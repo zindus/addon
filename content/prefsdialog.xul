@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
+
+<dialog
+	id="zindus-prefs-dialog"
+	title="&ZinPrefs.title;"
+	buttons="accept,cancel"
+	flex="1"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	onload="window.wd = new Prefs; window.wd.onLoad(event.target);"
+	oncommand="window.wd.onCommand(event.target.id);"
+	ondialogaccept="window.wd.onAccept();"
+	ondialogcancel="window.wd.onCancel();"
+	>
+
+	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/prefsdialog.js"/>
+
+	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
+
+	<tabbox id="zindus-prefs-tabbox" orient="vertical" flex="1" > <!-- selectedIndex="1"  -->
+		<tabs>
+			<tab id="zindus-prefs-tab-server"  label="&ZinPrefsTabServer.label;"  />
+			<tab id="zindus-prefs-tab-general" label="&ZinPrefsTabGeneral.label;" />
+		</tabs>
+		<tabpanels flex="1">
+
+			<command id="zindus-prefs-cmd-sync" oncommand=" dump('event.target.id: ' + event.target.id + '\n'); dump('event.originalTarget.id: ' + event.originalTarget.id + '\n'); dump('event.explicitOriginalTarget.id: ' + event.explicitOriginalTarget.id + '\n'); dump('event.currentTarget.id: ' + event.currentTarget.id + '\n'); window.wd.onCommand(event.explicitOriginalTarget.id);" />
+
+			<!-- Server -->
+
+			<vbox flex="1" >
+				<grid flex="1" style="&ZinPrefsServerGrid.style;" > 
+					<columns>
+						<column style="margin-left:15px" />
+						<column flex="1" />
+					</columns>
+					<rows>
+						<description xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
+							&ZinPrefsServerUrlDescription.value;
+						</description>
+						<row>
+							<label value="&ZinPrefsServerUrl.label;" />
+							<textbox id="zindus-prefs-server-url" />
+						</row>
+						<description value="&ZinPrefsServerUsernameDescription.value;" style="&ZinPrefsServerDescription.style;" />
+						<row>
+							<label value="&ZinPrefsServerUsername.label;:" />
+							<textbox id="zindus-prefs-server-username" />
+							<label value="" />
+						</row>
+						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+						<row>
+							<label value="&ZinPrefsServerPassword.label;:" />
+							<textbox id="zindus-prefs-server-password" type="password" />
+						</row>
+						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+						<row>
+							<label value="" />
+							<hbox align="left" >
+								<button id="zindus-prefs-server-button-authonly" align="center" label="&ZinPrefsServerTestConnection.label;" accesskey="&ZinPrefsServerTestConnection.accesskey;" command="zindus-prefs-cmd-sync" />
+							</hbox>
+						</row>
+						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+					</rows>
+				</grid>
+			</vbox>
+
+			<!-- General -->
+
+			<vbox flex="1" style="margin:20px" >
+				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				<groupbox pack="center" >
+				    <caption label="General Settings"/>
+					<vbox align="left" >
+						<checkbox id="zindus-prefs-general-show-progress" label="&ZinPrefsGeneralShowProgress.label;" checked="false" />
+						<checkbox id="zindus-prefs-general-map-PAB"       label="&ZinPrefsGeneralMapPAB.label;"       checked="true"  />
+					</vbox>
+				</groupbox>
+				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				<groupbox pack="center" >
+				    <caption label="Advanced"/>
+					<hbox align="right" >
+						<button id="zindus-prefs-general-button-test-harness" align="center" label="test harness" />
+						<button id="zindus-prefs-general-button-reset"        align="center" label="&ZinPrefsGeneralButtonReset.label;"   accesskey="&ZinPrefsGeneralButtonReset.accesskey;" />
+						<spacer flex="1"/> 
+						<button id="zindus-prefs-general-button-sync-now"     align="center" label="&ZinPrefsGeneralButtonSyncNow.label;" accesskey="&ZinPrefsGeneralButtonSyncNow.accesskey;" command="zindus-prefs-cmd-sync" />
+					</hbox>
+				</groupbox>
+			</vbox>
+
+		</tabpanels>
+	</tabbox>
+</dialog>
+<!--
+	<statusbar id="ch3-bar" persist="collapsed">
+		<statusbarpanel class="statusbarpanel-iconic" id="book-icon"/>
+		<statusbarpanel id="status-text" label="Thanks for reading chapter 3" flex="1" crop="right"/>
+		<statusbarpanel class="statusbarpanel-iconic" id="book-icon-2"/>
+	</statusbar>
+</window>
+-->

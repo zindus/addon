@@ -1,0 +1,6 @@
+overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/thunderbirdoverlay.xul
+
+content zindus       content/
+
+locale  zindus       en-US       locale/en-US/
+

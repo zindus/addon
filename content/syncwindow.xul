@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
+
+<dialog
+	id="zindus-syncwindow"
+	title = "Zindus Sync"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	onload="onLoad();"
+	ondialogcancel="return onCancel();"
+	ondialogaccept="return onAccept();"
+	buttons="cancel"
+	>
+
+	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/syncwindow.js"/>
+
+	<stringbundleset>
+		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
+	</stringbundleset>
+
+	<vbox align="center" style="margin:30px" >
+		<progressmeter id="zindus-syncwindow-progress-meter" value="0%" style="&ZinSyncWindowProgressDescription.style;" /> 
+		<spacer style="&ZinPrefsSpacer.style;" flex="1" /> 
+		<description id="zindus-syncwindow-progress-description" style="&ZinSyncWindowProgressDescription.style;" />
+		<spacer style="&ZinPrefsSpacer.style;" flex="1" /> 
+		<button dlgtype="cancel" align="center" />
+	</vbox>
+
+</dialog>

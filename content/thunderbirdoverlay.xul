@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
+
+<overlay
+	id="zindus-thunderbird-overlay" 
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	>
+
+	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/thunderbirdoverlay.js" />
+	<!--
+	-->
+
+	<!--
+		From: http://www.xulplanet.com/forum/viewtopic.php?p=1546&sid=4c55092e7978ed8e92a00c048dcc0e54
+		The id of <stringbundleset> in an overlay (as well as other direct children of <overlay>)
+		must match the id of an existent element in the main document.
+		IIRC, it's <stringbundleset id="stringbundleset"/> in browser.xul
+	-->
+
+	<stringbundleset id="stringbundleset" >
+		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
+	</stringbundleset>
+
+	<menupopup id="taskPopup">
+		<menuitem label="&ZinToolsMenuItem.label;"
+		          accesskey="&ZinToolsMenuItem.accesskey;"
+		          insertafter="javaScriptConsole"
+				  oncommand="zindusPrefsDialog();" />
+	</menupopup>
+
+	<toolbox id="mail-toolbox" class="toolbox-top" mode="full">
+		<toolbarpalette id="MailToolbarPalette">
+			<toolbarbutton id="zindus-toolbarbutton"
+			               label="&ZinToolsMenuItem.label;"
+						   tooltiptext="&ZinToolBarButton.tooltip;"
+			               oncommand="zindusPrefsDialog();" />
+		</toolbarpalette>
+	</toolbox>	
+
+</overlay>
