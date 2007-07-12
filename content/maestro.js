@@ -105,6 +105,11 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 				cnsAssert(false);
 		}
 	}
+	else if (topic == "quit-application")
+	{
+		dump("\n\n\n\n\n SAW QUIT APPLICATION \n\n\n\n\n");
+	}
+
 }
 
 ZinMaestro.prototype.functorNotifyAll = function()

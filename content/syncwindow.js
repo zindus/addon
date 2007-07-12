@@ -5,7 +5,6 @@ include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/payload.js");
-include("chrome://zindus/content/lastsyncstatus.js");
 include("chrome://zindus/content/maestro.js");
 
 var gLogger      = null;
