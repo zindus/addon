@@ -43,7 +43,6 @@ function onLoad()
 		case Payload.SYNC:
 			sw.m_id_fsm = ZinMaestro.FSM_ID_TWOWAY;
 			var maestro = new ZinMaestro();
-			gLogger.debug("syncwindow: onLoad(): sw.m_id_fsm: " + sw.m_id_fsm);
 			maestro.notifyFunctorRegister(onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_1, ZinMaestro.FSM_GROUP_SYNC);
 			break;
 

@@ -1,4 +1,5 @@
 include("chrome://zindus/content/maestro.js");
+include("chrome://zindus/content/timer.js");
 
 window.addEventListener("load", onLoad, false);
 
@@ -27,6 +28,10 @@ function onLoad(event)
         		dump("thunderbirdoverlay: creating ZinMaestro and registering it with nsIObserverService\n");
 
 				maestro.osRegister();
+
+				var timer = new ZinTimer(5000);
+
+				timer.start();
 			}
 
         }

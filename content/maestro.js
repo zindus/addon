@@ -199,6 +199,7 @@ ZinMaestro.prototype.wrapForJS = function(obj)
 	return obj;
 }
 
+// TODO change these to static methods
 ZinMaestro.prototype.notifyFunctorRegister = function(functor, id_functor, a_id_fsm)
 {
 	this.m_logger.debug("ZinMaestro.notifyFunctorRegister(): id_functor == " + id_functor + " a_id_fsm: " + aToString(a_id_fsm));
