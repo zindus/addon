@@ -1,4 +1,6 @@
 include("chrome://zindus/content/log4js.js");
+include("chrome://zindus/content/mozillapreferences.js");
+// include("chrome://zindus/content/filesystem.js");
 
 // code in this file created by leni
 
@@ -21,9 +23,13 @@ Log.dumpAndFileLogger = function(msg,level)
 
     dump(message);
 
-	if (typeof gLogger.loggingOutputStream != "undefined" && gLogger.loggingOutputStream != null)
+	var os = loggingFileOpen();
+
+	if (typeof os != "undefined" && os != null)
 	{
-		gLogger.loggingOutputStream.write(message, message.length);
+		os.write(message, message.length);
+
+		loggingFileClose(os);
 	}
 }
 
@@ -34,40 +40,44 @@ Log.dumpAndFileLogger = function(msg,level)
 // - the Log.dumpAndFileLogger uses it
 // - the stream is closed
 
-Log.prototype.loggingFileOpen = function()
+function loggingFileOpen()
 {
-	if (gPreferences.getCharPref(gPreferences.branch(), "loggingActive") == "true")
-	{
-		var logfile = Filesystem.getDirectory(DIRECTORY_LOG); // returns an nsIFile object
+	var ret = null;
+	var prefs = new MozillaPreferences();
 
-		var ioFlags = FILESYSTEM_FLAG_PR_CREATE_FILE | FILESYSTEM_FLAG_PR_WRONLY | FILESYSTEM_FLAG_PR_APPEND | FILESYSTEM_FLAG_PR_SYNC;
+	if (prefs.getCharPref(prefs.branch(), "loggingActive") == "true")
+	{
+		var logfile = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
+
+		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
 
 		if (!logfile.exists() || !logfile.isDirectory())
-			logfile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, FILESYSTEM_PERM_PR_IRUSR | FILESYSTEM_PERM_PR_IWUSR);
+			logfile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 
 		logfile.append(LOGFILENAME); // dump("logfile.path == " + logfile.path + "\n");
 
-		var loggingFileSizeMax = gPreferences.getIntPref(gPreferences.branch(), "loggingFileSizeMax");
+		var loggingFileSizeMax = prefs.getIntPref(prefs.branch(), "loggingFileSizeMax");
 
 		if (logfile.exists() && logfile.fileSize > loggingFileSizeMax)
-			ioFlags |= FILESYSTEM_FLAG_PR_TRUNCATE;
+			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
 
-		this.loggingOutputStream = Components.classes["@mozilla.org/network/file-output-stream;1"].
+		ret = Components.classes["@mozilla.org/network/file-output-stream;1"].
 		                        createInstance(Components.interfaces.nsIFileOutputStream);
 
-		this.loggingOutputStream.init(logfile, ioFlags, FILESYSTEM_PERM_PR_IRUSR | FILESYSTEM_PERM_PR_IWUSR, null);
+		ret.init(logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
 
 		// gLogger.debug("logfile.fileSize == " + logfile.fileSize + " and loggingFileSizeMax == " + loggingFileSizeMax);
 	}
+
+	return ret;
 }
 
-Log.prototype.loggingFileClose = function()
+function loggingFileClose(os)
 {
-	if (typeof this.loggingOutputStream != "undefined" && this.loggingOutputStream != null)
+	if (typeof os != "undefined" && os != null)
 	{
-		this.loggingOutputStream.flush();
-		this.loggingOutputStream.close()
-		this.loggingOutputStream = null;
+		os.flush();
+		os.close()
 	}
 }
 

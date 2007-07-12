@@ -5,22 +5,22 @@ function include(url)
 
 	if (loader)
 	{
-		// if the url doesn't exist, you don't get very good error messages - uncomment these dump() statements
-		// dump("javascript loader.loadSubScript(" + url + ")...\n");
 		var is_exception = false;
+
 		try {
 			ret = loader.loadSubScript(url);
 		}
-		catch (e)
+		catch (ex)
 		{
 			is_exception = true;
+
+			if (typeof alert == 'function')
+				alert(ex.message + " stack: \n" + ex.stack);
+			else
+				print(ex.message + " stack: \n" + ex.stack);
 		}
 
-		// dump("javascript loader.loadSubScript(" + url + "): " + ret + "\n");
-
-		if (is_exception)
-		{
-			// this is the code from Assert()
+		if (is_exception) // this is the code from Assert()
 			try
 			{
 				throw new Error("Internal error in extension: assert failed");
@@ -34,6 +34,5 @@ function include(url)
 
 				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
 			}
-		}
 	}
 }

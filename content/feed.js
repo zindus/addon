@@ -130,7 +130,7 @@ ZinFeedCollection.prototype.load = function(filename)
 	functor.m_zfc  = this;
 	functor.m_zfi = new ZinFeedItem();
 
-	var file = Filesystem.getDirectory(DIRECTORY_MAPPING);
+	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
 	file.append(filename);
 	// gLogger.debug("about to parse file: " + file.path);
 
@@ -146,7 +146,7 @@ ZinFeedCollection.prototype.save = function(filename)
 	// so the functor used in load() doesn't get called.
 	content += "\n";
 
-	var file = Filesystem.getDirectory(DIRECTORY_MAPPING);
+	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
 
 	if (!file.exists() || !file.isDirectory())
 	{

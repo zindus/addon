@@ -78,7 +78,7 @@ function onAccept()
 
 	gLogger.debug("syncwindow onAccept:");
 
-	gLogger.loggingFileClose();
+	// gLogger.loggingFileClose();
 	gLogger = null;
 
 	return true;
@@ -107,7 +107,7 @@ function resetAll()
 	gLogger.debug("syncwindow resetAll()");
 
 	var file;
-	var directory = Filesystem.getDirectory(DIRECTORY_MAPPING);
+	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
 
 	// zap everything in the mapping directory
 	//
@@ -130,7 +130,7 @@ function resetAll()
 
 	// zap the logfile
 	//
-	file = Filesystem.getDirectory(DIRECTORY_LOG);
+	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
 	file.append(LOGFILENAME);
 
 	if (file.exists() || !file.isDirectory())
@@ -146,7 +146,7 @@ function initialiseGlobals()
 	gPreferences = new MozillaPreferences();
 
 	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
-	gLogger.loggingFileOpen();
+	// gLogger.loggingFileOpen();
 
 	gBiMap = new Object();
 

@@ -1,17 +1,17 @@
-const DIRECTORY_PROFILE   = "00001";
-const DIRECTORY_LOG       = "zindus-log";
-const DIRECTORY_MAPPING   = "zindus-mappings";
+Filesystem.DIRECTORY_PROFILE   = 1; // used to distinguish from DIRECTORY_EXTENSION to - since deleted
+Filesystem.DIRECTORY_LOG       = "zindus-log";
+Filesystem.DIRECTORY_MAPPING   = "zindus-mappings";
 
 // from prio.h
-const FILESYSTEM_PERM_PR_IRUSR  = 0400;  // Read  by owner
-const FILESYSTEM_PERM_PR_IWUSR  = 0200;  // Write by owner
+Filesystem.PERM_PR_IRUSR  = 0400;  // Read  by owner
+Filesystem.PERM_PR_IWUSR  = 0200;  // Write by owner
 
-const FILESYSTEM_FLAG_PR_RDONLY      = 0x01;
-const FILESYSTEM_FLAG_PR_WRONLY      = 0x02;
-const FILESYSTEM_FLAG_PR_CREATE_FILE = 0x08;
-const FILESYSTEM_FLAG_PR_APPEND      = 0x10;
-const FILESYSTEM_FLAG_PR_TRUNCATE    = 0x20;
-const FILESYSTEM_FLAG_PR_SYNC        = 0x40;
+Filesystem.FLAG_PR_RDONLY      = 0x01;
+Filesystem.FLAG_PR_WRONLY      = 0x02;
+Filesystem.FLAG_PR_CREATE_FILE = 0x08;
+Filesystem.FLAG_PR_APPEND      = 0x10;
+Filesystem.FLAG_PR_TRUNCATE    = 0x20;
+Filesystem.FLAG_PR_SYNC        = 0x40;
 
 function Filesystem()
 {
@@ -19,14 +19,14 @@ function Filesystem()
 
 Filesystem.getDirectoryParent = function(code)
 {
-	cnsAssert(code == DIRECTORY_PROFILE);
+	cnsAssert(code == Filesystem.DIRECTORY_PROFILE);
 
 	var ret;
 
 	try
 	{
 		// See http://www.mozilla.org/support/thunderbird/profile#locate
-		if (code == DIRECTORY_PROFILE)
+		if (code == Filesystem.DIRECTORY_PROFILE)
 			ret = Components.classes["@mozilla.org/file/directory_service;1"]
 		                 .getService(Components.interfaces.nsIProperties)
 		                 .get("ProfD", Components.interfaces.nsIFile);
@@ -44,8 +44,8 @@ Filesystem.getDirectoryParent = function(code)
 Filesystem.getDirectory = function(code)
 {
 	var aRelativeTo = new Object();
-	aRelativeTo[DIRECTORY_LOG]      = DIRECTORY_PROFILE;
-	aRelativeTo[DIRECTORY_MAPPING]  = DIRECTORY_PROFILE;
+	aRelativeTo[Filesystem.DIRECTORY_LOG]      = Filesystem.DIRECTORY_PROFILE;
+	aRelativeTo[Filesystem.DIRECTORY_MAPPING]  = Filesystem.DIRECTORY_PROFILE;
 
 	cnsAssert(typeof aRelativeTo[code] != 'undefined');
 
@@ -58,32 +58,32 @@ Filesystem.getDirectory = function(code)
 
 Filesystem.getLogDir = function()
 {
-	var file = this.getDirectory(DIRECTORY_MAPPING);
+	var file = this.getDirectory(Filesystem.DIRECTORY_MAPPING);
 
-	file.append(DIRECTORY_LOG);
+	file.append(Filesystem.DIRECTORY_LOG);
 
 	return file;
 }
 
 Filesystem.createLogDir = function()
 {
-	this.createDir(DIRECTORY_LOG);
+	this.createDir(Filesystem.DIRECTORY_LOG);
 }
 
 Filesystem.createMappingDir = function()
 {
-	this.createDir(DIRECTORY_MAPPING);
+	this.createDir(Filesystem.DIRECTORY_MAPPING);
 }
 
 Filesystem.createDir = function(name)
 {
-	var file = this.getDirectory(DIRECTORY_MAPPING);
+	var file = this.getDirectory(Filesystem.DIRECTORY_MAPPING);
 
 	file.append(name);
 
 	if (!file.exists() || !file.isDirectory()) 
 	{   
-		file.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, FILESYSTEM_PERM_PR_IRUSR | FILESYSTEM_PERM_PR_IWUSR);
+		file.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 	}
 }
 
@@ -122,14 +122,14 @@ Filesystem.writeToFile = function(file, content)
 		//
 
 		if (!file.exists()) 
-			file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FILESYSTEM_PERM_PR_IRUSR | FILESYSTEM_PERM_PR_IWUSR);
+			file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 
 		// Write with nsIFileOutputStream.
 		var outputStream = Components.classes["@mozilla.org/network/file-output-stream;1"].
 		                              createInstance(Components.interfaces.nsIFileOutputStream);
 
-		outputStream.init(file, FILESYSTEM_FLAG_PR_WRONLY | FILESYSTEM_FLAG_PR_TRUNCATE,
-		                        FILESYSTEM_PERM_PR_IRUSR | FILESYSTEM_PERM_PR_IWUSR, null);
+		outputStream.init(file, Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_TRUNCATE,
+		                        Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
 		outputStream.write(content, content.length);
 		outputStream.flush();
 		outputStream.close();
@@ -156,7 +156,7 @@ Filesystem.fileReadByLine = function(path, functor)
 		var istream = Components.classes["@mozilla.org/network/file-input-stream;1"].
 		                         createInstance(Components.interfaces.nsIFileInputStream);
 
-		istream.init(file, FILESYSTEM_FLAG_PR_RDONLY,  FILESYSTEM_PERM_PR_IRUSR, 0);
+		istream.init(file, Filesystem.FLAG_PR_RDONLY,  Filesystem.PERM_PR_IRUSR, 0);
 		istream.QueryInterface(Components.interfaces.nsILineInputStream);
 
 		var line = {};
