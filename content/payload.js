@@ -7,10 +7,8 @@ function Payload(opcode)
 	this.m_result = null;
 }
 
-Payload.SYNC        = 0;
-Payload.AUTHONLY    = 1;
-Payload.TESTHARNESS = 2;
-Payload.RESET       = 3;
+// Payload.SYNC        = 0;
+// Payload.AUTHONLY    = 1;
 
 Payload.prototype.opcode = function()
 {

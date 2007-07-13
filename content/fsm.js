@@ -5,7 +5,7 @@ include("chrome://zindus/content/maestro.js");
 //   if continuation() is called from a transition or exit action.
 // - states are final when their entryAction()'s don't call continuation()
 //
-// $Id: fsm.js,v 1.1 2007-07-11 11:22:54 cvsuser Exp $
+// $Id: fsm.js,v 1.2 2007-07-13 05:36:43 cvsuser Exp $
 
 function FsmSanityCheck(context)
 {
@@ -85,8 +85,6 @@ function fsmDoTransition(fsmstate)
 	var context  = fsmstate.state.context;
 
 	gLogger.debug("722. fsmDoTransition: fsmstate: " + fsmstate.toString() );
-	// gLogger.debug("723. fsmDoTransition: context.fsm: " + (isPropertyPresent(context, "fsm") ? "set" : "not set") );
-	// gLogger.debug("723. fsmDoTransition: context.fsm.is_cancelled: " + (isPropertyPresent(context.fsm, "is_cancelled") ? context.fsm.is_cancelled : "not set") );
 
 	context.countTransitions++;
 

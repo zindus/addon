@@ -28,7 +28,7 @@ Prefs.prototype.onLoad = function(target)
 	dump("Prefs.onLoad: - m_prefset_general == " + this.m_prefset_general.toString() + "\n");
 
 	var maestro = new ZinMaestro();
-	maestro.notifyFunctorRegister(onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_2, ZinMaestro.FSM_GROUP_SYNC);
+	maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_2, ZinMaestro.FSM_GROUP_SYNC);
 
 	this.updateView();
 }
@@ -110,12 +110,12 @@ Prefs.prototype.onCommand = function(id_target)
 	switch(id_target)
 	{
 		case "zindus-prefs-general-button-sync-now":
-			payload = new Payload(Payload.SYNC);
+			payload = new Payload(ZinMaestro.FSM_ID_TWOWAY);
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 			break;
 
 		case "zindus-prefs-server-button-authonly":
-			payload = new Payload(Payload.AUTHONLY);
+			payload = new Payload(ZinMaestro.FSM_ID_AUTHONLY);
 
 			payload.m_args = newObject( 'soapURL',  document.getElementById("zindus-prefs-server-url").value,
 			                            'username', document.getElementById("zindus-prefs-server-username").value,
@@ -154,13 +154,13 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-test-harness":
-			payload = new Payload(Payload.TESTHARNESS);
-			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
+			var testharness = new ZinTestHarness();
+			testharness.run();
 			break;
 
 		case "zindus-prefs-general-button-reset":
-			payload = new Payload(Payload.RESET);
-			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
+			// TODO - this needs a guard around it so that the fsm can't run during...
+			resetAll();
 			break;
 
 		default:
@@ -179,7 +179,7 @@ Prefs.doObserverAuthOnly = function()
 	dump("Prefs.doObserverAuthOnly: lastsyncstatus.detail: "      + lastsyncdate.detail + "\n");
 }
 
-function onFsmStateChangeFunctor(fsmstate)
+Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	if (fsmstate && fsmstate.state.oldstate != "final")
 	{
@@ -192,3 +192,43 @@ function onFsmStateChangeFunctor(fsmstate)
 		document.getElementById("zindus-prefs-cmd-sync").removeAttribute('disabled');
 	}
 }
+
+function resetAll()
+{
+	gLogger.debug("syncwindow resetAll()");
+
+	var file;
+	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
+
+	// zap everything in the mapping directory
+	//
+	if (directory.exists() && directory.isDirectory())
+	{
+		var iter = directory.directoryEntries;
+ 
+		while (iter.hasMoreElements())
+		{
+			file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+
+			file.remove(false);
+		}
+	}
+
+	var aAddressBook = ZimbraFsm.getTbAddressbooks();
+
+	for each (abName in aAddressBook)
+		ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
+
+	// zap the logfile
+	//
+	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
+	file.append(LOGFILENAME);
+
+	if (file.exists() || !file.isDirectory())
+	{
+		gLogger.loggingFileClose();
+		file.remove(false);
+		gLogger.loggingFileOpen();
+	}
+}
+

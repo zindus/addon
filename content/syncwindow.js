@@ -8,165 +8,84 @@ include("chrome://zindus/content/payload.js");
 include("chrome://zindus/content/maestro.js");
 
 var gLogger      = null;
-var gPreferences = null;
-var gBiMap       = null;
 
-var sw = null;
-
-// TODO - return authstatus back to caller - maybe this should be a dialog after all?
-
-function SyncWindowState()
+function SyncWindow()
 {
 	this.m_id_fsm  = null;
 	this.m_syncfsm = null;
 	this.m_timeoutID = null; // need to remember this in case the user cancels
-	this.m_newstate = null;  // the cancel method needs to know whether to expect a continuation or not - there will be one if the fsm has had a transition.  It wont have had a transition if newstate == 'start'
+	this.m_newstate = null;  // the cancel method needs to know whether to expect a continuation or not
+	                         // there will be one if the fsm has had a transition.  It wont have had a transition if newstate == 'start'
 	this.m_payload = null;
 	this.m_has_observer_been_called = false;
 	this.m_sfpo = new SyncFsmProgressObserver();
 }
 
-function onLoad()
+SyncWindow.prototype.onLoad = function()
 {
-	initialiseGlobals();
+	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 
 	gLogger.debug("=========================================== start: " + getTime() + "\n");
 
-	sw = new SyncWindowState();
-
-	sw.m_payload = window.arguments[0];
+	this.m_payload = window.arguments[0];
 	
-	gLogger.debug("syncwindow onLoad() entering: arguments[0] " + window.arguments[0] + " and payload = " + sw.m_payload.toString());
+	gLogger.debug("syncwindow onLoad() entering: arguments[0] " + window.arguments[0] + " and payload = " + this.m_payload.toString());
 
-	switch(sw.m_payload.opcode())
-	{
-		case Payload.SYNC:
-			sw.m_id_fsm = ZinMaestro.FSM_ID_TWOWAY;
-			var maestro = new ZinMaestro();
-			maestro.notifyFunctorRegister(onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_1, ZinMaestro.FSM_GROUP_SYNC);
-			break;
-
-		case Payload.AUTHONLY:
-			sw.m_id_fsm = ZinMaestro.FSM_ID_AUTHONLY;
-			var maestro = new ZinMaestro();
-			gLogger.debug("syncwindow onLoad(), sw.m_id_fsm: " + sw.m_id_fsm);
-			maestro.notifyFunctorRegister(onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_1, ZinMaestro.FSM_GROUP_SYNC);
-			break;
-
-		case Payload.TESTHARNESS:
-			var testharness = new ZinTestHarness();
-			testharness.run();
-			document.getElementById('zindus-syncwindow').acceptDialog();
-			break;
-		case Payload.RESET:
-			resetAll();
-			document.getElementById('zindus-syncwindow').acceptDialog();
-			break;
-		default:
-			cnsAssert(false);
-	}
+	this.m_id_fsm = this.m_payload.opcode();
+	var maestro = new ZinMaestro();
+	maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_1, ZinMaestro.FSM_GROUP_SYNC);
 
 	if (gLogger)
 		gLogger.debug("syncwindow onLoad() exiting");
 }
 
-function onAccept()
+SyncWindow.prototype.onAccept = function()
 {
 	var maestro = new ZinMaestro();
 	maestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_1);
 
 	gLogger.debug("syncwindow onAccept:");
 
-	// gLogger.loggingFileClose();
 	gLogger = null;
 
 	return true;
 }
 
-function onCancel()
+SyncWindow.prototype.onCancel = function()
 {
 	gLogger.debug("syncwindow onCancel: entered");
 			
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
-	// window.clearTimeout(sw.m_timeoutID);
-	// gLogger.debug("syncwindow onCancel: cleared timeoutID: " + sw.m_timeoutID);
+	// window.clearTimeout(this.m_timeoutID);
+	// gLogger.debug("syncwindow onCancel: cleared timeoutID: " + this.m_timeoutID);
 
-	sw.m_syncfsm.cancel(sw.m_timeoutID, sw.m_newstate);
-	sw.m_syncfsm.fsm.is_cancelled = true;
+	this.m_syncfsm.cancel(this.m_timeoutID, this.m_newstate);
 
 	gLogger.debug("syncwindow onCancel: exited");
 
 	return false;
 }
 
-function resetAll()
-{
-	gLogger.debug("syncwindow resetAll()");
-
-	var file;
-	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
-
-	// zap everything in the mapping directory
-	//
-	if (directory.exists() && directory.isDirectory())
-	{
-		var iter = directory.directoryEntries;
- 
-		while (iter.hasMoreElements())
-		{
-			file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
-
-			file.remove(false);
-		}
-	}
-
-	var aAddressBook = ZimbraFsm.getTbAddressbooks();
-
-	for each (abName in aAddressBook)
-		ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
-
-	// zap the logfile
-	//
-	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
-	file.append(LOGFILENAME);
-
-	if (file.exists() || !file.isDirectory())
-	{
-		gLogger.loggingFileClose();
-		file.remove(false);
-		gLogger.loggingFileOpen();
-	}
-}
-
-function initialiseGlobals()
-{
-	gPreferences = new MozillaPreferences();
-
-	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
-	// gLogger.loggingFileOpen();
-
-	gBiMap = new Object();
-
-	gBiMap.FORMAT = new BiMap(
-		[FORMAT_TB, FORMAT_ZM],
-		['tb',      'zm'     ]);
-}
-
-function onFsmStateChangeFunctor(fsmstate)
+SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	gLogger.debug("syncwindow onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null") +
-	                                                                                " sw.m_id_fsm: " + sw.m_id_fsm);
+	                                                                                " this.m_id_fsm: " + this.m_id_fsm);
 
-	if (!sw.m_has_observer_been_called)
+	if (!this.m_has_observer_been_called)
 	{
-		sw.m_has_observer_been_called = true;
+		this.m_has_observer_been_called = true;
 
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 742: starting fsm: " + sw.m_id_fsm + "\n");
+		gLogger.debug("syncwindow onFsmStateChangeFunctor: 742: starting fsm: " + this.m_id_fsm + "\n");
 
-		sw.m_syncfsm = new ZimbraFsm(sw.m_id_fsm, sw.m_payload.m_args);
-		sw.m_syncfsm.start();
+		var x = document.getElementById('zindus-statuspanel');
+		gLogger.debug("SyncWindow.onFsmStateChangeFunctor: statuspanel: " + (x ? "defined" : "undefined") );
+
+		// document.getElementById('zindus-statuspanel').hidden = false;
+
+		this.m_syncfsm = new ZimbraFsm(this.m_id_fsm, this.m_payload.m_args);
+		this.m_syncfsm.start();
 	}
 	else if (fsmstate.state.oldstate == "final")
 	{
@@ -174,38 +93,39 @@ function onFsmStateChangeFunctor(fsmstate)
 		gLogger.debug("syncwindow 743: fsmstate.state.context.state: " + (isPropertyPresent(fsmstate.state.context, "state") ? "present" : "absent"));
 		gLogger.debug("syncwindow 743: fsmstate.state.context.state.observer: " + (isPropertyPresent(fsmstate.state.context.state, "observer") ? "present" : "absent"));
 
-		sw.m_payload.m_result = sw.m_sfpo.exitStatus();
+		this.m_payload.m_result = this.m_sfpo.exitStatus();
 
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 743: about to call acceptDialog: exitStatus: " + sw.m_sfpo.exitStatus().toString());
+		gLogger.debug("syncwindow onFsmStateChangeFunctor: 743: about to call acceptDialog: exitStatus: " + this.m_sfpo.exitStatus().toString());
 
-		updateProgress(fsmstate);
+		this.updateProgress(fsmstate);
 
+		// document.getElementById('zindus-statuspanel').hidden = true;
 		document.getElementById('zindus-syncwindow').acceptDialog();
 	}
 	else if (fsmstate.state.newstate == "start")  // fsm is about to have it's first transition - nothing to report to the UI
 	{
-		sw.m_timeoutID = fsmstate.state.timeoutID;
-		sw.m_newstate  = fsmstate.state.newstate;
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + sw.m_timeoutID);
+		this.m_timeoutID = fsmstate.state.timeoutID;
+		this.m_newstate  = fsmstate.state.newstate;
+		gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.m_timeoutID);
 
-		updateProgress(fsmstate);
+		this.updateProgress(fsmstate);
 	}
 	else if (fsmstate.state.newstate != "start")
 	{
-		sw.m_timeoutID = fsmstate.state.timeoutID;
-		sw.m_newstate  = fsmstate.state.newstate;
+		this.m_timeoutID = fsmstate.state.timeoutID;
+		this.m_newstate  = fsmstate.state.newstate;
 
 		gLogger.debug("syncwindow onFsmStateChangeFunctor: 745: " +
-		                             " timeoutID: " + sw.m_timeoutID );
+		                             " timeoutID: " + this.m_timeoutID );
 
-		updateProgress(fsmstate);
+		this.updateProgress(fsmstate);
 	}
 
 	if (gLogger) // gLogger will be null after acceptDialog()
 		gLogger.debug("syncwindow onFsmStateChangeFunctor 746: exiting");
 }
 
-function updateProgress(fsmstate)
+SyncWindow.prototype.updateProgress = function(fsmstate)
 {
 	var a_states_of_interest = { stAuth : 0,       stLoad: 1,     stSync: 2,     stGetContact: 3,    stSyncGal: 4, stLoadTb : 5, 
 	                             stSyncPrepare: 6, stUpdateTb: 7, stUpdateZm: 8, stUpdateCleanup: 9, final: 10 };
@@ -213,18 +133,18 @@ function updateProgress(fsmstate)
 	if (isPropertyPresent(a_states_of_interest, fsmstate.state.newstate))
 	{
 		var context = fsmstate.state.context; // ZimbraFsmState
-		sw.m_sfpo.state = context.state;
+		this.m_sfpo.state = context.state;
 
 		switch(fsmstate.state.newstate)
 		{
-			case 'stAuth':          sw.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "RemoteAuth"); break;
-			case 'stLoad':          sw.m_sfpo.progressReportOn("Load");                                        break;
-			case 'stSync':          sw.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
-			case 'stSyncGal':       sw.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
-			case 'stLoadTb':        sw.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetItem");    break;
-			case 'stSyncPrepare':   sw.m_sfpo.progressReportOn("Converge");                                    break;
-			case 'stUpdateTb':      sw.m_sfpo.progressReportOnSource(context.state.sourceid_tb, "Put");        break;
-			case 'stUpdateCleanup': sw.m_sfpo.progressReportOn("Saving");                                      break;
+			case 'stAuth':          this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "RemoteAuth"); break;
+			case 'stLoad':          this.m_sfpo.progressReportOn("Load");                                        break;
+			case 'stSync':          this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
+			case 'stSyncGal':       this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
+			case 'stLoadTb':        this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetItem");    break;
+			case 'stSyncPrepare':   this.m_sfpo.progressReportOn("Converge");                                    break;
+			case 'stUpdateTb':      this.m_sfpo.progressReportOnSource(context.state.sourceid_tb, "Put");        break;
+			case 'stUpdateCleanup': this.m_sfpo.progressReportOn("Saving");                                      break;
 
 			case 'stGetContact':
 				var id;
@@ -233,15 +153,15 @@ function updateProgress(fsmstate)
 
 				if (typeof(id) != 'undefined')
 				{
-					var op = sw.m_sfpo.buildOp(context.state.sourceid_zm, "GetItem");
+					var op = this.m_sfpo.buildOp(context.state.sourceid_zm, "GetItem");
 
-					if (sw.m_sfpo.get(SyncFsmProgressObserver.OP) != op)
+					if (this.m_sfpo.get(SyncFsmProgressObserver.OP) != op)
 					{
-						gLogger.debug("4401: op: " + op + " sw.m_sfpo.get(SyncFsmProgressObserver.OP): " + sw.m_sfpo.get(SyncFsmProgressObserver.OP));
-						sw.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetItem", aToLength(context.state.aQueue));
+						gLogger.debug("4401: op: " + op + " this.m_sfpo.get(SyncFsmProgressObserver.OP): " + this.m_sfpo.get(SyncFsmProgressObserver.OP));
+						this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetItem", aToLength(context.state.aQueue));
 					}
 
-					sw.m_sfpo.set(SyncFsmProgressObserver.PROG_CNT, sw.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) + 1);
+					this.m_sfpo.set(SyncFsmProgressObserver.PROG_CNT, this.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) + 1);
 				}
 				break;
 
@@ -251,7 +171,7 @@ function updateProgress(fsmstate)
 					var sourceid = context.state.updateZmPackage['sourceid'];
 					var op = context.state.sources[sourceid]['name'] + " " + stringBundleString("Put");
 
-					if (sw.m_sfpo.get(SyncFsmProgressObserver.OP) != op)
+					if (this.m_sfpo.get(SyncFsmProgressObserver.OP) != op)
 					{
 						var cTotal = 0; // aSuo definitely needs an iterator!
 						for (var x in context.state.sources)
@@ -261,16 +181,16 @@ function updateProgress(fsmstate)
 										for (var z in context.state.aSuo[x][SORT_ORDER[y]])
 											cTotal++;
 
-						sw.m_sfpo.progressReportOnSource(sourceid, "Put", cTotal);
+						this.m_sfpo.progressReportOnSource(sourceid, "Put", cTotal);
 					}
 
-					sw.m_sfpo.set(SyncFsmProgressObserver.PROG_CNT, sw.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) + 1);
+					this.m_sfpo.set(SyncFsmProgressObserver.PROG_CNT, this.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) + 1);
 				}
 				break;
 
 			case 'final':
 				if (fsmstate.state.event == 'evCancel')
-					sw.m_sfpo.progressReportOn("Cancelled");
+					this.m_sfpo.progressReportOn("Cancelled");
 
 				var es = new SyncFsmExitStatus();
 
@@ -291,7 +211,7 @@ function updateProgress(fsmstate)
 					}
 				}
 
-				sw.m_sfpo.exitStatus(es);
+				this.m_sfpo.exitStatus(es);
 
 				// there are three bits of "exit status" that the outside world might be interested in
 				// ZinMaestro.FSM_ID_TWOWAY:
@@ -309,15 +229,17 @@ function updateProgress(fsmstate)
 		var percentage_complete = 0;
 		percentage_complete += a_states_of_interest[fsmstate.state.newstate] / a_states_of_interest['final'];
 
-		if (sw.m_sfpo.get(SyncFsmProgressObserver.PROG_MAX) > 0)
-			percentage_complete += (1 / a_states_of_interest['final']) * (sw.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) / sw.m_sfpo.get(SyncFsmProgressObserver.PROG_MAX));
+		if (this.m_sfpo.get(SyncFsmProgressObserver.PROG_MAX) > 0)
+			percentage_complete += (1 / a_states_of_interest['final']) * (this.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) / this.m_sfpo.get(SyncFsmProgressObserver.PROG_MAX));
 
 		percentage_complete = percentage_complete * 100 + "%";
 
 		gLogger.debug("4401: percentage_complete: " + percentage_complete);
 
-		document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value', percentage_complete );
-		document.getElementById('zindus-syncwindow-progress-description').setAttribute('value', sw.m_sfpo.progressToString());
+		// document.getElementById('zindus-statuspanel-progress-meter').setAttribute('value', percentage_complete );
+		// document.getElementById('zindus-statuspanel-progress-label').setAttribute('value', this.m_sfpo.progressToString());
+
+		document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value', percentage_complete ); document.getElementById('zindus-syncwindow-progress-description').setAttribute('value', this.m_sfpo.progressToString());
 	}
 }
 

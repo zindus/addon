@@ -7,9 +7,9 @@
 	id="zindus-syncwindow"
 	title = "Zindus Sync"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="onLoad();"
-	ondialogcancel="return onCancel();"
-	ondialogaccept="return onAccept();"
+	onload="window.wd = new SyncWindow(); window.wd.onLoad();"
+	ondialogcancel="return window.wd.onCancel();"
+	ondialogaccept="return window.wd.onAccept();"
 	buttons="cancel"
 	>
 

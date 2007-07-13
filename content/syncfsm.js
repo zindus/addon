@@ -125,6 +125,11 @@ function ZimbraFsmState(id_fsm, args)
 	this.aSuo                = null;         // container for source update operations - populated in SyncPrepare
 	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
 
+	this.m_preferences  = new MozillaPreferences();
+	this.m_bimap_format = new BiMap(
+		[FORMAT_TB, FORMAT_ZM],
+		['tb',      'zm'     ]);
+
 	// this stuff should be initialised elsewhere
 	//
 	// TODO - persist this: map or preferences (sql would be nice) - password has to go in the password manager
@@ -367,7 +372,7 @@ ZimbraFsm.prototype.entryActionLoad = function(state, event, continuation)
 	var sources = this.state.sources;
 
 	for (var i in sources)
-		sources[i]['zfcLuid'].load(ZinFeedCollection.fileName(i, gBiMap.FORMAT.lookup(sources[i]['format'], null)));
+		sources[i]['zfcLuid'].load(ZinFeedCollection.fileName(i, this.state.m_bimap_format.lookup(sources[i]['format'], null)));
 
 	continuation('evNext');
 }
@@ -396,7 +401,7 @@ ZimbraFsm.prototype.exitActionGetAccountInfo = function(state, event)
 		soapURL = functor.a[0];
 	else if (functor.a.length > 1)
 	{
-		var scheme = gPreferences.getCharPref(gPreferences.branch(), "preferSchemeForSoapUrl");
+		var scheme = this.state.m_preferences.getCharPref(this.state.m_preferences.branch(), "preferSchemeForSoapUrl");
 		var scheme_length = scheme.length;
 
 		for (var i = 0; i < functor.a.length && (soapURL == null); i++)
@@ -712,7 +717,7 @@ ZimbraFsm.prototype.exitActionGetContact = function(state, event)
 
 ZimbraFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 {
-	var SyncGalMdInterval = parseInt(gPreferences.getIntPref(gPreferences.branch(), "SyncGalMdInterval"));
+	var SyncGalMdInterval = parseInt(this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "SyncGalMdInterval"));
 	var SyncMd = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncMd');
 
 	gLogger.debug("11443322: SyncGalMdInterval == " + SyncGalMdInterval);
@@ -2516,7 +2521,7 @@ ZimbraFsm.prototype.entryActionCommit = function(state, event, continuation)
 	this.state.zfcGid.save(ZinFeedCollection.fileName(ZimbraFsm.FILE_GID));
 
 	for (var i in this.state.sources)
-		this.state.sources[i]['zfcLuid'].save(ZinFeedCollection.fileName(i, gBiMap.FORMAT.lookup(this.state.sources[i]['format'], null)));
+		this.state.sources[i]['zfcLuid'].save(ZinFeedCollection.fileName(i, this.state.m_bimap_format.lookup(this.state.sources[i]['format'], null)));
 
 	continuation('evNext');
 }

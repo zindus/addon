@@ -40,4 +40,17 @@
 		</toolbarpalette>
 	</toolbox>	
 
+	<hbox id="statusTextBox" >
+		<statusbarpanel hidden="true" id="zindus-statuspanel" insertbefore="statusbar-progresspanel" >
+			<stack>
+				<progressmeter id="zindus-statuspanel-progress-meter" mode="normal" value="0" />
+				<label id="zindus-statuspanel-progress-label" onclick="alert('you clicked me');" />
+			</stack>
+		</statusbarpanel>
+	</hbox>
+	<!-- 
+	<statusbar id="status-bar" >
+	</statusbar>
+	-->
+
 </overlay>
