@@ -253,3 +253,18 @@ function hyphenate()
 
 	return ret;
 }
+
+// see:
+// http://www.sitepoint.com/blogs/2006/01/17/javascript-inheritance/
+//
+function copyPrototype(child, parent)
+{ 
+	var sConstructor = parent.toString(); 
+	var aMatch       = sConstructor.match( /\s*function (.*)\(/ ); 
+
+	if (aMatch != null)
+		child.prototype[aMatch[1]] = parent;
+
+	for (var i in parent.prototype)
+		child.prototype[i] = parent.prototype[i]; 
+}

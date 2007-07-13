@@ -58,10 +58,7 @@ SyncWindow.prototype.onCancel = function()
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
-	// window.clearTimeout(this.m_timeoutID);
-	// gLogger.debug("syncwindow onCancel: cleared timeoutID: " + this.m_timeoutID);
-
-	this.m_syncfsm.cancel(this.m_timeoutID, this.m_newstate);
+	this.m_syncfsm.cancel(this.m_id_fsm, this.m_timeoutID, this.m_newstate);
 
 	gLogger.debug("syncwindow onCancel: exited");
 
@@ -84,8 +81,21 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		// document.getElementById('zindus-statuspanel').hidden = false;
 
-		this.m_syncfsm = new ZimbraFsm(this.m_id_fsm, this.m_payload.m_args);
-		this.m_syncfsm.start();
+		var state;
+
+		if (this.m_id_fsm == ZinMaestro.FSM_ID_TWOWAY)
+		{
+			state = new TwoWayFsmState();
+			state.setCredentials();
+		}
+		else 
+		{
+			state = new AuthOnlyFsmState();
+			state.setCredentials(this.m_payload.m_args['soapURL'], this.m_payload.m_args['username'], this.m_payload.m_args['password'] );
+		}
+
+		this.m_syncfsm = new ZimbraFsm(this.m_id_fsm, state);
+		this.m_syncfsm.start(this.m_id_fsm);
 	}
 	else if (fsmstate.state.oldstate == "final")
 	{
@@ -132,7 +142,7 @@ SyncWindow.prototype.updateProgress = function(fsmstate)
 
 	if (isPropertyPresent(a_states_of_interest, fsmstate.state.newstate))
 	{
-		var context = fsmstate.state.context; // ZimbraFsmState
+		var context = fsmstate.state.context; // ZimbraFsm
 		this.m_sfpo.state = context.state;
 
 		switch(fsmstate.state.newstate)
@@ -194,9 +204,9 @@ SyncWindow.prototype.updateProgress = function(fsmstate)
 
 				var es = new SyncFsmExitStatus();
 
-				if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
+				if (this.m_id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
 					es.m_exit_status = 0;
-				else if (context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.state.event == 'evNext')
+				else if (this.m_id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.state.event == 'evNext')
 					es.m_exit_status = 0;
 				else
 				{

@@ -14,13 +14,11 @@ include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/passwordmanager.js");
 
-function ZimbraFsm(id_fsm, args)
+function ZimbraFsm(id_fsm, state)
 {
-	cnsAssert(isPropertyPresent(ZinMaestro.FSM_GROUP_SYNC, id_fsm));
-
 	this.countTransitions = 0;
 
-	this.state   = new ZimbraFsmState(id_fsm, args);
+	this.state   = state;
 	this.soapfsm = new SoapFsm();
 	this.fsm     = new Object();
 
@@ -99,113 +97,13 @@ function ZimbraFsm(id_fsm, args)
 ZimbraFsm.FILE_LASTSYNC = "lastsync";
 ZimbraFsm.FILE_GID      = "gid";
 
-function ZimbraFsmState(id_fsm, args)
+
+ZimbraFsm.prototype.start = function(id_fsm)
 {
-	this.id_fsm              = id_fsm;
-
-	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
-	this.zfcGid              = new ZinFeedCollection(); // map of gid to (sourceid, luid)
-	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)
-
-	this.authToken           = null;         // Auth
-	this.sessionId           = null;
-	this.lifetime            = null;
-	this.zimbraId            = null;         // GetAccountInfo
-	this.soapURL             = null;         // initialised to this.state.sources[this.state.sourceid_zm]['soapURL'] and may be modified by a <soapURL> response
-	this.mapiStatus          = null;         // CheckLicenseStatus
-	this.aSyncGalContact     = null;         // SyncGal
-	this.mapIdSyncGalContact = null;      
-	this.SyncGalToken        = null;
-	this.SyncGalTokenChanged = false;
-	this.aSyncContact        = new Object(); // each property is a ZimbraContact object returned in GetContactResponse
-	this.SyncMd              = null;         // this gives us the time on the server
-	this.SyncToken           = null;         
-	this.aQueue              = new Object(); // associative array of contact ids - ids added in SyncResponse, deleted in GetContactResponse
-	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
-	this.aSuo                = null;         // container for source update operations - populated in SyncPrepare
-	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
-
-	this.m_preferences  = new MozillaPreferences();
-	this.m_bimap_format = new BiMap(
-		[FORMAT_TB, FORMAT_ZM],
-		['tb',      'zm'     ]);
-
-	// this stuff should be initialised elsewhere
-	//
-	// TODO - persist this: map or preferences (sql would be nice) - password has to go in the password manager
-	//
-	// id=1 (this could be an accountid if we wanted it to be)
-	// type=account
-	// name=leni
-	// sources=2,3
-	//
-	// id=2
-	// type=source
-	// subtype=thunderbird
-	//
-	// id=3
-	// type=source
-	// subtype=zimbra
-	// soapURL=blah
-	// username=blah
-	// password=blah
-	//
-
-	this.sources = new Object();
-	this.sources[SOURCEID_TB] = new Object();
-	this.sources[SOURCEID_ZM] = new Object();
-
-	this.sources[SOURCEID_TB]['format']   = FORMAT_TB;
-	this.sources[SOURCEID_TB]['name']     = "thunderbird"; // TODO: stringbundle
-
-	this.sources[SOURCEID_ZM]['format']   = FORMAT_ZM;
-	this.sources[SOURCEID_ZM]['name']     = "server";
-
-	if (args)
-	{
-		cnsAssert(id_fsm == ZinMaestro.FSM_ID_AUTHONLY);
-
-		this.sources[SOURCEID_ZM]['soapURL']  = args['soapURL'];
-		this.sources[SOURCEID_ZM]['username'] = args['username'];
-		this.sources[SOURCEID_ZM]['password'] = args['password'];
-	}
-	else
-	{
-		cnsAssert(id_fsm == ZinMaestro.FSM_ID_TWOWAY);
-
-		var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
-		prefset.load(SOURCEID_ZM);
-
-		this.sources[SOURCEID_ZM]['soapURL']  = prefset.getProperty(PrefSet.SERVER_URL);
-		this.sources[SOURCEID_ZM]['username'] = prefset.getProperty(PrefSet.SERVER_USERNAME);
-
-    	var pm = new PasswordManager();
-		this.sources[SOURCEID_ZM]['password'] = pm.get(prefset.getProperty(PrefSet.SERVER_URL), prefset.getProperty(PrefSet.SERVER_USERNAME) );
-
-		// this.sources[SOURCEID_ZM]['soapURL']  = "http://barkly.moniker.net/service/soap/";
-		// this.sources[SOURCEID_ZM]['username'] = "leni@barkly.moniker.net";
-		// this.sources[SOURCEID_ZM]['password'] = "qwe123qwe123";
-	}
-
-	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
-
-	for (var i in this.sources)
-	{
-		var rr_flag = (this.sources[i]['format'] == FORMAT_ZM) ? ZinFeedCollection.RESERVED_RANGE_OFF : ZinFeedCollection.RESERVED_RANGE_ON;
-
-		this.sources[i]['zfcLuid'] = new ZinFeedCollection(rr_flag);  // updated during sync and persisted at the end
-	}
-
-	this.sourceid_tb = SOURCEID_TB;
-	this.sourceid_zm = SOURCEID_ZM;
+	fsmFireTransition(id_fsm, null, 'start', 'evStart', this);
 }
 
-ZimbraFsm.prototype.start = function()
-{
-	fsmFireTransition(this.state.id_fsm, null, 'start', 'evStart', this);
-}
-
-ZimbraFsm.prototype.cancel = function(timeoutID, newstate)
+ZimbraFsm.prototype.cancel = function(id_fsm, timeoutID, newstate)
 {
 	this.soapfsm.abort();
 
@@ -219,7 +117,7 @@ ZimbraFsm.prototype.cancel = function(timeoutID, newstate)
 		// so the new transition just enters the start state on a cancel event
 		//
 		gLogger.debug("ZimbraFsm.cancel: fsm was about to enter start state - now it does that on evCancel");
-		fsmFireTransition(this.state.id_fsm, null, 'start', 'evCancel', this);
+		fsmFireTransition(id_fsm, null, 'start', 'evCancel', this);
 	}
 	else
 	{
@@ -2968,3 +2866,118 @@ SoapFsmState.prototype.toHtml = function()
 {
 	return this.toString().replace(/\n/g, "<html:br>");
 }
+
+ZimbraFsmState.prototype.setCredentials = function()
+{
+	cnsAssert(false);  // virtual base method
+}
+
+function ZimbraFsmState(args)
+{
+	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
+	this.zfcGid              = new ZinFeedCollection(); // map of gid to (sourceid, luid)
+	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)
+
+	this.authToken           = null;         // Auth
+	this.sessionId           = null;
+	this.lifetime            = null;
+	this.zimbraId            = null;         // GetAccountInfo
+	this.soapURL             = null;         // initialised to this.state.sources[this.state.sourceid_zm]['soapURL'] and may be modified by a <soapURL> response
+	this.mapiStatus          = null;         // CheckLicenseStatus
+	this.aSyncGalContact     = null;         // SyncGal
+	this.mapIdSyncGalContact = null;      
+	this.SyncGalToken        = null;
+	this.SyncGalTokenChanged = false;
+	this.aSyncContact        = new Object(); // each property is a ZimbraContact object returned in GetContactResponse
+	this.SyncMd              = null;         // this gives us the time on the server
+	this.SyncToken           = null;         
+	this.aQueue              = new Object(); // associative array of contact ids - ids added in SyncResponse, deleted in GetContactResponse
+	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
+	this.aSuo                = null;         // container for source update operations - populated in SyncPrepare
+	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
+
+	this.m_preferences  = new MozillaPreferences();
+	this.m_bimap_format = new BiMap(
+		[FORMAT_TB, FORMAT_ZM],
+		['tb',      'zm'     ]);
+
+	// this stuff should be initialised elsewhere
+	//
+	// TODO - persist this: map or preferences (sql would be nice) - password has to go in the password manager
+	//
+	// id=1 (this could be an accountid if we wanted it to be)
+	// type=account
+	// name=leni
+	// sources=2,3
+	//
+	// id=2
+	// type=source
+	// subtype=thunderbird
+	//
+	// id=3
+	// type=source
+	// subtype=zimbra
+	// soapURL=blah
+	// username=blah
+	// password=blah
+	//
+
+	this.sources = new Object();
+	this.sources[SOURCEID_TB] = new Object();
+	this.sources[SOURCEID_ZM] = new Object();
+
+	this.sources[SOURCEID_TB]['format']   = FORMAT_TB;
+	this.sources[SOURCEID_TB]['name']     = "thunderbird"; // TODO: stringbundle
+
+	this.sources[SOURCEID_ZM]['format']   = FORMAT_ZM;
+	this.sources[SOURCEID_ZM]['name']     = "server";
+
+	for (var i in this.sources)
+	{
+		var rr_flag = (this.sources[i]['format'] == FORMAT_ZM) ? ZinFeedCollection.RESERVED_RANGE_OFF : ZinFeedCollection.RESERVED_RANGE_ON;
+
+		this.sources[i]['zfcLuid'] = new ZinFeedCollection(rr_flag);  // updated during sync and persisted at the end
+	}
+
+	this.sourceid_tb = SOURCEID_TB;
+	this.sourceid_zm = SOURCEID_ZM;
+}
+
+ZimbraFsmState.prototype.setCredentials = function()
+{
+	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
+}
+
+function AuthOnlyFsmState() { this.ZimbraFsmState(); }
+function TwoWayFsmState()  { this.ZimbraFsmState(); }
+
+copyPrototype(AuthOnlyFsmState, ZimbraFsmState);
+copyPrototype(TwoWayFsmState,   ZimbraFsmState);
+
+AuthOnlyFsmState.prototype.setCredentials = function(soapURL, username, password)
+{
+	this.sources[SOURCEID_ZM]['soapURL']  = soapURL;
+	this.sources[SOURCEID_ZM]['username'] = username;
+	this.sources[SOURCEID_ZM]['password'] = password;
+
+	ZimbraFsmState.prototype.setCredentials.apply(this); // call the method in the base class
+}
+
+TwoWayFsmState.prototype.setCredentials = function()
+{
+	var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
+	prefset.load(SOURCEID_ZM);
+
+	this.sources[SOURCEID_ZM]['soapURL']  = prefset.getProperty(PrefSet.SERVER_URL);
+	this.sources[SOURCEID_ZM]['username'] = prefset.getProperty(PrefSet.SERVER_USERNAME);
+
+   	var pm = new PasswordManager();
+	this.sources[SOURCEID_ZM]['password'] = pm.get(prefset.getProperty(PrefSet.SERVER_URL), prefset.getProperty(PrefSet.SERVER_USERNAME) );
+
+	// this.sources[SOURCEID_ZM]['soapURL']  = "http://barkly.moniker.net/service/soap/";
+	// this.sources[SOURCEID_ZM]['username'] = "leni@barkly.moniker.net";
+	// this.sources[SOURCEID_ZM]['password'] = "qwe123qwe123";
+
+	ZimbraFsmState.prototype.setCredentials.apply(this);
+}
+
