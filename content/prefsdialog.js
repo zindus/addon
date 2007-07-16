@@ -112,7 +112,6 @@ Prefs.prototype.onCommand = function(id_target)
 			state.setCredentials();
 
 			var payload = new Payload();
-			payload.m_id_fsm  = ZinMaestro.FSM_ID_TWOWAY;
 			payload.m_syncfsm = new TwoWayFsm(state);
 
 			var win = window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
@@ -128,7 +127,6 @@ Prefs.prototype.onCommand = function(id_target)
 				document.getElementById("zindus-prefs-server-password").value );
 
 			var payload = new Payload();
-			payload.m_id_fsm  = ZinMaestro.FSM_ID_AUTHONLY;
 			payload.m_syncfsm = new AuthOnlyFsm(state);
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);

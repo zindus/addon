@@ -29,12 +29,12 @@ function ZimbraFsm(state)
 	this.fsm     = new Object();
 }
 
-ZimbraFsm.prototype.start = function(id_fsm)
+ZimbraFsm.prototype.start = function()
 {
-	fsmFireTransition(id_fsm, null, 'start', 'evStart', this);
+	fsmFireTransition(this.state.id_fsm, null, 'start', 'evStart', this);
 }
 
-ZimbraFsm.prototype.cancel = function(id_fsm, timeoutID, newstate)
+ZimbraFsm.prototype.cancel = function(timeoutID, newstate)
 {
 	this.soapfsm.abort();
 
@@ -48,7 +48,7 @@ ZimbraFsm.prototype.cancel = function(id_fsm, timeoutID, newstate)
 		// so the new transition just enters the start state on a cancel event
 		//
 		gLogger.debug("ZimbraFsm.cancel: fsm was about to enter start state - now it does that on evCancel");
-		fsmFireTransition(id_fsm, null, 'start', 'evCancel', this);
+		fsmFireTransition(this.state.id_fsm, null, 'start', 'evCancel', this);
 	}
 	else
 	{
@@ -2872,8 +2872,9 @@ TwoWayFsm.prototype.setFsm = function()
 	};
 }
 
-function ZimbraFsmState()
+function ZimbraFsmState(id_fsm)
 {
+	this.id_fsm              = id_fsm;
 	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
 	this.zfcGid              = new ZinFeedCollection(); // map of gid to (sourceid, luid)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)
@@ -2948,8 +2949,8 @@ ZimbraFsmState.prototype.setCredentials = function()
 	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
 }
 
-function AuthOnlyFsmState() { this.ZimbraFsmState(); }
-function TwoWayFsmState()   { this.ZimbraFsmState(); }
+function AuthOnlyFsmState() { this.ZimbraFsmState(ZinMaestro.FSM_ID_AUTHONLY); }
+function TwoWayFsmState()   { this.ZimbraFsmState(ZinMaestro.FSM_ID_TWOWAY);   }
 
 copyPrototype(AuthOnlyFsmState, ZimbraFsmState);
 copyPrototype(TwoWayFsmState,   ZimbraFsmState);

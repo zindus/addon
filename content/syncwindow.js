@@ -10,7 +10,6 @@ var gLogger      = null;
 
 function SyncWindow()
 {
-	this.m_id_fsm    = null;
 	this.m_syncfsm   = null;
 	this.m_timeoutID = null; // need to remember this in case the user cancels
 	this.m_newstate  = null; // the cancel method needs to know whether to expect a continuation or not
@@ -35,7 +34,6 @@ SyncWindow.prototype.onLoad = function()
 	gLogger.debug("=========================================== SyncWindow.onLoad: " + getTime() + "\n");
 
 	this.m_payload = window.arguments[0];
-	this.m_id_fsm  = this.m_payload.m_id_fsm;
 	this.m_syncfsm = this.m_payload.m_syncfsm;
 
 	this.setStatusPanelIds();
@@ -64,7 +62,7 @@ SyncWindow.prototype.onCancel = function()
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
-	this.m_syncfsm.cancel(this.m_id_fsm, this.m_timeoutID, this.m_newstate);
+	this.m_syncfsm.cancel(this.m_timeoutID, this.m_newstate);
 
 	gLogger.debug("syncwindow onCancel: exited");
 
@@ -73,20 +71,19 @@ SyncWindow.prototype.onCancel = function()
 
 SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	gLogger.debug("syncwindow onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null") +
-	                                                                                " this.m_id_fsm: " + this.m_id_fsm);
+	gLogger.debug("syncwindow onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	if (!this.m_has_observer_been_called)
 	{
 		this.m_has_observer_been_called = true;
 
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 742: starting fsm: " + this.m_id_fsm + "\n");
+		gLogger.debug("syncwindow onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
 		// TODO - extension point - onFsmAboutToStart  - unhide the statuspanel before starting the fsm 
 
 		// document.getElementById('zindus-statuspanel').hidden = false;
 
-		this.m_syncfsm.start(this.m_id_fsm);
+		this.m_syncfsm.start();
 	}
 	else 
 	{
@@ -197,9 +194,9 @@ SyncWindow.prototype.updateProgress = function(fsmstate)
 
 				var es = new SyncFsmExitStatus();
 
-				if (this.m_id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
+				if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
 					es.m_exit_status = 0;
-				else if (this.m_id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.state.event == 'evNext')
+				else if (context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.state.event == 'evNext')
 					es.m_exit_status = 0;
 				else
 				{
