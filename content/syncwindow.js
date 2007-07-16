@@ -87,37 +87,34 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 	else 
 	{
+		this.m_timeoutID = fsmstate.state.timeoutID;
+		this.m_newstate  = fsmstate.state.newstate;
+
+		gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.m_timeoutID);
+
+		var is_window_update_required = this.m_sfpo.update(fsmstate);
+
+		if (is_window_update_required)
+		{
+			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
+			                                        this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
+			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
+			                                        stringBundleString("zfomPrefix") + " " + this.m_sfpo.progressToString());
+
+			// TODO - extension point - report the contents of this.m_sfpo to the UI
+
+			if (this.m_el_statuspanel_progress_meter)
+			{
+				this.m_el_statuspanel_progress_meter.setAttribute('value', this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
+				this.m_el_statuspanel_progress_label.setAttribute('value', this.m_sfpo.progressToString());
+			}
+		}
+
 		if (fsmstate.state.oldstate == "final")
 		{
-			gLogger.debug("syncwindow 743: fsmstate.state.context: " + (isPropertyPresent(fsmstate.state, "context") ? "present" : "absent"));
-			gLogger.debug("syncwindow 743: fsmstate.state.context.state: " + (isPropertyPresent(fsmstate.state.context, "state") ? "present" : "absent"));
-			gLogger.debug("syncwindow 743: fsmstate.state.context.state.observer: " + (isPropertyPresent(fsmstate.state.context.state, "observer") ? "present" : "absent"));
-
-			gLogger.debug("syncwindow onFsmStateChangeFunctor: 743: about to call acceptDialog: exitStatus: " + this.m_sfpo.exitStatus().toString());
-
-			this.updateProgress(fsmstate);
-
 			this.m_payload.m_result = this.m_sfpo.exitStatus();
 
-			// TODO - extension point - onFsmStateFinal close the dialog and hide the statuspanel (or set a timer to do it)
-
-			// document.getElementById('zindus-statuspanel').hidden = true;
 			document.getElementById('zindus-syncwindow').acceptDialog();
-		}
-		else if (fsmstate.state.newstate == "start")  // fsm is about to have it's first transition - nothing to report to the UI
-		{
-			this.m_timeoutID = fsmstate.state.timeoutID;
-			this.m_newstate  = fsmstate.state.newstate;
-			gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.m_timeoutID);
-			this.updateProgress(fsmstate);
-		}
-		else if (fsmstate.state.newstate != "start")
-		{
-			this.m_timeoutID = fsmstate.state.timeoutID;
-			this.m_newstate  = fsmstate.state.newstate;
-
-			gLogger.debug("syncwindow onFsmStateChangeFunctor: 745: " + " timeoutID: " + this.m_timeoutID );
-			this.updateProgress(fsmstate);
 		}
 	}
 
@@ -125,131 +122,6 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		gLogger.debug("syncwindow onFsmStateChangeFunctor 746: exiting");
 }
 
-SyncWindow.prototype.updateProgress = function(fsmstate)
-{
-	var a_states_of_interest = { stAuth : 0,       stLoad: 1,     stSync: 2,     stGetContact: 3,    stSyncGal: 4, stLoadTb : 5, 
-	                             stSyncPrepare: 6, stUpdateTb: 7, stUpdateZm: 8, stUpdateCleanup: 9, final: 10 };
-
-	if (isPropertyPresent(a_states_of_interest, fsmstate.state.newstate))
-	{
-		var context = fsmstate.state.context; // ZimbraFsm
-		this.m_sfpo.state = context.state;
-
-		switch(fsmstate.state.newstate)
-		{
-			case 'stAuth':          this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "RemoteAuth"); break;
-			case 'stLoad':          this.m_sfpo.progressReportOn("Load");                                        break;
-			case 'stSync':          this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
-			case 'stSyncGal':       this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
-			case 'stLoadTb':        this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetItem");    break;
-			case 'stSyncPrepare':   this.m_sfpo.progressReportOn("Converge");                                    break;
-			case 'stUpdateTb':      this.m_sfpo.progressReportOnSource(context.state.sourceid_tb, "Put");        break;
-			case 'stUpdateCleanup': this.m_sfpo.progressReportOn("Saving");                                      break;
-
-			case 'stGetContact':
-				var id;
-				for (id in context.state.aQueue)
-					break;
-
-				if (typeof(id) != 'undefined')
-				{
-					var op = this.m_sfpo.buildOp(context.state.sourceid_zm, "GetItem");
-
-					if (this.m_sfpo.get(SyncFsmProgressObserver.OP) != op)
-					{
-						gLogger.debug("4401: op: " + op + " this.m_sfpo.get(SyncFsmProgressObserver.OP): " + this.m_sfpo.get(SyncFsmProgressObserver.OP));
-						this.m_sfpo.progressReportOnSource(context.state.sourceid_zm, "GetItem", aToLength(context.state.aQueue));
-					}
-
-					this.m_sfpo.set(SyncFsmProgressObserver.PROG_CNT, this.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) + 1);
-				}
-				break;
-
-			case 'stUpdateZm':
-				if (context.state.updateZmPackage)
-				{
-					var sourceid = context.state.updateZmPackage['sourceid'];
-					var op = context.state.sources[sourceid]['name'] + " " + stringBundleString("Put");
-
-					if (this.m_sfpo.get(SyncFsmProgressObserver.OP) != op)
-					{
-						var cTotal = 0; // aSuo definitely needs an iterator!
-						for (var x in context.state.sources)
-							if (context.state.sources[x]['format'] == FORMAT_ZM)
-								for (var y = 0; y < SORT_ORDER.length; i++)
-									if (isPropertyPresent(context.state.aSuo[x], SORT_ORDER[y]))
-										for (var z in context.state.aSuo[x][SORT_ORDER[y]])
-											cTotal++;
-
-						this.m_sfpo.progressReportOnSource(sourceid, "Put", cTotal);
-					}
-
-					this.m_sfpo.set(SyncFsmProgressObserver.PROG_CNT, this.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) + 1);
-				}
-				break;
-
-			case 'final':
-				if (fsmstate.state.event == 'evCancel')
-					this.m_sfpo.progressReportOn("Cancelled");
-
-				var es = new SyncFsmExitStatus();
-
-				if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
-					es.m_exit_status = 0;
-				else if (context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.state.event == 'evNext')
-					es.m_exit_status = 0;
-				else
-				{
-					es.m_exit_status = 1;
-
-					switch (context.soapfsm.state.summaryCode())
-					{
-						case SoapFsmState.POST_RESPONSE_FAIL_ON_SERVICE: es.m_fail_code = SyncFsmExitStatus.FailOnService; break;
-						case SoapFsmState.POST_RESPONSE_FAIL_ON_FAULT:   es.m_fail_code = SyncFsmExitStatus.FailOnFault;   break;
-						case SoapFsmState.CANCELLED:                     es.m_fail_code = SyncFsmExitStatus.FailOnCancel;  break;
-						default:                                         es.m_fail_code = SyncFsmExitStatus.FailOnUnknown; break;
-					}
-				}
-
-				this.m_sfpo.exitStatus(es);
-
-				// there are three bits of "exit status" that the outside world might be interested in
-				// ZinMaestro.FSM_ID_TWOWAY:
-				// - last sync success: (time, maybe other stuff like conflicts...)
-				// - last sync:         (time, success/fail and optional failure reason)
-				// - an idea: next sync: when scheduled?
-				//
-				// ZinMaestro.FSM_ID_AUTHONLY:
-				// - last auth: (time, success/fail and optional failure reason)
-				//
-
-				break;
-		}
-
-		var percentage_complete = 0;
-		percentage_complete += a_states_of_interest[fsmstate.state.newstate] / a_states_of_interest['final'];
-
-		if (this.m_sfpo.get(SyncFsmProgressObserver.PROG_MAX) > 0)
-			percentage_complete += (1 / a_states_of_interest['final']) * (this.m_sfpo.get(SyncFsmProgressObserver.PROG_CNT) / this.m_sfpo.get(SyncFsmProgressObserver.PROG_MAX));
-
-		percentage_complete = percentage_complete * 100 + "%";
-
-		gLogger.debug("4401: percentage_complete: " + percentage_complete);
-
-		this.m_sfpo.set(SyncFsmProgressObserver.PERCENTAGE_COMPLETE, percentage_complete);
-
-		// TODO - extension point - report the contents of this.m_sfpo to the UI
-
-		if (this.m_el_statuspanel_progress_meter)
-		{
-			this.m_el_statuspanel_progress_meter.setAttribute('value', this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
-			this.m_el_statuspanel_progress_label.setAttribute('value', this.m_sfpo.progressToString());
-		}
-
-		document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value', this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
-		document.getElementById('zindus-syncwindow-progress-description').setAttribute('value', stringBundleString("zfomPrefix") + " " + this.m_sfpo.progressToString());
-	}
-}
 
 SyncWindow.prototype.getWindowsContainingElementIds = function(a_id_orig)
 {
@@ -385,3 +257,126 @@ SyncFsmProgressObserver.prototype.progressToString = function()
 
 	return ret;
 }
+
+SyncFsmProgressObserver.prototype.update = function(fsmstate)
+{
+	var ret = false;
+	var a_states_of_interest = { stAuth : 0,       stLoad: 1,     stSync: 2,     stGetContact: 3,    stSyncGal: 4, stLoadTb : 5, 
+	                             stSyncPrepare: 6, stUpdateTb: 7, stUpdateZm: 8, stUpdateCleanup: 9, final: 10 };
+
+	if (isPropertyPresent(a_states_of_interest, fsmstate.state.newstate))
+	{
+		var context = fsmstate.state.context; // ZimbraFsm
+		this.state = context.state;
+		ret = true;
+
+		switch(fsmstate.state.newstate)
+		{
+			case 'stAuth':          this.progressReportOnSource(context.state.sourceid_zm, "RemoteAuth"); break;
+			case 'stLoad':          this.progressReportOn("Load");                                        break;
+			case 'stSync':          this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
+			case 'stSyncGal':       this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
+			case 'stLoadTb':        this.progressReportOnSource(context.state.sourceid_zm, "GetItem");    break;
+			case 'stSyncPrepare':   this.progressReportOn("Converge");                                    break;
+			case 'stUpdateTb':      this.progressReportOnSource(context.state.sourceid_tb, "Put");        break;
+			case 'stUpdateCleanup': this.progressReportOn("Saving");                                      break;
+
+			case 'stGetContact':
+				var id;
+				for (id in context.state.aQueue)
+					break;
+
+				if (typeof(id) != 'undefined')
+				{
+					var op = this.buildOp(context.state.sourceid_zm, "GetItem");
+
+					if (this.get(SyncFsmProgressObserver.OP) != op)
+					{
+						gLogger.debug("4401: op: " + op + " this.get(SyncFsmProgressObserver.OP): " + this.get(SyncFsmProgressObserver.OP));
+						this.progressReportOnSource(context.state.sourceid_zm, "GetItem", aToLength(context.state.aQueue));
+					}
+
+					this.set(SyncFsmProgressObserver.PROG_CNT, this.get(SyncFsmProgressObserver.PROG_CNT) + 1);
+				}
+				break;
+
+			case 'stUpdateZm':
+				if (context.state.updateZmPackage)
+				{
+					var sourceid = context.state.updateZmPackage['sourceid'];
+					var op = context.state.sources[sourceid]['name'] + " " + stringBundleString("Put");
+
+					if (this.get(SyncFsmProgressObserver.OP) != op)
+					{
+						var cTotal = 0; // aSuo definitely needs an iterator!
+						for (var x in context.state.sources)
+							if (context.state.sources[x]['format'] == FORMAT_ZM)
+								for (var y = 0; y < SORT_ORDER.length; i++)
+									if (isPropertyPresent(context.state.aSuo[x], SORT_ORDER[y]))
+										for (var z in context.state.aSuo[x][SORT_ORDER[y]])
+											cTotal++;
+
+						this.progressReportOnSource(sourceid, "Put", cTotal);
+					}
+
+					this.set(SyncFsmProgressObserver.PROG_CNT, this.get(SyncFsmProgressObserver.PROG_CNT) + 1);
+				}
+				break;
+
+			case 'final':
+				if (fsmstate.state.event == 'evCancel')
+					this.progressReportOn("Cancelled");
+
+				var es = new SyncFsmExitStatus();
+
+				if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
+					es.m_exit_status = 0;
+				else if (context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.state.event == 'evNext')
+					es.m_exit_status = 0;
+				else
+				{
+					es.m_exit_status = 1;
+
+					switch (context.soapfsm.state.summaryCode())
+					{
+						case SoapFsmState.POST_RESPONSE_FAIL_ON_SERVICE: es.m_fail_code = SyncFsmExitStatus.FailOnService; break;
+						case SoapFsmState.POST_RESPONSE_FAIL_ON_FAULT:   es.m_fail_code = SyncFsmExitStatus.FailOnFault;   break;
+						case SoapFsmState.CANCELLED:                     es.m_fail_code = SyncFsmExitStatus.FailOnCancel;  break;
+						default:                                         es.m_fail_code = SyncFsmExitStatus.FailOnUnknown; break;
+					}
+				}
+
+				this.exitStatus(es);
+
+				// there are three bits of "exit status" that the outside world might be interested in
+				// ZinMaestro.FSM_ID_TWOWAY:
+				// - last sync success: (time, maybe other stuff like conflicts...)
+				// - last sync:         (time, success/fail and optional failure reason)
+				// - an idea: next sync: when scheduled?
+				//
+				// ZinMaestro.FSM_ID_AUTHONLY:
+				// - last auth: (time, success/fail and optional failure reason)
+				//
+
+				break;
+		}
+
+		var percentage_complete = 0;
+		percentage_complete += a_states_of_interest[fsmstate.state.newstate] / a_states_of_interest['final'];
+
+		if (this.get(SyncFsmProgressObserver.PROG_MAX) > 0)
+			percentage_complete += (1 / a_states_of_interest['final']) * (this.get(SyncFsmProgressObserver.PROG_CNT) / this.get(SyncFsmProgressObserver.PROG_MAX));
+
+		percentage_complete = percentage_complete * 100 + "%";
+
+		gLogger.debug("4401: percentage_complete: " + percentage_complete);
+
+		this.set(SyncFsmProgressObserver.PERCENTAGE_COMPLETE, percentage_complete);
+
+		document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value', this.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
+		document.getElementById('zindus-syncwindow-progress-description').setAttribute('value', stringBundleString("zfomPrefix") + " " + this.progressToString());
+	}
+
+	return ret;
+}
+
