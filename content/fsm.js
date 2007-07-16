@@ -5,7 +5,7 @@ include("chrome://zindus/content/maestro.js");
 //   if continuation() is called from a transition or exit action.
 // - states are final when their entryAction()'s don't call continuation()
 //
-// $Id: fsm.js,v 1.2 2007-07-13 05:36:43 cvsuser Exp $
+// $Id: fsm.js,v 1.3 2007-07-16 21:20:08 cvsuser Exp $
 
 function FsmSanityCheck(context)
 {
@@ -119,7 +119,7 @@ function fsmDoTransition(fsmstate)
 
 	if (context.fsm.aActionEntry[newstate])
 	{
-		// gLogger.debug("fsm: calling entry      action (to: " + newstate + ", event: " + event + ")");
+		gLogger.debug("fsm: calling entry      action (to: " + newstate + ", event: " + event + ")");
 
 		var continuation = function(nextEvent) {
 				// See:  http://en.wikipedia.org/wiki/Closure_%28computer_science%29
@@ -169,7 +169,7 @@ function fsmDoTransition(fsmstate)
 			                            'event',    null,
 			                            'context',  context);
 
-			notifyMaestro(fsmstate);
+			ZinMaestro.notifySyncFsmStatusUpdate(fsmstate);
 		}
 	}
 
@@ -203,14 +203,8 @@ function fsmFireTransition(id_fsm, oldstate, newstate, event, context)
 
 	gLogger.debug("711. fsmFireTransition: fsmstate.timeoutID: " + fsmstate.state.timeoutID);
 
-	notifyMaestro(fsmstate);
+	ZinMaestro.notifySyncFsmStatusUpdate(fsmstate);
 
 	if (gLogger)  // gLogger == null once the dialog goes away after the very last transition
 		gLogger.debug("716. fsmFireTransition exiting ");
-}
-
-function notifyMaestro(fsmstate)
-{
-	var maestro = new ZinMaestro();
-	maestro.notifySyncFsmStatusUpdate(fsmstate);
 }

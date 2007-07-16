@@ -1,6 +1,5 @@
 include("chrome://zindus/content/const.js");
 include("chrome://zindus/content/utils.js");
-include("chrome://zindus/content/logger.js");
 include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/filesystem.js");
@@ -11,29 +10,37 @@ var gLogger      = null;
 
 function SyncWindow()
 {
-	this.m_id_fsm  = null;
-	this.m_syncfsm = null;
+	this.m_id_fsm    = null;
+	this.m_syncfsm   = null;
 	this.m_timeoutID = null; // need to remember this in case the user cancels
-	this.m_newstate = null;  // the cancel method needs to know whether to expect a continuation or not
+	this.m_newstate  = null; // the cancel method needs to know whether to expect a continuation or not
 	                         // there will be one if the fsm has had a transition.  It wont have had a transition if newstate == 'start'
-	this.m_payload = null;
+	this.m_payload  = null;  // we keep it around so that we can pass the results back
+
 	this.m_has_observer_been_called = false;
 	this.m_sfpo = new SyncFsmProgressObserver();
 }
 
 SyncWindow.prototype.onLoad = function()
 {
-	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	// window.height = 100;
+	// window.hidden = true;
+	// window.collapsed = true;
+	// this doesn't work document.getElementById('zindus-syncwindow').setAttribute('hidden', true);
+	// these work but part of the parent window underneath is invisble
+	// document.getElementById('zindus-syncwindow').setAttribute('collapsed', true);
+	// document.getElementById('zindus-syncwindow').setAttribute('hidechrome', true);
 
-	gLogger.debug("=========================================== start: " + getTime() + "\n");
+	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	gLogger.debug("=========================================== SyncWindow.onLoad: " + getTime() + "\n");
 
 	this.m_payload = window.arguments[0];
-	
-	gLogger.debug("syncwindow onLoad() entering: arguments[0] " + window.arguments[0] + " and payload = " + this.m_payload.toString());
+	this.m_id_fsm  = this.m_payload.m_id_fsm;
+	this.m_syncfsm = this.m_payload.m_syncfsm;
 
-	this.m_id_fsm = this.m_payload.opcode();
-	var maestro = new ZinMaestro();
-	maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_1, ZinMaestro.FSM_GROUP_SYNC);
+	this.setStatusPanelIds();
+
+	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_1, ZinMaestro.FSM_GROUP_SYNC);
 
 	if (gLogger)
 		gLogger.debug("syncwindow onLoad() exiting");
@@ -41,8 +48,7 @@ SyncWindow.prototype.onLoad = function()
 
 SyncWindow.prototype.onAccept = function()
 {
-	var maestro = new ZinMaestro();
-	maestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_1);
+	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_1);
 
 	gLogger.debug("syncwindow onAccept:");
 
@@ -76,62 +82,49 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		gLogger.debug("syncwindow onFsmStateChangeFunctor: 742: starting fsm: " + this.m_id_fsm + "\n");
 
-		var x = document.getElementById('zindus-statuspanel');
-		gLogger.debug("SyncWindow.onFsmStateChangeFunctor: statuspanel: " + (x ? "defined" : "undefined") );
+		// TODO - extension point - onFsmAboutToStart  - unhide the statuspanel before starting the fsm 
 
 		// document.getElementById('zindus-statuspanel').hidden = false;
 
-		var state;
-
-		if (this.m_id_fsm == ZinMaestro.FSM_ID_TWOWAY)
-		{
-			state = new TwoWayFsmState();
-			state.setCredentials();
-		}
-		else 
-		{
-			state = new AuthOnlyFsmState();
-			state.setCredentials(this.m_payload.m_args['soapURL'], this.m_payload.m_args['username'], this.m_payload.m_args['password'] );
-		}
-
-		this.m_syncfsm = new ZimbraFsm(this.m_id_fsm, state);
 		this.m_syncfsm.start(this.m_id_fsm);
 	}
-	else if (fsmstate.state.oldstate == "final")
+	else 
 	{
-		gLogger.debug("syncwindow 743: fsmstate.state.context: " + (isPropertyPresent(fsmstate.state, "context") ? "present" : "absent"));
-		gLogger.debug("syncwindow 743: fsmstate.state.context.state: " + (isPropertyPresent(fsmstate.state.context, "state") ? "present" : "absent"));
-		gLogger.debug("syncwindow 743: fsmstate.state.context.state.observer: " + (isPropertyPresent(fsmstate.state.context.state, "observer") ? "present" : "absent"));
+		if (fsmstate.state.oldstate == "final")
+		{
+			gLogger.debug("syncwindow 743: fsmstate.state.context: " + (isPropertyPresent(fsmstate.state, "context") ? "present" : "absent"));
+			gLogger.debug("syncwindow 743: fsmstate.state.context.state: " + (isPropertyPresent(fsmstate.state.context, "state") ? "present" : "absent"));
+			gLogger.debug("syncwindow 743: fsmstate.state.context.state.observer: " + (isPropertyPresent(fsmstate.state.context.state, "observer") ? "present" : "absent"));
 
-		this.m_payload.m_result = this.m_sfpo.exitStatus();
+			gLogger.debug("syncwindow onFsmStateChangeFunctor: 743: about to call acceptDialog: exitStatus: " + this.m_sfpo.exitStatus().toString());
 
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 743: about to call acceptDialog: exitStatus: " + this.m_sfpo.exitStatus().toString());
+			this.updateProgress(fsmstate);
 
-		this.updateProgress(fsmstate);
+			this.m_payload.m_result = this.m_sfpo.exitStatus();
 
-		// document.getElementById('zindus-statuspanel').hidden = true;
-		document.getElementById('zindus-syncwindow').acceptDialog();
+			// TODO - extension point - onFsmStateFinal close the dialog and hide the statuspanel (or set a timer to do it)
+
+			// document.getElementById('zindus-statuspanel').hidden = true;
+			document.getElementById('zindus-syncwindow').acceptDialog();
+		}
+		else if (fsmstate.state.newstate == "start")  // fsm is about to have it's first transition - nothing to report to the UI
+		{
+			this.m_timeoutID = fsmstate.state.timeoutID;
+			this.m_newstate  = fsmstate.state.newstate;
+			gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.m_timeoutID);
+			this.updateProgress(fsmstate);
+		}
+		else if (fsmstate.state.newstate != "start")
+		{
+			this.m_timeoutID = fsmstate.state.timeoutID;
+			this.m_newstate  = fsmstate.state.newstate;
+
+			gLogger.debug("syncwindow onFsmStateChangeFunctor: 745: " + " timeoutID: " + this.m_timeoutID );
+			this.updateProgress(fsmstate);
+		}
 	}
-	else if (fsmstate.state.newstate == "start")  // fsm is about to have it's first transition - nothing to report to the UI
-	{
-		this.m_timeoutID = fsmstate.state.timeoutID;
-		this.m_newstate  = fsmstate.state.newstate;
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.m_timeoutID);
 
-		this.updateProgress(fsmstate);
-	}
-	else if (fsmstate.state.newstate != "start")
-	{
-		this.m_timeoutID = fsmstate.state.timeoutID;
-		this.m_newstate  = fsmstate.state.newstate;
-
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 745: " +
-		                             " timeoutID: " + this.m_timeoutID );
-
-		this.updateProgress(fsmstate);
-	}
-
-	if (gLogger) // gLogger will be null after acceptDialog()
+	if (typeof gLogger != 'undefined' && gLogger) // gLogger will be null after acceptDialog()
 		gLogger.debug("syncwindow onFsmStateChangeFunctor 746: exiting");
 }
 
@@ -246,10 +239,74 @@ SyncWindow.prototype.updateProgress = function(fsmstate)
 
 		gLogger.debug("4401: percentage_complete: " + percentage_complete);
 
-		// document.getElementById('zindus-statuspanel-progress-meter').setAttribute('value', percentage_complete );
-		// document.getElementById('zindus-statuspanel-progress-label').setAttribute('value', this.m_sfpo.progressToString());
+		this.m_sfpo.set(SyncFsmProgressObserver.PERCENTAGE_COMPLETE, percentage_complete);
 
-		document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value', percentage_complete ); document.getElementById('zindus-syncwindow-progress-description').setAttribute('value', this.m_sfpo.progressToString());
+		// TODO - extension point - report the contents of this.m_sfpo to the UI
+
+		if (this.m_el_statuspanel_progress_meter)
+		{
+			this.m_el_statuspanel_progress_meter.setAttribute('value', this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
+			this.m_el_statuspanel_progress_label.setAttribute('value', this.m_sfpo.progressToString());
+		}
+
+		document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value', this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
+		document.getElementById('zindus-syncwindow-progress-description').setAttribute('value', stringBundleString("zfomPrefix") + " " + this.m_sfpo.progressToString());
+	}
+}
+
+SyncWindow.prototype.getWindowsContainingElementIds = function(a_id_orig)
+{
+	var a_id = cnsCloneObject(a_id_orig);
+
+	// Good background reading:
+	//   http://developer.mozilla.org/en/docs/Working_with_windows_in_chrome_code
+	// which links to this page, which offers the code snippet below:
+	//   http://developer.mozilla.org/en/docs/nsIWindowMediator
+	//
+	// perhaps someone one day will tell me how to find messengerWindow more efficiently vs the current approach of iterating through
+	// all open windows
+	//
+	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+
+	var windowtype = "";
+	var enumerator = wm.getEnumerator(windowtype);
+
+	while(enumerator.hasMoreElements() && aToLength(a_id) > 0)
+	{
+		var win = enumerator.getNext(); // win is [Object ChromeWindow] (just like window)
+
+		for (var id in a_id)
+			if (win.document.getElementById(id))
+			{
+				gLogger.debug("blah 23432: getWindowsContainingElementIds sets id: " + id);
+
+				a_id_orig[id] = win;
+				delete a_id[id]; // remove it - once an id is found in one window, we assume it's unique and stop looking for it
+				break;
+			}
+	}
+}
+
+SyncWindow.prototype.setStatusPanelIds = function()
+{
+	this.m_el_statuspanel_progress_meter = null;
+	this.m_el_statuspanel_progress_label = null;
+
+	var a_id = { 'zindus-statuspanel' : null };
+
+	this.getWindowsContainingElementIds(a_id);
+
+	if (a_id['zindus-statuspanel'])
+	{
+		// TODO - this isn't right because the window might disappear between now and when you write to it - better to test that
+		// the element exists just before setting it's attribute...
+		//
+		win = a_id['zindus-statuspanel'];
+
+		gLogger.debug("blah 23433: title attribute of the winning win: " + win.title);
+
+		this.m_el_statuspanel_progress_meter = win.document.getElementById("zindus-statuspanel-progress-meter");
+		this.m_el_statuspanel_progress_label = win.document.getElementById("zindus-statuspanel-progress-label");
 	}
 }
 
@@ -268,13 +325,10 @@ function SyncFsmProgressObserver()
 	this.zfi.set(SyncFsmProgressObserver.PROG_CNT, 0);
 }
 
-SyncFsmProgressObserver.OP       = 'op';
-SyncFsmProgressObserver.PROG_MAX = 'pm';
-SyncFsmProgressObserver.PROG_CNT = 'pc';
-
-SyncFsmProgressObserver.LAST_STATUS             = 'as';
-SyncFsmProgressObserver.LAST_FAIL_REASON_CODE   = 'ac';
-SyncFsmProgressObserver.LAST_FAIL_REASON_DETAIL = 'ad';
+SyncFsmProgressObserver.OP                  = 'op'; // eg: server put
+SyncFsmProgressObserver.PROG_CNT            = 'pc'; // eg: 3 of
+SyncFsmProgressObserver.PROG_MAX            = 'pm'; // eg: 6    (counts progress through an iteration of one or two states)
+SyncFsmProgressObserver.PERCENTAGE_COMPLETE = 'pp'; // eg: 70%  (counts how far we are through all observed states)
 
 SyncFsmProgressObserver.prototype.exitStatus = function()
 {
@@ -322,8 +376,7 @@ SyncFsmProgressObserver.prototype.progressToString = function()
 {
 	var ret = "";
 	
-	ret += stringBundleString("zfomPrefix");
-	ret += " " + this.get(SyncFsmProgressObserver.OP);
+	ret += this.get(SyncFsmProgressObserver.OP);
 
 	if (this.get(SyncFsmProgressObserver.PROG_MAX) > 0)
 		ret += " " + this.get(SyncFsmProgressObserver.PROG_CNT) +

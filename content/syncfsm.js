@@ -14,89 +14,20 @@ include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/passwordmanager.js");
 
-function ZimbraFsm(id_fsm, state)
+// TODO - GetInfo for zimbraFeatureGalEnabled 
+// TODO - look for gLogger.error messages and perhaps implement an "orderly exit" flag that's tested before each continuation
+
+ZimbraFsm.FILE_LASTSYNC = "lastsync";
+ZimbraFsm.FILE_GID      = "gid";
+
+function ZimbraFsm(state)
 {
 	this.countTransitions = 0;
 
 	this.state   = state;
 	this.soapfsm = new SoapFsm();
 	this.fsm     = new Object();
-
- 	// TODO - GetInfo for zimbraFeatureGalEnabled 
-	// TODO - look for gLogger.error messages and perhaps implement an "orderly exit" flag that's tested before each continuation
-
-	if (id_fsm == ZinMaestro.FSM_ID_TWOWAY)
-	{
-		this.fsm.transitions = {
-			start:                  { evCancel: 'final', evStart: 'stAuth'                                          },
-			stAuth:                 { evCancel: 'final', evNext:  'stLoad'                                          },
-			stLoad:                 { evCancel: 'final', evNext:  'stGetAccountInfo'                                },
-			stGetAccountInfo:       { evCancel: 'final', evNext:  'stCheckLicense'                                  },
-			stCheckLicense:         { evCancel: 'final', evNext:  'stSync'                                          },
-			stSync:                 { evCancel: 'final', evNext:  'stGetContact'                                    },
-			stGetContact:           { evCancel: 'final', evNext:  'stLoadTb',        evRepeat: 'stGetContact'       },// evNext: 'stSyncGal'
-			stSyncGal:              { evCancel: 'final', evNext:  'stSyncGalCommit'                                 },
-			stSyncGalCommit:        { evCancel: 'final', evNext:  'stLoadTb'                                        },
-			stLoadTb:               { evCancel: 'final', evNext:  'stSyncPrepare'                                   },
-			stSyncPrepare:          { evCancel: 'final', evNext:  'stUpdateTb'                                      },
-			stUpdateTb:             { evCancel: 'final', evNext:  'stUpdateZm'                                      },
-			stAboutToUpdateZm:      { evCancel: 'final', evNext:  'stUpdateZm',                                     }, // TODO remove this
-			stUpdateZm:             { evCancel: 'final', evNext:  'stUpdateCleanup', evRepeat: 'stAboutToUpdateZm'  },
-			stUpdateCleanup:        { evCancel: 'final', evNext:  'stCommit'                                        },
-			stCommit:               { evCancel: 'final', evNext:  'final'                                           }
-		};
-
-		this.fsm.aActionEntry = {
-			start:                  this.entryActionStart,
-			stAuth:                 this.entryActionAuth,
-			stLoad:                 this.entryActionLoad,
-			stGetAccountInfo:       this.entryActionGetAccountInfo,
-			stCheckLicense:         this.entryActionCheckLicense,
-			stSync:                 this.entryActionSync,
-			stGetContact:           this.entryActionGetContact,
-			stSyncGal:              this.entryActionSyncGal,
-			stSyncGalCommit:        this.entryActionSyncGal,
-			stLoadTb:               this.entryActionLoadTb,
-			stSyncPrepare:          this.entryActionSyncPrepare,
-			stUpdateTb:             this.entryActionUpdateTb,
-			stAboutToUpdateZm:      this.entryActionAboutToUpdateZm,
-			stUpdateZm:             this.entryActionUpdateZm,
-			stUpdateCleanup:        this.entryActionUpdateCleanup,
-			stCommit:               this.entryActionCommit,
-			final:                  this.entryActionFinal
-		};
-
-		this.fsm.aActionExit = {
-			stAuth:           this.exitActionAuth,
-			stGetAccountInfo: this.exitActionGetAccountInfo,
-			stCheckLicense:   this.exitActionCheckLicense,
-			stSync:           this.exitActionSync, stGetContact:     this.exitActionGetContact,
-			stSyncGal:        this.exitActionSyncGal,
-			stUpdateZm:       this.exitActionUpdateZm
-		};
-	}
-	else
-	{
-		this.fsm.transitions  = {
-			start:                  { evCancel: 'final', evStart:  'stAuth' },
-			stAuth:                 { evCancel: 'final', evNext:  'final'   }
-		};
-
-		this.fsm.aActionEntry = {
-			start:                  this.entryActionStart,
-			stAuth:                 this.entryActionAuth,
-			final:                  this.entryActionFinal
-		};
-
-		this.fsm.aActionExit = {
-			stAuth:           this.exitActionAuth,
-		};
-	}
 }
-
-ZimbraFsm.FILE_LASTSYNC = "lastsync";
-ZimbraFsm.FILE_GID      = "gid";
-
 
 ZimbraFsm.prototype.start = function(id_fsm)
 {
@@ -226,7 +157,6 @@ ZimbraFsm.prototype.entryActionStart = function(state, event, continuation)
 	if (event == 'evCancel')
 	{
 		nextEvent = 'evCancel';
-		gLogger.debug("89347523: entryActionStart: event: " + event + " nextEvent: " + nextEvent);
 	}
 	else
 	{
@@ -2867,12 +2797,82 @@ SoapFsmState.prototype.toHtml = function()
 	return this.toString().replace(/\n/g, "<html:br>");
 }
 
-ZimbraFsmState.prototype.setCredentials = function()
+function AuthOnlyFsm(state) { this.ZimbraFsm(state); this.setFsm(); }
+function TwoWayFsm(state)   { this.ZimbraFsm(state); this.setFsm(); }
+
+copyPrototype(AuthOnlyFsm, ZimbraFsm);
+copyPrototype(TwoWayFsm,   ZimbraFsm);
+
+AuthOnlyFsm.prototype.setFsm = function()
 {
-	cnsAssert(false);  // virtual base method
+	this.fsm.transitions  = {
+		start:                  { evCancel: 'final', evStart:  'stAuth' },
+		stAuth:                 { evCancel: 'final', evNext:  'final'   }
+	};
+
+	this.fsm.aActionEntry = {
+		start:                  this.entryActionStart,
+		stAuth:                 this.entryActionAuth,
+		final:                  this.entryActionFinal
+	};
+
+	this.fsm.aActionExit = {
+		stAuth:           this.exitActionAuth,
+	};
 }
 
-function ZimbraFsmState(args)
+TwoWayFsm.prototype.setFsm = function()
+{
+	this.fsm.transitions = {
+		start:                  { evCancel: 'final', evStart: 'stAuth'                                          },
+		stAuth:                 { evCancel: 'final', evNext:  'stLoad'                                          },
+		stLoad:                 { evCancel: 'final', evNext:  'stGetAccountInfo'                                },
+		stGetAccountInfo:       { evCancel: 'final', evNext:  'stCheckLicense'                                  },
+		stCheckLicense:         { evCancel: 'final', evNext:  'stSync'                                          },
+		stSync:                 { evCancel: 'final', evNext:  'stGetContact'                                    },
+		stGetContact:           { evCancel: 'final', evNext:  'stLoadTb',        evRepeat: 'stGetContact'       },// evNext: 'stSyncGal'
+		stSyncGal:              { evCancel: 'final', evNext:  'stSyncGalCommit'                                 },
+		stSyncGalCommit:        { evCancel: 'final', evNext:  'stLoadTb'                                        },
+		stLoadTb:               { evCancel: 'final', evNext:  'stSyncPrepare'                                   },
+		stSyncPrepare:          { evCancel: 'final', evNext:  'stUpdateTb'                                      },
+		stUpdateTb:             { evCancel: 'final', evNext:  'stUpdateZm'                                      },
+		stAboutToUpdateZm:      { evCancel: 'final', evNext:  'stUpdateZm',                                     }, // TODO remove this
+		stUpdateZm:             { evCancel: 'final', evNext:  'stUpdateCleanup', evRepeat: 'stAboutToUpdateZm'  },
+		stUpdateCleanup:        { evCancel: 'final', evNext:  'stCommit'                                        },
+		stCommit:               { evCancel: 'final', evNext:  'final'                                           }
+	};
+
+	this.fsm.aActionEntry = {
+		start:                  this.entryActionStart,
+		stAuth:                 this.entryActionAuth,
+		stLoad:                 this.entryActionLoad,
+		stGetAccountInfo:       this.entryActionGetAccountInfo,
+		stCheckLicense:         this.entryActionCheckLicense,
+		stSync:                 this.entryActionSync,
+		stGetContact:           this.entryActionGetContact,
+		stSyncGal:              this.entryActionSyncGal,
+		stSyncGalCommit:        this.entryActionSyncGal,
+		stLoadTb:               this.entryActionLoadTb,
+		stSyncPrepare:          this.entryActionSyncPrepare,
+		stUpdateTb:             this.entryActionUpdateTb,
+		stAboutToUpdateZm:      this.entryActionAboutToUpdateZm,
+		stUpdateZm:             this.entryActionUpdateZm,
+		stUpdateCleanup:        this.entryActionUpdateCleanup,
+		stCommit:               this.entryActionCommit,
+		final:                  this.entryActionFinal
+	};
+
+	this.fsm.aActionExit = {
+		stAuth:           this.exitActionAuth,
+		stGetAccountInfo: this.exitActionGetAccountInfo,
+		stCheckLicense:   this.exitActionCheckLicense,
+		stSync:           this.exitActionSync, stGetContact:     this.exitActionGetContact,
+		stSyncGal:        this.exitActionSyncGal,
+		stUpdateZm:       this.exitActionUpdateZm
+	};
+}
+
+function ZimbraFsmState()
 {
 	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
 	this.zfcGid              = new ZinFeedCollection(); // map of gid to (sourceid, luid)
@@ -2949,7 +2949,7 @@ ZimbraFsmState.prototype.setCredentials = function()
 }
 
 function AuthOnlyFsmState() { this.ZimbraFsmState(); }
-function TwoWayFsmState()  { this.ZimbraFsmState(); }
+function TwoWayFsmState()   { this.ZimbraFsmState(); }
 
 copyPrototype(AuthOnlyFsmState, ZimbraFsmState);
 copyPrototype(TwoWayFsmState,   ZimbraFsmState);

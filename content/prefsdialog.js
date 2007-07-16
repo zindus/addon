@@ -2,11 +2,12 @@ include("chrome://zindus/content/const.js");
 include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/bimap.js");
 include("chrome://zindus/content/payload.js");
+include("chrome://zindus/content/logger.js");
 include("chrome://zindus/content/passwordmanager.js");
 include("chrome://zindus/content/mozillapreferences.js");
 include("chrome://zindus/content/utils.js");
 include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/syncfsmexitstatus.js");
+include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 
 function Prefs()
@@ -24,11 +25,12 @@ Prefs.prototype.onLoad = function(target)
 	this.m_prefset_server.load(SOURCEID_ZM);
 	this.m_prefset_general.load(1);
 
-	dump("Prefs.onLoad: - m_prefset_server == "  + this.m_prefset_server.toString()  + "\n");
-	dump("Prefs.onLoad: - m_prefset_general == " + this.m_prefset_general.toString() + "\n");
+	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 
-	var maestro = new ZinMaestro();
-	maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_2, ZinMaestro.FSM_GROUP_SYNC);
+	gLogger.debug("Prefs.onLoad: - m_prefset_server == "  + this.m_prefset_server.toString()  + "\n");
+	gLogger.debug("Prefs.onLoad: - m_prefset_general == " + this.m_prefset_general.toString() + "\n");
+
+	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_2, ZinMaestro.FSM_GROUP_SYNC);
 
 	this.updateView();
 }
@@ -39,7 +41,7 @@ Prefs.prototype.updateView = function()
 	// - sanity checking on the whole thing - perhaps enable the ok button when all is well
 	// - selected tab depends on whether the user has initialised a server or not
 
-	document.getElementById("zindus-prefs-tabbox").selectedTab = document.getElementById("zindus-prefs-tab-server");
+	document.getElementById("zindus-prefs-tabbox").selectedTab = document.getElementById("zindus-prefs-tab-general");
 
 	// server tab
 	//
@@ -61,13 +63,12 @@ Prefs.prototype.updateView = function()
 
 Prefs.prototype.onCancel = function()
 {
-	var maestro = new ZinMaestro();
-	maestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_2);
+	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_2);
 }
 
 Prefs.prototype.onAccept = function()
 {
-	dump("Prefs.onAccept:\n");
+	gLogger.debug("Prefs.onAccept:\n");
 
 	// server tab
 	//
@@ -97,29 +98,38 @@ Prefs.prototype.onAccept = function()
 	this.m_prefset_server.save();
 	this.m_prefset_general.save();
 
-	var maestro = new ZinMaestro();
-	maestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_2);
+	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_2);
 }
 
 Prefs.prototype.onCommand = function(id_target)
 {
-	var payload;
-
-	dump("Prefs.onCommand - target is " + id_target + "\n");
+	gLogger.debug("Prefs.onCommand - target is " + id_target + "\n");
 
 	switch(id_target)
 	{
 		case "zindus-prefs-general-button-sync-now":
-			payload = new Payload(ZinMaestro.FSM_ID_TWOWAY);
-			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
+			var state = new TwoWayFsmState();
+			state.setCredentials();
+
+			var payload = new Payload();
+			payload.m_id_fsm  = ZinMaestro.FSM_ID_TWOWAY;
+			payload.m_syncfsm = new TwoWayFsm(state);
+
+			var win = window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
+			win.hidechrome = true;
+
 			break;
 
 		case "zindus-prefs-server-button-authonly":
-			payload = new Payload(ZinMaestro.FSM_ID_AUTHONLY);
+			var state = new AuthOnlyFsmState();
+			state.setCredentials(
+				document.getElementById("zindus-prefs-server-url").value,
+				document.getElementById("zindus-prefs-server-username").value,
+				document.getElementById("zindus-prefs-server-password").value );
 
-			payload.m_args = newObject( 'soapURL',  document.getElementById("zindus-prefs-server-url").value,
-			                            'username', document.getElementById("zindus-prefs-server-username").value,
-			                            'password', document.getElementById("zindus-prefs-server-password").value );
+			var payload = new Payload();
+			payload.m_id_fsm  = ZinMaestro.FSM_ID_AUTHONLY;
+			payload.m_syncfsm = new AuthOnlyFsm(state);
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
@@ -174,21 +184,21 @@ Prefs.doObserverAuthOnly = function()
 	var lastsyncstatus = document.getElementById("zindus-broadaster-lastsyncstatus").lastsyncstatus;
 	var lastsyncdate    = document.getElementById("zindus-broadaster-lastsyncstatus").getAttribute('value');
 
-	dump("Prefs.doObserverAuthOnly: lastsyncdate: "               + lastsyncdate + "\n");
-	dump("Prefs.doObserverAuthOnly: lastsyncstatus.summarycode: " + lastsyncdate.summarycode + "\n");
-	dump("Prefs.doObserverAuthOnly: lastsyncstatus.detail: "      + lastsyncdate.detail + "\n");
+	gLogger.debug("Prefs.doObserverAuthOnly: lastsyncdate: "               + lastsyncdate + "\n");
+	gLogger.debug("Prefs.doObserverAuthOnly: lastsyncstatus.summarycode: " + lastsyncdate.summarycode + "\n");
+	gLogger.debug("Prefs.doObserverAuthOnly: lastsyncstatus.detail: "      + lastsyncdate.detail + "\n");
 }
 
 Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	if (fsmstate && fsmstate.state.oldstate != "final")
 	{
-		dump("Prefs onFsmStateChangeFunctor: fsmstate is non-null - setting disabled attribute on command\n");
+		gLogger.debug("Prefs onFsmStateChangeFunctor: fsmstate is non-null - setting disabled attribute on command\n");
 		document.getElementById("zindus-prefs-cmd-sync").setAttribute('disabled', true);
 	}
 	else
 	{
-		dump("Prefs onFsmStateChangeFunctor: fsmstate is null - removing disabled attribute on command\n");
+		gLogger.debug("Prefs onFsmStateChangeFunctor: fsmstate is null - removing disabled attribute on command\n");
 		document.getElementById("zindus-prefs-cmd-sync").removeAttribute('disabled');
 	}
 }

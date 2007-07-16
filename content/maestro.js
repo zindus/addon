@@ -2,17 +2,30 @@ include("chrome://zindus/content/utils.js");
 include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/logger.js");
 
+// A few places in this class there are properties and methods that are both static and per-object.
+// The static ones are a nicer idiom for users of the notify* methods.
+// Instead of creating a ZinMaestro object, the call is just ZinMaestro.notifyFunctorRegister().
+// But, when "this" is called back by the observer service, the file of source code is no longer loaded into javascript scope,
+// so the static methods are gone.  So anything that's required by .observe() must be a per-object method.  Hence the duplication.
+//
+
 function ZinMaestro()
 {
 	this.m_a_functor = new Object();  // an associative array where key = a-unique-id and value == functor
 	this.m_fsmstate  = null;
-	this.m_logger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	this.m_logger    = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 
-	this.TOPIC = "ZindusMaestroObserver";
-	this.CMD_FUNCTOR_REGISTER     = "notifyFunctorRegister";
-	this.CMD_FUNCTOR_UNREGISTER   = "notifyFunctorUnregister";
-	this.CMD_SYNCFSM_STATE_UPDATE = "notifySyncFsmStatusUpdate";
+	this.TOPIC                   = ZinMaestro.TOPIC;
+	this.DO_FUNCTOR_REGISTER     = ZinMaestro.DO_FUNCTOR_REGISTER;
+	this.DO_FUNCTOR_UNREGISTER   = ZinMaestro.DO_FUNCTOR_UNREGISTER;
+	this.DO_SYNCFSM_STATE_UPDATE = ZinMaestro.DO_SYNCFSM_STATE_UPDATE;
 }
+
+ZinMaestro.TOPIC = "ZindusMaestroObserver";
+
+ZinMaestro.DO_FUNCTOR_REGISTER     = "1";
+ZinMaestro.DO_FUNCTOR_UNREGISTER   = "2";
+ZinMaestro.DO_SYNCFSM_STATE_UPDATE = "3";
 
 // There is a unique FSM_ID_* for each fsm so that functors can register to be notified about the state of specific fsm's
 //
@@ -48,36 +61,43 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 	if (topic == this.TOPIC)
 	{
 		this.m_logger.debug("ZinMaestro.observe(): " + " data: " + data + " maestro: " + this.toString());
+		this.m_logger.debug("ZinMaestro.observe(): " + " this.DO_FUNCTOR_REGISTER: " + this.DO_FUNCTOR_REGISTER);
 
 		switch (data)
 		{
-			case this.CMD_FUNCTOR_REGISTER:
+			case this.DO_FUNCTOR_REGISTER:
 				cnsAssert(isPropertyPresent(subject, 'id_functor'));
 				cnsAssert(isPropertyPresent(subject, 'a_id_fsm'));
 				cnsAssert(isPropertyPresent(subject, 'functor'));
 				cnsAssert(isPropertyPresent(subject, 'context'));
-				this.m_a_functor[subject['id_functor']] = newObject('a_id_fsm', cnsCloneObject(subject['a_id_fsm']), 'functor', subject['functor'], 'context', subject['context']);
-				// this.m_logger.debug("blah 98723811: a_id_fsm: " + subject['a_id_fsm']);
-				// this.m_logger.debug("blah 98723812: a_id_fsm: " + this.m_a_functor[subject['id_functor']]['a_id_fsm']);
+
+				this.m_a_functor[subject['id_functor']] = newObject('a_id_fsm', cnsCloneObject(subject['a_id_fsm']),
+				                                                    'functor',  subject['functor'],
+				                                                    'context',  subject['context']);
+
+				this.m_logger.debug("blah 98723811: a_id_fsm: " + subject['a_id_fsm']);
+				this.m_logger.debug("blah 98723812: a_id_fsm: " + this.m_a_functor[subject['id_functor']]['a_id_fsm']);
 
 				this.functorNotifyOne(subject['id_functor']);
 				break;
-			case this.CMD_FUNCTOR_UNREGISTER:
+
+			case this.DO_FUNCTOR_UNREGISTER:
 				cnsAssert(isPropertyPresent(subject, 'id_functor'));
 				delete this.m_a_functor[subject['id_functor']]; // clients register and unregister functors with unique ids
 				break;
-			case this.CMD_SYNCFSM_STATE_UPDATE:
+
+			case this.DO_SYNCFSM_STATE_UPDATE:
 				cnsAssert(isPropertyPresent(subject, 'fsmstate'));
 				this.m_fsmstate = subject.fsmstate;
 
-				// this.m_logger.debug("CMD_SYNCFSM_STATE_UPDATE: m_fsmstate: " + this.m_fsmstate.toString());
+				// this.m_logger.debug("DO_SYNCFSM_STATE_UPDATE: m_fsmstate: " + this.m_fsmstate.toString());
 
 				this.functorNotifyAll();
 
 				if (this.m_fsmstate.state.oldstate == 'final')
 					this.m_fsmstate = null;
-
 				break;
+
 			default:
 				cnsAssert(false);
 		}
@@ -127,10 +147,12 @@ ZinMaestro.prototype.osUnregister = function()
 	this.observerService().removeObserver(this, this.name);
 }
 
-ZinMaestro.prototype.observerService = function()
+ZinMaestro.observerService = function()
 {
 	return Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService);
 }
+
+ZinMaestro.prototype.observerService = ZinMaestro.observerService;
 
 ZinMaestro.prototype.osIsRegistered = function()
 {
@@ -158,36 +180,41 @@ ZinMaestro.prototype.osIsRegistered = function()
 	return count > 0;
 }
 
-ZinMaestro.prototype.osNotify = function(subject, data)
+ZinMaestro.osNotify = function(subject, data)
 {
-	this.observerService().notifyObservers(subject, this.TOPIC, data);
+	if (gLogger)
+		gLogger.debug("ZinMaestro.osNotify(): data == " + data);
+
+	ZinMaestro.observerService().notifyObservers(subject, ZinMaestro.TOPIC, data);
 }
 
-ZinMaestro.prototype.wrapForJS = function(obj)
+ZinMaestro.wrapForJS = function(obj)
 {
 	obj.wrappedJSObject = obj;
 
 	return obj;
 }
 
-// TODO change these to static methods
-ZinMaestro.prototype.notifyFunctorRegister = function(context, functor, id_functor, a_id_fsm)
+ZinMaestro.notifyFunctorRegister = function(context, functor, id_functor, a_id_fsm)
 {
-	this.m_logger.debug("ZinMaestro.notifyFunctorRegister(): id_functor == " + id_functor + " a_id_fsm: " + aToString(a_id_fsm));
+	if (gLogger)
+		gLogger.debug("ZinMaestro.notifyFunctorRegister(): id_functor == " + id_functor + " a_id_fsm: " + aToString(a_id_fsm));
 
-	this.osNotify(this.wrapForJS(newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)), this.CMD_FUNCTOR_REGISTER);
+	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)), this.DO_FUNCTOR_REGISTER);
 }
 
-ZinMaestro.prototype.notifyFunctorUnregister = function(id_functor)
+ZinMaestro.notifyFunctorUnregister = function(id_functor)
 {
-	this.m_logger.debug("ZinMaestro.notifyFunctorUnregister(): id_functor == " + id_functor);
+	if (gLogger)
+		gLogger.debug("ZinMaestro.notifyFunctorUnregister(): id_functor == " + id_functor);
 
-	this.osNotify(this.wrapForJS(newObject('id_functor', id_functor)), this.CMD_FUNCTOR_UNREGISTER);
+	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('id_functor', id_functor)), this.DO_FUNCTOR_UNREGISTER);
 }
 
-ZinMaestro.prototype.notifySyncFsmStatusUpdate = function(fsmstate)
+ZinMaestro.notifySyncFsmStatusUpdate = function(fsmstate)
 {
-	this.m_logger.debug("ZinMaestro.notifySyncFsmStatusUpdate(): fsmstate: " + fsmstate.toString());
+	if (gLogger)
+		gLogger.debug("ZinMaestro.notifySyncFsmStatusUpdate(): fsmstate: " + fsmstate.toString());
 
-	this.osNotify(this.wrapForJS(newObject('fsmstate', fsmstate)), this.CMD_SYNCFSM_STATE_UPDATE);
+	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('fsmstate', fsmstate)), this.DO_SYNCFSM_STATE_UPDATE);
 }

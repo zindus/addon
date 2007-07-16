@@ -2,7 +2,8 @@
 //
 function Payload(opcode)
 {
-	this.m_opcode = opcode;
+	if (arguments.length > 0)
+		this.m_opcode = opcode;
 	this.m_args   = null;
 	this.m_result = null;
 }

@@ -13,8 +13,7 @@ ZinTimer.prototype.observe = function(nsSubject, topic, data)
 {
 	this.m_logger.debug("ZinTimer.observe(): topic: " + topic + " data: " + data);
 
-	var maestro = new ZinMaestro();
-	maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_3, ZinMaestro.FSM_GROUP_SYNC);
+	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_3, ZinMaestro.FSM_GROUP_SYNC);
 }
 
 ZinTimer.prototype.QueryInterface = function(iid)
@@ -64,8 +63,7 @@ ZinTimer.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		delay = this.m_delay;
 	}
 
-	var maestro = new ZinMaestro();
-	maestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_3);
+	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_3);
 
 	this.start(delay);
 }
