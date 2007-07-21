@@ -30,8 +30,8 @@ Prefs.prototype.onLoad = function(target)
 
 	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 
-	gLogger.debug("Prefs.onLoad: - m_prefset_server == "  + this.m_prefset_server.toString()  + "\n");
-	gLogger.debug("Prefs.onLoad: - m_prefset_general == " + this.m_prefset_general.toString() + "\n");
+	gLogger.debug("Prefs.onLoad: - m_prefset_server == "  + this.m_prefset_server.toString());
+	gLogger.debug("Prefs.onLoad: - m_prefset_general == " + this.m_prefset_general.toString());
 
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_PREFSDIALOG, ZinMaestro.FSM_GROUP_SYNC);
 
@@ -202,8 +202,6 @@ Prefs.prototype.isServerSettingsComplete = function()
 	ret = ret && (document.getElementById("zindus-prefs-server-url").value.length      > 0);
 	ret = ret && (document.getElementById("zindus-prefs-server-username").value.length > 0);
 	ret = ret && (document.getElementById("zindus-prefs-server-password").value.length > 0);
-
-	dump("isServerSettingsComplete returns: " + ret + "\n");
 
 	return ret;
 }

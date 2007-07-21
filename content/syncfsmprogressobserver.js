@@ -120,7 +120,7 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 				if (context.state.updateZmPackage)
 				{
 					var sourceid = context.state.updateZmPackage['sourceid'];
-					var op = context.state.sources[sourceid]['name'] + " " + stringBundleString("Put");
+					var op = this.buildOp(context.state.sourceid_zm, "Put");
 
 					if (this.get(SyncFsmProgressObserver.OP) != op)
 					{

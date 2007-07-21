@@ -1847,7 +1847,7 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 //    (even though we have no way of knowing one way or the other)
 //
 
-ZimbraFsm.prototype.entryActionAboutToUpdateZm = function(state, event, continuation)
+ZimbraFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 {
 	var SORT_ORDER = [ Suo.DEL | ZinFeedItem.TYPE_FL, Suo.DEL | ZinFeedItem.TYPE_CN, 
 	                   Suo.MOD | ZinFeedItem.TYPE_FL, Suo.MOD | ZinFeedItem.TYPE_CN,
@@ -1867,11 +1867,11 @@ ZimbraFsm.prototype.entryActionAboutToUpdateZm = function(state, event, continua
 				if (isPropertyPresent(this.state.aSuo[sourceid], SORT_ORDER[i]))
 					for (indexSuo in this.state.aSuo[sourceid][SORT_ORDER[i]])
 	{
-		gLogger.debug("3377: entryActionUpdateZm: " +
+		gLogger.debug("entryActionUpdateZm: " +
 				" opcode: " + Suo.opcodeAsString(SORT_ORDER[i] & Suo.MASK) +
 				" type: "   + ZinFeedItem.typeAsString(SORT_ORDER[i] & ZinFeedItem.TYPE_MASK) );
 
-		gLogger.debug("3377: suo[" + indexSuo + "] ==  " + this.state.aSuo[sourceid][SORT_ORDER[i]][indexSuo].toString());
+		gLogger.debug("entryActionUpdateZm: suo[" + indexSuo + "] ==  " + this.state.aSuo[sourceid][SORT_ORDER[i]][indexSuo].toString());
 
 		suo             = this.state.aSuo[sourceid][SORT_ORDER[i]][indexSuo];
 		sourceid_winner = suo.sourceid_winner;
@@ -1893,8 +1893,6 @@ ZimbraFsm.prototype.entryActionAboutToUpdateZm = function(state, event, continua
 				break;
 
 			case Suo.ADD | ZinFeedItem.TYPE_CN:
-				// TODO - using 123456 instead of l_target below generates a SOAP fault (when you get around to debugging them)
-
 				l_gid      = this.state.aReverseGid[sourceid_winner][l_winner];
 				l_target   = this.state.zfcGid.get(l_gid).get(sourceid_target);
 				properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
@@ -1917,6 +1915,7 @@ ZimbraFsm.prototype.entryActionAboutToUpdateZm = function(state, event, continua
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
 				l_gid       = this.state.aReverseGid[sourceid_winner][l_winner];
 				l_target    = this.state.zfcGid.get(l_gid).get(sourceid_target);
+				msg        += " about to modify contact: ";
 				soapMethod  = null;
 
 				if (this.state.sources[sourceid_winner]['format'] == FORMAT_TB) // always a content update 
@@ -1989,7 +1988,7 @@ ZimbraFsm.prototype.entryActionAboutToUpdateZm = function(state, event, continua
 			break;
 	}
 
-	gLogger.debug("3377: " + msg);
+	gLogger.debug("entryActionUpdateZm: " + msg);
 
 	this.state.updateZmPackage = null;
 
@@ -1998,51 +1997,16 @@ ZimbraFsm.prototype.entryActionAboutToUpdateZm = function(state, event, continua
 		this.state.updateZmPackage = newObject('sourceid', sourceid, 'bucket', bucket, 'indexSuo', indexSuo,
 		                                       'soapmethod', soapMethod, 'soaparg', soapArg);
 
-		gLogger.debug("3377: updateZmPackage: " + aToString(this.state.updateZmPackage));
-	}
+		gLogger.debug("entryActionUpdateZm: updateZmPackage: " + aToString(this.state.updateZmPackage));
 
-	continuation('evNext');
-}
-
-ZimbraFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
-{
-	var package = this.state.updateZmPackage;
-
-	if (package)
-	{
-		this.callSoapFsm(continuation, this.eventFromSoapDefault, "evRepeat", package.soapmethod, package.soaparg);
+		this.callSoapFsm(continuation, this.eventFromSoapDefault, "evRepeat",
+		                           this.state.updateZmPackage.soapmethod, this.state.updateZmPackage.soaparg);
 	}
 	else
 	{
 		this.soapfsm.state.response = null;
 		continuation('evNext');
 	}
-}
-
-ZimbraFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
-{
-	var zfc = this.state.sources[sourceid]['zfcLuid'];
-	var zfi = zfc.get(luid);
-	var l   = zfi.get('l');
-	var ret = null;
-
-	if (this.state.sources[sourceid]['format'] == FORMAT_TB)
-	{
-		var uri    = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
-		var abCard = ZimbraAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
-
-		if (abCard)
-			ret = ZimbraAddressBook.getCardProperties(abCard, format_to);
-		else
-			gLogger.warn("can't find contact for to sourceid: " + sourceid + " and luid: " + luid + " in thunderbird addressbook uri: " + uri + " - this shouldn't happen.");
-	}
-	else
-	{
-		var zc = this.state.aSyncContact[luid_winner]; // the ZimbraContact object that arrived via GetContactResponse
-		ret = CnsContactConverter.instance().convert(format_to, FORMAT_ZM, zc.element);
-	}
-
-	return ret;
 }
 
 ZimbraFsm.prototype.exitActionUpdateZm = function(state, event)
@@ -2230,6 +2194,32 @@ ZimbraFsm.prototype.exitActionUpdateZm = function(state, event)
 		delete this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket];  // delete empty buckets
 		gLogger.debug("33771: deleted aSuo sourceid: " + sourceid + " bucket: " + updateZmPackage.bucket);
 	}
+}
+
+ZimbraFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
+{
+	var zfc = this.state.sources[sourceid]['zfcLuid'];
+	var zfi = zfc.get(luid);
+	var l   = zfi.get('l');
+	var ret = null;
+
+	if (this.state.sources[sourceid]['format'] == FORMAT_TB)
+	{
+		var uri    = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
+		var abCard = ZimbraAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
+
+		if (abCard)
+			ret = ZimbraAddressBook.getCardProperties(abCard, format_to);
+		else
+			gLogger.warn("can't find contact for to sourceid: " + sourceid + " and luid: " + luid + " in thunderbird addressbook uri: " + uri + " - this shouldn't happen.");
+	}
+	else
+	{
+		var zc = this.state.aSyncContact[luid_winner]; // the ZimbraContact object that arrived via GetContactResponse
+		ret = CnsContactConverter.instance().convert(format_to, FORMAT_ZM, zc.element);
+	}
+
+	return ret;
 }
 
 ZimbraFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation)
@@ -2856,8 +2846,7 @@ TwoWayFsm.prototype.setFsm = function()
 		stLoadTb:               { evCancel: 'final', evNext:  'stSyncPrepare'                                   },
 		stSyncPrepare:          { evCancel: 'final', evNext:  'stUpdateTb'                                      },
 		stUpdateTb:             { evCancel: 'final', evNext:  'stUpdateZm'                                      },
-		stAboutToUpdateZm:      { evCancel: 'final', evNext:  'stUpdateZm',                                     }, // TODO remove this
-		stUpdateZm:             { evCancel: 'final', evNext:  'stUpdateCleanup', evRepeat: 'stAboutToUpdateZm'  },
+		stUpdateZm:             { evCancel: 'final', evNext:  'stUpdateCleanup', evRepeat: 'stUpdateZm'         },
 		stUpdateCleanup:        { evCancel: 'final', evNext:  'stCommit'                                        },
 		stCommit:               { evCancel: 'final', evNext:  'final'                                           }
 	};
@@ -2875,7 +2864,7 @@ TwoWayFsm.prototype.setFsm = function()
 		stLoadTb:               this.entryActionLoadTb,
 		stSyncPrepare:          this.entryActionSyncPrepare,
 		stUpdateTb:             this.entryActionUpdateTb,
-		stAboutToUpdateZm:      this.entryActionAboutToUpdateZm,
+		// stAboutToUpdateZm:      this.entryActionAboutToUpdateZm,
 		stUpdateZm:             this.entryActionUpdateZm,
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
 		stCommit:               this.entryActionCommit,
