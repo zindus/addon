@@ -6,7 +6,7 @@
 <dialog
 	id="zindus-prefs-dialog"
 	title="&ZinPrefs.title;"
-	buttons="accept,cancel"
+	buttons="accept"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	onload="window.wd = new Prefs; window.wd.onLoad(event.target);"
@@ -27,7 +27,7 @@
 		</tabs>
 		<tabpanels flex="1">
 
-			<command id="zindus-prefs-cmd-sync" oncommand=" dump('event.target.id: ' + event.target.id + '\n'); dump('event.originalTarget.id: ' + event.originalTarget.id + '\n'); dump('event.explicitOriginalTarget.id: ' + event.explicitOriginalTarget.id + '\n'); dump('event.currentTarget.id: ' + event.currentTarget.id + '\n'); window.wd.onCommand(event.explicitOriginalTarget.id);" />
+			<command id="zindus-prefs-cmd-sync"    oncommand=" window.wd.onCommand(event.explicitOriginalTarget.id);" />
 
 			<!-- Server -->
 
@@ -60,7 +60,9 @@
 						<row>
 							<label value="" />
 							<hbox align="left" >
-								<button id="zindus-prefs-server-button-authonly" align="center" label="&ZinPrefsServerTestConnection.label;" accesskey="&ZinPrefsServerTestConnection.accesskey;" command="zindus-prefs-cmd-sync" />
+								<button id="zindus-prefs-server-button-authonly"
+								        align="center" label="&ZinPrefsServerTestConnection.label;"
+										accesskey="&ZinPrefsServerTestConnection.accesskey;" command="zindus-prefs-cmd-sync" />
 							</hbox>
 						</row>
 						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
@@ -82,11 +84,17 @@
 				<groupbox pack="center" >
 				    <caption label="Advanced"/>
 					<hbox align="right" >
-						<button id="zindus-prefs-general-button-test-harness" align="center" label="test harness" />
-						<button id="zindus-prefs-general-button-run-timer"    align="center" label="run timer" command="zindus-prefs-cmd-sync" />
-						<button id="zindus-prefs-general-button-reset"        align="center" label="&ZinPrefsGeneralButtonReset.label;"   accesskey="&ZinPrefsGeneralButtonReset.accesskey;" />
+						<button id="zindus-prefs-general-button-test-harness"
+						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTestHarness.label;" />
+						<button id="zindus-prefs-general-button-run-timer"
+						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTimer.label;" />
+						<button id="zindus-prefs-general-button-reset"
+						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonReset.label;"
+								accesskey="&ZinPrefsGeneralButtonReset.accesskey;" />
 						<spacer flex="1"/> 
-						<button id="zindus-prefs-general-button-sync-now"     align="center" label="&ZinPrefsGeneralButtonSyncNow.label;" accesskey="&ZinPrefsGeneralButtonSyncNow.accesskey;" command="zindus-prefs-cmd-sync" />
+						<button id="zindus-prefs-general-button-sync-now"
+						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonSyncNow.label;"
+								accesskey="&ZinPrefsGeneralButtonSyncNow.accesskey;" />
 					</hbox>
 				</groupbox>
 			</vbox>

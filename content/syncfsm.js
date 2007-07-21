@@ -2922,27 +2922,6 @@ function ZimbraFsmState(id_fsm)
 		[FORMAT_TB, FORMAT_ZM],
 		['tb',      'zm'     ]);
 
-	// this stuff should be initialised elsewhere
-	//
-	// TODO - persist this: map or preferences (sql would be nice) - password has to go in the password manager
-	//
-	// id=1 (this could be an accountid if we wanted it to be)
-	// type=account
-	// name=leni
-	// sources=2,3
-	//
-	// id=2
-	// type=source
-	// subtype=thunderbird
-	//
-	// id=3
-	// type=source
-	// subtype=zimbra
-	// soapURL=blah
-	// username=blah
-	// password=blah
-	//
-
 	this.sources = new Object();
 	this.sources[SOURCEID_TB] = new Object();
 	this.sources[SOURCEID_ZM] = new Object();
@@ -2966,6 +2945,25 @@ function ZimbraFsmState(id_fsm)
 
 ZimbraFsmState.prototype.setCredentials = function()
 {
+	if (arguments.length == 3)
+	{
+		this.sources[SOURCEID_ZM]['soapURL']  = arguments[0];
+		this.sources[SOURCEID_ZM]['username'] = arguments[1];
+		this.sources[SOURCEID_ZM]['password'] = arguments[2];
+	}
+	else
+	{
+		var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
+		prefset.load(SOURCEID_ZM);
+
+		this.sources[SOURCEID_ZM]['soapURL']  = prefset.getProperty(PrefSet.SERVER_URL);
+		this.sources[SOURCEID_ZM]['username'] = prefset.getProperty(PrefSet.SERVER_USERNAME);
+
+   		var pm = new PasswordManager();
+		this.sources[SOURCEID_ZM]['password'] = pm.get(prefset.getProperty(PrefSet.SERVER_URL),
+		                                               prefset.getProperty(PrefSet.SERVER_USERNAME) );
+	}
+
 	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
 }
 
@@ -2974,31 +2972,4 @@ function TwoWayFsmState()   { this.ZimbraFsmState(ZinMaestro.FSM_ID_TWOWAY);   }
 
 copyPrototype(AuthOnlyFsmState, ZimbraFsmState);
 copyPrototype(TwoWayFsmState,   ZimbraFsmState);
-
-AuthOnlyFsmState.prototype.setCredentials = function(soapURL, username, password)
-{
-	this.sources[SOURCEID_ZM]['soapURL']  = soapURL;
-	this.sources[SOURCEID_ZM]['username'] = username;
-	this.sources[SOURCEID_ZM]['password'] = password;
-
-	ZimbraFsmState.prototype.setCredentials.apply(this); // call the method in the base class
-}
-
-TwoWayFsmState.prototype.setCredentials = function()
-{
-	var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
-	prefset.load(SOURCEID_ZM);
-
-	this.sources[SOURCEID_ZM]['soapURL']  = prefset.getProperty(PrefSet.SERVER_URL);
-	this.sources[SOURCEID_ZM]['username'] = prefset.getProperty(PrefSet.SERVER_USERNAME);
-
-   	var pm = new PasswordManager();
-	this.sources[SOURCEID_ZM]['password'] = pm.get(prefset.getProperty(PrefSet.SERVER_URL), prefset.getProperty(PrefSet.SERVER_USERNAME) );
-
-	// this.sources[SOURCEID_ZM]['soapURL']  = "http://barkly.moniker.net/service/soap/";
-	// this.sources[SOURCEID_ZM]['username'] = "leni@barkly.moniker.net";
-	// this.sources[SOURCEID_ZM]['password'] = "qwe123qwe123";
-
-	ZimbraFsmState.prototype.setCredentials.apply(this);
-}
 

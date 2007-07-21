@@ -19,6 +19,8 @@ function Prefs()
 	this.checkbox_properties = PrefSet.GENERAL_PROPERTIES;
 	this.checkbox_ids        = [ "zindus-prefs-general-map-PAB" ];
 	this.checkbox_bimap      = new BiMap(this.checkbox_properties, this.checkbox_ids);
+
+	this.is_fsm_running = false;
 }
 
 Prefs.prototype.onLoad = function(target)
@@ -33,43 +35,20 @@ Prefs.prototype.onLoad = function(target)
 
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_PREFSDIALOG, ZinMaestro.FSM_GROUP_SYNC);
 
+	this.initialiseView();
 	this.updateView();
-}
-
-Prefs.prototype.updateView = function()
-{
-	// TODO
-	// - sanity checking on the whole thing - perhaps enable the ok button when all is well
-	// - selected tab depends on whether the user has initialised a server or not
-
-	document.getElementById("zindus-prefs-tabbox").selectedTab = document.getElementById("zindus-prefs-tab-general");
-
-	// server tab
-	//
-	document.getElementById("zindus-prefs-server-url").value      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
-	document.getElementById("zindus-prefs-server-username").value = this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME);
-
-	var pm = new PasswordManager();
-	var pw = pm.get(this.m_prefset_server.getProperty(PrefSet.SERVER_URL),
-	                this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME) );
-	if (pw)
-		document.getElementById("zindus-prefs-server-password").value = pw;
-
-	// general tab - checkbox elements
-	//
-	for (var i = 0; i < this.checkbox_properties.length; i++)
-		document.getElementById(this.checkbox_bimap.lookup(this.checkbox_properties[i], null)).checked =
-		           (this.m_prefset_general.getProperty(this.checkbox_properties[i]) == "yes");
 }
 
 Prefs.prototype.onCancel = function()
 {
+	gLogger.debug("Prefs.onCancel:");
+
 	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_PREFSDIALOG);
 }
 
 Prefs.prototype.onAccept = function()
 {
-	gLogger.debug("Prefs.onAccept:\n");
+	gLogger.debug("Prefs.onAccept:");
 
 	// server tab
 	//
@@ -110,7 +89,10 @@ Prefs.prototype.onCommand = function(id_target)
 	{
 		case "zindus-prefs-general-button-sync-now":
 			var state = new TwoWayFsmState();
-			state.setCredentials();
+			state.setCredentials(
+				document.getElementById("zindus-prefs-server-url").value,
+				document.getElementById("zindus-prefs-server-username").value,
+				document.getElementById("zindus-prefs-server-password").value );
 
 			var payload = new Payload();
 			payload.m_syncfsm = new TwoWayFsm(state);
@@ -177,34 +159,96 @@ Prefs.prototype.onCommand = function(id_target)
 			resetAll();
 			break;
 
+		case "zindus-prefs-tab-general":
+			this.updateView();
+			break;
+
 		default:
 			// do nothing
 			break;
 	}
 }
 
-Prefs.doObserverAuthOnly = function()
+Prefs.prototype.initialiseView = function()
 {
-	var lastsyncstatus = document.getElementById("zindus-broadaster-lastsyncstatus").lastsyncstatus;
-	var lastsyncdate    = document.getElementById("zindus-broadaster-lastsyncstatus").getAttribute('value');
+	// TODO
+	// - sanity checking on the whole thing - perhaps enable the ok button when all is well
 
-	gLogger.debug("Prefs.doObserverAuthOnly: lastsyncdate: "               + lastsyncdate + "\n");
-	gLogger.debug("Prefs.doObserverAuthOnly: lastsyncstatus.summarycode: " + lastsyncdate.summarycode + "\n");
-	gLogger.debug("Prefs.doObserverAuthOnly: lastsyncstatus.detail: "      + lastsyncdate.detail + "\n");
+	// server tab
+	//
+	document.getElementById("zindus-prefs-server-url").value      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
+	document.getElementById("zindus-prefs-server-username").value = this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME);
+
+	var pm = new PasswordManager();
+	var pw = pm.get(this.m_prefset_server.getProperty(PrefSet.SERVER_URL),
+	                this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME) );
+	if (pw)
+		document.getElementById("zindus-prefs-server-password").value = pw;
+
+	// general tab - checkbox elements
+	//
+	for (var i = 0; i < this.checkbox_properties.length; i++)
+		document.getElementById(this.checkbox_bimap.lookup(this.checkbox_properties[i], null)).checked =
+		           (this.m_prefset_general.getProperty(this.checkbox_properties[i]) == "yes");
+
+	var selectedTab = this.isServerSettingsComplete() ? "zindus-prefs-tab-general" : "zindus-prefs-tab-server";
+
+	document.getElementById("zindus-prefs-tabbox").selectedTab = document.getElementById(selectedTab);
+}
+
+Prefs.prototype.isServerSettingsComplete = function()
+{
+	ret = true;
+	ret = ret && (document.getElementById("zindus-prefs-server-url").value.length      > 0);
+	ret = ret && (document.getElementById("zindus-prefs-server-username").value.length > 0);
+	ret = ret && (document.getElementById("zindus-prefs-server-password").value.length > 0);
+
+	dump("isServerSettingsComplete returns: " + ret + "\n");
+
+	return ret;
+}
+
+Prefs.prototype.updateView = function()
+{
+	var i;
+	// - test connection ==> disabled when fsm is running, otherwise enabled
+	// - test harness    ==> disabled when fsm is running, otherwise enabled
+	// - reset           ==> disabled when fsm is running, otherwise enabled
+	// - run timer       ==> disabled when fsm is running or isServerSettingsComplete, otherwise enabled
+	// - sync now        ==> disabled when fsm is running or isServerSettingsComplete, otherwise enabled
+
+	if (this.is_fsm_running)
+	{
+		document.getElementById("zindus-prefs-cmd-sync").setAttribute('disabled', true);
+	}
+	else if (!this.isServerSettingsComplete())
+	{
+		document.getElementById("zindus-prefs-general-button-run-timer").setAttribute('disabled', true);
+		document.getElementById("zindus-prefs-general-button-sync-now").setAttribute('disabled', true);
+	}
+	else
+	{
+		document.getElementById("zindus-prefs-cmd-sync").removeAttribute('disabled');
+		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('disabled');
+		document.getElementById("zindus-prefs-general-button-sync-now").removeAttribute('disabled');
+	}
 }
 
 Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	if (fsmstate && fsmstate.oldstate != "final")
-	{
-		gLogger.debug("Prefs onFsmStateChangeFunctor: fsmstate is non-null - setting disabled attribute on command\n");
-		document.getElementById("zindus-prefs-cmd-sync").setAttribute('disabled', true);
-	}
-	else
-	{
-		gLogger.debug("Prefs onFsmStateChangeFunctor: fsmstate is null - removing disabled attribute on command\n");
-		document.getElementById("zindus-prefs-cmd-sync").removeAttribute('disabled');
-	}
+	if (fsmstate)
+		if (fsmstate.newstate == "start")
+		{
+			gLogger.debug("Prefs onFsmStateChangeFunctor: fsm started");
+			this.is_fsm_running = true;
+			this.updateView();
+		}
+		else if (fsmstate.oldstate == "final")
+		{
+			gLogger.debug("Prefs onFsmStateChangeFunctor: fsm finished");
+			this.is_fsm_running = false;
+			this.updateView();
+		}
 }
 
 function resetAll()
