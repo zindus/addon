@@ -1,130 +1,4 @@
-include("chrome://zindus/content/const.js");
-include("chrome://zindus/content/utils.js");
-include("chrome://zindus/content/syncfsm.js");
-include("chrome://zindus/content/testharness.js");
-include("chrome://zindus/content/filesystem.js");
-include("chrome://zindus/content/payload.js");
-include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/syncfsmprogressobserver.js");
-
-var gLogger      = null;
-
-function SyncWindow()
-{
-	this.m_syncfsm   = null;
-	this.m_timeoutID = null; // need to remember this in case the user cancels
-	this.m_newstate  = null; // the cancel method needs to know whether to expect a continuation or not
-	                         // there will be one if the fsm has had a transition.  It wont have had a transition if newstate == 'start'
-	this.m_payload  = null;  // we keep it around so that we can pass the results back
-
-	this.m_has_observer_been_called = false;
-	this.m_sfpo = new SyncFsmProgressObserver();
-}
-
-SyncWindow.prototype.onLoad = function()
-{
-	// this doesn't work document.getElementById('zindus-syncwindow').setAttribute('hidden', true);
-	// these work but part of the parent window underneath is invisble
-	// document.getElementById('zindus-syncwindow').setAttribute('collapsed', true);
-	// document.getElementById('zindus-syncwindow').setAttribute('hidechrome', true);
-
-	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
-	gLogger.debug("=========================================== SyncWindow.onLoad: " + getTime() + "\n");
-
-	this.m_payload = window.arguments[0];
-	this.m_syncfsm = this.m_payload.m_syncfsm;
-
-	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, ZinMaestro.FSM_GROUP_SYNC);
-
-	if (gLogger)
-		gLogger.debug("syncwindow onLoad() exiting");
-}
-
-SyncWindow.prototype.onAccept = function()
-{
-	gLogger.debug("syncwindow onAccept: before unregister...");
-
-	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_SYNCWINDOW);
-
-	gLogger.debug("syncwindow onAccept: after unregister...");
-
-	gLogger = null;
-
-	return true;
-}
-
-SyncWindow.prototype.onCancel = function()
-{
-	gLogger.debug("syncwindow onCancel: entered");
-			
-	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
-	// The observer is then notified and closes the window.
-	//
-	this.m_syncfsm.cancel(this.m_timeoutID, this.m_newstate);
-
-	gLogger.debug("syncwindow onCancel: exited");
-
-	return false;
-}
-
-SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
-{
-	gLogger.debug("syncwindow onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
-
-	if (!this.m_has_observer_been_called)
-	{
-		// fsmstate should be null on first call to observer because the 'sync now' button should be disabled if the fsm is running
-		//
-		cnsAssert(fsmstate == null);
-
-		this.m_has_observer_been_called = true;
-
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
-
-		// TODO - extension point - onFsmAboutToStart  - unhide the statuspanel before starting the fsm 
-
-		// document.getElementById('zindus-statuspanel').hidden = false;
-
-		this.m_syncfsm.start();
-	}
-	else 
-	{
-		this.m_timeoutID = fsmstate.timeoutID;
-		this.m_newstate  = fsmstate.newstate;
-
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.m_timeoutID);
-
-		var is_window_update_required = this.m_sfpo.update(fsmstate);
-
-		if (is_window_update_required)
-		{
-			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
-			                                        this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
-			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
-			                                        stringBundleString("zfomPrefix") + " " + this.m_sfpo.progressToString());
-
-			// TODO - extension point - report the contents of this.m_sfpo to the UI
-
-			if (this.m_el_statuspanel_progress_meter)
-			{
-				this.m_el_statuspanel_progress_meter.setAttribute('value', this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
-				this.m_el_statuspanel_progress_label.setAttribute('value', this.m_sfpo.progressToString());
-			}
-		}
-
-		if (fsmstate.oldstate == "final")
-		{
-			this.m_payload.m_result = this.m_sfpo.exitStatus();
-
-			document.getElementById('zindus-syncwindow').acceptDialog();
-		}
-	}
-
-	if (typeof gLogger != 'undefined' && gLogger) // gLogger will be null after acceptDialog()
-		gLogger.debug("syncwindow onFsmStateChangeFunctor 746: exiting");
-}
-
-// this object contains the state information that the observers get access to
+// this object maintains state information about an fsm's progress from start to finish
 //
 function SyncFsmProgressObserver()
 {
@@ -197,9 +71,6 @@ SyncFsmProgressObserver.prototype.progressToString = function()
 		       " " + stringBundleString(this.tweakStringId("Of")) +
 		       " " + this.get(SyncFsmProgressObserver.PROG_MAX);
 
-	// time = getTime();
-	// ret += " " + parseInt(time/1000) + "." + time % 1000;
-
 	return ret;
 }
 
@@ -271,6 +142,8 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 			case 'final':
 				if (fsmstate.event == 'evCancel')
 					this.progressReportOn("Cancelled");
+				else
+					this.progressReportOn("Done");
 
 				var es = new SyncFsmExitStatus();
 
@@ -317,9 +190,6 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 		gLogger.debug("4401: percentage_complete: " + percentage_complete);
 
 		this.set(SyncFsmProgressObserver.PERCENTAGE_COMPLETE, percentage_complete);
-
-		document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value', this.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
-		document.getElementById('zindus-syncwindow-progress-description').setAttribute('value', stringBundleString("zfomPrefix") + " " + this.progressToString());
 	}
 
 	return ret;

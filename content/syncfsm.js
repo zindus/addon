@@ -142,7 +142,10 @@ ZimbraFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 
 ZimbraFsm.prototype.eventFromSoapCheckLicense = function(eventOnResponse, method)
 {
-	if (this.soapfsm.state.faultElementXml) // the fault varies depending on open-source vs non-open-source server: this.soapfsm.state.faultCode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
+	// the fault varies depending on open-source vs non-open-source server:
+	// this.soapfsm.state.faultCode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
+	//
+	if (this.soapfsm.state.faultElementXml)
 		event = eventOnResponse;
 	else
 		event = this.eventFromSoapDefault(eventOnResponse, method)
@@ -2547,6 +2550,8 @@ SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 	soapCall.message = this.zsd.doc;
 
+	cnsAssert(!this.state.is_cancelled); // we shouldn't be here if we've called abort() on the callCompletion object!
+
 	gLogger.debug("SoapFsm: request is " + xmlDocumentToString(soapCall.message));
 
 	this.state.callCompletion = soapCall.asyncInvoke(
@@ -2576,7 +2581,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 
 	context.state.callCompletion = null; // don't need this anymore and setting it to null tells the world that no request is outstanding
 
-	cnsAssert(!context.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
+	cnsAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
 
 	// four scenarios here:
 	//   a) service failure
@@ -2675,8 +2680,14 @@ SoapFsm.prototype.abort = function()
 	// I don't trust that it isn't buggy given my experience with faults...
 	// so "cancel" of the parent fsm doesn't cause any transitions to the soapfsm...
 
+	gLogger.debug("SoapFsm.abort: entered");
+
 	if (this.state.callCompletion)
-		this.state.callCompletion.abort();
+	{
+		var ret = this.state.callCompletion.abort();
+
+		gLogger.debug("SoapFsm.abort: callCompletion.abort() returns: " + ret);
+	}
 
 	this.state.is_cancelled = true;
 }

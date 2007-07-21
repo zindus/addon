@@ -5,7 +5,7 @@ include("chrome://zindus/content/maestro.js");
 //   if continuation() is called from a transition or exit action.
 // - states are final when their entryAction()'s don't call continuation()
 //
-// $Id: fsm.js,v 1.3 2007-07-16 21:20:08 cvsuser Exp $
+// $Id: fsm.js,v 1.4 2007-07-21 04:22:14 cvsuser Exp $
 
 function FsmSanityCheck(context)
 {
@@ -55,34 +55,32 @@ function FsmSanityCheck(context)
 		}
 }
 
-function FsmController()
-{
-	this.id = newObject(arguments);
-}
-
 function FsmState()
 {
-	this.state = newObject(arguments);
+	cnsAssert(arguments.length % 2 == 0);
+
+	for (var i = 0; i < arguments.length; i+=2)
+		this[arguments[i]] = arguments[i+1];
 }
 
 FsmState.prototype.toString = function()
 {
-	return "id_fsm: "     + this.state.id_fsm +
-	       " timeoutID: " + this.state.timeoutID +
-	       " oldstate: "  + this.state.oldstate +
-	       " newstate: "  + this.state.newstate +
-	       " event: "     + this.state.event;
+	return "id_fsm: "     + this.id_fsm +
+	       " timeoutID: " + this.timeoutID +
+	       " oldstate: "  + this.oldstate +
+	       " newstate: "  + this.newstate +
+	       " event: "     + this.event;
 }
 
 function fsmDoTransition(fsmstate)
 {
 	var fsmstate;
 
-	var id_fsm   = fsmstate.state.id_fsm;
-	var oldstate = fsmstate.state.oldstate;
-	var newstate = fsmstate.state.newstate;
-	var event    = fsmstate.state.event;
-	var context  = fsmstate.state.context;
+	var id_fsm   = fsmstate.id_fsm;
+	var oldstate = fsmstate.oldstate;
+	var newstate = fsmstate.newstate;
+	var event    = fsmstate.event;
+	var context  = fsmstate.context;
 
 	gLogger.debug("722. fsmDoTransition: fsmstate: " + fsmstate.toString() );
 
@@ -169,7 +167,7 @@ function fsmDoTransition(fsmstate)
 			                            'event',    null,
 			                            'context',  context);
 
-			ZinMaestro.notifySyncFsmStatusUpdate(fsmstate);
+			ZinMaestro.notifyFsmState(fsmstate);
 		}
 	}
 
@@ -178,7 +176,7 @@ function fsmDoTransition(fsmstate)
 
 function fsmFireTransition(id_fsm, oldstate, newstate, event, context)
 {
-	gLogger.debug("711. fsmFireTransition: entered: oldstate: " + oldstate + " newstate: " + newstate + " event: " + event);
+	gLogger.debug("711. fsmFireTransition: entered: id_fsm: " + id_fsm + " oldstate: " + oldstate + " newstate: " + newstate + " event: " + event);
 
 	// var label = "transition from " + oldstate + " to " + newstate + " event: " + event;
 	// var newlabel = document.getElementById(fsmcontroller.id.observer).getAttribute('label', label);
@@ -199,11 +197,11 @@ function fsmFireTransition(id_fsm, oldstate, newstate, event, context)
 
 	var timeoutID = window.setTimeout(fsmDoTransition, 0, fsmstate);
 
-	fsmstate.state.timeoutID = timeoutID;
+	fsmstate.timeoutID = timeoutID;
 
-	gLogger.debug("711. fsmFireTransition: fsmstate.timeoutID: " + fsmstate.state.timeoutID);
+	gLogger.debug("711. fsmFireTransition: fsmstate.timeoutID: " + fsmstate.timeoutID);
 
-	ZinMaestro.notifySyncFsmStatusUpdate(fsmstate);
+	ZinMaestro.notifyFsmState(fsmstate);
 
 	if (gLogger)  // gLogger == null once the dialog goes away after the very last transition
 		gLogger.debug("716. fsmFireTransition exiting ");

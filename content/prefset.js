@@ -19,9 +19,9 @@ PrefSet.SERVER_USERNAME       = "username";
 PrefSet.SERVER_PROPERTIES     = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME ];
 
 PrefSet.GENERAL               = "general";
-PrefSet.GENERAL_SHOW_PROGRESS = "showprogress";
+// PrefSet.GENERAL_SHOW_PROGRESS = "showprogress";
 PrefSet.GENERAL_MAP_PAB       = "mappab";
-PrefSet.GENERAL_PROPERTIES    = [ PrefSet.GENERAL_SHOW_PROGRESS, PrefSet.GENERAL_MAP_PAB ];
+PrefSet.GENERAL_PROPERTIES    = [ PrefSet.GENERAL_MAP_PAB ];
 
 // load() supports an optional branch parameter because 
 // a) the collection need only create one branch object and pass it to each .load() method

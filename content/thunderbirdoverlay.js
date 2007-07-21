@@ -29,7 +29,7 @@ function onLoad(event)
 
 				maestro.osRegister();
 
-				// var timer = new ZinTimer(10);
+				// var timer = new ZinTimer(ZinTimer.REPEATING, 10);
 				// timer.start();
 			}
 

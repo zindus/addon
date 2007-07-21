@@ -9,14 +9,15 @@ include("chrome://zindus/content/utils.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
+include("chrome://zindus/content/timer.js");
 
 function Prefs()
 {
 	this.m_prefset_server  = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
 	this.m_prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
-	this.checkbox_properties = [ PrefSet.GENERAL_SHOW_PROGRESS,        PrefSet.GENERAL_MAP_PAB        ];
-	this.checkbox_ids        = [ "zindus-prefs-general-show-progress", "zindus-prefs-general-map-PAB" ];
+	this.checkbox_properties = PrefSet.GENERAL_PROPERTIES;
+	this.checkbox_ids        = [ "zindus-prefs-general-map-PAB" ];
 	this.checkbox_bimap      = new BiMap(this.checkbox_properties, this.checkbox_ids);
 }
 
@@ -30,7 +31,7 @@ Prefs.prototype.onLoad = function(target)
 	gLogger.debug("Prefs.onLoad: - m_prefset_server == "  + this.m_prefset_server.toString()  + "\n");
 	gLogger.debug("Prefs.onLoad: - m_prefset_general == " + this.m_prefset_general.toString() + "\n");
 
-	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_2, ZinMaestro.FSM_GROUP_SYNC);
+	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_PREFSDIALOG, ZinMaestro.FSM_GROUP_SYNC);
 
 	this.updateView();
 }
@@ -63,7 +64,7 @@ Prefs.prototype.updateView = function()
 
 Prefs.prototype.onCancel = function()
 {
-	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_2);
+	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_PREFSDIALOG);
 }
 
 Prefs.prototype.onAccept = function()
@@ -98,7 +99,7 @@ Prefs.prototype.onAccept = function()
 	this.m_prefset_server.save();
 	this.m_prefset_general.save();
 
-	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_2);
+	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_PREFSDIALOG);
 }
 
 Prefs.prototype.onCommand = function(id_target)
@@ -166,6 +167,11 @@ Prefs.prototype.onCommand = function(id_target)
 			testharness.run();
 			break;
 
+		case "zindus-prefs-general-button-run-timer":
+			var timer = new ZinTimer(ZinTimer.ONE_SHOT, 0);
+			timer.start();
+			break;
+
 		case "zindus-prefs-general-button-reset":
 			// TODO - this needs a guard around it so that the fsm can't run during...
 			resetAll();
@@ -189,7 +195,7 @@ Prefs.doObserverAuthOnly = function()
 
 Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	if (fsmstate && fsmstate.state.oldstate != "final")
+	if (fsmstate && fsmstate.oldstate != "final")
 	{
 		gLogger.debug("Prefs onFsmStateChangeFunctor: fsmstate is non-null - setting disabled attribute on command\n");
 		document.getElementById("zindus-prefs-cmd-sync").setAttribute('disabled', true);
@@ -233,10 +239,6 @@ function resetAll()
 	file.append(LOGFILENAME);
 
 	if (file.exists() || !file.isDirectory())
-	{
-		gLogger.loggingFileClose();
 		file.remove(false);
-		gLogger.loggingFileOpen();
-	}
 }
 

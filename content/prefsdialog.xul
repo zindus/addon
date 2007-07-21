@@ -75,8 +75,7 @@
 				<groupbox pack="center" >
 				    <caption label="General Settings"/>
 					<vbox align="left" >
-						<checkbox id="zindus-prefs-general-show-progress" label="&ZinPrefsGeneralShowProgress.label;" checked="false" />
-						<checkbox id="zindus-prefs-general-map-PAB"       label="&ZinPrefsGeneralMapPAB.label;"       checked="true"  />
+						<checkbox id="zindus-prefs-general-map-PAB" label="&ZinPrefsGeneralMapPAB.label;" checked="true" />
 					</vbox>
 				</groupbox>
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
@@ -84,6 +83,7 @@
 				    <caption label="Advanced"/>
 					<hbox align="right" >
 						<button id="zindus-prefs-general-button-test-harness" align="center" label="test harness" />
+						<button id="zindus-prefs-general-button-run-timer"    align="center" label="run timer" command="zindus-prefs-cmd-sync" />
 						<button id="zindus-prefs-general-button-reset"        align="center" label="&ZinPrefsGeneralButtonReset.label;"   accesskey="&ZinPrefsGeneralButtonReset.accesskey;" />
 						<spacer flex="1"/> 
 						<button id="zindus-prefs-general-button-sync-now"     align="center" label="&ZinPrefsGeneralButtonSyncNow.label;" accesskey="&ZinPrefsGeneralButtonSyncNow.accesskey;" command="zindus-prefs-cmd-sync" />
