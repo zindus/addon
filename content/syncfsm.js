@@ -34,13 +34,13 @@ ZimbraFsm.prototype.start = function()
 	fsmFireTransition(this.state.id_fsm, null, 'start', 'evStart', this);
 }
 
-ZimbraFsm.prototype.cancel = function(timeoutID, newstate)
+ZimbraFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeoutID)
 {
-	this.soapfsm.abort();
+	window.clearTimeout(syncfsm_timeoutID);
 
-	window.clearTimeout(timeoutID);
+	gLogger.debug("ZimbraFsm.cancel: cleared timeoutID: " + syncfsm_timeoutID);
 
-	gLogger.debug("ZimbraFsm.cancel: cleared timeoutID: " + timeoutID);
+	this.soapfsm.cancel(soapfsm_timeoutID);
 
 	if (newstate == 'start')
 	{
@@ -2672,15 +2672,24 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	return true;
 }
 
-SoapFsm.prototype.abort = function()
+SoapFsm.prototype.cancel = function(timeoutID)
 {
+	// if the user cancelled and there was a SoapFsm in progress then either:
+	// - it had just started (newstate == start), in which case we have to clear it's timeout so that it doesn't continue, or
+	// - it is waiting for a response from the server, in which case we have to abort the callCompletion object
+	// A different way of handling either or both of these cases would have been for the syncfsm to set a flag in the soapfsm's state
+	// and then the soapfsm would check the flag at all relevant points (only a small number of those)...
+	// in the current implementation, is_cancelled is just used to assert correctness.
+
 	// Do I want to consider the return value from callCompletion.abort() 
 	// see http://www.xulplanet.com/references/xpcomref/ifaces/nsISOAPCallCompletion.html
 	// right now, we ignore the completion status as reported by nsISOAPCallCompletion.isComplete() 
 	// I don't trust that it isn't buggy given my experience with faults...
 	// so "cancel" of the parent fsm doesn't cause any transitions to the soapfsm...
 
-	gLogger.debug("SoapFsm.abort: entered");
+	window.clearTimeout(timeoutID);
+
+	gLogger.debug("SoapFsm.cancel: cleared timeoutID: " + timeoutID);
 
 	if (this.state.callCompletion)
 	{

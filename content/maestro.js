@@ -34,9 +34,12 @@ ZinMaestro.FSM_ID_AUTHONLY = "syncfsm-authonly";
 ZinMaestro.FSM_ID_SOAP     = "soapfsm";
 ZinMaestro.FSM_GROUP_SYNC  = newObject(ZinMaestro.FSM_ID_TWOWAY, 0, ZinMaestro.FSM_ID_AUTHONLY, 0);
 
-ZinMaestro.ID_FUNCTOR_SYNCWINDOW  = "syncwindow"; // ID_FUNCTOR_* uniquely identify functors
-ZinMaestro.ID_FUNCTOR_PREFSDIALOG = "prefsdialog";
-ZinMaestro.ID_FUNCTOR_TIMER       = "timer";
+// ID_FUNCTOR_* uniquely identifies each functor
+//
+ZinMaestro.ID_FUNCTOR_SYNCWINDOW         = "syncwindow";
+ZinMaestro.ID_FUNCTOR_PREFSDIALOG        = "prefsdialog";
+ZinMaestro.ID_FUNCTOR_TIMER              = "timer";
+ZinMaestro.ID_FUNCTOR_SYNCWINDOW_SOAPFSM = "syncwindow-soapfsm";
 
 ZinMaestro.prototype.toString = function()
 {
