@@ -44,15 +44,17 @@ ZinMaestro.ID_FUNCTOR_SYNCWINDOW_SOAPFSM = "syncwindow-soapfsm";
 ZinMaestro.prototype.toString = function()
 {
 	var msg = "";
+	var functors = "";
 	var id;
-
-	msg += "ZinMaestro: ";
 
 	for (id in this.m_a_fsmstate)
 		msg += " m_a_fsmstate[" + id + "] == " + (this.m_a_fsmstate[id] ? this.m_a_fsmstate[id].toString() : "null");
 
+
 	for (id in this.m_a_functor)
-		msg += " m_a_functor[" + id + "] is set";
+		functors += id + " ";
+
+	msg += " functor(s): " + (functors == "" ? "none" : functors);
 
 	return msg;
 }

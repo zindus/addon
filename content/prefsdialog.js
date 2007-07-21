@@ -83,7 +83,7 @@ Prefs.prototype.onAccept = function()
 
 Prefs.prototype.onCommand = function(id_target)
 {
-	gLogger.debug("Prefs.onCommand - target is " + id_target + "\n");
+	gLogger.debug("Prefs.onCommand: target: " + id_target);
 
 	switch(id_target)
 	{

@@ -102,7 +102,7 @@ ZinTimer.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 	else
 	{
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.m_timeoutID);
+		gLogger.debug("ZinTimer.onFsmStateChangeFunctor: 744: ");
 
 		var is_window_update_required = this.m_sfpo.update(fsmstate);
 
@@ -178,7 +178,7 @@ ZinTimer.prototype.getWindowsContainingElementIds = function(a_id_orig)
 		for (var id in a_id)
 			if (win.document.getElementById(id))
 			{
-				gLogger.debug("blah 23432: getWindowsContainingElementIds sets id: " + id);
+				// gLogger.debug("blah 23432: getWindowsContainingElementIds sets id: " + id);
 
 				a_id_orig[id] = win;
 				delete a_id[id]; // remove it - once an id is found in one window, we assume it's unique and stop looking for it
