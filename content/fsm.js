@@ -5,7 +5,7 @@ include("chrome://zindus/content/maestro.js");
 //   if continuation() is called from a transition or exit action.
 // - states are final when their entryAction()'s don't call continuation()
 //
-// $Id: fsm.js,v 1.4 2007-07-21 04:22:14 cvsuser Exp $
+// $Id: fsm.js,v 1.5 2007-07-22 03:15:23 cvsuser Exp $
 
 function FsmSanityCheck(context)
 {
@@ -39,7 +39,7 @@ function FsmSanityCheck(context)
 		}
 	}
 
-	for each (table in [context.fsm.aActionTransition, context.fsm.aActionEntry, context.fsm.aActionExit])
+	for each (table in [context.fsm.aActionEntry, context.fsm.aActionExit])
 		for (mapping in table)
 		{
 			// dump("FsmSanityCheck: mapping is " + mapping + "\n");
@@ -84,35 +84,13 @@ function fsmDoTransition(fsmstate)
 
 	gLogger.debug("722. fsmDoTransition: fsmstate: " + fsmstate.toString() );
 
-	context.countTransitions++;
-
 	gLogger.debug("fsm: transitioned to state " + newstate + " on event " + event);
 
 	if (typeof context.fsm.transitions.isSeenOnce == 'undefined' || !context.fsm.transitions.isSeenOnce)
 	{
-		// no arguments when we are windowing... cnsAssert(arguments.length == 4);
-
 		FsmSanityCheck(context);
 
 		context.fsm.transitions.isSeenOnce = true;
-	}
-
-	if (context.fsm.aActionTransition && context.fsm.aActionTransition[newstate])
-	{
-		// gLogger.debug("fsm: calling transition action (from: " + oldstate + ", to: " + newstate + ", event: " + event + ")");
-
-		context.fsm.aActionTransition[newstate].call(context, oldstate, newstate, event);
-	}
-
-	if (context.fsm.onTransition)
-	{
-		// gLogger.debug("fsm: calling onTransition observer (from: " + oldstate + ", to: " + newstate + ", event: " + event + ")");
-
-		context.fsm.onTransition.call(context);
-	}
-	else
-	{
-		// gLogger.debug("fsm: onTransition observer not set");
 	}
 
 	if (context.fsm.aActionEntry[newstate])
