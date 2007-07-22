@@ -4,25 +4,24 @@ include("chrome://zindus/content/maestro.js");
 // - only entry actions should call continuation() - not sure what happens
 //   if continuation() is called from a transition or exit action.
 // - states are final when their entryAction()'s don't call continuation()
+//   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.5 2007-07-22 03:15:23 cvsuser Exp $
+// $Id: fsm.js,v 1.6 2007-07-22 03:48:50 cvsuser Exp $
 
 function FsmSanityCheck(context)
 {
 	var states = new Object();
 
-	cnsAssert(typeof context == 'object');
+	cnsAssert(typeof context == 'object' && typeof context.fsm.transitions == 'object');
 
 	for (stateFrom in context.fsm.transitions)
 	{
-		// print("FsmSanityCheck: stateFrom is " + stateFrom);
-
 		states[stateFrom] = true;
 
 		// there has to be an entry action corresponding to the 'from' state in a transition
 		// otherwise the continuation wouldn't get called to execute the transition
 		//
-		// gLogger.debug("FsmSanityCheck: stateFrom: " + stateFrom);
+		// gLogger.debug("fsm: FsmSanityCheck: stateFrom: " + stateFrom);
 
 		cnsAssert(typeof context.fsm.aActionEntry[stateFrom] == 'function');
 
@@ -32,20 +31,17 @@ function FsmSanityCheck(context)
 
 			states[stateTo] = true;
 
-			// print("stateFrom is " + stateFrom);
-			// print("stateTo   is " + stateTo);
-			// print("event     is " + event);
-
+			// gLogger.debug("fsm: stateTo: " + stateTo);
+			// gLogger.debug("fsm: event: "   + event);
 		}
 	}
 
 	for each (table in [context.fsm.aActionEntry, context.fsm.aActionExit])
 		for (mapping in table)
 		{
-			// dump("FsmSanityCheck: mapping is " + mapping + "\n");
+			// gLogger.debug("fsm: FsmSanityCheck: mapping is " + mapping + "\n");
 
-			// if this assert fails, it means that there's an action for a state that's not
-			// in the transitions table.
+			// if this assert fails, it means that there's an action for a state that's not in the transitions table.
 			//
 			cnsAssert(typeof states[mapping] != 'undefined');
 
@@ -53,23 +49,6 @@ function FsmSanityCheck(context)
 			//
 			cnsAssert(typeof table[mapping] == 'function');
 		}
-}
-
-function FsmState()
-{
-	cnsAssert(arguments.length % 2 == 0);
-
-	for (var i = 0; i < arguments.length; i+=2)
-		this[arguments[i]] = arguments[i+1];
-}
-
-FsmState.prototype.toString = function()
-{
-	return "id_fsm: "     + this.id_fsm +
-	       " timeoutID: " + this.timeoutID +
-	       " oldstate: "  + this.oldstate +
-	       " newstate: "  + this.newstate +
-	       " event: "     + this.event;
 }
 
 function fsmDoTransition(fsmstate)
@@ -82,9 +61,7 @@ function fsmDoTransition(fsmstate)
 	var event    = fsmstate.event;
 	var context  = fsmstate.context;
 
-	gLogger.debug("722. fsmDoTransition: fsmstate: " + fsmstate.toString() );
-
-	gLogger.debug("fsm: transitioned to state " + newstate + " on event " + event);
+	gLogger.debug("fsm: 722. fsmDoTransition: fsmstate: " + fsmstate.toString() );
 
 	if (typeof context.fsm.transitions.isSeenOnce == 'undefined' || !context.fsm.transitions.isSeenOnce)
 	{
@@ -95,7 +72,7 @@ function fsmDoTransition(fsmstate)
 
 	if (context.fsm.aActionEntry[newstate])
 	{
-		gLogger.debug("fsm: calling entry      action (to: " + newstate + ", event: " + event + ")");
+		gLogger.debug("fsm: calling entry action (to: " + newstate + ", event: " + event + ")");
 
 		var continuation = function(nextEvent) {
 				// See:  http://en.wikipedia.org/wiki/Closure_%28computer_science%29
@@ -122,14 +99,14 @@ function fsmDoTransition(fsmstate)
 					// Even though Finite State Machines in UML are supposed to silently ignore events that they don't know about,
 					// here we assert failure - because it's probably a programming error.
 					//
-					gLogger.debug("84578: blah: newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.transitions: " + aToString(context.fsm.transitions));
+					gLogger.debug("fsm: about to assert: newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.transitions: " + aToString(context.fsm.transitions));
 					cnsAssert(false);
 				}
 			}
 
 		// we add the continuation as a property of the fsm object to support ZimbraFsm.prototype.cancel()
 		context.fsm.continuation = continuation;
-		// gLogger.debug("724. fsmDoTransition: context.fsm.continuation has been set - about to call the entry action");
+		// gLogger.debug("fsm: 724. fsmDoTransition: context.fsm.continuation has been set - about to call the entry action");
 
     	context.fsm.aActionEntry[newstate].call(context, newstate, event, continuation);
 
@@ -154,16 +131,7 @@ function fsmDoTransition(fsmstate)
 
 function fsmFireTransition(id_fsm, oldstate, newstate, event, context)
 {
-	gLogger.debug("711. fsmFireTransition: entered: id_fsm: " + id_fsm + " oldstate: " + oldstate + " newstate: " + newstate + " event: " + event);
-
-	// var label = "transition from " + oldstate + " to " + newstate + " event: " + event;
-	// var newlabel = document.getElementById(fsmcontroller.id.observer).getAttribute('label', label);
-	// if (label == newlabel)
-	// 	label += "1";  // leni TODO - ok in practice but in theory this function recurses - choose a different attribute eg. value
-
-	// gLogger.debug("714.  about to change label on: " + fsmcontroller.id.observer);
-	// document.getElementById(fsmcontroller.id.observer).fsmstate = fsmstate;
-	// document.getElementById(fsmcontroller.id.observer).setAttribute('label', label);   // observers get a look-in...
+	gLogger.debug("fsm: 711. fsmFireTransition: entered: id_fsm: " + id_fsm + " oldstate: " + oldstate + " newstate: " + newstate + " event: " + event);
 
 	// release control in order to flip to the next transition - but the maestro holds a reference to fsmstate
 	//
@@ -177,10 +145,27 @@ function fsmFireTransition(id_fsm, oldstate, newstate, event, context)
 
 	fsmstate.timeoutID = timeoutID;
 
-	gLogger.debug("711. fsmFireTransition: fsmstate.timeoutID: " + fsmstate.timeoutID);
+	gLogger.debug("fsm: 712. fsmFireTransition: fsmstate.timeoutID: " + fsmstate.timeoutID);
 
 	ZinMaestro.notifyFsmState(fsmstate);
 
 	if (gLogger)  // gLogger == null once the dialog goes away after the very last transition
-		gLogger.debug("716. fsmFireTransition exiting ");
+		gLogger.debug("fsm: 713. fsmFireTransition exiting ");
+}
+
+function FsmState()
+{
+	cnsAssert(arguments.length % 2 == 0);
+
+	for (var i = 0; i < arguments.length; i+=2)
+		this[arguments[i]] = arguments[i+1];
+}
+
+FsmState.prototype.toString = function()
+{
+	return "id_fsm: "     + this.id_fsm +
+	       " timeoutID: " + this.timeoutID +
+	       " oldstate: "  + this.oldstate +
+	       " newstate: "  + this.newstate +
+	       " event: "     + this.event;
 }
