@@ -33,12 +33,12 @@ function onLoad(event)
 
 				if (prefset.getProperty(PrefSet.GENERAL_MANUAL_SYNC_ONLY) != "true")
 				{
-					logger.debug("thunderbirdoverlay: starting timer...\n");
+					logger.debug("thunderbirdoverlay: starting timer.");
 					var timer = new ZinTimer(ZinTimer.REPEATING, 10);
 					timer.start();
 				}
 				else
-        				logger.debug("thunderbirdoverlay: not starting timer...\n");
+        				logger.debug("thunderbirdoverlay: not starting timer.");
 			}
         }
 	}

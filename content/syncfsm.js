@@ -9,7 +9,6 @@ include("chrome://zindus/content/suo.js");
 include("chrome://zindus/content/gcs.js");
 include("chrome://zindus/content/lso.js");
 include("chrome://zindus/content/mozillapreferences.js");
-include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/passwordmanager.js");

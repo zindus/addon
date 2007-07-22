@@ -41,7 +41,7 @@
 	</toolbox>	
 
 	<hbox id="statusTextBox" >
-		<statusbarpanel hidden="true" id="zindus-statuspanel" style="maxwidth: 12em" insertbefore="statusbar-progresspanel" onclick="alert('you clicked me 1');" >
+		<statusbarpanel hidden="true" id="zindus-statuspanel" insertbefore="statusbar-progresspanel" onclick="alert('you clicked me 1');" >
 			<label id="zindus-statuspanel-label-prefix" value="zindus:" /> <!-- onclick="alert('you clicked me 2');"  -->
 			<stack>
 				<progressmeter id="zindus-statuspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" /> <!--  -->
