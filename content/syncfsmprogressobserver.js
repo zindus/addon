@@ -1,4 +1,5 @@
-// this object maintains state information about an fsm's progress from start to finish
+// An object of this class is updated as a SyncFsm progresses from start to finish.
+// It supports both percentage complete and per-state text detail.
 //
 function SyncFsmProgressObserver()
 {
@@ -6,11 +7,11 @@ function SyncFsmProgressObserver()
 
 	this.m_exit_status = null;
 
-	this.zfi = new ZinFeedItem();
+	this.m_properties = new Object();
 
-	this.zfi.set(SyncFsmProgressObserver.OP,       "");
-	this.zfi.set(SyncFsmProgressObserver.PROG_MAX, 0);
-	this.zfi.set(SyncFsmProgressObserver.PROG_CNT, 0);
+	this.set(SyncFsmProgressObserver.OP,       "");
+	this.set(SyncFsmProgressObserver.PROG_MAX, 0);
+	this.set(SyncFsmProgressObserver.PROG_CNT, 0);
 }
 
 SyncFsmProgressObserver.OP                  = 'op'; // eg: server put
@@ -28,12 +29,12 @@ SyncFsmProgressObserver.prototype.exitStatus = function()
 
 SyncFsmProgressObserver.prototype.set = function(key, value)
 {
-	this.zfi.set(key, value);
+	this.m_properties[key] = value;
 }
 
 SyncFsmProgressObserver.prototype.get = function(key, value)
 {
-	return this.zfi.get(key);
+	return this.m_properties[key];
 }
 
 SyncFsmProgressObserver.prototype.progressReportOn = function(stringid)
