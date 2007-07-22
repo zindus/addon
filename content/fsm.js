@@ -6,7 +6,12 @@ include("chrome://zindus/content/maestro.js");
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.6 2007-07-22 03:48:50 cvsuser Exp $
+// $Id: fsm.js,v 1.7 2007-07-22 09:13:15 cvsuser Exp $
+
+// create a gLogger if there isn't one (which there isn't when fsm is run by the scheduled background timer)
+//
+if (typeof gLogger != 'object' || !gLogger)
+	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger); 
 
 function FsmSanityCheck(context)
 {

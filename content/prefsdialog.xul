@@ -75,14 +75,15 @@
 			<vbox flex="1" style="margin:20px" >
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
 				<groupbox pack="center" >
-				    <caption label="General Settings"/>
+				    <caption label="&ZinPrefsGeneralGroupSettings.label;"/>
 					<vbox align="left" >
-						<checkbox id="zindus-prefs-general-map-PAB" label="&ZinPrefsGeneralMapPAB.label;" checked="true" />
+					<checkbox id="zindus-prefs-general-map-PAB"          label="&ZinPrefsGeneralMapPAB.label;"         checked="true" />
+					<checkbox id="zindus-prefs-general-manual-sync-only" label="&ZinPrefsGeneralManualSyncOnly.label;" checked="false" />
 					</vbox>
 				</groupbox>
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
 				<groupbox pack="center" >
-				    <caption label="Advanced"/>
+				    <caption label="&ZinPrefsGeneralGroupActions.label;"/>
 					<hbox align="right" >
 						<button id="zindus-prefs-general-button-test-harness"
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTestHarness.label;" />

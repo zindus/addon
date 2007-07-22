@@ -1,5 +1,10 @@
 function include(url)
 {
+	var msg = "include: " + (typeof url == 'string' ? url : "non-string") + "\n";
+	dump(msg);
+	var consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
+	consoleService.logStringMessage("zindus: " + msg);
+
 	var loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"].getService(Components.interfaces.mozIJSSubScriptLoader);
 	var ret;
 

@@ -1,4 +1,4 @@
-include("chrome://zindus/content/logger.js");
+include("chrome://zindus/content/bimap.js");
 
 ZinFeedCollection.ITER_ALL        = 0;   // various flavours of foreach
 ZinFeedCollection.ITER_UNRESERVED = 1;   // only call functor when key == id and id > ID_MAX_RESERVED

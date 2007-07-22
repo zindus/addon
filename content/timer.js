@@ -1,5 +1,6 @@
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/logger.js");
+include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmprogressobserver.js");
 
 ZinTimer.ONE_SHOT  = 0;

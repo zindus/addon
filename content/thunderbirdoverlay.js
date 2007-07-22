@@ -1,44 +1,51 @@
 include("chrome://zindus/content/maestro.js");
+include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/timer.js");
+include("chrome://zindus/content/logger.js");
 
 window.addEventListener("load", onLoad, false);
 
 function onLoad(event)
 {
-    try
-    {
-        dump("thunderbirdoverlay onLoad\n");
-        // dump("thunderbirdoverlay onLoad - event.toString() is " + event.toString() + "\n");
-        // dump("thunderbirdoverlay onLoad - event.target.id is " + event.target.id + "\n");
-		// dump("thunderbirdoverlay onLoad - id of document          is: " + document.id + "\n");
-		// dump("thunderbirdoverlay onLoad - id of window            is: " + window.id + "\n");
-		// dump("thunderbirdoverlay onLoad - id of sync-stringbundle is: " + document.getElementById("sync-stringbundle") + "\n");
+	var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 
-        // We dont want to do this each time a new window is opened
-        var messengerWindow = document.getElementById("messengerWindow");
+	try
+	{
+		logger.debug("thunderbirdoverlay: onLoad entered");
 
-        if (messengerWindow)
-        {
-        	dump("thunderbirdoverlay onLoad in messengerWindow \n");
+		// We dont want to do this each time a new window is opened
+		var messengerWindow = document.getElementById("messengerWindow");
+
+		if (messengerWindow)
+		{
+			logger.debug("thunderbirdoverlay: in messengerWindow");
 
 			var maestro = new ZinMaestro();
 
 			if (!maestro.osIsRegistered())
 			{
-        		dump("thunderbirdoverlay: creating ZinMaestro and registering it with nsIObserverService\n");
+				logger.debug("thunderbirdoverlay: creating ZinMaestro and registering it with nsIObserverService");
 
 				maestro.osRegister();
 
-				// var timer = new ZinTimer(ZinTimer.REPEATING, 10);
-				// timer.start();
-			}
+				var prefset = new PrefSet(PrefSet.GENERAL,  PrefSet.GENERAL_PROPERTIES);
+				prefset.load(SOURCEID_TB);
 
+				if (prefset.getProperty(PrefSet.GENERAL_MANUAL_SYNC_ONLY) != "true")
+				{
+					logger.debug("thunderbirdoverlay: starting timer...\n");
+					var timer = new ZinTimer(ZinTimer.REPEATING, 10);
+					timer.start();
+				}
+				else
+        				logger.debug("thunderbirdoverlay: not starting timer...\n");
+			}
         }
-    }
-    catch (ex)
-    {
-        alert("thunderbirdoverlay onLoad() : " + ex);
-    }
+	}
+	catch (ex)
+	{
+		alert("thunderbirdoverlay onLoad() : " + ex);
+	}
 }
 
 function zindusPrefsDialog()

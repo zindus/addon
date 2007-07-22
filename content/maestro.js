@@ -188,7 +188,7 @@ ZinMaestro.prototype.osIsRegistered = function()
 
 ZinMaestro.osNotify = function(subject, data)
 {
-	if (gLogger)
+	if (typeof gLogger == 'object' && gLogger)
 		gLogger.debug("ZinMaestro.osNotify(): data == " + data);
 
 	ZinMaestro.observerService().notifyObservers(subject, ZinMaestro.TOPIC, data);
@@ -203,7 +203,7 @@ ZinMaestro.wrapForJS = function(obj)
 
 ZinMaestro.notifyFunctorRegister = function(context, functor, id_functor, a_id_fsm)
 {
-	if (gLogger)
+	if (typeof gLogger == 'object' && gLogger)
 		gLogger.debug("ZinMaestro.notifyFunctorRegister(): id_functor == " + id_functor + " a_id_fsm: " + aToString(a_id_fsm));
 
 	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)), this.DO_FUNCTOR_REGISTER);
@@ -211,7 +211,7 @@ ZinMaestro.notifyFunctorRegister = function(context, functor, id_functor, a_id_f
 
 ZinMaestro.notifyFunctorUnregister = function(id_functor)
 {
-	if (gLogger)
+	if (typeof gLogger == 'object' && gLogger)
 		gLogger.debug("ZinMaestro.notifyFunctorUnregister(): id_functor == " + id_functor);
 
 	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('id_functor', id_functor)), this.DO_FUNCTOR_UNREGISTER);
@@ -219,7 +219,7 @@ ZinMaestro.notifyFunctorUnregister = function(id_functor)
 
 ZinMaestro.notifyFsmState = function(fsmstate)
 {
-	if (gLogger)
+	if (typeof gLogger == 'object' && gLogger)
 		gLogger.debug("ZinMaestro.notifyFsmStatusUpdate(): fsmstate: " + fsmstate.toString());
 
 	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('fsmstate', fsmstate)), this.DO_FSM_STATE_UPDATE);

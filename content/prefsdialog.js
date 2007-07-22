@@ -17,7 +17,7 @@ function Prefs()
 	this.m_prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
 	this.checkbox_properties = PrefSet.GENERAL_PROPERTIES;
-	this.checkbox_ids        = [ "zindus-prefs-general-map-PAB" ];
+	this.checkbox_ids        = [ "zindus-prefs-general-map-PAB", "zindus-prefs-general-manual-sync-only" ];
 	this.checkbox_bimap      = new BiMap(this.checkbox_properties, this.checkbox_ids);
 
 	this.is_fsm_running = false;
@@ -26,7 +26,7 @@ function Prefs()
 Prefs.prototype.onLoad = function(target)
 {
 	this.m_prefset_server.load(SOURCEID_ZM);
-	this.m_prefset_general.load(1);
+	this.m_prefset_general.load(SOURCEID_TB); // only using SOURCEID_TB here because it's id is not going to clash with other sources
 
 	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 
@@ -73,7 +73,7 @@ Prefs.prototype.onAccept = function()
 	//
 	for (var i = 0; i < this.checkbox_properties.length; i++)
 		this.m_prefset_general.setProperty(this.checkbox_properties[i],
-			document.getElementById(this.checkbox_bimap.lookup(this.checkbox_properties[i], null)).checked ? "yes" : "no" );
+			document.getElementById(this.checkbox_bimap.lookup(this.checkbox_properties[i], null)).checked ? "true" : "false" );
 
 	this.m_prefset_server.save();
 	this.m_prefset_general.save();
@@ -189,7 +189,7 @@ Prefs.prototype.initialiseView = function()
 	//
 	for (var i = 0; i < this.checkbox_properties.length; i++)
 		document.getElementById(this.checkbox_bimap.lookup(this.checkbox_properties[i], null)).checked =
-		           (this.m_prefset_general.getProperty(this.checkbox_properties[i]) == "yes");
+		           (this.m_prefset_general.getProperty(this.checkbox_properties[i]) == "true");
 
 	var selectedTab = this.isServerSettingsComplete() ? "zindus-prefs-tab-general" : "zindus-prefs-tab-server";
 

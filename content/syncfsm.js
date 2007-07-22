@@ -2871,10 +2871,10 @@ function ZimbraFsmState(id_fsm)
 	this.sources[SOURCEID_ZM] = new Object();
 
 	this.sources[SOURCEID_TB]['format']   = FORMAT_TB;
-	this.sources[SOURCEID_TB]['name']     = "thunderbird"; // TODO: stringbundle - should the host platform be derived on-the-fly?
+	this.sources[SOURCEID_TB]['name']     = stringBundleString("sourceThunderbird");
 
 	this.sources[SOURCEID_ZM]['format']   = FORMAT_ZM;
-	this.sources[SOURCEID_ZM]['name']     = "server";
+	this.sources[SOURCEID_ZM]['name']     = stringBundleString("sourceServer");
 
 	for (var i in this.sources)
 	{

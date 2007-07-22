@@ -19,7 +19,10 @@
 <!ENTITY ZinPrefsServerTestConnection.label     "Test Connection to Server">
 <!ENTITY ZinPrefsServerTestConnection.accesskey "T">
 
+<!ENTITY ZinPrefsGeneralGroupSettings.label     "General Settings">
+<!ENTITY ZinPrefsGeneralGroupActions.label      "Actions">
 <!ENTITY ZinPrefsGeneralMapPAB.label            "Synchronize local Personal Address Book with remote Contacts folder">
+<!ENTITY ZinPrefsGeneralManualSyncOnly.label    "Manual sync only - background sync is disabled on next restart">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.label     "Sync Now">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey "S">
 <!ENTITY ZinPrefsGeneralButtonReset.label       "Reset">

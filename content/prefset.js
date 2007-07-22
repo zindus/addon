@@ -11,17 +11,18 @@ function PrefSet(prefprefix, a)
 		this.m_properties[a[i]] = PrefSet.DEFAULT_VALUE;
 }
 
-PrefSet.DEFAULT_VALUE         = null;
+PrefSet.DEFAULT_VALUE            = null;
 
-PrefSet.SERVER                = "server";
-PrefSet.SERVER_URL            = "url";
-PrefSet.SERVER_USERNAME       = "username";
-PrefSet.SERVER_PROPERTIES     = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME ];
+PrefSet.SERVER                   = "server";
+PrefSet.SERVER_URL               = "url";
+PrefSet.SERVER_USERNAME          = "username";
+PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME ];
 
-PrefSet.GENERAL               = "general";
+PrefSet.GENERAL                  = "general";
 // PrefSet.GENERAL_SHOW_PROGRESS = "showprogress";
-PrefSet.GENERAL_MAP_PAB       = "mappab";
-PrefSet.GENERAL_PROPERTIES    = [ PrefSet.GENERAL_MAP_PAB ];
+PrefSet.GENERAL_MAP_PAB          = "mappab";
+PrefSet.GENERAL_MANUAL_SYNC_ONLY = "manualsynconly";
+PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MAP_PAB, PrefSet.GENERAL_MANUAL_SYNC_ONLY ];
 
 // load() supports an optional branch parameter because 
 // a) the collection need only create one branch object and pass it to each .load() method
