@@ -22,8 +22,6 @@ ZimbraFsm.FILE_GID      = "gid";
 
 function ZimbraFsm(state)
 {
-	this.countTransitions = 0;
-
 	this.state   = state;
 	this.soapfsm = new SoapFsm();
 	this.fsm     = new Object();
@@ -91,7 +89,6 @@ ZimbraFsm.prototype.callSoapFsm = function(continuation, f, eventOnResponse, met
 
 // This routine tests for:
 // - unexpected response ==> evCancel (eg <parsererror xmlns="http://www.mozilla.org/newlayout/xml/parsererror.xml">...</parsererror>
-// TODO need to test for: auth timeout ==> retry
 
 ZimbraFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 {
@@ -1621,7 +1618,6 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				}
 				else
 					gLogger.warn("Was about to create an addressbook: " + abName + " but it already exists.");  // TODO - this might happen if the user created an addressbook both locally and on a server with the same name - how to handle?
-				// TODO - gLogger.warn messages need to be exposed through the UI somehow
 
 				break;
 
@@ -2547,59 +2543,37 @@ SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	this.state.callCompletion = soapCall.asyncInvoke(
 	        function (response, call, error)
 			{
-				context.handleAsyncResponse(response, call, error, continuation, context);
+				context.handleAsyncResponse(response, call, error, continuation, context, gLogger);
 			}
 		);
 }
 
-SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context)
+SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context, gLogger)
 {
 	var ret = false;
 
-	// TODO debugging only
-	if (0)
-	{
-	try
-	{
-	throw new Error("debuggin here - want to see call stack");
-	}
-	catch(ex)
-	{
-	dump(ex.message + " stack: \n" + ex.stack);
-	}
-	}
+	cnsAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
 
 	context.state.callCompletion = null; // don't need this anymore and setting it to null tells the world that no request is outstanding
-
-	cnsAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
+	context.state.serviceCode = error;
 
 	// four scenarios here:
 	//   a) service failure
 	//      - documentation says that this is reported by a non-zero value for the error argument
 	//      - I also notice that when no web server is listening on the targetURI port, 
 	//        this function is called with error == 0 but response == null.  This seems like a bug...
-	//   b) soap fault
-	//      - response.fault is non-null
-	//        there is some sub-scenario here whereby response.fault.detail might be missing, possibly because namespaces
-	//        the zimbra fault seem to stuff things up - need to isolate this test case better
-	//      - response.fault is null and error = 0 but response is a soap:Fault element.
-	//        This is a bug - either in zimbra's (document-style) response or mozilla
-	//        - on the one hand, mozilla uses "http://www.w3.org/2001/09/soap-envelope" to indicate a soap 1.2 message
-	//          this URL is now out of data - it should be http://www.w3.org/2003/05/soap-envelope
-	//        - on the other hand, zimbra responds with the "2003" schema URL in response to a request that uses the "2001" schema URL
-	//          This seems wrong - zimbra should respond either with the 2001 url or fall back to soap 1.1.
-	//   c) <BlahResponse> document
+	//   b) soap fault and response.fault is non-null
+	//      - there is some sub-scenario here whereby response.fault.detail might be missing, possibly because of a namespace muddle
+	//      - the zimbra fault seems to stuff things up - need to isolate this test case better
+	//   c) soap fault and response.fault is null and error = 0 but response is a soap:Fault element.
+	//      This is a bug - either in zimbra's (document-style) response or mozilla
+	//      - on the one hand, mozilla uses "http://www.w3.org/2001/09/soap-envelope" to indicate a soap 1.2 message
+	//        this URL is now out of data - it should be http://www.w3.org/2003/05/soap-envelope
+	//      - on the other hand, zimbra responds with the "2003" schema URL in response to a request that uses the "2001" schema URL
+	//        This seems wrong - zimbra should respond either with the 2001 url or fall back to soap 1.1.
+	//   d) <BlahResponse> document ==> success!
 	//
 
-	context.state.serviceCode = error;
-
-	// TODO - there is something dodgy going on if you hit the cancel button on the sync dialog during processing:
-	// - sometimes, gLogger has no properties!
-	// - sometimes, SOAP_REQUEST_FAILED is not defined
-	// The solution might be to simply not reference anything outside context (ie put gLogger and SOAP_REQUEST_FAILED into SoapFsmState)
-	// inside this function.
-	// But perhaps not.  Clearly there is something that I don't understand about scope - need to debug this.
-	//
 	if (response == null && error == 0)
 	{
 		// this is a workaround for (what I think is) a mozilla bug
@@ -2607,19 +2581,16 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 		// the callback gets executed with a null response and error code zero.
 		// here, we turn that into a non-zero error code.
 		//
-		dump("blah - 1239850 - am here\n");
 		context.state.serviceCode = SOAP_REQUEST_FAILED;
+		gLogger.debug("SoapFsm.handleAsyncResponse: soap service failure - setting an arbitrary error code: " + context.state.serviceCod);
 	}
 	else if (error != 0)
 	{ 
-		gLogger.debug("SoapFsm: soap service failure - error code is " + error);
+		gLogger.debug("SoapFsm.handleAsyncResponse: soap service failure - error code is " + error);
 	}
 	else 
 	{
-		gLogger.debug("SoapFsm: response.version is " + response.version);
-
-		// include("chrome://zindus/content/testsoapfault.js");
-		// testsoapfault();
+		gLogger.debug("SoapFsm.handleAsyncResponse: response.version is " + response.version);
 
 		if (response.fault != null)
 		{ 
@@ -2640,7 +2611,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 			{
 				context.state.response = response.message;
 
-				gLogger.debug("SoapFsm: response is " + xmlDocumentToString(response.message));
+				gLogger.debug("SoapFsm.handleAsyncResponse: response is " + xmlDocumentToString(response.message));
 			}
 		}
 	}
@@ -2654,7 +2625,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	if (msg)
 	{
 		msg += " fault xml: " + context.state.faultElementXml;
-		gLogger.debug("SoapFsm: handleAsyncResponse: " + msg);
+		gLogger.debug("SoapFsm.handleAsyncResponse: " + msg);
 	}
 
 	continuation('evSoapResponse');
@@ -2750,22 +2721,6 @@ SoapFsmState.prototype.faultLoadFromXml = function(doc)
 {
 	var nodelist;
 	
-	// dump("887. children in the found node ? " + nodelist.item(0).hasChildNodes() + "\n");
-	// dump("888. setting ret.faultString to " + nodelist.item(0).firstChild.nodeValue +"\n");
-	// node = nodelist.item(0);
-	// ret.faultString = nodelist.item(0).data;
-	// dump("888. node name is " + node.nodeName +"\n");
-	// dump("888. node type is " + node.nodeType +"\n");
-	// dump("888. node value is " + node.nodeValue +"\n");
-	// dump("888. node hasChildNodes is " + node.hasChildNodes() +"\n");
-	// dump("888. node data is " + node.data +"\n");
-	// nodelist = doc.getElementsByTagNameNS(ZimbraSoapDocument.NS_SOAP_ENVELOPE, "Trace");
-	// nodelist = doc.getElementsByTagName("Trace");
-	// dump("887. number of faulstrings in the response is " + nodelist.length + "\n");
-
-	// leni TODO - dont hardcode xmlns - obtain it from the top-level node
-	//           - or use this instead (reliant on caller using 'soap') : nodelist = doc.getElementsByTagName("soap:faultstring");
-
 	this.faultElementXml = xmlDocumentToString(doc);
 
 	conditionalGetElementByTagNameNS(doc, ZimbraSoapDocument.NS_SOAP_ENVELOPE, "faultstring", this, 'faultString');
@@ -2916,7 +2871,7 @@ function ZimbraFsmState(id_fsm)
 	this.sources[SOURCEID_ZM] = new Object();
 
 	this.sources[SOURCEID_TB]['format']   = FORMAT_TB;
-	this.sources[SOURCEID_TB]['name']     = "thunderbird"; // TODO: stringbundle
+	this.sources[SOURCEID_TB]['name']     = "thunderbird"; // TODO: stringbundle - should the host platform be derived on-the-fly?
 
 	this.sources[SOURCEID_ZM]['format']   = FORMAT_ZM;
 	this.sources[SOURCEID_ZM]['name']     = "server";
