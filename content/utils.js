@@ -8,6 +8,12 @@ function cnsAssert(expr)
 		}
 		catch(ex)
 		{
+			if (typeof gLogger == 'object' && gLogger)
+			{
+				gLogger.fatal(ex.message);
+				gLogger.fatal(ex.stack);
+			}
+
 			if (typeof alert == 'function')
 				alert(ex.message + " stack: \n" + ex.stack);
 			else

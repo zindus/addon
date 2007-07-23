@@ -47,26 +47,42 @@ function loggingFileOpen()
 
 	if (prefs.getCharPref(prefs.branch(), "loggingActive") == "true")
 	{
-		var logfile = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
+		try
+		{
+			var logfile = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
 
-		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
+			var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
 
-		if (!logfile.exists() || !logfile.isDirectory())
-			logfile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
+			if (!logfile.exists() || !logfile.isDirectory())
+				logfile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 
-		logfile.append(LOGFILENAME); // dump("logfile.path == " + logfile.path + "\n");
+			logfile.append(LOGFILENAME); // dump("logfile.path == " + logfile.path + "\n");
 
-		var loggingFileSizeMax = prefs.getIntPref(prefs.branch(), "loggingFileSizeMax");
+			var loggingFileSizeMax = prefs.getIntPref(prefs.branch(), "loggingFileSizeMax");
 
-		if (logfile.exists() && logfile.fileSize > loggingFileSizeMax)
-			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
+			if (logfile.exists() && logfile.fileSize > loggingFileSizeMax)
+				ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
 
-		ret = Components.classes["@mozilla.org/network/file-output-stream;1"].
+			ret = Components.classes["@mozilla.org/network/file-output-stream;1"].
 		                        createInstance(Components.interfaces.nsIFileOutputStream);
 
-		ret.init(logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
+			// TODO - test this
+			// this next line throws an exception if the logfile is already open (eg by a hung process)
+			//
+			ret.init(logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
 
-		// gLogger.debug("logfile.fileSize == " + logfile.fileSize + " and loggingFileSizeMax == " + loggingFileSizeMax);
+			// gLogger.debug("logfile.fileSize == " + logfile.fileSize + " and loggingFileSizeMax == " + loggingFileSizeMax);
+		}
+		catch (e)
+		{
+			if (typeof(is_first_logging_file_open_exception) == 'undefined')
+			{
+				Components.utils.reportError(e);
+				is_first_logging_file_open_exception = true;
+			}
+
+			ret = null;
+		}
 	}
 
 	return ret;

@@ -7,8 +7,6 @@ include("chrome://zindus/content/payload.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsmprogressobserver.js");
 
-var gLogger      = null;
-
 function SyncWindow()
 {
 	this.m_syncfsm         = null;
@@ -23,13 +21,7 @@ function SyncWindow()
 
 SyncWindow.prototype.onLoad = function()
 {
-	// this doesn't work document.getElementById('zindus-syncwindow').setAttribute('hidden', true);
-	// these work but part of the parent window underneath is invisble
-	// document.getElementById('zindus-syncwindow').setAttribute('collapsed', true);
-	// document.getElementById('zindus-syncwindow').setAttribute('hidechrome', true);
-
-	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
-	gLogger.debug("=========================================== SyncWindow.onLoad: " + getTime() + "\n");
+	gLogger.debug("=== SyncWindow.onLoad: " + getTime() + "\n");
 
 	this.m_payload = window.arguments[0];
 	this.m_syncfsm = this.m_payload.m_syncfsm;
@@ -38,40 +30,37 @@ SyncWindow.prototype.onLoad = function()
 	listen_to[ZinMaestro.FSM_ID_SOAP] = 0;
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
 
-	if (gLogger)
-		gLogger.debug("syncwindow onLoad() exiting");
+	gLogger.debug("SyncWindow.onLoad() exiting");
 }
 
 SyncWindow.prototype.onAccept = function()
 {
-	gLogger.debug("syncwindow onAccept: before unregister...");
+	gLogger.debug("SyncWindow.onAccept: before unregister...");
 
 	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_SYNCWINDOW);
 
-	gLogger.debug("syncwindow onAccept: after unregister...");
-
-	gLogger = null;
+	gLogger.debug("SyncWindow.onAccept: after unregister...");
 
 	return true;
 }
 
 SyncWindow.prototype.onCancel = function()
 {
-	gLogger.debug("syncwindow onCancel: entered");
+	gLogger.debug("SyncWindow.onCancel: entered");
 			
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
 	this.m_syncfsm.cancel(this.m_newstate, this.timeoutID_syncfsm, this.timeoutID_soapfsm);
 
-	gLogger.debug("syncwindow onCancel: exited");
+	gLogger.debug("SyncWindow.onCancel: exited");
 
 	return false;
 }
 
 SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	gLogger.debug("syncwindow onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+	gLogger.debug("SyncWindow.onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	if (fsmstate && fsmstate.id_fsm == ZinMaestro.FSM_ID_SOAP)
 		this.timeoutID_soapfsm = fsmstate.timeoutID;
@@ -83,7 +72,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_has_observer_been_called = true;
 
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
+		gLogger.debug("SyncWindow.onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
 		// TODO - extension point - onFsmAboutToStart  - unhide the statuspanel before starting the fsm 
 
@@ -96,7 +85,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		this.timeoutID_syncfsm = fsmstate.timeoutID;
 		this.m_newstate  = fsmstate.newstate;
 
-		gLogger.debug("syncwindow onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.timeoutID_syncfsm);
+		gLogger.debug("SyncWindow.onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.timeoutID_syncfsm);
 
 		var is_window_update_required = this.m_sfpo.update(fsmstate);
 
@@ -125,5 +114,5 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 
 	if (typeof gLogger != 'undefined' && gLogger) // gLogger will be null after acceptDialog()
-		gLogger.debug("syncwindow onFsmStateChangeFunctor 746: exiting");
+		gLogger.debug("SyncWindow.onFsmStateChangeFunctor 746: exiting");
 }

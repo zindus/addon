@@ -78,7 +78,14 @@
 				    <caption label="&ZinPrefsGeneralGroupSettings.label;"/>
 					<vbox align="left" >
 					<checkbox id="zindus-prefs-general-map-PAB"          label="&ZinPrefsGeneralMapPAB.label;"         checked="true" />
+					</vbox>
+				</groupbox>
+				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				<groupbox pack="center" >
+				    <caption label="&ZinPrefsGeneralGroupAdvanced.label;"/>
+					<vbox align="left" >
 					<checkbox id="zindus-prefs-general-manual-sync-only" label="&ZinPrefsGeneralManualSyncOnly.label;" checked="false" />
+					<checkbox id="zindus-prefs-general-verbose-logging"  label="&ZinPrefsGeneralVerboseLogging.label;" checked="false" />
 					</vbox>
 				</groupbox>
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
@@ -99,15 +106,6 @@
 					</hbox>
 				</groupbox>
 			</vbox>
-
 		</tabpanels>
 	</tabbox>
 </dialog>
-<!--
-	<statusbar id="ch3-bar" persist="collapsed">
-		<statusbarpanel class="statusbarpanel-iconic" id="book-icon"/>
-		<statusbarpanel id="status-text" label="Thanks for reading chapter 3" flex="1" crop="right"/>
-		<statusbarpanel class="statusbarpanel-iconic" id="book-icon-2"/>
-	</statusbar>
-</window>
--->

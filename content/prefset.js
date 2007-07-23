@@ -22,20 +22,25 @@ PrefSet.GENERAL                  = "general";
 // PrefSet.GENERAL_SHOW_PROGRESS = "showprogress";
 PrefSet.GENERAL_MAP_PAB          = "mappab";
 PrefSet.GENERAL_MANUAL_SYNC_ONLY = "manualsynconly";
-PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MAP_PAB, PrefSet.GENERAL_MANUAL_SYNC_ONLY ];
+PrefSet.GENERAL_VERBOSE_LOGGING  = "verboselogging";
+PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MAP_PAB, PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING ];
 
-// load() supports an optional branch parameter because 
+// Both id and branch are optional
+// id is option because there might only be a single subsection under prefprefix
+// branch is optional because
 // a) the collection need only create one branch object and pass it to each .load() method
 // b) at some point we might like to distinguish between user-defined and default preferences,
 //
 PrefSet.prototype.load = function(id, branch)
 {
 	var i, mp, prefs;
-	var retval = false;
 
-	cnsAssert((arguments.length == 1) || (arguments.length == 2));
+	cnsAssert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
 
-	if (arguments.length == 1)
+	if (arguments.length == 0)
+		id = 0;
+
+	if (arguments.length < 2)
 	{
 		mp = new MozillaPreferences();
 		prefs = mp.branch();
@@ -61,9 +66,8 @@ PrefSet.prototype.load = function(id, branch)
 	}
 
 	this.m_id = id;
-	retval = true;
 	
-	return retval;
+	return true;
 }
 
 PrefSet.prototype.save = function()

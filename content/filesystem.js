@@ -170,7 +170,11 @@ Filesystem.fileReadByLine = function(path, functor)
 		// leni TODO - I wonder why sunny put this here...?
 		//
 		if (line.value)
+		{
+			gLogger.error("Filesystem.fileReadByLine: shouldn't be here");
+			cnsAssert(false);
 			functor.run(line.value);
+		}
 
 		istream.close();
 	} 

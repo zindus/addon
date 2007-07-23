@@ -3,84 +3,82 @@ include("chrome://zindus/content/logger.js");
 include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmprogressobserver.js");
 
-ZinTimer.ONE_SHOT  = 0;
-ZinTimer.REPEATING = 1;
-
-function ZinTimer(type, delay)
+function ZinTimer(functor)
 {
-	this.ONE_SHOT  = ZinTimer.ONE_SHOT;
-	this.REPEATING = ZinTimer.REPEATING;
+	cnsAssert(arguments.length == 1);
 
-	this.m_type   = type;
-	this.m_timer  = Components.classes["@mozilla.org/timer;1"].createInstance(Components.interfaces.nsITimer);
-	this.m_delay  = delay; // seconds
-	this.m_logger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	this.m_timer   = Components.classes["@mozilla.org/timer;1"].createInstance(Components.interfaces.nsITimer);
+	this.m_functor = functor;
+	this.m_logger  = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 }
 
-// initialised at the start of each timer
-//
-ZinTimer.prototype.initOnStart = function()
+ZinTimer.prototype.start = function(delay)
 {
-	this.m_has_functor_been_called_after_timer_fired = false;
-	this.m_messengerWindow   = null;
-	this.m_addressbookWindow = null;
-	this.m_sfpo = new SyncFsmProgressObserver();
-}
-
-ZinTimer.prototype.observe = function(nsSubject, topic, data)
-{
-	this.m_logger.debug("ZinTimer.observe(): topic: " + topic + " data: " + data);
-
-	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_TIMER, ZinMaestro.FSM_GROUP_SYNC);
-}
-
-ZinTimer.prototype.QueryInterface = function(iid)
-{
-	if (iid.equals(Components.interfaces.nsIObserver) ||
-	    iid.equals(Components.interfaces.nsISupportsWeakReference) ||
-	    iid.equals(Components.interfaces.nsISupports))
-			return this;
-
-	throw Components.results.NS_NOINTERFACE;
-}
-
-ZinTimer.prototype.start = function()
-{
-	var delay = (arguments.length == 1) ? arguments[0] : this.m_delay;
+	cnsAssert(arguments.length == 1);
 
 	this.m_logger.debug("ZinTimer.start: delay: " + delay);
 
 	cnsAssert(typeof delay == 'number');
 
-	this.initOnStart();
-
-	this.m_timer.init(this, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
+	this.m_timer.initWithCallback(this, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
 }
 
-ZinTimer.prototype.onFsmStateChangeFunctor = function(fsmstate)
+// This method allows us to pass "this" into initWithCallback - it is called when the timer expires.
+// This method gives the class an interface of nsITimerCallback, see:
+// http://www.xulplanet.com/references/xpcomref/ifaces/nsITimerCallback.html
+//
+ZinTimer.prototype.notify = function(timer)
 {
-	this.m_logger.debug("ZinTimer.onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
-	var delay;
+	this.m_logger.debug("ZinTimerFunctor.notify: about to run callback: ");
 
-	if (!this.m_has_functor_been_called_after_timer_fired)
+	cnsAssert(typeof this.m_functor.run == 'function');
+
+    this.m_functor.run();
+}
+
+function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
+{
+	cnsAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
+
+	this.m_logger            = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	this.m_sfpo              = new SyncFsmProgressObserver();
+	this.m_messengerWindow   = null;
+	this.m_addressbookWindow = null;
+	this.m_is_fsm_functor_first_entry = true;
+	this.m_id_fsm_functor    = id_fsm_functor;
+	this.m_delay_on_repeat   = delay_on_repeat; // null implies ONE_SHOT, non-null implies REPEAT frequency in seconds
+}
+
+ZinTimerFunctorSync.prototype.run = function()
+{
+	this.m_logger.debug("ZinTimerFunctorSync.run: m_id_fsm_functor: " + this.m_id_fsm_functor);
+
+	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, this.m_id_fsm_functor, ZinMaestro.FSM_GROUP_SYNC);
+}
+
+ZinTimerFunctorSync.prototype.copy = function()
+{
+	return new ZinTimerFunctorSync(this.m_id_fsm_functor, this.m_delay_on_repeat);
+}
+	
+ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
+{
+	this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor 741: entering: m_id_fsm_functor: " + this.m_id_fsm_functor + " fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+
+	if (this.m_is_fsm_functor_first_entry)
 	{
 		if (fsmstate)
 		{
-			delay = 10;
+			this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: fsm is running: " +
+			                      (this.m_delay_on_repeat ? "about to retry" : "single-shot - no retry"));
 
-			this.m_logger.debug("ZinTimer.onFsmStateChangeFunctor: fsm is running");
-
-			if (this.m_type == this.REPEATING)
-			{
-				this.m_logger.debug("ZinTimer.onFsmStateChangeFunctor: retry: " + delay);
-
-				this.start(delay);
-			}
+			if (this.m_delay_on_repeat)
+				this.setNextTimer(10);  // retry in 10 seconds
 		}
 		else
 		{
-			this.m_has_functor_been_called_after_timer_fired = true;
-			this.m_logger.debug("ZinTimer.onFsmStateChangeFunctor: fsm is not running - starting... ");
+			this.m_is_fsm_functor_first_entry = false;
+			this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
 			// set m_messengerWindow and m_addressbookWindow...
 			// TODO: m_addressbookWindow
@@ -103,7 +101,7 @@ ZinTimer.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 	else
 	{
-		gLogger.debug("ZinTimer.onFsmStateChangeFunctor: 744: ");
+		gLogger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: 744: ");
 
 		var is_window_update_required = this.m_sfpo.update(fsmstate);
 
@@ -125,8 +123,7 @@ ZinTimer.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		if (fsmstate.oldstate == "final")
 		{
 			// TODO - display the exit status 
-			// set a timer that eventually hides the status panel
-			// set the next timer
+			// one option: put something in the status panel and set a timer that eventually hides the status panel
 
 			// if messengerWindow disappeared while we were syncing, string bundles wont be available, so we try/catch...
 			//
@@ -150,12 +147,24 @@ ZinTimer.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				this.m_messengerWindow.document.getElementById('zindus-statuspanel').setAttribute('hidden', true);
 			}
 
-			ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_TIMER);
+			if (this.m_delay_on_repeat)
+				this.setNextTimer(this.m_delay_on_repeat);
 		}
 	}
 }
 
-ZinTimer.prototype.getWindowsContainingElementIds = function(a_id_orig)
+ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
+{
+	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
+
+	this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: rescheduling timer (seconds): " + delay);
+
+	var functor = this.copy();
+	var timer = new ZinTimer(functor);
+	timer.start(delay);
+}
+
+ZinTimerFunctorSync.prototype.getWindowsContainingElementIds = function(a_id_orig)
 {
 	var a_id = cnsCloneObject(a_id_orig);
 

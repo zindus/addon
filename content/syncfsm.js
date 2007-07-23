@@ -228,7 +228,7 @@ ZimbraFsm.prototype.exitActionGetAccountInfo = function(state, event)
 		soapURL = functor.a[0];
 	else if (functor.a.length > 1)
 	{
-		var scheme = this.state.m_preferences.getCharPref(this.state.m_preferences.branch(), "preferSchemeForSoapUrl");
+		var scheme = this.state.m_preferences.getCharPref(this.state.m_preferences.branch(), "system.preferSchemeForSoapUrl");
 		var scheme_length = scheme.length;
 
 		for (var i = 0; i < functor.a.length && (soapURL == null); i++)
@@ -544,7 +544,7 @@ ZimbraFsm.prototype.exitActionGetContact = function(state, event)
 
 ZimbraFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 {
-	var SyncGalMdInterval = parseInt(this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "SyncGalMdInterval"));
+	var SyncGalMdInterval = parseInt(this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalMdInterval"));
 	var SyncMd = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncMd');
 
 	gLogger.debug("11443322: SyncGalMdInterval == " + SyncGalMdInterval);

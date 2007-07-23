@@ -11,13 +11,17 @@ include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/timer.js");
 
+var gLogger      = null;
+
 function Prefs()
 {
 	this.m_prefset_server  = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
 	this.m_prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
 	this.checkbox_properties = PrefSet.GENERAL_PROPERTIES;
-	this.checkbox_ids        = [ "zindus-prefs-general-map-PAB", "zindus-prefs-general-manual-sync-only" ];
+	this.checkbox_ids        = [ "zindus-prefs-general-map-PAB",
+	                             "zindus-prefs-general-manual-sync-only",
+								 "zindus-prefs-general-verbose-logging"  ];
 	this.checkbox_bimap      = new BiMap(this.checkbox_properties, this.checkbox_ids);
 
 	this.is_fsm_running = false;
@@ -26,7 +30,7 @@ function Prefs()
 Prefs.prototype.onLoad = function(target)
 {
 	this.m_prefset_server.load(SOURCEID_ZM);
-	this.m_prefset_general.load(SOURCEID_TB); // only using SOURCEID_TB here because it's id is not going to clash with other sources
+	this.m_prefset_general.load();
 
 	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 
@@ -150,12 +154,13 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-run-timer":
-			var timer = new ZinTimer(ZinTimer.ONE_SHOT, 0);
-			timer.start();
+			var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG, null);
+			var timer = new ZinTimer(functor);
+			timer.start(0);
 			break;
 
 		case "zindus-prefs-general-button-reset":
-			// TODO - this needs a guard around it so that the fsm can't run during...
+			// TODO - this needs a guard around it so that the timer can't run during...
 			resetAll();
 			break;
 
