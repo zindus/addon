@@ -97,3 +97,9 @@ function loggingFileClose(os)
 	}
 }
 
+function newLogger()
+{
+	var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+
+	return logger;
+}

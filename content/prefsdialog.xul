@@ -73,14 +73,13 @@
 			<!-- General -->
 
 			<vbox flex="1" style="margin:20px" >
-				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
 				<groupbox pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupSettings.label;"/>
 					<vbox align="left" >
 					<checkbox id="zindus-prefs-general-map-PAB"          label="&ZinPrefsGeneralMapPAB.label;"         checked="true" />
 					</vbox>
 				</groupbox>
-				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				<spacer style="height:30px;" flex="5"/> 
 				<groupbox pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupAdvanced.label;"/>
 					<vbox align="left" >
@@ -92,9 +91,9 @@
 				<groupbox pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupActions.label;"/>
 					<hbox align="right" >
-						<button id="zindus-prefs-general-button-test-harness"
+						<button id="zindus-prefs-general-button-test-harness" hidden="true"
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTestHarness.label;" />
-						<button id="zindus-prefs-general-button-run-timer"
+						<button id="zindus-prefs-general-button-run-timer" hidden="true"
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTimer.label;" />
 						<button id="zindus-prefs-general-button-reset"
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonReset.label;"

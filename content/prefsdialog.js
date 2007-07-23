@@ -11,6 +11,7 @@ include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/timer.js");
 
+var is_developer_mode = false; // true ==> expose buttons in the UI
 var gLogger      = null;
 
 function Prefs()
@@ -29,6 +30,12 @@ function Prefs()
 
 Prefs.prototype.onLoad = function(target)
 {
+	if (is_developer_mode)
+	{
+		document.getElementById("zindus-prefs-general-button-test-harness").removeAttribute('hidden');
+		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('hidden');
+	}
+
 	this.m_prefset_server.load(SOURCEID_ZM);
 	this.m_prefset_general.load();
 
@@ -154,6 +161,11 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-run-timer":
+			// note that if you close the preferences window while this timer is running, the fsm is garbage collected
+			// but the maestro is never told (because the fsm never reached the 'final' state
+			// The timer functor isn't doesn't support 'cancel' the way SyncWindow does.
+			// It should only be visible in the UI with debugging turned on anyways...
+			//
 			var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG, null);
 			var timer = new ZinTimer(functor);
 			timer.start(0);

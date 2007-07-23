@@ -38,7 +38,7 @@ PrefSet.prototype.load = function(id, branch)
 	cnsAssert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
 
 	if (arguments.length == 0)
-		id = 0;
+		id = null;
 
 	if (arguments.length < 2)
 	{
@@ -168,11 +168,22 @@ PrefSet.prototype.getId = function()
 	return this.m_id;
 }
 
+// Makes keys of the following form:
+// with m_prefprefix == "fred"
+//    id      property      key
+//    --      --------      ---
+//    null    not supplied  fred
+//    1       not supplied  fred.1
+//    1       joe           fred.1.joe
+//
 PrefSet.prototype.makePrefKey = function(id, property)
 {
 	var ret = "";
 
-	ret += this.m_prefprefix + "." + id;
+	ret += this.m_prefprefix;
+	
+	if (id != null)
+		ret += "." + id;
 
 	if (arguments.length == 2)
 	{

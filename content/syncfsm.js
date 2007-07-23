@@ -100,7 +100,6 @@ ZimbraFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 	// - this.faultElementXml != null
 	// That's what SoapFsmState.prototype.sanityCheck tests for...
 	//
-	// for (var i in soapfsmstate) { gLogger.debug("115550: soapfsmstate[" + i + "]  == " + soapfsmstate[i]); }
 
 	soapfsmstate.sanityCheck();
 

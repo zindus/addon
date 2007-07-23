@@ -13,7 +13,7 @@ function ZinMaestro()
 {
 	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
 	this.m_a_fsmstate = new Object();
-	this.m_logger     = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	this.m_logger     = newLogger();
 
 	this.TOPIC                 = ZinMaestro.TOPIC;
 	this.DO_FUNCTOR_REGISTER   = ZinMaestro.DO_FUNCTOR_REGISTER;

@@ -1,4 +1,5 @@
 <!-- See http://books.mozdev.org/html/mozilla-chp-11-sect-4.html for the naming scheme -->
+
 <!ENTITY ZinToolsMenuItem.label                  "zindus">
 <!ENTITY ZinToolsMenuItem.accesskey              "z">
 <!ENTITY ZinToolBarButton.tooltip                "preferences for the zindus extension">
@@ -11,7 +12,8 @@
 <!ENTITY ZinPrefsServerGrid.style               "margin-left:10px; margin-right:20px; ">
 <!ENTITY ZinPrefsServerDescription.style        "margin-top:10px; margin-bottom:10px; padding:5px ">
 <!ENTITY ZinPrefsServerLabel.style              "margin-left:20px">
-<!ENTITY ZinPrefsServerUrlDescription.value     "Type the url you use to log on to your zimbra server.<html:br/>example: http://example.com<html:br/>example: https://example.com:443">
+<!ENTITY ZinPrefsServerUrlDescription.value     "Type the url you use to log on to your zimbra server.
+                                                 <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
 <!ENTITY ZinPrefsServerUrl.label                "Server Url:">
 <!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on to the zimbra server.">
 <!ENTITY ZinPrefsServerUsername.label           "Email Address">
@@ -20,9 +22,11 @@
 <!ENTITY ZinPrefsServerTestConnection.accesskey "T">
 
 <!ENTITY ZinPrefsGeneralGroupSettings.label     "General Settings">
-<!ENTITY ZinPrefsGeneralGroupActions.label      "Actions">
+<!ENTITY ZinPrefsGeneralGroupAdvanced.label     "Advanced Settings">
+<!ENTITY ZinPrefsGeneralGroupActions.label      "Advanced Actions">
 <!ENTITY ZinPrefsGeneralMapPAB.label            "Synchronize local Personal Address Book with remote Contacts folder">
 <!ENTITY ZinPrefsGeneralManualSyncOnly.label    "Manual sync only - background sync is disabled on next restart">
+<!ENTITY ZinPrefsGeneralVerboseLogging.label    "Verbose logging">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.label     "Sync Now">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey "S">
 <!ENTITY ZinPrefsGeneralButtonReset.label       "Reset">
@@ -30,22 +34,4 @@
 <!ENTITY ZinPrefsGeneralButtonTimer.label       "Run Timer">
 <!ENTITY ZinPrefsGeneralButtonTestHarness.label "Test Harness">
 
-<!ENTITY ZinSyncWindowProgressDescription.style "width:30em; align:left; ">
-
-<!-- not used -->
-<!ENTITY ZinPrefsServerNameDescription.value    "Type the name of your Zimbra server.">
-<!ENTITY ZinPrefsServerName.label               "Server Name">
-<!ENTITY ZinPrefsServerName.tooltiptext         "eg: webmail.example.com">
-<!ENTITY ZinPrefsServerPort.label               "Port">
-<!ENTITY ZinPrefsServerPort.tooltiptext         "default port: 443">
-<!ENTITY ZinPrefsServerPort.style               "width:4em">
-<!ENTITY ZinPrefsServerPortDescription.value    "Type the port number on which the Zimbra server listens.">
-<!ENTITY ZinPrefsServerUrlScheme.value          "Url Scheme">
-
-<!ENTITY ZinMenuPopup.label                  "zindus">
-<!ENTITY ZinMenuPopup.tooltip                "preferences for the zindus extension">
-<!ENTITY ZinMenuPopup.accesskey              "z">
-<!ENTITY ZinMenuItemSyncAll.label            "Sync all accounts">
-<!ENTITY ZinMenuItemSyncAll.accesskey        "S">
-<!ENTITY ZinMenuItemPreferences.label        "Preferences">
-<!ENTITY ZinMenuItemPreferences.accesskey    "P">
+<!ENTITY ZinSyncWindowProgressDescription.style "width:30em; ">
