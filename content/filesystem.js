@@ -190,14 +190,7 @@ Filesystem.fileReadByLine = function(path, functor)
 			line.value = null;
 		} 
 
-		// leni TODO - I wonder why sunny put this here...?
-		//
-		if (line.value)
-		{
-			gLogger.error("Filesystem.fileReadByLine: shouldn't be here");
-			zinAssert(false);
-			functor.run(line.value);
-		}
+		zinAssert(!line.value); // just being conservative...
 
 		istream.close();
 	} 

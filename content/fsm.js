@@ -29,7 +29,7 @@ include("chrome://zindus/content/maestro.js");
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.10 2007-07-24 01:21:22 cvsuser Exp $
+// $Id: fsm.js,v 1.11 2007-07-24 01:32:33 cvsuser Exp $
 
 // create a gLogger if there isn't one (which there isn't when fsm is run by the scheduled background timer)
 //
@@ -132,7 +132,7 @@ function fsmDoTransition(fsmstate)
 				}
 			}
 
-		// we add the continuation as a property of the fsm object to support ZimbraFsm.prototype.cancel()
+		// we add the continuation as a property of the fsm object to support context.cancel()
 		context.fsm.continuation = continuation;
 		// gLogger.debug("fsm: 724. fsmDoTransition: context.fsm.continuation has been set - about to call the entry action");
 

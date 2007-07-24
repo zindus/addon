@@ -26,7 +26,7 @@
 //
 function SyncFsmProgressObserver()
 {
-	this.state = null; // ZimbraFsm.state, used on a read-only basis, set before any update
+	this.state = null; // SyncFsm.state, used on a read-only basis, set before any update
 
 	this.m_exit_status = null;
 
@@ -106,7 +106,7 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 
 	if (isPropertyPresent(a_states_of_interest, fsmstate.newstate))
 	{
-		var context = fsmstate.context; // ZimbraFsm
+		var context = fsmstate.context; // SyncFsm
 		this.state = context.state;
 		ret = true;
 

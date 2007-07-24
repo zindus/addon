@@ -39,26 +39,26 @@ include("chrome://zindus/content/passwordmanager.js");
 // TODO - GetInfo for zimbraFeatureGalEnabled 
 // TODO - look for gLogger.error messages and perhaps implement an "orderly exit" flag that's tested before each continuation
 
-ZimbraFsm.FILE_LASTSYNC = "lastsync";
-ZimbraFsm.FILE_GID      = "gid";
+SyncFsm.FILE_LASTSYNC = "lastsync";
+SyncFsm.FILE_GID      = "gid";
 
-function ZimbraFsm(state)
+function SyncFsm(state)
 {
 	this.state   = state;
 	this.soapfsm = new SoapFsm();
 	this.fsm     = new Object();
 }
 
-ZimbraFsm.prototype.start = function()
+SyncFsm.prototype.start = function()
 {
 	fsmFireTransition(this.state.id_fsm, null, 'start', 'evStart', this);
 }
 
-ZimbraFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeoutID)
+SyncFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeoutID)
 {
 	window.clearTimeout(syncfsm_timeoutID);
 
-	gLogger.debug("ZimbraFsm.cancel: cleared timeoutID: " + syncfsm_timeoutID);
+	gLogger.debug("SyncFsm.cancel: cleared timeoutID: " + syncfsm_timeoutID);
 
 	this.soapfsm.cancel(soapfsm_timeoutID);
 
@@ -67,7 +67,7 @@ ZimbraFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeo
 		// the fsm hasn't had a transition yet so there's no continuation
 		// so the new transition just enters the start state on a cancel event
 		//
-		gLogger.debug("ZimbraFsm.cancel: fsm was about to enter start state - now it does that on evCancel");
+		gLogger.debug("SyncFsm.cancel: fsm was about to enter start state - now it does that on evCancel");
 		fsmFireTransition(this.state.id_fsm, null, 'start', 'evCancel', this);
 	}
 	else
@@ -75,7 +75,7 @@ ZimbraFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeo
 		if (typeof this.fsm.continuation != 'function')
 			gLogger.error("about to throw an exception because this.fsm.continuation is not a function")
 
-		gLogger.debug("ZimbraFsm.cancel: continuing on evCancel");
+		gLogger.debug("SyncFsm.cancel: continuing on evCancel");
 
 		this.fsm.continuation('evCancel');
 	}
@@ -84,13 +84,13 @@ ZimbraFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeo
 // note: this function takes a variable number of arguments following the "method" parameter
 // Function.length below returns the number of formal arguments
 //
-ZimbraFsm.prototype.callSoapFsm = function(continuation, f, eventOnResponse, method)
+SyncFsm.prototype.callSoapFsm = function(continuation, f, eventOnResponse, method)
 {
 	var zsd = new ZimbraSoapDocument();
 	zsd.context(this.state.authToken, this.state.sessionId);
 
 	var args = new Array();
-	for (var i = ZimbraFsm.prototype.callSoapFsm.length; i < arguments.length; i++)
+	for (var i = SyncFsm.prototype.callSoapFsm.length; i < arguments.length; i++)
 		args.push(arguments[i]);
 
 	zsd[method].apply(zsd, args);
@@ -112,7 +112,7 @@ ZimbraFsm.prototype.callSoapFsm = function(continuation, f, eventOnResponse, met
 // This routine tests for:
 // - unexpected response ==> evCancel (eg <parsererror xmlns="http://www.mozilla.org/newlayout/xml/parsererror.xml">...</parsererror>
 
-ZimbraFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
+SyncFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 {
 	var soapfsmstate = this.soapfsm.state;
 	var event = null;
@@ -158,7 +158,7 @@ ZimbraFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 	return event;
 }
 
-ZimbraFsm.prototype.eventFromSoapCheckLicense = function(eventOnResponse, method)
+SyncFsm.prototype.eventFromSoapCheckLicense = function(eventOnResponse, method)
 {
 	// the fault varies depending on open-source vs non-open-source server:
 	// this.soapfsm.state.faultCode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
@@ -171,7 +171,7 @@ ZimbraFsm.prototype.eventFromSoapCheckLicense = function(eventOnResponse, method
 	return event;
 }
 
-ZimbraFsm.prototype.entryActionStart = function(state, event, continuation)
+SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 {
 	var nextEvent = null;
 
@@ -183,7 +183,7 @@ ZimbraFsm.prototype.entryActionStart = function(state, event, continuation)
 	{
 		this.state.soapURL = this.state.sources[this.state.sourceid_zm]['soapURL'];
 
-		this.state.zfcLastSync.load(ZinFeedCollection.fileName(ZimbraFsm.FILE_LASTSYNC));
+		this.state.zfcLastSync.load(ZinFeedCollection.fileName(SyncFsm.FILE_LASTSYNC));
 
 		for (var i in this.state.sources)
 			if (this.state.sources[i]['format'] == FORMAT_ZM && !this.state.zfcLastSync.isPresent(i))
@@ -197,14 +197,14 @@ ZimbraFsm.prototype.entryActionStart = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
-ZimbraFsm.prototype.entryActionAuth = function(state, event, continuation)
+SyncFsm.prototype.entryActionAuth = function(state, event, continuation)
 {
-	this.callSoapFsm(continuation, ZimbraFsm.prototype.eventFromSoapDefault, "evNext", "Auth",
+	this.callSoapFsm(continuation, SyncFsm.prototype.eventFromSoapDefault, "evNext", "Auth",
 					 this.state.sources[this.state.sourceid_zm]['username'],
 					 this.state.sources[this.state.sourceid_zm]['password']);
 }
 
-ZimbraFsm.prototype.exitActionAuth = function(state, event)
+SyncFsm.prototype.exitActionAuth = function(state, event)
 {
 	if (this.soapfsm.state.response)
 	{
@@ -214,9 +214,9 @@ ZimbraFsm.prototype.exitActionAuth = function(state, event)
 	}
 }
 
-ZimbraFsm.prototype.entryActionLoad = function(state, event, continuation)
+SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 {
-	this.state.zfcGid.load(ZinFeedCollection.fileName(ZimbraFsm.FILE_GID));
+	this.state.zfcGid.load(ZinFeedCollection.fileName(SyncFsm.FILE_GID));
 
 	var sources = this.state.sources;
 
@@ -226,12 +226,12 @@ ZimbraFsm.prototype.entryActionLoad = function(state, event, continuation)
 	continuation('evNext');
 }
 
-ZimbraFsm.prototype.entryActionGetAccountInfo = function(state, event, continuation)
+SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuation)
 {
 	this.callSoapFsm(continuation, this.eventFromSoapDefault, "evNext", "GetAccountInfo", this.state.sources[this.state.sourceid_zm]['username']);
 }
 
-ZimbraFsm.prototype.exitActionGetAccountInfo = function(state, event)
+SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 {
 	if (!this.soapfsm.state.response)
 		return;
@@ -268,12 +268,12 @@ ZimbraFsm.prototype.exitActionGetAccountInfo = function(state, event)
 	// gLogger.debug("887788: this.state.soapURL == " + this.state.soapURL);
 }
 
-ZimbraFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
+SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
 {
 	this.callSoapFsm(continuation, this.eventFromSoapCheckLicense, "evNext", "CheckLicense");
 }
 
-ZimbraFsm.prototype.exitActionCheckLicense = function(state, event)
+SyncFsm.prototype.exitActionCheckLicense = function(state, event)
 {
 	if (this.soapfsm.state.faultElementXml && this.soapfsm.state.faultCode == "service.UNKNOWN_DOCUMENT")
 		this.state.mapiStatus = "CheckLicense not supported by server - service is probably open source edition";
@@ -286,13 +286,13 @@ ZimbraFsm.prototype.exitActionCheckLicense = function(state, event)
 	}
 }
 
-ZimbraFsm.prototype.entryActionSync = function(state, event, continuation)
+SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 {
 	this.callSoapFsm(continuation, this.eventFromSoapDefault, "evNext", "Sync",
 	                              this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncToken'));
 }
 
-ZimbraFsm.prototype.exitActionSync = function(state, event)
+SyncFsm.prototype.exitActionSync = function(state, event)
 {
 	if (!this.soapfsm.state.response)
 		return;
@@ -336,13 +336,13 @@ ZimbraFsm.prototype.exitActionSync = function(state, event)
 			{
 				if (zfcServer.isPresent(id))
 				{
-					var isInterestingPreUpdate = ZimbraFsm.isOfInterest(zfcServer, id);
+					var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcServer, id);
 
 					zfcServer.get(id).set(attribute);  // update existing item
 
 					msg += " - updated id in map";
 
-					var isInterestingPostUpdate = ZimbraFsm.isOfInterest(zfcServer, id);
+					var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcServer, id);
 
 					if (!isInterestingPreUpdate && isInterestingPostUpdate)
 					{
@@ -402,7 +402,7 @@ ZimbraFsm.prototype.exitActionSync = function(state, event)
 
 				zinAssert(zfcServer.isPresent(id));
 
-				var isInterestingPreUpdate = ZimbraFsm.isOfInterest(zfcServer, id);
+				var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcServer, id);
 
 				var isRevChange = !isPropertyPresent(attribute, ZinFeedItem.ATTR_REV) ||
 				                  !zfcServer.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
@@ -412,7 +412,7 @@ ZimbraFsm.prototype.exitActionSync = function(state, event)
 
 				msg += " - updated id in map";
 
-				var isInterestingPostUpdate = ZimbraFsm.isOfInterest(zfcServer, id);
+				var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcServer, id);
 
 				if (!isRevChange && isInterestingPostUpdate && !isInterestingPreUpdate)
 				{
@@ -491,7 +491,7 @@ ZimbraFsm.prototype.exitActionSync = function(state, event)
 	gLogger.debug("11113 - aQueue: " + aToString(this.state.aQueue));
 }
 
-ZimbraFsm.prototype.entryActionGetContact = function(state, event, continuation)
+SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
 {
 	// gLogger.debug("11116: entryActionGetContact, aQueue == " + aToString(this.state.aQueue) );
 
@@ -517,7 +517,7 @@ ZimbraFsm.prototype.entryActionGetContact = function(state, event, continuation)
 	}
 }
 
-ZimbraFsm.prototype.exitActionGetContact = function(state, event)
+SyncFsm.prototype.exitActionGetContact = function(state, event)
 {
 	if (!this.soapfsm.state.response)
 		return;
@@ -564,7 +564,7 @@ ZimbraFsm.prototype.exitActionGetContact = function(state, event)
 	}
 }
 
-ZimbraFsm.prototype.entryActionSyncGal = function(state, event, continuation)
+SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 {
 	var SyncGalMdInterval = parseInt(this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalMdInterval"));
 	var SyncMd = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncMd');
@@ -593,7 +593,7 @@ ZimbraFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 	this.callSoapFsm(continuation, this.eventFromSoapDefault, "evNext", "SyncGal", this.state.SyncGalToken);
 }
 
-ZimbraFsm.prototype.exitActionSyncGal = function(state, event)
+SyncFsm.prototype.exitActionSyncGal = function(state, event)
 {
 	var SyncGalToken = null;
 
@@ -644,7 +644,7 @@ ZimbraFsm.prototype.exitActionSyncGal = function(state, event)
 
 // the reference to this.state.SyncMd here is why SyncGalCommit must come *after* SyncResponse
 //
-ZimbraFsm.prototype.entryActionSyncGal = function(state, event, continuation)
+SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 {
 	// It would be nice if the gal token and SyncMd could be stored as user-defined properties of an addressbook
 	// rather than as preferences.  Then we wouldn't need to worry about the prefs somehow getting out of sync with the addressbooks.
@@ -756,7 +756,7 @@ ZimbraFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 // TODO - change this so that if any of the maps have been zapped that they are all zapped... call resetAll()
 //
 
-ZimbraFsm.prototype.initialiseMapsIfRequired = function()
+SyncFsm.prototype.initialiseMapsIfRequired = function()
 {
 	var zfcLocal = this.state.sources[this.state.sourceid_tb]['zfcLuid']; // bring these variables into the local namespace
 	var zfcGid   = this.state.zfcGid;
@@ -798,7 +798,7 @@ ZimbraFsm.prototype.initialiseMapsIfRequired = function()
 	}
 }
 
-ZimbraFsm.prototype.updateTbLuidMap = function()
+SyncFsm.prototype.updateTbLuidMap = function()
 {
 	var functor_foreach_card, functor_foreach_addressbook;
 	var uri;
@@ -814,7 +814,7 @@ ZimbraFsm.prototype.updateTbLuidMap = function()
 	functor_foreach_addressbook =
 	{
 		state:  this.state,
-		prefix: ZimbraFsm.getAddressBookName(""),
+		prefix: SyncFsm.getAddressBookName(""),
 
 		run: function(elem)
 		{
@@ -1037,7 +1037,7 @@ ZimbraFsm.prototype.updateTbLuidMap = function()
 // For example: reverse.1.4 == 7 means that sourceid == 1, luid == 4, gid == 7
 // forward lookups are done via zfcGid: zfcGid.get(7).get(1) == 4
 //
-ZimbraFsm.prototype.buildReverseGid = function()
+SyncFsm.prototype.buildReverseGid = function()
 {
 	var reverse = this.state.aReverseGid; // bring it into the local namespace
 
@@ -1073,7 +1073,7 @@ ZimbraFsm.prototype.buildReverseGid = function()
 	gLogger.debug("1177 - buildReverseGid initialises reverse: " + aToString(reverse));
 }
 
-ZimbraFsm.isOfInterest = function(zfc, id)
+SyncFsm.isOfInterest = function(zfc, id)
 {
 	// gLogger.debug("blahblah: arguments.length: " + arguments.length);
 	// gLogger.debug("blahblah: zfc: " + zfc);
@@ -1096,7 +1096,7 @@ ZimbraFsm.isOfInterest = function(zfc, id)
 			if (l == 1)
 				ret = false; // not sure how a contact could end up at the very top level but maybe it's possible!
 			else
-				ret = ZimbraFsm.isOfInterest(zfc, l);
+				ret = SyncFsm.isOfInterest(zfc, l);
 			break;
 		default:
 			zinAssert(false);
@@ -1105,7 +1105,7 @@ ZimbraFsm.isOfInterest = function(zfc, id)
 	return ret;
 }
 
-ZimbraFsm.prototype.updateGidFromSources = function()
+SyncFsm.prototype.updateGidFromSources = function()
 {
 	var zfcGid  = this.state.zfcGid;
 	var reverse = this.state.aReverseGid; // bring it into the local namespace
@@ -1123,7 +1123,7 @@ ZimbraFsm.prototype.updateGidFromSources = function()
 				zfcGid.get(reverse[sourceid][luid]).set('present', 1);
 				msg += " - already in gid";
 			}
-			else if (!ZimbraFsm.isOfInterest(zfc, zfi.id()))
+			else if (!SyncFsm.isOfInterest(zfc, zfi.id()))
 				msg += " - luid is not of interest - ignoring";
 			else
 			{
@@ -1145,7 +1145,7 @@ ZimbraFsm.prototype.updateGidFromSources = function()
 	for (sourceid in this.state.sources)
 	{
 		zfc = this.state.sources[sourceid]['zfcLuid'];
-		zfc.forEach(functor_foreach_luid, ZimbraFsm.forEachFlavour(this.state.sources[sourceid]['format']));
+		zfc.forEach(functor_foreach_luid, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 	}
 
 	// sanity check - ensure that all gid's have been visited
@@ -1171,7 +1171,7 @@ ZimbraFsm.prototype.updateGidFromSources = function()
 	gLogger.debug("1177 - after updateGidFromSources(), reverse: " + aToString(this.state.aReverseGid));
 }
 
-ZimbraFsm.prototype.buildGcs = function()
+SyncFsm.prototype.buildGcs = function()
 {
 	var aGcs          = new Object();  // an associative array where the key is a gid and the value is a Gcs object
 	var aZfcCandidate = new Object();  // a copy of the luid maps updated as per this sync
@@ -1200,7 +1200,7 @@ ZimbraFsm.prototype.buildGcs = function()
 			gLogger.debug("885438 - about to determine winner for:");
 			gLogger.debug("885438 - sourceid: " + sourceid + " zfi: " + zfi.toString());
 
-			if (ZimbraFsm.isOfInterest(sources[sourceid]['zfcLuid'], zfi.id()))
+			if (SyncFsm.isOfInterest(sources[sourceid]['zfcLuid'], zfi.id()))
 			{
 				var luid = zfi.id();
 				var gid  = reverse[sourceid][luid];
@@ -1315,7 +1315,7 @@ ZimbraFsm.prototype.buildGcs = function()
 	var sources = this.state.sources; // bring the name into scope
 
 	for (sourceid in this.state.sources)
-		aZfcCandidate[sourceid].forEach(functor_foreach_candidate, ZimbraFsm.forEachFlavour(this.state.sources[sourceid]['format']));
+		aZfcCandidate[sourceid].forEach(functor_foreach_candidate, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 	
 	for (var gid in aGcs)
 		gLogger.debug("aGcs[" + gid + "]: " + aGcs[gid].toString());
@@ -1328,7 +1328,7 @@ ZimbraFsm.prototype.buildGcs = function()
 // - if a winning item was already in the gid and changed, generate an MDU operation (which will bump it's version)
 // - if a winning item was already in the gid but didn't change, do nothing
 //
-ZimbraFsm.prototype.suoBuildWinners = function(aGcs)
+SyncFsm.prototype.suoBuildWinners = function(aGcs)
 {
 	var zfcGid     = this.state.zfcGid;
 	var aSuoResult = new Array();
@@ -1400,7 +1400,7 @@ ZimbraFsm.prototype.suoBuildWinners = function(aGcs)
 // - for Suo.ADD, id is just an autoincremented number.
 //
 
-ZimbraFsm.prototype.suoBuildLosers = function(aGcs)
+SyncFsm.prototype.suoBuildLosers = function(aGcs)
 {
 	var zfcGid     = this.state.zfcGid;
 	var aSuoResult = new Object();
@@ -1437,7 +1437,7 @@ ZimbraFsm.prototype.suoBuildLosers = function(aGcs)
 					// when zimbra's trash gets emptied, we see the deletes, by which time the item is long gone from the original source
 					// so here, we only add items to the gid if the winner is of interest (and not deleted)
 					//
-					if (!zfiWinner.isPresent(ZinFeedItem.ATTR_DEL) && ZimbraFsm.isOfInterest(zfcWinner, zfiWinner.id()))
+					if (!zfiWinner.isPresent(ZinFeedItem.ATTR_DEL) && SyncFsm.isOfInterest(zfcWinner, zfiWinner.id()))
 					{
 						msg += " - source not present in gid";
 						suo = new Suo(gid, aGcs[gid].sourceid_winner, sourceid, Suo.ADD);
@@ -1447,7 +1447,7 @@ ZimbraFsm.prototype.suoBuildLosers = function(aGcs)
 					msg += " lso and version match gid - do nothing"; // do nothing
 				else if (zfiWinner.isPresent(ZinFeedItem.ATTR_DEL))
 					suo = new Suo(gid, winner, sourceid, Suo.DEL);
-				else if (!ZimbraFsm.isOfInterest(zfcWinner, zfiWinner.id()))
+				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.id()))
 					suo = new Suo(gid, winner, sourceid, Suo.DEL);
 				else
 					suo = new Suo(gid, winner, sourceid, Suo.MOD);
@@ -1479,11 +1479,11 @@ ZimbraFsm.prototype.suoBuildLosers = function(aGcs)
 	return aSuoResult;
 }
 
-ZimbraFsm.prototype.settleSomeConflicts = function()
+SyncFsm.prototype.settleSomeConflicts = function()
 {
 }
 
-ZimbraFsm.prototype.buildPreUpdateWinners = function(aGcs)
+SyncFsm.prototype.buildPreUpdateWinners = function(aGcs)
 {
 	for (var gid in aGcs)
 	{
@@ -1498,7 +1498,7 @@ ZimbraFsm.prototype.buildPreUpdateWinners = function(aGcs)
 	}
 }
 
-ZimbraFsm.prototype.suoRunWinners = function(aSuoWinners)
+SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 {
 	if (0) // just experimenting...
 	{
@@ -1525,14 +1525,14 @@ ZimbraFsm.prototype.suoRunWinners = function(aSuoWinners)
 	}
 }
 
-ZimbraFsm.prototype.entryActionLoadTb = function(state, event, continuation)
+SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 {
 	this.initialiseMapsIfRequired();             // 1.  in case someone deleted the map files...
 	this.updateTbLuidMap();                      // 2.  update the local thunderbird map...
 	continuation('evNext');
 }
 
-ZimbraFsm.prototype.entryActionSyncPrepare = function(state, event, continuation)
+SyncFsm.prototype.entryActionSyncPrepare = function(state, event, continuation)
 {
 	var aSuoWinners;
 
@@ -1549,7 +1549,7 @@ ZimbraFsm.prototype.entryActionSyncPrepare = function(state, event, continuation
 	continuation('evNext');
 }
 
-ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
+SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 {
 	var i, gid, id, type, sourceid_target, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
 	var zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg;
@@ -1620,7 +1620,7 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 			case Suo.ADD | ZinFeedItem.TYPE_FL:
 				var name   = zfiWinner.get('name');
-				var abName = ZimbraFsm.getAddressBookName(name);
+				var abName = SyncFsm.getAddressBookName(name);
 
 				if (!ZimbraAddressBook.getAddressBookUri(abName))
 				{
@@ -1813,7 +1813,7 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 		}
 
 		if (luid_target)
-			ZimbraFsm.setLsoToGid(zfiGid, zfcTarget.get(luid_target));
+			SyncFsm.setLsoToGid(zfiGid, zfcTarget.get(luid_target));
 
 		gLogger.debug("2277: " + msg);
 	}
@@ -1864,7 +1864,7 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 //    (even though we have no way of knowing one way or the other)
 //
 
-ZimbraFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
+SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 {
 	var SORT_ORDER = [ Suo.DEL | ZinFeedItem.TYPE_FL, Suo.DEL | ZinFeedItem.TYPE_CN, 
 	                   Suo.MOD | ZinFeedItem.TYPE_FL, Suo.MOD | ZinFeedItem.TYPE_CN,
@@ -2026,7 +2026,7 @@ ZimbraFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 	}
 }
 
-ZimbraFsm.prototype.exitActionUpdateZm = function(state, event)
+SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 {
 	if (!this.soapfsm.state.response)
 		return;
@@ -2086,14 +2086,14 @@ ZimbraFsm.prototype.exitActionUpdateZm = function(state, event)
 					zfi = zfcTarget.get(id);
 					zfi.set(attribute)
 					zfi.set(ZinFeedItem.ATTR_MS, change.token);
-					ZimbraFsm.setLsoToGid(zfiGid, zfi);
+					SyncFsm.setLsoToGid(zfiGid, zfi);
 					msg += " - updated luid and gid"; 
 				}
 				else
 				{
 					zfi = new ZinFeedItem(type, attribute);
 					zfi.set(ZinFeedItem.ATTR_MS, change.token);
-					ZimbraFsm.setLsoToGid(zfiGid, zfi);
+					SyncFsm.setLsoToGid(zfiGid, zfi);
 
 					zfcTarget.set(zfi);
 
@@ -2135,7 +2135,7 @@ ZimbraFsm.prototype.exitActionUpdateZm = function(state, event)
 					zfiTarget.set(updateZmPackage.soaparg);
 
 				zfiTarget.set(ZinFeedItem.ATTR_MS, change.token);
-				ZimbraFsm.setLsoToGid(this.state.zfcGid.get(suo.gid), zfiTarget);
+				SyncFsm.setLsoToGid(this.state.zfcGid.get(suo.gid), zfiTarget);
 
 				if (updateZmPackage.bucket == Suo.DEL | ZinFeedItem.TYPE_FL)
 				{
@@ -2213,7 +2213,7 @@ ZimbraFsm.prototype.exitActionUpdateZm = function(state, event)
 	}
 }
 
-ZimbraFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
+SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 {
 	var zfc = this.state.sources[sourceid]['zfcLuid'];
 	var zfi = zfc.get(luid);
@@ -2239,7 +2239,7 @@ ZimbraFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 	return ret;
 }
 
-ZimbraFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation)
+SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation)
 {
 	var gid;
 	var aGidsToDelete = new Array();
@@ -2273,7 +2273,7 @@ ZimbraFsm.prototype.entryActionUpdateCleanup = function(state, event, continuati
 					gLogger.debug("2332 - cleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid);
 				}
 			}
-			else if (this.state.sources[sourceid]['format'] == FORMAT_ZM && gid && !ZimbraFsm.isOfInterest(zfc, zfi.id()))
+			else if (this.state.sources[sourceid]['format'] == FORMAT_ZM && gid && !SyncFsm.isOfInterest(zfc, zfi.id()))
 			{
 				// for zimbra luids, delete the link to the gid if the luid is no longer of interest
 				//
@@ -2287,7 +2287,7 @@ ZimbraFsm.prototype.entryActionUpdateCleanup = function(state, event, continuati
 	};
 
 	for (sourceid in this.state.sources)
-		this.state.sources[sourceid]['zfcLuid'].forEach(functor_foreach_luid, ZimbraFsm.forEachFlavour(this.state.sources[sourceid]['format']));
+		this.state.sources[sourceid]['zfcLuid'].forEach(functor_foreach_luid, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 
 	var functor_count_luids_in_gid = {
 		count: 0,
@@ -2343,20 +2343,20 @@ ZimbraFsm.prototype.entryActionUpdateCleanup = function(state, event, continuati
 	};
 
 	for (sourceid in this.state.sources)
-		this.state.sources[sourceid]['zfcLuid'].forEach(functor_cleanup_attributes, ZimbraFsm.forEachFlavour(this.state.sources[sourceid]['format']));
+		this.state.sources[sourceid]['zfcLuid'].forEach(functor_cleanup_attributes, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 
 	}
 
 	continuation('evNext');
 }
 
-ZimbraFsm.prototype.entryActionCommit = function(state, event, continuation)
+SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 {
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('SyncToken', this.state.SyncToken);
 
-	this.state.zfcLastSync.save(ZinFeedCollection.fileName(ZimbraFsm.FILE_LASTSYNC));
+	this.state.zfcLastSync.save(ZinFeedCollection.fileName(SyncFsm.FILE_LASTSYNC));
 
-	this.state.zfcGid.save(ZinFeedCollection.fileName(ZimbraFsm.FILE_GID));
+	this.state.zfcGid.save(ZinFeedCollection.fileName(SyncFsm.FILE_GID));
 
 	for (var i in this.state.sources)
 		this.state.sources[i]['zfcLuid'].save(ZinFeedCollection.fileName(i, this.state.m_bimap_format.lookup(this.state.sources[i]['format'], null)));
@@ -2364,11 +2364,11 @@ ZimbraFsm.prototype.entryActionCommit = function(state, event, continuation)
 	continuation('evNext');
 }
 
-ZimbraFsm.prototype.entryActionFinal = function(state, event, continuation)
+SyncFsm.prototype.entryActionFinal = function(state, event, continuation)
 {
 }
 
-ZimbraFsm.prototype.suoOpcode = function(suo)
+SyncFsm.prototype.suoOpcode = function(suo)
 {
 	var type = this.feedItemTypeFromGid(suo.gid, suo.sourceid_winner);
 	return (type | suo.opcode);
@@ -2378,7 +2378,7 @@ ZimbraFsm.prototype.suoOpcode = function(suo)
 // else if the zfi ls doesn't match either the zfi or the gid attributes, bump the gid's ver and reset the zfi's ls
 // otherwise do nothing
 //
-ZimbraFsm.prototype.resetLsoVer = function(gid, zfi)
+SyncFsm.prototype.resetLsoVer = function(gid, zfi)
 {
 	var lsoFromZfiAttributes = new Lso(zfi);
 	var lsoFromLsAttribute   = zfi.isPresent(ZinFeedItem.ATTR_LS) ? new Lso(zfi.get(ZinFeedItem.ATTR_LS)) : null;
@@ -2408,7 +2408,7 @@ ZimbraFsm.prototype.resetLsoVer = function(gid, zfi)
 
 }
 
-ZimbraFsm.prototype.isFolderPresentInSource = function(sourceid, luid_parent, name)
+SyncFsm.prototype.isFolderPresentInSource = function(sourceid, luid_parent, name)
 {
 	var isPresent = false;
 
@@ -2422,18 +2422,18 @@ ZimbraFsm.prototype.isFolderPresentInSource = function(sourceid, luid_parent, na
 		}
 	};
 
-	this.state.sources[sourceid]['zfcLuid'].forEach(functor, ZimbraFsm.forEachFlavour(this.state.sources[sourceid]['format']));
+	this.state.sources[sourceid]['zfcLuid'].forEach(functor, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 
 	return isPresent;
 }
 
-ZimbraFsm.prototype.feedItemTypeFromGid = function(gid, sourceid)
+SyncFsm.prototype.feedItemTypeFromGid = function(gid, sourceid)
 {
 	var luid = this.state.zfcGid.get(gid).get(sourceid);
 	return this.state.sources[sourceid]['zfcLuid'].get(luid).type();
 }
 
-ZimbraFsm.getAddressBookName = function()
+SyncFsm.getAddressBookName = function()
 {
 	var ret = EXTENSION_NAME;
 
@@ -2446,7 +2446,7 @@ ZimbraFsm.getAddressBookName = function()
 // TODO - assert that users can't add a "zindus/Trash" or "zindus/GAL" folder
 //
 
-ZimbraFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
+SyncFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
 {
 	var zfc = this.state.sources[sourceid]['zfcLuid'];
 
@@ -2457,10 +2457,10 @@ ZimbraFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
 
 	var name = zfc.get(luid).get('name');
 
-	return ZimbraFsm.getAddressBookName(name);
+	return SyncFsm.getAddressBookName(name);
 }
 
-ZimbraFsm.prototype.isLsoVerMatch = function(gid, zfi)
+SyncFsm.prototype.isLsoVerMatch = function(gid, zfi)
 {
 	var ret = false;
 
@@ -2479,10 +2479,10 @@ ZimbraFsm.prototype.isLsoVerMatch = function(gid, zfi)
 	return ret;
 }
 
-ZimbraFsm.getTbAddressbooks = function()
+SyncFsm.getTbAddressbooks = function()
 {
 	var functor_foreach_addressbook = {
-		prefix: ZimbraFsm.getAddressBookName(),
+		prefix: SyncFsm.getAddressBookName(),
 		result: new Array(),
 
 		run: function(elem)
@@ -2501,7 +2501,7 @@ ZimbraFsm.getTbAddressbooks = function()
 	return functor_foreach_addressbook.result;
 }
 
-ZimbraFsm.setLsoToGid = function(zfiGid, zfiTarget)
+SyncFsm.setLsoToGid = function(zfiGid, zfiTarget)
 {
 	var lso = new Lso(zfiTarget);
 	var ver = zfiGid.get(ZinFeedItem.ATTR_VER);
@@ -2511,7 +2511,7 @@ ZimbraFsm.setLsoToGid = function(zfiGid, zfiTarget)
 	zfiTarget.set(ZinFeedItem.ATTR_LS, lso.toString());
 }
 
-ZimbraFsm.forEachFlavour = function(format)
+SyncFsm.forEachFlavour = function(format)
 {
 	return (format == FORMAT_ZM) ? ZinFeedCollection.ITER_ALL : ZinFeedCollection.ITER_UNRESERVED;
 }
@@ -2783,11 +2783,11 @@ SoapFsmState.prototype.toHtml = function()
 	return this.toString().replace(/\n/g, "<html:br>");
 }
 
-function AuthOnlyFsm(state) { this.ZimbraFsm(state); this.setFsm(); }
-function TwoWayFsm(state)   { this.ZimbraFsm(state); this.setFsm(); }
+function AuthOnlyFsm(state) { this.SyncFsm(state); this.setFsm(); }
+function TwoWayFsm(state)   { this.SyncFsm(state); this.setFsm(); }
 
-copyPrototype(AuthOnlyFsm, ZimbraFsm);
-copyPrototype(TwoWayFsm,   ZimbraFsm);
+copyPrototype(AuthOnlyFsm, SyncFsm);
+copyPrototype(TwoWayFsm,   SyncFsm);
 
 AuthOnlyFsm.prototype.setFsm = function()
 {
@@ -2857,7 +2857,7 @@ TwoWayFsm.prototype.setFsm = function()
 	};
 }
 
-function ZimbraFsmState(id_fsm)
+function SyncFsmState(id_fsm)
 {
 	this.id_fsm              = id_fsm;
 	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
@@ -2908,7 +2908,7 @@ function ZimbraFsmState(id_fsm)
 	this.sourceid_zm = SOURCEID_ZM;
 }
 
-ZimbraFsmState.prototype.setCredentials = function()
+SyncFsmState.prototype.setCredentials = function()
 {
 	if (arguments.length == 3)
 	{
@@ -2932,9 +2932,9 @@ ZimbraFsmState.prototype.setCredentials = function()
 	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
 }
 
-function AuthOnlyFsmState() { this.ZimbraFsmState(ZinMaestro.FSM_ID_AUTHONLY); }
-function TwoWayFsmState()   { this.ZimbraFsmState(ZinMaestro.FSM_ID_TWOWAY);   }
+function AuthOnlyFsmState() { this.SyncFsmState(ZinMaestro.FSM_ID_AUTHONLY); }
+function TwoWayFsmState()   { this.SyncFsmState(ZinMaestro.FSM_ID_TWOWAY);   }
 
-copyPrototype(AuthOnlyFsmState, ZimbraFsmState);
-copyPrototype(TwoWayFsmState,   ZimbraFsmState);
+copyPrototype(AuthOnlyFsmState, SyncFsmState);
+copyPrototype(TwoWayFsmState,   SyncFsmState);
 

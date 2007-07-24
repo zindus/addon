@@ -315,7 +315,7 @@ function resetAll()
 		}
 	}
 
-	var aAddressBook = ZimbraFsm.getTbAddressbooks();
+	var aAddressBook = SyncFsm.getTbAddressbooks();
 
 	for each (abName in aAddressBook)
 		ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
