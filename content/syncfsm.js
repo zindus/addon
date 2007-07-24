@@ -2435,7 +2435,7 @@ ZimbraFsm.prototype.feedItemTypeFromGid = function(gid, sourceid)
 
 ZimbraFsm.getAddressBookName = function()
 {
-	var ret = "zindus";
+	var ret = EXTENSION_NAME;
 
 	if (arguments.length == 1)
 		ret += "/" + arguments[0];
