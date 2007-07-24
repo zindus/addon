@@ -1,3 +1,26 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * 
+ * "The contents of this file are subject to the Mozilla Public License
+ * Version 1.1 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ * 
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+ * License for the specific language governing rights and limitations
+ * under the License.
+ * 
+ * The Original Code is Zindus Sync.
+ * 
+ * The Initial Developer of the Original Code is Moniker Pty Ltd.
+ *
+ * Portions created by Initial Developer are Copyright (C) 2007
+ * the Initial Developer. All Rights Reserved.
+ * 
+ * Contributor(s): Leni Mayo
+ * 
+ * ***** END LICENSE BLOCK *****/
+
 include("chrome://zindus/content/const.js");
 include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/bimap.js");
@@ -35,6 +58,11 @@ Prefs.prototype.onLoad = function(target)
 		document.getElementById("zindus-prefs-general-button-test-harness").removeAttribute('hidden');
 		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('hidden');
 	}
+
+	var consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
+	consoleService.logStringMessage("test an nsIConsoleService message: ")
+
+	Components.utils.reportError("test a Components.utils.reportError message: ");
 
 	this.m_prefset_server.load(SOURCEID_ZM);
 	this.m_prefset_general.load();

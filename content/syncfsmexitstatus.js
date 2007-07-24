@@ -1,3 +1,26 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * 
+ * "The contents of this file are subject to the Mozilla Public License
+ * Version 1.1 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ * 
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+ * License for the specific language governing rights and limitations
+ * under the License.
+ * 
+ * The Original Code is Zindus Sync.
+ * 
+ * The Initial Developer of the Original Code is Moniker Pty Ltd.
+ *
+ * Portions created by Initial Developer are Copyright (C) 2007
+ * the Initial Developer. All Rights Reserved.
+ * 
+ * Contributor(s): Leni Mayo
+ * 
+ * ***** END LICENSE BLOCK *****/
+
 function SyncFsmExitStatus()
 {
 	this.m_exit_status = null;
@@ -9,7 +32,6 @@ SyncFsmExitStatus.FailOnService   = 0; // some sort of service failure (generate
 SyncFsmExitStatus.FailOnFault     = 1; // recived a soap fault
 SyncFsmExitStatus.FailOnCancel    = 2; // user cancelled
 SyncFsmExitStatus.FailOnUnknown   = 3; // this should never be!
-
 
 SyncFsmExitStatus.prototype.toString = function()
 {
