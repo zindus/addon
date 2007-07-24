@@ -97,10 +97,6 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		gLogger.debug("SyncWindow.onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
-		// TODO - extension point - onFsmAboutToStart  - unhide the statuspanel before starting the fsm 
-
-		// document.getElementById('zindus-statuspanel').hidden = false;
-
 		this.m_syncfsm.start();
 	}
 	else 
@@ -118,14 +114,6 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			                                        this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
 			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
 			                                        stringBundleString("zfomPrefix") + " " + this.m_sfpo.progressToString());
-
-			// TODO - extension point - report the contents of this.m_sfpo to the UI
-
-			if (this.m_el_statuspanel_progress_meter)
-			{
-				this.m_el_statuspanel_progress_meter.setAttribute('value', this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
-				this.m_el_statuspanel_progress_label.setAttribute('value', this.m_sfpo.progressToString());
-			}
 		}
 
 		if (fsmstate.oldstate == "final")
