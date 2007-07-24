@@ -96,28 +96,28 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 		switch (data)
 		{
 			case this.DO_FUNCTOR_REGISTER:
-				cnsAssert(isPropertyPresent(subject, 'id_functor'));
-				cnsAssert(isPropertyPresent(subject, 'a_id_fsm'));
-				cnsAssert(isPropertyPresent(subject, 'functor'));
-				cnsAssert(isPropertyPresent(subject, 'context'));
+				zinAssert(isPropertyPresent(subject, 'id_functor'));
+				zinAssert(isPropertyPresent(subject, 'a_id_fsm'));
+				zinAssert(isPropertyPresent(subject, 'functor'));
+				zinAssert(isPropertyPresent(subject, 'context'));
 
 				var id_functor = subject['id_functor'];
 
-				cnsAssert(!isPropertyPresent(this.m_a_functor, id_functor));
+				zinAssert(!isPropertyPresent(this.m_a_functor, id_functor));
 
-				this.m_a_functor[id_functor] = newObject('a_id_fsm', cnsCloneObject(subject['a_id_fsm']),
+				this.m_a_functor[id_functor] = newObject('a_id_fsm', zinCloneObject(subject['a_id_fsm']),
 				                                         'functor',  subject['functor'],
 				                                         'context',  subject['context']);
 				this.functorNotifyOnRegister(id_functor);
 				break;
 
 			case this.DO_FUNCTOR_UNREGISTER:
-				cnsAssert(isPropertyPresent(subject, 'id_functor'));
+				zinAssert(isPropertyPresent(subject, 'id_functor'));
 				delete this.m_a_functor[subject['id_functor']]; // clients register and unregister functors with unique ids
 				break;
 
 			case this.DO_FSM_STATE_UPDATE:
-				cnsAssert(isPropertyPresent(subject, 'fsmstate'));
+				zinAssert(isPropertyPresent(subject, 'fsmstate'));
 				var id_fsm = subject.fsmstate.id_fsm;
 
 				this.m_a_fsmstate[id_fsm] = subject.fsmstate;
@@ -132,7 +132,7 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 				break;
 
 			default:
-				cnsAssert(false);
+				zinAssert(false);
 		}
 	}
 }

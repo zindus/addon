@@ -28,7 +28,7 @@ function PrefSetCollection(template)
 {
 	var mp;
 
-	cnsAssert(typeof(template.load) == "function" &&
+	zinAssert(typeof(template.load) == "function" &&
 	          typeof(template.save) == "function" &&
 		      typeof(template.m_prefprefix) != "undefined");
 
@@ -44,7 +44,7 @@ PrefSetCollection.prototype.load = function(branch)
 {
 	var i, obj, isLoaded, aid;
 
-	cnsAssert(arguments.length <= 1);
+	zinAssert(arguments.length <= 1);
 
 	aid = this.getAllIds(this.m_template.m_prefprefix);
 
@@ -52,7 +52,7 @@ PrefSetCollection.prototype.load = function(branch)
 	{
 		dump("PrefSetCollection.prototype.load - loading a prefset: " + this.m_template.m_prefprefix + "." + i + "\n");
 
-		obj = cnsCloneObject(this.m_template);
+		obj = zinCloneObject(this.m_template);
 		isLoaded = obj.load(i, this.m_prefs);
 
 		if (isLoaded)
@@ -124,7 +124,7 @@ PrefSetCollection.prototype.toString = function()
 {
 	var f = new FunctorToString();
 
-	cnsAssert(f != null);
+	zinAssert(f != null);
 
 	this.foreach(f);
 

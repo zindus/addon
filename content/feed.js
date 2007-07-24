@@ -85,13 +85,13 @@ ZinFeedCollection.prototype.get = function(id)
 
 ZinFeedCollection.prototype.set = function(zfi)
 {
-	cnsAssert(zfi != null && zfi.isPresent(ZinFeedItem.ATTR_ID));
+	zinAssert(zfi != null && zfi.isPresent(ZinFeedItem.ATTR_ID));
 	this.m_collection[zfi.m_properties[ZinFeedItem.ATTR_ID]] = zfi;
 }
 
 ZinFeedCollection.prototype.del = function(id)
 {
-	cnsAssert(this.isPresent(id));
+	zinAssert(this.isPresent(id));
 	delete this.m_collection[id];
 }
 
@@ -103,18 +103,18 @@ ZinFeedCollection.prototype.isPresent = function(id)
 ZinFeedCollection.prototype.forEach = function(functor, flavour)
 {
 	var fContinue;
-	cnsAssert(arguments.length == 2 && (flavour == ZinFeedCollection.ITER_ALL || flavour == ZinFeedCollection.ITER_UNRESERVED));
+	zinAssert(arguments.length == 2 && (flavour == ZinFeedCollection.ITER_ALL || flavour == ZinFeedCollection.ITER_UNRESERVED));
 
 	for (var id in this.m_collection)
 	{
-		cnsAssert(this.isPresent(id));
+		zinAssert(this.isPresent(id));
 
 		if (flavour == ZinFeedCollection.ITER_UNRESERVED && (id <= ZinFeedItem.ID_MAX_RESERVED))
 			fContinue = true;
 		else
 			fContinue = functor.run(this.m_collection[id]);
 
-		cnsAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		if (!fContinue)
 			break;
@@ -207,20 +207,20 @@ function ZinFeedItem()
 
 	if (arguments.length == 2)
 	{
-		cnsAssert(arguments[0] && typeof(arguments[1]) == 'object' && isPropertyPresent(arguments[1], ZinFeedItem.ATTR_ID));
+		zinAssert(arguments[0] && typeof(arguments[1]) == 'object' && isPropertyPresent(arguments[1], ZinFeedItem.ATTR_ID));
 
 		this.set(ZinFeedItem.ATTR_TYPE, ZinFeedItem.typeAsString(arguments[0]));
 		this.set(arguments[1]);
 	}
 	else if (arguments.length > 0)
 	{
-		cnsAssert(arguments.length % 2 == 1);
+		zinAssert(arguments.length % 2 == 1);
 
 		for (var i = 1; i < arguments.length; i+=2)
 			this.m_properties[arguments[i]] = arguments[i+1];
 
-		cnsAssert(!isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_TYPE));
-		cnsAssert(isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_ID));
+		zinAssert(!isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_TYPE));
+		zinAssert(isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_ID));
 
 		if (arguments[0] != null)
 			this.m_properties[ZinFeedItem.ATTR_TYPE] = ZinFeedItem.typeAsString(arguments[0]);
@@ -232,7 +232,7 @@ ZinFeedItem.prototype.get = function(key)
 	if (!this.isPresent(key))
 	{
 		gLogger.error("ZinFeedItem.get: key not present: " + key);
-		cnsAssert(false);
+		zinAssert(false);
 	}
 
 	return this.m_properties[key];
@@ -245,7 +245,7 @@ ZinFeedItem.prototype.getOrNull = function(key)
 
 ZinFeedItem.prototype.del = function(key)
 {
-	cnsAssert(this.isPresent(key));
+	zinAssert(this.isPresent(key));
 	delete this.m_properties[key];
 }
 
@@ -256,7 +256,7 @@ ZinFeedItem.prototype.set = function(arg1, arg2)
 {
 	if (arguments.length == 2)
 	{
-		cnsAssert(typeof(arg2) != 'object' && arg2 != null);
+		zinAssert(typeof(arg2) != 'object' && arg2 != null);
 
 		this.m_properties[arg1] = arg2;
 	}
@@ -264,7 +264,7 @@ ZinFeedItem.prototype.set = function(arg1, arg2)
 	{
 		// this is handy for creating/updating an existing ZinFeedItem based on a response from a zimbra server
 		//
-		cnsAssert(this.isPresent(ZinFeedItem.ATTR_TYPE) &&
+		zinAssert(this.isPresent(ZinFeedItem.ATTR_TYPE) &&
 		          isPropertyPresent(arg1, ZinFeedItem.ATTR_ID) &&
 				  !isPropertyPresent(arg1, ZinFeedItem.ATTR_TYPE));
 
@@ -272,7 +272,7 @@ ZinFeedItem.prototype.set = function(arg1, arg2)
 			this.setWhenValueDefined(j, arg1[j]);
 	}
 	else
-		cnsAssert(false);
+		zinAssert(false);
 }
 
 ZinFeedItem.prototype.isPresent = function(key)
@@ -304,7 +304,7 @@ ZinFeedItem.prototype.setWhenValueDefined = function(arg1, arg2)
 ZinFeedItem.prototype.forEach = function(functor, flavour)
 {
 	var fContinue;
-	cnsAssert(arguments.length == 2 && (flavour == ZinFeedItem.ITER_ALL || flavour == ZinFeedItem.ITER_SOURCEID));
+	zinAssert(arguments.length == 2 && (flavour == ZinFeedItem.ITER_ALL || flavour == ZinFeedItem.ITER_SOURCEID));
 
 	for (var i in this.m_properties)
 	{
@@ -313,7 +313,7 @@ ZinFeedItem.prototype.forEach = function(functor, flavour)
 		else
 			fContinue = functor.run(i, this.m_properties[i]);
 
-		cnsAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		if (!fContinue)
 			break;
@@ -343,7 +343,7 @@ ZinFeedItem.zimbraAttributesForType = function(type)
 		case ZinFeedItem.TYPE_FL: ret = [ZinFeedItem.ATTR_ID, ZinFeedItem.ATTR_MS, 'l', 'name'];                     break;
 		case ZinFeedItem.TYPE_CN: ret = [ZinFeedItem.ATTR_ID, ZinFeedItem.ATTR_MS, 'l', ZinFeedItem.ATTR_MD, ZinFeedItem.ATTR_REV]; break;
 		// not implemented: TYPE_FL ...  ['id', 'l', ZinFeedItem.ATTR_MD, FEED_ITEM_ATTR_REV, 'fileAsStr']
-		default: cnsAssert(false);
+		default: zinAssert(false);
 	}
 
 	return ret;
@@ -355,11 +355,11 @@ function ZinFeed()
 
 ZinFeed.autoIncrement = function(zfi, key)
 {
-	cnsAssert(typeof(zfi) == 'object' && zfi != null && zfi.isPresent(key));
+	zinAssert(typeof(zfi) == 'object' && zfi != null && zfi.isPresent(key));
 
 	var ret = parseInt(zfi.get(key));
 
-	cnsAssert(ret > 0);
+	zinAssert(ret > 0);
 
 	zfi.set(key, ret + 1);
 

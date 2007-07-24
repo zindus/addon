@@ -62,12 +62,12 @@ function SuoCollection()
 
 SuoCollection.prototype.assertValidKey = function(key)
 {
-	cnsAssert(isPropertyPresent(key, "sourceid") && isPropertyPresent(key, "bucket") && isPropertyPresent(key, "id"));
+	zinAssert(isPropertyPresent(key, "sourceid") && isPropertyPresent(key, "bucket") && isPropertyPresent(key, "id"));
 }
 
 SuoCollection.prototype.get = function(key)
 {
-	cnsAssert(isPropertyPresent(this.m_collection, key.sourceid) &&
+	zinAssert(isPropertyPresent(this.m_collection, key.sourceid) &&
 	          isPropertyPresent(this.m_collection[key.sourceid], key.bucket) &&
 	          isPropertyPresent(this.m_collection[key.sourceid][key.bucket][key.id]));
 

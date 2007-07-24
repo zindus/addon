@@ -49,7 +49,7 @@ SyncWindow.prototype.onLoad = function()
 	this.m_payload = window.arguments[0];
 	this.m_syncfsm = this.m_payload.m_syncfsm;
 
-	var listen_to = cnsCloneObject(ZinMaestro.FSM_GROUP_SYNC);
+	var listen_to = zinCloneObject(ZinMaestro.FSM_GROUP_SYNC);
 	listen_to[ZinMaestro.FSM_ID_SOAP] = 0;
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
 
@@ -91,7 +91,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	{
 		// fsmstate should be null on first call to observer because the 'sync now' button should be disabled if the fsm is running
 		//
-		cnsAssert(fsmstate == null);
+		zinAssert(fsmstate == null);
 
 		this.m_has_observer_been_called = true;
 

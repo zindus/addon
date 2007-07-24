@@ -113,13 +113,13 @@ ZinTestHarness.prototype.testLso = function()
 	gLogger.debug("blah: t: " + t);
 
 	var zfi1 = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334, ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_MD, 1168484761);
-	var zfi2 = cnsCloneObject(zfi1);
+	var zfi2 = zinCloneObject(zfi1);
 
 	lso = new Lso(zfi1);
 
 	var str = "-1234-1168484761-"
 
-	cnsAssert(lso.toString() == str);
+	zinAssert(lso.toString() == str);
 
 	ZinTestHarness.testLsoCompare(lso, zfi1);
 
@@ -128,7 +128,7 @@ ZinTestHarness.prototype.testLso = function()
 	// gLogger.debug("testLso: lso == " + aToString(lso));
 	// gLogger.debug("testLso: lso.toString() == " + lso.toString());
 
-	cnsAssert(lso.toString() == str);
+	zinAssert(lso.toString() == str);
 
 	ZinTestHarness.testLsoCompare(lso, zfi2);
 }
@@ -137,20 +137,20 @@ ZinTestHarness.testLsoCompare = function(lso, zfi)
 {
 	// gLogger.debug("testLso: lso.compare(zfi) == " + lso.compare(zfi));
 
-	cnsAssert(lso.compare(zfi) == 0);  // test compare() == 0;
+	zinAssert(lso.compare(zfi) == 0);  // test compare() == 0;
 
 	zfi.set(ZinFeedItem.ATTR_MS, 1235);
-	cnsAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi.set(ZinFeedItem.ATTR_MS, 1234);
 	zfi.set(ZinFeedItem.ATTR_MS, 1168484762);
-	cnsAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi.set(ZinFeedItem.ATTR_MS, 1234);
 	zfi.set(ZinFeedItem.ATTR_MS, 1168484761);
 	zfi.set(ZinFeedItem.ATTR_DEL, 1);
-	cnsAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi.set(ZinFeedItem.ATTR_MS, 1233);
-	cnsAssert(lso.compare(zfi) == -1);  // test compare() == -1;
+	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
 }

@@ -51,7 +51,7 @@ ZinXpath.nsResolver = function(prefix)
 
 ZinXpath.setConditional = function(object, property, xpath_query, doc, warning_msg)
 {
-	cnsAssert(xpath_query.indexOf("attribute::")); // this function is only intended for xpath queries that return a single attribute
+	zinAssert(xpath_query.indexOf("attribute::")); // this function is only intended for xpath queries that return a single attribute
 
 	var node = ZinXpath.getSingleValue(xpath_query, doc, doc);
 
@@ -113,7 +113,7 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 
 ZinXpath.queryFromMethod = function(method)
 {
-	cnsAssert(isPropertyPresent(ZinXpath.nsOfMethod, method));
+	zinAssert(isPropertyPresent(ZinXpath.nsOfMethod, method));
 
 	return "/soap:Envelope/soap:Body/" + ZinXpath.nsOfMethod[method] + ":" + method + "Response";
 }

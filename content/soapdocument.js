@@ -73,7 +73,7 @@ ZimbraSoapDocument.prototype.context = function(authToken, sessionId)
 
 	if (authToken != null)
 	{
-		cnsAssert(sessionId != null);
+		zinAssert(sessionId != null);
 
 		var elAuthtoken = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "authToken");
 		var elSession   = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "sessionId");
@@ -150,7 +150,7 @@ ZimbraSoapDocument.prototype.GetContacts = function(id)
 	var elRequest = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "GetContactsRequest");
 	var elCn      = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "cn");
 
-	cnsAssert(id != null);
+	zinAssert(id != null);
 
 	elRequest.setAttribute("sync", "1");
 
@@ -177,7 +177,7 @@ ZimbraSoapDocument.prototype.CreateFolder = function(folder)
 
 	elFolder = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "folder");
 
-	cnsAssert(isPropertyPresent(folder, 'name') && isPropertyPresent(folder, 'l') && folder.name.length > 0)
+	zinAssert(isPropertyPresent(folder, 'name') && isPropertyPresent(folder, 'l') && folder.name.length > 0)
 
 	elFolder.setAttribute("name", folder.name);
 	elFolder.setAttribute("l",    folder.l);
@@ -195,7 +195,7 @@ ZimbraSoapDocument.prototype.CreateContact = function(args)
 	var elCn      = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "cn");
 	var i, elA;
 
-	cnsAssert(isPropertyPresent(args, 'properties') && isPropertyPresent(args, 'l') && aToLength(args.properties) > 0)
+	zinAssert(isPropertyPresent(args, 'properties') && isPropertyPresent(args, 'l') && aToLength(args.properties) > 0)
 
 	elCn.setAttribute("l", args.l);
 
@@ -241,7 +241,7 @@ ZimbraSoapDocument.prototype.ModifyContact = function(args)
 	var elCn      = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "cn");
 	var i, elA;
 
-	cnsAssert(isPropertyPresent(args, 'properties') &&
+	zinAssert(isPropertyPresent(args, 'properties') &&
 	          isPropertyPresent(args, 'l') &&
 			  isPropertyPresent(args, 'id') && aToLength(args.properties) > 0);
 

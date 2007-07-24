@@ -58,7 +58,7 @@ SyncFsmExitStatus.failCodeAsString = function(code)
 		case SyncFsmExitStatus.FailOnFault:   stringid += "FailOnFault";   break;
 		case SyncFsmExitStatus.FailOnCancel:  stringid += "FailOnCancel";  break;
 		case SyncFsmExitStatus.FailOnUnknown: stringid += "FailOnUnknown"; break;
-		default: cnsAssert(false);
+		default: zinAssert(false);
 	}
 
 	return stringBundleString(stringid);

@@ -28,7 +28,7 @@ include("chrome://zindus/content/syncfsmprogressobserver.js");
 
 function ZinTimer(functor)
 {
-	cnsAssert(arguments.length == 1);
+	zinAssert(arguments.length == 1);
 
 	this.m_timer   = Components.classes["@mozilla.org/timer;1"].createInstance(Components.interfaces.nsITimer);
 	this.m_functor = functor;
@@ -37,11 +37,11 @@ function ZinTimer(functor)
 
 ZinTimer.prototype.start = function(delay)
 {
-	cnsAssert(arguments.length == 1);
+	zinAssert(arguments.length == 1);
 
 	this.m_logger.debug("ZinTimer.start: delay: " + delay);
 
-	cnsAssert(typeof delay == 'number');
+	zinAssert(typeof delay == 'number');
 
 	this.m_timer.initWithCallback(this, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
 }
@@ -54,14 +54,14 @@ ZinTimer.prototype.notify = function(timer)
 {
 	this.m_logger.debug("ZinTimerFunctor.notify: about to run callback: ");
 
-	cnsAssert(typeof this.m_functor.run == 'function');
+	zinAssert(typeof this.m_functor.run == 'function');
 
     this.m_functor.run();
 }
 
 function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
 {
-	cnsAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
+	zinAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
 
 	this.m_logger            = new Log(Log.DEBUG, Log.dumpAndFileLogger);
 	this.m_sfpo              = new SyncFsmProgressObserver();
@@ -189,7 +189,7 @@ ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
 
 ZinTimerFunctorSync.prototype.getWindowsContainingElementIds = function(a_id_orig)
 {
-	var a_id = cnsCloneObject(a_id_orig);
+	var a_id = zinCloneObject(a_id_orig);
 
 	// Good background reading:
 	//   http://developer.mozilla.org/en/docs/Working_with_windows_in_chrome_code

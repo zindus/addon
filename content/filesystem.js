@@ -42,7 +42,7 @@ function Filesystem()
 
 Filesystem.getDirectoryParent = function(code)
 {
-	cnsAssert(code == Filesystem.DIRECTORY_PROFILE);
+	zinAssert(code == Filesystem.DIRECTORY_PROFILE);
 
 	var ret;
 
@@ -70,7 +70,7 @@ Filesystem.getDirectory = function(code)
 	aRelativeTo[Filesystem.DIRECTORY_LOG]      = Filesystem.DIRECTORY_PROFILE;
 	aRelativeTo[Filesystem.DIRECTORY_MAPPING]  = Filesystem.DIRECTORY_PROFILE;
 
-	cnsAssert(typeof aRelativeTo[code] != 'undefined');
+	zinAssert(typeof aRelativeTo[code] != 'undefined');
 
 	var parent = this.getDirectoryParent(aRelativeTo[code]);
 	var ret = parent.clone();
@@ -195,7 +195,7 @@ Filesystem.fileReadByLine = function(path, functor)
 		if (line.value)
 		{
 			gLogger.error("Filesystem.fileReadByLine: shouldn't be here");
-			cnsAssert(false);
+			zinAssert(false);
 			functor.run(line.value);
 		}
 

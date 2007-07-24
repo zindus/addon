@@ -53,7 +53,7 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 
 	gLogger.debug("77220: ZimbraContact.prototype.loadFromNode - node.nodeName == " + node.nodeName);
 
-	cnsAssert(node.nodeType == Node.ELEMENT_NODE);
+	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
 	// the only attribute we know/care about is id
 	// dump("77225: namednodemap.item(i)... " + " nodeName == " + node.attributes.item(i).nodeName +

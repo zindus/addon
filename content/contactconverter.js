@@ -110,8 +110,8 @@ CnsContactConverter.prototype.convert = function(format_to, format_from, propert
 {
 	var i, j, key;
 
-	cnsAssert(format_to   == FORMAT_TB || format_to   == FORMAT_ZM);
-	cnsAssert(format_from == FORMAT_TB || format_from == FORMAT_ZM);
+	zinAssert(format_to   == FORMAT_TB || format_to   == FORMAT_ZM);
+	zinAssert(format_from == FORMAT_TB || format_from == FORMAT_ZM);
 
 	var properties_to = new Object();
 

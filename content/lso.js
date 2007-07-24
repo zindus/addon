@@ -42,13 +42,13 @@ function Lso(arg)
 			break;
 		case 'string': // populate properties from a ZinFeedItem.ATTR_LS string
 			var a = arg.split("-");
-			cnsAssert(a.length == Lso.aPartsAll.length);
+			zinAssert(a.length == Lso.aPartsAll.length);
 			for (i = 0; i < Lso.aPartsAll.length; i++)
 				if (a[i].length > 0)
 					this.m_properties[Lso.aPartsAll[i]] = a[i];
 			break;
 		default:
-			cnsAssert(false);
+			zinAssert(false);
 	}
 }
 
@@ -121,14 +121,14 @@ Lso.prototype.compare = function(zfi)
 
 Lso.prototype.get = function(key)
 {
-	cnsAssert(isPropertyPresent(this.m_properties, key) && this.m_properties[key] != null);
+	zinAssert(isPropertyPresent(this.m_properties, key) && this.m_properties[key] != null);
 
 	return this.m_properties[key];
 }
 
 Lso.prototype.set = function(key, value)
 {
-	cnsAssert(isPropertyPresent(this.m_properties, key));
+	zinAssert(isPropertyPresent(this.m_properties, key));
 
 	this.m_properties[key] = value;
 }

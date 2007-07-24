@@ -70,7 +70,7 @@ ZimbraAddressBook.forEachAddressBook = function(functor)
 
 		fContinue = functor.run(elem);
 
-		cnsAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 	}
 }
 
@@ -89,7 +89,7 @@ ZimbraAddressBook.forEachCard = function(uri, functor)
 
 		fContinue = functor.run(uri, item);
 
-		cnsAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		try { enm.next(); } catch(ex) { fContinue = false; }
 	}
@@ -182,7 +182,7 @@ ZimbraAddressBook.deleteCards = function(uri, cardsArray)
 
 ZimbraAddressBook.addCard = function(uri, format, standard, extras)
 {
-	cnsAssert(uri != null && isPropertyPresent(CnsContactConverter.instance().m_map, format) && standard != null && extras != null);
+	zinAssert(uri != null && isPropertyPresent(CnsContactConverter.instance().m_map, format) && standard != null && extras != null);
 
 	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
@@ -210,8 +210,8 @@ ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 	
 	for (i in thunderbird_properties)
 	{
-		j   = CnsContactConverter.instance().m_map[FORMAT_TB][i];    cnsAssert(typeof j != 'undefined');
-		key = CnsContactConverter.instance().m_equivalents[j][FORMAT_TB]; cnsAssert(key != null);
+		j   = CnsContactConverter.instance().m_map[FORMAT_TB][i];    zinAssert(typeof j != 'undefined');
+		key = CnsContactConverter.instance().m_equivalents[j][FORMAT_TB]; zinAssert(key != null);
 
 		abCard.setCardValue(i, thunderbird_properties[i]);
 
@@ -230,7 +230,7 @@ ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 	// confirm that callers can rely on the .lastModifiedDate property changing after an update
 	// ie that they don't have to do a lookup after an update
 	//
-	cnsAssert(lastModifiedDatePre != abCard.lastModifiedDate);
+	zinAssert(lastModifiedDatePre != abCard.lastModifiedDate);
 
 	return abCard;
 }
@@ -252,7 +252,7 @@ ZimbraAddressBook.getCardProperties = function(abCard, format)
 			else
 			{
 				j = CnsContactConverter.instance().m_map[FORMAT_TB][i];
-				cnsAssert(typeof j != 'undefined');
+				zinAssert(typeof j != 'undefined');
 				key = CnsContactConverter.instance().m_equivalents[j][format];
 
 				if (key != null)
@@ -299,7 +299,7 @@ ZimbraAddressBook.nsIAbCardToPrintable = function(abCard)
 
 ZimbraAddressBook.nsIAbMDBCardToKey = function(uri, mdbCard)
 {
-	cnsAssert(typeof(uri) == 'string' && typeof(mdbCard) == 'object' && uri != null && mdbCard != null);
+	zinAssert(typeof(uri) == 'string' && typeof(mdbCard) == 'object' && uri != null && mdbCard != null);
 
 	return uri + "-" + mdbCard.dbTableID + "-" + mdbCard.dbRowID + "-" + mdbCard.key;
 }

@@ -21,7 +21,7 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function cnsAssert(expr)
+function zinAssert(expr)
 {
 	if (!expr)
 	{
@@ -47,7 +47,7 @@ function cnsAssert(expr)
 	}
 }
 
-function cnsCloneObject(obj)
+function zinCloneObject(obj)
 {
 	var ret;
 
@@ -56,7 +56,7 @@ function cnsCloneObject(obj)
 		ret = new Object();
 
 		for (var i in obj)
-			ret[i] = cnsCloneObject(obj[i]);
+			ret[i] = zinCloneObject(obj[i]);
 	}
 	else
 	{
@@ -108,7 +108,7 @@ function stringBundleString(id_string)
 	var ret = "";
 	var is_exception = false;
 
-	cnsAssert(stringbundle != null);
+	zinAssert(stringbundle != null);
 
 	try
 	{
@@ -120,7 +120,7 @@ function stringBundleString(id_string)
 		is_exception = true;
 	}
 
-	cnsAssert(!is_exception);
+	zinAssert(!is_exception);
 
 	return ret;
 }
@@ -129,7 +129,7 @@ function xmlDocumentToString(doc)
 {
 	// dump("xmlDocumentToString: typeof doc == " + typeof doc + "\n");
 	// dump("xmlDocumentToString: doc == " + doc + "\n");
-	cnsAssert(doc != null);
+	zinAssert(doc != null);
 
 	var serializer = new XMLSerializer();
 	// dump("771. in xmlDocumentToString(), serializer is " + serializer + "\n");
@@ -149,7 +149,7 @@ function conditionalGetElementByTagNameNS(doc, ns, tag, object, property)
 
 function attributesFromNode(node)
 {
-	cnsAssert(node.nodeType == Node.ELEMENT_NODE);
+	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
 	var ret = new Object();
 	
@@ -183,7 +183,7 @@ function aToString(obj)
 		else
 			ret += obj[x] + ", ";
 
-		cnsAssert(!was_exception_thrown);
+		zinAssert(!was_exception_thrown);
 	}
 
 	return ret;
@@ -201,7 +201,7 @@ function aToLength(obj)
 
 function isInArray(item, a)
 {
-	cnsAssert(typeof a == 'array');
+	zinAssert(typeof a == 'array');
 
 	return a.indexOf(item) != -1;
 }
@@ -210,7 +210,7 @@ function isInArray(item, a)
 
 function isPropertyPresent(obj, property)
 {
-	cnsAssert(arguments.length == 2); // this function has two arguments!
+	zinAssert(arguments.length == 2); // this function has two arguments!
 
 	return (typeof(obj[property]) != 'undefined');
 }
@@ -226,7 +226,7 @@ function newObject()
 
 	if (arguments.length == 1)
 	{
-		cnsAssert(typeof(arguments[0]) == 'object');
+		zinAssert(typeof(arguments[0]) == 'object');
 
 		args = arguments[0];
 	}
@@ -249,7 +249,7 @@ function propertyFromObject(obj)
 		break;
 	}
 
-	cnsAssert(ret != null);
+	zinAssert(ret != null);
 
 	return ret;
 }
@@ -269,7 +269,7 @@ function hyphenate()
 
 	for (var i = 1; i < arguments.length; i++)
 	{
-		cnsAssert(typeof(arguments[i]) == 'string' || typeof(arguments[i]) == 'number');
+		zinAssert(typeof(arguments[i]) == 'string' || typeof(arguments[i]) == 'number');
 
 		if (isFirst)
 		{

@@ -148,7 +148,7 @@ ZimbraFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 		else if (soapfsmstate.faultElementXml)
 			msg += "fault fields as shown: " + soapfsmstate.toString();
 		else
-			cnsAssert(false);
+			zinAssert(false);
 
 		gLogger.debug(msg);
 
@@ -400,7 +400,7 @@ ZimbraFsm.prototype.exitActionSync = function(state, event)
 			{
 				var fAddToTheQueue = false;
 
-				cnsAssert(zfcServer.isPresent(id));
+				zinAssert(zfcServer.isPresent(id));
 
 				var isInterestingPreUpdate = ZimbraFsm.isOfInterest(zfcServer, id);
 
@@ -443,7 +443,7 @@ ZimbraFsm.prototype.exitActionSync = function(state, event)
 
 		run: function(doc, node)
 		{
-			cnsAssert(node.nodeType == Node.ATTRIBUTE_NODE);
+			zinAssert(node.nodeType == Node.ATTRIBUTE_NODE);
 			
 			var ids = node.nodeValue;
 
@@ -668,7 +668,7 @@ ZimbraFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 	{
 		// since aSyncGalContact is only populated if there's a change in token, it seems reasonable to assert that length is > 0
 		//
-		cnsAssert(this.state.aSyncGalContact.length > 0 && this.state.SyncGalTokenChanged);
+		zinAssert(this.state.aSyncGalContact.length > 0 && this.state.SyncGalTokenChanged);
 
 		for (var i in this.state.aSyncGalContact)
 		{
@@ -763,7 +763,7 @@ ZimbraFsm.prototype.initialiseMapsIfRequired = function()
 
 	if (!zfcLocal.isPresent(ZinFeedItem.ID_AUTO_INCREMENT) || !zfcLocal.get(ZinFeedItem.ID_AUTO_INCREMENT).isPresent('next'))
 	{
-		cnsAssert(zfcLocal.length() == 0);
+		zinAssert(zfcLocal.length() == 0);
 
 		gLogger.debug("11770 - thunderbird and/or gid map was zapped - initialising...");
 
@@ -1081,7 +1081,7 @@ ZimbraFsm.isOfInterest = function(zfc, id)
 	// gLogger.debug("blahblah: zfc.isPresent(id): " + zfc.isPresent(id));
 	// gLogger.debug("blahblah: zfi: " + zfc.isPresent(id) ? zfc.get(id).toString() : "not present");
 
-	cnsAssert(arguments.length == 2 && zfc && id && id > 0 && zfc.isPresent(id));
+	zinAssert(arguments.length == 2 && zfc && id && id > 0 && zfc.isPresent(id));
 
 	var zfi = zfc.get(id);
 	var l   = zfi.get('l');
@@ -1099,7 +1099,7 @@ ZimbraFsm.isOfInterest = function(zfc, id)
 				ret = ZimbraFsm.isOfInterest(zfc, l);
 			break;
 		default:
-			cnsAssert(false);
+			zinAssert(false);
 	}
 
 	return ret;
@@ -1180,7 +1180,7 @@ ZimbraFsm.prototype.buildGcs = function()
 	var reverse       = this.state.aReverseGid; // bring it into the local namespace
 
 	for (var i in this.state.sources)
-		aZfcCandidate[i] = cnsCloneObject(this.state.sources[i]['zfcLuid']); // cloned because items get deleted out of this during merge
+		aZfcCandidate[i] = zinCloneObject(this.state.sources[i]['zfcLuid']); // cloned because items get deleted out of this during merge
 
 	// delete candidate mapitems in other sources once they've been compared
 	//
@@ -1205,7 +1205,7 @@ ZimbraFsm.prototype.buildGcs = function()
 				var luid = zfi.id();
 				var gid  = reverse[sourceid][luid];
 
-				cnsAssert(isPropertyPresent(reverse, sourceid) && isPropertyPresent(reverse[sourceid], luid));
+				zinAssert(isPropertyPresent(reverse, sourceid) && isPropertyPresent(reverse[sourceid], luid));
 
 				aGcs[gid] = this.compare(gid);// aZfcCandidate, reverse, zfcGid
 
@@ -1280,17 +1280,17 @@ ZimbraFsm.prototype.buildGcs = function()
 			gLogger.debug("885439 - aVerMatchesGid: " + aToString(aVerMatchesGid));
 			gLogger.debug("885439 - aChangeOfNote: "  + aToString(aChangeOfNote));
 
-			cnsAssert(cNeverSynced == 0 || cNeverSynced == 1);
+			zinAssert(cNeverSynced == 0 || cNeverSynced == 1);
 
 			if (cNeverSynced == 1)
 			{
-				cnsAssert(cVerMatchesGid == 0 && cChangeOfNote == 0);
+				zinAssert(cVerMatchesGid == 0 && cChangeOfNote == 0);
 				
 				ret = new Gcs(propertyFromObject(aNeverSynced), Gcs.WIN);
 			}
 			else if (cChangeOfNote == 0)
 			{
-				cnsAssert(isPropertyPresent(aVerMatchesGid, sourceid_tb));
+				zinAssert(isPropertyPresent(aVerMatchesGid, sourceid_tb));
 				ret = new Gcs(sourceid_tb, Gcs.WIN);
 			}
 			else if (cChangeOfNote == 1)
@@ -1354,9 +1354,9 @@ ZimbraFsm.prototype.suoBuildWinners = function(aGcs)
 
 				if (!zfiWinner.isPresent(ZinFeedItem.ATTR_LS)) // winner is new to gid
 				{
-					cnsAssert(!zfcGid.get(gid).isPresent(ZinFeedItem.ATTR_VER));
+					zinAssert(!zfcGid.get(gid).isPresent(ZinFeedItem.ATTR_VER));
 
-					cnsAssert(zfcGid.get(gid).length() == 2); // just the id property and the winning sourceid
+					zinAssert(zfcGid.get(gid).length() == 2); // just the id property and the winning sourceid
 
 					msg += " - winner is new to gid  - MDU";
 
@@ -1367,8 +1367,8 @@ ZimbraFsm.prototype.suoBuildWinners = function(aGcs)
 					var lso = new Lso(zfiWinner.get(ZinFeedItem.ATTR_LS));
 					var res = lso.compare(zfiWinner);
 
-					cnsAssert(lso.get(ZinFeedItem.ATTR_VER) == zfcGid.get(gid).get(ZinFeedItem.ATTR_VER));
-					cnsAssert(res >= 0); // winner either changed in an interesting way or stayed the same
+					zinAssert(lso.get(ZinFeedItem.ATTR_VER) == zfcGid.get(gid).get(ZinFeedItem.ATTR_VER));
+					zinAssert(res >= 0); // winner either changed in an interesting way or stayed the same
 
 					if (res == 1)
 					{
@@ -1381,7 +1381,7 @@ ZimbraFsm.prototype.suoBuildWinners = function(aGcs)
 				break;
 
 			default:
-				cnsAssert(false);
+				zinAssert(false);
 		}
 
 		gLogger.debug(msg);
@@ -1455,7 +1455,7 @@ ZimbraFsm.prototype.suoBuildLosers = function(aGcs)
 				break;
 			}
 			default:
-				cnsAssert(false);
+				zinAssert(false);
 		}
 
 		if (suo != null)
@@ -1490,7 +1490,7 @@ ZimbraFsm.prototype.buildPreUpdateWinners = function(aGcs)
 		var sourceid = aGcs[gid].sourceid_winner;
 		var zfc      = this.state.sources[sourceid]['zfcLuid'];
 		var luid     = this.state.zfcGid.get(gid).get(sourceid);
-		var zfi      = cnsCloneObject(zfc.get(luid));
+		var zfi      = zinCloneObject(zfc.get(luid));
 
 		zfi.set(ZinFeedItem.ATTR_ID, gid);
 
@@ -1592,12 +1592,12 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 				luid_target = ZinFeed.autoIncrement(zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
 
-				cnsAssert(this.state.aSyncContact, luid_winner);
+				zinAssert(this.state.aSyncContact, luid_winner);
 				zc = this.state.aSyncContact[luid_winner]; // the ZimbraContact object that arrived via GetContactResponse
 
 				msg += "About to add a contact to the thunderbird addressbook, gid: " + gid + " and luid_winner: " + luid_winner;
 
-				cnsAssert(typeof(zc != 'undefined'));
+				zinAssert(typeof(zc != 'undefined'));
 
 				attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
 				properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
@@ -1669,7 +1669,7 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					//
 					msg += " - parent folder hasn't changed";
 
-					cnsAssert(isPropertyPresent(this.state.aSyncContact, luid_winner));
+					zinAssert(isPropertyPresent(this.state.aSyncContact, luid_winner));
 
 					uri    = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
 					gLogger.debug("2277: uri: " + uri + " luid_target: " + luid_target);
@@ -1744,7 +1744,7 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				{
 					msg += "About to rename a thunderbird addressbook (folder), gid: " + gid + " and luid_winner: " + luid_winner;
 
-					cnsAssert(zfiWinner.get('l') == 1); // luid of the parent folder in the winner == 1
+					zinAssert(zfiWinner.get('l') == 1); // luid of the parent folder in the winner == 1
 
 					ZimbraAddressBook.renameAddressBook(uri, this.getTbAddressbookNameFromLuid(sourceid_winner, luid_winner));
 
@@ -1809,7 +1809,7 @@ ZimbraFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				break;
 
 			default:
-				cnsAssert(false);
+				zinAssert(false);
 		}
 
 		if (luid_target)
@@ -1961,7 +1961,7 @@ ZimbraFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 					bucket     = SORT_ORDER[i];
 				}
 				else
-					cnsAssert(false);
+					zinAssert(false);
 				break;
 
 			case Suo.DEL | ZinFeedItem.TYPE_FL:
@@ -1998,7 +1998,7 @@ ZimbraFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				break;
 
 			default:
-				cnsAssert(false);
+				zinAssert(false);
 		}
 
 		if (bucket)
@@ -2188,7 +2188,7 @@ ZimbraFsm.prototype.exitActionUpdateZm = function(state, event)
 				functor = functor_action_response;
 			}
 			else
-				cnsAssert(false);
+				zinAssert(false);
 			break;
 		case Suo.DEL | ZinFeedItem.TYPE_FL:
 			xpath_query = "/soap:Envelope/soap:Body/zm:FolderActionResponse/zm:action";
@@ -2199,7 +2199,7 @@ ZimbraFsm.prototype.exitActionUpdateZm = function(state, event)
 			functor = functor_action_response;
 			break;
 		default:
-			cnsAssert(false);
+			zinAssert(false);
 	}
 
 	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.response);
@@ -2453,7 +2453,7 @@ ZimbraFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
 	if (!zfc.isPresent(luid))
 		gLogger.debug("552231 - blah: sourceid: " + sourceid + " luid: " + luid);
 
-	cnsAssert(zfc.isPresent(luid));
+	zinAssert(zfc.isPresent(luid));
 
 	var name = zfc.get(luid).get('name');
 
@@ -2557,7 +2557,7 @@ SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 	soapCall.message = this.zsd.doc;
 
-	cnsAssert(!this.state.is_cancelled); // we shouldn't be here if we've called abort() on the callCompletion object!
+	zinAssert(!this.state.is_cancelled); // we shouldn't be here if we've called abort() on the callCompletion object!
 
 	gLogger.debug("SoapFsm: request is " + xmlDocumentToString(soapCall.message));
 
@@ -2573,7 +2573,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 {
 	var ret = false;
 
-	cnsAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
+	zinAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
 
 	context.state.callCompletion = null; // don't need this anymore and setting it to null tells the world that no request is outstanding
 	context.state.serviceCode = error;
@@ -2733,7 +2733,7 @@ SoapFsmState.prototype.sanityCheck = function()
 	var isPostResponse = (c == 1);  // exactly one of these three things is true after a response
 	var isPreResponse  = (this.response == null) && (this.serviceCode == null) && (this.faultCode == null)
 	                  && (this.faultElementXml == null) && (this.faultDetail == null) && (this.faultString == null);
-	cnsAssert(isPreResponse || isPostResponse && this.summaryCode() != SoapFsmState.UNKNOWN);
+	zinAssert(isPreResponse || isPostResponse && this.summaryCode() != SoapFsmState.UNKNOWN);
 }
 
 // load from xml - a SOAPResponse.message or SOAPFault.element

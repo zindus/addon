@@ -29,7 +29,7 @@ include("chrome://zindus/content/maestro.js");
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.9 2007-07-24 00:34:14 cvsuser Exp $
+// $Id: fsm.js,v 1.10 2007-07-24 01:21:22 cvsuser Exp $
 
 // create a gLogger if there isn't one (which there isn't when fsm is run by the scheduled background timer)
 //
@@ -40,7 +40,7 @@ function FsmSanityCheck(context)
 {
 	var states = new Object();
 
-	cnsAssert(typeof context == 'object' && typeof context.fsm.transitions == 'object');
+	zinAssert(typeof context == 'object' && typeof context.fsm.transitions == 'object');
 
 	for (stateFrom in context.fsm.transitions)
 	{
@@ -51,7 +51,7 @@ function FsmSanityCheck(context)
 		//
 		// gLogger.debug("fsm: FsmSanityCheck: stateFrom: " + stateFrom);
 
-		cnsAssert(typeof context.fsm.aActionEntry[stateFrom] == 'function');
+		zinAssert(typeof context.fsm.aActionEntry[stateFrom] == 'function');
 
 		for (event in context.fsm.transitions[stateFrom])
 		{
@@ -71,11 +71,11 @@ function FsmSanityCheck(context)
 
 			// if this assert fails, it means that there's an action for a state that's not in the transitions table.
 			//
-			cnsAssert(typeof states[mapping] != 'undefined');
+			zinAssert(typeof states[mapping] != 'undefined');
 
 			// if this assert fails, it means that the action function doesn't exist!
 			//
-			cnsAssert(typeof table[mapping] == 'function');
+			zinAssert(typeof table[mapping] == 'function');
 		}
 }
 
@@ -114,7 +114,7 @@ function fsmDoTransition(fsmstate)
 					context.fsm.aActionExit[newstate].call(context, newstate, nextEvent);
 				}
             
-				cnsAssert(isPropertyPresent(context.fsm.transitions, newstate));
+				zinAssert(isPropertyPresent(context.fsm.transitions, newstate));
 
 				var nextState = context.fsm.transitions[newstate][nextEvent];
 
@@ -128,7 +128,7 @@ function fsmDoTransition(fsmstate)
 					// here we assert failure - because it's probably a programming error.
 					//
 					gLogger.debug("fsm: about to assert: newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.transitions: " + aToString(context.fsm.transitions));
-					cnsAssert(false);
+					zinAssert(false);
 				}
 			}
 
@@ -183,7 +183,7 @@ function fsmFireTransition(id_fsm, oldstate, newstate, event, context)
 
 function FsmState()
 {
-	cnsAssert(arguments.length % 2 == 0);
+	zinAssert(arguments.length % 2 == 0);
 
 	for (var i = 0; i < arguments.length; i+=2)
 		this[arguments[i]] = arguments[i+1];

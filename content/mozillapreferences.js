@@ -74,7 +74,7 @@ MozillaPreferences.prototype.setIntPref = function(branch, key, value)
 {
 	var intValue = parseInt(value);
 
-	cnsAssert(!isNaN(intValue));
+	zinAssert(!isNaN(intValue));
 
 	// dump("33443366: setIntPref sets preference " + key + ", and " + typeof(intValue) + " " + intValue + "\n");
 
