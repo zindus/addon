@@ -1,4 +1,5 @@
 #!/bin/bash
+# $Id: build-config.sh,v 1.4 2007-07-26 21:16:14 cvsuser Exp $
 
 # Build config for the build script, build.sh. Look there for more info.
 
