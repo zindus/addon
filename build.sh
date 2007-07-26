@@ -37,6 +37,7 @@ CLEAN_UP=           # delete the jar / "files" when done?       (1/0)
 ROOT_FILES=         # put these files in root of xpi (space separated list of leaf filenames)
 ROOT_DIRS=          # ...and these directories       (space separated list)
 BEFORE_BUILD=       # run this before building       (bash command)
+BEFORE_JAR=         # run this before making the jar (bash command)
 AFTER_BUILD=        # ...and this after the build    (bash command)
 PLATFORM_ID=tb      # eg: linux-i686 or win.  Don't set it to the empty string here as we want it to be passed in via the environment.
 
@@ -56,21 +57,31 @@ fi
 
 XPI_FILE_NAME=$APP_NAME-$APP_VERSION_NUMBER-$PLATFORM_ID.xpi
 ROOT_DIR=`pwd`
-TMP_DIR=build
+TMP_DIR=$ROOT_DIR/build
+TMP_DIR_JAR=$ROOT_DIR/tmp-for-jar
 
 #uncomment to debug
-set -x
+# set -x
 
 # remove any left-over files from previous build
 rm -f $APP_NAME.jar $XPI_FILE_NAME files
-rm -rf $TMP_DIR
+rm -rf $TMP_DIR $TMP_DIR_JAR
 
-echo BEFORE_BUILD is ${BEFORE_BUILD}
 $BEFORE_BUILD
 
 set +x
 
 mkdir --parents --verbose $TMP_DIR/chrome
+
+# create this tmp directory so that we can search+replace it's files
+#
+mkdir --parents --verbose $TMP_DIR_JAR
+for CHROME_SUBDIR in $CHROME_PROVIDERS; do
+  cp -r $CHROME_SUBDIR $TMP_DIR_JAR
+done
+cd $TMP_DIR_JAR
+
+$ROOT_DIR/$BEFORE_JAR
 
 # generate the JAR file, excluding CVS, SVN, and temporary files
 JAR_FILE=$TMP_DIR/chrome/$APP_NAME.jar
@@ -82,6 +93,10 @@ done
 zip -0 -r $JAR_FILE -@ < files
 # The following statement should be used instead if you don't wish to use the JAR file
 #cp --verbose --parents `cat files` $TMP_DIR/chrome
+
+cd $ROOT_DIR
+
+rm -rf $TMP_DIR_JAR
 
 # prepare components and defaults
 echo "Copying various files to $TMP_DIR folder..."
