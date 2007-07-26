@@ -26,6 +26,8 @@
 #
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
+#
+# $Id: build.sh,v 1.4 2007-07-26 21:16:14 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 

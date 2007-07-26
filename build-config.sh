@@ -8,5 +8,6 @@ CHROME_PROVIDERS="content locale"
 CLEAN_UP=1
 ROOT_FILES="README"
 ROOT_DIRS="defaults"
-BEFORE_BUILD=./sed-script.sh
+BEFORE_BUILD=
+BEFORE_JAR=./build-sed-script.sh
 AFTER_BUILD=

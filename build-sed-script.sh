@@ -1,15 +1,7 @@
 #!/bin/sh
-# echo sed-script entered...
-
-# for debugging...
-# env | grep APP_
-# APP_NAME=zindus 
-# APP_VERSION_NUMBER=0.44
+# $Id: build-sed-script.sh,v 1.2 2007-07-26 21:15:30 cvsuser Exp $
 
 variables_to_replace="APP_NAME APP_VERSION_NUMBER"
-
-# look for the files that contain the strings that we're going to search and replace...
-#
 
 cd content
 
@@ -24,5 +16,3 @@ for x in $variables_to_replace; do
 		mv /tmp/asd $y
 	done
 done
-
-# echo sed-script exiting...
