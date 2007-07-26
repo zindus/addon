@@ -323,7 +323,7 @@ function resetAll()
 	// zap the logfile
 	//
 	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
-	file.append(LOGFILENAME);
+	file.append(LOGFILE_NAME);
 
 	if (file.exists() || !file.isDirectory())
 		file.remove(false);

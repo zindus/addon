@@ -76,7 +76,7 @@ function loggingFileOpen()
 			if (!logfile.exists() || !logfile.isDirectory())
 				logfile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 
-			logfile.append(LOGFILENAME); // dump("logfile.path == " + logfile.path + "\n");
+			logfile.append(LOGFILE_NAME); // dump("logfile.path == " + logfile.path + "\n");
 
 			var loggingFileSizeMax = prefs.getIntPref(prefs.branch(), "loggingFileSizeMax");
 

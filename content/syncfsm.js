@@ -42,6 +42,9 @@ include("chrome://zindus/content/passwordmanager.js");
 SyncFsm.FILE_LASTSYNC = "lastsync";
 SyncFsm.FILE_GID      = "gid";
 
+const ABSPECIAL_GAL   = "GAL"; // TODO - cleanup
+const ABSPECIAL_TRASH = "Trash";
+
 function SyncFsm(state)
 {
 	this.state   = state;

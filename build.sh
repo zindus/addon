@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.4 2007-07-26 21:16:14 cvsuser Exp $
+# $Id: build.sh,v 1.5 2007-07-26 21:47:53 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -60,28 +60,21 @@ fi
 XPI_FILE_NAME=$APP_NAME-$APP_VERSION_NUMBER-$PLATFORM_ID.xpi
 ROOT_DIR=`pwd`
 TMP_DIR=$ROOT_DIR/build
-TMP_DIR_JAR=$ROOT_DIR/tmp-for-jar
 
 #uncomment to debug
 # set -x
 
 # remove any left-over files from previous build
 rm -f $APP_NAME.jar $XPI_FILE_NAME files
-rm -rf $TMP_DIR $TMP_DIR_JAR
+rm -rf $TMP_DIR
 
 $BEFORE_BUILD
+
+[ $? -ne "0" ] && exit 1
 
 set +x
 
 mkdir --parents --verbose $TMP_DIR/chrome
-
-# create this tmp directory so that we can search+replace it's files
-#
-mkdir --parents --verbose $TMP_DIR_JAR
-for CHROME_SUBDIR in $CHROME_PROVIDERS; do
-  cp -r $CHROME_SUBDIR $TMP_DIR_JAR
-done
-cd $TMP_DIR_JAR
 
 $ROOT_DIR/$BEFORE_JAR
 
@@ -95,10 +88,6 @@ done
 zip -0 -r $JAR_FILE -@ < files
 # The following statement should be used instead if you don't wish to use the JAR file
 #cp --verbose --parents `cat files` $TMP_DIR/chrome
-
-cd $ROOT_DIR
-
-rm -rf $TMP_DIR_JAR
 
 # prepare components and defaults
 echo "Copying various files to $TMP_DIR folder..."
