@@ -34,7 +34,8 @@ function onLoad(event)
 
 	try
 	{
-		logger.debug("\n\n==== thunderbirdoverlay: onLoad entered: " + getTime());
+		logger.debug("\n\n==== startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + (new Date()).toLocaleString());
+		logger.debug("thunderbirdoverlay: onLoad entered: ");
 
 		// We dont want to do this each time a new window is opened
 		var messengerWindow = document.getElementById("messengerWindow");

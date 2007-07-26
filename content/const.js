@@ -21,8 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-const APP_VERSION_NUMBER=0.1.5;          // variable substitution by the build process would make sense for these two identifiers except
-const APP_NAME=zindus;                   // that during development, thunderbird directly references the source tree...
+const APP_VERSION_NUMBER="0.1.5";          // variable substitution by the build process would make sense for these two identifiers except
+const APP_NAME="zindus";                   // that during development, thunderbird directly references the source tree...
 
 const SOAP_REQUEST_FAILED = -12344;      // fake an error code to workaround a bug in mozilla soap
 

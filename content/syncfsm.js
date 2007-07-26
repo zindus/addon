@@ -41,9 +41,7 @@ include("chrome://zindus/content/passwordmanager.js");
 
 SyncFsm.FILE_LASTSYNC = "lastsync";
 SyncFsm.FILE_GID      = "gid";
-
-const ABSPECIAL_GAL   = "GAL"; // TODO - cleanup
-const ABSPECIAL_TRASH = "Trash";
+SyncFsm.ABSPECIAL_GAL = "GAL";
 
 function SyncFsm(state)
 {
@@ -654,7 +652,7 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 	// But the addressbook api doesn't support user-defined properties.
 	//
 
-	var abName = this.getAddressBookName() + ">" + ABSPECIAL_GAL;
+	var abName = this.getAddressBookName() + ">" + SyncFsm.ABSPECIAL_GAL;
 	var uri    = ZimbraAddressBook.getAddressBookUri(abName);
 	var aAdd   = new Array(); // each element in the array is an index into aSyncGalContact
 
