@@ -2435,7 +2435,7 @@ SyncFsm.prototype.feedItemTypeFromGid = function(gid, sourceid)
 
 SyncFsm.getAddressBookName = function()
 {
-	var ret = EXTENSION_NAME;
+	var ret = APP_NAME;
 
 	if (arguments.length == 1)
 		ret += "/" + arguments[0];

@@ -39,7 +39,7 @@ MozillaPreferences.prototype.branch = function()
 			var instance = Components.classes["@mozilla.org/preferences-service;1"].
 		                                       getService(Components.interfaces.nsIPrefService);
 	
-			this.m_branch = instance.getBranch(EXTENSION_NAME + ".");
+			this.m_branch = instance.getBranch(APP_NAME + ".");
 		}
 		catch(ex)
 		{
@@ -59,7 +59,7 @@ MozillaPreferences.prototype.defaultbranch = function()
 			var instance = Components. classes["@mozilla.org/preferences-service;1"].
 		                                        getService(Components.interfaces.nsIPrefService);
 	
-			this.m_defaultbranch = instance.getDefaultBranch(EXTENSION_NAME + ".");
+			this.m_defaultbranch = instance.getDefaultBranch(APP_NAME + ".");
 		}
 		catch(ex)
 		{

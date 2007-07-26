@@ -112,7 +112,7 @@ function stringBundleString(id_string)
 
 	try
 	{
-		ret = stringbundle.getString(EXTENSION_NAME + "." + id_string);
+		ret = stringbundle.getString(APP_NAME + "." + id_string);
 	}
 	catch (e)
 	{

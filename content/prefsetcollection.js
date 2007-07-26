@@ -40,6 +40,8 @@ function PrefSetCollection(template)
 	this.m_prefs = mp.branch();
 }
 
+PrefSetCollection.START_NUMBERING_AT=1000;  // leaves plenty of room for default preferences 0-999
+
 PrefSetCollection.prototype.load = function(branch)
 {
 	var i, obj, isLoaded, aid;
@@ -95,7 +97,7 @@ PrefSetCollection.prototype.getNextId = function()
 	// notice that this loops to '<=' while the above loops to '<'
 	// caters for the "no empty space, add at the end" use case
 
-	for (i = PREFERENCES_STARTAT; i <= (PREFERENCES_STARTAT + this.m_collection.length); i++)
+	for (i = PrefSetCollection.START_NUMBERING_AT; i <= (PrefSetCollection.START_NUMBERING_AT + this.m_collection.length); i++)
 		if (present[i] == undefined)
 		{
 			ret = i;
@@ -107,14 +109,14 @@ PrefSetCollection.prototype.getNextId = function()
 	return ret;
 }
 
-// count default prefsets by totalling the number of ids below PREFERENCES_STARTAT
+// count default prefsets by totalling the number of ids below PrefSetCollection.START_NUMBERING_AT
 //
 PrefSetCollection.prototype.countDefault = function()
 {
 	var ret = 0;
 
 	for (i = 0; i < this.m_collection.length; i++)
-		if (this.m_collection[i].m_id < PREFERENCES_STARTAT)
+		if (this.m_collection[i].m_id < PrefSetCollection.START_NUMBERING_AT)
 			ret++;
 	
 	return ret;

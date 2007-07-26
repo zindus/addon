@@ -21,9 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-const EXTENSION_NAME = "zindus";
-
-const PREFERENCES_STARTAT = 1000;            // leaves plenty of room for default preferences 0-999
+const APP_VERSION_NUMBER=0.1.5;    // variable substitution by the build process would make sense for these two identifiers except that
+const APP_NAME=zindus;             // during development, thunderbird directly references the source tree...
 
 const LOGFILENAME = "logfile.txt"; // appended to DIRECTORY_LOG
 
