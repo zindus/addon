@@ -30,15 +30,15 @@
 #
 # default configuration file is ./build-config.sh, unless another file is 
 # specified in command-line. Available config variables:
-APP_NAME=          # short-name, jar and xpi files name. Must be lowercase with no spaces
-CHROME_PROVIDERS=  # which chrome providers we have (space-separated list)
-CLEAN_UP=          # delete the jar / "files" when done?       (1/0)
-ROOT_FILES=        # put these files in root of xpi (space separated list of leaf filenames)
-ROOT_DIRS=         # ...and these directories       (space separated list)
-BEFORE_BUILD=      # run this before building       (bash command)
-AFTER_BUILD=       # ...and this after the build    (bash command)
-VERSION_NUMBER=    # eg: 0.1
-# PLATFORM_ID=     # eg: linux-i686 or win.  Don't set it to the empty string here as we want it to be passed in via the environment.
+APP_NAME=           # short-name, jar and xpi files name. Must be lowercase with no spaces
+APP_VERSION_NUMBER= # eg: 0.1
+CHROME_PROVIDERS=   # which chrome providers we have (space-separated list)
+CLEAN_UP=           # delete the jar / "files" when done?       (1/0)
+ROOT_FILES=         # put these files in root of xpi (space separated list of leaf filenames)
+ROOT_DIRS=          # ...and these directories       (space separated list)
+BEFORE_BUILD=       # run this before building       (bash command)
+AFTER_BUILD=        # ...and this after the build    (bash command)
+PLATFORM_ID=tb      # eg: linux-i686 or win.  Don't set it to the empty string here as we want it to be passed in via the environment.
 
 if [ -z $1 ]; then
   . ./build-config.sh
@@ -46,24 +46,29 @@ else
   . $1
 fi
 
+export APP_NAME APP_VERSION_NUMBER  # BEFORE_BUILD might use these...
+
 if [ -z $APP_NAME ]; then
   echo "You need to create build config file first!"
   echo "Read comments at the beginning of this script for more info."
   exit;
 fi
 
-XPI_FILE_NAME=$APP_NAME-$VERSION_NUMBER-$PLATFORM_ID.xpi
+XPI_FILE_NAME=$APP_NAME-$APP_VERSION_NUMBER-$PLATFORM_ID.xpi
 ROOT_DIR=`pwd`
 TMP_DIR=build
 
 #uncomment to debug
-#set -x
+set -x
 
 # remove any left-over files from previous build
 rm -f $APP_NAME.jar $XPI_FILE_NAME files
 rm -rf $TMP_DIR
 
+echo BEFORE_BUILD is ${BEFORE_BUILD}
 $BEFORE_BUILD
+
+set +x
 
 mkdir --parents --verbose $TMP_DIR/chrome
 
