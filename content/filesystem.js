@@ -21,9 +21,14 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-Filesystem.DIRECTORY_PROFILE   = 1; // used to distinguish from DIRECTORY_EXTENSION to - since deleted
-Filesystem.DIRECTORY_LOG       = "zindus-log";
-Filesystem.DIRECTORY_MAPPING   = "zindus-mappings";
+include("chrome://zindus/content/utils.js");
+
+Filesystem.DIRECTORY_PROFILE = "profile";  // C:\Documents and Settings\user\Application Data\Thunderbird\Profiles\blah
+Filesystem.DIRECTORY_APP     = APP_NAME;   //                                                                      blah\zindus
+Filesystem.DIRECTORY_LOG     = "log";      //                                                                      blah\zindus\log
+Filesystem.DIRECTORY_DATA    = "data";     //                                                                      blah\zindus\data
+
+Filesystem.aDirectory = new Object();
 
 // from prio.h
 Filesystem.PERM_PR_IRUSR  = 0400;  // Read  by owner
@@ -40,98 +45,59 @@ function Filesystem()
 {
 }
 
-Filesystem.getDirectoryParent = function(code)
-{
-	zinAssert(code == Filesystem.DIRECTORY_PROFILE);
-
-	var ret;
-
-	try
-	{
-		// See http://www.mozilla.org/support/thunderbird/profile#locate
-		if (code == Filesystem.DIRECTORY_PROFILE)
-			ret = Components.classes["@mozilla.org/file/directory_service;1"]
-		                 .getService(Components.interfaces.nsIProperties)
-		                 .get("ProfD", Components.interfaces.nsIFile);
-	}
-	catch (ex)
-	{
-		alert("Filesystem::getDirectoryParent : " + ex);
-	}
-
-	// dump("Filesystem::getDirectoryParent returns an nsIFile object: " + ret.path + "\n");
-
-	return ret;
-}
-
 Filesystem.getDirectory = function(code)
 {
-	var aRelativeTo = new Object();
-	aRelativeTo[Filesystem.DIRECTORY_LOG]      = Filesystem.DIRECTORY_PROFILE;
-	aRelativeTo[Filesystem.DIRECTORY_MAPPING]  = Filesystem.DIRECTORY_PROFILE;
+	var nsifile;
 
-	zinAssert(typeof aRelativeTo[code] != 'undefined');
+	if (!isPropertyPresent(Filesystem.aDirectory, code))
+		switch(code)
+		{
+			case Filesystem.DIRECTORY_PROFILE:
+				// http://developer.mozilla.org/en/docs/Code_snippets:File_I/O
+				Filesystem.aDirectory[code] = Components.classes["@mozilla.org/file/directory_service;1"]
+				                                  .getService(Components.interfaces.nsIProperties)
+				                                  .get("ProfD", Components.interfaces.nsIFile);
+				Filesystem.aDirectory[code].clone();
+				break;
 
-	var parent = this.getDirectoryParent(aRelativeTo[code]);
-	var ret = parent.clone();
-	ret.append(code);
+			case Filesystem.DIRECTORY_APP:
+				Filesystem.aDirectory[code] = Filesystem.getDirectory(Filesystem.DIRECTORY_PROFILE);
+				Filesystem.aDirectory[code].append(code);
+				break;
+
+		case Filesystem.DIRECTORY_LOG:
+				Filesystem.aDirectory[code] = Filesystem.getDirectory(Filesystem.DIRECTORY_APP);
+				Filesystem.aDirectory[code].append(code);
+				break;
+
+		case Filesystem.DIRECTORY_DATA:
+				Filesystem.aDirectory[code] = Filesystem.getDirectory(Filesystem.DIRECTORY_APP);
+				Filesystem.aDirectory[code].append(code);
+				break;
+
+		default:
+			cnsAssert(false);
+			break;
+	}
+
+	var ret = Filesystem.aDirectory[code].clone();
 
 	return ret;
 }
 
-Filesystem.getLogDir = function()
+Filesystem.createDirectoryIfRequired = function(code)
 {
-	var file = this.getDirectory(Filesystem.DIRECTORY_MAPPING);
+	var nsifile = Filesystem.getDirectory(code);
 
-	file.append(Filesystem.DIRECTORY_LOG);
-
-	return file;
+	if (!nsifile.exists() || !nsifile.isDirectory()) 
+		nsifile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 }
 
-Filesystem.createLogDir = function()
+Filesystem.createDirectoriesIfRequired = function()
 {
-	this.createDir(Filesystem.DIRECTORY_LOG);
-}
-
-Filesystem.createMappingDir = function()
-{
-	this.createDir(Filesystem.DIRECTORY_MAPPING);
-}
-
-Filesystem.createDir = function(name)
-{
-	var file = this.getDirectory(Filesystem.DIRECTORY_MAPPING);
-
-	file.append(name);
-
-	if (!file.exists() || !file.isDirectory()) 
-	{   
-		file.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
-	}
-}
-
-Filesystem.writeToPath = function(path, content) 
-{
-	var retval = false;
-
-	try 
-	{
-		// leni note - sunny had some privilige escalation code here
-		// might need to use it in order to write the mapping to the profile directory (rather than the extension directory).
-		//
-		var file = Components.classes["@mozilla.org/file/local;1"].
-		                      createInstance(Components.interfaces.nsILocalFile);
-
-		file.initWithPath(path);
-
-		retval = this.writeToFile(file, content);
-	}
-	catch (e) 
-	{
-		alert(e);
-	}
-
-	return retval;
+	Filesystem.createDirectoryIfRequired(Filesystem.DIRECTORY_APP);
+	Filesystem.createDirectoryIfRequired(Filesystem.DIRECTORY_LOG);
+	Filesystem.createDirectoryIfRequired(Filesystem.DIRECTORY_DATA);
 }
 
 Filesystem.writeToFile = function(file, content) 
@@ -140,10 +106,6 @@ Filesystem.writeToFile = function(file, content)
 
 	try 
 	{
-		// leni note - sunny had some privilige escalation code here
-		// might need to use it in order to write the mapping to the profile directory (rather than the extension directory).
-		//
-
 		if (!file.exists()) 
 			file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 
@@ -190,7 +152,7 @@ Filesystem.fileReadByLine = function(path, functor)
 			line.value = null;
 		} 
 
-		zinAssert(!line.value); // just being conservative...
+		zinAssert(!line.value); // just to confirm my understanding of the way the loop works
 
 		istream.close();
 	} 

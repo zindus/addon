@@ -61,11 +61,6 @@ Prefs.prototype.onLoad = function(target)
 		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('hidden');
 	}
 
-	// for experimentation only... TODO removeme
-	// var consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
-	// consoleService.logStringMessage("test an nsIConsoleService message: ")
-	// Components.utils.reportError("test a Components.utils.reportError message: ");
-
 	this.m_prefset_server.load(SOURCEID_ZM);
 	this.m_prefset_general.load();
 
@@ -201,7 +196,7 @@ Prefs.prototype.onCommand = function(id_target)
 
 		case "zindus-prefs-general-button-reset":
 			// TODO - this needs a guard around it so that the timer can't run during...
-			resetAll();
+			this.reset();
 			break;
 
 		case "zindus-prefs-tab-general":
@@ -294,15 +289,14 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		}
 }
 
-function resetAll()
+Prefs.prototype.reset = function()
 {
-	var logger = newLogger("Prefs");
-	logger.debug("resetAll: ");
+	this.m_logger.debug("reset: ");
 
 	var file;
-	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
+	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
 
-	// zap everything in the mapping directory
+	// remove files in the data directory
 	//
 	if (directory.exists() && directory.isDirectory())
 	{
@@ -316,17 +310,19 @@ function resetAll()
 		}
 	}
 
-	var aAddressBook = SyncFsm.getTbAddressbooks();
-
-	for each (abName in aAddressBook)
-		ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
-
-	// zap the logfile
+	// remove the logfile
 	//
 	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
 	file.append(LOGFILE_NAME);
 
 	if (file.exists() && !file.isDirectory())
 		file.remove(false);
+
+	// remove the addressbooks created by the extension
+	//
+	var aAddressBook = SyncFsm.getTbAddressbooks();
+
+	for each (abName in aAddressBook)
+		ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
 }
 

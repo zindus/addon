@@ -154,7 +154,7 @@ ZinFeedCollection.prototype.load = function(filename)
 	functor.m_zfc  = this;
 	functor.m_zfi = new ZinFeedItem();
 
-	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
+	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
 	file.append(filename);
 	// this.m_logger.debug("about to parse file: " + file.path);
 
@@ -170,14 +170,7 @@ ZinFeedCollection.prototype.save = function(filename)
 	// so the functor used in load() doesn't get called.
 	content += "\n";
 
-	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
-
-	if (!file.exists() || !file.isDirectory())
-	{
-		this.m_logger.debug("435656: about to create: " + file.path);
-
-		file.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0755);
-	}
+	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
 
 	file.append(filename);
 

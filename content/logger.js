@@ -22,6 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/log4js.js");  // see: http://log4js.sourceforge.net
+include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/mozillapreferences.js");
 
 /**
@@ -51,6 +52,36 @@ Log.dumpAndFileLogger = function(msg,level)
 
 		loggingFileClose(os);
 	}
+
+	// dodgy: here we test for the strings, rather than the class constants...
+	// if (level == Log.WARN || level == Log.ERROR || level == Log.FATAL)
+
+	if (level == "WARN" || level == "ERROR" || level == "FATAL")
+	{
+		// See: http://developer.mozilla.org/en/docs/nsIConsoleService
+		var consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
+		var scriptError    = Components.classes["@mozilla.org/scripterror;1"].createInstance(Components.interfaces.nsIScriptError);
+		var category       = "";
+		var flags;
+
+		switch (level)
+		{
+			case "WARN":  flags = scriptError.warningFlag; break;
+			case "ERROR": flags = scriptError.errorFlag;   break;
+			case "FATAL": flags = scriptError.errorFlag;   break;
+			default: zinAssert(false);
+		}
+
+		// dump("msg: " + msg + "\n");
+		// dump("flags: " + flags + "\n");
+		// dump("nsIScriptError: " + scriptError.toString() + "\n");
+
+		scriptError.init(msg, null, null, null, null, flags, category);
+		consoleService.logMessage(scriptError);
+
+		// consoleService.logStringMessage("test an nsIConsoleService message: ")
+		// Components.utils.reportError("test a Components.utils.reportError message: ");
+	}
 }
 
 // - if the file size exceeds the .loggingFileSizeMax preference it is truncated
@@ -66,12 +97,8 @@ function loggingFileOpen()
 
 	try
 	{
-		var logfile = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
-
 		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
-
-		if (!logfile.exists() || !logfile.isDirectory())
-			logfile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
+		var logfile = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
 
 		logfile.append(LOGFILE_NAME); // dump("logfile.path == " + logfile.path + "\n");
 
@@ -80,10 +107,8 @@ function loggingFileOpen()
 		if (logfile.exists() && logfile.fileSize > loggingFileSizeMax)
 			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
 
-		ret = Components.classes["@mozilla.org/network/file-output-stream;1"].
-	                        createInstance(Components.interfaces.nsIFileOutputStream);
+		ret = Components.classes["@mozilla.org/network/file-output-stream;1"].createInstance(Components.interfaces.nsIFileOutputStream);
 
-		// TODO - test this
 		// this next line throws an exception if the logfile is already open (eg by a hung process)
 		//
 		ret.init(logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
@@ -94,12 +119,15 @@ function loggingFileOpen()
 	{
 		if (typeof(is_first_logging_file_open_exception) == 'undefined')
 		{
+			Components.utils.reportError("am here 1");
 			Components.utils.reportError(e);
 			is_first_logging_file_open_exception = true;
 		}
 
 		ret = null;
 	}
+
+	// dump("loggingFileOpen returns: " + (ret == null ? "null" : ret) + "\n");
 
 	return ret;
 }

@@ -22,7 +22,6 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/utils.js");
-include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/logger.js");
 
 // A few places in this class there are properties and methods that are both static and per-object.

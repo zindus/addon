@@ -22,6 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/logger.js");
+include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/timer.js");
 
@@ -34,7 +35,6 @@ function onLoad(event)
 	try
 	{
 		newLogger().info("startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getDateUTCString());
-		logger.debug("onLoad entered: ");
 
 		// We dont want to do this each time a new window is opened
 		var messengerWindow = document.getElementById("messengerWindow");
@@ -42,6 +42,8 @@ function onLoad(event)
 		if (messengerWindow)
 		{
 			logger.debug("in messengerWindow");
+
+			Filesystem.createDirectoriesIfRequired();
 
 			var maestro = new ZinMaestro();
 
@@ -72,7 +74,7 @@ function onLoad(event)
 	}
 	catch (ex)
 	{
-		alert("thunderbirdoverlay onLoad() : " + ex);
+		alert(APP_NAME + " thunderbirdoverlay onLoad() : " + ex);
 	}
 }
 
