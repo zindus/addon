@@ -119,7 +119,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			                                        stringBundleString("zfomPrefix") + " " + this.m_sfpo.progressToString());
 		}
 
-		if (fsmstate.oldstate == "final")
+		if (fsmstate.isFinal())
 		{
 			this.m_payload.m_result = this.m_sfpo.exitStatus();
 

@@ -29,7 +29,7 @@ include("chrome://zindus/content/maestro.js");
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.12 2007-07-27 00:37:40 cvsuser Exp $
+// $Id: fsm.js,v 1.13 2007-07-27 10:21:57 cvsuser Exp $
 
 if (typeof fsmlogger != 'object' || !fsmlogger)
     fsmlogger = newLogger("fsm");
@@ -142,12 +142,12 @@ function fsmDoTransition(fsmstate)
 		//
 		if (newstate == 'final')
 		{
-			var fsmstate = new FsmState('id_fsm',   id_fsm,
+			var fsmstate = new FsmState('id_fsm',    id_fsm,
 			                            'timeoutID', null,
-			                            'oldstate', newstate,
-			                            'newstate', null,
-			                            'event',    null,
-			                            'context',  context);
+			                            'oldstate',  newstate,
+			                            'newstate',  null,
+			                            'event',     null,
+			                            'context',   context);
 
 			ZinMaestro.notifyFsmState(fsmstate);
 		}
@@ -199,4 +199,9 @@ FsmState.prototype.toString = function()
 	       " oldstate: "  + this.oldstate +
 	       " newstate: "  + this.newstate +
 	       " event: "     + this.event;
+}
+
+FsmState.prototype.isFinal = function()
+{
+	return typeof(this["oldstate"]) == 'string' && this.oldstate == "final";
 }

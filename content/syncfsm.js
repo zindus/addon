@@ -37,7 +37,6 @@ include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/passwordmanager.js");
 
 // TODO - GetInfo for zimbraFeatureGalEnabled 
-// TODO - look for gLogger.error messages and perhaps implement an "orderly exit" flag that's tested before each continuation
 
 SyncFsm.FILE_LASTSYNC = "lastsync";
 SyncFsm.FILE_GID      = "gid";

@@ -56,7 +56,8 @@ ZinMaestro.logger = newLogger("ZinMaestro");
 ZinMaestro.FSM_ID_TWOWAY   = "syncfsm-twoway";
 ZinMaestro.FSM_ID_AUTHONLY = "syncfsm-authonly";
 ZinMaestro.FSM_ID_SOAP     = "soapfsm";
-ZinMaestro.FSM_GROUP_SYNC  = newObject(ZinMaestro.FSM_ID_TWOWAY, 0, ZinMaestro.FSM_ID_AUTHONLY, 0);
+ZinMaestro.FSM_ID_RESET    = "reset";
+ZinMaestro.FSM_GROUP_SYNC  = newObject(ZinMaestro.FSM_ID_TWOWAY, 0, ZinMaestro.FSM_ID_AUTHONLY, 0, ZinMaestro.FSM_ID_RESET, 0);
 
 // ID_FUNCTOR_* uniquely identifies each functor
 //
@@ -109,6 +110,7 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 				this.m_a_functor[id_functor] = newObject('a_id_fsm', zinCloneObject(subject['a_id_fsm']),
 				                                         'functor',  subject['functor'],
 				                                         'context',  subject['context']);
+
 				this.functorNotifyOnRegister(id_functor);
 				break;
 
@@ -121,14 +123,20 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 				zinAssert(isPropertyPresent(subject, 'fsmstate'));
 				var id_fsm = subject.fsmstate.id_fsm;
 
+				if (!isPropertyPresent(this.m_a_fsmstate, id_fsm) && !subject.fsmstate.isFinal())
+					this.m_logger.debug("observe: adding to m_a_fsmstate: " + id_fsm);
+					
 				this.m_a_fsmstate[id_fsm] = subject.fsmstate;
 
 				// this.m_logger.debug("DO_FSM_STATE_UPDATE: m_a_fsmstate[" + id_fsm + "]: " + this.m_a_fsmstate[id_fsm].toString());
 
 				this.functorNotifyAll(id_fsm);
 
-				if (this.m_a_fsmstate[id_fsm].oldstate == 'final')
+				if (this.m_a_fsmstate[id_fsm].isFinal())
+				{
+					this.m_logger.debug("observe: removing from m_a_fsmstate: " + id_fsm);
 					delete this.m_a_fsmstate[id_fsm];
+				}
 
 				break;
 
@@ -155,8 +163,11 @@ ZinMaestro.prototype.functorNotifyAll = function(id_fsm)
 		{
 			var functor = this.m_a_functor[id_functor]['functor'];
 			var context = this.m_a_functor[id_functor]['context'];
+			var args    = isPropertyPresent(this.m_a_fsmstate, id_fsm) ? this.m_a_fsmstate[id_fsm] : null;
 
-			functor.call(context, isPropertyPresent(this.m_a_fsmstate, id_fsm) ? this.m_a_fsmstate[id_fsm] : null);
+			this.m_logger.debug(msg + " - calling the functor with args: " + args);
+
+			functor.call(context, args);
 		}
 		else
 			this.m_logger.debug(msg + " - not interested in change to this fsm");

@@ -49,8 +49,8 @@ function Prefs()
 	this.checkbox_bimap      = new BiMap(this.checkbox_properties, this.checkbox_ids);
 
 	this.is_fsm_running = false;
-	// this.m_logger       = newLogger("Prefs");
-	this.m_logger       = new Log(Log.NONE, Log.dumpAndFileLogger, "Prefs");
+	this.m_logger       = newLogger("Prefs");
+	// this.m_logger       = new Log(Log.NONE, Log.dumpAndFileLogger, "Prefs");
 }
 
 Prefs.prototype.onLoad = function(target)
@@ -195,7 +195,6 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-reset":
-			// TODO - this needs a guard around it so that the timer can't run during...
 			this.reset();
 			break;
 
@@ -257,15 +256,18 @@ Prefs.prototype.updateView = function()
 
 	if (this.is_fsm_running)
 	{
+		this.m_logger.debug("updateView: fsm running");
 		document.getElementById("zindus-prefs-cmd-sync").setAttribute('disabled', true);
 	}
 	else if (!this.isServerSettingsComplete())
 	{
+		this.m_logger.debug("updateView: server settings incomplete");
 		document.getElementById("zindus-prefs-general-button-run-timer").setAttribute('disabled', true);
 		document.getElementById("zindus-prefs-general-button-sync-now").setAttribute('disabled', true);
 	}
 	else
 	{
+		this.m_logger.debug("updateView: removing disabled attributes");
 		document.getElementById("zindus-prefs-cmd-sync").removeAttribute('disabled');
 		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('disabled');
 		document.getElementById("zindus-prefs-general-button-sync-now").removeAttribute('disabled');
@@ -274,6 +276,8 @@ Prefs.prototype.updateView = function()
 
 Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
+	// this.m_logger.debug("onFsmStateChangeFunctor: fsmstate: " + (fsmstate ? fsmstate.toString() : "null") );
+
 	if (fsmstate)
 		if (fsmstate.newstate == "start")
 		{
@@ -281,7 +285,7 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.is_fsm_running = true;
 			this.updateView();
 		}
-		else if (fsmstate.oldstate == "final")
+		else if (fsmstate.isFinal())
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm finished");
 			this.is_fsm_running = false;
@@ -291,6 +295,8 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 Prefs.prototype.reset = function()
 {
+	// One might imagine that the fsm timer might run during this but it can't because the code below doesn't release control
+
 	this.m_logger.debug("reset: ");
 
 	var file;

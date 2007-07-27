@@ -142,7 +142,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			}
 		}
 
-		if (fsmstate.oldstate == "final")
+		if (fsmstate.isFinal())
 		{
 			// TODO - display the exit status 
 			// one option: put something in the status panel and set a timer that eventually hides the status panel
