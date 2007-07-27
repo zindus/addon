@@ -26,6 +26,7 @@ include("chrome://zindus/content/lso.js");
 
 function ZinTestHarness()
 {
+	this.m_logger = newLogger();
 }
 
 ZinTestHarness.prototype.run = function()
@@ -57,11 +58,11 @@ ZinTestHarness.prototype.testZinFeedCollection = function()
 
 	cfc.set(cfi);
 
-	gLogger.debug("3233: cfc.toString() == \n" + cfc.toString());
+	this.m_logger.debug("3233: cfc.toString() == \n" + cfc.toString());
 
 	cfc.del(1);
 
-	gLogger.debug("3233: cfc.toString() after del(1) == \n" + cfc.toString());
+	this.m_logger.debug("3233: cfc.toString() after del(1) == \n" + cfc.toString());
 }
 
 ZinTestHarness.prototype.testContactConverter = function()
@@ -73,7 +74,7 @@ ZinTestHarness.prototype.testContactConverter = function()
 
 	var properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, element);
 
-	gLogger.debug("3233: testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
+	this.m_logger.debug("3233: testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
 }
 
 ZinTestHarness.prototype.testPropertyDelete = function()
@@ -86,17 +87,17 @@ ZinTestHarness.prototype.testPropertyDelete = function()
 	x[4] = 4;
 	x[5] = 5;
 
-	gLogger.debug("3233: x: " + aToString(x));
+	this.m_logger.debug("3233: x: " + aToString(x));
 
 	for (i in x)
 	{
-		gLogger.debug("3233: i: " + i);
+		this.m_logger.debug("3233: i: " + i);
 
 		if (i == 3)
 			delete x[i];
 	}
 
-	gLogger.debug("3233: x: " + aToString(x));
+	this.m_logger.debug("3233: x: " + aToString(x));
 }
 
 ZinTestHarness.prototype.testLso = function()
@@ -110,7 +111,7 @@ ZinTestHarness.prototype.testLso = function()
 	        " " +
 			hyphenate(":", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 
-	gLogger.debug("blah: t: " + t);
+	this.m_logger.debug("blah: t: " + t);
 
 	var zfi1 = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334, ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_MD, 1168484761);
 	var zfi2 = zinCloneObject(zfi1);
@@ -125,8 +126,8 @@ ZinTestHarness.prototype.testLso = function()
 
 	lso = new Lso(str);
 
-	// gLogger.debug("testLso: lso == " + aToString(lso));
-	// gLogger.debug("testLso: lso.toString() == " + lso.toString());
+	// this.m_logger.debug("testLso: lso == " + aToString(lso));
+	// this.m_logger.debug("testLso: lso.toString() == " + lso.toString());
 
 	zinAssert(lso.toString() == str);
 
@@ -135,7 +136,7 @@ ZinTestHarness.prototype.testLso = function()
 
 ZinTestHarness.testLsoCompare = function(lso, zfi)
 {
-	// gLogger.debug("testLso: lso.compare(zfi) == " + lso.compare(zfi));
+	// this.m_logger.debug("testLso: lso.compare(zfi) == " + lso.compare(zfi));
 
 	zinAssert(lso.compare(zfi) == 0);  // test compare() == 0;
 

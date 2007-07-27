@@ -25,6 +25,7 @@ function ZimbraContact()
 {
 	this.attribute = new Object();
 	this.element   = new Object();
+	this.m_logger  = newLogger();
 }
 
 ZimbraContact.prototype.isMailList = function()
@@ -51,7 +52,7 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 	var key = null;
 	var value = null;
 
-	gLogger.debug("77220: ZimbraContact.prototype.loadFromNode - node.nodeName == " + node.nodeName);
+	this.m_logger.debug("77220: ZimbraContact.prototype.loadFromNode - node.nodeName == " + node.nodeName);
 
 	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
@@ -69,11 +70,9 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 	// namespace of <cn> elements within SyncGalResponse    is NS_ACCOUNT
 	// namespace of <cn> elements within GetContactResponse is NS_MAIL
 	//
-	// gLogger.debug("77221: nodelist_of_a.length == " + nodelist_of_a.length + "\n");
-	//
 	var nodelist_of_a = node.getElementsByTagNameNS(ns, "a");
 
-	gLogger.debug("77221: nodelist_of_a.length == " + nodelist_of_a.length + "\n");
+	this.m_logger.debug("77221: nodelist_of_a.length == " + nodelist_of_a.length + "\n");
 
 	for (var i = 0; i < nodelist_of_a.length; i++)
 	{
@@ -92,9 +91,9 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 		if (key && value)
 			this.element[key] = value;
 		else
-			gLogger.warn("Unexpected response from server: key is " + key + " and value is " + value);
+			this.m_logger.warn("Unexpected response from server: key is " + key + " and value is " + value);
 
-		// if (key && value) gLogger.dump("77224: setting contact." + key + " to " + value);
+		// if (key && value) this.m_logger.debug("77224: setting contact." + key + " to " + value);
 	}
 }
 

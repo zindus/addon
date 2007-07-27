@@ -54,6 +54,7 @@ function ZinFeedCollection(has_reserved_range)
 {
 	this.m_collection  = new Object();
 	this.has_reserved_range = has_reserved_range;
+	this.m_logger = newLogger("ZinFeedCollection");
 }
 
 ZinFeedCollection.fileName = function()
@@ -127,14 +128,14 @@ ZinFeedCollection.prototype.load = function(filename)
 	{
 		run: function(line)
 		{
-			// gLogger.debug("line.length: " + line.length);
-			// gLogger.debug("line: " + line);
+			// this.m_logger.debug("line.length: " + line.length);
+			// this.m_logger.debug("line: " + line);
 
 			if (line.charAt(0) == '#')
 				; // do nothing
 			else if (line.length == 0)
 			{
-				// gLogger.debug("setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[ZinFeedItem.ATTR_ID] + "]");
+				// this.m_logger.debug("setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[ZinFeedItem.ATTR_ID] + "]");
 
 				this.m_zfc.set(this.m_zfi);
 				this.m_zfi = new ZinFeedItem();
@@ -145,7 +146,7 @@ ZinFeedCollection.prototype.load = function(filename)
 
 				this.m_zfi.set([line.substring(0, eq)], line.substring(eq + 1));
 
-				// gLogger.debug("this.m_zfi.m_properties[" + line.substring(0, eq) + "] = " + line.substring(eq + 1));
+				// this.m_logger.debug("m_zfi.m_properties[" + line.substring(0, eq) + "] = " + line.substring(eq + 1));
 			}
 		}
 	};
@@ -155,7 +156,7 @@ ZinFeedCollection.prototype.load = function(filename)
 
 	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);
 	file.append(filename);
-	// gLogger.debug("about to parse file: " + file.path);
+	// this.m_logger.debug("about to parse file: " + file.path);
 
 	if (file.exists() && !file.isDirectory())
 		Filesystem.fileReadByLine(file.path, functor);
@@ -173,7 +174,7 @@ ZinFeedCollection.prototype.save = function(filename)
 
 	if (!file.exists() || !file.isDirectory())
 	{
-		gLogger.debug("435656: about to create: " + file.path);
+		this.m_logger.debug("435656: about to create: " + file.path);
 
 		file.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0755);
 	}
@@ -231,7 +232,7 @@ ZinFeedItem.prototype.get = function(key)
 {
 	if (!this.isPresent(key))
 	{
-		gLogger.error("ZinFeedItem.get: key not present: " + key);
+		newLogger("ZinFeedItem").error("get: key not present: " + key);
 		zinAssert(false);
 	}
 
@@ -394,8 +395,6 @@ ZinFeed.getTopLevelFolderLuidBimap = function(zfc, attr, iter_flavour)
 
 	var bimap = new BiMap(functor.m_a_id, functor.m_a_attr);
 
-	gLogger.debug("blah: 8855888555: bimap: " + bimap.toString());
-
 	return bimap;
 }
 
@@ -416,8 +415,6 @@ ZinFeed.getContactIdsForParent = function(zfc, l)
 	};
 
 	zfc.forEach(functor, ZinFeedCollection.ITER_UNRESERVED);
-
-	gLogger.debug("554466 - getContactIdsForParent() returns: " + functor.m_a_result.toString());
 
 	return functor.m_a_result;
 }

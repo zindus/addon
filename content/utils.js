@@ -31,10 +31,12 @@ function zinAssert(expr)
 		}
 		catch(ex)
 		{
-			if (typeof gLogger == 'object' && gLogger)
+			if (typeof newLogger == 'function')
 			{
-				gLogger.fatal(ex.message);
-				gLogger.fatal(ex.stack);
+				var logger = newLogger("Utils");
+				
+				logger.fatal(ex.message);
+				logger.fatal(ex.stack);
 			}
 
 			if (typeof alert == 'function')

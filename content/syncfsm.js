@@ -59,7 +59,7 @@ SyncFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeout
 {
 	window.clearTimeout(syncfsm_timeoutID);
 
-	gLogger.debug("SyncFsm.cancel: cleared timeoutID: " + syncfsm_timeoutID);
+	this.state.m_logger.debug("SyncFsm.cancel: cleared timeoutID: " + syncfsm_timeoutID);
 
 	this.soapfsm.cancel(soapfsm_timeoutID);
 
@@ -68,15 +68,15 @@ SyncFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeout
 		// the fsm hasn't had a transition yet so there's no continuation
 		// so the new transition just enters the start state on a cancel event
 		//
-		gLogger.debug("SyncFsm.cancel: fsm was about to enter start state - now it does that on evCancel");
+		this.state.m_logger.debug("SyncFsm.cancel: fsm was about to enter start state - now it does that on evCancel");
 		fsmFireTransition(this.state.id_fsm, null, 'start', 'evCancel', this);
 	}
 	else
 	{
 		if (typeof this.fsm.continuation != 'function')
-			gLogger.error("about to throw an exception because this.fsm.continuation is not a function")
+			this.state.m_logger.error("about to throw an exception because this.fsm.continuation is not a function")
 
-		gLogger.debug("SyncFsm.cancel: continuing on evCancel");
+		this.state.m_logger.debug("SyncFsm.cancel: continuing on evCancel");
 
 		this.fsm.continuation('evCancel');
 	}
@@ -151,7 +151,7 @@ SyncFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 		else
 			zinAssert(false);
 
-		gLogger.debug(msg);
+		this.state.m_logger.debug(msg);
 
 		event = 'evCancel';
 	}
@@ -176,6 +176,8 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 {
 	var nextEvent = null;
 
+	dump("am here 11\n");
+
 	if (event == 'evCancel')
 	{
 		nextEvent = 'evCancel';
@@ -192,7 +194,10 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 		nextEvent = 'evStart';
 
-		gLogger.debug("89347523: entryActionStart: starting normally: SoapFsmState: " + this.soapfsm.state.summaryCode() + " nextEvent: " + nextEvent);
+		dump("am here 22\n");
+
+		this.state.m_logger.debug("89347523: entryActionStart: starting normally: SoapFsmState: " + this.soapfsm.state.summaryCode() + " nextEvent: " + nextEvent);
+		dump("am here 33\n");
 	}
 
 	continuation(nextEvent);
@@ -259,14 +264,14 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 				soapURL = functor.a[i];
 
 		if (!soapURL)
-			gLogger.warn("Unexpected soap response - multiple soapURL's returned and none are https");
+			this.state.m_logger.warn("Unexpected soap response - multiple soapURL's returned and none are https");
 	}
 
 	if (soapURL)
 		this.state.soapURL = soapURL;
 
-	// gLogger.debug("887788: soapURL == " + soapURL);
-	// gLogger.debug("887788: this.state.soapURL == " + this.state.soapURL);
+	// this.state.m_logger.debug("887788: soapURL == " + soapURL);
+	// this.state.m_logger.debug("887788: this.state.soapURL == " + this.state.soapURL);
 }
 
 SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
@@ -323,7 +328,7 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 	xpath_query = xpath_query_folders;
 
 	functor = {
-		aQueue: this.state.aQueue,
+		state: this.state,
 		run: function(doc, node)
 		{
 			var attribute = attributesFromNode(node);
@@ -332,7 +337,7 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 			var msg = "111113 - found a <folder id='" + id +"' l='" + l + "'>";
 
 			if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
-				gLogger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
+				this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
 			else
 			{
 				if (zfcServer.isPresent(id))
@@ -352,7 +357,7 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 						aContactIds = ZinFeed.getContactIdsForParent(zfc, id);
 
 						for (var i = 0; i < aContactIds.length; i++)
-							this.aQueue[aContactIds[i]] = true;
+							this.state.aQueue[aContactIds[i]] = true;
 
 						msg += " - folder has become of interest - adding children to queue: " + aContactIds.toString();
 					}
@@ -382,7 +387,7 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 	xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:cn[not(@ids) and not(@type='group')]";
 
 	functor = {
-		aQueue: this.state.aQueue,
+		state: this.state,
 
 		run: function(doc, node)
 		{
@@ -396,7 +401,7 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 			//
 
 			if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
-				gLogger.error("<cn> element received from server without an 'id' or 'l' attribute.  Unexpected.  Ignoring: " + aToString(attribute));
+				this.state.m_logger.error("<cn> element received from server without an 'id' or 'l' attribute.  Unexpected.  Ignoring: " + aToString(attribute));
 			else
 			{
 				var fAddToTheQueue = false;
@@ -429,11 +434,11 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 				if (fAddToTheQueue)
 				{
 					msg += " - add to the queue for GetContactRequest";
-					this.aQueue[id] = true;
+					this.state.aQueue[id] = true;
 				}
 			}
 
-			gLogger.debug(msg);
+			this.state.m_logger.debug(msg);
 		}
 	};
 
@@ -489,16 +494,16 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 	//   - contacts that are in the parent folders of interest, and
 	//   - contacts whose content has changed (indicated by the rev attribute being bumped)
 
-	gLogger.debug("11113 - aQueue: " + aToString(this.state.aQueue));
+	this.state.m_logger.debug("11113 - aQueue: " + aToString(this.state.aQueue));
 }
 
 SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
 {
-	// gLogger.debug("11116: entryActionGetContact, aQueue == " + aToString(this.state.aQueue) );
+	// this.state.m_logger.debug("11116: entryActionGetContact, aQueue == " + aToString(this.state.aQueue) );
 
 	if (this.state.SyncMd == null)
 	{
-		gLogger.debug("Can't proceed with sync because (for some reason) <SyncResponse> didn't have an 'md' attribute");
+		this.state.m_logger.debug("Can't proceed with sync because (for some reason) <SyncResponse> didn't have an 'md' attribute");
 		continuation('evCancel')
 	}
 
@@ -508,7 +513,7 @@ SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
 
 	if (typeof(id) != 'undefined')
 	{
-		gLogger.debug("11116: calling GetContactsRequest with id == " + id );
+		this.state.m_logger.debug("11116: calling GetContactsRequest with id == " + id );
 		this.callSoapFsm(continuation, this.eventFromSoapDefault, "evRepeat", "GetContacts", id);
 	}
 	else
@@ -529,17 +534,17 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 
 	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.response);
 
-	// gLogger.debug("111118 - functor.a.length == " + functor.a.length);
+	// this.state.m_logger.debug("111118 - functor.a.length == " + functor.a.length);
 
 	if (functor.a.length <= 0)
-		gLogger.warn("GetContactsResponse recieved without containing a <cn> entry");
+		this.state.m_logger.warn("GetContactsResponse recieved without containing a <cn> entry");
 	else
 	{
 		for (var i = 0; i < functor.a.length; i++)
 		{
 			var id = functor.a[i].attribute['id'];
 
-			// gLogger.debug("111119: i == " + i + " and id == " + id);
+			// this.state.m_logger.debug("111119: i == " + i + " and id == " + id);
 
 			if (this.state.aQueue[id])
 			{
@@ -554,13 +559,13 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 					else
 						zfcServer.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, functor.a[i].attribute));  // add new item
 
-					// gLogger.debug("111119: added this.state.aSyncContact[" + id + "] == " + this.state.aSyncContact[id]);
+					// this.state.m_logger.debug("111119: added this.state.aSyncContact[" + id + "] == " + this.state.aSyncContact[id]);
 				}
 
 				delete this.state.aQueue[id];
 			}
 			else
-				gLogger.warn("GetContactsResponse recieved contact id == " + id + " but it was not in our queue!  Ignored.");
+				this.state.m_logger.warn("GetContactsResponse recieved contact id == " + id + " but it was not in our queue!  Ignored.");
 		}
 	}
 }
@@ -570,15 +575,15 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 	var SyncGalMdInterval = parseInt(this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalMdInterval"));
 	var SyncMd = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncMd');
 
-	gLogger.debug("11443322: SyncGalMdInterval == " + SyncGalMdInterval);
-	gLogger.debug("11443322: SyncMdStored      == " + SyncMd);
-	gLogger.debug("11443322: SyncMd            == " + this.state.SyncMd );
+	this.state.m_logger.debug("11443322: SyncGalMdInterval == " + SyncGalMdInterval);
+	this.state.m_logger.debug("11443322: SyncMdStored      == " + SyncMd);
+	this.state.m_logger.debug("11443322: SyncMd            == " + this.state.SyncMd );
 
 	if (SyncMd == null || (this.state.SyncMd > (SyncMd + SyncGalMdInterval)))
 	{
 		this.state.SyncGalToken = null;
 
-		gLogger.debug("11443322: Gal either expired or had no state - this.state.SyncGalToken set to null to force replacement of GAL");
+		this.state.m_logger.debug("11443322: Gal either expired or had no state - this.state.SyncGalToken set to null to force replacement of GAL");
 
 		// When this.state.SyncGalToken is set to null:
 		// - we don't supply a token attribute to <SyncGalRequest>, which means the entire gal is returned with the response, and
@@ -588,7 +593,7 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 	{
 		this.state.SyncGalToken = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncGalToken');
 
-		gLogger.debug("11443322: Gal hasn't expired - this.state.SyncGalToken == " + this.state.SyncGalToken);
+		this.state.m_logger.debug("11443322: Gal hasn't expired - this.state.SyncGalToken == " + this.state.SyncGalToken);
 	}
 
 	this.callSoapFsm(continuation, this.eventFromSoapDefault, "evNext", "SyncGal", this.state.SyncGalToken);
@@ -609,7 +614,7 @@ SyncFsm.prototype.exitActionSyncGal = function(state, event)
 	if (node && node.nodeValue)
 		SyncGalToken = node.nodeValue;
 	else
-		gLogger.warn("SyncGalResponse received without a token attribute - don't know how to handle so ignoring it...");
+		this.state.m_logger.warn("SyncGalResponse received without a token attribute - don't know how to handle so ignoring it...");
 
 	// zimbra server versions 4.0.x and 4.5 does some caching thing whereby it returns <cn> elements
 	// in the SyncGalResponse even though the token is unchanged vs the previous response.
@@ -629,18 +634,18 @@ SyncFsm.prototype.exitActionSyncGal = function(state, event)
 
 		if (0)
 		{
-		gLogger.debug("11443378: SyncGalToken            == " + SyncGalToken );
-		gLogger.debug("11443378: this.state.SyncGalToken == " + this.state.SyncGalToken );
+		this.state.m_logger.debug("11443378: SyncGalToken            == " + SyncGalToken );
+		this.state.m_logger.debug("11443378: this.state.SyncGalToken == " + this.state.SyncGalToken );
 
 		for (var i in this.state.aSyncGalContact)
-			gLogger.debug("11443378: aSyncGalContact[" + i + "] == \n" + this.state.aSyncGalContact[i].toString());
+			this.state.m_logger.debug("11443378: aSyncGalContact[" + i + "] == \n" + this.state.aSyncGalContact[i].toString());
 
 		for (var id in this.state.mapIdSyncGalContact)
-			gLogger.debug("11443378: mapIdSyncGalContact." + id + " == " + this.state.mapIdSyncGalContact[id]);
+			this.state.m_logger.debug("11443378: mapIdSyncGalContact." + id + " == " + this.state.mapIdSyncGalContact[id]);
 		}
 	}
 	else
-		gLogger.debug("11443378: SyncGalResponse: token is unchanged - ignoring any <cn> elements in the response");
+		this.state.m_logger.debug("11443378: SyncGalResponse: token is unchanged - ignoring any <cn> elements in the response");
 }
 
 // the reference to this.state.SyncMd here is why SyncGalCommit must come *after* SyncResponse
@@ -664,7 +669,7 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 	}
 
 	if (!uri)
-		gLogger.error("Unable to find or create the GAL addresbook - skipping GAL sync");
+		this.state.m_logger.error("Unable to find or create the GAL addresbook - skipping GAL sync");
 	else if (this.state.aSyncGalContact != null)
 	{
 		// since aSyncGalContact is only populated if there's a change in token, it seems reasonable to assert that length is > 0
@@ -681,10 +686,12 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 		{
 			// flush cards out of the GAL address book that don't match cards in the contacts received from zimbra and
 			// if there's a match, mark the corresponding zimbra contact so that it doesn't get added again below
-			gLogger.debug("this.state.SyncGalTokenChanged == true so wiping contacts that aren't in the SyncGalResponse");
+			this.state.m_logger.debug("this.state.SyncGalTokenChanged == true so wiping contacts that aren't in the SyncGalResponse");
 			var context = this;
 
 			var functor = {
+				state: this.state,
+
 				run: function(uri, item)
 				{
 					var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
@@ -695,17 +702,17 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 
 					var index = context.state.mapIdSyncGalContact[id];
 
-					gLogger.debug("forEachCard() functor abCard.mailListURI == " + abCard.mailListURI);
+					this.state.m_logger.debug("forEachCard() functor abCard.mailListURI == " + abCard.mailListURI);
 
 					if (id != null && typeof index != 'undefined' && checksum == context.state.aSyncGalContact[index].checksum)
 					{
 						context.state.aSyncGalContact[index].present = true;
-						gLogger.debug("GAL card present in SyncGalResponse: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard));
+						this.state.m_logger.debug("GAL card present in SyncGalResponse: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard));
 					}
 					else
 					{
 						this.cardsToBeDeletedArray.AppendElement(abCard);
-						gLogger.debug("GAL card marked for deletion: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard));
+						this.state.m_logger.debug("GAL card marked for deletion: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard));
 					}
 
 					return true;
@@ -733,7 +740,7 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 		{
 			var zc = this.state.aSyncGalContact[aAdd[i]];
 
-			gLogger.debug("844324: about to write aSyncGalContact[" + aAdd[i] + "] == \n" + zc.toString());
+			this.state.m_logger.debug("844324: about to write aSyncGalContact[" + aAdd[i] + "] == \n" + zc.toString());
 
 			var attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
 			var properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
@@ -745,7 +752,7 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 		this.state.zfcLastSync.get(this.state.sourceid_zm).set('SyncGalToken', this.state.SyncGalToken);
 	}
 	else
-		gLogger.debug("entryActionSyncGal: - nothing to commit - SyncGalToken == " + this.state.SyncGalToken);
+		this.state.m_logger.debug("entryActionSyncGal: - nothing to commit - SyncGalToken == " + this.state.SyncGalToken);
 		
 	continuation('evNext');
 }
@@ -766,7 +773,7 @@ SyncFsm.prototype.initialiseMapsIfRequired = function()
 	{
 		zinAssert(zfcLocal.length() == 0);
 
-		gLogger.debug("11770 - thunderbird and/or gid map was zapped - initialising...");
+		this.state.m_logger.debug("11770 - thunderbird and/or gid map was zapped - initialising...");
 
 		zfcLocal.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
 		zfcGid.set(  new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
@@ -808,7 +815,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 
 	bimapFolderLuid = ZinFeed.getTopLevelFolderLuidBimap(zfcLocal, ZinFeedItem.ATTR_TPI, ZinFeedCollection.ITER_UNRESERVED);
 
-	gLogger.debug("1177 - bimapFolderLuid == " + bimapFolderLuid.toString());
+	this.state.m_logger.debug("1177 - bimapFolderLuid == " + bimapFolderLuid.toString());
 
 	// identify the zimbra addressbooks
 	//
@@ -883,7 +890,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 			else
 				msg += " - ignored";
 
-			gLogger.debug(msg);
+			this.state.m_logger.debug(msg);
 		
 			return true;
 		}
@@ -922,7 +929,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 	for (uri in aUri)
 		ZimbraAddressBook.forEachCard(uri, functor_foreach_card);
 
-	gLogger.debug("1177 - pass 1 - aMailListUri == " + aToString(aMailListUri));
+	this.state.m_logger.debug("1177 - pass 1 - aMailListUri == " + aToString(aMailListUri));
 
 	// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
 	//
@@ -942,9 +949,11 @@ SyncFsm.prototype.updateTbLuidMap = function()
 	for (uri in aMailListUri)
 		ZimbraAddressBook.forEachCard(uri, functor_foreach_card);
 
-	gLogger.debug("1177 - pass 2 - aCardKeysToExclude == " + aToString(aCardKeysToExclude));
+	this.state.m_logger.debug("1177 - pass 2 - aCardKeysToExclude == " + aToString(aCardKeysToExclude));
 
 	functor_foreach_card = {
+		state: this.state,
+
 		run: function(uri, item)
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
@@ -997,7 +1006,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 			else
 				msg += " - ignored";
 
-			gLogger.debug(msg);
+			this.state.m_logger.debug(msg);
 
 			return true;
 		}
@@ -1014,6 +1023,8 @@ SyncFsm.prototype.updateTbLuidMap = function()
 	// 
 
 	var functor_mark_deleted = {
+		state: this.state,
+
 		run: function(zfi)
 		{
 			if (zfi.isPresent(ZinFeedItem.ATTR_DEL))
@@ -1023,7 +1034,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 			else
 			{
 				zfi.set(ZinFeedItem.ATTR_DEL, 1);
-				gLogger.debug("1177 - marking as deleted: " + zfi.toString());
+				this.state.m_logger.debug("1177 - marking as deleted: " + zfi.toString());
 				ZinFeed.autoIncrement(zfi, (zfi.type() == ZinFeedItem.TYPE_FL) ? ZinFeedItem.ATTR_MS : ZinFeedItem.ATTR_REV);
 			}
 
@@ -1043,12 +1054,14 @@ SyncFsm.prototype.buildReverseGid = function()
 	var reverse = this.state.aReverseGid; // bring it into the local namespace
 
 	var functor_each_gid_mapitem = {
+		state: this.state,
+
 		run: function(sourceid, luid)
 		{
 			if (isPropertyPresent(reverse, sourceid))
 				reverse[sourceid][luid] = this.gid;
 			else
-				gLogger.warn("gid == " + this.gid + " has an unknown sourceid: " + sourceid + " - ignored");
+				this.state.m_logger.warn("gid == " + this.gid + " has an unknown sourceid: " + sourceid + " - ignored");
 
 			return true;
 		}
@@ -1071,17 +1084,11 @@ SyncFsm.prototype.buildReverseGid = function()
 
 	this.state.zfcGid.forEach(functor_foreach_gid, ZinFeedCollection.ITER_UNRESERVED);
 
-	gLogger.debug("1177 - buildReverseGid initialises reverse: " + aToString(reverse));
+	this.state.m_logger.debug("1177 - buildReverseGid initialises reverse: " + aToString(reverse));
 }
 
 SyncFsm.isOfInterest = function(zfc, id)
 {
-	// gLogger.debug("blahblah: arguments.length: " + arguments.length);
-	// gLogger.debug("blahblah: zfc: " + zfc);
-	// gLogger.debug("blahblah: id: " + id);
-	// gLogger.debug("blahblah: zfc.isPresent(id): " + zfc.isPresent(id));
-	// gLogger.debug("blahblah: zfi: " + zfc.isPresent(id) ? zfc.get(id).toString() : "not present");
-
 	zinAssert(arguments.length == 2 && zfc && id && id > 0 && zfc.isPresent(id));
 
 	var zfi = zfc.get(id);
@@ -1113,6 +1120,8 @@ SyncFsm.prototype.updateGidFromSources = function()
 	var zfc;
 
 	var functor_foreach_luid = {
+		state: this.state,
+
 		run: function(zfi)
 		{
 			var luid = zfi.id();
@@ -1137,7 +1146,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 				msg += " - added to gid: " + gid;
 			}
 
-			gLogger.debug(msg);
+			this.state.m_logger.debug(msg);
 
 			return true;
 		}
@@ -1152,13 +1161,15 @@ SyncFsm.prototype.updateGidFromSources = function()
 	// sanity check - ensure that all gid's have been visited
 	//
 	var functor_foreach_gid = {
+		state: this.state,
+
 		run: function(zfi)
 		{
 			if (zfi.isPresent('present'))
 				zfi.del('present');
 			else
 			{
-				gLogger.warn("Found a gid unreferenced by any sourceid/luid.  This shouldn't happen.  Deleting...");
+				this.state.m_logger.warn("Found a gid unreferenced by any sourceid/luid.  This shouldn't happen.  Deleting...");
 				zfcGid.del(zfi.id());
 			}
 
@@ -1168,8 +1179,8 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 	zfcGid.forEach(functor_foreach_gid, ZinFeedCollection.ITER_UNRESERVED);
 
-	gLogger.debug("1177 - after updateGidFromSources(), zfcGid: " + zfcGid.toString());
-	gLogger.debug("1177 - after updateGidFromSources(), reverse: " + aToString(this.state.aReverseGid));
+	this.state.m_logger.debug("1177 - after updateGidFromSources(), zfcGid: " + zfcGid.toString());
+	this.state.m_logger.debug("1177 - after updateGidFromSources(), reverse: " + aToString(this.state.aReverseGid));
 }
 
 SyncFsm.prototype.buildGcs = function()
@@ -1196,10 +1207,12 @@ SyncFsm.prototype.buildGcs = function()
 	};
 
 	var functor_foreach_candidate = {
+		state: this.state,
+
 		run: function(zfi)
 		{
-			gLogger.debug("885438 - about to determine winner for:");
-			gLogger.debug("885438 - sourceid: " + sourceid + " zfi: " + zfi.toString());
+			this.state.m_logger.debug("885438 - about to determine winner for:");
+			this.state.m_logger.debug("885438 - sourceid: " + sourceid + " zfi: " + zfi.toString());
 
 			if (SyncFsm.isOfInterest(sources[sourceid]['zfcLuid'], zfi.id()))
 			{
@@ -1213,7 +1226,7 @@ SyncFsm.prototype.buildGcs = function()
 				zfcGid.get(gid).forEach(functor_delete_other_candidate_mapitems, ZinFeedItem.ITER_SOURCEID);
 			}
 			else
-				gLogger.debug("885438 - zfi not of interest - compare skipped - sourceid: " + sourceid + " zfi: " + zfi.toString());
+				this.state.m_logger.debug("885438 - zfi not of interest - compare skipped - sourceid: " + sourceid + " zfi: " + zfi.toString());
 
 			return true;
 		},
@@ -1226,6 +1239,8 @@ SyncFsm.prototype.buildGcs = function()
 			var ret = null;
 
 			var functor_each_luid_in_gid = {
+				state: this.state,
+
 				run: function(sourceid, luid)
 				{
 					if (sourceid == ZinFeedItem.ATTR_VER)
@@ -1244,9 +1259,9 @@ SyncFsm.prototype.buildGcs = function()
 						var lso = new Lso(zfi.get(ZinFeedItem.ATTR_LS));
 						var gid = reverse[sourceid][luid];
 
-						gLogger.debug("885438 - gid: " + gid + " gid's ver: " + zfcGid.get(gid).get(ZinFeedItem.ATTR_VER) +
-									  " zfi: " + zfi.toString() +
-						              " lso: " + lso.toString() + " lso.compare == " + lso.compare(zfi));
+						this.state.m_logger.debug("885438 - gid: " + gid + " gid's ver: " + zfcGid.get(gid).get(ZinFeedItem.ATTR_VER) +
+									                      " zfi: " + zfi.toString() +
+						                                  " lso: " + lso.toString() + " lso.compare == " + lso.compare(zfi));
 
 						if (lso.get(ZinFeedItem.ATTR_VER) == zfcGid.get(gid).get(ZinFeedItem.ATTR_VER))
 						{
@@ -1265,7 +1280,7 @@ SyncFsm.prototype.buildGcs = function()
 						}
 					}
 
-					gLogger.debug(msg);
+					this.state.m_logger.debug(msg);
 
 					return true;
 				}
@@ -1277,9 +1292,9 @@ SyncFsm.prototype.buildGcs = function()
 			var cVerMatchesGid = aToLength(aVerMatchesGid);
 			var cChangeOfNote  = aToLength(aChangeOfNote);
 
-			gLogger.debug("885439 - aNeverSynced: "   + aToString(aNeverSynced));
-			gLogger.debug("885439 - aVerMatchesGid: " + aToString(aVerMatchesGid));
-			gLogger.debug("885439 - aChangeOfNote: "  + aToString(aChangeOfNote));
+			this.state.m_logger.debug("885439 - aNeverSynced: "   + aToString(aNeverSynced));
+			this.state.m_logger.debug("885439 - aVerMatchesGid: " + aToString(aVerMatchesGid));
+			this.state.m_logger.debug("885439 - aChangeOfNote: "  + aToString(aChangeOfNote));
 
 			zinAssert(cNeverSynced == 0 || cNeverSynced == 1);
 
@@ -1307,7 +1322,7 @@ SyncFsm.prototype.buildGcs = function()
 				ret = new Gcs(lowest_sourceid, Gcs.CONFLICT);
 			}
 
-			gLogger.debug("885439 - compare(" + gid + ") returns: " + ret.toString());
+			this.state.m_logger.debug("885439 - compare(" + gid + ") returns: " + ret.toString());
 
 			return ret;
 		}
@@ -1319,7 +1334,7 @@ SyncFsm.prototype.buildGcs = function()
 		aZfcCandidate[sourceid].forEach(functor_foreach_candidate, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 	
 	for (var gid in aGcs)
-		gLogger.debug("aGcs[" + gid + "]: " + aGcs[gid].toString());
+		this.state.m_logger.debug("aGcs[" + gid + "]: " + aGcs[gid].toString());
 
 	return aGcs;
 }
@@ -1385,7 +1400,7 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 				zinAssert(false);
 		}
 
-		gLogger.debug(msg);
+		this.state.m_logger.debug(msg);
 
 		if (suo != null)
 			aSuoResult.push(suo);
@@ -1430,7 +1445,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 				var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(winner));
 
 				msg += " gid: " + gid + " target sourceid: " + sourceid;
-				// gLogger.debug("blah: gid: " + gid + " target sourceid: " + sourceid);
+				// this.state.m_logger.debug("blah: gid: " + gid + " target sourceid: " + sourceid);
 
 				if (!zfcGid.get(gid).isPresent(sourceid))
 				{
@@ -1474,7 +1489,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 			msg += " added suo: " + suo.toString();
 		}
 
-		gLogger.debug(msg);
+		this.state.m_logger.debug(msg);
 	}
 
 	return aSuoResult;
@@ -1517,7 +1532,7 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 	{
 		suo = aSuoWinners[i];
 
-		gLogger.debug("2277 - acting on suo: - " + " suo: "  + suo.toString());
+		this.state.m_logger.debug("2277 - acting on suo: - " + " suo: "  + suo.toString());
 
 		var zfcWinner   = this.state.sources[suo.sourceid_winner]['zfcLuid'];
 		var luid_winner = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
@@ -1577,7 +1592,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 		luid_target = null;  // if non-null at the bottom of loop, it means that a change was made
 		msg = "";
 
-		gLogger.debug("2277 - acting on suo: - opcode: " + Suo.opcodeAsString(SORT_ORDER[i] & Suo.MASK)
+		this.state.m_logger.debug("2277 - acting on suo: - opcode: " + Suo.opcodeAsString(SORT_ORDER[i] & Suo.MASK)
 			+ " type: " + ZinFeedItem.typeAsString(SORT_ORDER[i] & ZinFeedItem.TYPE_MASK)
 			+ " suo: "  + this.state.aSuo[this.state.sourceid_tb][SORT_ORDER[i]][indexSuo].toString());
 
@@ -1639,7 +1654,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					this.state.aReverseGid[sourceid_target][luid_target] = gid;
 				}
 				else
-					gLogger.warn("Was about to create an addressbook: " + abName + " but it already exists.");  // TODO - this might happen if the user created an addressbook both locally and on a server with the same name - how to handle?
+					this.state.m_logger.warn("Was about to create an addressbook: " + abName + " but it already exists.");  // TODO - this might happen if the user created an addressbook both locally and on a server with the same name - how to handle?
 
 				break;
 
@@ -1673,9 +1688,9 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					zinAssert(isPropertyPresent(this.state.aSyncContact, luid_winner));
 
 					uri    = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-					gLogger.debug("2277: uri: " + uri + " luid_target: " + luid_target);
+					this.state.m_logger.debug("2277: uri: " + uri + " luid_target: " + luid_target);
 					abCard = ZimbraAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
-					gLogger.debug("2277: card: " + abCard);
+					this.state.m_logger.debug("2277: card: " + abCard);
 
 					if (abCard)
 					{
@@ -1732,7 +1747,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				else
 				{
 					luid_target = null;
-					gLogger.warn("Can't find card to modify in the addressbook: luid: "+ luid_target + " - this shouldn't happen.");
+					this.state.m_logger.warn("Can't find card to modify in the addressbook: luid: "+ luid_target + " - this shouldn't happen.");
 				}
 
 				break;
@@ -1754,7 +1769,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				}
 				else
 				{
-					gLogger.warn("Was about to rename an addressbook: " + this.getTbAddressbookNameFromLuid(sourceid_target, luid_target) +
+					this.state.m_logger.warn("Was about to rename an addressbook: " + this.getTbAddressbookNameFromLuid(sourceid_target, luid_target) +
 					             " but it didn't exist.  This shouldn't happen.");
 
 					luid_target = null
@@ -1782,7 +1797,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				}
 				else
 				{
-					gLogger.warn("Can't find card to delete in the addressbook: luid: "+ luid_target + " - this shouldn't happen.");
+					this.state.m_logger.warn("Can't find card to delete in the addressbook: luid: "+ luid_target + " - this shouldn't happen.");
 
 					luid_target = null;
 				}
@@ -1802,7 +1817,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				}
 				else
 				{
-					gLogger.warn("Can't find addressbook to delete in the addressbook: luid: "+ luid_target + " - this shouldn't happen.");
+					this.state.m_logger.warn("Can't find addressbook to delete in the addressbook: luid: "+ luid_target + " - this shouldn't happen.");
 
 					luid_target = null;
 				}
@@ -1816,7 +1831,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 		if (luid_target)
 			SyncFsm.setLsoToGid(zfiGid, zfcTarget.get(luid_target));
 
-		gLogger.debug("2277: " + msg);
+		this.state.m_logger.debug("2277: " + msg);
 	}
 
 	continuation('evNext');
@@ -1885,11 +1900,11 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				if (isPropertyPresent(this.state.aSuo[sourceid], SORT_ORDER[i]))
 					for (indexSuo in this.state.aSuo[sourceid][SORT_ORDER[i]])
 	{
-		gLogger.debug("entryActionUpdateZm: " +
+		this.state.m_logger.debug("entryActionUpdateZm: " +
 				" opcode: " + Suo.opcodeAsString(SORT_ORDER[i] & Suo.MASK) +
 				" type: "   + ZinFeedItem.typeAsString(SORT_ORDER[i] & ZinFeedItem.TYPE_MASK) );
 
-		gLogger.debug("entryActionUpdateZm: suo[" + indexSuo + "] ==  " + this.state.aSuo[sourceid][SORT_ORDER[i]][indexSuo].toString());
+		this.state.m_logger.debug("entryActionUpdateZm: suo[" + indexSuo + "] ==  " + this.state.aSuo[sourceid][SORT_ORDER[i]][indexSuo].toString());
 
 		suo             = this.state.aSuo[sourceid][SORT_ORDER[i]][indexSuo];
 		sourceid_winner = suo.sourceid_winner;
@@ -2006,7 +2021,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 			break;
 	}
 
-	gLogger.debug("entryActionUpdateZm: " + msg);
+	this.state.m_logger.debug("entryActionUpdateZm: " + msg);
 
 	this.state.updateZmPackage = null;
 
@@ -2015,7 +2030,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		this.state.updateZmPackage = newObject('sourceid', sourceid, 'bucket', bucket, 'indexSuo', indexSuo,
 		                                       'soapmethod', soapMethod, 'soaparg', soapArg);
 
-		gLogger.debug("entryActionUpdateZm: updateZmPackage: " + aToString(this.state.updateZmPackage));
+		this.state.m_logger.debug("entryActionUpdateZm: updateZmPackage: " + aToString(this.state.updateZmPackage));
 
 		this.callSoapFsm(continuation, this.eventFromSoapDefault, "evRepeat",
 		                           this.state.updateZmPackage.soapmethod, this.state.updateZmPackage.soaparg);
@@ -2042,14 +2057,14 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 	if (!isPropertyPresent(change, 'token'))
 	{
-		gLogger.error("No change token found.  This shouldn't happen.  Ignoring soap response.");
+		this.state.m_logger.error("No change token found.  This shouldn't happen.  Ignoring soap response.");
 
 		delete this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket];  // drastic, but it ensures we don't end up in a loop
 
 		return;
 	}
 
-	gLogger.debug("33771: updateZmPackage: " + aToString(updateZmPackage) + " and change.token: " + change.token);
+	this.state.m_logger.debug("33771: updateZmPackage: " + aToString(updateZmPackage) + " and change.token: " + change.token);
 
 	var functor_create_blah_response = {
 		state: this.state,
@@ -2069,10 +2084,10 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				msg += "modified: <cn id='" + id + "'>";
 
 			if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
-				gLogger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
+				this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
 			else
 			{
-				gLogger.debug("updateZmPackage.indexSuo: " + updateZmPackage.indexSuo);
+				this.state.m_logger.debug("updateZmPackage.indexSuo: " + updateZmPackage.indexSuo);
 
 				suo = this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket][updateZmPackage.indexSuo];
 
@@ -2119,7 +2134,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 			msg += " recieved: <action id='" + id + "'>";
 
 			if (!isPropertyPresent(attribute, 'id'))
-				gLogger.error("<action> element received seems to be missing an 'id' attribute - ignoring: " + aToString(attribute));
+				this.state.m_logger.error("<action> element received seems to be missing an 'id' attribute - ignoring: " + aToString(attribute));
 			else
 			{
 				suo = this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket][updateZmPackage.indexSuo];
@@ -2205,12 +2220,12 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.response);
 
-	gLogger.debug(msg);
+	this.state.m_logger.debug(msg);
 
 	if (aToLength(this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket]) == 0)
 	{
 		delete this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket];  // delete empty buckets
-		gLogger.debug("33771: deleted aSuo sourceid: " + sourceid + " bucket: " + updateZmPackage.bucket);
+		this.state.m_logger.debug("33771: deleted aSuo sourceid: " + sourceid + " bucket: " + updateZmPackage.bucket);
 	}
 }
 
@@ -2229,7 +2244,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 		if (abCard)
 			ret = ZimbraAddressBook.getCardProperties(abCard, format_to);
 		else
-			gLogger.warn("can't find contact for to sourceid: " + sourceid + " and luid: " + luid + " in thunderbird addressbook uri: " + uri + " - this shouldn't happen.");
+			this.state.m_logger.warn("can't find contact for to sourceid: " + sourceid + " and luid: " + luid + " in thunderbird addressbook uri: " + uri + " - this shouldn't happen.");
 	}
 	else
 	{
@@ -2245,8 +2260,8 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 	var gid;
 	var aGidsToDelete = new Array();
 
-	// gLogger.debug("998899: after UpdateZm, zfcZm: " + this.state.sources[this.state.sourceid_zm]['zfcLuid'].toString());
-	// gLogger.debug("998899: after UpdateZm, zfcGid: " + this.state.zfcGid.toString());
+	// this.state.m_logger.debug("998899: after UpdateZm, zfcZm: " + this.state.sources[this.state.sourceid_zm]['zfcLuid'].toString());
+	// this.state.m_logger.debug("998899: after UpdateZm, zfcGid: " + this.state.zfcGid.toString());
 
 	// 1. delete the gid when all the mapitems source maps have a ZinFeedItem.ATTR_DEL attribute
 	//    delete the mapping between a gid and an luid when the luid is not of interest
@@ -2264,14 +2279,14 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 			if (zfi.isPresent(ZinFeedItem.ATTR_DEL))
 			{
 				zfc.del(luid);
-				gLogger.debug("2332 - cleanup: sourceid: " + sourceid + " - deleted luid: " + luid);
+				this.state.m_logger.debug("2332 - cleanup: sourceid: " + sourceid + " - deleted luid: " + luid);
 
 				if (gid)
 				{
 					this.state.zfcGid.get(gid).del(sourceid);
 					delete this.state.aReverseGid[sourceid][luid];
 
-					gLogger.debug("2332 - cleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid);
+					this.state.m_logger.debug("2332 - cleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid);
 				}
 			}
 			else if (this.state.sources[sourceid]['format'] == FORMAT_ZM && gid && !SyncFsm.isOfInterest(zfc, zfi.id()))
@@ -2280,7 +2295,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 				//
 				this.state.zfcGid.get(gid).del(sourceid);
 				delete this.state.aReverseGid[sourceid][luid];
-				gLogger.debug("2332 - cleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid + " as the item is no longer of interest");
+				this.state.m_logger.debug("2332 - cleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid + " as the item is no longer of interest");
 			}
 
 			return true;
@@ -2308,11 +2323,11 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 
 			zfi.forEach(functor_count_luids_in_gid, ZinFeedItem.ITER_SOURCEID);
 
-			gLogger.debug("2332 - cleanup: zfi: " + zfi.toString() + " count: " + functor_count_luids_in_gid.count);
+			this.state.m_logger.debug("2332 - cleanup: zfi: " + zfi.toString() + " count: " + functor_count_luids_in_gid.count);
 
 			if (functor_count_luids_in_gid.count == 0)
 			{
-				gLogger.debug("2332 - cleanup: gid: " + zfi.id() + " had no links to luids - deleted.");
+				this.state.m_logger.debug("2332 - cleanup: gid: " + zfi.id() + " had no links to luids - deleted.");
 				this.state.zfcGid.del(zfi.id());
 			}
 
@@ -2404,7 +2419,7 @@ SyncFsm.prototype.resetLsoVer = function(gid, zfi)
 		lsoFromZfiAttributes.set(ZinFeedItem.ATTR_VER, ver);
 		zfi.set(ZinFeedItem.ATTR_LS, lsoFromZfiAttributes.toString());
 
-		gLogger.debug("9664: gid ver set to: " + ver + " and zfi: " + zfi.toString());
+		this.state.m_logger.debug("9664: gid ver set to: " + ver + " and zfi: " + zfi.toString());
 	}
 
 }
@@ -2452,7 +2467,7 @@ SyncFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
 	var zfc = this.state.sources[sourceid]['zfcLuid'];
 
 	if (!zfc.isPresent(luid))
-		gLogger.debug("552231 - blah: sourceid: " + sourceid + " luid: " + luid);
+		this.state.m_logger.debug("552231 - blah: sourceid: " + sourceid + " luid: " + luid);
 
 	zinAssert(zfc.isPresent(luid));
 
@@ -2497,7 +2512,7 @@ SyncFsm.getTbAddressbooks = function()
 
 	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
 
-	gLogger.debug("getTbAddressbooks() returns: " + functor_foreach_addressbook.result.toString());
+	this.state.m_logger.debug("getTbAddressbooks() returns: " + functor_foreach_addressbook.result.toString());
 
 	return functor_foreach_addressbook.result;
 }
@@ -2560,17 +2575,17 @@ SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 	zinAssert(!this.state.is_cancelled); // we shouldn't be here if we've called abort() on the callCompletion object!
 
-	gLogger.debug("SoapFsm: request is " + xmlDocumentToString(soapCall.message));
+	this.state.m_logger.debug("SoapFsm: request is " + xmlDocumentToString(soapCall.message));
 
 	this.state.callCompletion = soapCall.asyncInvoke(
 	        function (response, call, error)
 			{
-				context.handleAsyncResponse(response, call, error, continuation, context, gLogger);
+				context.handleAsyncResponse(response, call, error, continuation, context, context.state.m_logger);
 			}
 		);
 }
 
-SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context, gLogger)
+SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context, logger)
 {
 	var ret = false;
 
@@ -2604,15 +2619,15 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 		// here, we turn that into a non-zero error code.
 		//
 		context.state.serviceCode = SOAP_REQUEST_FAILED;
-		gLogger.debug("SoapFsm.handleAsyncResponse: soap service failure - setting an arbitrary error code: " + context.state.serviceCod);
+		logger.debug("SoapFsm.handleAsyncResponse: soap service failure - setting an arbitrary error code: " + context.state.serviceCod);
 	}
 	else if (error != 0)
 	{ 
-		gLogger.debug("SoapFsm.handleAsyncResponse: soap service failure - error code is " + error);
+		logger.debug("SoapFsm.handleAsyncResponse: soap service failure - error code is " + error);
 	}
 	else 
 	{
-		gLogger.debug("SoapFsm.handleAsyncResponse: response.version is " + response.version);
+		logger.debug("SoapFsm.handleAsyncResponse: response.version is " + response.version);
 
 		if (response.fault != null)
 		{ 
@@ -2633,7 +2648,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 			{
 				context.state.response = response.message;
 
-				gLogger.debug("SoapFsm.handleAsyncResponse: response is " + xmlDocumentToString(response.message));
+				logger.debug("SoapFsm.handleAsyncResponse: response is " + xmlDocumentToString(response.message));
 			}
 		}
 	}
@@ -2647,7 +2662,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	if (msg)
 	{
 		msg += " fault xml: " + context.state.faultElementXml;
-		gLogger.debug("SoapFsm.handleAsyncResponse: " + msg);
+		logger.debug("SoapFsm.handleAsyncResponse: " + msg);
 	}
 
 	continuation('evSoapResponse');
@@ -2672,13 +2687,13 @@ SoapFsm.prototype.cancel = function(timeoutID)
 
 	window.clearTimeout(timeoutID);
 
-	gLogger.debug("SoapFsm.cancel: cleared timeoutID: " + timeoutID);
+	logger.debug("SoapFsm.cancel: cleared timeoutID: " + timeoutID);
 
 	if (this.state.callCompletion)
 	{
 		var ret = this.state.callCompletion.abort();
 
-		gLogger.debug("SoapFsm.abort: callCompletion.abort() returns: " + ret);
+		this.state.m_logger.debug("SoapFsm.abort: callCompletion.abort() returns: " + ret);
 	}
 
 	this.state.is_cancelled = true;
@@ -2695,7 +2710,7 @@ function SoapFsmState()
 	this.faultString      = null;
 	this.callCompletion   = null;  // the object returned by soapCall.asyncInvoke()
 	this.is_cancelled     = false;
-	// this.countTransitions = 0;  // for debugging
+	this.m_logger         = newLogger();
 }
 
 
@@ -2861,6 +2876,7 @@ TwoWayFsm.prototype.setFsm = function()
 function SyncFsmState(id_fsm)
 {
 	this.id_fsm              = id_fsm;
+	this.m_logger            = newLogger("SyncFsm");
 	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
 	this.zfcGid              = new ZinFeedCollection(); // map of gid to (sourceid, luid)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)

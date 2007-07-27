@@ -110,7 +110,6 @@ ZimbraAddressBook.contactPropertyChecksum = function(properties)
 			var tmp = checksum;
 			checksum = (checksum + ((charcount % 10) * properties[i].charCodeAt(j))) % Number.MAX_VALUE;
 			charcount++;
-			// gLogger.debug("ZimbraAddressBook.contactPropertyChecksum() goes from " + tmp + " to " + checksum);
 		}
 	}
 
@@ -215,14 +214,14 @@ ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 
 		abCard.setCardValue(i, thunderbird_properties[i]);
 
-		// gLogger.debug("ZimbraAddressBook.addCard() - i == " + i + " and j == " + j);
-		// gLogger.debug("ZimbraAddressBook.addCard() calls abCard.setCardValue(" + i + ", " + thunderbird_properties[i] + ")");
+		// logger.debug("ZimbraAddressBook.addCard() - i == " + i + " and j == " + j);
+		// logger.debug("ZimbraAddressBook.addCard() calls abCard.setCardValue(" + i + ", " + thunderbird_properties[i] + ")");
 	}
 
 	for (i in extras)
 	{
 		mdbCard.setStringAttribute(i, extras[i]);
-		// gLogger.debug("ZimbraAddressBook.addCard() calls mdbCard.setStringAttribute(" + i + ", " + extras[i] + ")");
+		// logger.debug("ZimbraAddressBook.addCard() calls mdbCard.setStringAttribute(" + i + ", " + extras[i] + ")");
 	}
 
 	mdbCard.editCardToDatabase(uri);

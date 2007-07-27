@@ -25,6 +25,8 @@ function ZinXpath()
 {
 }
 
+ZinXpath.logger = newLogger("ZinXpath");
+
 ZinXpath.nsResolverBimap = new BiMap(
 	[ "soap",                              "z",                          "za",                          "zm"                       ],
 	[ ZimbraSoapDocument.NS_SOAP_ENVELOPE, ZimbraSoapDocument.NS_ZIMBRA, ZimbraSoapDocument.NS_ACCOUNT, ZimbraSoapDocument.NS_MAIL ]);
@@ -58,14 +60,14 @@ ZinXpath.setConditional = function(object, property, xpath_query, doc, warning_m
 	if (node && node.nodeValue)
 		object[property] = node.nodeValue;
 	else if (warning_msg != null)
-		gLogger.warn(warning_msg);
+		ZinXpath.logger.warn(warning_msg);
 }
 
 ZinXpath.getSingleValue = function(xpath_query, doc, contextNode)
 {
 	var ret = null;
 
-	// gLogger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
+	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
 
 	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_TYPE;
 	var xpathResult     = doc.evaluate(xpath_query, contextNode, ZinXpath.nsResolver, xpathResultType, null);
@@ -75,13 +77,13 @@ ZinXpath.getSingleValue = function(xpath_query, doc, contextNode)
 		{
 			ret = xpathResult.singleNodeValue;
 
-			// gLogger.debug("44991: ret.nodeName == " + ret.nodeName);
-			// gLogger.debug("44991: ret.nodeValue == " + ret.nodeValue);
+			// ZinXpath.logger.debug("44991: ret.nodeName == " + ret.nodeName);
+			// ZinXpath.logger.debug("44991: ret.nodeValue == " + ret.nodeValue);
 		}
 	}
 	catch(e) {
-		gLogger.error("============================= ERROR - exception ==========================");
-		gLogger.error("ZinXpath.getSingleValue() reports document tree modified during iteration " + e);
+		ZinXpath.logger.error("============================= ERROR - exception ==========================");
+		ZinXpath.logger.error("ZinXpath.getSingleValue() reports document tree modified during iteration " + e);
 	}
 
 	return ret;
@@ -89,7 +91,7 @@ ZinXpath.getSingleValue = function(xpath_query, doc, contextNode)
 
 ZinXpath.runFunctor = function(functor, xpath_query, doc)
 {
-	// gLogger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
+	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
 
 	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_ITERATOR_TYPE;
 	var xpathResult     = doc.evaluate(xpath_query, doc, ZinXpath.nsResolver, xpathResultType, null);
@@ -99,14 +101,14 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 
 		while (node)
 		{
-			// gLogger.debug("44991: arrayOfContactsFromXpath - node.nodeType == " + node.nodeType);
+			// ZinXpath.logger.debug("44991: arrayOfContactsFromXpath - node.nodeType == " + node.nodeType);
 			functor.run(doc, node);
 			node = xpathResult.iterateNext();
 		}
 	}
 	catch(e) {
-		gLogger.error("============================= ERROR - exception ==========================");
-		gLogger.error("ZinXpath.runFunctor() reports document tree modified during iteration " + e);
+		ZinXpath.logger.error("============================= ERROR - exception ==========================");
+		ZinXpath.logger.error("ZinXpath.runFunctor() reports document tree modified during iteration " + e);
 	}
 
 }

@@ -95,7 +95,7 @@ Lso.prototype.compare = function(zfi)
 
 	for (i = 0; i < aParts.length && isExactMatch; i++)
 	{
-		// gLogger.debug("blah: Lso.[i]: " + aParts[i] + " lhs: " + Lso.normalise(zfi, aParts[i]) + " rhs: " + this.m_properties[aParts[i]]);
+		// logger.debug("blah: Lso.[i]: " + aParts[i] + " lhs: " + Lso.normalise(zfi, aParts[i]) + " rhs: " + this.m_properties[aParts[i]]);
 
 		isExactMatch = (Lso.normalise(zfi, aParts[i]) == this.m_properties[aParts[i]]);
 	}

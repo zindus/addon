@@ -117,9 +117,9 @@ function loggingFileClose(os)
 	}
 }
 
-function newLogger()
+function newLogger(prefix)
 {
-	var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger, prefix);
 
 	return logger;
 }

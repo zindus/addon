@@ -34,8 +34,7 @@ include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/timer.js");
 
-var is_developer_mode = false; // true ==> expose buttons in the UI
-var gLogger      = null;
+var is_developer_mode = true; // true ==> expose buttons in the UI
 
 function Prefs()
 {
@@ -49,6 +48,7 @@ function Prefs()
 	this.checkbox_bimap      = new BiMap(this.checkbox_properties, this.checkbox_ids);
 
 	this.is_fsm_running = false;
+	this.m_logger = newLogger("Prefs");
 }
 
 Prefs.prototype.onLoad = function(target)
@@ -67,10 +67,8 @@ Prefs.prototype.onLoad = function(target)
 	this.m_prefset_server.load(SOURCEID_ZM);
 	this.m_prefset_general.load();
 
-	gLogger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
-
-	gLogger.debug("Prefs.onLoad: - m_prefset_server == "  + this.m_prefset_server.toString());
-	gLogger.debug("Prefs.onLoad: - m_prefset_general == " + this.m_prefset_general.toString());
+	this.m_logger.debug("onLoad: - m_prefset_server == "  + this.m_prefset_server.toString());
+	this.m_logger.debug("onLoad: - m_prefset_general == " + this.m_prefset_general.toString());
 
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_PREFSDIALOG, ZinMaestro.FSM_GROUP_SYNC);
 
@@ -80,14 +78,14 @@ Prefs.prototype.onLoad = function(target)
 
 Prefs.prototype.onCancel = function()
 {
-	gLogger.debug("Prefs.onCancel:");
+	this.m_logger.debug("onCancel:");
 
 	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_PREFSDIALOG);
 }
 
 Prefs.prototype.onAccept = function()
 {
-	gLogger.debug("Prefs.onAccept:");
+	this.m_logger.debug("onAccept:");
 
 	// server tab
 	//
@@ -122,7 +120,7 @@ Prefs.prototype.onAccept = function()
 
 Prefs.prototype.onCommand = function(id_target)
 {
-	gLogger.debug("Prefs.onCommand: target: " + id_target);
+	this.m_logger.debug("onCommand: target: " + id_target);
 
 	switch(id_target)
 	{
@@ -282,13 +280,13 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	if (fsmstate)
 		if (fsmstate.newstate == "start")
 		{
-			gLogger.debug("Prefs onFsmStateChangeFunctor: fsm started");
+			this.m_logger.debug("onFsmStateChangeFunctor: fsm started");
 			this.is_fsm_running = true;
 			this.updateView();
 		}
 		else if (fsmstate.oldstate == "final")
 		{
-			gLogger.debug("Prefs onFsmStateChangeFunctor: fsm finished");
+			this.m_logger.debug("onFsmStateChangeFunctor: fsm finished");
 			this.is_fsm_running = false;
 			this.updateView();
 		}
@@ -296,7 +294,8 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 function resetAll()
 {
-	gLogger.debug("syncwindow resetAll()");
+	var logger = newLogger("Prefs");
+	logger.debug("resetAll: ");
 
 	var file;
 	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_MAPPING);

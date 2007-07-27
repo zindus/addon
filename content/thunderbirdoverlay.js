@@ -30,25 +30,25 @@ window.addEventListener("load", onLoad, false);
 
 function onLoad(event)
 {
-	var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	var logger = newLogger("thunderbirdoverlay");
 
 	try
 	{
-		logger.debug("\n\n==== startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + (new Date()).toLocaleString());
-		logger.debug("thunderbirdoverlay: onLoad entered: ");
+		logger.info("==== startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + (new Date()).toLocaleString() + "====\n\n");
+		logger.debug("onLoad entered: ");
 
 		// We dont want to do this each time a new window is opened
 		var messengerWindow = document.getElementById("messengerWindow");
 
 		if (messengerWindow)
 		{
-			logger.debug("thunderbirdoverlay: in messengerWindow");
+			logger.debug("in messengerWindow");
 
 			var maestro = new ZinMaestro();
 
 			if (!maestro.osIsRegistered())
 			{
-				logger.debug("thunderbirdoverlay: creating ZinMaestro and registering it with nsIObserverService");
+				logger.debug("creating ZinMaestro and registering it with nsIObserverService");
 
 				maestro.osRegister();
 
@@ -62,7 +62,7 @@ function onLoad(event)
 					var delay_on_repeat = parseInt(preferences.getIntPref(preferences.branch(), "system.timerDelay"));
 					var delay_on_start  = Math.floor(Math.random() * (delay_on_repeat + 1)); // randomise clients to avoid hammering server
 
-					logger.debug("thunderbirdoverlay: starting timer: delay_on_start:" + delay_on_start +
+					logger.debug("starting timer: delay_on_start:" + delay_on_start +
 					                                                " delay_on_repeat: " + delay_on_repeat);
 
 					var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, delay_on_repeat);
@@ -70,7 +70,7 @@ function onLoad(event)
 					timer.start(delay_on_start);
 				}
 				else
-					logger.debug("thunderbirdoverlay: not starting timer.");
+					logger.debug("not starting timer.");
 			}
 		}
 	}

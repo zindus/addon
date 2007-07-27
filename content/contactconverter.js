@@ -85,7 +85,7 @@ CnsContactConverter.prototype.setup = function()
 	var i, j, k;
 	this.m_map = new Object();
 
-	// gLogger.debug("ZimbraAddressBook.setup() - m_equivalents: " + aToString(this.m_equivalents));
+	// logger.debug("ZimbraAddressBook.setup() - m_equivalents: " + aToString(this.m_equivalents));
 
 	for (j = 0; j < aIndex.length;  j++)
 		this.m_map[aIndex[j]] = new Object();
@@ -95,7 +95,7 @@ CnsContactConverter.prototype.setup = function()
 		{
 			k = this.m_equivalents[i][aIndex[j]];
 
-			// gLogger.debug("CnsContactConverter.setup() - i: " + i + " j: " + j + " k: " + k);
+			// logger.debug("CnsContactConverter.setup() - i: " + i + " j: " + j + " k: " + k);
 
 			if (k != null)
 				this.m_map[aIndex[j]][k] = i;

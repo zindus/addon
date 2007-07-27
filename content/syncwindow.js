@@ -30,6 +30,8 @@ include("chrome://zindus/content/payload.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsmprogressobserver.js");
 
+var gLogger = newLogger("SyncWindow");
+
 function SyncWindow()
 {
 	this.m_syncfsm         = null;

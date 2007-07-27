@@ -32,14 +32,14 @@ function ZinTimer(functor)
 
 	this.m_timer   = Components.classes["@mozilla.org/timer;1"].createInstance(Components.interfaces.nsITimer);
 	this.m_functor = functor;
-	this.m_logger  = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	this.m_logger  = newLogger("ZinTimer");
 }
 
 ZinTimer.prototype.start = function(delay)
 {
 	zinAssert(arguments.length == 1);
 
-	this.m_logger.debug("ZinTimer.start: delay: " + delay);
+	this.m_logger.debug("start: delay: " + delay);
 
 	zinAssert(typeof delay == 'number');
 
@@ -52,7 +52,7 @@ ZinTimer.prototype.start = function(delay)
 //
 ZinTimer.prototype.notify = function(timer)
 {
-	this.m_logger.debug("ZinTimerFunctor.notify: about to run callback: ");
+	this.m_logger.debug("notify: about to run callback: ");
 
 	zinAssert(typeof this.m_functor.run == 'function');
 
@@ -63,7 +63,7 @@ function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
 {
 	zinAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
 
-	this.m_logger            = new Log(Log.DEBUG, Log.dumpAndFileLogger);
+	this.m_logger            = newLogger("ZinTimerFunctorSync");
 	this.m_sfpo              = new SyncFsmProgressObserver();
 	this.m_messengerWindow   = null;
 	this.m_addressbookWindow = null;
@@ -74,7 +74,7 @@ function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
 
 ZinTimerFunctorSync.prototype.run = function()
 {
-	this.m_logger.debug("ZinTimerFunctorSync.run: m_id_fsm_functor: " + this.m_id_fsm_functor);
+	this.m_logger.debug("run: m_id_fsm_functor: " + this.m_id_fsm_functor);
 
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, this.m_id_fsm_functor, ZinMaestro.FSM_GROUP_SYNC);
 }
@@ -86,13 +86,13 @@ ZinTimerFunctorSync.prototype.copy = function()
 	
 ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor 741: entering: m_id_fsm_functor: " + this.m_id_fsm_functor + " fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+	this.m_logger.debug("onFsmStateChangeFunctor: entering: m_id_fsm_functor: " + this.m_id_fsm_functor + " fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	if (this.m_is_fsm_functor_first_entry)
 	{
 		if (fsmstate)
 		{
-			this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: fsm is running: " +
+			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running: " +
 			                      (this.m_delay_on_repeat ? "about to retry" : "single-shot - no retry"));
 
 			if (this.m_delay_on_repeat)
@@ -101,7 +101,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		else
 		{
 			this.m_is_fsm_functor_first_entry = false;
-			this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: fsm is not running - starting... ");
+			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
 			// set m_messengerWindow and m_addressbookWindow...
 			// TODO: m_addressbookWindow
@@ -124,7 +124,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 	else
 	{
-		gLogger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: 744: ");
+		this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: 744: ");
 
 		var is_window_update_required = this.m_sfpo.update(fsmstate);
 
@@ -180,7 +180,7 @@ ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
 {
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 
-	this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: rescheduling timer (seconds): " + delay);
+	this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + delay);
 
 	var functor = this.copy();
 	var timer = new ZinTimer(functor);
@@ -211,7 +211,7 @@ ZinTimerFunctorSync.prototype.getWindowsContainingElementIds = function(a_id_ori
 		for (var id in a_id)
 			if (win.document.getElementById(id))
 			{
-				// gLogger.debug("blah 23432: getWindowsContainingElementIds sets id: " + id);
+				// this.m_logger.debug("blah 23432: getWindowsContainingElementIds sets id: " + id);
 
 				a_id_orig[id] = win;
 				delete a_id[id]; // remove it - once an id is found in one window, we assume it's unique and stop looking for it
