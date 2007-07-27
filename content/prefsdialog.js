@@ -32,6 +32,7 @@ include("chrome://zindus/content/utils.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
+include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/timer.js");
 
 var is_developer_mode = true; // true ==> expose buttons in the UI
@@ -48,7 +49,8 @@ function Prefs()
 	this.checkbox_bimap      = new BiMap(this.checkbox_properties, this.checkbox_ids);
 
 	this.is_fsm_running = false;
-	this.m_logger = newLogger("Prefs");
+	// this.m_logger       = newLogger("Prefs");
+	this.m_logger       = new Log(Log.NONE, Log.dumpAndFileLogger, "Prefs");
 }
 
 Prefs.prototype.onLoad = function(target)
@@ -59,10 +61,10 @@ Prefs.prototype.onLoad = function(target)
 		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('hidden');
 	}
 
-	var consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
-	consoleService.logStringMessage("test an nsIConsoleService message: ")
-
-	Components.utils.reportError("test a Components.utils.reportError message: ");
+	// for experimentation only... TODO removeme
+	// var consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
+	// consoleService.logStringMessage("test an nsIConsoleService message: ")
+	// Components.utils.reportError("test a Components.utils.reportError message: ");
 
 	this.m_prefset_server.load(SOURCEID_ZM);
 	this.m_prefset_general.load();
@@ -324,7 +326,7 @@ function resetAll()
 	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
 	file.append(LOGFILE_NAME);
 
-	if (file.exists() || !file.isDirectory())
+	if (file.exists() && !file.isDirectory())
 		file.remove(false);
 }
 

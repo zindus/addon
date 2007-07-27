@@ -111,6 +111,25 @@ MozillaPreferences.prototype.getCharPref = function(branch, key, value)
 	return ret;
 }
 
+MozillaPreferences.prototype.getCharPrefOrNull = function(branch, key, value)
+{
+	var ret = null;
+
+	if (branch)
+		try
+		{
+			ret = branch.getCharPref(key);
+		}
+		catch(ex)
+		{
+			// do nothing
+		}
+
+	// dump("MozillaPreferences.getCharPrefOrNull: of key " + key + " returns: " + ret + "\n");
+
+	return ret;
+}
+
 MozillaPreferences.prototype.getIntPref = function(branch, key, value)
 {
 	var ret = null;

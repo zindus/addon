@@ -29,6 +29,7 @@ function PrefSet(prefprefix, a)
 	this.m_id            = -1;
 	this.m_prefprefix    = prefprefix;
 	this.m_properties    = new Object();
+	this.m_logger        = new Log(Log.NONE, Log.dumpAndFileLogger, "PrefSet");
 
 	for (var i in a)
 		this.m_properties[a[i]] = PrefSet.DEFAULT_VALUE;
@@ -85,7 +86,7 @@ PrefSet.prototype.load = function(id, branch)
 			// dump("PrefSet::load(" + id + ") - did not load preference for this.m_properties[" + i + "] - ex is " + ex + "\n");
 		}
 
-		// dump("PrefSet.prototype.load - loaded preference " + this.makePrefKey(id, i) + " == " + this.m_properties[i] + "\n");
+		this.m_logger.debug("load: loaded preference " + this.makePrefKey(id, i) + " == " + this.m_properties[i] + "\n");
 	}
 
 	this.m_id = id;
@@ -102,7 +103,7 @@ PrefSet.prototype.save = function()
 
 	zinAssert(this.m_id >= 0);
 
-	dump("PrefSet.prototype.save\n");
+	this.m_logger.debug("save: ");
 
 	try
 	{
@@ -110,7 +111,7 @@ PrefSet.prototype.save = function()
 		{
 			prefs.setCharPref(this.makePrefKey(this.m_id, i), this.m_properties[i]);
 
-			dump("PrefSet.prototype.save - saved preference " + this.makePrefKey(this.m_id, i) + " == " + this.m_properties[i] + "\n");
+			this.m_logger.debug("save: preference: " + this.makePrefKey(this.m_id, i) + " == " + this.m_properties[i]);
 		}
 
 		retval = true;
@@ -132,7 +133,7 @@ PrefSet.prototype.remove = function()
 
 	zinAssert(this.m_id >= 0);
 
-	// dump("PrefSet.prototype.remove\n");
+	this.m_logger.debug("remove: ");
 
 	try
 	{

@@ -21,7 +21,7 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/log4js.js");
+include("chrome://zindus/content/log4js.js");  // see: http://log4js.sourceforge.net
 include("chrome://zindus/content/mozillapreferences.js");
 
 /**
@@ -53,7 +53,6 @@ Log.dumpAndFileLogger = function(msg,level)
 	}
 }
 
-// - if the .loggingActive preference is set...
 // - if the file size exceeds the .loggingFileSizeMax preference it is truncated
 // - logfile is opened in append mode
 // - the outputStream is held in the gLogger.loggingOutputStream member variable
@@ -65,44 +64,41 @@ function loggingFileOpen()
 	var ret = null;
 	var prefs = new MozillaPreferences();
 
-	if (prefs.getCharPref(prefs.branch(), "loggingActive") == "true")
+	try
 	{
-		try
+		var logfile = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
+
+		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
+
+		if (!logfile.exists() || !logfile.isDirectory())
+			logfile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
+
+		logfile.append(LOGFILE_NAME); // dump("logfile.path == " + logfile.path + "\n");
+
+		var loggingFileSizeMax = prefs.getIntPref(prefs.branch(), "system.loggingFileSizeMax");
+
+		if (logfile.exists() && logfile.fileSize > loggingFileSizeMax)
+			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
+
+		ret = Components.classes["@mozilla.org/network/file-output-stream;1"].
+	                        createInstance(Components.interfaces.nsIFileOutputStream);
+
+		// TODO - test this
+		// this next line throws an exception if the logfile is already open (eg by a hung process)
+		//
+		ret.init(logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
+
+		// gLogger.debug("logfile.fileSize == " + logfile.fileSize + " and loggingFileSizeMax == " + loggingFileSizeMax);
+	}
+	catch (e)
+	{
+		if (typeof(is_first_logging_file_open_exception) == 'undefined')
 		{
-			var logfile = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
-
-			var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
-
-			if (!logfile.exists() || !logfile.isDirectory())
-				logfile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
-
-			logfile.append(LOGFILE_NAME); // dump("logfile.path == " + logfile.path + "\n");
-
-			var loggingFileSizeMax = prefs.getIntPref(prefs.branch(), "loggingFileSizeMax");
-
-			if (logfile.exists() && logfile.fileSize > loggingFileSizeMax)
-				ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
-
-			ret = Components.classes["@mozilla.org/network/file-output-stream;1"].
-		                        createInstance(Components.interfaces.nsIFileOutputStream);
-
-			// TODO - test this
-			// this next line throws an exception if the logfile is already open (eg by a hung process)
-			//
-			ret.init(logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
-
-			// gLogger.debug("logfile.fileSize == " + logfile.fileSize + " and loggingFileSizeMax == " + loggingFileSizeMax);
+			Components.utils.reportError(e);
+			is_first_logging_file_open_exception = true;
 		}
-		catch (e)
-		{
-			if (typeof(is_first_logging_file_open_exception) == 'undefined')
-			{
-				Components.utils.reportError(e);
-				is_first_logging_file_open_exception = true;
-			}
 
-			ret = null;
-		}
+		ret = null;
 	}
 
 	return ret;
@@ -117,9 +113,17 @@ function loggingFileClose(os)
 	}
 }
 
+if (typeof(loggingLevel) != 'object' || !loggingLevel)
+{
+	var preferences = new MozillaPreferences();
+
+	loggingLevel = (preferences.getCharPrefOrNull(preferences.branch(), "general.verboselogging") == "true") ? Log.DEBUG : Log.INFO;
+	gLogger      = newLogger("global");
+}
+
 function newLogger(prefix)
 {
-	var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger, prefix);
+	var logger = new Log(loggingLevel, Log.dumpAndFileLogger, prefix);
 
 	return logger;
 }

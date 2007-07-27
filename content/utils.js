@@ -263,6 +263,11 @@ function getTime()
 	return now.getTime();
 }
 
+function getDateUTCString()
+{
+	return new Date().toUTCString();
+}
+
 function hyphenate()
 {
 	var ret = "";

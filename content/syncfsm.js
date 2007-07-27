@@ -176,8 +176,6 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 {
 	var nextEvent = null;
 
-	dump("am here 11\n");
-
 	if (event == 'evCancel')
 	{
 		nextEvent = 'evCancel';
@@ -194,10 +192,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 		nextEvent = 'evStart';
 
-		dump("am here 22\n");
-
 		this.state.m_logger.debug("89347523: entryActionStart: starting normally: SoapFsmState: " + this.soapfsm.state.summaryCode() + " nextEvent: " + nextEvent);
-		dump("am here 33\n");
 	}
 
 	continuation(nextEvent);
@@ -2512,7 +2507,7 @@ SyncFsm.getTbAddressbooks = function()
 
 	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
 
-	this.state.m_logger.debug("getTbAddressbooks() returns: " + functor_foreach_addressbook.result.toString());
+	gLogger.debug("getTbAddressbooks() returns: " + functor_foreach_addressbook.result.toString());
 
 	return functor_foreach_addressbook.result;
 }

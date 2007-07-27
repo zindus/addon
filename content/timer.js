@@ -22,7 +22,6 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/logger.js");
 include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmprogressobserver.js");
 
@@ -95,8 +94,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running: " +
 			                      (this.m_delay_on_repeat ? "about to retry" : "single-shot - no retry"));
 
-			if (this.m_delay_on_repeat)
-				this.setNextTimer(10);  // retry in 10 seconds
+			this.setNextTimer(10);  // retry in 10 seconds
 		}
 		else
 		{
@@ -118,6 +116,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var state = new TwoWayFsmState();
 			state.setCredentials();
 
+			newLogger().info("sync start:  " + getDateUTCString());
 			var syncfsm = new TwoWayFsm(state);
 			syncfsm.start();
 		}
@@ -156,7 +155,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				var msg = "";
 
 				if (exitStatus.m_exit_status == 0)
-					msg += stringBundleString("statusLastSync") + ": " + new Date().toLocaleString();
+					msg += stringBundleString("statusLastSync") + ": " + getDateUTCString();
 				else
 					msg += stringBundleString("statusLastSyncFailed");
 			} catch (ex)
@@ -170,8 +169,9 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				this.m_messengerWindow.document.getElementById('zindus-statuspanel').setAttribute('hidden', true);
 			}
 
-			if (this.m_delay_on_repeat)
-				this.setNextTimer(this.m_delay_on_repeat);
+			newLogger().info("sync finish: " + getDateUTCString());
+
+			this.setNextTimer(this.m_delay_on_repeat);
 		}
 	}
 }
@@ -180,11 +180,14 @@ ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
 {
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 
-	this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + delay);
+	if (delay)
+	{
+		this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + delay);
 
-	var functor = this.copy();
-	var timer = new ZinTimer(functor);
-	timer.start(delay);
+		var functor = this.copy();
+		var timer = new ZinTimer(functor);
+		timer.start(delay);
+	}
 }
 
 ZinTimerFunctorSync.prototype.getWindowsContainingElementIds = function(a_id_orig)

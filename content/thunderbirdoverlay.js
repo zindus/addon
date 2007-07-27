@@ -21,10 +21,9 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/prefset.js");
-include("chrome://zindus/content/timer.js");
 include("chrome://zindus/content/logger.js");
+include("chrome://zindus/content/maestro.js");
+include("chrome://zindus/content/timer.js");
 
 window.addEventListener("load", onLoad, false);
 
@@ -34,7 +33,7 @@ function onLoad(event)
 
 	try
 	{
-		logger.info("==== startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + (new Date()).toLocaleString() + "====\n\n");
+		newLogger().info("startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getDateUTCString());
 		logger.debug("onLoad entered: ");
 
 		// We dont want to do this each time a new window is opened
@@ -54,10 +53,7 @@ function onLoad(event)
 
 				var preferences = new MozillaPreferences();
 
-				var prefset = new PrefSet(PrefSet.GENERAL,  PrefSet.GENERAL_PROPERTIES);
-				prefset.load();
-
-				if (prefset.getProperty(PrefSet.GENERAL_MANUAL_SYNC_ONLY) != "true")
+				if (preferences.getCharPrefOrNull(preferences.branch(), "general.manualsynconly") != "true")
 				{
 					var delay_on_repeat = parseInt(preferences.getIntPref(preferences.branch(), "system.timerDelay"));
 					var delay_on_start  = Math.floor(Math.random() * (delay_on_repeat + 1)); // randomise clients to avoid hammering server

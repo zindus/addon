@@ -27,10 +27,9 @@ include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/payload.js");
+include("chrome://zindus/content/logger.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsmprogressobserver.js");
-
-var gLogger = newLogger("SyncWindow");
 
 function SyncWindow()
 {
@@ -42,11 +41,12 @@ function SyncWindow()
 	this.m_payload         = null; // we keep it around so that we can pass the results back
 	this.m_sfpo            = new SyncFsmProgressObserver();
 	this.m_has_observer_been_called = false;
+	this.m_logger          = newLogger("SyncWindow");
 }
 
 SyncWindow.prototype.onLoad = function()
 {
-	gLogger.debug("=== SyncWindow.onLoad: " + getTime() + "\n");
+	this.m_logger.debug("onLoad: starts: " + getTime() + "\n");
 
 	this.m_payload = window.arguments[0];
 	this.m_syncfsm = this.m_payload.m_syncfsm;
@@ -55,37 +55,37 @@ SyncWindow.prototype.onLoad = function()
 	listen_to[ZinMaestro.FSM_ID_SOAP] = 0;
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
 
-	gLogger.debug("SyncWindow.onLoad() exiting");
+	this.m_logger.debug("onLoad: exiting");
 }
 
 SyncWindow.prototype.onAccept = function()
 {
-	gLogger.debug("SyncWindow.onAccept: before unregister...");
+	this.m_logger.debug("onAccept: before unregister...");
 
 	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_SYNCWINDOW);
 
-	gLogger.debug("SyncWindow.onAccept: after unregister...");
+	this.m_logger.debug("onAccept: after unregister...");
 
 	return true;
 }
 
 SyncWindow.prototype.onCancel = function()
 {
-	gLogger.debug("SyncWindow.onCancel: entered");
+	this.m_logger.debug("onCancel: entered");
 			
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
 	this.m_syncfsm.cancel(this.m_newstate, this.timeoutID_syncfsm, this.timeoutID_soapfsm);
 
-	gLogger.debug("SyncWindow.onCancel: exited");
+	this.m_logger.debug("onCancel: exited");
 
 	return false;
 }
 
 SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	gLogger.debug("SyncWindow.onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+	this.m_logger.debug("onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	if (fsmstate && fsmstate.id_fsm == ZinMaestro.FSM_ID_SOAP)
 		this.timeoutID_soapfsm = fsmstate.timeoutID;
@@ -97,8 +97,9 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_has_observer_been_called = true;
 
-		gLogger.debug("SyncWindow.onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
+		this.m_logger.debug("onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
+		newLogger().info("sync start:  " + getDateUTCString());
 		this.m_syncfsm.start();
 	}
 	else 
@@ -106,7 +107,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		this.timeoutID_syncfsm = fsmstate.timeoutID;
 		this.m_newstate  = fsmstate.newstate;
 
-		gLogger.debug("SyncWindow.onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.timeoutID_syncfsm);
+		this.m_logger.debug("onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.timeoutID_syncfsm);
 
 		var is_window_update_required = this.m_sfpo.update(fsmstate);
 
@@ -122,10 +123,12 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			this.m_payload.m_result = this.m_sfpo.exitStatus();
 
+			newLogger().info("sync finish: " + getDateUTCString());
+
 			document.getElementById('zindus-syncwindow').acceptDialog();
 		}
 	}
 
-	if (typeof gLogger != 'undefined' && gLogger) // gLogger will be null after acceptDialog()
-		gLogger.debug("SyncWindow.onFsmStateChangeFunctor 746: exiting");
+	if (typeof(Log) == 'function')  // the scope into which the source file was included is out of scope after acceptDialog()
+		this.m_logger.debug("onFsmStateChangeFunctor 746: exiting");
 }

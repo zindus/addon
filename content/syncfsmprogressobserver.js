@@ -28,7 +28,7 @@ function SyncFsmProgressObserver()
 {
 	this.state = null; // SyncFsm.state, used on a read-only basis, set before any update
 
-	this.m_logger = newLogger("SyncFsmProgressObserver");
+	// this.m_logger = newLogger("SyncFsmProgressObserver");
 
 	this.m_exit_status = null;
 
@@ -134,7 +134,7 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 
 					if (this.get(SyncFsmProgressObserver.OP) != op)
 					{
-						this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmProgressObserver.OP): " + this.get(SyncFsmProgressObserver.OP));
+						// this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmProgressObserver.OP): " + this.get(SyncFsmProgressObserver.OP));
 						this.progressReportOnSource(context.state.sourceid_zm, "GetItem", aToLength(context.state.aQueue));
 					}
 
@@ -213,7 +213,7 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 
 		percentage_complete = percentage_complete * 100 + "%";
 
-		this.m_logger.debug("4401: percentage_complete: " + percentage_complete);
+		// this.m_logger.debug("4401: percentage_complete: " + percentage_complete);
 
 		this.set(SyncFsmProgressObserver.PERCENTAGE_COMPLETE, percentage_complete);
 	}

@@ -97,6 +97,10 @@
 			<!-- General -->
 
 			<vbox flex="1" style="margin:20px" >
+				<description xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
+					&ZinPrefsGeneralIntroduction.value;
+				</description>
+				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
 				<groupbox pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupSettings.label;"/>
 					<vbox align="left" >
