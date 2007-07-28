@@ -181,7 +181,7 @@ ZimbraAddressBook.deleteCards = function(uri, cardsArray)
 
 ZimbraAddressBook.addCard = function(uri, format, standard, extras)
 {
-	zinAssert(uri != null && isPropertyPresent(CnsContactConverter.instance().m_map, format) && standard != null && extras != null);
+	zinAssert(uri != null && isPropertyPresent(ZinContactConverter.instance().m_map, format) && standard != null && extras != null);
 
 	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
@@ -203,14 +203,14 @@ ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 	var lastModifiedDatePre = abCard.lastModifiedDate;
 
 	if (format != FORMAT_TB)
-		thunderbird_properties =  CnsContactConverter.instance().convert(FORMAT_TB, format, standard);
+		thunderbird_properties =  ZinContactConverter.instance().convert(FORMAT_TB, format, standard);
 	else
 		thunderbird_properties = standard;
 	
 	for (i in thunderbird_properties)
 	{
-		j   = CnsContactConverter.instance().m_map[FORMAT_TB][i];    zinAssert(typeof j != 'undefined');
-		key = CnsContactConverter.instance().m_equivalents[j][FORMAT_TB]; zinAssert(key != null);
+		j   = ZinContactConverter.instance().m_map[FORMAT_TB][i];    zinAssert(typeof j != 'undefined');
+		key = ZinContactConverter.instance().m_equivalents[j][FORMAT_TB]; zinAssert(key != null);
 
 		abCard.setCardValue(i, thunderbird_properties[i]);
 
@@ -240,7 +240,7 @@ ZimbraAddressBook.getCardProperties = function(abCard, format)
 	var i, j, key, value;
 	var ret = new Object();
 
-	for (i in CnsContactConverter.instance().m_map[FORMAT_TB])
+	for (i in ZinContactConverter.instance().m_map[FORMAT_TB])
 	{
 		value = abCard.getCardValue(i);
 
@@ -250,9 +250,9 @@ ZimbraAddressBook.getCardProperties = function(abCard, format)
 				ret[i] = value;
 			else
 			{
-				j = CnsContactConverter.instance().m_map[FORMAT_TB][i];
+				j = ZinContactConverter.instance().m_map[FORMAT_TB][i];
 				zinAssert(typeof j != 'undefined');
-				key = CnsContactConverter.instance().m_equivalents[j][format];
+				key = ZinContactConverter.instance().m_equivalents[j][format];
 
 				if (key != null)
 					ret[key] = value;

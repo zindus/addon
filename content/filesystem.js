@@ -76,7 +76,7 @@ Filesystem.getDirectory = function(code)
 				break;
 
 		default:
-			cnsAssert(false);
+			zinAssert(false);
 			break;
 	}
 

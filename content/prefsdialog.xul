@@ -41,7 +41,6 @@
 
 	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/logger.js" /> <!-- TODO remove me -->
 	<script type="application/x-javascript" src="chrome://zindus/content/prefsdialog.js"/>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>

@@ -74,7 +74,7 @@ ZinTestHarness.prototype.testContactConverter = function()
 	element['email']     = "leni@barkly.moniker.net";
 	element['firstName'] = "leni";
 
-	var properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, element);
+	var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, element);
 
 	this.m_logger.debug("3233: testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
 }

@@ -21,28 +21,27 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function CnsContactConverter()
+function ZinContactConverter()
 {
 	this.m_equivalents = null; // an array of objects where each object is an n-tuplet of pairs of (format, contact property)
 	this.m_map         = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
-	// this.m_format      = null; // an associative array - key is format and value is all possible contact properties for that format
 
 	this.setup();
 }
 
-CnsContactConverter.instance = function()
+ZinContactConverter.instance = function()
 {
-	if (typeof (CnsContactConverter.m_instance) == "undefined")
-		CnsContactConverter.m_instance = new CnsContactConverter();
+	if (typeof (ZinContactConverter.m_instance) == "undefined")
+		ZinContactConverter.m_instance = new ZinContactConverter();
 
-	return CnsContactConverter.m_instance;
+	return ZinContactConverter.m_instance;
 }
 
 // see: mozilla/mailnews/addrbook/resources/content/abCardOverlay.js
 // which is a subset of the constants defined in mozilla/mailnews/addrbook/public/nsIAddrDatabase.idl
 // - the .idl also includes: LastModifiedDate, ListName, ListDescription, ListTotalAddresses
 //
-CnsContactConverter.prototype.setup = function()
+ZinContactConverter.prototype.setup = function()
 {
 	this.m_equivalents = new Array();
 	this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName"      ));
@@ -95,7 +94,7 @@ CnsContactConverter.prototype.setup = function()
 		{
 			k = this.m_equivalents[i][aIndex[j]];
 
-			// logger.debug("CnsContactConverter.setup() - i: " + i + " j: " + j + " k: " + k);
+			// logger.debug("ZinContactConverter.setup() - i: " + i + " j: " + j + " k: " + k);
 
 			if (k != null)
 				this.m_map[aIndex[j]][k] = i;
@@ -106,7 +105,7 @@ CnsContactConverter.prototype.setup = function()
 	// m_map[FORMAT_ZM][email] == 4
 }
 
-CnsContactConverter.prototype.convert = function(format_to, format_from, properties_from)
+ZinContactConverter.prototype.convert = function(format_to, format_from, properties_from)
 {
 	var i, j, key;
 

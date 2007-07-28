@@ -672,7 +672,7 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 
 		for (var i in this.state.aSyncGalContact)
 		{
-			var properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncGalContact[i].element);
+			var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncGalContact[i].element);
 			this.state.aSyncGalContact[i].checksum = ZimbraAddressBook.contactPropertyChecksum(properties);
 		}
 
@@ -737,7 +737,7 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 			this.state.m_logger.debug("844324: about to write aSyncGalContact[" + aAdd[i] + "] == \n" + zc.toString());
 
 			var attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
-			var properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+			var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
 			ZimbraAddressBook.addCard(uri, FORMAT_TB, properties, attributes);
 		}
@@ -1609,7 +1609,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				zinAssert(typeof(zc != 'undefined'));
 
 				attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
-				properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+				properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
 				msg += " properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
@@ -1690,7 +1690,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 						zc = this.state.aSyncContact[luid_winner];
 
 						attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
-						properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+						properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
 						msg += " setting card to: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
@@ -1711,7 +1711,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 						{
 							zc         = this.state.aSyncContact[luid_winner];
 							attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
-							properties = CnsContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+							properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
 							msg += " - content changed";
 						}
@@ -2242,7 +2242,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 	else
 	{
 		var zc = this.state.aSyncContact[luid_winner]; // the ZimbraContact object that arrived via GetContactResponse
-		ret = CnsContactConverter.instance().convert(format_to, FORMAT_ZM, zc.element);
+		ret = ZinContactConverter.instance().convert(format_to, FORMAT_ZM, zc.element);
 	}
 
 	return ret;
@@ -2680,7 +2680,7 @@ SoapFsm.prototype.cancel = function(timeoutID)
 
 	window.clearTimeout(timeoutID);
 
-	logger.debug("SoapFsm.cancel: cleared timeoutID: " + timeoutID);
+	this.state.m_logger.debug("SoapFsm.cancel: cleared timeoutID: " + timeoutID);
 
 	if (this.state.callCompletion)
 	{
