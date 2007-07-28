@@ -21,7 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/const.js");
 include("chrome://zindus/content/utils.js");
 include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/testharness.js");
@@ -41,7 +40,7 @@ function SyncWindow()
 	this.m_payload         = null; // we keep it around so that we can pass the results back
 	this.m_sfpo            = new SyncFsmProgressObserver();
 	this.m_has_observer_been_called = false;
-	this.m_logger          = newLogger("SyncWindow");
+	this.m_logger          = newZinLogger("SyncWindow");
 }
 
 SyncWindow.prototype.onLoad = function()
@@ -99,7 +98,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_logger.debug("onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
-		newLogger().info("sync start:  " + getDateUTCString());
+		newZinLogger().info("sync start:  " + getDateUTCString());
 		this.m_syncfsm.start();
 	}
 	else 
@@ -123,7 +122,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			this.m_payload.m_result = this.m_sfpo.exitStatus();
 
-			newLogger().info("sync finish: " + getDateUTCString());
+			newZinLogger().info("sync finish: " + getDateUTCString());
 
 			document.getElementById('zindus-syncwindow').acceptDialog();
 		}

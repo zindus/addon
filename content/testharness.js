@@ -26,14 +26,14 @@ include("chrome://zindus/content/lso.js");
 
 function ZinTestHarness()
 {
-	this.m_logger = newLogger("ZinTestHarness");
+	this.m_logger = newZinLogger("ZinTestHarness");
 }
 
 ZinTestHarness.prototype.run = function()
 {
-	this.testZinFeedCollection();
+	this.testLogging();
+	// this.testZinFeedCollection();
 	// this.testFilesystem();
-	// this.testLogging();
 	// this.testContactConverter();
 	// this.testPropertyDelete();
 	// this.testLso();
@@ -113,8 +113,6 @@ ZinTestHarness.prototype.testLso = function()
 	        " " +
 			hyphenate(":", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 
-	this.m_logger.debug("blah: t: " + t);
-
 	var zfi1 = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334, ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_MD, 1168484761);
 	var zfi2 = zinCloneObject(zfi1);
 
@@ -160,7 +158,8 @@ ZinTestHarness.testLsoCompare = function(lso, zfi)
 
 ZinTestHarness.prototype.testLogging = function()
 {
-	var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger, "ZinTestHarness.testLogging");
+	// var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger, "ZinTestHarness.testLogging");
+	var logger = newZinLogger("testLogging");
 
 	logger.debug("hello, this is a debug");
 	logger.info("hello, this is a info");

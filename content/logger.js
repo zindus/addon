@@ -1,62 +1,95 @@
-/* ***** BEGIN LICENSE BLOCK *****
- * 
- * "The contents of this file are subject to the Mozilla Public License
- * Version 1.1 (the "License"); you may not use this file except in
- * compliance with the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- * 
- * Software distributed under the License is distributed on an "AS IS"
- * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
- * License for the specific language governing rights and limitations
- * under the License.
- * 
- * The Original Code is Zindus Sync.
- * 
- * The Initial Developer of the Original Code is Moniker Pty Ltd.
- *
- * Portions created by Initial Developer are Copyright (C) 2007
- * the Initial Developer. All Rights Reserved.
- * 
- * Contributor(s): Leni Mayo
- * 
- * ***** END LICENSE BLOCK *****/
+// start here...
+// simple logging api, no appenders
 
-include("chrome://zindus/content/log4js.js");  // see: http://log4js.sourceforge.net
-include("chrome://zindus/content/filesystem.js");
+include("chrome://zindus/content/utils.js");
+include("chrome://zindus/content/bimap.js");
 include("chrome://zindus/content/mozillapreferences.js");
+include("chrome://zindus/content/Filesystem.js");
 
-/**
- * Static dump logger method.  This logger uses dump() to output the message
- * @param {String} msg The message to display
- * @param level The priority level of this log event
- */
-Log.dumpLogger = function(msg,level) { dump(level+" - "+msg+"\n"); }
+ZinLogger.NONE  = 6;
+ZinLogger.FATAL = 5;
+ZinLogger.ERROR = 4;
+ZinLogger.WARN  = 3;
+ZinLogger.INFO  = 2;
+ZinLogger.DEBUG = 1;
 
-/**
- * Static logger method.  This logger sends the message both to dump() and to an nsIFileOutputStream
- * @param {String} msg The message to display
- * @param level The priority level of this log event
- */
-// leni note - this method is static, so it has to reference gLogger, rather than "this"
-Log.dumpAndFileLogger = function(msg,level)
+ZinLogger.bimap_LEVEL = new BiMap(
+	[ZinLogger.NONE, ZinLogger.FATAL, ZinLogger.ERROR, ZinLogger.WARN, ZinLogger.INFO, ZinLogger.DEBUG],
+	['none',         'fatal',         'error',         'warn',         'info',         'debug'        ]);
+
+function ZinLogger(level, prefix)
 {
-	var message = level + " - " + msg + "\n"
+	this.m_level    = level;
+	this.m_prefix   = prefix;
+}
+
+ZinLogger.prototype.level = function()
+{
+	if (arguments.length == 1)
+		this.m_level = arguments[1];
+
+	return this.m_level;
+}
+
+ZinLogger.prototype.debug = function(msg) { var l = ZinLogger.DEBUG; if (this.level() <= l) this.log(l, msg); }
+ZinLogger.prototype.info  = function(msg) { var l = ZinLogger.INFO;  if (this.level() <= l) this.log(l, msg); }
+ZinLogger.prototype.warn  = function(msg) { var l = ZinLogger.WARN;  if (this.level() <= l) this.log(l, msg); }
+ZinLogger.prototype.error = function(msg) { var l = ZinLogger.ERROR; if (this.level() <= l) this.log(l, msg); }
+ZinLogger.prototype.fatal = function(msg) { var l = ZinLogger.FATAL; if (this.level() <= l) this.log(l, msg); }
+
+ZinLogger.prototype.log = function(l, msg)
+{
+	ZinLogAppender.instance().log(l, this.m_prefix, msg);
+}
+
+// Only one appender is implemented, and it's implemented as a singleton.
+// In an earlier implementation, the appender object was a member of ZinLogger, but
+// I discovered that zinCloneObject() just hangs when trying to clone an appender.
+// Rather than looking into why clone() doesn't work on one of the xpcom objects,
+// I just made the appender a singleton, which is better for speed too.
+// If there was an abstract base class, ZinLogAppender would have just one public method, namely log().
+//
+function ZinLogAppender()
+{
+	var prefs = new MozillaPreferences();
+
+	this.m_logfile_size_max = prefs.getIntPref(prefs.branch(), "system.logfileSizeMax");
+	this.m_logfile          = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
+
+	this.m_logfile.append(LOGFILE_NAME);
+	// dump("logfile.path == " + this.m_logfile.path + "\n");
+}
+
+ZinLogAppender.instance = function()
+{
+	if (typeof (ZinLogAppender.m_instance) == "undefined")
+		ZinLogAppender.m_instance = new ZinLogAppender();
+
+	return ZinLogAppender.m_instance;
+}
+
+ZinLogAppender.prototype.log = function(level, prefix, msg)
+{
+	var message = "";
+	var max_prefix_length = 15;
+	
+	message += new String(ZinLogger.bimap_LEVEL.lookup(level, null) + ":   ").substr(0, 7);
+
+	if (prefix)
+		message += new String(prefix.substr(0, max_prefix_length) + ":                ").substr(0, max_prefix_length + 1) + " ";
+
+	message += msg + "\n";
 
     dump(message);
 
-	var os = loggingFileOpen();
+	this.logToFile(message);
 
-	if (typeof os != "undefined" && os != null)
-	{
-		os.write(message, message.length);
+	this.logToConsoleService(level, message);
+}
 
-		loggingFileClose(os);
-	}
-
-	// dodgy: here we test for the strings, rather than the class constants...
-	// if (level == Log.WARN || level == Log.ERROR || level == Log.FATAL)
-
-	if (level == "WARN" || level == "ERROR" || level == "FATAL")
+ZinLogAppender.prototype.logToConsoleService = function(level, message)
+{
+	if (level == ZinLogger.WARN || level == ZinLogger.ERROR || level == ZinLogger.FATAL)
 	{
 		// See: http://developer.mozilla.org/en/docs/nsIConsoleService
 		var consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
@@ -66,60 +99,52 @@ Log.dumpAndFileLogger = function(msg,level)
 
 		switch (level)
 		{
-			case "WARN":  flags = scriptError.warningFlag; break;
-			case "ERROR": flags = scriptError.errorFlag;   break;
-			case "FATAL": flags = scriptError.errorFlag;   break;
+			case ZinLogger.WARN:  flags = scriptError.warningFlag; break;
+			case ZinLogger.ERROR: flags = scriptError.errorFlag;   break;
+			case ZinLogger.FATAL: flags = scriptError.errorFlag;   break;
 			default: zinAssert(false);
 		}
 
-		// dump("msg: " + msg + "\n");
-		// dump("flags: " + flags + "\n");
-		// dump("nsIScriptError: " + scriptError.toString() + "\n");
-
-		scriptError.init(msg, null, null, null, null, flags, category);
+		scriptError.init(message, null, null, null, null, flags, category);
 		consoleService.logMessage(scriptError);
-
-		// consoleService.logStringMessage("test an nsIConsoleService message: ")
-		// Components.utils.reportError("test a Components.utils.reportError message: ");
 	}
 }
 
-// - if the file size exceeds the .loggingFileSizeMax preference it is truncated
-// - logfile is opened in append mode
-// - the outputStream is held in the gLogger.loggingOutputStream member variable
-// - the Log.dumpAndFileLogger uses it
-// - the stream is closed
+ZinLogAppender.prototype.logToFile = function(message)
+{
+	var os = this.fileOpen();
 
-function loggingFileOpen()
+	if (typeof os != "undefined" && os != null)
+	{
+		os.write(message, message.length);
+
+		this.fileClose(os);
+	}
+}
+
+ZinLogAppender.prototype.fileOpen = function()
 {
 	var ret = null;
-	var prefs = new MozillaPreferences();
 
 	try
 	{
 		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
-		var logfile = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
 
-		logfile.append(LOGFILE_NAME); // dump("logfile.path == " + logfile.path + "\n");
-
-		var loggingFileSizeMax = prefs.getIntPref(prefs.branch(), "system.loggingFileSizeMax");
-
-		if (logfile.exists() && logfile.fileSize > loggingFileSizeMax)
+		if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
 			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
 
 		ret = Components.classes["@mozilla.org/network/file-output-stream;1"].createInstance(Components.interfaces.nsIFileOutputStream);
 
 		// this next line throws an exception if the logfile is already open (eg by a hung process)
 		//
-		ret.init(logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
+		ret.init(this.m_logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
 
-		// gLogger.debug("logfile.fileSize == " + logfile.fileSize + " and loggingFileSizeMax == " + loggingFileSizeMax);
+		// dump("logfile.fileSize == " + this.m_logfile.fileSize + " and m_logfile_size_max == " + this.m_logfile_size_max);
 	}
 	catch (e)
 	{
 		if (typeof(is_first_logging_file_open_exception) == 'undefined')
 		{
-			Components.utils.reportError("am here 1");
 			Components.utils.reportError(e);
 			is_first_logging_file_open_exception = true;
 		}
@@ -132,7 +157,7 @@ function loggingFileOpen()
 	return ret;
 }
 
-function loggingFileClose(os)
+ZinLogAppender.prototype.fileClose = function(os)
 {
 	if (typeof os != "undefined" && os != null)
 	{
@@ -143,15 +168,13 @@ function loggingFileClose(os)
 
 if (typeof(loggingLevel) != 'object' || !loggingLevel)
 {
-	var preferences = new MozillaPreferences();
+	var prefs = new MozillaPreferences();
 
-	loggingLevel = (preferences.getCharPrefOrNull(preferences.branch(), "general.verboselogging") == "true") ? Log.DEBUG : Log.INFO;
-	gLogger      = newLogger("global");
+	loggingLevel = (prefs.getCharPrefOrNull(prefs.branch(), "general.verboselogging") == "true") ? ZinLogger.DEBUG : ZinLogger.INFO;
+	gLogger      = newZinLogger("global");
 }
 
-function newLogger(prefix)
+function newZinLogger(prefix)
 {
-	var logger = new Log(loggingLevel, Log.dumpAndFileLogger, prefix);
-
-	return logger;
+	return new ZinLogger(loggingLevel, prefix);
 }

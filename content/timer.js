@@ -31,7 +31,7 @@ function ZinTimer(functor)
 
 	this.m_timer   = Components.classes["@mozilla.org/timer;1"].createInstance(Components.interfaces.nsITimer);
 	this.m_functor = functor;
-	this.m_logger  = newLogger("ZinTimer");
+	this.m_logger  = newZinLogger("ZinTimer");
 }
 
 ZinTimer.prototype.start = function(delay)
@@ -62,7 +62,7 @@ function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
 {
 	zinAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
 
-	this.m_logger            = newLogger("ZinTimerFunctorSync");
+	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfpo              = new SyncFsmProgressObserver();
 	this.m_messengerWindow   = null;
 	this.m_addressbookWindow = null;
@@ -116,7 +116,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var state = new TwoWayFsmState();
 			state.setCredentials();
 
-			newLogger().info("sync start:  " + getDateUTCString());
+			newZinLogger().info("sync start:  " + getDateUTCString());
 			var syncfsm = new TwoWayFsm(state);
 			syncfsm.start();
 		}
@@ -169,7 +169,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				this.m_messengerWindow.document.getElementById('zindus-statuspanel').setAttribute('hidden', true);
 			}
 
-			newLogger().info("sync finish: " + getDateUTCString());
+			newZinLogger().info("sync finish: " + getDateUTCString());
 
 			this.setNextTimer(this.m_delay_on_repeat);
 		}
@@ -214,8 +214,6 @@ ZinTimerFunctorSync.prototype.getWindowsContainingElementIds = function(a_id_ori
 		for (var id in a_id)
 			if (win.document.getElementById(id))
 			{
-				// this.m_logger.debug("blah 23432: getWindowsContainingElementIds sets id: " + id);
-
 				a_id_orig[id] = win;
 				delete a_id[id]; // remove it - once an id is found in one window, we assume it's unique and stop looking for it
 				break;

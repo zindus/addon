@@ -25,7 +25,7 @@ function ZinXpath()
 {
 }
 
-ZinXpath.logger = newLogger("ZinXpath");
+ZinXpath.logger = newZinLogger("ZinXpath");
 
 ZinXpath.nsResolverBimap = new BiMap(
 	[ "soap",                              "z",                          "za",                          "zm"                       ],

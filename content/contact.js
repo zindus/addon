@@ -25,7 +25,7 @@ function ZimbraContact()
 {
 	this.attribute = new Object();
 	this.element   = new Object();
-	this.m_logger  = newLogger();
+	this.m_logger  = newZinLogger("ZimbraContact");
 }
 
 ZimbraContact.prototype.isMailList = function()
@@ -52,7 +52,7 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 	var key = null;
 	var value = null;
 
-	this.m_logger.debug("77220: ZimbraContact.prototype.loadFromNode - node.nodeName == " + node.nodeName);
+	this.m_logger.debug("loadFromNode: node.nodeName == " + node.nodeName);
 
 	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
@@ -72,7 +72,7 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 	//
 	var nodelist_of_a = node.getElementsByTagNameNS(ns, "a");
 
-	this.m_logger.debug("77221: nodelist_of_a.length == " + nodelist_of_a.length + "\n");
+	this.m_logger.debug("nodelist_of_a.length == " + nodelist_of_a.length + "\n");
 
 	for (var i = 0; i < nodelist_of_a.length; i++)
 	{

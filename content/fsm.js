@@ -29,10 +29,10 @@ include("chrome://zindus/content/maestro.js");
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.13 2007-07-27 10:21:57 cvsuser Exp $
+// $Id: fsm.js,v 1.14 2007-07-28 06:34:38 cvsuser Exp $
 
 if (typeof fsmlogger != 'object' || !fsmlogger)
-    fsmlogger = newLogger("fsm");
+    fsmlogger = newZinLogger("fsm");
 
 function FsmSanityCheck(context)
 {
@@ -94,7 +94,7 @@ function fsmDoTransition(fsmstate)
 		FsmSanityCheck(context);
 
 		context.fsm.transitions.isSeenOnce = true;
-		context.fsm.transitions.logger = newLogger("fsm");
+		context.fsm.transitions.logger = newZinLogger("fsm");
 	}
 
 	if (context.fsm.aActionEntry[newstate])
@@ -179,7 +179,7 @@ function fsmFireTransition(id_fsm, oldstate, newstate, event, context)
 	logger = fsmlogger;
 
 	if (typeof logger != 'object' || !logger) // logger == null once the dialog goes away after the very last transition
-		logger = newLogger("fsm");
+		logger = newZinLogger("fsm");
 
 	logger.debug("fsm: 713. fsmFireTransition exiting ");
 }

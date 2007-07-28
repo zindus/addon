@@ -54,7 +54,6 @@ function ZinFeedCollection(has_reserved_range)
 {
 	this.m_collection  = new Object();
 	this.has_reserved_range = has_reserved_range;
-	this.m_logger = newLogger("ZinFeedCollection");
 }
 
 ZinFeedCollection.fileName = function()
@@ -128,14 +127,14 @@ ZinFeedCollection.prototype.load = function(filename)
 	{
 		run: function(line)
 		{
-			// this.m_logger.debug("line.length: " + line.length);
-			// this.m_logger.debug("line: " + line);
+			// gLogger.debug("line.length: " + line.length);
+			// gLogger.debug("line: " + line);
 
 			if (line.charAt(0) == '#')
 				; // do nothing
 			else if (line.length == 0)
 			{
-				// this.m_logger.debug("setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[ZinFeedItem.ATTR_ID] + "]");
+				// gLogger.debug("setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[ZinFeedItem.ATTR_ID] + "]");
 
 				this.m_zfc.set(this.m_zfi);
 				this.m_zfi = new ZinFeedItem();
@@ -146,7 +145,7 @@ ZinFeedCollection.prototype.load = function(filename)
 
 				this.m_zfi.set([line.substring(0, eq)], line.substring(eq + 1));
 
-				// this.m_logger.debug("m_zfi.m_properties[" + line.substring(0, eq) + "] = " + line.substring(eq + 1));
+				// gLogger.debug("m_zfi.m_properties[" + line.substring(0, eq) + "] = " + line.substring(eq + 1));
 			}
 		}
 	};
@@ -156,7 +155,7 @@ ZinFeedCollection.prototype.load = function(filename)
 
 	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
 	file.append(filename);
-	// this.m_logger.debug("about to parse file: " + file.path);
+	// gLogger.debug("about to parse file: " + file.path);
 
 	if (file.exists() && !file.isDirectory())
 		Filesystem.fileReadByLine(file.path, functor);
@@ -225,7 +224,7 @@ ZinFeedItem.prototype.get = function(key)
 {
 	if (!this.isPresent(key))
 	{
-		newLogger("ZinFeedItem").error("get: key not present: " + key);
+		newZinLogger("ZinFeedItem").error("get: key not present: " + key);
 		zinAssert(false);
 	}
 

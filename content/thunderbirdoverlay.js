@@ -30,11 +30,11 @@ window.addEventListener("load", onLoad, false);
 
 function onLoad(event)
 {
-	var logger = newLogger("thunderbirdoverlay");
+	var logger = newZinLogger("thunderbirdoverlay");
 
 	try
 	{
-		newLogger().info("startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getDateUTCString());
+		newZinLogger().info("startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getDateUTCString());
 
 		// We dont want to do this each time a new window is opened
 		var messengerWindow = document.getElementById("messengerWindow");

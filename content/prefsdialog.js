@@ -21,7 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/const.js");
 include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/bimap.js");
 include("chrome://zindus/content/payload.js");
@@ -39,18 +38,17 @@ var is_developer_mode = true; // true ==> expose buttons in the UI
 
 function Prefs()
 {
-	this.m_prefset_server  = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
-	this.m_prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
+	this.m_prefset_server      = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
+	this.m_prefset_general     = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
-	this.checkbox_properties = PrefSet.GENERAL_PROPERTIES;
-	this.checkbox_ids        = [ "zindus-prefs-general-map-PAB",
+	this.m_checkbox_properties = PrefSet.GENERAL_PROPERTIES;
+	this.m_checkbox_ids        = [ "zindus-prefs-general-map-PAB",
 	                             "zindus-prefs-general-manual-sync-only",
 								 "zindus-prefs-general-verbose-logging"  ];
-	this.checkbox_bimap      = new BiMap(this.checkbox_properties, this.checkbox_ids);
+	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
-	this.is_fsm_running = false;
-	this.m_logger       = newLogger("Prefs");
-	// this.m_logger       = new Log(Log.NONE, Log.dumpAndFileLogger, "Prefs");
+	this.m_is_fsm_running      = false;
+	this.m_logger              = newZinLogger("Prefs");
 }
 
 Prefs.prototype.onLoad = function(target)
@@ -105,9 +103,9 @@ Prefs.prototype.onAccept = function()
 
 	// general tab - checkbox elements
 	//
-	for (var i = 0; i < this.checkbox_properties.length; i++)
-		this.m_prefset_general.setProperty(this.checkbox_properties[i],
-			document.getElementById(this.checkbox_bimap.lookup(this.checkbox_properties[i], null)).checked ? "true" : "false" );
+	for (var i = 0; i < this.m_checkbox_properties.length; i++)
+		this.m_prefset_general.setProperty(this.m_checkbox_properties[i],
+			document.getElementById(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked ? "true" : "false" );
 
 	this.m_prefset_server.save();
 	this.m_prefset_general.save();
@@ -226,9 +224,9 @@ Prefs.prototype.initialiseView = function()
 
 	// general tab - checkbox elements
 	//
-	for (var i = 0; i < this.checkbox_properties.length; i++)
-		document.getElementById(this.checkbox_bimap.lookup(this.checkbox_properties[i], null)).checked =
-		           (this.m_prefset_general.getProperty(this.checkbox_properties[i]) == "true");
+	for (var i = 0; i < this.m_checkbox_properties.length; i++)
+		document.getElementById(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked =
+		           (this.m_prefset_general.getProperty(this.m_checkbox_properties[i]) == "true");
 
 	var selectedTab = this.isServerSettingsComplete() ? "zindus-prefs-tab-general" : "zindus-prefs-tab-server";
 
@@ -254,7 +252,7 @@ Prefs.prototype.updateView = function()
 	// - run timer       ==> disabled when fsm is running or isServerSettingsComplete, otherwise enabled
 	// - sync now        ==> disabled when fsm is running or isServerSettingsComplete, otherwise enabled
 
-	if (this.is_fsm_running)
+	if (this.m_is_fsm_running)
 	{
 		this.m_logger.debug("updateView: fsm running");
 		document.getElementById("zindus-prefs-cmd-sync").setAttribute('disabled', true);
@@ -282,13 +280,13 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		if (fsmstate.newstate == "start")
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm started");
-			this.is_fsm_running = true;
+			this.m_is_fsm_running = true;
 			this.updateView();
 		}
 		else if (fsmstate.isFinal())
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm finished");
-			this.is_fsm_running = false;
+			this.m_is_fsm_running = false;
 			this.updateView();
 		}
 }

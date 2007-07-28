@@ -28,7 +28,7 @@ function SyncFsmProgressObserver()
 {
 	this.state = null; // SyncFsm.state, used on a read-only basis, set before any update
 
-	// this.m_logger = newLogger("SyncFsmProgressObserver");
+	// this.m_logger = newZinLogger("SyncFsmProgressObserver");
 
 	this.m_exit_status = null;
 

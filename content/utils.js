@@ -31,9 +31,9 @@ function zinAssert(expr)
 		}
 		catch(ex)
 		{
-			if (typeof newLogger == 'function')
+			if (typeof newZinLogger == 'function')
 			{
-				var logger = newLogger("Utils");
+				var logger = newZinLogger("Utils");
 				
 				logger.fatal(ex.message);
 				logger.fatal(ex.stack);

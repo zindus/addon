@@ -1439,7 +1439,6 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 				var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(winner));
 
 				msg += " gid: " + gid + " target sourceid: " + sourceid;
-				// this.state.m_logger.debug("blah: gid: " + gid + " target sourceid: " + sourceid);
 
 				if (!zfcGid.get(gid).isPresent(sourceid))
 				{
@@ -2704,9 +2703,8 @@ function SoapFsmState()
 	this.faultString      = null;
 	this.callCompletion   = null;  // the object returned by soapCall.asyncInvoke()
 	this.is_cancelled     = false;
-	this.m_logger         = newLogger();
+	this.m_logger         = newZinLogger();
 }
-
 
 SoapFsmState.PRE_REQUEST                     = 0; // haven't made a request yet
 SoapFsmState.PRE_RESPONSE                    = 1; // made a request but haven't yet recieved a response
@@ -2870,7 +2868,7 @@ TwoWayFsm.prototype.setFsm = function()
 function SyncFsmState(id_fsm)
 {
 	this.id_fsm              = id_fsm;
-	this.m_logger            = newLogger("SyncFsm");
+	this.m_logger            = newZinLogger("SyncFsm");
 	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
 	this.zfcGid              = new ZinFeedCollection(); // map of gid to (sourceid, luid)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)

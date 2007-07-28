@@ -35,7 +35,7 @@ function ZinMaestro()
 {
 	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
 	this.m_a_fsmstate = new Object();
-	this.m_logger     = newLogger("ZinMaestro");
+	this.m_logger     = newZinLogger("ZinMaestro");
 
 	this.TOPIC                 = ZinMaestro.TOPIC;
 	this.DO_FUNCTOR_REGISTER   = ZinMaestro.DO_FUNCTOR_REGISTER;
@@ -49,7 +49,7 @@ ZinMaestro.DO_FUNCTOR_REGISTER   = "do_register";
 ZinMaestro.DO_FUNCTOR_UNREGISTER = "do_unregister";
 ZinMaestro.DO_FSM_STATE_UPDATE   = "do_state_update";
 
-ZinMaestro.logger = newLogger("ZinMaestro");
+ZinMaestro.logger = newZinLogger("ZinMaestro");
 
 // There is a unique FSM_ID_* for each fsm so that functors can register to be notified about the state of specific fsm's
 //
