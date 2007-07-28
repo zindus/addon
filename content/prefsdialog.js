@@ -57,6 +57,7 @@ Prefs.prototype.onLoad = function(target)
 	{
 		document.getElementById("zindus-prefs-general-button-test-harness").removeAttribute('hidden');
 		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('hidden');
+		document.getElementById("zindus-prefs-general-group-advanced-settings").removeAttribute('hidden');
 	}
 
 	this.m_prefset_server.load(SOURCEID_ZM);

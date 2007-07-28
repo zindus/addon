@@ -110,7 +110,7 @@
 					</vbox>
 				</groupbox>
 				<spacer style="height:30px;" flex="5"/> 
-				<groupbox pack="center" >
+				<groupbox id="zindus-prefs-general-group-advanced-settings" pack="center" hidden="true" >
 				    <caption label="&ZinPrefsGeneralGroupAdvanced.label;"/>
 					<vbox align="left" >
 					<checkbox id="zindus-prefs-general-manual-sync-only" label="&ZinPrefsGeneralManualSyncOnly.label;" checked="false" />
