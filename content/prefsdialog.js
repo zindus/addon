@@ -209,9 +209,6 @@ Prefs.prototype.onCommand = function(id_target)
 
 Prefs.prototype.initialiseView = function()
 {
-	// TODO
-	// - sanity checking on the whole thing - perhaps enable the ok button when all is well
-
 	// server tab
 	//
 	document.getElementById("zindus-prefs-server-url").value      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
