@@ -153,9 +153,8 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 						var cTotal = 0; // aSuo definitely needs an iterator!
 						for (var x in context.state.sources)
 							if (context.state.sources[x]['format'] == FORMAT_ZM)
-								for (var y = 0; y < SORT_ORDER.length; i++)
-									if (isPropertyPresent(context.state.aSuo[x], SORT_ORDER[y]))
-										for (var z in context.state.aSuo[x][SORT_ORDER[y]])
+								for (y in context.state.aSuo[x])
+										for (var z in context.state.aSuo[x][y])
 											cTotal++;
 
 						this.progressReportOnSource(sourceid, "Put", cTotal);
