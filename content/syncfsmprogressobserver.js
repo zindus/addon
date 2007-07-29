@@ -28,7 +28,7 @@ function SyncFsmProgressObserver()
 {
 	this.state = null; // SyncFsm.state, used on a read-only basis, set before any update
 
-	// this.m_logger = newZinLogger("SyncFsmProgressObserver");
+	this.m_logger = newZinLogger("SyncFsmProgressObserver");
 
 	this.m_exit_status = null;
 
@@ -106,6 +106,8 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 	var a_states_of_interest = { stAuth : 0,       stLoad: 1,     stSync: 2,     stGetContact: 3,    stSyncGal: 4, stLoadTb : 5, 
 	                             stSyncPrepare: 6, stUpdateTb: 7, stUpdateZm: 8, stUpdateCleanup: 9, final: 10 };
 
+	this.m_logger.debug("4400: update entered, fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+
 	if (isPropertyPresent(a_states_of_interest, fsmstate.newstate))
 	{
 		var context = fsmstate.context; // SyncFsm
@@ -143,10 +145,20 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 				break;
 
 			case 'stUpdateZm':
-				if (context.state.updateZmPackage)
+				var sourceid = null;
+
+				bigloop: for (var x in context.state.sources)
+					if (context.state.sources[x]['format'] == FORMAT_ZM)
+						for (y in context.state.aSuo[x])
+								for (var z in context.state.aSuo[x][y])
+								{
+									sourceid = x;
+									break bigloop;
+								}
+
+				if (sourceid)
 				{
-					var sourceid = context.state.updateZmPackage['sourceid'];
-					var op = this.buildOp(context.state.sourceid_zm, "Put");
+					var op = this.buildOp(sourceid, "Put");
 
 					if (this.get(SyncFsmProgressObserver.OP) != op)
 					{
@@ -158,9 +170,12 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 											cTotal++;
 
 						this.progressReportOnSource(sourceid, "Put", cTotal);
+
+						this.m_logger.debug("4401: this.get(SyncFsmProgressObserver.OP): " + this.get(SyncFsmProgressObserver.OP) + " cTotal: " + cTotal);
 					}
 
 					this.set(SyncFsmProgressObserver.PROG_CNT, this.get(SyncFsmProgressObserver.PROG_CNT) + 1);
+					this.m_logger.debug("4402: PROG_CNT: " + this.get(SyncFsmProgressObserver.PROG_CNT));
 				}
 				break;
 

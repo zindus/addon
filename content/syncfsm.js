@@ -369,11 +369,14 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 
 	// <cn d="1169685098000" ms="2708" md="1169685098" email="a.b@example.com" fileAsStr="a b" l="7" id="561" rev="2708"/>
 	//   This element appears as a child of a <SyncResponse> element
-	//   and only ever relates to ids that we've previously seen via a <cn ids="blah"> element (so the id already exists in the map)
 	//
-	//   update the attributes in the map
-	//   if the rev attribute is unchanged and the item became of interest or
-	//      the rev attribute changed and it's a contact we're interested in
+	//   if the id isn't in the map
+	//           ==> add the id to the queue for GetContactRequest,
+	//               in which case the id get added to the map in GetContactResponse
+	//   else
+	//     update the attributes in the map
+	//     if the rev attribute is unchanged and the item became of interest or
+	//       the rev attribute changed and it's a contact we're interested in
 	//           ==> add the id to the queue for GetContactRequest,
 	//               in which case the id get added to the map in GetContactResponse
 	//
@@ -400,29 +403,35 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 			{
 				var fAddToTheQueue = false;
 
-				zinAssert(zfcServer.isPresent(id));
-
-				var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcServer, id);
-
-				var isRevChange = !isPropertyPresent(attribute, ZinFeedItem.ATTR_REV) ||
-				                  !zfcServer.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
-				                  attribute[ZinFeedItem.ATTR_REV] != zfcServer.get(id).get(ZinFeedItem.ATTR_REV);
-
-				zfcServer.get(id).set(attribute);
-
-				msg += " - updated id in map";
-
-				var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcServer, id);
-
-				if (!isRevChange && isInterestingPostUpdate && !isInterestingPreUpdate)
+				if (!zfcServer.isPresent(id))
 				{
 					fAddToTheQueue = true;
-					msg += " - rev didn't change but the id become of interest";
+					msg += " - first time it's been seen ";
 				}
-				else if (isRevChange && isInterestingPostUpdate)
+				else
 				{
-					fAddToTheQueue = true;
-					msg += " - rev changed and the item is of interest";
+					var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcServer, id);
+
+					var isRevChange = !isPropertyPresent(attribute, ZinFeedItem.ATTR_REV) ||
+					                  !zfcServer.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
+					                  attribute[ZinFeedItem.ATTR_REV] != zfcServer.get(id).get(ZinFeedItem.ATTR_REV);
+
+					zfcServer.get(id).set(attribute);
+
+					msg += " - updated id in map";
+
+					var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcServer, id);
+
+					if (!isRevChange && isInterestingPostUpdate && !isInterestingPreUpdate)
+					{
+						fAddToTheQueue = true;
+						msg += " - rev didn't change but the id become of interest";
+					}
+					else if (isRevChange && isInterestingPostUpdate)
+					{
+						fAddToTheQueue = true;
+						msg += " - rev changed and the item is of interest";
+					}
 				}
 
 				if (fAddToTheQueue)
@@ -1718,7 +1727,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 						else
 						{
 							attributes = ZimbraAddressBook.getCardAttributes(abCard);
-							properties = ZimbraAddressBook.getCardProperties(abCard, FORMAT_TB);
+							properties = ZimbraAddressBook.getCardProperties(abCard);
 
 							msg += " - content didn't change";
 						}
@@ -2235,7 +2244,10 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 		var abCard = ZimbraAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
 
 		if (abCard)
-			ret = ZimbraAddressBook.getCardProperties(abCard, format_to);
+		{
+			ret = ZimbraAddressBook.getCardProperties(abCard);
+			ret = ZinContactConverter.instance().convert(format_to, FORMAT_TB, ret);
+		}
 		else
 			this.state.m_logger.warn("can't find contact for to sourceid: " + sourceid + " and luid: " + luid + " in thunderbird addressbook uri: " + uri + " - this shouldn't happen.");
 	}

@@ -234,7 +234,7 @@ ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 	return abCard;
 }
 
-ZimbraAddressBook.getCardProperties = function(abCard, format)
+ZimbraAddressBook.getCardProperties = function(abCard)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var i, j, key, value;
@@ -245,19 +245,7 @@ ZimbraAddressBook.getCardProperties = function(abCard, format)
 		value = abCard.getCardValue(i);
 
 		if (value)
-		{
-			if (format == FORMAT_TB)
-				ret[i] = value;
-			else
-			{
-				j = ZinContactConverter.instance().m_map[FORMAT_TB][i];
-				zinAssert(typeof j != 'undefined');
-				key = ZinContactConverter.instance().m_equivalents[j][format];
-
-				if (key != null)
-					ret[key] = value;
-			}
-		}
+			ret[i] = value;
 	}
 
 	return ret;
