@@ -29,15 +29,14 @@ function ZimbraSoapDocument()
 	this.doc.appendChild(this.envelope);
 }
 
-// - mozilla uses this to imply SOAP 1.2
-//   see mozilla/extensions/webservices/soap/src/nsSOAPUtils.cpp and nsSOAPMessage.cpp
+// - mozilla uses this url to imply SOAP 1.2:
 //   NS_SOAP_ENVELOPE = "http://www.w3.org/2001/09/soap-envelope";
-// - zimbra  uses this to imply SOAP 1.2
-//   and responds to requests containing the 2001 with the 2003 url which mozilla doesn't understand.
+//   see mozilla/extensions/webservices/soap/src/nsSOAPUtils.cpp and nsSOAPMessage.cpp
+// - zimbra  uses this to url imply SOAP 1.2:
 //   NS_SOAP_ENVELOPE = "http://www.w3.org/2003/05/soap-envelope";
-// - both mozilla and zimbra agree that this means soap 1.1
-//
-// also see const.js:xpathNsResolver
+//   and responds to requests containing the 2001 with the 2003 url which mozilla doesn't understand.
+// - both mozilla and zimbra agree that the NS_SOAP_ENVELOPE used below means soap 1.1
+// - see also xpath.js
 //
 ZimbraSoapDocument.NS_SOAP_ENVELOPE  = "http://schemas.xmlsoap.org/soap/envelope/";
 ZimbraSoapDocument.NS_ZIMBRA         = "urn:zimbra";
@@ -62,11 +61,11 @@ ZimbraSoapDocument.prototype.context = function(authToken, sessionId)
 	var elHeader    = this.doc.createElementNS(ZimbraSoapDocument.NS_SOAP_ENVELOPE, "soap:Header");
 	var elContext   = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "context");
 	var elNonotify  = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "nonotify");
-	var elNoqualify = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "noqualify"); // TODO - understand what this does - it's not documented 
+	var elNoqualify = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "noqualify");
 
-	this.envelope.appendChild(elHeader);
-
-	elHeader.appendChild(elContext);
+	// noqualify controls the formatting of returned id's and distinguishes whether the owner of the mailbox 
+	// matches the principal.  Since there's no delegation of authority here, we use noqualify.
+	// see: ZimbraServer/src/java/com/zimbra/cs/service/util/ItemIdFormatter.java
 
 	elContext.appendChild(elNonotify);
 	elContext.appendChild(elNoqualify);
