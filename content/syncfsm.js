@@ -1518,18 +1518,6 @@ SyncFsm.prototype.buildPreUpdateWinners = function(aGcs)
 
 SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 {
-	if (0) // just experimenting...
-	{
-	var sci = new SuoCollectionIterator(aSuoWinners);
-
-	var key = sci.getNext();
-
-	while (key)
-	{
-		suo = aSuoWinners.get(key);
-	}
-	}
-
 	for (var i = 0; i < aSuoWinners.length; i++)
 	{
 		suo = aSuoWinners[i];
@@ -2350,23 +2338,6 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 	// - confirm that everything in the gid is in a source map
 	// - warn if anything in the/a tb source isn't in the source map which
 	//   could be because of an update parallel to sync or could indicate a problem
-
-	if (0) // this is no longer relevant - OFI is gone...
-	{
-	var functor_cleanup_attributes = {
-		run: function(zfi)
-		{
-			if (zfi.isPresent(ZinFeedItem.ATTR_OFI))
-				zfi.del(ZinFeedItem.ATTR_OFI);
-
-			return true;
-		}
-	};
-
-	for (sourceid in this.state.sources)
-		this.state.sources[sourceid]['zfcLuid'].forEach(functor_cleanup_attributes, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
-
-	}
 
 	continuation('evNext');
 }

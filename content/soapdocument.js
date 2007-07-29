@@ -67,6 +67,10 @@ ZimbraSoapDocument.prototype.context = function(authToken, sessionId)
 	// matches the principal.  Since there's no delegation of authority here, we use noqualify.
 	// see: ZimbraServer/src/java/com/zimbra/cs/service/util/ItemIdFormatter.java
 
+	this.envelope.appendChild(elHeader);
+
+	elHeader.appendChild(elContext);
+
 	elContext.appendChild(elNonotify);
 	elContext.appendChild(elNoqualify);
 
