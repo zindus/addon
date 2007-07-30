@@ -2622,6 +2622,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 {
 	var ret = false;
 
+	context.state.m_logger.debug("handleAsyncResponse: m_callcompletion set to null"); // TODO remove me
 	zinAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the m_callcompletion object!
 
 	context.state.m_callcompletion = null; // don't need this anymore and setting it to null tells the world that no request is outstanding
