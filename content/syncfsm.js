@@ -118,7 +118,7 @@ SyncFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 	var event = null;
 
 	// After a response, exactly one of these things is true:
-	// - this.response != null
+	// - this.m_response != null
 	// - this.m_service_code != 0
 	// - this.m_fault_element_xml != null
 	// That's what SoapFsmState.prototype.sanityCheck tests for...
@@ -126,9 +126,9 @@ SyncFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 
 	soapfsmstate.sanityCheck();
 
-	if (soapfsmstate.response)
+	if (soapfsmstate.m_response)
 	{
-		var node = ZinXpath.getSingleValue(ZinXpath.queryFromMethod(method), soapfsmstate.response, soapfsmstate.response);
+		var node = ZinXpath.getSingleValue(ZinXpath.queryFromMethod(method), soapfsmstate.m_response, soapfsmstate.m_response);
 
 		if (node)
 			event = eventOnResponse; // we found a BlahResponse element - all is well
@@ -236,11 +236,11 @@ SyncFsm.prototype.entryActionAuth = function(state, event, continuation)
 
 SyncFsm.prototype.exitActionAuth = function(state, event)
 {
-	if (this.soapfsm.state.response)
+	if (this.soapfsm.state.m_response)
 	{
-		conditionalGetElementByTagNameNS(this.soapfsm.state.response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
-		conditionalGetElementByTagNameNS(this.soapfsm.state.response, ZimbraSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
-		conditionalGetElementByTagNameNS(this.soapfsm.state.response, ZimbraSoapDocument.NS_ACCOUNT, "sessionId", this.state, 'sessionId');
+		conditionalGetElementByTagNameNS(this.soapfsm.state.m_response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
+		conditionalGetElementByTagNameNS(this.soapfsm.state.m_response, ZimbraSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
+		conditionalGetElementByTagNameNS(this.soapfsm.state.m_response, ZimbraSoapDocument.NS_ACCOUNT, "sessionId", this.state, 'sessionId');
 	}
 }
 
@@ -263,7 +263,7 @@ SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuatio
 
 SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 {
-	if (!this.soapfsm.state.response)
+	if (!this.soapfsm.state.m_response)
 		return;
 
 	// this.zimbraId    = null; // set by GetAccountInfo
@@ -272,7 +272,7 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 	var xpath_query = "/soap:Envelope/soap:Body/za:GetAccountInfoResponse/za:soapURL";
 	var functor     = new FunctorArrayOfTextNodeValue();
 
-	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.response);
+	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.m_response);
 
 	var soapURL = null;
 
@@ -307,12 +307,12 @@ SyncFsm.prototype.exitActionCheckLicense = function(state, event)
 {
 	if (this.soapfsm.state.m_fault_element_xml && this.soapfsm.state.m_faultcode == "service.UNKNOWN_DOCUMENT")
 		this.state.mapiStatus = "CheckLicense not supported by server - service is probably open source edition";
-	else if (this.soapfsm.state.response)
+	else if (this.soapfsm.state.m_response)
 	{
 		var xpath_query = "/soap:Envelope/soap:Body/za:CheckLicenseResponse/attribute::status";
 		var warn_msg    = "warning - expected to find 'status' attribute in <CheckLicenseResponse>";
 
-		ZinXpath.setConditional(this.state, 'mapiStatus', xpath_query, this.soapfsm.state.response, warn_msg);
+		ZinXpath.setConditional(this.state, 'mapiStatus', xpath_query, this.soapfsm.state.m_response, warn_msg);
 	}
 }
 
@@ -324,10 +324,10 @@ SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 
 SyncFsm.prototype.exitActionSync = function(state, event)
 {
-	if (!this.soapfsm.state.response)
+	if (!this.soapfsm.state.m_response)
 		return;
 
-	var response  = this.soapfsm.state.response;
+	var response  = this.soapfsm.state.m_response;
 	var sourceid = this.state.sourceid_zm;
 	var zfcServer = this.state.sources[sourceid]['zfcLuid'];
 	var id, functor, xpath_query;
@@ -551,21 +551,21 @@ SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
 	}
 	else
 	{
-		this.soapfsm.state.response = null;
+		this.soapfsm.state.m_response = null;
 		continuation('evNext');
 	}
 }
 
 SyncFsm.prototype.exitActionGetContact = function(state, event)
 {
-	if (!this.soapfsm.state.response)
+	if (!this.soapfsm.state.m_response)
 		return;
 
 	var xpath_query = "/soap:Envelope/soap:Body/zm:GetContactsResponse/zm:cn";
 	var functor     = new FunctorArrayOfContactsFromNodes(ZinXpath.nsResolver("zm")); // see <cn> above
 	var zfcServer   = this.state.sources[this.state.sourceid_zm]['zfcLuid'];
 
-	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.response);
+	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.m_response);
 
 	// this.state.m_logger.debug("111118 - functor.a.length == " + functor.a.length);
 
@@ -636,11 +636,11 @@ SyncFsm.prototype.exitActionSyncGal = function(state, event)
 {
 	var SyncGalToken = null;
 
-	if (!this.soapfsm.state.response)
+	if (!this.soapfsm.state.m_response)
 		return;
 
 	var functor = new FunctorArrayOfContactsFromNodes(xpathNsResolver("za")); // see SyncGalResponse below
-	var response = this.soapfsm.state.response;
+	var response = this.soapfsm.state.m_response;
 
 	var node = ZinXpath.getSingleValue("/soap:Envelope/soap:Body/za:SyncGalResponse/@token", response, response);
 
@@ -657,7 +657,7 @@ SyncFsm.prototype.exitActionSyncGal = function(state, event)
 	//
 	if (SyncGalToken != null && SyncGalToken != this.state.SyncGalToken)
 	{
-		ZinXpath.runFunctor(functor, "/soap:Envelope/soap:Body/za:SyncGalResponse/za:cn", this.soapfsm.state.response);
+		ZinXpath.runFunctor(functor, "/soap:Envelope/soap:Body/za:SyncGalResponse/za:cn", this.soapfsm.state.m_response);
 
 		this.state.SyncGalToken        = SyncGalToken;
 		this.state.SyncGalTokenChanged = true;
@@ -2057,18 +2057,18 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 	}
 	else
 	{
-		this.soapfsm.state.response = null;
+		this.soapfsm.state.m_response = null;
 		continuation('evNext');
 	}
 }
 
 SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 {
-	if (!this.soapfsm.state.response)
+	if (!this.soapfsm.state.m_response)
 		return;
 
 	var msg, suo, xpath_query, functor;
-	var response = this.soapfsm.state.response;
+	var response = this.soapfsm.state.m_response;
 	var change = new Object();
 	var updateZmPackage = this.state.updateZmPackage;
 	var msg = "3377: ";
@@ -2238,7 +2238,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 			zinAssert(false);
 	}
 
-	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.response);
+	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.m_response);
 
 	this.state.m_logger.debug(msg);
 
@@ -2559,7 +2559,7 @@ function SoapFsm()
 SoapFsm.prototype.start = function(uri, zsd)
 {
 	this.state = new SoapFsmState();
-	this.state.uri = uri;
+	this.state.m_uri = uri;
 	this.zsd       = zsd;
 
 	fsmFireTransition(ZinMaestro.FSM_ID_SOAP, null, 'start', 'evStart', this);
@@ -2575,15 +2575,15 @@ SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	var soapCall   = new SOAPCall();
 	var context    = this;
 
-	soapCall.transportURI = this.state.uri;
+	soapCall.transportURI = this.state.m_uri;
 
 	soapCall.message = this.zsd.doc;
 
-	zinAssert(!this.state.is_cancelled); // we shouldn't be here if we've called abort() on the callCompletion object!
+	zinAssert(!this.state.is_cancelled); // we shouldn't be here if we've called abort() on the m_callcompletion object!
 
 	this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 
-	this.state.callCompletion = soapCall.asyncInvoke(
+	this.state.m_callcompletion = soapCall.asyncInvoke(
 	        function (response, call, error)
 			{
 				context.handleAsyncResponse(response, call, error, continuation, context);
@@ -2597,9 +2597,9 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 
 	dump("inside handleAsyncResponse\n");
 
-	zinAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
+	zinAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the m_callcompletion object!
 
-	context.state.callCompletion = null; // don't need this anymore and setting it to null tells the world that no request is outstanding
+	context.state.m_callcompletion = null; // don't need this anymore and setting it to null tells the world that no request is outstanding
 	context.state.m_service_code = error;
 
 	// four scenarios here:
@@ -2650,7 +2650,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 			}
 			else
 			{
-				context.state.response = response.message;
+				context.state.m_response = response.message;
 
 				context.state.m_logger.debug("handleAsyncResponse: response is " + xmlDocumentToString(response.message));
 			}
@@ -2678,12 +2678,12 @@ SoapFsm.prototype.cancel = function(timeoutID)
 {
 	// if the user cancelled and there was a SoapFsm in progress then either:
 	// - it had just started (newstate == start), in which case we have to clear it's timeout so that it doesn't continue, or
-	// - it is waiting for a response from the server, in which case we have to abort the callCompletion object
+	// - it is waiting for a response from the server, in which case we have to abort the m_callcompletion object
 	// A different way of handling either or both of these cases would have been for the syncfsm to set a flag in the soapfsm's state
 	// and then the soapfsm would check the flag at all relevant points (only a small number of those)...
 	// in the current implementation, is_cancelled is just used to assert correctness.
 
-	// Do I want to consider the return value from callCompletion.abort() 
+	// Do I want to consider the return value from m_callcompletion.abort() 
 	// see http://www.xulplanet.com/references/xpcomref/ifaces/nsISOAPCallCompletion.html
 	// right now, we ignore the completion status as reported by nsISOAPCallCompletion.isComplete() 
 	// I don't trust that it isn't buggy given my experience with faults...
@@ -2693,11 +2693,11 @@ SoapFsm.prototype.cancel = function(timeoutID)
 
 	this.state.m_logger.debug("cancel: cleared timeoutID: " + timeoutID);
 
-	if (this.state.callCompletion)
+	if (this.state.m_callcompletion)
 	{
-		var ret = this.state.callCompletion.abort();
+		var ret = this.state.m_callcompletion.abort();
 
-		this.state.m_logger.debug("abort: callCompletion.abort() returns: " + ret);
+		this.state.m_logger.debug("abort: m_callcompletion.abort() returns: " + ret);
 	}
 
 	this.state.is_cancelled = true;
@@ -2705,16 +2705,16 @@ SoapFsm.prototype.cancel = function(timeoutID)
 
 function SoapFsmState()
 {
-	this.uri              = null;  // the uri of the zimbra server - set by the start() method
-	this.response         = null;  // SOAPResponse.message - the xml soap message response, assuming all was well
+	this.m_uri               = null;  // the uri of the zimbra server - set by the start() method
+	this.m_response          = null;  // SOAPResponse.message - the xml soap message response, assuming all was well
 	this.m_service_code      = null;  // 
-	this.m_faultcode        = null;  // These are derived from the soap fault element
-	this.m_fault_element_xml  = null;  // the soap:Fault element as string xml
+	this.m_faultcode         = null;  // These are derived from the soap fault element
+	this.m_fault_element_xml = null;  // the soap:Fault element as string xml
 	this.m_fault_detail      = null;
-	this.m_faultstring      = null;
-	this.callCompletion   = null;  // the object returned by soapCall.asyncInvoke()
-	this.is_cancelled     = false;
-	this.m_logger         = newZinLogger("SoapFsm");
+	this.m_faultstring       = null;
+	this.m_callcompletion    = null;  // the object returned by soapCall.asyncInvoke()
+	this.is_cancelled        = false;
+	this.m_logger            = newZinLogger("SoapFsm");
 }
 
 SoapFsmState.PRE_REQUEST                     = 0; // haven't made a request yet
@@ -2729,13 +2729,13 @@ SoapFsmState.prototype.summaryCode = function()
 {
 	var ret;
 
-	var isPreResponse  = (this.response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
+	var isPreResponse  = (this.m_response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
 	                  && (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
 
 	if (this.is_cancelled)                 ret = SoapFsmState.CANCELLED;
-	else if (!this.uri)                    ret = SoapFsmState.PRE_REQUEST;
+	else if (!this.m_uri)                    ret = SoapFsmState.PRE_REQUEST;
 	else if (isPreResponse)                ret = SoapFsmState.PRE_RESPONSE;
-	else if (this.response != null)        ret = SoapFsmState.POST_RESPONSE_SUCCESS;
+	else if (this.m_response != null)        ret = SoapFsmState.POST_RESPONSE_SUCCESS;
 	else if (this.m_service_code != 0)        ret = SoapFsmState.POST_RESPONSE_FAIL_ON_SERVICE;
 	else if (this.m_fault_element_xml != null) ret = SoapFsmState.POST_RESPONSE_FAIL_ON_FAULT;
 	else                                   ret = SoapFsmState.UNKNOWN;
@@ -2746,11 +2746,11 @@ SoapFsmState.prototype.summaryCode = function()
 SoapFsmState.prototype.sanityCheck = function()
 {
 	var c = 0;
-	if (this.response != null)        c++;
+	if (this.m_response != null)        c++;
 	if (this.m_service_code != 0)        c++;
 	if (this.m_fault_element_xml != null) c++;
 	var isPostResponse = (c == 1);  // exactly one of these three things is true after a response
-	var isPreResponse  = (this.response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
+	var isPreResponse  = (this.m_response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
 	                  && (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
 	zinAssert(isPreResponse || isPostResponse && this.summaryCode() != SoapFsmState.UNKNOWN);
 }
@@ -2792,7 +2792,7 @@ SoapFsmState.prototype.toString = function()
 	          "\n fault string = "     + this.m_faultstring +
 	          "\n fault detail = "     + this.m_fault_detail +
 	          "\n fault elementxml = " + this.m_fault_element_xml +
-	          "\n response = "         + this.response;
+	          "\n response = "         + this.m_response;
 
 	return ret;
 }
