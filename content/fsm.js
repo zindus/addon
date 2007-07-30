@@ -29,7 +29,7 @@ include("chrome://zindus/content/maestro.js");
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.14 2007-07-28 06:34:38 cvsuser Exp $
+// $Id: fsm.js,v 1.15 2007-07-30 08:49:55 cvsuser Exp $
 
 if (typeof fsmlogger != 'object' || !fsmlogger)
     fsmlogger = newZinLogger("fsm");
@@ -106,12 +106,11 @@ function fsmDoTransition(fsmstate)
 				// Closures are commonly used in functional programming to defer calculation, to hide state,
 				// and as arguments to higher-order functions
 				//
-				if (context.fsm.aActionExit && context.fsm.aActionExit[newstate])
-				{
-					// fsmlogger.debug("calling exit       action (to: " + newstate + ", event: " + nextEvent + ")");
+				// logger.debug("blah1: newstate: " + newstate + " nextEvent: " + nextEvent);
+				// logger.debug("blah2: context.fsm.transitions: " + aToString(context.fsm.transitions));
 
+				if (context.fsm.aActionExit && context.fsm.aActionExit[newstate])
 					context.fsm.aActionExit[newstate].call(context, newstate, nextEvent);
-				}
             
 				zinAssert(isPropertyPresent(context.fsm.transitions, newstate));
 
@@ -126,14 +125,16 @@ function fsmDoTransition(fsmstate)
 					// Even though Finite State Machines in UML are supposed to silently ignore events that they don't know about,
 					// here we assert failure - because it's probably a programming error.
 					//
-					fsmlogger.debug("about to assert: newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.transitions: " + aToString(context.fsm.transitions));
+					var logger = newZinLogger("fsm");
+					logger.debug("about to assert: newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.transitions: " + aToString(context.fsm.transitions));
 					zinAssert(false);
 				}
 			}
 
 		// we add the continuation as a property of the fsm object to support context.cancel()
 		context.fsm.continuation = continuation;
-		fsmlogger.debug("724. fsmDoTransition: context.fsm.continuation has been set - about to call the entry action");
+		fsmlogger.debug("724. fsmDoTransition: context.fsm.continuation set - about to call the entry action, newstate: " + newstate);
+		// fsmlogger.debug("725. fsmDoTransition: entryAction: " + context.fsm.aActionEntry[newstate].toString());
 
     	context.fsm.aActionEntry[newstate].call(context, newstate, event, continuation);
 
@@ -168,6 +169,9 @@ function fsmFireTransition(id_fsm, oldstate, newstate, event, context)
 	                            'event',     event,
 	                            'context',   context);
 
+	if (fsmstate.isStart())
+		context.fsm.continuation = null;
+		
 	var timeoutID = window.setTimeout(fsmDoTransition, 0, fsmstate);
 
 	fsmstate.timeoutID = timeoutID;
@@ -204,4 +208,9 @@ FsmState.prototype.toString = function()
 FsmState.prototype.isFinal = function()
 {
 	return typeof(this["oldstate"]) == 'string' && this.oldstate == "final";
+}
+
+FsmState.prototype.isStart = function()
+{
+	return typeof(this["newstate"]) == 'string' && this.newstate == "start";
 }

@@ -22,29 +22,29 @@
  * ***** END LICENSE BLOCK *****/
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
-// It supports both percentage complete and per-state text detail.
+// It's state includes both percentage complete and per-fsm-state text detail.
 //
-function SyncFsmProgressObserver()
+function SyncFsmObserver()
 {
 	this.state = null; // SyncFsm.state, used on a read-only basis, set before any update
 
-	this.m_logger = newZinLogger("SyncFsmProgressObserver");
+	this.m_logger = newZinLogger("SyncFsmObserver");
 
 	this.m_exit_status = null;
 
 	this.m_properties = new Object();
 
-	this.set(SyncFsmProgressObserver.OP,       "");
-	this.set(SyncFsmProgressObserver.PROG_MAX, 0);
-	this.set(SyncFsmProgressObserver.PROG_CNT, 0);
+	this.set(SyncFsmObserver.OP,       "");
+	this.set(SyncFsmObserver.PROG_MAX, 0);
+	this.set(SyncFsmObserver.PROG_CNT, 0);
 }
 
-SyncFsmProgressObserver.OP                  = 'op'; // eg: server put
-SyncFsmProgressObserver.PROG_CNT            = 'pc'; // eg: 3 of
-SyncFsmProgressObserver.PROG_MAX            = 'pm'; // eg: 6    (counts progress through an iteration of one or two states)
-SyncFsmProgressObserver.PERCENTAGE_COMPLETE = 'pp'; // eg: 70%  (counts how far we are through all observed states)
+SyncFsmObserver.OP                  = 'op'; // eg: server put
+SyncFsmObserver.PROG_CNT            = 'pc'; // eg: 3 of
+SyncFsmObserver.PROG_MAX            = 'pm'; // eg: 6    (counts progress through an iteration of one or two states)
+SyncFsmObserver.PERCENTAGE_COMPLETE = 'pp'; // eg: 70%  (counts how far we are through all observed states)
 
-SyncFsmProgressObserver.prototype.exitStatus = function()
+SyncFsmObserver.prototype.exitStatus = function()
 {
 	if (arguments.length > 0)
 		this.m_exit_status = arguments[0];
@@ -52,61 +52,61 @@ SyncFsmProgressObserver.prototype.exitStatus = function()
 	return this.m_exit_status;
 }
 
-SyncFsmProgressObserver.prototype.set = function(key, value)
+SyncFsmObserver.prototype.set = function(key, value)
 {
 	this.m_properties[key] = value;
 }
 
-SyncFsmProgressObserver.prototype.get = function(key, value)
+SyncFsmObserver.prototype.get = function(key, value)
 {
 	return this.m_properties[key];
 }
 
-SyncFsmProgressObserver.prototype.progressReportOn = function(stringid)
+SyncFsmObserver.prototype.progressReportOn = function(stringid)
 {
-	this.set(SyncFsmProgressObserver.OP, stringBundleString(this.tweakStringId(stringid)) );
+	this.set(SyncFsmObserver.OP, stringBundleString(this.tweakStringId(stringid)) );
 
-	this.set(SyncFsmProgressObserver.PROG_MAX, 0);
+	this.set(SyncFsmObserver.PROG_MAX, 0);
 }
 
-SyncFsmProgressObserver.prototype.progressReportOnSource = function()
+SyncFsmObserver.prototype.progressReportOnSource = function()
 {
-	this.set(SyncFsmProgressObserver.OP, this.buildOp(arguments[0], arguments[1]));
+	this.set(SyncFsmObserver.OP, this.buildOp(arguments[0], arguments[1]));
 
-	this.set(SyncFsmProgressObserver.PROG_MAX, (arguments.length == 3) ? arguments[2] : 0);
+	this.set(SyncFsmObserver.PROG_MAX, (arguments.length == 3) ? arguments[2] : 0);
 }
 
-SyncFsmProgressObserver.prototype.buildOp = function(sourceid, stringid)
+SyncFsmObserver.prototype.buildOp = function(sourceid, stringid)
 {
 	return this.state.sources[sourceid]['name'] + " " + stringBundleString(this.tweakStringId(stringid));
 }
 
-SyncFsmProgressObserver.prototype.tweakStringId = function(stringid)
+SyncFsmObserver.prototype.tweakStringId = function(stringid)
 {
 	return "zfomProgress" + stringid;
 }
 
-SyncFsmProgressObserver.prototype.progressToString = function()
+SyncFsmObserver.prototype.progressToString = function()
 {
 	var ret = "";
 	
-	ret += this.get(SyncFsmProgressObserver.OP);
+	ret += this.get(SyncFsmObserver.OP);
 
-	if (this.get(SyncFsmProgressObserver.PROG_MAX) > 0)
-		ret += " " + this.get(SyncFsmProgressObserver.PROG_CNT) +
+	if (this.get(SyncFsmObserver.PROG_MAX) > 0)
+		ret += " " + this.get(SyncFsmObserver.PROG_CNT) +
 		       " " + stringBundleString(this.tweakStringId("Of")) +
-		       " " + this.get(SyncFsmProgressObserver.PROG_MAX);
+		       " " + this.get(SyncFsmObserver.PROG_MAX);
 
 	return ret;
 }
 
-SyncFsmProgressObserver.prototype.update = function(fsmstate)
+SyncFsmObserver.prototype.update = function(fsmstate)
 {
 	var ret = false;
 	var a_states_of_interest = { stAuth : 0,       stLoad: 1,     stSync: 2,     stGetContact: 3,    stSyncGal: 4, stLoadTb : 5, 
 	                             stSyncPrepare: 6, stUpdateTb: 7, stUpdateZm: 8, stUpdateCleanup: 9, final: 10 };
 
-	this.m_logger.debug("4400: update entered, fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	if (isPropertyPresent(a_states_of_interest, fsmstate.newstate))
 	{
@@ -134,13 +134,13 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 				{
 					var op = this.buildOp(context.state.sourceid_zm, "GetItem");
 
-					if (this.get(SyncFsmProgressObserver.OP) != op)
+					if (this.get(SyncFsmObserver.OP) != op)
 					{
-						// this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmProgressObserver.OP): " + this.get(SyncFsmProgressObserver.OP));
+						// this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP));
 						this.progressReportOnSource(context.state.sourceid_zm, "GetItem", aToLength(context.state.aQueue));
 					}
 
-					this.set(SyncFsmProgressObserver.PROG_CNT, this.get(SyncFsmProgressObserver.PROG_CNT) + 1);
+					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
 				}
 				break;
 
@@ -160,7 +160,7 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 				{
 					var op = this.buildOp(sourceid, "Put");
 
-					if (this.get(SyncFsmProgressObserver.OP) != op)
+					if (this.get(SyncFsmObserver.OP) != op)
 					{
 						var cTotal = 0; // aSuo definitely needs an iterator!
 						for (var x in context.state.sources)
@@ -171,11 +171,11 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 
 						this.progressReportOnSource(sourceid, "Put", cTotal);
 
-						this.m_logger.debug("4401: this.get(SyncFsmProgressObserver.OP): " + this.get(SyncFsmProgressObserver.OP) + " cTotal: " + cTotal);
+						this.m_logger.debug("4401: this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP) + " cTotal: " + cTotal);
 					}
 
-					this.set(SyncFsmProgressObserver.PROG_CNT, this.get(SyncFsmProgressObserver.PROG_CNT) + 1);
-					this.m_logger.debug("4402: PROG_CNT: " + this.get(SyncFsmProgressObserver.PROG_CNT));
+					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
+					this.m_logger.debug("4402: PROG_CNT: " + this.get(SyncFsmObserver.PROG_CNT));
 				}
 				break;
 
@@ -187,7 +187,13 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 
 				var es = new SyncFsmExitStatus();
 
-				if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
+				if (fsmstate.event == 'evLackIntegrity')
+				{
+					es.m_exit_status = 1;
+					es.m_fail_code   = SyncFsmExitStatus.FailOnIntegrity;
+					es.m_fail_detail = context.state.m_lack_integrity;
+				}
+				else if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
 					es.m_exit_status = 0;
 				else if (context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.event == 'evNext')
 					es.m_exit_status = 0;
@@ -212,6 +218,9 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 					}
 				}
 
+				this.m_logger.debug("12353: SyncFsmExitStatus.FailOnIntegrity is: " + SyncFsmExitStatus.FailOnIntegrity);
+				this.m_logger.debug("12353: exit status: " + es.toString());
+
 				this.exitStatus(es);
 
 				// there are three bits of "exit status" that the outside world might be interested in
@@ -230,14 +239,14 @@ SyncFsmProgressObserver.prototype.update = function(fsmstate)
 		var percentage_complete = 0;
 		percentage_complete += a_states_of_interest[fsmstate.newstate] / a_states_of_interest['final'];
 
-		if (this.get(SyncFsmProgressObserver.PROG_MAX) > 0)
-			percentage_complete += (1 / a_states_of_interest['final']) * (this.get(SyncFsmProgressObserver.PROG_CNT) / this.get(SyncFsmProgressObserver.PROG_MAX));
+		if (this.get(SyncFsmObserver.PROG_MAX) > 0)
+			percentage_complete += (1 / a_states_of_interest['final']) * (this.get(SyncFsmObserver.PROG_CNT) / this.get(SyncFsmObserver.PROG_MAX));
 
 		percentage_complete = percentage_complete * 100 + "%";
 
 		// this.m_logger.debug("4401: percentage_complete: " + percentage_complete);
 
-		this.set(SyncFsmProgressObserver.PERCENTAGE_COMPLETE, percentage_complete);
+		this.set(SyncFsmObserver.PERCENTAGE_COMPLETE, percentage_complete);
 	}
 
 	return ret;

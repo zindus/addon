@@ -93,9 +93,10 @@ ZinLogAppender.instance = function()
 ZinLogAppender.prototype.log = function(level, prefix, msg)
 {
 	var message = "";
+	var max_level_length = 7;
 	var max_prefix_length = 15;
 	
-	message += new String(ZinLogger.bimap_LEVEL.lookup(level, null) + ":   ").substr(0, 7);
+	message += new String(ZinLogger.bimap_LEVEL.lookup(level, null) + ":   ").substr(0, max_level_length);
 
 	if (prefix)
 		message += new String(prefix.substr(0, max_prefix_length) + ":                ").substr(0, max_prefix_length + 1) + " ";

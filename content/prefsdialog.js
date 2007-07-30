@@ -167,6 +167,8 @@ Prefs.prototype.onCommand = function(id_target)
 						msg += "\n" + stringBundleString("statusFailOnCancelDetail");
 					else if (exitStatus.m_fail_code == SyncFsmExitStatus.FailOnService)
 						msg += "\n" + stringBundleString("statusFailOnServiceDetail");
+					else if (exitStatus.m_fail_code == SyncFsmExitStatus.FailOnIntegrity)
+						msg += "\n" + exitStatus.m_fail_detail;
 				}
 
 				alert(msg);
@@ -271,7 +273,7 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	// this.m_logger.debug("onFsmStateChangeFunctor: fsmstate: " + (fsmstate ? fsmstate.toString() : "null") );
 
 	if (fsmstate)
-		if (fsmstate.newstate == "start")
+		if (fsmstate.isStart())
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm started");
 			this.m_is_fsm_running = true;

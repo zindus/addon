@@ -38,7 +38,7 @@ function SyncWindow()
 	this.m_newstate        = null; // the cancel method needs to know whether to expect a continuation or not.
 								   // if newstate == 'start', there would have been a transition, otherwise not.
 	this.m_payload         = null; // we keep it around so that we can pass the results back
-	this.m_sfo             = new SyncFsmProgressObserver();
+	this.m_sfo             = new SyncFsmObserver();
 	this.m_has_observer_been_called = false;
 	this.m_logger          = newZinLogger("SyncWindow");
 }
@@ -84,7 +84,7 @@ SyncWindow.prototype.onCancel = function()
 
 SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	this.m_logger.debug("onFsmStateChangeFunctor 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+	this.m_logger.debug("functor: 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	if (fsmstate && fsmstate.id_fsm == ZinMaestro.FSM_ID_SOAP)
 		this.timeoutID_soapfsm = fsmstate.timeoutID;
@@ -96,7 +96,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_has_observer_been_called = true;
 
-		this.m_logger.debug("onFsmStateChangeFunctor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
+		this.m_logger.debug("functor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
 		newZinLogger().info("sync start:  " + getDateUTCString());
 		this.m_syncfsm.start();
@@ -106,14 +106,14 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		this.timeoutID_syncfsm = fsmstate.timeoutID;
 		this.m_newstate  = fsmstate.newstate;
 
-		this.m_logger.debug("onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.timeoutID_syncfsm);
+		this.m_logger.debug("functor: 744: " + " timeoutID: " + this.timeoutID_syncfsm);
 
 		var is_window_update_required = this.m_sfo.update(fsmstate);
 
 		if (is_window_update_required)
 		{
 			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
-			                                        this.m_sfo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
+			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
 			                                        stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString());
 		}
@@ -129,5 +129,5 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 
 	if (typeof(Log) == 'function')  // the scope into which the source file was included is out of scope after acceptDialog()
-		this.m_logger.debug("onFsmStateChangeFunctor 746: exiting");
+		this.m_logger.debug("functor 746: exiting");
 }
