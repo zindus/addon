@@ -63,7 +63,7 @@ function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
 	zinAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
 
 	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
-	this.m_sfo               = new SyncFsmObserver();
+	this.m_sfo               = new SyncFsmProgressObserver();
 	this.m_messengerWindow   = null;
 	this.m_addressbookWindow = null;
 	this.m_id_fsm_functor    = id_fsm_functor;
@@ -137,7 +137,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				var el_statuspanel_progress_meter = this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-meter");
 				var el_statuspanel_progress_label = this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-label");
 
-				el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+				el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
 				el_statuspanel_progress_label.setAttribute('value', this.m_sfo.progressToString());
 			}
 		}
