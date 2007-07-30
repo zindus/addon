@@ -183,18 +183,48 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	{
 		this.state.soapURL = this.state.sources[this.state.sourceid_zm]['soapURL'];
 
+		// load the lastsync map early to support authonly use of the fsm
+		//
 		this.state.zfcLastSync.load(ZinFeedCollection.fileName(SyncFsm.FILE_LASTSYNC));
 
-		for (var i in this.state.sources)
-			if (this.state.sources[i]['format'] == FORMAT_ZM && !this.state.zfcLastSync.isPresent(i))
-				this.state.zfcLastSync.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, i)); // either a new source or the map was zapped
+		if (!this.zfcIsValid(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync))
+			this.zfcInitialise(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync);
 
 		nextEvent = 'evStart';
-
-		this.state.m_logger.debug("89347523: entryActionStart: starting normally: SoapFsmState: " + this.soapfsm.state.summaryCode() + " nextEvent: " + nextEvent);
 	}
 
 	continuation(nextEvent);
+}
+
+SyncFsm.prototype.zfcIsValid = function(fileprefix, zfc)
+{
+	ret = true;
+
+	switch(fileprefix)
+	{
+		case SyncFsm.FILE_LASTSYNC:
+			for (var i in this.state.sources)
+				if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
+				{
+					ret = false;
+					break;
+				}
+			break;
+	}
+
+	return ret;
+}
+
+SyncFsm.prototype.zfcInitialise = function(fileprefix, zfc)
+{
+	switch(fileprefix)
+	{
+		case SyncFsm.FILE_LASTSYNC:
+			for (var i in this.state.sources)
+				if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
+					zfc.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, i)); // either a new source or the map was zapped
+			break;
+	}
 }
 
 SyncFsm.prototype.entryActionAuth = function(state, event, continuation)
@@ -769,12 +799,12 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 
 SyncFsm.prototype.initialiseMapsIfRequired = function()
 {
-	var zfcLocal = this.state.sources[this.state.sourceid_tb]['zfcLuid']; // bring these variables into the local namespace
+	var zfcLocal = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
 	var zfcGid   = this.state.zfcGid;
 
 	if (!zfcLocal.isPresent(ZinFeedItem.ID_AUTO_INCREMENT) || !zfcLocal.get(ZinFeedItem.ID_AUTO_INCREMENT).isPresent('next'))
 	{
-		zinAssert(zfcLocal.length() == 0);
+		zinAssert(zfcLocal.length() == 0); // TODO this is not right
 
 		this.state.m_logger.debug("11770 - thunderbird and/or gid map was zapped - initialising...");
 
@@ -2551,7 +2581,7 @@ SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 	zinAssert(!this.state.is_cancelled); // we shouldn't be here if we've called abort() on the callCompletion object!
 
-	this.state.m_logger.debug("SoapFsm: request is " + xmlDocumentToString(soapCall.message));
+	this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 
 	this.state.callCompletion = soapCall.asyncInvoke(
 	        function (response, call, error)
@@ -2564,6 +2594,8 @@ SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context, logger)
 {
 	var ret = false;
+
+	dump("inside handleAsyncResponse\n");
 
 	zinAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
 
@@ -2663,13 +2695,13 @@ SoapFsm.prototype.cancel = function(timeoutID)
 
 	window.clearTimeout(timeoutID);
 
-	this.state.m_logger.debug("SoapFsm.cancel: cleared timeoutID: " + timeoutID);
+	this.state.m_logger.debug("cancel: cleared timeoutID: " + timeoutID);
 
 	if (this.state.callCompletion)
 	{
 		var ret = this.state.callCompletion.abort();
 
-		this.state.m_logger.debug("SoapFsm.abort: callCompletion.abort() returns: " + ret);
+		this.state.m_logger.debug("abort: callCompletion.abort() returns: " + ret);
 	}
 
 	this.state.is_cancelled = true;
@@ -2686,7 +2718,7 @@ function SoapFsmState()
 	this.faultString      = null;
 	this.callCompletion   = null;  // the object returned by soapCall.asyncInvoke()
 	this.is_cancelled     = false;
-	this.m_logger         = newZinLogger();
+	this.m_logger         = newZinLogger("SoapFsm");
 }
 
 SoapFsmState.PRE_REQUEST                     = 0; // haven't made a request yet
@@ -2831,7 +2863,6 @@ TwoWayFsm.prototype.setFsm = function()
 		stLoadTb:               this.entryActionLoadTb,
 		stSyncPrepare:          this.entryActionSyncPrepare,
 		stUpdateTb:             this.entryActionUpdateTb,
-		// stAboutToUpdateZm:      this.entryActionAboutToUpdateZm,
 		stUpdateZm:             this.entryActionUpdateZm,
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
 		stCommit:               this.entryActionCommit,
@@ -2910,15 +2941,14 @@ SyncFsmState.prototype.setCredentials = function()
 	}
 	else
 	{
+		// load credentials from preferences and the password manager
+		//
 		var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
 		prefset.load(SOURCEID_ZM);
 
-		this.sources[SOURCEID_ZM]['soapURL']  = prefset.getProperty(PrefSet.SERVER_URL);
-		this.sources[SOURCEID_ZM]['username'] = prefset.getProperty(PrefSet.SERVER_USERNAME);
-
-   		var pm = new PasswordManager();
-		this.sources[SOURCEID_ZM]['password'] = pm.get(prefset.getProperty(PrefSet.SERVER_URL),
-		                                               prefset.getProperty(PrefSet.SERVER_USERNAME) );
+		[ this.sources[SOURCEID_ZM]['username'],
+		  this.sources[SOURCEID_ZM]['soapURL'],
+		  this.sources[SOURCEID_ZM]['password'] ] = PrefSetHelper.getUserUrlPw(prefset, PrefSet.SERVER_USERNAME, PrefSet.SERVER_URL);
 	}
 
 	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
