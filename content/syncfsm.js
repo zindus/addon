@@ -58,7 +58,7 @@ SyncFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeout
 {
 	window.clearTimeout(syncfsm_timeoutID);
 
-	this.state.m_logger.debug("SyncFsm.cancel: cleared timeoutID: " + syncfsm_timeoutID);
+	this.state.m_logger.debug("cancel: cleared timeoutID: " + syncfsm_timeoutID);
 
 	this.soapfsm.cancel(soapfsm_timeoutID);
 
@@ -119,8 +119,8 @@ SyncFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 
 	// After a response, exactly one of these things is true:
 	// - this.response != null
-	// - this.serviceCode != 0
-	// - this.faultElementXml != null
+	// - this.m_service_code != 0
+	// - this.m_fault_element_xml != null
 	// That's what SoapFsmState.prototype.sanityCheck tests for...
 	//
 
@@ -143,9 +143,9 @@ SyncFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 	{
 		var msg = "onSoapFsmExit: soap error - ";  // note that we didn't say "fault" here - it could be a sending/service error
 
-		if (soapfsmstate.serviceCode != 0 && soapfsmstate.serviceCode != null)
-			msg += "serviceCode == " + soapfsmstate.serviceCode;
-		else if (soapfsmstate.faultElementXml)
+		if (soapfsmstate.m_service_code != 0 && soapfsmstate.m_service_code != null)
+			msg += "m_service_code == " + soapfsmstate.m_service_code;
+		else if (soapfsmstate.m_fault_element_xml)
 			msg += "fault fields as shown: " + soapfsmstate.toString();
 		else
 			zinAssert(false);
@@ -161,9 +161,9 @@ SyncFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
 SyncFsm.prototype.eventFromSoapCheckLicense = function(eventOnResponse, method)
 {
 	// the fault varies depending on open-source vs non-open-source server:
-	// this.soapfsm.state.faultCode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
+	// this.soapfsm.state.m_faultcode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
 	//
-	if (this.soapfsm.state.faultElementXml)
+	if (this.soapfsm.state.m_fault_element_xml)
 		event = eventOnResponse;
 	else
 		event = this.eventFromSoapDefault(eventOnResponse, method)
@@ -305,7 +305,7 @@ SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
 
 SyncFsm.prototype.exitActionCheckLicense = function(state, event)
 {
-	if (this.soapfsm.state.faultElementXml && this.soapfsm.state.faultCode == "service.UNKNOWN_DOCUMENT")
+	if (this.soapfsm.state.m_fault_element_xml && this.soapfsm.state.m_faultcode == "service.UNKNOWN_DOCUMENT")
 		this.state.mapiStatus = "CheckLicense not supported by server - service is probably open source edition";
 	else if (this.soapfsm.state.response)
 	{
@@ -2600,7 +2600,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	zinAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the callCompletion object!
 
 	context.state.callCompletion = null; // don't need this anymore and setting it to null tells the world that no request is outstanding
-	context.state.serviceCode = error;
+	context.state.m_service_code = error;
 
 	// four scenarios here:
 	//   a) service failure
@@ -2611,11 +2611,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	//      - there is some sub-scenario here whereby response.fault.detail might be missing, possibly because of a namespace muddle
 	//      - the zimbra fault seems to stuff things up - need to isolate this test case better
 	//   c) soap fault and response.fault is null and error = 0 but response is a soap:Fault element.
-	//      This is a bug - either in zimbra's (document-style) response or mozilla
-	//      - on the one hand, mozilla uses "http://www.w3.org/2001/09/soap-envelope" to indicate a soap 1.2 message
-	//        this URL is now out of data - it should be http://www.w3.org/2003/05/soap-envelope
-	//      - on the other hand, zimbra responds with the "2003" schema URL in response to a request that uses the "2001" schema URL
-	//        This seems wrong - zimbra should respond either with the 2001 url or fall back to soap 1.1.
+	//      This is a bug - either in zimbra's (document-style) response or mozilla (should look into this further)
 	//   d) <BlahResponse> document ==> success!
 	//
 
@@ -2626,7 +2622,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 		// the callback gets executed with a null response and error code zero.
 		// here, we turn that into a non-zero error code.
 		//
-		context.state.serviceCode = SOAP_REQUEST_FAILED;
+		context.state.m_service_code = SOAP_REQUEST_FAILED;
 		context.state.m_logger.debug("handleAsyncResponse: soap service failure - setting an error code by fiat: " + context.state.serviceCod);
 	}
 	else if (error != 0)
@@ -2641,7 +2637,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 		{ 
 			context.state.faultLoadFromSoapFault(response.fault);
 
-			if (!context.state.faultString)
+			if (!context.state.m_faultstring)
 				context.state.faultLoadFromXml(response.fault.element);
 		}
 		else
@@ -2662,14 +2658,14 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	}
 
 	var msg;
-	if (context.state.serviceCode != 0)
-		msg = "soap service failure - serviceCode is " + context.state.serviceCode;
-	else if (context.state.faultElementXml)
-		msg = "soap fault: service code " + context.state.serviceCode;
+	if (context.state.m_service_code != 0)
+		msg = "soap service failure - m_service_code is " + context.state.m_service_code;
+	else if (context.state.m_fault_element_xml)
+		msg = "soap fault: service code " + context.state.m_service_code;
 
 	if (msg)
 	{
-		msg += " fault xml: " + context.state.faultElementXml;
+		msg += " fault xml: " + context.state.m_fault_element_xml;
 		context.state.m_logger.debug("handleAsyncResponse: " + msg);
 	}
 
@@ -2711,11 +2707,11 @@ function SoapFsmState()
 {
 	this.uri              = null;  // the uri of the zimbra server - set by the start() method
 	this.response         = null;  // SOAPResponse.message - the xml soap message response, assuming all was well
-	this.serviceCode      = null;  // 
-	this.faultCode        = null;  // These are derived from the soap fault element
-	this.faultElementXml  = null;  // the soap:Fault element as string xml
-	this.faultDetail      = null;
-	this.faultString      = null;
+	this.m_service_code      = null;  // 
+	this.m_faultcode        = null;  // These are derived from the soap fault element
+	this.m_fault_element_xml  = null;  // the soap:Fault element as string xml
+	this.m_fault_detail      = null;
+	this.m_faultstring      = null;
 	this.callCompletion   = null;  // the object returned by soapCall.asyncInvoke()
 	this.is_cancelled     = false;
 	this.m_logger         = newZinLogger("SoapFsm");
@@ -2733,15 +2729,15 @@ SoapFsmState.prototype.summaryCode = function()
 {
 	var ret;
 
-	var isPreResponse  = (this.response == null) && (this.serviceCode == null) && (this.faultCode == null)
-	                  && (this.faultElementXml == null) && (this.faultDetail == null) && (this.faultString == null);
+	var isPreResponse  = (this.response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
+	                  && (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
 
 	if (this.is_cancelled)                 ret = SoapFsmState.CANCELLED;
 	else if (!this.uri)                    ret = SoapFsmState.PRE_REQUEST;
 	else if (isPreResponse)                ret = SoapFsmState.PRE_RESPONSE;
 	else if (this.response != null)        ret = SoapFsmState.POST_RESPONSE_SUCCESS;
-	else if (this.serviceCode != 0)        ret = SoapFsmState.POST_RESPONSE_FAIL_ON_SERVICE;
-	else if (this.faultElementXml != null) ret = SoapFsmState.POST_RESPONSE_FAIL_ON_FAULT;
+	else if (this.m_service_code != 0)        ret = SoapFsmState.POST_RESPONSE_FAIL_ON_SERVICE;
+	else if (this.m_fault_element_xml != null) ret = SoapFsmState.POST_RESPONSE_FAIL_ON_FAULT;
 	else                                   ret = SoapFsmState.UNKNOWN;
 
 	return ret;
@@ -2751,11 +2747,11 @@ SoapFsmState.prototype.sanityCheck = function()
 {
 	var c = 0;
 	if (this.response != null)        c++;
-	if (this.serviceCode != 0)        c++;
-	if (this.faultElementXml != null) c++;
+	if (this.m_service_code != 0)        c++;
+	if (this.m_fault_element_xml != null) c++;
 	var isPostResponse = (c == 1);  // exactly one of these three things is true after a response
-	var isPreResponse  = (this.response == null) && (this.serviceCode == null) && (this.faultCode == null)
-	                  && (this.faultElementXml == null) && (this.faultDetail == null) && (this.faultString == null);
+	var isPreResponse  = (this.response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
+	                  && (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
 	zinAssert(isPreResponse || isPostResponse && this.summaryCode() != SoapFsmState.UNKNOWN);
 }
 
@@ -2765,11 +2761,11 @@ SoapFsmState.prototype.faultLoadFromXml = function(doc)
 {
 	var nodelist;
 	
-	this.faultElementXml = xmlDocumentToString(doc);
+	this.m_fault_element_xml = xmlDocumentToString(doc);
 
-	conditionalGetElementByTagNameNS(doc, ZimbraSoapDocument.NS_SOAP_ENVELOPE, "faultstring", this, 'faultString');
-	conditionalGetElementByTagNameNS(doc, "urn:zimbra",                        "Trace",       this, 'faultDetail');
-	conditionalGetElementByTagNameNS(doc, "urn:zimbra",                        "Code",        this, 'faultCode');
+	conditionalGetElementByTagNameNS(doc, ZimbraSoapDocument.NS_SOAP_ENVELOPE, "faultstring", this, 'm_faultstring');
+	conditionalGetElementByTagNameNS(doc, "urn:zimbra",                        "Trace",       this, 'm_fault_detail');
+	conditionalGetElementByTagNameNS(doc, "urn:zimbra",                        "Code",        this, 'm_faultcode');
 }
 
 // load from a SOAPFault object - http://www.xulplanet.com/references/objref/SOAPFault.html
@@ -2777,26 +2773,26 @@ SoapFsmState.prototype.faultLoadFromXml = function(doc)
 SoapFsmState.prototype.faultLoadFromSoapFault = function(fault)
 {
 	if (fault.element)
-		this.faultElementXml = xmlDocumentToString(fault.element);
+		this.m_fault_element_xml = xmlDocumentToString(fault.element);
 		
 	if (fault.faultString)
-		this.faultString = fault.faultString;
+		this.m_faultstring = fault.faultString;
 
 	if (fault.detail)
-		this.faultDetail = fault.detail;
+		this.m_fault_detail = fault.detail;
 
 	if (fault.faultcode)
-		this.faultCode = fault.faultcode;
+		this.m_faultcode = fault.faultcode;
 }
 
 SoapFsmState.prototype.toString = function()
 {
-	var ret = "\n serviceCode = " + this.serviceCode +
-	          "\n code = "        + this.faultCode +
-	          "\n string = "      + this.faultString +
-	          "\n detail = "      + this.faultDetail +
-	          "\n elementxml = "  + this.faultElementXml +
-	          "\n response = "    + this.response;
+	var ret = "\n service code = "     + this.m_service_code +
+	          "\n fault code = "       + this.m_faultcode +
+	          "\n fault string = "     + this.m_faultstring +
+	          "\n fault detail = "     + this.m_fault_detail +
+	          "\n fault elementxml = " + this.m_fault_element_xml +
+	          "\n response = "         + this.response;
 
 	return ret;
 }

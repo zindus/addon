@@ -28,7 +28,7 @@ include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/payload.js");
 include("chrome://zindus/content/logger.js");
 include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/syncfsmprogressobserver.js");
+include("chrome://zindus/content/syncfsmobserver.js");
 
 function SyncWindow()
 {
@@ -38,7 +38,7 @@ function SyncWindow()
 	this.m_newstate        = null; // the cancel method needs to know whether to expect a continuation or not.
 								   // if newstate == 'start', there would have been a transition, otherwise not.
 	this.m_payload         = null; // we keep it around so that we can pass the results back
-	this.m_sfpo            = new SyncFsmProgressObserver();
+	this.m_sfo             = new SyncFsmObserver();
 	this.m_has_observer_been_called = false;
 	this.m_logger          = newZinLogger("SyncWindow");
 }
@@ -108,19 +108,19 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_logger.debug("onFsmStateChangeFunctor: 744: " + " timeoutID: " + this.timeoutID_syncfsm);
 
-		var is_window_update_required = this.m_sfpo.update(fsmstate);
+		var is_window_update_required = this.m_sfo.update(fsmstate);
 
 		if (is_window_update_required)
 		{
 			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
-			                                        this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
+			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
-			                                        stringBundleString("zfomPrefix") + " " + this.m_sfpo.progressToString());
+			                                        stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString());
 		}
 
 		if (fsmstate.isFinal())
 		{
-			this.m_payload.m_result = this.m_sfpo.exitStatus();
+			this.m_payload.m_result = this.m_sfo.exitStatus();
 
 			newZinLogger().info("sync finish: " + getDateUTCString());
 
