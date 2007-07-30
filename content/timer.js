@@ -23,7 +23,7 @@
 
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsm.js");
-include("chrome://zindus/content/syncfsmprogressobserver.js");
+include("chrome://zindus/content/syncfsmobserver.js");
 
 function ZinTimer(functor)
 {
@@ -63,12 +63,12 @@ function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
 	zinAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
 
 	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
-	this.m_sfpo              = new SyncFsmProgressObserver();
+	this.m_sfo               = new SyncFsmObserver();
 	this.m_messengerWindow   = null;
 	this.m_addressbookWindow = null;
-	this.m_is_fsm_functor_first_entry = true;
 	this.m_id_fsm_functor    = id_fsm_functor;
 	this.m_delay_on_repeat   = delay_on_repeat; // null implies ONE_SHOT, non-null implies REPEAT frequency in seconds
+	this.m_is_fsm_functor_first_entry = true;
 }
 
 ZinTimerFunctorSync.prototype.run = function()
@@ -125,7 +125,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	{
 		this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: 744: ");
 
-		var is_window_update_required = this.m_sfpo.update(fsmstate);
+		var is_window_update_required = this.m_sfo.update(fsmstate);
 
 		if (is_window_update_required)
 		{
@@ -137,8 +137,8 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				var el_statuspanel_progress_meter = this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-meter");
 				var el_statuspanel_progress_label = this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-label");
 
-				el_statuspanel_progress_meter.setAttribute('value', this.m_sfpo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
-				el_statuspanel_progress_label.setAttribute('value', this.m_sfpo.progressToString());
+				el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+				el_statuspanel_progress_label.setAttribute('value', this.m_sfo.progressToString());
 			}
 		}
 
@@ -151,7 +151,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			//
 			if (0)
 			try {
-				var exitStatus = this.m_sfpo.exitStatus();
+				var exitStatus = this.m_sfo.exitStatus();
 				var msg = "";
 
 				if (exitStatus.m_exit_status == 0)

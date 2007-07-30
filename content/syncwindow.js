@@ -38,7 +38,7 @@ function SyncWindow()
 	this.m_newstate        = null; // the cancel method needs to know whether to expect a continuation or not.
 								   // if newstate == 'start', there would have been a transition, otherwise not.
 	this.m_payload         = null; // we keep it around so that we can pass the results back
-	this.m_sfo             = new SyncFsmObserver();
+	this.m_sfo             = new SyncFsmProgressObserver();
 	this.m_has_observer_been_called = false;
 	this.m_logger          = newZinLogger("SyncWindow");
 }
@@ -113,7 +113,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		if (is_window_update_required)
 		{
 			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
-			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+			                                        this.m_sfo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
 			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
 			                                        stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString());
 		}

@@ -21,11 +21,12 @@
 <!ENTITY ZinPrefsServerTestConnection.label     "Test Connection to Server">
 <!ENTITY ZinPrefsServerTestConnection.accesskey "T">
 
+<!ENTITY ZinPrefsGeneralIntroduction.value      "Restart thunderbird after changing settings to be sure they are in effect.">
 <!ENTITY ZinPrefsGeneralGroupSettings.label     "General Settings">
 <!ENTITY ZinPrefsGeneralGroupAdvanced.label     "Advanced Settings">
 <!ENTITY ZinPrefsGeneralGroupActions.label      "Advanced Actions">
 <!ENTITY ZinPrefsGeneralMapPAB.label            "Synchronize local Personal Address Book with remote Contacts folder">
-<!ENTITY ZinPrefsGeneralManualSyncOnly.label    "Manual sync only - background sync is disabled on next restart">
+<!ENTITY ZinPrefsGeneralManualSyncOnly.label    "Manual sync only - background sync is disabled">
 <!ENTITY ZinPrefsGeneralVerboseLogging.label    "Verbose logging">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.label     "Sync Now">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey "S">
