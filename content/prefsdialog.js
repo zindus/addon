@@ -211,14 +211,10 @@ Prefs.prototype.initialiseView = function()
 {
 	// server tab
 	//
-	document.getElementById("zindus-prefs-server-url").value      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
-	document.getElementById("zindus-prefs-server-username").value = this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME);
-
-	var pm = new PasswordManager();
-	var pw = pm.get(this.m_prefset_server.getProperty(PrefSet.SERVER_URL),
-	                this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME) );
-	if (pw)
-		document.getElementById("zindus-prefs-server-password").value = pw;
+	[ document.getElementById("zindus-prefs-server-username").value,
+	  document.getElementById("zindus-prefs-server-url").value, 
+	  document.getElementById("zindus-prefs-server-password").value ] =
+	                                  PrefSetHelper.getUserUrlPw(this.m_prefset_server, PrefSet.SERVER_USERNAME, PrefSet.SERVER_URL)
 
 	// general tab - checkbox elements
 	//

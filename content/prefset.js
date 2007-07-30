@@ -43,7 +43,6 @@ PrefSet.SERVER_USERNAME          = "username";
 PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME ];
 
 PrefSet.GENERAL                  = "general";
-// PrefSet.GENERAL_SHOW_PROGRESS = "showprogress";
 PrefSet.GENERAL_MAP_PAB          = "mappab";
 PrefSet.GENERAL_MANUAL_SYNC_ONLY = "manualsynconly";
 PrefSet.GENERAL_VERBOSE_LOGGING  = "verboselogging";
@@ -217,3 +216,21 @@ PrefSet.prototype.makePrefKey = function(id, property)
 	return ret;
 }
 
+function PrefSetHelper()
+{
+}
+
+// return credentials from preferences and the password manager
+//
+PrefSetHelper.getUserUrlPw = function(prefset, pref_user, pref_url)
+{
+	var url, username, pw, pm;
+
+	username = prefset.getProperty(pref_user);
+	url      = prefset.getProperty(pref_url);
+
+	pm = new PasswordManager();
+	pw = pm.get(url, username);
+
+	return [ username, url, pw ];
+}

@@ -2586,12 +2586,12 @@ SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	this.state.callCompletion = soapCall.asyncInvoke(
 	        function (response, call, error)
 			{
-				context.handleAsyncResponse(response, call, error, continuation, context, context.state.m_logger);
+				context.handleAsyncResponse(response, call, error, continuation, context);
 			}
 		);
 }
 
-SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context, logger)
+SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context)
 {
 	var ret = false;
 
@@ -2627,15 +2627,15 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 		// here, we turn that into a non-zero error code.
 		//
 		context.state.serviceCode = SOAP_REQUEST_FAILED;
-		logger.debug("SoapFsm.handleAsyncResponse: soap service failure - setting an arbitrary error code: " + context.state.serviceCod);
+		context.state.m_logger.debug("handleAsyncResponse: soap service failure - setting an error code by fiat: " + context.state.serviceCod);
 	}
 	else if (error != 0)
 	{ 
-		logger.debug("SoapFsm.handleAsyncResponse: soap service failure - error code is " + error);
+		context.state.m_logger.debug("handleAsyncResponse: soap service failure - error code is " + error);
 	}
 	else 
 	{
-		logger.debug("SoapFsm.handleAsyncResponse: response.version is " + response.version);
+		context.state.m_logger.debug("handleAsyncResponse: response.version is " + response.version);
 
 		if (response.fault != null)
 		{ 
@@ -2656,7 +2656,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 			{
 				context.state.response = response.message;
 
-				logger.debug("SoapFsm.handleAsyncResponse: response is " + xmlDocumentToString(response.message));
+				context.state.m_logger.debug("handleAsyncResponse: response is " + xmlDocumentToString(response.message));
 			}
 		}
 	}
@@ -2670,7 +2670,7 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	if (msg)
 	{
 		msg += " fault xml: " + context.state.faultElementXml;
-		logger.debug("SoapFsm.handleAsyncResponse: " + msg);
+		context.state.m_logger.debug("handleAsyncResponse: " + msg);
 	}
 
 	continuation('evSoapResponse');
