@@ -34,8 +34,11 @@ function ZimbraSoapDocument()
 //   see mozilla/extensions/webservices/soap/src/nsSOAPUtils.cpp and nsSOAPMessage.cpp
 // - zimbra  uses this to url imply SOAP 1.2:
 //   NS_SOAP_ENVELOPE = "http://www.w3.org/2003/05/soap-envelope";
-//   and responds to requests containing the 2001 with the 2003 url which mozilla doesn't understand.
-// - both mozilla and zimbra agree that the NS_SOAP_ENVELOPE used below means soap 1.1
+// - zimbra responds to requests containing the 2001 with the 2003 url which mozilla doesn't understand.
+//   This is unlikely to be correct - it should either:
+//   - understand the 2001 url and respond with it, or
+//   - not understand the 2001 url and fall back to soap 1.1.
+// - in any case, both mozilla and zimbra agree that the NS_SOAP_ENVELOPE used below means soap 1.1
 // - see also xpath.js
 //
 ZimbraSoapDocument.NS_SOAP_ENVELOPE  = "http://schemas.xmlsoap.org/soap/envelope/";
