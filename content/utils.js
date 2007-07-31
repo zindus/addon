@@ -273,19 +273,43 @@ function hyphenate()
 	var ret = "";
 	var isFirst = true;
 	var separator = arguments[0];
+	var args;
+	var startAt;
 
-	for (var i = 1; i < arguments.length; i++)
+	zinAssert(arguments.length >= 2);
+
+	// dump("am here 31 - arguments: " + arguments.toString() + "\n");
+	// dump("am here 31 - arguments.length: " + arguments.length + "\n");
+	// dump("am here 32 - typeof arguments: " + typeof(arguments) + "\n");
+	// dump("am here 33 - typeof arguments[1]: " + typeof(arguments[1]) + "\n");
+
+	if (typeof arguments[1] == 'array')
 	{
-		zinAssert(typeof(arguments[i]) == 'string' || typeof(arguments[i]) == 'number');
+		args = arguments[i];
+		startAt = 0;
+	}
+	else
+	{
+		args = arguments;
+		startAt = 1;
+	}
+
+	// dump("am here 34 - args: " + args.toString() + "\n");
+
+	for (var i = startAt; i < args.length; i++)
+	{
+		zinAssert(typeof(args[i]) == 'string' || typeof(args[i]) == 'number');
 
 		if (isFirst)
 		{
 			isFirst = false;
-			ret += arguments[i];
+			ret += args[i];
 		}
 		else
-			ret += separator + arguments[i];
+			ret += separator + args[i];
 	}
+
+	// dump("am here 35 - ret: " + ret + "\n");
 
 	return ret;
 }

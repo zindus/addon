@@ -50,26 +50,31 @@ ZinFeedItem.TYPE_BIMAP = new BiMap(
 		[ZinFeedItem.TYPE_FL, ZinFeedItem.TYPE_CN],
 		['fl',                'cn',            ]);
 
-function ZinFeedCollection(has_reserved_range)
+function ZinFeedCollection()
 {
-	this.m_collection  = new Object();
-	this.has_reserved_range = has_reserved_range;
+	this.m_collection = new Object();
+	this.m_filename   = null; // this is a string containing the filename (like "fred.txt"), not an nsIFile
 }
 
-ZinFeedCollection.fileName = function()
+ZinFeedCollection.prototype.filename = function()
 {
-	var ret = "";
+	if (arguments.length == 1)
+		this.m_filename = arguments[0];
 
-	for (var i = 0; i < arguments.length; i++)
-	{
-		if (i > 0)
-			ret += "-";
+	gLogger.debug("filename: " + this.m_filename);
+	return this.m_filename;
+}
 
-		ret += arguments[i];
-	}
+ZinFeedCollection.prototype.nsifile = function()
+{
+	dump("am here 21\n");
+	zinAssert(this.m_filename);
 
-	ret += ".txt";
+	var ret = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
 
+	ret.append(this.m_filename);
+
+	dump("am here 23\n");
 	return ret;
 }
 
@@ -121,7 +126,7 @@ ZinFeedCollection.prototype.forEach = function(functor, flavour)
 	}
 }
 
-ZinFeedCollection.prototype.load = function(filename)
+ZinFeedCollection.prototype.load = function()
 {
 	var functor =
 	{
@@ -153,25 +158,23 @@ ZinFeedCollection.prototype.load = function(filename)
 	functor.m_zfc  = this;
 	functor.m_zfi = new ZinFeedItem();
 
-	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
-	file.append(filename);
-	// gLogger.debug("about to parse file: " + file.path);
+	var file = this.nsifile();
+	gLogger.debug("about to parse file: " + file.path);
 
 	if (file.exists() && !file.isDirectory())
 		Filesystem.fileReadByLine(file.path, functor);
 }
 
-ZinFeedCollection.prototype.save = function(filename)
+ZinFeedCollection.prototype.save = function()
 {
 	var content = this.toString("\n");
 
-	// need an addtional newline at the end of the file because nsILineInputStream.readLine doesn't return TRUE on the very last newline
+	// put an addtional newline at the end of the file because nsILineInputStream.readLine doesn't return TRUE on the very last newline
 	// so the functor used in load() doesn't get called.
+	//
 	content += "\n";
 
-	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
-
-	file.append(filename);
+	var file = this.nsifile();
 
 	Filesystem.writeToFile(file, content);
 }

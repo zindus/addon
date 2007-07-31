@@ -143,7 +143,6 @@ SyncFsm.prototype.cancel = function(timeoutID)
 	else
 	{
 		this.state.m_logger.debug("cancel: continuing on evCancel");
-		// this.state.m_logger.debug("cancel: continuation is: " + this.fsm.continuation.toString() );
 
 		this.fsm.continuation('evCancel');
 	}
@@ -152,8 +151,6 @@ SyncFsm.prototype.cancel = function(timeoutID)
 SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 {
 	var nextEvent = null;
-
-	this.state.m_logger.debug("entryActionStart: ");
 
 	if (event == 'evCancel')
 	{
@@ -164,18 +161,10 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		var url      = this.state.sources[this.state.sourceid_zm]['soapURL']
 		var username = this.state.sources[this.state.sourceid_zm]['username']
 		var password = this.state.sources[this.state.sourceid_zm]['password']
-		var re_scheme = /^https?:\/\//;
 
-		if (re_scheme.test(url) && username.length > 0 && password.length > 0)
+		if (/^https?:\/\//.test(url) && username.length > 0 && password.length > 0)
 		{
 			this.state.soapURL = this.state.sources[this.state.sourceid_zm]['soapURL'];
-
-			// load the lastsync map early to support authonly use of the fsm
-			//
-			this.state.zfcLastSync.load(ZinFeedCollection.fileName(SyncFsm.FILE_LASTSYNC));
-
-			if (!this.zfcIsValid(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync))
-				this.zfcInitialise(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync);
 
 			nextEvent = 'evStart';
 		}
@@ -188,38 +177,9 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 	zinAssert(nextEvent);
 
+	this.state.m_logger.debug("entryActionStart: nextEvent: " + nextEvent);
+
 	continuation(nextEvent);
-}
-
-SyncFsm.prototype.zfcIsValid = function(fileprefix, zfc)
-{
-	ret = true;
-
-	switch(fileprefix)
-	{
-		case SyncFsm.FILE_LASTSYNC:
-			for (var i in this.state.sources)
-				if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
-				{
-					ret = false;
-					break;
-				}
-			break;
-	}
-
-	return ret;
-}
-
-SyncFsm.prototype.zfcInitialise = function(fileprefix, zfc)
-{
-	switch(fileprefix)
-	{
-		case SyncFsm.FILE_LASTSYNC:
-			for (var i in this.state.sources)
-				if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
-					zfc.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, i)); // either a new source or the map was zapped
-			break;
-	}
 }
 
 SyncFsm.prototype.entryActionAuth = function(state, event, continuation)
@@ -248,14 +208,133 @@ SyncFsm.prototype.exitActionAuth = function(state, event)
 
 SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 {
-	this.state.zfcGid.load(ZinFeedCollection.fileName(SyncFsm.FILE_GID));
-
+	// Here is (one of the places) where we pay for not having a real data store.
+	// Even though data is stored in at least four separate files: 1-tb.txt, 2-zm.txt, gid.txt, lastsync.txt 
+	// as far as integrity is concerned they are a single unit.
+	//
+	// We distinguish between three cases:
+	// 1. clean slate (ie post install or reset)          ==> initialise and nextEvent == evNext
+	// 2. all the files exist and have integrity          ==> continue   and nextEvent == evNext
+	// 3. some files don't exist or don't have integrity  ==> continue   and nextEvent == evLackIntegrity (user is notified)
+	//
 	var sources = this.state.sources;
+	var cExist = 0;
+
+	var a_zfc = new Object(); // associative array of zfc, key is the file name
+
+	a_zfc[SyncFsm.FILE_GID      + ".txt"] = this.state.zfcGid;
+	a_zfc[SyncFsm.FILE_LASTSYNC + ".txt"] = this.state.zfcLastSync;
 
 	for (var i in sources)
-		sources[i]['zfcLuid'].load(ZinFeedCollection.fileName(i, this.state.m_bimap_format.lookup(sources[i]['format'], null)));
+		a_zfc[hyphenate("-", i, this.state.m_bimap_format.lookup(sources[i]['format'], null)) + ".txt"] = sources[i]['zfcLuid'];
+
+	for (var i in a_zfc)
+	{
+		a_zfc[i].filename(i);
+
+		if (a_zfc[i].nsifile().exists())
+			cExist++;
+
+		a_zfc[i].load();
+	}
+
+	this.state.m_logger.debug("entryActionLoad: number of files we tried to load: " + aToLength(a_zfc) +
+	                                          " number of files we actually loaded: " + cExist);
+
+	if (cExist == 0)
+	{
+		// TODO - am here...
+	}
+
+	if (!this.zfcIsValid(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync))
+		this.zfcInitialise(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync);
+
+	this.initialiseMapsIfRequired();             // 1.  in case someone deleted the map files...
 
 	continuation('evNext');
+}
+
+SyncFsm.prototype.zfcIsValid = function(fileprefix, zfc)
+{
+	ret = true;
+
+	// case SyncFsm.FILE_GID:
+
+	switch(fileprefix)
+	{
+		case SyncFsm.FILE_LASTSYNC:
+			for (var i in this.state.sources)
+				if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
+				{
+					ret = false;
+					break;
+				}
+			break;
+	}
+
+	return ret;
+}
+
+SyncFsm.prototype.zfcInitialise = function(fileprefix, zfc)
+{
+	switch(fileprefix)
+	{
+		case SyncFsm.FILE_GID:
+		case SyncFsm.FILE_LASTSYNC:
+			for (var i in this.state.sources)
+				if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
+					zfc.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, i)); // either a new source or the map was zapped
+			break;
+	}
+}
+
+// if the local map has been zapped:
+// - add the max property
+// - zero out all the attributes that have been added to thunderbird cards...
+//
+// TODO - change this so that if any of the maps have been zapped that they are all zapped... call resetAll()
+//
+
+SyncFsm.prototype.initialiseMapsIfRequired = function()
+{
+	var zfcLocal = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
+	var zfcGid   = this.state.zfcGid;
+
+	if (!zfcLocal.isPresent(ZinFeedItem.ID_AUTO_INCREMENT) || !zfcLocal.get(ZinFeedItem.ID_AUTO_INCREMENT).isPresent('next'))
+	{
+		zinAssert(zfcLocal.length() == 0); // TODO this is not right
+
+		this.state.m_logger.debug("11770 - thunderbird and/or gid map was zapped - initialising...");
+
+		zfcLocal.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
+		zfcGid.set(  new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
+
+	 	var functor_foreach_card = {
+			run: function(uri, item)
+			{
+				var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
+				var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+
+				var id =  mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+
+				if (id > 0)
+					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, 0); // delete would be more natural but not supported by api
+
+				return true;
+			}
+		};
+
+		var functor_foreach_addressbook = {
+			run: function(elem)
+			{
+				ZimbraAddressBook.forEachCard(elem.directoryProperties.URI, functor_foreach_card);
+
+				return true;
+			}
+		};
+
+		ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
+	}
 }
 
 SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuation)
@@ -813,55 +892,6 @@ SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation
 		this.state.m_logger.debug("entryActionSyncGal: - nothing to commit - SyncGalToken == " + this.state.SyncGalToken);
 		
 	continuation('evNext');
-}
-
-// if the local map has been zapped:
-// - add the max property
-// - zero out all the attributes that have been added to thunderbird cards...
-//
-// TODO - change this so that if any of the maps have been zapped that they are all zapped... call resetAll()
-//
-
-SyncFsm.prototype.initialiseMapsIfRequired = function()
-{
-	var zfcLocal = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
-	var zfcGid   = this.state.zfcGid;
-
-	if (!zfcLocal.isPresent(ZinFeedItem.ID_AUTO_INCREMENT) || !zfcLocal.get(ZinFeedItem.ID_AUTO_INCREMENT).isPresent('next'))
-	{
-		zinAssert(zfcLocal.length() == 0); // TODO this is not right
-
-		this.state.m_logger.debug("11770 - thunderbird and/or gid map was zapped - initialising...");
-
-		zfcLocal.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
-		zfcGid.set(  new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
-
-	 	var functor_foreach_card = {
-			run: function(uri, item)
-			{
-				var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
-				var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-
-				var id =  mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
-
-				if (id > 0)
-					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, 0); // delete would be more natural but not supported by api
-
-				return true;
-			}
-		};
-
-		var functor_foreach_addressbook = {
-			run: function(elem)
-			{
-				ZimbraAddressBook.forEachCard(elem.directoryProperties.URI, functor_foreach_card);
-
-				return true;
-			}
-		};
-
-		ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
-	}
 }
 
 SyncFsm.prototype.updateTbLuidMap = function()
@@ -1588,7 +1618,6 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 
 SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 {
-	this.initialiseMapsIfRequired();             // 1.  in case someone deleted the map files...
 	this.updateTbLuidMap();                      // 2.  update the local thunderbird map...
 	continuation('evNext');
 }
@@ -2408,12 +2437,12 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 {
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('SyncToken', this.state.SyncToken);
 
-	this.state.zfcLastSync.save(ZinFeedCollection.fileName(SyncFsm.FILE_LASTSYNC));
+	this.state.zfcLastSync.save();
 
-	this.state.zfcGid.save(ZinFeedCollection.fileName(SyncFsm.FILE_GID));
+	this.state.zfcGid.save();
 
 	for (var i in this.state.sources)
-		this.state.sources[i]['zfcLuid'].save(ZinFeedCollection.fileName(i, this.state.m_bimap_format.lookup(this.state.sources[i]['format'], null)));
+		this.state.sources[i]['zfcLuid'].save();
 
 	continuation('evNext');
 }
@@ -2927,11 +2956,7 @@ function SyncFsmState(id_fsm)
 	this.sources[SOURCEID_ZM]['name']     = stringBundleString("sourceServer");
 
 	for (var i in this.sources)
-	{
-		var rr_flag = (this.sources[i]['format'] == FORMAT_ZM) ? ZinFeedCollection.RESERVED_RANGE_OFF : ZinFeedCollection.RESERVED_RANGE_ON;
-
-		this.sources[i]['zfcLuid'] = new ZinFeedCollection(rr_flag);  // updated during sync and persisted at the end
-	}
+		this.sources[i]['zfcLuid'] = new ZinFeedCollection();  // updated during sync and persisted at the end
 
 	this.sourceid_tb = SOURCEID_TB;
 	this.sourceid_zm = SOURCEID_ZM;
