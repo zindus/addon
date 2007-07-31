@@ -63,8 +63,8 @@ Prefs.prototype.onLoad = function(target)
 	this.m_prefset_server.load(SOURCEID_ZM);
 	this.m_prefset_general.load();
 
-	this.m_logger.debug("onLoad: - m_prefset_server == "  + this.m_prefset_server.toString());
-	this.m_logger.debug("onLoad: - m_prefset_general == " + this.m_prefset_general.toString());
+	// this.m_logger.debug("onLoad: - m_prefset_server == "  + this.m_prefset_server.toString());
+	// this.m_logger.debug("onLoad: - m_prefset_general == " + this.m_prefset_general.toString());
 
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_PREFSDIALOG, ZinMaestro.FSM_GROUP_SYNC);
 

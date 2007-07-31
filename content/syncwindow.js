@@ -34,8 +34,6 @@ function SyncWindow()
 {
 	this.m_syncfsm   = null;
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
-	this.m_newstate  = null; // the cancel method needs to know whether to expect a continuation or not.
-								   // if newstate == 'start', there would have been a transition, otherwise not.
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_sfo       = new SyncFsmObserver();
 	this.m_logger    = newZinLogger("SyncWindow");
@@ -73,7 +71,7 @@ SyncWindow.prototype.onCancel = function()
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
-	this.m_syncfsm.cancel(this.m_newstate, this.m_timeoutID);
+	this.m_syncfsm.cancel(this.m_timeoutID);
 
 	this.m_logger.debug("onCancel: exited");
 
@@ -82,7 +80,7 @@ SyncWindow.prototype.onCancel = function()
 
 SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	this.m_logger.debug("functor: 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+	this.m_logger.debug("functor: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	if (!this.m_has_observer_been_called)
 	{
@@ -92,7 +90,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_has_observer_been_called = true;
 
-		this.m_logger.debug("functor: 742: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
+		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
 		newZinLogger().info("sync start:  " + getDateUTCString());
 		this.m_syncfsm.start();
@@ -100,9 +98,8 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	else 
 	{
 		this.m_timeoutID = fsmstate.timeoutID;
-		this.m_newstate  = fsmstate.newstate;
 
-		this.m_logger.debug("functor: 744: " + " timeoutID: " + this.m_timeoutID);
+		this.m_logger.debug("functor: timeoutID: " + this.m_timeoutID);
 
 		var is_window_update_required = this.m_sfo.update(fsmstate);
 
@@ -125,5 +122,5 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 
 	if (typeof(Log) == 'function')  // the scope into which the source file was included is out of scope after acceptDialog()
-		this.m_logger.debug("functor 746: exiting");
+		this.m_logger.debug("functor: exiting");
 }

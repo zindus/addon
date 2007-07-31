@@ -218,8 +218,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 					}
 				}
 
-				this.m_logger.debug("12353: SyncFsmExitStatus.FailOnIntegrity is: " + SyncFsmExitStatus.FailOnIntegrity);
-				this.m_logger.debug("12353: exit status: " + es.toString());
+				this.m_logger.debug("exit status: " + es.toString());
 
 				this.exitStatus(es);
 
