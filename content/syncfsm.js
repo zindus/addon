@@ -169,13 +169,8 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 			nextEvent = 'evStart';
 		}
 		else
-		{
 			nextEvent = 'evLackIntegrity';
-			this.state.m_lack_integrity = stringBundleString("statusFailOnIntegrityBadCredentials");
-		}
 	}
-
-	zinAssert(nextEvent);
 
 	this.state.m_logger.debug("entryActionStart: nextEvent: " + nextEvent);
 
@@ -217,6 +212,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	// 2. all the files exist and have integrity          ==> continue   and nextEvent == evNext
 	// 3. some files don't exist or don't have integrity  ==> continue   and nextEvent == evLackIntegrity (user is notified)
 	//
+	var nextEvent = null;
 	var sources = this.state.sources;
 	var cExist = 0;
 
@@ -243,15 +239,75 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	if (cExist == 0)
 	{
-		// TODO - am here...
+		this.state.m_logger.debug("entryActionLoad: data files didn't exist - initialising...");
+
+		this.initialiseZfcLastSync();
+		this.initialiseZfcAutoIncrement(this.state.zfcGid);
+		this.initialiseZfcAutoIncrement(this.state.sources[this.state.sourceid_tb]['zfcLuid']);
+		this.initialiseTbAddressbook();
+
+		nextEvent = 'evNext';
 	}
+	else if (cExist == aToLength(a_zfc) && this.isDataStoreConsistent())
+		nextEvent = 'evNext';
+	else
+		nextEvent = 'evLackIntegrity';
 
-	if (!this.zfcIsValid(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync))
-		this.zfcInitialise(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync);
+	continuation(nextEvent);
+}
 
-	this.initialiseMapsIfRequired();             // 1.  in case someone deleted the map files...
+SyncFsm.prototype.isDataStoreConsistent = function()
+{
+	// TODO - am here...
 
-	continuation('evNext');
+	return true;
+}
+
+SyncFsm.prototype.initialiseZfcLastSync = function()
+{
+	var zfc = this.state.zfcLastSync;
+
+	for (var i in this.state.sources)
+		if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
+			zfc.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, i));
+}
+
+SyncFsm.prototype.initialiseZfcAutoIncrement = function(zfc)
+{
+	zinAssert(zfc.length() == 0);
+
+	zfc.set( new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
+}
+
+// remove any luid attributes in the addressbook
+//
+SyncFsm.prototype.initialiseTbAddressbook = function()
+{
+ 	var functor_foreach_card = {
+		run: function(uri, item)
+		{
+			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
+			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+
+			var id =  mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+
+			if (id > 0)
+				mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, 0); // delete would be more natural but not supported by api
+
+			return true;
+		}
+	};
+
+	var functor_foreach_addressbook = {
+		run: function(elem)
+		{
+			ZimbraAddressBook.forEachCard(elem.directoryProperties.URI, functor_foreach_card);
+
+			return true;
+		}
+	};
+
+	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
 }
 
 SyncFsm.prototype.zfcIsValid = function(fileprefix, zfc)
@@ -275,67 +331,6 @@ SyncFsm.prototype.zfcIsValid = function(fileprefix, zfc)
 	return ret;
 }
 
-SyncFsm.prototype.zfcInitialise = function(fileprefix, zfc)
-{
-	switch(fileprefix)
-	{
-		case SyncFsm.FILE_GID:
-		case SyncFsm.FILE_LASTSYNC:
-			for (var i in this.state.sources)
-				if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
-					zfc.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, i)); // either a new source or the map was zapped
-			break;
-	}
-}
-
-// if the local map has been zapped:
-// - add the max property
-// - zero out all the attributes that have been added to thunderbird cards...
-//
-// TODO - change this so that if any of the maps have been zapped that they are all zapped... call resetAll()
-//
-
-SyncFsm.prototype.initialiseMapsIfRequired = function()
-{
-	var zfcLocal = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
-	var zfcGid   = this.state.zfcGid;
-
-	if (!zfcLocal.isPresent(ZinFeedItem.ID_AUTO_INCREMENT) || !zfcLocal.get(ZinFeedItem.ID_AUTO_INCREMENT).isPresent('next'))
-	{
-		zinAssert(zfcLocal.length() == 0); // TODO this is not right
-
-		this.state.m_logger.debug("11770 - thunderbird and/or gid map was zapped - initialising...");
-
-		zfcLocal.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
-		zfcGid.set(  new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_AUTO_INCREMENT, 'next', ZinFeedItem.ID_MAX_RESERVED + 1));
-
-	 	var functor_foreach_card = {
-			run: function(uri, item)
-			{
-				var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
-				var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-
-				var id =  mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
-
-				if (id > 0)
-					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, 0); // delete would be more natural but not supported by api
-
-				return true;
-			}
-		};
-
-		var functor_foreach_addressbook = {
-			run: function(elem)
-			{
-				ZimbraAddressBook.forEachCard(elem.directoryProperties.URI, functor_foreach_card);
-
-				return true;
-			}
-		};
-
-		ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
-	}
-}
 
 SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuation)
 {
@@ -653,8 +648,6 @@ SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
 			nextEvent = 'evNext';
 		}
 	}
-
-	zinAssert(nextEvent);
 
 	continuation(nextEvent);
 }
@@ -2628,13 +2621,18 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 {
 	var soapCall = new SOAPCall();
 	var context  = this;
+	var soapstate = this.state.m_soap_state;
 
-	zinAssert(!this.state.m_soap_state.is_cancelled);
+	zinAssert(!soapstate.is_cancelled);
+	zinAssert(soapstate.isPreResponse());
+	zinAssert(!soapstate.isPostResponse());
+	zinAssert(soapstate.isStateConsistent());
 
 	soapCall.transportURI = this.state.soapURL;
 	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
 
 	this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
+
 
 	// if soapCall is passed bad args (eg if transportURI is an email address), asyncInvoke() doesn't return!
 	// the cases I've found are handled during the integrity checking at the start of the fsm.
@@ -2740,14 +2738,8 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 	this.state.m_logger.debug("entryActionSoapResponse: m_method: " + soapstate.m_method);
 
-	// After a response, exactly one of these things is true:
-	// - this.m_response != null
-	// - this.m_service_code != 0
-	// - this.m_fault_element_xml != null
-	// See: SoapState.prototype.sanityCheck()
-	//
-
-	soapstate.sanityCheck();
+	zinAssert(soapstate.isPostResponse());
+	zinAssert(soapstate.isStateConsistent());
 
 	// For method == "CheckLicense", the fault varies depending on open-source vs non-open-source server:
 	// soapstate.m_faultcode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
@@ -2807,44 +2799,49 @@ function SoapState()
 	this.m_fault_detail      = null;
 	this.m_faultstring       = null;
 	this.is_cancelled        = false;
+
+	zinAssert(this.isStateConsistent());
+	zinAssert(this.isPreResponse());
+	zinAssert(!this.is_cancelled);
+	zinAssert(!this.isPostResponse());
 }
 
-SoapState.PRE_REQUEST                     = 0; // haven't made a request yet
-SoapState.PRE_RESPONSE                    = 1; // made a request but haven't yet recieved a response
-SoapState.POST_RESPONSE_SUCCESS           = 2; // recieved a non-fault soap response
-SoapState.POST_RESPONSE_FAIL_ON_SERVICE   = 3; // some sort of service failure (generated by mozilla)
-SoapState.POST_RESPONSE_FAIL_ON_FAULT     = 4; // recived a soap fault
-SoapState.CANCELLED                       = 5; // user cancelled
-SoapState.UNKNOWN                         = 6; // this should never be!
-
-SoapState.prototype.summaryCode = function()
+SoapState.prototype.failCode = function()
 {
 	var ret;
 
-	var isPreResponse  = (this.m_response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
-	                  && (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
-
-	if (this.is_cancelled)                     ret = SoapState.CANCELLED;
-	else if (!this.m_callcompletion)           ret = SoapState.PRE_REQUEST;
-	else if (isPreResponse)                    ret = SoapState.PRE_RESPONSE;
-	else if (this.m_response != null)          ret = SoapState.POST_RESPONSE_SUCCESS;
-	else if (this.m_service_code != 0)         ret = SoapState.POST_RESPONSE_FAIL_ON_SERVICE;
-	else if (this.m_fault_element_xml != null) ret = SoapState.POST_RESPONSE_FAIL_ON_FAULT;
-	else                                       ret = SoapState.UNKNOWN;
+	if (this.is_cancelled)                     ret = SyncFsmExitStatus.FailOnCancel;
+	else if (!this.m_callcompletion)           ret = SyncFsmExitStatus.FailOnUnknown;  // pre-request:       not a failure
+	else if (this.m_response != null)          ret = SyncFsmExitStatus.FailOnUnknown;  // response recieved: not a failure
+	else if (this.m_service_code != 0)         ret = SyncFsmExitStatus.FailOnService;
+	else if (this.m_fault_element_xml != null) ret = SyncFsmExitStatus.FailOnFault;
+	else                                       ret = SyncFsmExitStatus.FailOnUnknown;  // this really is unknown
 
 	return ret;
 }
 
-SoapState.prototype.sanityCheck = function()
+SoapState.prototype.isStateConsistent = function()
+{
+	return this.isPreResponse() || this.isPostResponse();
+}
+
+SoapState.prototype.isPostResponse = function()
 {
 	var c = 0;
-	if (this.m_response != null)          c++;
-	if (this.m_service_code != 0)         c++;
-	if (this.m_fault_element_xml != null) c++;
-	var isPostResponse = (c == 1);              // exactly one of these three things is true after a response
-	var isPreResponse  = (this.m_response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
-	                  && (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
-	zinAssert(isPreResponse || isPostResponse && this.summaryCode() != SoapState.UNKNOWN);
+
+	if (this.m_response != null)                                c++;
+	if (this.m_service_code != null && this.m_service_code !=0) c++;
+	if (this.m_fault_element_xml != null)                       c++;
+
+	return (c == 1); // exactly one of these three things is true after a response
+}
+
+// pre-request would be m_callcompletion == null
+//
+SoapState.prototype.isPreResponse = function()
+{
+	return (this.m_response == null) && (this.m_service_code == null) && (this.m_faultcode == null) &&
+	       (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
 }
 
 // load from xml - a SOAPResponse.message or SOAPFault.element
@@ -2879,7 +2876,8 @@ SoapState.prototype.faultLoadFromSoapFault = function(fault)
 
 SoapState.prototype.toString = function()
 {
-	var ret = "\n service code = "     + this.m_service_code +
+	var ret = "\n callcompletn = "     + (this.m_callcompletion ? "non-null" : "null") +
+	          "\n service code = "     + this.m_service_code +
 	          "\n fault code = "       + this.m_faultcode +
 	          "\n fault string = "     + this.m_faultstring +
 	          "\n fault detail = "     + this.m_fault_detail +
@@ -2916,8 +2914,7 @@ function SyncFsmState(id_fsm)
 {
 	this.id_fsm              = id_fsm;
 	this.m_logger            = newZinLogger("SyncFsm");
-	this.m_lack_integrity    = null;
-	this.m_soap_state        = new SoapState();
+	this.m_soap_state        = null;
 	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
 	this.zfcGid              = new ZinFeedCollection(); // map of gid to (sourceid, luid)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)

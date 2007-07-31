@@ -190,8 +190,13 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				if (fsmstate.event == 'evLackIntegrity')
 				{
 					es.m_exit_status = 1;
-					es.m_fail_code   = SyncFsmExitStatus.FailOnIntegrity;
-					es.m_fail_detail = context.state.m_lack_integrity;
+
+					if (fsmstate.oldstate == 'start')
+						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityBadCredentials;
+					else if (fsmstate.oldstate == 'stLoad')
+						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityDataStore;
+					else
+						es.m_fail_code = SyncFsmExitStatus.FailOnUnknown;
 				}
 				else if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
 					es.m_exit_status = 0;
@@ -200,14 +205,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				else
 				{
 					es.m_exit_status = 1;
-
-					switch (context.state.m_soap_state.summaryCode())
-					{
-						case SoapState.POST_RESPONSE_FAIL_ON_SERVICE: es.m_fail_code = SyncFsmExitStatus.FailOnService; break;
-						case SoapState.POST_RESPONSE_FAIL_ON_FAULT:   es.m_fail_code = SyncFsmExitStatus.FailOnFault;   break;
-						case SoapState.CANCELLED:                     es.m_fail_code = SyncFsmExitStatus.FailOnCancel;  break;
-						default:                                      es.m_fail_code = SyncFsmExitStatus.FailOnUnknown; break;
-					}
+					es.m_fail_code   = context.state.m_soap_state.failCode();
 
 					if (es.m_fail_code == SyncFsmExitStatus.FailOnFault)
 					{
@@ -217,6 +215,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 							es.m_fail_detail = context.state.m_soap_state.m_faultcode;
 					}
 				}
+
+				zinAssert(es.m_fail_code != SyncFsmExitStatus.FailOnUnknown);
 
 				this.m_logger.debug("exit status: " + es.toString());
 

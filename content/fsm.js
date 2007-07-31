@@ -29,7 +29,7 @@ include("chrome://zindus/content/maestro.js");
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.17 2007-07-31 01:49:34 cvsuser Exp $
+// $Id: fsm.js,v 1.18 2007-07-31 07:04:18 cvsuser Exp $
 
 if (typeof fsmlogger != 'object' || !fsmlogger)
     fsmlogger = newZinLogger("fsm");
@@ -107,6 +107,7 @@ function fsmTransitionDo(fsmstate)
 				//
 				// newZinLogger("fsm").debug("blah1: newstate: " + newstate + " nextEvent: " + nextEvent);
 				// newZinLogger("fsm").debug("blah2: context.fsm.transitions: " + aToString(context.fsm.transitions));
+				zinAssert(nextEvent);
 
 				if (context.fsm.aActionExit && context.fsm.aActionExit[newstate])
 					context.fsm.aActionExit[newstate].call(context, newstate, nextEvent);
