@@ -45,23 +45,28 @@ SyncFsm.ABSPECIAL_GAL = "GAL";
 function SyncFsm(state)
 {
 	this.state   = state;
-	this.soapfsm = new SoapFsm();
 	this.fsm     = new Object();
 }
 
 SyncFsm.prototype.start = function()
 {
-	fsmFireTransition(this.state.id_fsm, null, 'start', 'evStart', this);
+	fsmTransitionSchedule(this.state.id_fsm, null, 'start', 'evStart', this);
 }
 
-SyncFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeoutID)
+SyncFsm.prototype.cancel = function(newstate, timeoutID)
 {
-	window.clearTimeout(syncfsm_timeoutID);
+	window.clearTimeout(timeoutID);
 
-	this.state.m_logger.debug("cancel: cleared timeoutID: " + syncfsm_timeoutID);
+	this.state.m_logger.debug("cancel: cleared timeoutID: " + timeoutID);
 
-	if (soapfsm_timeoutID)
-		this.soapfsm.cancel(soapfsm_timeoutID);
+	if (this.state.m_soap_state.m_callcompletion)
+	{
+		var ret = this.state.m_soap_state.m_callcompletion.abort();
+
+		this.state.m_logger.debug("abort: m_callcompletion.abort() returns: " + ret);
+	}
+
+	this.state.m_soap_state.is_cancelled = true
 
 	if (newstate == 'start')
 	{
@@ -69,7 +74,7 @@ SyncFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeout
 		// so the new transition just enters the start state on a cancel event
 		//
 		this.state.m_logger.debug("cancel: fsm was about to enter start state - now it does that on evCancel");
-		fsmFireTransition(this.state.id_fsm, null, 'start', 'evCancel', this);
+		fsmTransitionSchedule(this.state.id_fsm, null, 'start', 'evCancel', this);
 	}
 	else
 	{
@@ -83,105 +88,11 @@ SyncFsm.prototype.cancel = function(newstate, syncfsm_timeoutID, soapfsm_timeout
 	}
 }
 
-// note: this function takes a variable number of arguments following the "method" parameter
-// Function.length below returns the number of formal arguments
-//
-SyncFsm.prototype.callSoapFsm = function(continuation, f, eventOnResponse, method)
-{
-	var zsd = new ZimbraSoapDocument();
-	zsd.context(this.state.authToken, this.state.sessionId);
-
-	var args = new Array();
-	for (var i = SyncFsm.prototype.callSoapFsm.length; i < arguments.length; i++)
-		args.push(arguments[i]);
-
-	zsd[method].apply(zsd, args);
-
-	// setting the final action on the soap fsm each time ensures that the continuation object passed to
-	// to the starter of the fsm is the one called on exit of the fsm
-	//
-	var context = this;
-	this.soapfsm.fsm.aActionEntry['final'] = function(soapfsm_state, soapfsm_event, soapfsm_continuation)
-		{
-			if (soapfsm_event != 'evCancel')
-			{
-				context.state.m_logger.debug("soapfsm final entry action: continuing...");
-
-				var event = f.call(context, eventOnResponse, method);
-				continuation(event);
-			}
-			else
-				context.state.m_logger.debug("soapfsm final entry action: soapfsm was cancelled - no continuation");
-		}
-
-	this.soapfsm.start(this.state.soapURL, zsd);
-}
-
-// This routine tests for:
-// - unexpected response ==> evCancel (eg <parsererror xmlns="http://www.mozilla.org/newlayout/xml/parsererror.xml">...</parsererror>
-
-SyncFsm.prototype.eventFromSoapDefault = function(eventOnResponse, method)
-{
-	var soapfsmstate = this.soapfsm.state;
-	var event = null;
-
-	// After a response, exactly one of these things is true:
-	// - this.m_response != null
-	// - this.m_service_code != 0
-	// - this.m_fault_element_xml != null
-	// That's what SoapFsmState.prototype.sanityCheck tests for...
-	//
-
-	soapfsmstate.sanityCheck();
-
-	if (soapfsmstate.m_response)
-	{
-		var node = ZinXpath.getSingleValue(ZinXpath.queryFromMethod(method), soapfsmstate.m_response, soapfsmstate.m_response);
-
-		if (node)
-			event = eventOnResponse; // we found a BlahResponse element - all is well
-		else
-		{
-			// otherwise assume that the response is something that we can't do anything with - so just cancel
-			// perhaps set a flag to indicate how/why we cancelled
-			event = 'evCancel';
-		}
-	}
-	else 
-	{
-		var msg = "onSoapFsmExit: soap error - ";  // note that we didn't say "fault" here - it could be a sending/service error
-
-		if (soapfsmstate.m_service_code != 0 && soapfsmstate.m_service_code != null)
-			msg += "m_service_code == " + soapfsmstate.m_service_code;
-		else if (soapfsmstate.m_fault_element_xml)
-			msg += "fault fields as shown: " + soapfsmstate.toString();
-		else
-			zinAssert(false);
-
-		this.state.m_logger.debug(msg);
-
-		event = 'evCancel';
-	}
-
-	return event;
-}
-
-SyncFsm.prototype.eventFromSoapCheckLicense = function(eventOnResponse, method)
-{
-	// the fault varies depending on open-source vs non-open-source server:
-	// this.soapfsm.state.m_faultcode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
-	//
-	if (this.soapfsm.state.m_fault_element_xml)
-		event = eventOnResponse;
-	else
-		event = this.eventFromSoapDefault(eventOnResponse, method)
-
-	return event;
-}
-
 SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 {
 	var nextEvent = null;
+
+	this.state.m_logger.debug("entryActionStart: ");
 
 	if (event == 'evCancel')
 	{
@@ -196,16 +107,16 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 		if (re_scheme.test(url) && username.length > 0 && password.length > 0)
 		{
-		this.state.soapURL = this.state.sources[this.state.sourceid_zm]['soapURL'];
+			this.state.soapURL = this.state.sources[this.state.sourceid_zm]['soapURL'];
 
-		// load the lastsync map early to support authonly use of the fsm
-		//
-		this.state.zfcLastSync.load(ZinFeedCollection.fileName(SyncFsm.FILE_LASTSYNC));
+			// load the lastsync map early to support authonly use of the fsm
+			//
+			this.state.zfcLastSync.load(ZinFeedCollection.fileName(SyncFsm.FILE_LASTSYNC));
 
-		if (!this.zfcIsValid(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync))
-			this.zfcInitialise(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync);
+			if (!this.zfcIsValid(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync))
+				this.zfcInitialise(SyncFsm.FILE_LASTSYNC, this.state.zfcLastSync);
 
-		nextEvent = 'evStart';
+			nextEvent = 'evStart';
 		}
 		else
 		{
@@ -213,6 +124,8 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 			this.state.m_lack_integrity = stringBundleString("statusFailOnIntegrityBadCredentials");
 		}
 	}
+
+	zinAssert(nextEvent);
 
 	continuation(nextEvent);
 }
@@ -250,18 +163,25 @@ SyncFsm.prototype.zfcInitialise = function(fileprefix, zfc)
 
 SyncFsm.prototype.entryActionAuth = function(state, event, continuation)
 {
-	this.callSoapFsm(continuation, SyncFsm.prototype.eventFromSoapDefault, "evNext", "Auth",
-					 this.state.sources[this.state.sourceid_zm]['username'],
-					 this.state.sources[this.state.sourceid_zm]['password']);
+	this.setupSoapCall(state, 'evNext', "Auth",
+	                          this.state.sources[this.state.sourceid_zm]['username'],
+	                          this.state.sources[this.state.sourceid_zm]['password']);
+
+	continuation('evSoapRequest');
 }
 
 SyncFsm.prototype.exitActionAuth = function(state, event)
 {
-	if (this.soapfsm.state.m_response)
+	if (!this.state.m_soap_state.m_response || event == "evCancel")
+		return;
+
+	var response = this.state.m_soap_state.m_response;
+
+	if (response)
 	{
-		conditionalGetElementByTagNameNS(this.soapfsm.state.m_response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
-		conditionalGetElementByTagNameNS(this.soapfsm.state.m_response, ZimbraSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
-		conditionalGetElementByTagNameNS(this.soapfsm.state.m_response, ZimbraSoapDocument.NS_ACCOUNT, "sessionId", this.state, 'sessionId');
+		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
+		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
+		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "sessionId", this.state, 'sessionId');
 	}
 }
 
@@ -279,12 +199,16 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuation)
 {
-	this.callSoapFsm(continuation, this.eventFromSoapDefault, "evNext", "GetAccountInfo", this.state.sources[this.state.sourceid_zm]['username']);
+	this.state.m_logger.debug("entryActionGetAccountInfo: username: " + this.state.sources[this.state.sourceid_zm]['username']); // TODO remove me
+
+	this.setupSoapCall(state, 'evNext', "GetAccountInfo", this.state.sources[this.state.sourceid_zm]['username']);
+
+	continuation('evSoapRequest');
 }
 
 SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 {
-	if (!this.soapfsm.state.m_response || event == "evCancel")
+	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
 
 	// this.zimbraId    = null; // set by GetAccountInfo
@@ -293,7 +217,7 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 	var xpath_query = "/soap:Envelope/soap:Body/za:GetAccountInfoResponse/za:soapURL";
 	var functor     = new FunctorArrayOfTextNodeValue();
 
-	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.m_response);
+	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
 
 	var soapURL = null;
 
@@ -321,34 +245,41 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 
 SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
 {
-	this.callSoapFsm(continuation, this.eventFromSoapCheckLicense, "evNext", "CheckLicense");
+	this.setupSoapCall(state, 'evNext', "CheckLicense");
+
+	continuation('evSoapRequest');
 }
 
 SyncFsm.prototype.exitActionCheckLicense = function(state, event)
 {
-	if (this.soapfsm.state.m_fault_element_xml && this.soapfsm.state.m_faultcode == "service.UNKNOWN_DOCUMENT")
+	if (event == "evCancel")
+		return;
+
+	if (this.state.m_soap_state.m_fault_element_xml && this.state.m_soap_state.m_faultcode == "service.UNKNOWN_DOCUMENT")
 		this.state.mapiStatus = "CheckLicense not supported by server - service is probably open source edition";
-	else if (this.soapfsm.state.m_response)
+	else if (this.state.m_soap_state.m_response)
 	{
 		var xpath_query = "/soap:Envelope/soap:Body/za:CheckLicenseResponse/attribute::status";
 		var warn_msg    = "warning - expected to find 'status' attribute in <CheckLicenseResponse>";
 
-		ZinXpath.setConditional(this.state, 'mapiStatus', xpath_query, this.soapfsm.state.m_response, warn_msg);
+		ZinXpath.setConditional(this.state, 'mapiStatus', xpath_query, this.state.m_soap_state.m_response, warn_msg);
 	}
 }
 
 SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 {
-	this.callSoapFsm(continuation, this.eventFromSoapDefault, "evNext", "Sync",
-	                              this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncToken'));
+	this.setupSoapCall(state, 'evNext', "Sync",
+	                          this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncToken'));
+
+	continuation('evSoapRequest');
 }
 
 SyncFsm.prototype.exitActionSync = function(state, event)
 {
-	if (!this.soapfsm.state.m_response || event == "evCancel")
+	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
 
-	var response  = this.soapfsm.state.m_response;
+	var response  = this.state.m_soap_state.m_response;
 	var sourceid = this.state.sourceid_zm;
 	var zfcServer = this.state.sources[sourceid]['zfcLuid'];
 	var id, functor, xpath_query;
@@ -553,40 +484,53 @@ SyncFsm.prototype.exitActionSync = function(state, event)
 
 SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
 {
+	var nextEvent = null;
+
 	// this.state.m_logger.debug("11116: entryActionGetContact, aQueue == " + aToString(this.state.aQueue) );
 
 	if (this.state.SyncMd == null)
 	{
 		this.state.m_logger.debug("Can't proceed with sync because (for some reason) <SyncResponse> didn't have an 'md' attribute");
-		continuation('evCancel')
-	}
 
-	var id;
-	for (id in this.state.aQueue)
-		break;
-
-	if (typeof(id) != 'undefined')
-	{
-		this.state.m_logger.debug("11116: calling GetContactsRequest with id == " + id );
-		this.callSoapFsm(continuation, this.eventFromSoapDefault, "evRepeat", "GetContacts", id);
+		nextEvent = 'evCancel';
 	}
 	else
 	{
-		this.soapfsm.state.m_response = null;
-		continuation('evNext');
+		var id;
+		for (id in this.state.aQueue)
+			break;
+
+		if (typeof(id) != 'undefined')
+		{
+			this.state.m_logger.debug("11116: calling GetContactsRequest with id == " + id );
+
+			this.setupSoapCall(state, 'evRepeat', "GetContacts", id);
+
+			nextEvent = 'evSoapRequest';
+		}
+		else
+		{
+			this.state.m_soap_state.m_response = null;
+
+			nextEvent = 'evNext';
+		}
 	}
+
+	zinAssert(nextEvent);
+
+	continuation(nextEvent);
 }
 
 SyncFsm.prototype.exitActionGetContact = function(state, event)
 {
-	if (!this.soapfsm.state.m_response || event == "evCancel")
+	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
 
 	var xpath_query = "/soap:Envelope/soap:Body/zm:GetContactsResponse/zm:cn";
 	var functor     = new FunctorArrayOfContactsFromNodes(ZinXpath.nsResolver("zm")); // see <cn> above
 	var zfcServer   = this.state.sources[this.state.sourceid_zm]['zfcLuid'];
 
-	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.m_response);
+	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
 
 	// this.state.m_logger.debug("111118 - functor.a.length == " + functor.a.length);
 
@@ -650,17 +594,19 @@ SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
 		this.state.m_logger.debug("11443322: Gal hasn't expired - this.state.SyncGalToken == " + this.state.SyncGalToken);
 	}
 
-	this.callSoapFsm(continuation, this.eventFromSoapDefault, "evNext", "SyncGal", this.state.SyncGalToken);
+	this.setupSoapCall(state, 'evNext', "SyncGal", this.state.SyncGalToken);
+
+	continuation('evSoapRequest');
 }
 
 SyncFsm.prototype.exitActionSyncGal = function(state, event)
 {
-	if (!this.soapfsm.state.m_response || event == "evCancel")
+	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
 
 	var SyncGalToken = null;
 	var functor = new FunctorArrayOfContactsFromNodes(xpathNsResolver("za")); // see SyncGalResponse below
-	var response = this.soapfsm.state.m_response;
+	var response = this.state.m_soap_state.m_response;
 
 	var node = ZinXpath.getSingleValue("/soap:Envelope/soap:Body/za:SyncGalResponse/@token", response, response);
 
@@ -677,7 +623,7 @@ SyncFsm.prototype.exitActionSyncGal = function(state, event)
 	//
 	if (SyncGalToken != null && SyncGalToken != this.state.SyncGalToken)
 	{
-		ZinXpath.runFunctor(functor, "/soap:Envelope/soap:Body/za:SyncGalResponse/za:cn", this.soapfsm.state.m_response);
+		ZinXpath.runFunctor(functor, "/soap:Envelope/soap:Body/za:SyncGalResponse/za:cn", this.state.m_soap_state.m_response);
 
 		this.state.SyncGalToken        = SyncGalToken;
 		this.state.SyncGalTokenChanged = true;
@@ -703,7 +649,7 @@ SyncFsm.prototype.exitActionSyncGal = function(state, event)
 
 // the reference to this.state.SyncMd here is why SyncGalCommit must come *after* SyncResponse
 //
-SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
+SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation)
 {
 	// It would be nice if the gal token and SyncMd could be stored as user-defined properties of an addressbook
 	// rather than as preferences.  Then we wouldn't need to worry about the prefs somehow getting out of sync with the addressbooks.
@@ -2074,23 +2020,25 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 		this.state.m_logger.debug("entryActionUpdateZm: updateZmPackage: " + aToString(this.state.updateZmPackage));
 
-		this.callSoapFsm(continuation, this.eventFromSoapDefault, "evRepeat",
-		                           this.state.updateZmPackage.soapmethod, this.state.updateZmPackage.soaparg);
+		this.setupSoapCall(state, 'evRepeat', this.state.updateZmPackage.soapmethod, 
+		                          this.state.updateZmPackage.soaparg);
+
+		continuation('evSoapRequest');
 	}
 	else
 	{
-		this.soapfsm.state.m_response = null;
+		this.state.m_soap_state.m_response = null;
 		continuation('evNext');
 	}
 }
 
 SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 {
-	if (!this.soapfsm.state.m_response || event == "evCancel")
+	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
 
 	var msg, suo, xpath_query, functor;
-	var response = this.soapfsm.state.m_response;
+	var response = this.state.m_soap_state.m_response;
 	var change = new Object();
 	var updateZmPackage = this.state.updateZmPackage;
 	var msg = "3377: ";
@@ -2260,7 +2208,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 			zinAssert(false);
 	}
 
-	ZinXpath.runFunctor(functor, xpath_query, this.soapfsm.state.m_response);
+	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
 
 	this.state.m_logger.debug(msg);
 
@@ -2560,73 +2508,69 @@ SyncFsm.forEachFlavour = function(format)
 	return (format == FORMAT_ZM) ? ZinFeedCollection.ITER_ALL : ZinFeedCollection.ITER_UNRESERVED;
 }
 
-function SoapFsm()
+// note: this function takes a variable number of arguments following the "method" parameter
+// Function.length below returns the number of formal arguments
+//
+SyncFsm.prototype.setupSoapCall = function(state, eventOnResponse, method)
 {
-	this.zsd   = null;
-	this.state = new SoapFsmState();
+	this.state.m_logger.debug("setupSoapCall: state: " + state + " eventOnResponse: " + eventOnResponse + " method: " + method);
 
-	this.fsm = new Object();
-	this.fsm.transitions = {
-		start:          { evCancel: 'final', evStart: 'stSoapResponse'  },
-		stSoapResponse: { evCancel: 'final', evNext:  'final',          }
-	};
+	var args = new Array();
+	for (var i = SyncFsm.prototype.setupSoapCall.length; i < arguments.length; i++)
+	{
+		args.push(arguments[i]);
+		this.state.m_logger.debug("setupSoapCall: args[" + i + "] == " + arguments[i]);
+	}
 
-	this.fsm.aActionEntry = {
-		start:          this.entryActionStart,
-		stSoapResponse: this.entryActionSoapResponse,
-		final:          null // used to be this.entryActionFinal, now set by caller before machine starts
-	};
+	this.state.m_soap_state = new SoapState();
+	this.state.m_soap_state.m_method = method;
+	this.state.m_soap_state.m_zsd.context(this.state.authToken, this.state.sessionId);
+	this.state.m_soap_state.m_zsd[method].apply(this.state.m_soap_state.m_zsd, args);
+
+	this.fsm.transitions['stSoapResponse']['evNext'] = this.fsm.transitions[state][eventOnResponse];
+
+	if (this.fsm.aActionExit[state])
+		this.fsm.aActionExit['stSoapResponse'] = this.fsm.aActionExit[state];
+
+	this.state.m_logger.debug("setupSoapCall: soap final state: " + this.fsm.transitions[state][eventOnResponse]);
 }
 
-SoapFsm.prototype.start = function(uri, zsd)
+SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 {
-	this.state = new SoapFsmState();
-	this.state.m_uri = uri;
-	this.zsd       = zsd;
+	var soapCall = new SOAPCall();
+	var context  = this;
 
-	fsmFireTransition(ZinMaestro.FSM_ID_SOAP, null, 'start', 'evStart', this);
-}
+	zinAssert(!this.state.m_soap_state.is_cancelled);
 
-SoapFsm.prototype.entryActionStart = function(state, event, continuation)
-{
-	continuation((event == 'evCancel') ? 'evCancel' : 'evStart');
-}
-
-SoapFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
-{
-	var soapCall   = new SOAPCall();
-	var context    = this;
-
-	soapCall.transportURI = this.state.m_uri;
-
-	soapCall.message = this.zsd.doc;
-
-	zinAssert(!this.state.is_cancelled); // we shouldn't be here if we've called abort() on the m_callcompletion object!
+	soapCall.transportURI = this.state.soapURL;
+	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
 
 	this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 
-	// if soapCall has bad args (eg if transportURI is an email address), asyncInvoke() doesn't even return!
-	// the cases I've found are tested for as part of the integrity checking at the start of the fsm.
+	// if soapCall is passed bad args (eg if transportURI is an email address), asyncInvoke() doesn't return!
+	// the cases I've found are handled during the integrity checking at the start of the fsm.
 	//
-	this.state.m_callcompletion = soapCall.asyncInvoke(
+	this.state.m_soap_state.m_callcompletion = soapCall.asyncInvoke(
 	        function (response, call, error)
 			{
 				context.handleAsyncResponse(response, call, error, continuation, context);
 			}
 		);
-	// this.state.m_logger.debug("m_callcompletion: " + (this.state.m_callcompletion ? "is set" : "is null"));
-	// this.state.m_logger.debug("m_callcompletion.isComplete: " + this.state.m_callcompletion.isComplete);
+	// this.state.m_logger.debug("m_callcompletion: evaluates to: " + (this.state.m_soap_state.m_callcompletion ? "true" : "false"));
+	// this.state.m_logger.debug("m_callcompletion.isComplete: " + this.state.m_soap_state.m_callcompletion.isComplete);
 }
 
-SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context)
+// Note that "this" in this method could be anything - as decided by the mozilla SOAP API.
+// That's why we call continuation() here, so that the code that processes the response can refer to "this", rather than "context".
+//
+SyncFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context)
 {
 	var ret = false;
+	var soapstate = context.state.m_soap_state;
 
-	context.state.m_logger.debug("handleAsyncResponse: m_callcompletion set to null"); // TODO remove me
-	zinAssert(!context.state.is_cancelled); // we shouldn't be here because we called abort() on the m_callcompletion object!
+	zinAssert(!soapstate.is_cancelled); // we shouldn't be here because we called abort() on the m_callcompletion object!
 
-	context.state.m_callcompletion = null; // don't need this anymore and setting it to null tells the world that no request is outstanding
-	context.state.m_service_code = error;
+	soapstate.m_service_code = error;
 
 	// four scenarios here:
 	//   a) service failure
@@ -2648,8 +2592,8 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 		// the callback gets executed with a null response and error code zero.
 		// here, we turn that into a non-zero error code.
 		//
-		context.state.m_service_code = SOAP_REQUEST_FAILED;
-		context.state.m_logger.debug("handleAsyncResponse: soap service failure - setting an error code by fiat: " + context.state.serviceCod);
+		soapstate.m_service_code = SOAP_REQUEST_FAILED;
+		context.state.m_logger.debug("handleAsyncResponse: soap service failure - error code set by fiat: " + soapstate.m_service_code);
 	}
 	else if (error != 0)
 	{ 
@@ -2661,10 +2605,10 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 
 		if (response.fault != null)
 		{ 
-			context.state.faultLoadFromSoapFault(response.fault);
+			soapstate.faultLoadFromSoapFault(response.fault);
 
-			if (!context.state.m_faultstring)
-				context.state.faultLoadFromXml(response.fault.element);
+			if (!soapstate.m_faultstring)
+				soapstate.faultLoadFromXml(response.fault.element);
 		}
 		else
 		{
@@ -2672,11 +2616,11 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 
 			if (nodelist.length > 0)
 			{
-				context.state.faultLoadFromXml(response.message);
+				soapstate.faultLoadFromXml(response.message);
 			}
 			else
 			{
-				context.state.m_response = response.message;
+				soapstate.m_response = response.message;
 
 				context.state.m_logger.debug("handleAsyncResponse: response is " + xmlDocumentToString(response.message));
 			}
@@ -2684,14 +2628,14 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	}
 
 	var msg;
-	if (context.state.m_service_code != 0)
-		msg = "soap service failure - m_service_code is " + context.state.m_service_code;
-	else if (context.state.m_fault_element_xml)
-		msg = "soap fault: service code " + context.state.m_service_code;
+	if (soapstate.m_service_code != 0)
+		msg = "soap service failure - m_service_code is " + soapstate.m_service_code;
+	else if (soapstate.m_fault_element_xml)
+		msg = "soap fault: service code " + soapstate.m_service_code;
 
 	if (msg)
 	{
-		msg += " fault xml: " + context.state.m_fault_element_xml;
+		msg += " fault xml: " + soapstate.m_fault_element_xml;
 		context.state.m_logger.debug("handleAsyncResponse: " + msg);
 	}
 
@@ -2700,96 +2644,108 @@ SoapFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 	return true;
 }
 
-SoapFsm.prototype.cancel = function(timeoutID)
+SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 {
-	// if the user cancelled and there was a SoapFsm in progress then either:
-	// - it had just started (newstate == start), in which case we have to clear it's timeout so that it doesn't continue, or
-	// - it is waiting for a response from the server, in which case we have to abort the m_callcompletion object
-	// A different way of handling either or both of these cases would have been for the syncfsm to set a flag in the soapfsm's state
-	// and then the soapfsm would check the flag at all relevant points (only a small number of those)...
-	// in the current implementation, is_cancelled is just used to assert correctness.
+	var soapstate = this.state.m_soap_state;
 
-	// Do I want to consider the return value from m_callcompletion.abort() 
-	// see http://www.xulplanet.com/references/xpcomref/ifaces/nsISOAPCallCompletion.html
-	// right now, we ignore the completion status as reported by nsISOAPCallCompletion.isComplete() 
-	// I don't trust that it isn't buggy given my experience with faults...
-	// so "cancel" of the parent fsm doesn't cause any transitions to the soapfsm...
+	this.state.m_logger.debug("entryActionSoapResponse: m_method: " + soapstate.m_method);
 
-	window.clearTimeout(timeoutID);
-
-	this.state.m_logger.debug("cancel: cleared timeoutID: " + timeoutID);
-
-	if (this.state.m_callcompletion)
-	{
-		var ret = this.state.m_callcompletion.abort();
-
-		this.state.m_logger.debug("abort: m_callcompletion.abort() returns: " + ret);
-	}
-
-	this.state.is_cancelled = true;
-
-	// we continue to the final start (even though that does nothing
-	// so that the maestro knows that the soapfsm is finished and can deregister it
+	// After a response, exactly one of these things is true:
+	// - this.m_response != null
+	// - this.m_service_code != 0
+	// - this.m_fault_element_xml != null
+	// That's what SoapState.prototype.sanityCheck tests for...
 	//
-	if (typeof this.fsm.continuation != 'function')
-	{
-		// the fsm hasn't had a transition yet so there's no continuation
-		// so the new transition just enters the start state on a cancel event
-		//
-		this.state.m_logger.debug("cancel: fsm was about to enter start state - now it does that on evCancel");
-		fsmFireTransition(ZinMaestro.FSM_ID_SOAP, null, 'start', 'evCancel', this);
-	}
-	else
-	{
-		this.state.m_logger.debug("cancel: continuing on evCancel");
-		// this.state.m_logger.debug("cancel: transitions: " + aToString(this.fsm.transitions));
-		// this.state.m_logger.debug("cancel: continuation: " + this.fsm.continuation.toString());
 
-		this.fsm.continuation('evCancel');
+	soapstate.sanityCheck();
+
+	// For method == "CheckLicense", the fault varies depending on open-source vs non-open-source server:
+	// soapstate.m_faultcode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
+	//
+
+	if (soapstate.m_method == "CheckLicense" && soapstate.m_fault_element_xml)
+		event = 'evNext';
+	else if (soapstate.m_response)
+	{
+		var node = ZinXpath.getSingleValue(ZinXpath.queryFromMethod(soapstate.m_method), soapstate.m_response, soapstate.m_response);
+
+		if (node)
+			event = 'evNext'; // we found a BlahResponse element - all is well
+		else
+		{
+			event = 'evCancel';
+			this.state.m_logger.error("soap response isn't a fault and doesn't match our request - about to cancel");
+		}
 	}
+	else 
+	{
+		var msg = "soap error - ";  // note that we didn't say "fault" here - it could be a sending/service error
+
+		if (soapstate.m_service_code != 0 && soapstate.m_service_code != null)
+			msg += "m_service_code == " + soapstate.m_service_code;
+		else if (soapstate.m_fault_element_xml)
+			msg += "fault fields as shown: " + soapstate.toString();
+		else
+			zinAssert(false);
+
+		this.state.m_logger.debug(msg);
+
+		event = 'evCancel';
+	}
+
+	this.state.m_logger.debug("entryActionSoapResponse: calls continuation with: " + event);
+
+	continuation(event); // the next state in the transitions table got set by setupSoapCall()
 }
 
-function SoapFsmState()
+SyncFsm.prototype.exitActionSoapResponse = function(state, event)
 {
-	this.m_uri               = null;  // the uri of the zimbra server - set by the start() method
+	// this method's entry in the aActionExit table may be overwritten by setupSoapCall
+	// otherwise, do nothing...
+}
+
+function SoapState()
+{
+	this.m_zsd               = new ZimbraSoapDocument();
+	this.m_method            = null;  // the prefix of the soap method, eg: "Auth" or "GetContacts"
+	this.m_callcompletion    = null;  // the object returned by soapCall.asyncInvoke()
+
 	this.m_response          = null;  // SOAPResponse.message - the xml soap message response, assuming all was well
 	this.m_service_code      = null;  // 
 	this.m_faultcode         = null;  // These are derived from the soap fault element
 	this.m_fault_element_xml = null;  // the soap:Fault element as string xml
 	this.m_fault_detail      = null;
 	this.m_faultstring       = null;
-	this.m_callcompletion    = null;  // the object returned by soapCall.asyncInvoke()
 	this.is_cancelled        = false;
-	this.m_logger            = newZinLogger("SoapFsm");
 }
 
-SoapFsmState.PRE_REQUEST                     = 0; // haven't made a request yet
-SoapFsmState.PRE_RESPONSE                    = 1; // made a request but haven't yet recieved a response
-SoapFsmState.POST_RESPONSE_SUCCESS           = 2; // recieved a non-fault soap response
-SoapFsmState.POST_RESPONSE_FAIL_ON_SERVICE   = 3; // some sort of service failure (generated by mozilla)
-SoapFsmState.POST_RESPONSE_FAIL_ON_FAULT     = 4; // recived a soap fault
-SoapFsmState.CANCELLED                       = 5; // user cancelled
-SoapFsmState.UNKNOWN                         = 6; // this should never be!
+SoapState.PRE_REQUEST                     = 0; // haven't made a request yet
+SoapState.PRE_RESPONSE                    = 1; // made a request but haven't yet recieved a response
+SoapState.POST_RESPONSE_SUCCESS           = 2; // recieved a non-fault soap response
+SoapState.POST_RESPONSE_FAIL_ON_SERVICE   = 3; // some sort of service failure (generated by mozilla)
+SoapState.POST_RESPONSE_FAIL_ON_FAULT     = 4; // recived a soap fault
+SoapState.CANCELLED                       = 5; // user cancelled
+SoapState.UNKNOWN                         = 6; // this should never be!
 
-SoapFsmState.prototype.summaryCode = function()
+SoapState.prototype.summaryCode = function()
 {
 	var ret;
 
 	var isPreResponse  = (this.m_response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
 	                  && (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
 
-	if (this.is_cancelled)                     ret = SoapFsmState.CANCELLED;
-	else if (!this.m_uri)                      ret = SoapFsmState.PRE_REQUEST;
-	else if (isPreResponse)                    ret = SoapFsmState.PRE_RESPONSE;
-	else if (this.m_response != null)          ret = SoapFsmState.POST_RESPONSE_SUCCESS;
-	else if (this.m_service_code != 0)         ret = SoapFsmState.POST_RESPONSE_FAIL_ON_SERVICE;
-	else if (this.m_fault_element_xml != null) ret = SoapFsmState.POST_RESPONSE_FAIL_ON_FAULT;
-	else                                       ret = SoapFsmState.UNKNOWN;
+	if (this.is_cancelled)                     ret = SoapState.CANCELLED;
+	else if (!this.m_callcompletion)           ret = SoapState.PRE_REQUEST;
+	else if (isPreResponse)                    ret = SoapState.PRE_RESPONSE;
+	else if (this.m_response != null)          ret = SoapState.POST_RESPONSE_SUCCESS;
+	else if (this.m_service_code != 0)         ret = SoapState.POST_RESPONSE_FAIL_ON_SERVICE;
+	else if (this.m_fault_element_xml != null) ret = SoapState.POST_RESPONSE_FAIL_ON_FAULT;
+	else                                       ret = SoapState.UNKNOWN;
 
 	return ret;
 }
 
-SoapFsmState.prototype.sanityCheck = function()
+SoapState.prototype.sanityCheck = function()
 {
 	var c = 0;
 	if (this.m_response != null)        c++;
@@ -2798,12 +2754,12 @@ SoapFsmState.prototype.sanityCheck = function()
 	var isPostResponse = (c == 1);  // exactly one of these three things is true after a response
 	var isPreResponse  = (this.m_response == null) && (this.m_service_code == null) && (this.m_faultcode == null)
 	                  && (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
-	zinAssert(isPreResponse || isPostResponse && this.summaryCode() != SoapFsmState.UNKNOWN);
+	zinAssert(isPreResponse || isPostResponse && this.summaryCode() != SoapState.UNKNOWN);
 }
 
 // load from xml - a SOAPResponse.message or SOAPFault.element
 //
-SoapFsmState.prototype.faultLoadFromXml = function(doc)
+SoapState.prototype.faultLoadFromXml = function(doc)
 {
 	var nodelist;
 	
@@ -2816,7 +2772,7 @@ SoapFsmState.prototype.faultLoadFromXml = function(doc)
 
 // load from a SOAPFault object - http://www.xulplanet.com/references/objref/SOAPFault.html
 //
-SoapFsmState.prototype.faultLoadFromSoapFault = function(fault)
+SoapState.prototype.faultLoadFromSoapFault = function(fault)
 {
 	if (fault.element)
 		this.m_fault_element_xml = xmlDocumentToString(fault.element);
@@ -2831,7 +2787,7 @@ SoapFsmState.prototype.faultLoadFromSoapFault = function(fault)
 		this.m_faultcode = fault.faultcode;
 }
 
-SoapFsmState.prototype.toString = function()
+SoapState.prototype.toString = function()
 {
 	var ret = "\n service code = "     + this.m_service_code +
 	          "\n fault code = "       + this.m_faultcode +
@@ -2843,7 +2799,7 @@ SoapFsmState.prototype.toString = function()
 	return ret;
 }
 
-SoapFsmState.prototype.toHtml = function()
+SoapState.prototype.toHtml = function()
 {
 	return this.toString().replace(/\n/g, "<html:br>");
 }
@@ -2875,21 +2831,26 @@ AuthOnlyFsm.prototype.setFsm = function()
 TwoWayFsm.prototype.setFsm = function()
 {
 	this.fsm.transitions = {
-		start:                  { evCancel: 'final', evStart: 'stAuth',          evLackIntegrity: 'final'       },
-		stAuth:                 { evCancel: 'final', evNext:  'stLoad',          evLackIntegrity: 'final'       },
-		stLoad:                 { evCancel: 'final', evNext:  'stGetAccountInfo'                                },
-		stGetAccountInfo:       { evCancel: 'final', evNext:  'stCheckLicense'                                  },
-		stCheckLicense:         { evCancel: 'final', evNext:  'stSync'                                          },
-		stSync:                 { evCancel: 'final', evNext:  'stGetContact'                                    },
-		stGetContact:           { evCancel: 'final', evNext:  'stLoadTb',        evRepeat: 'stGetContact'       },// evNext: 'stSyncGal'
-		stSyncGal:              { evCancel: 'final', evNext:  'stSyncGalCommit'                                 },
-		stSyncGalCommit:        { evCancel: 'final', evNext:  'stLoadTb'                                        },
-		stLoadTb:               { evCancel: 'final', evNext:  'stSyncPrepare'                                   },
-		stSyncPrepare:          { evCancel: 'final', evNext:  'stUpdateTb'                                      },
-		stUpdateTb:             { evCancel: 'final', evNext:  'stUpdateZm'                                      },
-		stUpdateZm:             { evCancel: 'final', evNext:  'stUpdateCleanup', evRepeat: 'stUpdateZm'         },
-		stUpdateCleanup:        { evCancel: 'final', evNext:  'stCommit'                                        },
-		stCommit:               { evCancel: 'final', evNext:  'final'                                           }
+		start:            { evCancel: 'final', evStart: 'stAuth',                                           evLackIntegrity: 'final' },
+		stAuth:           { evCancel: 'final', evNext:  'stLoad',           evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final' },
+		stLoad:           { evCancel: 'final', evNext:  'stGetAccountInfo', evSoapRequest: 'stSoapRequest'                           },
+		stGetAccountInfo: { evCancel: 'final', evNext:  'stCheckLicense',   evSoapRequest: 'stSoapRequest'                           },
+		stCheckLicense:   { evCancel: 'final', evNext:  'stSync',           evSoapRequest: 'stSoapRequest'                           },
+		stSync:           { evCancel: 'final', evNext:  'stGetContact',     evSoapRequest: 'stSoapRequest'                           },
+		// TODO evNext: 'stSyncGal'
+		stGetContact:     { evCancel: 'final', evNext:  'stLoadTb',         evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContact' },
+		stSyncGal:        { evCancel: 'final', evNext:  'stSyncGalCommit',  evSoapRequest: 'stSoapRequest'                           },
+		stSyncGalCommit:  { evCancel: 'final', evNext:  'stLoadTb'                                                                   },
+		stLoadTb:         { evCancel: 'final', evNext:  'stSyncPrepare'                                                              },
+		stSyncPrepare:    { evCancel: 'final', evNext:  'stUpdateTb'                                                                 },
+		stUpdateTb:       { evCancel: 'final', evNext:  'stUpdateZm'                                                                 },
+		stUpdateZm:       { evCancel: 'final', evNext:  'stUpdateCleanup',  evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateZm'   },
+		stUpdateCleanup:  { evCancel: 'final', evNext:  'stCommit'                                                                   },
+
+		stSoapRequest:    { evCancel: 'final', evNext:  'stSoapResponse'                                                             },
+		stSoapResponse:   { evCancel: 'final', evNext:  'final' /* evNext here is set by setupSoapCall */                            },
+
+		stCommit:         { evCancel: 'final', evNext:  'final'                                                                      }
 	};
 
 	this.fsm.aActionEntry = {
@@ -2908,6 +2869,10 @@ TwoWayFsm.prototype.setFsm = function()
 		stUpdateZm:             this.entryActionUpdateZm,
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
 		stCommit:               this.entryActionCommit,
+
+		stSoapRequest:          this.entryActionSoapRequest,
+		stSoapResponse:         this.entryActionSoapResponse,
+
 		final:                  this.entryActionFinal
 	};
 
@@ -2915,9 +2880,11 @@ TwoWayFsm.prototype.setFsm = function()
 		stAuth:           this.exitActionAuth,
 		stGetAccountInfo: this.exitActionGetAccountInfo,
 		stCheckLicense:   this.exitActionCheckLicense,
-		stSync:           this.exitActionSync, stGetContact:     this.exitActionGetContact,
+		stSync:           this.exitActionSync,
+		stGetContact:     this.exitActionGetContact,
 		stSyncGal:        this.exitActionSyncGal,
-		stUpdateZm:       this.exitActionUpdateZm
+		stUpdateZm:       this.exitActionUpdateZm,
+		stSoapResponse:   this.exitActionSoapResponse
 	};
 }
 
@@ -2926,6 +2893,7 @@ function SyncFsmState(id_fsm)
 	this.id_fsm              = id_fsm;
 	this.m_logger            = newZinLogger("SyncFsm");
 	this.m_lack_integrity    = null;
+	this.m_soap_state        = new SoapState();
 	this.zfcLastSync         = new ZinFeedCollection(); // maintains state re: last sync (anchors, success/fail)
 	this.zfcGid              = new ZinFeedCollection(); // map of gid to (sourceid, luid)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)

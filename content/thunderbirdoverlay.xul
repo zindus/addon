@@ -32,10 +32,10 @@
 
 	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/thunderbirdoverlay.js" />
-	<!--
 	<script type="application/x-javascript" src="chrome://zindus/content/utils.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/syncfsm.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/thunderbirdoverlay.js" />
+	<!--
 	-->
 
 	<!--

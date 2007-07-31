@@ -51,13 +51,11 @@ ZinMaestro.DO_FSM_STATE_UPDATE   = "do_state_update";
 
 ZinMaestro.logger = newZinLogger("ZinMaestro");
 
-// There is a unique FSM_ID_* for each fsm so that functors can register to be notified about the state of specific fsm's
+// Each fsm has a unique FSM_ID_* so that functors can register to be notified of state change in specific fsm's
 //
 ZinMaestro.FSM_ID_TWOWAY   = "syncfsm-twoway";
 ZinMaestro.FSM_ID_AUTHONLY = "syncfsm-authonly";
-ZinMaestro.FSM_ID_SOAP     = "soapfsm";
-ZinMaestro.FSM_ID_RESET    = "reset";
-ZinMaestro.FSM_GROUP_SYNC  = newObject(ZinMaestro.FSM_ID_TWOWAY, 0, ZinMaestro.FSM_ID_AUTHONLY, 0, ZinMaestro.FSM_ID_RESET, 0);
+ZinMaestro.FSM_GROUP_SYNC  = newObject(ZinMaestro.FSM_ID_TWOWAY, 0, ZinMaestro.FSM_ID_AUTHONLY, 0);
 
 // ID_FUNCTOR_* uniquely identifies each functor
 //
@@ -65,7 +63,6 @@ ZinMaestro.ID_FUNCTOR_SYNCWINDOW         = "syncwindow";
 ZinMaestro.ID_FUNCTOR_PREFSDIALOG        = "prefsdialog";
 ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG  = "timer-prefsdialog";
 ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY      = "timer-overlay";
-ZinMaestro.ID_FUNCTOR_SYNCWINDOW_SOAPFSM = "syncwindow-soapfsm";
 
 ZinMaestro.prototype.toString = function()
 {

@@ -32,15 +32,14 @@ include("chrome://zindus/content/syncfsmobserver.js");
 
 function SyncWindow()
 {
-	this.m_syncfsm         = null;
-	this.timeoutID_syncfsm = null; // need to remember this in case the user cancels
-	this.timeoutID_soapfsm = null; // likewise
-	this.m_newstate        = null; // the cancel method needs to know whether to expect a continuation or not.
+	this.m_syncfsm   = null;
+	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
+	this.m_newstate  = null; // the cancel method needs to know whether to expect a continuation or not.
 								   // if newstate == 'start', there would have been a transition, otherwise not.
-	this.m_payload         = null; // we keep it around so that we can pass the results back
-	this.m_sfo             = new SyncFsmObserver();
+	this.m_payload   = null; // we keep it around so that we can pass the results back
+	this.m_sfo       = new SyncFsmObserver();
+	this.m_logger    = newZinLogger("SyncWindow");
 	this.m_has_observer_been_called = false;
-	this.m_logger          = newZinLogger("SyncWindow");
 }
 
 SyncWindow.prototype.onLoad = function()
@@ -51,7 +50,6 @@ SyncWindow.prototype.onLoad = function()
 	this.m_syncfsm = this.m_payload.m_syncfsm;
 
 	var listen_to = zinCloneObject(ZinMaestro.FSM_GROUP_SYNC);
-	listen_to[ZinMaestro.FSM_ID_SOAP] = 0;
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
 
 	this.m_logger.debug("onLoad: exiting");
@@ -75,7 +73,7 @@ SyncWindow.prototype.onCancel = function()
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
-	this.m_syncfsm.cancel(this.m_newstate, this.timeoutID_syncfsm, this.timeoutID_soapfsm);
+	this.m_syncfsm.cancel(this.m_newstate, this.m_timeoutID);
 
 	this.m_logger.debug("onCancel: exited");
 
@@ -86,9 +84,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	this.m_logger.debug("functor: 741: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
-	if (fsmstate && fsmstate.id_fsm == ZinMaestro.FSM_ID_SOAP)
-		this.timeoutID_soapfsm = fsmstate.timeoutID;
-	else if (!this.m_has_observer_been_called)
+	if (!this.m_has_observer_been_called)
 	{
 		// fsmstate should be null on first call to observer because the 'sync now' button should be disabled if the fsm is running
 		//
@@ -103,10 +99,10 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 	else 
 	{
-		this.timeoutID_syncfsm = fsmstate.timeoutID;
+		this.m_timeoutID = fsmstate.timeoutID;
 		this.m_newstate  = fsmstate.newstate;
 
-		this.m_logger.debug("functor: 744: " + " timeoutID: " + this.timeoutID_syncfsm);
+		this.m_logger.debug("functor: 744: " + " timeoutID: " + this.m_timeoutID);
 
 		var is_window_update_required = this.m_sfo.update(fsmstate);
 

@@ -201,20 +201,20 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				{
 					es.m_exit_status = 1;
 
-					switch (context.soapfsm.state.summaryCode())
+					switch (context.state.m_soap_state.summaryCode())
 					{
-						case SoapFsmState.POST_RESPONSE_FAIL_ON_SERVICE: es.m_fail_code = SyncFsmExitStatus.FailOnService; break;
-						case SoapFsmState.POST_RESPONSE_FAIL_ON_FAULT:   es.m_fail_code = SyncFsmExitStatus.FailOnFault;   break;
-						case SoapFsmState.CANCELLED:                     es.m_fail_code = SyncFsmExitStatus.FailOnCancel;  break;
-						default:                                         es.m_fail_code = SyncFsmExitStatus.FailOnUnknown; break;
+						case SoapState.POST_RESPONSE_FAIL_ON_SERVICE: es.m_fail_code = SyncFsmExitStatus.FailOnService; break;
+						case SoapState.POST_RESPONSE_FAIL_ON_FAULT:   es.m_fail_code = SyncFsmExitStatus.FailOnFault;   break;
+						case SoapState.CANCELLED:                     es.m_fail_code = SyncFsmExitStatus.FailOnCancel;  break;
+						default:                                      es.m_fail_code = SyncFsmExitStatus.FailOnUnknown; break;
 					}
 
 					if (es.m_fail_code == SyncFsmExitStatus.FailOnFault)
 					{
-						if (context.soapfsm.state.m_faultstring)
-							es.m_fail_detail = context.soapfsm.state.m_faultstring;
-						else if (context.soapfsm.state.m_faultcode)
-							es.m_fail_detail = context.soapfsm.state.m_faultcode;
+						if (context.state.m_soap_state.m_faultstring)
+							es.m_fail_detail = context.state.m_soap_state.m_faultstring;
+						else if (context.state.m_soap_state.m_faultcode)
+							es.m_fail_detail = context.state.m_soap_state.m_faultcode;
 					}
 				}
 
