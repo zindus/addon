@@ -123,6 +123,8 @@ function FunctorArrayOfTextNodeValue()
 
 FunctorArrayOfTextNodeValue.prototype.run = function(doc, node)
 {
+	gLogger.debug("77225: node.nodeType == " + node.nodeType + " node.childNodes.length: " + node.childNodes.length);
+
 	if (node.childNodes.length == 1 && node.childNodes.item(0).nodeType == Node.TEXT_NODE)
 		this.a.push(new String(node.childNodes.item(0).nodeValue));
 }

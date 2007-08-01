@@ -35,6 +35,7 @@ ZinXpath.nsOfMethod = {
 		Auth:           "za",
 		CheckLicense:   "za",
 		GetAccountInfo: "za",
+		GetInfo:        "za",
 		SyncGal:        "za",
 		GetContacts:    "zm",
 		Sync:           "zm",
@@ -53,7 +54,7 @@ ZinXpath.nsResolver = function(prefix)
 
 ZinXpath.setConditional = function(object, property, xpath_query, doc, warning_msg)
 {
-	zinAssert(xpath_query.indexOf("attribute::")); // this function is only intended for xpath queries that return a single attribute
+	zinAssert(xpath_query.indexOf("attribute::") > 0); // this function is only intended for xpath queries that return a single attribute
 
 	var node = ZinXpath.getSingleValue(xpath_query, doc, doc);
 

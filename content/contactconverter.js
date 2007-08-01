@@ -138,6 +138,14 @@ ZinContactConverter.prototype.setup = function()
 	this.m_address_line = new Object();
 	this.m_address_line[FORMAT_ZM] = { "homeStreet" :  0, "workStreet"   : 0 };
 	this.m_address_line[FORMAT_TB] = { "HomeAddress":  0, "HomeAddress2" : 0, "WorkAddress" : 0, "WorkAddress2" : 0 };
+
+	// don't generate warnings if unable to convert these attributes
+	// eg. the <cn> elements returned by SyncGal include ldap attributes
+	//
+	this.m_dont_convert = newObject("zimbraId",        0,
+	                                "objectClass",     0,
+	                                "createTimeStamp", 0,
+	                                "modifyTimeStamp", 0);
 }
 
 ZinContactConverter.prototype.convert = function(format_to, format_from, properties_from)
@@ -152,7 +160,9 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 
 	for (key_from in properties_from)
 	{
-		if (format_to == format_from)
+		if (isPropertyPresent(this.m_dont_convert, key_from))
+			; // do nothing
+		else if (format_to == format_from)
 			properties_to[key_from] = properties_from[key_from];
 		else
 		{
@@ -192,8 +202,8 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 
 // Here's what the address line conversion stuff does:
 // Thunderbird                             Zimbra
-// HomeAddress                       <==>  homeStreet new-line-separated line 1
-// HomeAddress2 comma-separated      <==>  homeStreet new-line-separated lines 2 onwards
+// HomeAddress                       <==>  homeStreet line 1
+// HomeAddress2 comma-separated      <==>  homeStreet lines 2 onwards
 // eg.
 // HomeAddress:  Unit 1, 123 Acme st       homeStreet: Unit 1, 123 Acme st
 // HomeAddress2: Melbourne, VIC, 3000                  Melbourne

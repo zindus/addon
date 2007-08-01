@@ -132,6 +132,13 @@ ZimbraSoapDocument.prototype.GetAccountInfo = function(name)
 	this.setElementAsBody(elRequest);
 }
 
+ZimbraSoapDocument.prototype.GetInfo = function()
+{
+	var elRequest = this.doc.createElementNS(ZimbraSoapDocument.NS_ACCOUNT, "GetInfoRequest");
+
+	this.setElementAsBody(elRequest);
+}
+
 ZimbraSoapDocument.prototype.CheckLicense = function()
 {
 	var elRequest = this.doc.createElementNS(ZimbraSoapDocument.NS_ACCOUNT, "CheckLicenseRequest");
