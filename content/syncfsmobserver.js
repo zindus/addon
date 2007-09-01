@@ -194,7 +194,9 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 					if (fsmstate.oldstate == 'start')
 						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityBadCredentials;
 					else if (fsmstate.oldstate == 'stLoad')
-						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityDataStore;
+						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityDataStoreIn;
+					else if (fsmstate.oldstate == 'stUpdateCleanup')
+						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityDataStoreOut; // this indicates a bug in our code
 					else
 						es.m_fail_code = SyncFsmExitStatus.FailOnUnknown;
 				}

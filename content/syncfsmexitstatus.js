@@ -32,8 +32,9 @@ SyncFsmExitStatus.FailOnService                 = 0; // some sort of service fai
 SyncFsmExitStatus.FailOnFault                   = 1; // recived a soap fault
 SyncFsmExitStatus.FailOnCancel                  = 2; // user cancelled
 SyncFsmExitStatus.FailOnIntegrityBadCredentials = 3; // something dodgy about url, username or password - dont proceed
-SyncFsmExitStatus.FailOnIntegrityDataStore      = 4; // something dodgy about url, username or password - dont proceed
-SyncFsmExitStatus.FailOnUnknown                 = 5; // this should never be!
+SyncFsmExitStatus.FailOnIntegrityDataStoreIn    = 4; // something dodgy about url, username or password - dont proceed
+SyncFsmExitStatus.FailOnIntegrityDataStoreOut   = 5; // something dodgy about url, username or password - dont proceed
+SyncFsmExitStatus.FailOnUnknown                 = 6; // this should never be!
 
 SyncFsmExitStatus.prototype.toString = function()
 {
@@ -60,7 +61,8 @@ SyncFsmExitStatus.failCodeAsString = function(code)
 		case SyncFsmExitStatus.FailOnFault:                   stringid += "FailOnFault";                   break;
 		case SyncFsmExitStatus.FailOnCancel:                  stringid += "FailOnCancel";                  break;
 		case SyncFsmExitStatus.FailOnIntegrityBadCredentials: stringid += "FailOnIntegrityBadCredentials"; break;
-		case SyncFsmExitStatus.FailOnIntegrityDataStore:      stringid += "FailOnIntegrityDataStore";      break;
+		case SyncFsmExitStatus.FailOnIntegrityDataStoreIn:    stringid += "FailOnIntegrityDataStoreIn";    break;
+		case SyncFsmExitStatus.FailOnIntegrityDataStoreOut:   stringid += "FailOnIntegrityDataStoreOut";   break;
 		case SyncFsmExitStatus.FailOnUnknown:                 stringid += "FailOnUnknown";                 break;
 		default: zinAssert(false);
 	}

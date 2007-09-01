@@ -65,7 +65,7 @@ SyncFsm.getFsm = function(context)
 		stSyncPrepare:    { evCancel: 'final', evNext:  'stUpdateTb'                                                                 },
 		stUpdateTb:       { evCancel: 'final', evNext:  'stUpdateZm'                                                                 },
 		stUpdateZm:       { evCancel: 'final', evNext:  'stUpdateCleanup',  evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateZm'   },
-		stUpdateCleanup:  { evCancel: 'final', evNext:  'stCommit'                                                                   },
+		stUpdateCleanup:  { evCancel: 'final', evNext:  'stCommit',                                         evLackIntegrity: 'final' },
 
 		stSoapRequest:    { evCancel: 'final', evNext:  'stSoapResponse'                                                             },
 		stSoapResponse:   { evCancel: 'final', evNext:  'final' /* evNext here is set by setupSoapCall */                            },
@@ -234,8 +234,10 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		a_zfc[i].load();
 	}
 
-	this.state.m_logger.debug("entryActionLoad: number of files we tried to load: " + aToLength(a_zfc) +
-	                                          " number of files we actually loaded: " + cExist);
+	this.state.aReverseGid = this.getGidInReverse(); // 3.  an associative array - a[sourceid][luid] = gid
+
+	this.state.m_logger.debug("entryActionLoad: number of file load attempts: " + aToLength(a_zfc) +
+	                                          " number of file load actual: " + cExist);
 
 	if (cExist == 0)
 	{
@@ -253,8 +255,22 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	else
 		nextEvent = 'evLackIntegrity';
 
+	this.state.m_logger.debug("entryActionLoad: nextEvent: " + nextEvent);
+
 	continuation(nextEvent);
 }
+
+// Here's what's tested:
+// - thunderbird source:
+//   - confirm that there are no ZinFeedItem.ATTR_DEL flags in thunderbird sources
+//     (there can only be a ZinFeedItem.ATTR_DEL flag in a zimbra source if there was a network or server failure)
+// - confirm that everything in a source map is in the gid - for zimbra this is qualified by isOfInterest()
+// - confirm that everything in the gid is in a source map
+// - confirm that no item in a map has the 'present' flag - this should have got deleted and isn't meant to be persisted
+//
+// Could also (but don't) test for:
+// - 'l'   attributes are correct
+// - 'ver' attributes make sense
 
 SyncFsm.prototype.isConsistentDataStore = function()
 {
@@ -262,12 +278,83 @@ SyncFsm.prototype.isConsistentDataStore = function()
 
 	ret = ret && this.isConsistentZfcAutoIncrement(this.state.zfcGid);
 	ret = ret && this.isConsistentZfcAutoIncrement(this.state.sources[this.state.sourceid_tb]['zfcLuid']);
+	ret = ret && this.isConsistentGid();
+	ret = ret && this.isConsistentSources();
 
-	// TODO - am here...
-	//      - the SyncFsm.prototype.isConsistentZfcAutoIncrement doesn't appear to work...
-	// also see the santity check code in entryActionUpdateCleanup
+	return ret;
+}
 
-	return true;
+SyncFsm.prototype.isConsistentGid = function()
+{
+	var is_consistent = true;
+	this.state.m_logger.debug("isConsistentGid: entering");
+	
+	// test that:
+	// - every (sourceid, luid) in the gid present in the corresponding source (tested by reference to aReverseGid)
+
+	bigloop:
+		for (var sourceid in this.state.aReverseGid)
+			for (var luid in this.state.aReverseGid[sourceid])
+				if (!isPropertyPresent(this.state.sources, sourceid) || !this.state.sources[sourceid]['zfcLuid'].isPresent(luid))
+				{
+					this.state.m_logger.debug("isConsistentGid: inconsistency: sourceid: " + sourceid + " luid: " + luid);
+					is_consistent = false;
+					break bigloop;
+				}
+
+	this.state.m_logger.debug("isConsistentGid: " + is_consistent);
+
+	return is_consistent;
+}
+
+SyncFsm.prototype.isConsistentSources = function()
+{
+	var sourceid;
+	var is_consistent = true;
+
+	var functor_foreach_luid = {
+		state: this.state,
+
+		run: function(zfi)
+		{
+			var luid = zfi.id();
+
+			if ( (this.state.sources[sourceid]['format'] == FORMAT_TB ||
+			    (this.state.sources[sourceid]['format'] == FORMAT_ZM && SyncFsm.isOfInterest(zfc, zfi.id()))) &&
+				!isPropertyPresent(this.state.aReverseGid[sourceid], luid) )
+				{
+					this.state.m_logger.debug("isConsistentSources: inconsistency vs gid: sourceid: " + sourceid + " luid: " + luid);
+					is_consistent = false;
+				}
+
+			// a zimbra source might have a ZinFeedItem.ATTR_DEL attribute because of a network or server failure
+			// only test thunderbird
+			//
+			if (is_consistent && this.state.sources[sourceid]['format'] == FORMAT_TB && zfi.isPresent(ZinFeedItem.ATTR_DEL))
+			{
+				this.state.m_logger.debug("isConsistentSources: inconsistency re: ATTR_DEL: sourceid: " + sourceid + " luid: " + luid);
+				is_consistent = false;
+			}
+
+			if (is_consistent && zfi.isPresent('present'))
+			{
+				this.state.m_logger.debug("isConsistentSources: inconsistency re: 'present': sourceid: " + sourceid + " luid: " + luid);
+				is_consistent = false;
+			}
+
+			return is_consistent;
+		}
+	};
+
+	for (sourceid in this.state.sources)
+	{
+		zfc = this.state.sources[sourceid]['zfcLuid'];
+		zfc.forEach(functor_foreach_luid, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
+	}
+
+	this.state.m_logger.debug("isConsistentSources: " + is_consistent);
+
+	return is_consistent;
 }
 
 SyncFsm.prototype.isConsistentZfcAutoIncrement = function(zfc)
@@ -324,25 +411,45 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
 }
 
-SyncFsm.prototype.zfcIsValid = function(fileprefix, zfc)
+// build a two dimensional associative array for reverse lookups - meaning given a sourceid and luid, find the gid.
+// For example: reverse.1.4 == 7 means that sourceid == 1, luid == 4, gid == 7
+// forward lookups are done via zfcGid: zfcGid.get(7).get(1) == 4
+//
+SyncFsm.prototype.getGidInReverse = function()
 {
-	ret = true;
+	var reverse = new Object();
 
-	// case SyncFsm.FILE_GID:
+	for (sourceid in this.state.sources)
+		reverse[sourceid] = new Object();
 
-	switch(fileprefix)
-	{
-		case SyncFsm.FILE_LASTSYNC:
-			for (var i in this.state.sources)
-				if (this.state.sources[i]['format'] == FORMAT_ZM && !zfc.isPresent(i))
-				{
-					ret = false;
-					break;
-				}
-			break;
-	}
+	var functor_each_gid_mapitem = {
+		state: this.state,
 
-	return ret;
+		run: function(sourceid, luid)
+		{
+			reverse[sourceid][luid] = this.gid;
+
+			return true;
+		}
+	};
+
+	var functor_foreach_gid = {
+		run: function(zfi)
+		{
+			var gid = zfi.id();
+
+			functor_each_gid_mapitem.gid = gid;
+			zfi.forEach(functor_each_gid_mapitem, ZinFeedItem.ITER_SOURCEID);
+
+			return true;
+		}
+	};
+
+	this.state.zfcGid.forEach(functor_foreach_gid, ZinFeedCollection.ITER_UNRESERVED);
+
+	this.state.m_logger.debug("1177 - getGidInReverse returns: " + aToString(reverse));
+
+	return reverse;
 }
 
 SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuation)
@@ -1180,48 +1287,6 @@ SyncFsm.prototype.updateTbLuidMap = function()
 	zfcLocal.forEach(functor_mark_deleted, ZinFeedCollection.ITER_UNRESERVED);
 }
 
-// build a two dimensional associative array for reverse lookups - meaning given a sourceid and luid, find the gid.
-// For example: reverse.1.4 == 7 means that sourceid == 1, luid == 4, gid == 7
-// forward lookups are done via zfcGid: zfcGid.get(7).get(1) == 4
-//
-SyncFsm.prototype.buildReverseGid = function()
-{
-	var reverse = this.state.aReverseGid; // bring it into the local namespace
-
-	var functor_each_gid_mapitem = {
-		state: this.state,
-
-		run: function(sourceid, luid)
-		{
-			if (isPropertyPresent(reverse, sourceid))
-				reverse[sourceid][luid] = this.gid;
-			else
-				this.state.m_logger.warn("gid == " + this.gid + " has an unknown sourceid: " + sourceid + " - ignored");
-
-			return true;
-		}
-	};
-
-	var functor_foreach_gid = {
-		run: function(zfi)
-		{
-			var gid = zfi.id();
-
-			functor_each_gid_mapitem.gid = gid;
-			zfi.forEach(functor_each_gid_mapitem, ZinFeedItem.ITER_SOURCEID);
-
-			return true;
-		}
-	};
-
-	for (sourceid in this.state.sources)
-		reverse[sourceid] = new Object();
-
-	this.state.zfcGid.forEach(functor_foreach_gid, ZinFeedCollection.ITER_UNRESERVED);
-
-	this.state.m_logger.debug("1177 - buildReverseGid initialises reverse: " + aToString(reverse));
-}
-
 SyncFsm.isOfInterest = function(zfc, id)
 {
 	zinAssert(arguments.length == 2 && zfc && id && id > 0 && zfc.isPresent(id));
@@ -1260,7 +1325,6 @@ SyncFsm.prototype.updateGidFromSources = function()
 		run: function(zfi)
 		{
 			var luid = zfi.id();
-			var l    = zfi.get('l');
 			var msg  = "1177 - building gid - sourceid: " + sourceid + " and luid: " + luid;
 
 			if (isPropertyPresent(reverse[sourceid], luid))
@@ -1673,7 +1737,6 @@ SyncFsm.prototype.entryActionSyncPrepare = function(state, event, continuation)
 {
 	var aSuoWinners;
 
-	this.buildReverseGid();                      // 3.  build this.state.aReverse from the gid
 	this.updateGidFromSources();                 // 4.  map all luids into a single namespace (the gid)
 	var aGcs = this.buildGcs();                  // 5.  reconcile the sources (via the gid) into a single truth (the sse output array) 
 	this.buildPreUpdateWinners(aGcs);            // 6.  save state of winners before they are updated (to distinguish an ms vs md update)
@@ -2468,16 +2531,12 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 
 	this.state.zfcGid.forEach(functor_foreach_gid, ZinFeedCollection.ITER_UNRESERVED);
 
-	// sanity check, iterate through all sources
-	// - confirm that there are no ZinFeedItem.ATTR_DEL flags in thunderbird sources
-	// - there can only be a ZinFeedItem.ATTR_DEL flag in a zimbra source if there was a network or server failure
-	// - confirm that everything in a source map is in the gid
-	// - confirm that no item in a map has the 'present' flag - this should have got deleted and isn't meant to be persisted
-	// - confirm that everything in the gid is in a source map
-	// - warn if anything in the tb source isn't in the source map which
-	//   could be because of an update parallel to sync or could indicate a problem
+	var nextEvent = 'evNext';
 
-	continuation('evNext');
+	if (!this.isConsistentDataStore()) // if this fails, it indicates a bug in our code...
+		nextEvent = 'evLackIntegrity';
+
+	continuation(nextEvent);
 }
 
 SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
@@ -2977,6 +3036,7 @@ function SyncFsmState(id_fsm)
 	this.sessionId           = null;
 	this.lifetime            = null;
 	this.soapURL             = null;         // see setCredentials() -  and may be modified by a <soapURL> response from GetAccountInfo
+	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
 	this.isZimbraFeatureGalEnabled = false;     // GetInfo ==> FALSE ==> don't do SyncGalRequest
 	this.mapiStatus          = null;         // CheckLicenseStatus
 	this.aSyncGalContact     = null;         // SyncGal
@@ -2987,7 +3047,6 @@ function SyncFsmState(id_fsm)
 	this.SyncMd              = null;         // this gives us the time on the server
 	this.SyncToken           = null;         
 	this.aQueue              = new Object(); // associative array of contact ids - ids added in SyncResponse, deleted in GetContactResponse
-	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
 	this.aSuo                = null;         // container for source update operations - populated in SyncPrepare
 	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
 

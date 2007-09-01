@@ -201,7 +201,8 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 }
 
 // Here's what the address line conversion stuff does:
-// Thunderbird                             Zimbra
+// Thunderbird field                       Zimbra field
+// =================                       ============
 // HomeAddress                       <==>  homeStreet line 1
 // HomeAddress2 comma-separated      <==>  homeStreet lines 2 onwards
 // eg.
