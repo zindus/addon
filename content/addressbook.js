@@ -22,6 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/contactconverter.js");
+include("chrome://zindus/content/crc32.js");
 
 function ZimbraAddressBook()
 {
@@ -93,6 +94,19 @@ ZimbraAddressBook.forEachCard = function(uri, functor)
 
 		try { enm.next(); } catch(ex) { fContinue = false; }
 	}
+}
+
+ZimbraAddressBook.crc32 = function(properties)
+{
+	var str = "";
+
+	for (var i in properties)
+	{
+		if (properties[i].length > 0)
+			str += i + ":" + properties[i];
+	}
+
+	return crc32(str);
 }
 
 ZimbraAddressBook.contactPropertyChecksum = function(properties)
@@ -272,6 +286,8 @@ ZimbraAddressBook.getCardAttributes = function(abCard)
 
 ZimbraAddressBook.lookupCard = function(uri, key, value)
 {
+	zinAssert(uri && key && value);
+
 	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	var abCard = ZimbraAddressBook.instanceAbook().getAbDatabaseFromURI(uri).getCardFromAttribute(dir, key, value, false);

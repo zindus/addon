@@ -43,10 +43,10 @@ PrefSet.SERVER_USERNAME          = "username";
 PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME ];
 
 PrefSet.GENERAL                  = "general";
-PrefSet.GENERAL_MAP_PAB          = "mappab";
+PrefSet.GENERAL_PAB_AND_CONTACTS = "pabandcontacts";
 PrefSet.GENERAL_MANUAL_SYNC_ONLY = "manualsynconly";
 PrefSet.GENERAL_VERBOSE_LOGGING  = "verboselogging";
-PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MAP_PAB, PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING ];
+PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_PAB_AND_CONTACTS, PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING ];
 
 // Both id and branch are optional
 // id is option because there might only be a single subsection under prefprefix

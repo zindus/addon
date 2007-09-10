@@ -31,6 +31,8 @@ const ZIMBRA_ID_TRASH = 3;               // see: ZimbraServer/src/java/com/zimbr
 const TBCARD_ATTRIBUTE_LUID     = "zid"; // user-defined attributes associated with thunderbird cards
 const TBCARD_ATTRIBUTE_CHECKSUM = "zcs";
 
+const TB_PAB = "Personal Address Book";
+
 const LOGFILE_NAME = "logfile.txt";
 
 const FORMAT_TB = 0;

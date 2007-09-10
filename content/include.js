@@ -32,6 +32,8 @@ function include(url)
 	{
 		var is_exception = false;
 
+		// ret = loader.loadSubScript(url);
+
 		try {
 			ret = loader.loadSubScript(url);
 		}
@@ -45,6 +47,7 @@ function include(url)
 				print(ex.message + " stack: \n" + ex.stack);
 		}
 
+		if (false)
 		if (is_exception) // this is the code from Assert()
 			try
 			{

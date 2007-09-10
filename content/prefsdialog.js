@@ -42,9 +42,9 @@ function Prefs()
 	this.m_prefset_general     = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
 	this.m_checkbox_properties = PrefSet.GENERAL_PROPERTIES;
-	this.m_checkbox_ids        = [ "zindus-prefs-general-map-PAB",
-	                             "zindus-prefs-general-manual-sync-only",
-								 "zindus-prefs-general-verbose-logging"  ];
+	this.m_checkbox_ids        = [ "zindus-prefs-general-pab-and-contacts",
+	                               "zindus-prefs-general-manual-sync-only",
+								   "zindus-prefs-general-verbose-logging"  ];
 	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
 	this.m_is_fsm_running      = false;
@@ -319,10 +319,10 @@ Prefs.prototype.reset = function()
 		file.remove(false);
 
 	// remove the addressbooks created by the extension
-	//
-	var aAddressBook = SyncFsm.getTbAddressbooks();
+	// commented this out now that we've implemented slow sync
+	// var aAddressBook = SyncFsm.getTbAddressbooks();
 
-	for each (abName in aAddressBook)
-		ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
+	// for each (abName in aAddressBook)
+	// 	ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
 }
 

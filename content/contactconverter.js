@@ -26,6 +26,10 @@ function ZinContactConverter()
 	this.m_equivalents = null; // an array of objects where each object is an n-tuplet of pairs of (format, contact property)
 	this.m_map         = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
 
+    this.m_bimap_folder_name = new BiMap(
+			[FORMAT_TB, FORMAT_ZM  ],
+			[TB_PAB,    'Contacts' ])
+
 	this.m_logger = newZinLogger("ContactConverter");
 
 	this.setup();
@@ -310,4 +314,18 @@ ZinContactConverter.prototype.lineFromNewlineSeparated = function(properties_fro
 		else
 			a_normalised_line[type][i] = a[i].replace(/,/, " "); // can't allow commas in line 2 and onwards
 	}
+}
+
+ZinContactConverter.prototype.convertFolderName = function(name, format_from, format_to)
+{
+	var ret;
+
+	if (this.m_bimap_folder_name.lookup(format_from, null) == name)
+		ret = this.m_bimap_folder_name.lookup(format_to, null);
+	else
+		ret = name;
+
+	this.m_logger.debug("convertFolderName: blah: name: " + name + " returns: " + ret);
+
+	return ret;
 }

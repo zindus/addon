@@ -107,7 +107,7 @@
 				<groupbox pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupSettings.label;"/>
 					<vbox align="left" >
-					<checkbox id="zindus-prefs-general-map-PAB"          label="&ZinPrefsGeneralMapPAB.label;"         checked="true" />
+					<checkbox id="zindus-prefs-general-pab-and-contacts" label="&ZinPrefsGeneralPabAndContacts.label;" checked="true" />
 					</vbox>
 				</groupbox>
 				<spacer style="height:30px;" flex="5"/> 
