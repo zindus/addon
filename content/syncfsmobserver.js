@@ -138,6 +138,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 					{
 						// this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP));
 						this.progressReportOnSource(context.state.sourceid_zm, "GetItem", aToLength(context.state.aQueue));
+						this.set(SyncFsmObserver.PROG_CNT, 0);
 					}
 
 					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
@@ -170,6 +171,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 											cTotal++;
 
 						this.progressReportOnSource(sourceid, "Put", cTotal);
+						this.set(SyncFsmObserver.PROG_CNT, 0);
 
 						this.m_logger.debug("4401: this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP) + " cTotal: " + cTotal);
 					}

@@ -1324,13 +1324,11 @@ SyncFsm.isOfInterest = function(zfc, id)
 	switch (zfi.type())
 	{
 		case ZinFeedItem.TYPE_FL:
-			ret = l == '1' && zfi.get('id') != ZIMBRA_ID_TRASH;
+			ret = (l == 1) && zfi.get('id') != ZIMBRA_ID_TRASH;
 			break;
 		case ZinFeedItem.TYPE_CN:
-			if (l == 1)
-				ret = false; // not sure how a contact could end up at the very top level but maybe it's possible!
-			else
-				ret = SyncFsm.isOfInterest(zfc, l);
+			// not sure how a contact could end up at the very top level but maybe it's possible!
+			ret = (l == 1) ? false : SyncFsm.isOfInterest(zfc, l);
 			break;
 		default:
 			zinAssert(false);
