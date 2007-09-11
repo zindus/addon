@@ -1443,9 +1443,6 @@ SyncFsm.prototype.updateGidFromSources = function()
 					var name_parent = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB,
 					                                                                   zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
 
-					// TODO - am here - twinning for contacts isn't working even though the checksums are correct
-					//
-
 					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
 
 					this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: key: " + key);
