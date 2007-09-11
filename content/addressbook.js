@@ -300,10 +300,10 @@ ZimbraAddressBook.nsIAbCardToPrintable = function(abCard)
 	return (abCard.isMailList ? abCard.mailListURI : abCard.getCardValue("PrimaryEmail"));
 }
 
-ZimbraAddressBook.nsIAbMDBCardToKey = function(uri, mdbCard)
+ZimbraAddressBook.nsIAbMDBCardToKey = function(mdbCard)
 {
-	zinAssert(typeof(uri) == 'string' && typeof(mdbCard) == 'object' && uri != null && mdbCard != null);
+	zinAssert(typeof(mdbCard) == 'object' && mdbCard != null);
 
-	return uri + "-" + mdbCard.dbTableID + "-" + mdbCard.dbRowID + "-" + mdbCard.key;
+	return hyphenate('-', mdbCard.dbTableID, mdbCard.dbRowID, mdbCard.key);
 }
 

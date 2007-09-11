@@ -1067,9 +1067,9 @@ SyncFsm.prototype.updateTbLuidMap = function()
 	var functor_foreach_card, functor_foreach_addressbook;
 	var uri;
 	var sourceid = this.state.sourceid_tb;
-	var zfcLocal = this.state.sources[sourceid]['zfcLuid'];
+	var zfcTb = this.state.sources[sourceid]['zfcLuid'];
 
-	var bimapFolderLuid = ZinFeed.getTopLevelFolderLuidBimap(zfcLocal, ZinFeedItem.ATTR_TPI, ZinFeedCollection.ITER_UNRESERVED);
+	var bimapFolderLuid = ZinFeed.getTopLevelFolderLuidBimap(zfcTb, ZinFeedItem.ATTR_TPI, ZinFeedCollection.ITER_UNRESERVED);
 
 	this.state.m_logger.debug("updateTbLuidMap: bimapFolderLuid == " + bimapFolderLuid.toString());
 
@@ -1114,13 +1114,13 @@ SyncFsm.prototype.updateTbLuidMap = function()
 
 				if (!bimapFolderLuid.isPresent(null, elem.dirPrefId))
 				{
-					id = ZinFeed.autoIncrement(zfcLocal.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
+					id = ZinFeed.autoIncrement(zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
 
-					zfcLocal.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_ID, id , 'l', 1, ZinFeedItem.ATTR_NAME, name,
+					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_ID, id , 'l', 1, ZinFeedItem.ATTR_NAME, name,
 					    ZinFeedItem.ATTR_MS, 1,
 						ZinFeedItem.ATTR_TPI, elem.dirPrefId));
 					
-					msg = "added to the map: " + msg + " : " + zfcLocal.get(id).toString();
+					msg = "added to the map: " + msg + " : " + zfcTb.get(id).toString();
 				}
 				else
 				{
@@ -1129,7 +1129,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 					// the mozilla addressbook hasn't implemented elem.lastModifiedDate (for folders)
 					// so we do our own change detection
 
-					var zfi = zfcLocal.get(id);
+					var zfi = zfcTb.get(id);
 
 					if (zfi.get(ZinFeedItem.ATTR_NAME) != name)
 					{
@@ -1141,7 +1141,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 				}
 
 				aUri[elem.directoryProperties.URI] = id;
-				zfcLocal.get(id).set('present', '1');  // this drives deletion detection
+				zfcTb.get(id).set('present', '1');  // this drives deletion detection
 
 				msg += " - elem.directoryProperties." +
 				       " URI: "      + elem.directoryProperties.URI +
@@ -1203,7 +1203,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 		{
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
 
-			aCardKeysToExclude[ZimbraAddressBook.nsIAbMDBCardToKey(uri, mdbCard)] = true;
+			aCardKeysToExclude[ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard)] = true;
 
 			return true;
 		}
@@ -1214,6 +1214,8 @@ SyncFsm.prototype.updateTbLuidMap = function()
 
 	this.state.m_logger.debug("1177 - pass 2 - aCardKeysToExclude == " + aToString(aCardKeysToExclude));
 
+	// pass 3 - iterate through the cards in the zindus folders excluding mailing list uris and cards with keys in aCardKeysToExclude
+	//
 	functor_foreach_card = {
 		state: this.state,
 
@@ -1221,27 +1223,30 @@ SyncFsm.prototype.updateTbLuidMap = function()
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-			var msg = "1177 - pass 3 - card key: " + ZimbraAddressBook.nsIAbMDBCardToKey(uri, mdbCard);
+			var msg = "1177 - pass 3 - card key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard);
 
-			if ( !abCard.isMailList && !isPropertyPresent(aCardKeysToExclude, ZimbraAddressBook.nsIAbMDBCardToKey(uri, mdbCard)))
+			// this.state.m_logger.debug("1177 - pass 3: blah: " +
+			//                           " key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard) +
+			//                           " card: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) +
+			//                           " abCard.isMailList: " + abCard.isMailList );
+
+			if ( !abCard.isMailList && !isPropertyPresent(aCardKeysToExclude, ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard)))
 			{
 				var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 
 				if (! (id > ZinFeedItem.ID_MAX_RESERVED)) // id might be null (not present) or zero (reset after the map was deleted)
 				{
-					id = ZinFeed.autoIncrement(zfcLocal.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
-
-					// aUri[uri] is the id of the enclosing folder
+					id = ZinFeed.autoIncrement(zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
 
 					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, id);
 
-					zfcLocal.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id , ZinFeedItem.ATTR_MD, abCard.lastModifiedDate, ZinFeedItem.ATTR_REV, 1, 'l', aUri[uri]));
+					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id , ZinFeedItem.ATTR_MD, abCard.lastModifiedDate, ZinFeedItem.ATTR_REV, 1, 'l', aUri[uri]));
 
-					msg += " added:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfcLocal.get(id).toString();
+					msg += " added:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfcTb.get(id).toString();
 				}
 				else
 				{
-					var zfi = zfcLocal.get(id);
+					var zfi = zfcTb.get(id);
 
 					// if things have changed, update the map...
 					//
@@ -1264,7 +1269,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 						msg += " found:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
 				}
 
-				zfcLocal.get(id).set('present', '1');
+				zfcTb.get(id).set('present', '1');
 			}
 			else
 				msg += " - ignored";
@@ -1305,7 +1310,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 		}
 	};
 
-	zfcLocal.forEach(functor_mark_deleted, ZinFeedCollection.ITER_UNRESERVED);
+	zfcTb.forEach(functor_mark_deleted, ZinFeedCollection.ITER_UNRESERVED);
 }
 
 SyncFsm.isOfInterest = function(zfc, id)
