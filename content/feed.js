@@ -41,6 +41,7 @@ ZinFeedItem.ATTR_DEL  = 'del';
 ZinFeedItem.ATTR_ID   = 'id';
 ZinFeedItem.ATTR_TPI  = 'tpi';  // thunderbird pref id - see http://www.xulplanet.com/references/xpcomref/ifaces/nsIAbDirectory.html
 ZinFeedItem.ATTR_TYPE = 'type';
+ZinFeedItem.ATTR_NAME = 'name';
 ZinFeedItem.ATTR_CS   = 'cs';   // checksum - not persisted
 
 ZinFeedItem.TYPE_FL   = 0x01; // folder
@@ -68,14 +69,12 @@ ZinFeedCollection.prototype.filename = function()
 
 ZinFeedCollection.prototype.nsifile = function()
 {
-	dump("am here 21\n");
 	zinAssert(this.m_filename);
 
 	var ret = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
 
 	ret.append(this.m_filename);
 
-	dump("am here 23\n");
 	return ret;
 }
 

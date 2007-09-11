@@ -31,12 +31,53 @@ function ZinTestHarness()
 
 ZinTestHarness.prototype.run = function()
 {
-	this.testLogging();
+	this.testCrc32();
+	// this.testLookupCard();
+	// this.testLogging();
 	// this.testZinFeedCollection();
 	// this.testFilesystem();
 	// this.testContactConverter();
+	// this.testContactConverterForFolderNames();
 	// this.testPropertyDelete();
 	// this.testLso();
+}
+
+ZinTestHarness.prototype.testCrc32 = function()
+{
+	if (0)
+	{
+	var o = newObject("LastName", "02-last", "FirstName", "01-first-3", "PrimaryEmail", "08-email-1@moniker.net");
+	var a = new Array();
+
+	for (var i in o)
+		a[ZinContactConverter.instance().m_map[FORMAT_TB][i]] = o[i];
+
+	this.m_logger.debug("testCrc32: a: " + a.toString());
+	}
+
+	var left  = newObject("FirstName", "01-first-3", "LastName", "02-last", "PrimaryEmail", "08-email-1@moniker.net");
+	var right = newObject("LastName", "02-last", "PrimaryEmail", "08-email-1@moniker.net" , "FirstName", "01-first-3");
+
+	var crcLeft  = ZimbraAddressBook.crc32(left);
+	var crcRight = ZimbraAddressBook.crc32(right);
+
+	zinAssert(crcLeft == crcLeft);
+}
+
+ZinTestHarness.prototype.testLookupCard = function()
+{
+	var uri    = "moz-abmdbdirectory://abook.mab";
+	var luid   = 258;
+	var abCard = ZimbraAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
+
+	this.m_logger.debug("testLookupCard: abCard: "                   + (abCard ? "non-null" : "null"));
+
+	if (abCard)
+	{
+	this.m_logger.debug("testLookupCard: abCard: "                   + ZimbraAddressBook.nsIAbCardToPrintable(abCard));
+	this.m_logger.debug("testLookupCard: abCard: isANormalCard: "    + abCard.isANormalCard);
+	this.m_logger.debug("testLookupCard: abCard: isAnEmailAddress: " + abCard.isAnEmailAddress);
+	}
 }
 
 ZinTestHarness.prototype.testZinFeedCollection = function()
@@ -77,6 +118,29 @@ ZinTestHarness.prototype.testContactConverter = function()
 	var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, element);
 
 	this.m_logger.debug("3233: testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
+}
+
+ZinTestHarness.prototype.testContactConverterForFolderNames = function()
+{
+	var name, format_from, format_to;
+
+	var prefix = APP_NAME + "/";
+
+	this.m_logger.debug("testContactConverterForFolderNames: start");
+
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, "")            == prefix);
+
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_ZM, "fred")        == "fred");
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, "fred")        == prefix + "fred");
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, "zindus/fred") == "fred");
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_TB, "zindus/fred") == "zindus/fred");
+
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, TB_PAB)        == "Contacts");
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_TB, TB_PAB)        == TB_PAB);
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_ZM, "Contacts")    == "Contacts");
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, "Contacts")    == TB_PAB);
+
+	this.m_logger.debug("testContactConverterForFolderNames: finish");
 }
 
 ZinTestHarness.prototype.testPropertyDelete = function()

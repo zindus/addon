@@ -98,15 +98,15 @@ ZimbraAddressBook.forEachCard = function(uri, functor)
 
 ZimbraAddressBook.crc32 = function(properties)
 {
-	var str = "";
+	var ret = 0;
 
 	for (var i in properties)
-	{
 		if (properties[i].length > 0)
-			str += i + ":" + properties[i];
-	}
+			ret |= crc32(i + ":" + properties[i]);
 
-	return crc32(str);
+	// newZinLogger("ZimbraAddressBook").debug("crc32: crc: " + ret);
+
+	return ret;
 }
 
 ZimbraAddressBook.contactPropertyChecksum = function(properties)

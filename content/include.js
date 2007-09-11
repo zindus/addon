@@ -32,7 +32,7 @@ function include(url)
 	{
 		var is_exception = false;
 
-		// ret = loader.loadSubScript(url);
+		ret = loader.loadSubScript(url);
 
 		try {
 			ret = loader.loadSubScript(url);

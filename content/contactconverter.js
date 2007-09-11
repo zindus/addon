@@ -30,6 +30,8 @@ function ZinContactConverter()
 			[FORMAT_TB, FORMAT_ZM  ],
 			[TB_PAB,    'Contacts' ])
 
+	this.m_app_name_with_slash = APP_NAME + "/";
+
 	this.m_logger = newZinLogger("ContactConverter");
 
 	this.setup();
@@ -265,7 +267,7 @@ ZinContactConverter.prototype.normaliseAddressLine = function(format_to, format_
 {
 	var i;
 
-	this.m_logger.debug("normaliseAddressLine: format_to: " + format_to + " format_from: " + format_from + " key_from: " + key_from);
+	// this.m_logger.debug("normaliseAddressLine: format_to: " + format_to + " format_from: " + format_from + " key_from: " + key_from);
 
 	switch(format_from)
 	{
@@ -287,8 +289,8 @@ ZinContactConverter.prototype.normaliseAddressLine = function(format_to, format_
 		default: zinAssert(false);
 	}
 
-	this.m_logger.debug("normaliseAddressLine: a_normalised_line[home]: " + a_normalised_line["home"].toString());
-	this.m_logger.debug("normaliseAddressLine: a_normalised_line[work]: " + a_normalised_line["work"].toString());
+	// this.m_logger.debug("normaliseAddressLine: a_normalised_line[home]: " + a_normalised_line["home"].toString());
+	// this.m_logger.debug("normaliseAddressLine: a_normalised_line[work]: " + a_normalised_line["work"].toString());
 }
 
 ZinContactConverter.prototype.lineTwoFromCommaSeparated = function(properties_from, key_from, a_normalised_line, type)
@@ -305,7 +307,7 @@ ZinContactConverter.prototype.lineFromNewlineSeparated = function(properties_fro
 {
 	var a = properties_from[key_from].split("\n");
 
-	this.m_logger.debug("lineFromNewlineSeparated: type: " + type + " a: " + a.toString());
+	// this.m_logger.debug("lineFromNewlineSeparated: type: " + type + " a: " + a.toString());
 
 	for (var i = 0; i < a.length; i++)
 	{
@@ -316,16 +318,26 @@ ZinContactConverter.prototype.lineFromNewlineSeparated = function(properties_fro
 	}
 }
 
-ZinContactConverter.prototype.convertFolderName = function(name, format_from, format_to)
+ZinContactConverter.prototype.convertFolderName = function(format_from, format_to, name)
 {
 	var ret;
 
 	if (this.m_bimap_folder_name.lookup(format_from, null) == name)
 		ret = this.m_bimap_folder_name.lookup(format_to, null);
-	else
+	else if (format_from == format_to)
 		ret = name;
+	else if (format_to == FORMAT_TB)
+		ret = this.m_app_name_with_slash + name;
+	else
+	{
+		zinAssert(name.substring(0, this.m_app_name_with_slash.length) == this.m_app_name_with_slash);
+		ret = name.substring(this.m_app_name_with_slash.length)
+	}
 
-	this.m_logger.debug("convertFolderName: blah: name: " + name + " returns: " + ret);
+	// this.m_logger.debug("convertFolderName: name: " + name +
+	//                     " from: " + this.m_bimap_format.lookup(format_from, null) + 
+	//                     " to: " + this.m_bimap_format.lookup(format_to, null) + 
+	//                     " returns: " + ret);
 
 	return ret;
 }

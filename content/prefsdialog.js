@@ -319,10 +319,13 @@ Prefs.prototype.reset = function()
 		file.remove(false);
 
 	// remove the addressbooks created by the extension
-	// commented this out now that we've implemented slow sync
-	// var aAddressBook = SyncFsm.getTbAddressbooks();
+	// TODO remove once we've implemented slow sync
+	if (0)
+	{
+	var aAddressBook = SyncFsm.getTbAddressbooks();
 
-	// for each (abName in aAddressBook)
-	// 	ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
+	for each (abName in aAddressBook)
+	 	ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
+	}
 }
 
