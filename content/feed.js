@@ -85,6 +85,7 @@ ZinFeedCollection.prototype.length = function()
 
 ZinFeedCollection.prototype.get = function(id)
 {
+	zinAssert(typeof(id) != 'undefined' && typeof(id) != 'object');
 	return (this.isPresent(id) ? this.m_collection[id] : null);
 }
 

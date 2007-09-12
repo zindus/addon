@@ -173,7 +173,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 						this.progressReportOnSource(sourceid, "Put", cTotal);
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 
-						this.m_logger.debug("4401: this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP) + " cTotal: " + cTotal);
+						// this.m_logger.debug("4401: this.get(SyncFsmObserver.OP): "+this.get(SyncFsmObserver.OP) + " cTotal: " + cTotal);
 					}
 
 					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);

@@ -103,15 +103,8 @@
 				<description xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
 					&ZinPrefsGeneralIntroduction.value;
 				</description>
-				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
-				<groupbox pack="center" >
-				    <caption label="&ZinPrefsGeneralGroupSettings.label;"/>
-					<vbox align="left" >
-					<checkbox id="zindus-prefs-general-pab-and-contacts" label="&ZinPrefsGeneralPabAndContacts.label;" checked="true" />
-					</vbox>
-				</groupbox>
-				<spacer style="height:30px;" flex="5"/> 
-				<groupbox id="zindus-prefs-general-group-advanced-settings" pack="center" hidden="true" >
+				<spacer style="height:30px;" flex="1"/> 
+				<groupbox id="zindus-prefs-general-group-advanced-settings" pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupAdvanced.label;"/>
 					<vbox align="left" >
 					<checkbox id="zindus-prefs-general-manual-sync-only" label="&ZinPrefsGeneralManualSyncOnly.label;" checked="false" />

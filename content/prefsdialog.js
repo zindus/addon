@@ -34,7 +34,7 @@ include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/timer.js");
 
-var is_developer_mode = true; // true ==> expose buttons in the UI
+var is_developer_mode = false; // true ==> expose buttons in the UI
 
 function Prefs()
 {
@@ -42,8 +42,7 @@ function Prefs()
 	this.m_prefset_general     = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
 	this.m_checkbox_properties = PrefSet.GENERAL_PROPERTIES;
-	this.m_checkbox_ids        = [ "zindus-prefs-general-pab-and-contacts",
-	                               "zindus-prefs-general-manual-sync-only",
+	this.m_checkbox_ids        = [ "zindus-prefs-general-manual-sync-only",
 								   "zindus-prefs-general-verbose-logging"  ];
 	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
@@ -196,7 +195,8 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-reset":
-			this.reset();
+			SyncFsm.removeZfcs();
+			SyncFsm.removeLogfile();
 			break;
 
 		case "zindus-prefs-tab-general":
@@ -286,46 +286,3 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.updateView();
 		}
 }
-
-Prefs.prototype.reset = function()
-{
-	// One might imagine that the fsm timer might run during this but it can't because the code below doesn't release control
-
-	this.m_logger.debug("reset: ");
-
-	var file;
-	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
-
-	// remove files in the data directory
-	//
-	if (directory.exists() && directory.isDirectory())
-	{
-		var iter = directory.directoryEntries;
- 
-		while (iter.hasMoreElements())
-		{
-			file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
-
-			file.remove(false);
-		}
-	}
-
-	// remove the logfile
-	//
-	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
-	file.append(LOGFILE_NAME);
-
-	if (file.exists() && !file.isDirectory())
-		file.remove(false);
-
-	// remove the addressbooks created by the extension
-	// TODO remove once we've implemented slow sync
-	if (0)
-	{
-	var aAddressBook = SyncFsm.getTbAddressbooks();
-
-	for each (abName in aAddressBook)
-	 	ZimbraAddressBook.deleteAddressBook(ZimbraAddressBook.getAddressBookUri(abName));
-	}
-}
-
