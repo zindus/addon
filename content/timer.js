@@ -63,7 +63,7 @@ function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
 	zinAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
 
 	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
-	this.m_sfo               = new SyncFsmProgressObserver();
+	this.m_sfo               = new SyncFsmObserver();
 	this.m_messengerWindow   = null;
 	this.m_addressbookWindow = null;
 	this.m_id_fsm_functor    = id_fsm_functor;
@@ -116,7 +116,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var state = new TwoWayFsmState();
 			state.setCredentials();
 
-			newZinLogger().info("sync start:  " + getDateUTCString());
+			newZinLogger().info("sync start:  " + getUTCAndLocalTime());
 			var syncfsm = new TwoWayFsm(state);
 			syncfsm.start();
 		}
@@ -137,14 +137,14 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				var el_statuspanel_progress_meter = this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-meter");
 				var el_statuspanel_progress_label = this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-label");
 
-				el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmProgressObserver.PERCENTAGE_COMPLETE) );
+				el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 				el_statuspanel_progress_label.setAttribute('value', this.m_sfo.progressToString());
 			}
 		}
 
 		if (fsmstate.isFinal())
 		{
-			// TODO - display the exit status 
+			// TODO - display the exit status - and fix the code below
 			// one option: put something in the status panel and set a timer that eventually hides the status panel
 
 			// if messengerWindow disappeared while we were syncing, string bundles wont be available, so we try/catch...
@@ -155,7 +155,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				var msg = "";
 
 				if (exitStatus.m_exit_status == 0)
-					msg += stringBundleString("statusLastSync") + ": " + getDateUTCString();
+					msg += stringBundleString("statusLastSync") + ": " + getUTCAndLocalTime();
 				else
 					msg += stringBundleString("statusLastSyncFailed");
 			} catch (ex)
@@ -169,7 +169,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				this.m_messengerWindow.document.getElementById('zindus-statuspanel').setAttribute('hidden', true);
 			}
 
-			newZinLogger().info("sync finish: " + getDateUTCString());
+			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 
 			this.setNextTimer(this.m_delay_on_repeat);
 		}

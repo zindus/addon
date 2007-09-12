@@ -34,7 +34,7 @@ include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/timer.js");
 
-var is_developer_mode = false; // true ==> expose buttons in the UI
+var is_developer_mode = true; // true ==> expose buttons in the UI
 
 function Prefs()
 {

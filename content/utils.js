@@ -263,9 +263,12 @@ function getTime()
 	return now.getTime();
 }
 
-function getDateUTCString()
+// function getDateUTCString()
+function getUTCAndLocalTime()
 {
-	return new Date().toUTCString();
+	var date = new Date();
+
+	return date.toUTCString() + " (local time: " + date.toLocaleString() + " )";
 }
 
 function hyphenate()

@@ -34,7 +34,7 @@ function onLoad(event)
 
 	try
 	{
-		newZinLogger().info("startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getDateUTCString());
+		newZinLogger().info("startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
 
 		// We dont want to do this each time a new window is opened
 		var messengerWindow = document.getElementById("messengerWindow");

@@ -92,7 +92,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
-		newZinLogger().info("sync start:  " + getDateUTCString());
+		newZinLogger().info("sync start:  " + getUTCAndLocalTime());
 		this.m_syncfsm.start();
 	}
 	else 
@@ -115,7 +115,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			this.m_payload.m_result = this.m_sfo.exitStatus();
 
-			newZinLogger().info("sync finish: " + getDateUTCString());
+			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 
 			document.getElementById('zindus-syncwindow').acceptDialog();
 		}
