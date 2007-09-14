@@ -228,7 +228,8 @@ ZinFeedItem.prototype.get = function(key)
 {
 	if (!this.isPresent(key))
 	{
-		newZinLogger("ZinFeedItem").error("get: key not present: " + key);
+		newZinLogger("ZinFeedItem").error("get: key not present: " + key +
+		             " id: " + (isPropertyPresent(this.m_properties, "id") ? this.id() : "undefined") );
 		zinAssert(false);
 	}
 

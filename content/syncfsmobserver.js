@@ -103,8 +103,9 @@ SyncFsmObserver.prototype.progressToString = function()
 SyncFsmObserver.prototype.update = function(fsmstate)
 {
 	var ret = false;
-	var a_states_of_interest = { stAuth : 0,       stLoad: 1,     stSync: 2,     stGetContact: 3,    stSyncGal: 4, stLoadTb : 5, 
-	                             stSyncPrepare: 6, stUpdateTb: 7, stUpdateZm: 8, stUpdateCleanup: 9, final: 10 };
+	var a_states_of_interest = { stAuth : 0,      stLoad: 1,     stSync: 2,           stSyncResult: 2,
+	                             stGetContact: 3, stSyncGal: 4,  stLoadTb : 5,        stSyncPrepare: 6,
+								 stUpdateTb: 7,   stUpdateZm: 8, stUpdateCleanup: 9,  final: 10 };
 
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
@@ -118,7 +119,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		{
 			case 'stAuth':          this.progressReportOnSource(context.state.sourceid_zm, "RemoteAuth"); break;
 			case 'stLoad':          this.progressReportOn("Load");                                        break;
-			case 'stSync':          this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
+			case 'stSync':          
+			case 'stSyncResult':    this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
 			case 'stSyncGal':       this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
 			case 'stLoadTb':        this.progressReportOnSource(context.state.sourceid_zm, "GetItem");    break;
 			case 'stSyncPrepare':   this.progressReportOn("Converge");                                    break;

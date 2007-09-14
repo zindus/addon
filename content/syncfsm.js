@@ -57,7 +57,8 @@ SyncFsm.getFsm = function(context)
 		stGetAccountInfo: { evCancel: 'final', evNext:  'stGetInfo',        evSoapRequest: 'stSoapRequest'                           },
 		stGetInfo:        { evCancel: 'final', evNext:  'stCheckLicense',   evSoapRequest: 'stSoapRequest'                           },
 		stCheckLicense:   { evCancel: 'final', evNext:  'stSync',           evSoapRequest: 'stSoapRequest'                           },
-		stSync:           { evCancel: 'final', evNext:  'stGetContact',     evSoapRequest: 'stSoapRequest'                           },
+		stSync:           { evCancel: 'final', evNext:  'stSyncResult',     evSoapRequest: 'stSoapRequest'                           },
+		stSyncResult:     { evCancel: 'final', evNext:  'stGetContact',     evRepeat:      'stSync'                                  },
 		stGetContact:     { evCancel: 'final', evNext:  'stSyncGal',        evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContact' },
 		stSyncGal:        { evCancel: 'final', evNext:  'stSyncGalCommit',  evSoapRequest: 'stSoapRequest'                           },
 		stSyncGalCommit:  { evCancel: 'final', evNext:  'stLoadTb'                                                                   },
@@ -81,6 +82,7 @@ SyncFsm.getFsm = function(context)
 		stGetInfo:              context.entryActionGetInfo,
 		stCheckLicense:         context.entryActionCheckLicense,
 		stSync:                 context.entryActionSync,
+		stSyncResult:           context.entryActionSyncResult,
 		stGetContact:           context.entryActionGetContact,
 		stSyncGal:              context.entryActionSyncGal,
 		stSyncGalCommit:        context.entryActionSyncGalCommit,
@@ -102,11 +104,10 @@ SyncFsm.getFsm = function(context)
 		stGetAccountInfo: context.exitActionGetAccountInfo,
 		stGetInfo:        context.exitActionGetInfo,
 		stCheckLicense:   context.exitActionCheckLicense,
-		stSync:           context.exitActionSync,
 		stGetContact:     context.exitActionGetContact,
 		stSyncGal:        context.exitActionSyncGal,
 		stUpdateZm:       context.exitActionUpdateZm,
-		stSoapResponse:   context.exitActionSoapResponse
+		stSoapResponse:   context.exitActionSoapResponse  /* this gets tweaked by setupSoapCall */
 	};
 
 	return fsm;
@@ -205,35 +206,27 @@ SyncFsm.prototype.loadZfcs = function(a_zfc)
 {
 	var cExist = 0;
 
-	dump("am here 1\n");
 	a_zfc[SyncFsm.FILE_GID      + ".txt"] = this.state.zfcGid      = new ZinFeedCollection();
 	a_zfc[SyncFsm.FILE_LASTSYNC + ".txt"] = this.state.zfcLastSync = new ZinFeedCollection();
 
-	dump("am here 2\n");
 	for (var i in this.state.sources)
 	{
 		var key = hyphenate("-", i, this.state.m_bimap_format.lookup(this.state.sources[i]['format'], null)) + ".txt";
-	dump("am here 3\n");
 		a_zfc[key] = this.state.sources[i]['zfcLuid'] = new ZinFeedCollection();
-	dump("am here 4\n");
 	}
 
 	for (var i in a_zfc)
 	{
-	dump("am here 5\n");
 		a_zfc[i].filename(i);
 
 		if (a_zfc[i].nsifile().exists())
 			cExist++;
 
-	dump("am here 6\n");
 		a_zfc[i].load();
 	}
 
-	dump("am here 7\n");
 	this.state.aReverseGid = this.getGidInReverse();
 
-	dump("am here 8\n");
 	return cExist;
 }
 
@@ -278,18 +271,19 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		cExist = this.loadZfcs(a_zfc);
 
 		this.state.m_logger.debug("entryActionLoad: blah: after remove+load, zfcGid: " + this.state.zfcGid.toString());
-
-		// TODO - work out whether we need to get the contacts underneat Sync Issues/Conflicts etc...
 	}
 
 	if (cExist == 0)
 	{
 		this.state.m_logger.debug("entryActionLoad: data files didn't exist - initialising...");
 
+		dump("am here 41\n");
 		this.initialiseZfcLastSync();
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
 		this.initialiseZfcAutoIncrement(this.state.sources[this.state.sourceid_tb]['zfcLuid']);
+		dump("am here 42\n");
 		this.initialiseTbAddressbook();
+		dump("am here 43\n");
 
 		nextEvent = 'evNext';
 	}
@@ -298,9 +292,18 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	else
 		nextEvent = 'evLackIntegrity';
 
-	this.state.m_logger.debug("entryActionLoad: nextEvent: " + nextEvent);
-
 	continuation(nextEvent);
+}
+
+SyncFsm.prototype.isSlowSync = function(sourceid)
+{
+	zinAssert(this.state.sources[sourceid]['format'] == FORMAT_ZM);
+
+	var ret = !this.state.zfcLastSync.get(sourceid).isPresent('SyncToken');
+
+	this.state.m_logger.debug("isSlowSync: sourceid: " + sourceid + " returns: " + ret);
+
+	return ret;
 }
 
 // Here's what's tested:
@@ -314,13 +317,6 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 // Could also (but don't) test for:
 // - 'l'   attributes are correct
 // - 'ver' attributes make sense
-
-SyncFsm.prototype.isSlowSync = function(sourceid)
-{
-	zinAssert(this.state.sources[sourceid]['format'] == FORMAT_ZM);
-
-	return !this.state.zfcLastSync.get(sourceid).isPresent('SyncToken');
-}
 
 SyncFsm.prototype.isConsistentDataStore = function()
 {
@@ -337,10 +333,9 @@ SyncFsm.prototype.isConsistentDataStore = function()
 SyncFsm.prototype.isConsistentGid = function()
 {
 	var is_consistent = true;
-	this.state.m_logger.debug("isConsistentGid: entering");
 	
 	// test that:
-	// - every (sourceid, luid) in the gid present in the corresponding source (tested by reference to aReverseGid)
+	// - every (sourceid, luid) in the gid is present in the corresponding source (tested by reference to aReverseGid)
 
 	bigloop:
 		for (var sourceid in this.state.aReverseGid)
@@ -442,22 +437,28 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 
 			var id =  mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 
-			if (id > 0)
+			if (id > 0 || id.length > 0)  // the TBCARD_ATTRIBUTE_LUID for cards in the GAL is an ldap dn which is why we test for length>0
+			{
 				mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, 0); // delete would be more natural but not supported by api
+				mdbCard.editCardToDatabase(uri);
+			}
 
 			return true;
 		}
 	};
 
 	var functor_foreach_addressbook = {
+		functor: null,
 		run: function(elem)
 		{
-			ZimbraAddressBook.forEachCard(elem.directoryProperties.URI, functor_foreach_card);
+			dump("blah: iterating through cards in uri: " + elem.directoryProperties.URI + "\n");
+			ZimbraAddressBook.forEachCard(elem.directoryProperties.URI, this.functor);
 
 			return true;
 		}
 	};
 
+	functor_foreach_addressbook.functor = functor_foreach_card;
 	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
 }
 
@@ -497,7 +498,7 @@ SyncFsm.prototype.getGidInReverse = function()
 
 	this.state.zfcGid.forEach(functor_foreach_gid, ZinFeedCollection.ITER_UNRESERVED);
 
-	this.state.m_logger.debug("1177 - getGidInReverse returns: " + aToString(reverse));
+	this.state.m_logger.debug("getGidInReverse returns: " + aToString(reverse));
 
 	return reverse;
 }
@@ -596,222 +597,245 @@ SyncFsm.prototype.exitActionCheckLicense = function(state, event)
 
 SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 {
-	var syncToken = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncToken');
+	dump("am here 11\n");
+	var SyncTokenInRequest = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncToken');
+	dump("am here 12\n");
+	dump("am here 121 - SyncTokenInRequest: " + SyncTokenInRequest + "\n");
 
 	// slow sync <==> no "last sync token"
-	zinAssert((!syncToken && this.isSlowSync(this.state.sourceid_zm)) || (syncToken && !this.isSlowSync(this.state.sourceid_zm)));
+	zinAssert((!SyncTokenInRequest && this.isSlowSync(this.state.sourceid_zm)) ||
+	           (SyncTokenInRequest && !this.isSlowSync(this.state.sourceid_zm)));
 
-	this.setupSoapCall(state, 'evNext', "Sync", syncToken);
+	dump("am here 13\n");
+	if (this.state.isRedoSyncRequest)
+		SyncTokenInRequest = null;
+
+	dump("am here 14\n");
+	this.state.SyncTokenInRequest = SyncTokenInRequest;
+	dump("am here 15\n");
+
+	this.setupSoapCall(state, 'evNext', "Sync", SyncTokenInRequest);
+	dump("am here 16\n");
 
 	continuation('evSoapRequest');
 }
 
-SyncFsm.prototype.exitActionSync = function(state, event)
+SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 {
-	if (!this.state.m_soap_state.m_response || event == "evCancel")
-		return;
+	var nextEvent = null;
 
-	var response  = this.state.m_soap_state.m_response;
-	var sourceid = this.state.sourceid_zm;
-	var zfcServer = this.state.sources[sourceid]['zfcLuid'];
-	var id, functor, xpath_query;
+	if (!this.state.m_soap_state.m_response)
+		nextEvent = 'evCancel';
+	else
+	{
+		var response  = this.state.m_soap_state.m_response;
+		var sourceid = this.state.sourceid_zm;
+		var zfcServer = this.state.sources[sourceid]['zfcLuid'];
+		var id, functor, xpath_query;
 
-	ZinXpath.setConditional(this.state, 'SyncMd',    "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::md",    response, null);
-	ZinXpath.setConditional(this.state, 'SyncToken', "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::token", response, null);
+		ZinXpath.setConditional(this.state, 'SyncMd',    "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::md",    response, null);
+		ZinXpath.setConditional(this.state, 'SyncToken', "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::token", response, null);
 
-	// TODO - what if the sync token went backwards (eg if the server had to restore from backups) ??
+		// TODO - what if the sync token went backwards (eg if the server had to restore from backups) ??
 
-	// Things we're expecting:
-	// <folder view="contact" ms="2713" md="1169690090" l="1" name="address-book-3" id="563"><acl/></folder>
-	// <cn ids="567,480,501"/>
-	// <cn d="1169685098000" ms="2708" md="1169685098" email="a.b@example.com" fileAsStr="a b" l="7" id="561" rev="2708"/>
-	// <deleted ids="561"/>
-	//   ==> set the ZinFeedItem.ATTR_DEL flag in the map
-	//
+		// Things we're expecting:
+		// <folder view="contact" ms="2713" md="1169690090" l="1" name="address-book-3" id="563"><acl/></folder>
+		// <cn ids="567,480,501"/>
+		// <cn d="1169685098000" ms="2708" md="1169685098" email="a.b@example.com" fileAsStr="a b" l="7" id="561" rev="2708"/>
+		// <deleted ids="561"/>
+		//   ==> set the ZinFeedItem.ATTR_DEL flag in the map
+		//
 	
-	// <folder view="contact" ms="2713" md="1169690090" l="1" name="address-book-3" id="563"><acl/></folder>
-	//  ==> add the id to the map
-	//
-	var xpath_query_folders = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder[@view='contact' or @id='" + ZIMBRA_ID_TRASH + "']";
-	xpath_query = xpath_query_folders;
+		// <folder view="contact" ms="2713" md="1169690090" l="1" name="address-book-3" id="563"><acl/></folder>
+		//  ==> if id is present, update the map
+		//      else if l=1
+		//        if SyncToken was non-null, set a flag indicating that we need to redo <SyncRequest>
+		//        else add it to the map
+		//
+		// var xpath_query_folders = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder[@view='contact' or @id='" + ZIMBRA_ID_TRASH + "']";
+		var xpath_query_folders = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder[@view='contact']";
+		xpath_query = xpath_query_folders;
 
-	functor = {
-		state: this.state,
-		run: function(doc, node)
-		{
-			var attribute = attributesFromNode(node);
-			var id = attribute['id'];
-			var l  = attribute['l'];
-			var msg = "111113 - found a <folder id='" + id +"' l='" + l + "'>";
+		this.state.isRedoSyncRequest = false;
 
-			if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
-				this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
-			else
+		functor = {
+			state: this.state,
+			run: function(doc, node)
 			{
-				if (zfcServer.isPresent(id))
-				{
-					var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcServer, id);
+				var attribute = attributesFromNode(node);
+				var id = attribute['id'];
+				var l  = attribute['l'];
+				var msg = "111113 - found a <folder id='" + id +"' l='" + l + "'>";
 
-					zfcServer.get(id).set(attribute);  // update existing item
-
-					msg += " - updated id in map";
-
-					var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcServer, id);
-
-					if (!isInterestingPreUpdate && isInterestingPostUpdate)
-					{
-						// a folder has become of interest (eg it moved out of trash), we need to get it's contacts
-						//
-						aContactIds = ZinFeed.getContactIdsForParent(zfc, id);
-
-						for (var i = 0; i < aContactIds.length; i++)
-							this.state.aQueue[aContactIds[i]] = true;
-
-						msg += " - folder has become of interest - adding children to queue: " + aContactIds.toString();
-					}
-				}
+				if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
+					this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
 				else
 				{
-					zfcServer.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, attribute));  // add new item
-					msg += " - adding folder to map";
+					if (zfcServer.isPresent(id))
+					{
+						zfcServer.get(id).set(attribute);  // update existing item
+						msg += " - updated id in map";
+					}
+					else if (this.state.SyncTokenInRequest)
+					{
+						this.state.isRedoSyncRequest = true;
+						msg += " - new folder seen - need to do another <SyncRequest>";
+					}
+					else
+					{
+						zfcServer.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, attribute));  // add new item
+						msg += " - adding folder to map";
+					}
+
+					this.state.m_logger.debug(msg);
 				}
 			}
-		}
-	};
+		};
 
-	ZinXpath.runFunctor(functor, xpath_query, response);
+		ZinXpath.runFunctor(functor, xpath_query, response);
 
-	// <cn d="1169685098000" ms="2708" md="1169685098" email="a.b@example.com" fileAsStr="a b" l="7" id="561" rev="2708"/>
-	//   This element appears as a child of a <SyncResponse> element
-	//
-	//   if the id isn't in the map
-	//           ==> add the id to the queue for GetContactRequest,
-	//               in which case the id get added to the map in GetContactResponse
-	//   else
-	//     update the attributes in the map
-	//     if the rev attribute is unchanged and the item became of interest or
-	//       the rev attribute changed and it's a contact we're interested in
-	//           ==> add the id to the queue for GetContactRequest,
-	//               in which case the id get added to the map in GetContactResponse
-	//
+		// <cn d="1169685098000" ms="2708" md="1169685098" email="a.b@example.com" fileAsStr="a b" l="7" id="561" rev="2708"/>
+		//   This element appears as a child of a <SyncResponse> element
+		//
+		//   if the id isn't in the map
+		//           ==> add the id to the queue for GetContactRequest,
+		//               in which case the id get added to the map in GetContactResponse
+		//   else
+		//     update the attributes in the map
+		//     if the rev attribute is unchanged and the item became of interest or
+		//       the rev attribute changed and it's a contact we're interested in
+		//           ==> add the id to the queue for GetContactRequest,
+		//               in which case the id get added to the map in GetContactResponse
+		//
 
-	xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:cn[not(@ids) and not(@type='group')]";
+		xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:cn[not(@ids) and not(@type='group')]";
 
-	functor = {
-		state: this.state,
+		functor = {
+			state: this.state,
 
-		run: function(doc, node)
-		{
-			var attribute = attributesFromNode(node);
-			var id = attribute['id'];
-			var l  = attribute['l'];
-			var msg = "11113 - found a <cn id='" + id +"' l='" + l + "'>";
-			
-			// if the rev attribute is different from that in the map, it means a content change is pending so add the id to the queue,
-			// otherwise just add it to the map
-			//
-
-			if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
-				this.state.m_logger.error("<cn> element received from server without an 'id' or 'l' attribute.  Unexpected.  Ignoring: " + aToString(attribute));
-			else
+			run: function(doc, node)
 			{
-				var fAddToTheQueue = false;
+				var attribute = attributesFromNode(node);
+				var id = attribute['id'];
+				var l  = attribute['l'];
+				var msg = "11113 - found a <cn id='" + id +"' l='" + l + "'>";
+				
+				// if the rev attribute is different from that in the map, it means a content change is pending so add the id to the queue,
+				// otherwise just add it to the map
+				//
 
-				if (!zfcServer.isPresent(id))
-				{
-					fAddToTheQueue = true;
-					msg += " - first time it's been seen ";
-				}
+				if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
+					this.state.m_logger.error("<cn> element received from server without an 'id' or 'l' attribute.  Unexpected.  Ignoring: " + aToString(attribute));
 				else
 				{
-					var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcServer, id);
+					var fAddToTheQueue = false;
 
-					var isRevChange = !isPropertyPresent(attribute, ZinFeedItem.ATTR_REV) ||
-					                  !zfcServer.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
-					                  attribute[ZinFeedItem.ATTR_REV] != zfcServer.get(id).get(ZinFeedItem.ATTR_REV);
-
-					zfcServer.get(id).set(attribute);
-
-					msg += " - updated id in map";
-
-					var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcServer, id);
-
-					if (!isRevChange && isInterestingPostUpdate && !isInterestingPreUpdate)
+					if (!zfcServer.isPresent(id))
 					{
 						fAddToTheQueue = true;
-						msg += " - rev didn't change but the id become of interest";
+						msg += " - first time it's been seen ";
 					}
-					else if (isRevChange && isInterestingPostUpdate)
+					else
 					{
-						fAddToTheQueue = true;
-						msg += " - rev changed and the item is of interest";
+						var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcServer, id);
+
+						var isRevChange = !isPropertyPresent(attribute, ZinFeedItem.ATTR_REV) ||
+										  !zfcServer.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
+										  attribute[ZinFeedItem.ATTR_REV] != zfcServer.get(id).get(ZinFeedItem.ATTR_REV);
+
+						zfcServer.get(id).set(attribute);
+
+						msg += " - updated id in map";
+
+						var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcServer, id);
+
+						if (!isRevChange && isInterestingPostUpdate && !isInterestingPreUpdate)
+						{
+							fAddToTheQueue = true;
+							msg += " - rev didn't change but the id become of interest";
+						}
+						else if (isRevChange && isInterestingPostUpdate)
+						{
+							fAddToTheQueue = true;
+							msg += " - rev changed and the item is of interest";
+						}
+					}
+
+					if (fAddToTheQueue)
+					{
+						msg += " - add to the queue for GetContactRequest";
+						this.state.aQueue[id] = true;
 					}
 				}
 
-				if (fAddToTheQueue)
-				{
-					msg += " - add to the queue for GetContactRequest";
-					this.state.aQueue[id] = true;
-				}
+				this.state.m_logger.debug(msg);
 			}
+		};
 
-			this.state.m_logger.debug(msg);
-		}
-	};
+		ZinXpath.runFunctor(functor, xpath_query, response);
 
-	ZinXpath.runFunctor(functor, xpath_query, response);
+		functor = {
+			ids: new Object(),
 
-	functor = {
-		ids: new Object(),
+			run: function(doc, node)
+			{
+				zinAssert(node.nodeType == Node.ATTRIBUTE_NODE);
+				
+				var ids = node.nodeValue;
 
-		run: function(doc, node)
+				for each (var id in ids.split(","))
+					this.ids[id] = true;
+			}
+		};
+
+		// <cn ids="567,480,501"/>
+		//   This element appears as a child of a <folder> element
+		//     ==> add each id to the queue for GetContactRequest
+		//     ==> the id is added to the map in GetContactResponse
+		//
+		// xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder[@l='1' and (@view='contact' or @name='Trash')]/zm:cn/@ids";
+		//
+		xpath_query = xpath_query_folders + "/zm:cn/@ids";
+
+		ZinXpath.runFunctor(functor, xpath_query, response);
+
+		for (id in functor.ids)
+			this.state.aQueue[id] = true;
+
+		// <deleted ids="561,542"/>
+		//   ==> set the ZinFeedItem.ATTR_DEL flag in the map
+		// Some of the deleted ids might not relate to contacts at all
+		// So we may never have seen them and no map entry exists.
+		// So the ZinFeedItem.ATTR_DEL flag is set only on items already in the map.
+		//
+		//
+		xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:deleted/@ids";
+		functor.ids = new Object();
+
+		ZinXpath.runFunctor(functor, xpath_query, response);
+
+		for (id in functor.ids)
+			if (zfcServer.isPresent(id))
+				zfcServer.get(id).set(ZinFeedItem.ATTR_DEL, 1);
+
+		// At the end of all this:
+		// - our map points to subset of items on the server - basically all folders with @view='contact' and their contacts
+		// - this.state.aQueue is populated with the ids of:
+		//   - contacts that are in the parent folders of interest, and
+		//   - contacts whose content has changed (indicated by the rev attribute being bumped)
+
+		this.state.m_logger.debug("11113 - aQueue: " + aToString(this.state.aQueue));
+
+		if (this.state.isRedoSyncRequest)
 		{
-			zinAssert(node.nodeType == Node.ATTRIBUTE_NODE);
-			
-			var ids = node.nodeValue;
-
-			for each (var id in ids.split(","))
-				this.ids[id] = true;
+			nextEvent = 'evRepeat';
+			this.state.m_logger.debug("entryActionSyncResult: forcing a second <SyncRequest>");
 		}
-	};
+		else
+			nextEvent = 'evNext';
+	}
 
-	// <cn ids="567,480,501"/>
-	//   This element appears as a child of a <folder> element
-	//     ==> add each id to the queue for GetContactRequest
-	//     ==> the id is added to the map in GetContactResponse
-	//
-	// xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder[@l='1' and (@view='contact' or @name='Trash')]/zm:cn/@ids";
-	//
-	xpath_query = xpath_query_folders + "/zm:cn/@ids";
-
-	ZinXpath.runFunctor(functor, xpath_query, response);
-
-	for (id in functor.ids)
-		this.state.aQueue[id] = true;
-
-	// <deleted ids="561,542"/>
-	//   ==> set the ZinFeedItem.ATTR_DEL flag in the map
-	// Some of the deleted ids might not relate to contacts at all
-	// So we may never have seen them and no map entry exists.
-	// So the ZinFeedItem.ATTR_DEL flag is set only on items already in the map.
-	//
-	//
-	xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:deleted/@ids";
-	functor.ids = new Object();
-
-	ZinXpath.runFunctor(functor, xpath_query, response);
-
-	for (id in functor.ids)
-		if (zfcServer.isPresent(id))
-			zfcServer.get(id).set(ZinFeedItem.ATTR_DEL, 1);
-
-	// At the end of all this:
-	// - our map points to subset of items on the server - basically all folders with @view='contact' and their contacts
-	// - this.state.aQueue is populated with the ids of:
-	//   - contacts that are in the parent folders of interest, and
-	//   - contacts whose content has changed (indicated by the rev attribute being bumped)
-
-	this.state.m_logger.debug("11113 - aQueue: " + aToString(this.state.aQueue));
+	continuation(nextEvent);
 }
 
 SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
@@ -1207,11 +1231,13 @@ SyncFsm.prototype.updateTbLuidMap = function()
 	// and the only way I know of identifying such cards is to iterate to them via a mailing list uri.
 	// So there's a 3-pass thing here:
 	// pass 1 - iterate through the cards in the zindus folders building an associative array of mailing list uris
-	//   aListUris['moz-abmdbdirectory://abook.mab/MailList3'] = true
+	//   aListUris['moz-abmdbdirectory://abook.mab/MailList3'] = moz-abmdbdirectory://abook.mab
 	// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
 	//   a card key is a concatenation of mdbCard. dbTableID dbRowID key == 1 797 402
-	//   aListCardKey['1-797-402'] = true;
+	//   aListCardKey['1-797-402'] = moz-abmdbdirectory://abook.mab;
 	// pass 3 - iterate through the cards in the zindus folders excluding mailing list uris and cards with keys in aListCardKey
+	//          where the uri matches the uri of the addressbook
+	// The key '1-797-402' is only unique within an addressbook.
 	//
 
 	// pass 1 - iterate through the cards in the zindus folders building an associative array of mailing list uris
@@ -1223,7 +1249,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
 
 			if (abCard.isMailList)
-				aMailListUri[abCard.mailListURI] = true;
+				aMailListUri[abCard.mailListURI] = uri;
 
 			return true;
 		}
@@ -1243,7 +1269,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 		{
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
 
-			aCardKeysToExclude[ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard)] = true;
+			aCardKeysToExclude[ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard)] = aMailListUri[uri];
 
 			return true;
 		}
@@ -1265,12 +1291,27 @@ SyncFsm.prototype.updateTbLuidMap = function()
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
 			var msg = "1177 - pass 3 - card key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard);
 
-			// this.state.m_logger.debug("1177 - pass 3: blah: " +
-			//                           " key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard) +
-			//                           " card: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) +
-			//                           " abCard.isMailList: " + abCard.isMailList );
+			var isInTopLevelFolder = false;
 
-			if ( !abCard.isMailList && !isPropertyPresent(aCardKeysToExclude, ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard)))
+			if (!abCard.isMailList)
+			{
+				var key = ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard);
+
+				if ( !isPropertyPresent(aCardKeysToExclude, key) ||
+				    (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] == uri))
+					isInTopLevelFolder = true;
+
+			}
+
+			dump("am here 21\n");
+
+			this.state.m_logger.debug("1177 - pass 3: blah: " +
+			                          " uri: " + uri +
+			                          " key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard) +
+			                          " card: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) +
+			                          " isInTopLevelFolder: " + isInTopLevelFolder );
+
+			if (isInTopLevelFolder)
 			{
 				var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 
@@ -1279,14 +1320,21 @@ SyncFsm.prototype.updateTbLuidMap = function()
 					id = ZinFeed.autoIncrement(zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
 
 					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, id);
+					mdbCard.editCardToDatabase(uri);
 
 					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id , ZinFeedItem.ATTR_MD, abCard.lastModifiedDate, ZinFeedItem.ATTR_REV, 1, 'l', aUri[uri]));
+			dump("am here 27\n");
 
 					msg += " added:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfcTb.get(id).toString();
 				}
 				else
 				{
 					var zfi = zfcTb.get(id);
+			dump("am here 28\n");
+					this.state.m_logger.debug("1177 - pass 3: blah: " + " zfcTb: " + zfcTb.toString() + " zfi: " + zfi);
+			dump("am here 281\n");
+					dump("zfi: " + zfi.toString() + "\n");
+			dump("am here 282\n");
 
 					// if things have changed, update the map...
 					//
@@ -1299,6 +1347,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 						//    and it'd look as if there was no change.
 						// TODO - might need to update ZinFeedItem.ATTR_REV based on a change in checksum, rather than abCard.lastModifiedDate
 
+			dump("am here 29\n");
 						zfi.set(ZinFeedItem.ATTR_MD, abCard.lastModifiedDate);
 						zfi.set('l', aUri[uri]);
 						ZinFeed.autoIncrement(zfi, ZinFeedItem.ATTR_REV);
@@ -1308,6 +1357,7 @@ SyncFsm.prototype.updateTbLuidMap = function()
 					else
 						msg += " found:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
 				}
+			dump("am here 291\n");
 
 				zfcTb.get(id).set('present', '1');
 			}
@@ -1329,6 +1379,8 @@ SyncFsm.prototype.updateTbLuidMap = function()
 	//    - an item without a 'present' attribute is marked as deleted
 	//    - remove the 'present' attribute so that it's not saved
 	// 
+
+	dump("am here 11\n");
 
 	var functor_mark_deleted = {
 		state: this.state,
@@ -1355,27 +1407,37 @@ SyncFsm.prototype.updateTbLuidMap = function()
 
 SyncFsm.isOfInterest = function(zfc, id)
 {
-	gLogger.debug("SyncFsm.isOfInterest: blah: arguments.length: " + arguments.length + " zfc: " + (zfc ? "non-null" : "null") +
-	              " id: " + id + " zfc.isPresent(id): " + zfc.isPresent(id));
+	// gLogger.debug("SyncFsm.isOfInterest: blah: id: " + id + " arguments.length: " + arguments.length +
+	//               " zfc: " + (zfc ? "non-null" : "null") + " zfc.isPresent(id): " + zfc.isPresent(id));
 
-	zinAssert(arguments.length == 2 && zfc && id && id > 0 && zfc.isPresent(id));
+	zinAssert(arguments.length == 2 && zfc && id && id > 0);
 
-	var zfi = zfc.get(id);
-	var l   = zfi.get('l');
 	var ret = null;
 
-	switch (zfi.type())
+	if (!zfc.isPresent(id))
+		ret = false;
+	else
 	{
-		case ZinFeedItem.TYPE_FL:
-			ret = (l == 1) && zfi.get('id') != ZIMBRA_ID_TRASH;
-			break;
-		case ZinFeedItem.TYPE_CN:
-			// not sure how a contact could end up at the very top level but maybe it's possible!
-			ret = (l == 1) ? false : SyncFsm.isOfInterest(zfc, l);
-			break;
-		default:
-			zinAssert(false);
+		var zfi = zfc.get(id);
+
+		switch (zfi.type())
+		{
+			case ZinFeedItem.TYPE_FL:
+				ret = (zfi.get('l') == 1); // if present, must be a top-level folder
+				break;
+
+			case ZinFeedItem.TYPE_CN:
+				// not sure how a contact could end up at the very top level but maybe it's possible!
+				zinAssert(zfc.isPresent(id));
+				var l   = zfi.get('l');
+				ret = (l == 1) ? false : SyncFsm.isOfInterest(zfc, l);
+				break;
+			default:
+				zinAssert(false);
+		}
 	}
+
+	gLogger.debug("SyncFsm.isOfInterest: blah: id: " + id + " returns: " + ret);
 
 	return ret;
 }
@@ -1609,6 +1671,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 		{
 			zfc = this.state.sources[sourceid]['zfcLuid'];
 
+			this.state.m_logger.debug("about to run functor_foreach_luid_do_checksum for sourceid: " + sourceid);
 			zfc.forEach(functor_foreach_luid_do_checksum, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 		}
 
@@ -1683,8 +1746,7 @@ SyncFsm.prototype.buildGcs = function()
 
 		run: function(zfi)
 		{
-			this.state.m_logger.debug("885438 - about to determine winner for:");
-			this.state.m_logger.debug("885438 - sourceid: " + sourceid + " zfi: " + zfi.toString());
+			this.state.m_logger.debug("buildGcs: about to determine winner for sourceid: " + sourceid + " zfi: " + zfi.toString());
 
 			if (SyncFsm.isOfInterest(sources[sourceid]['zfcLuid'], zfi.id()))
 			{
@@ -1698,7 +1760,7 @@ SyncFsm.prototype.buildGcs = function()
 				zfcGid.get(gid).forEach(functor_delete_other_candidate_mapitems, ZinFeedItem.ITER_SOURCEID);
 			}
 			else
-				this.state.m_logger.debug("885438 - zfi not of interest - compare skipped - sourceid: " + sourceid + " zfi: " + zfi.toString());
+				this.state.m_logger.debug("buildGcs: zfi not of interest - compare skipped - sourceid: " + sourceid + " zfi: " + zfi.toString());
 
 			return true;
 		},
@@ -1719,7 +1781,7 @@ SyncFsm.prototype.buildGcs = function()
 						return true;
 
 					var zfi = aZfcCandidate[sourceid].get(luid);
-					var msg = "885435 - sourceid: " + sourceid + " zfi: " + zfi.toString();
+					var msg = "buildGcs: compare: sourceid: " + sourceid + " zfi: " + zfi.toString();
 
 					if (!zfi.isPresent(ZinFeedItem.ATTR_LS))
 					{
@@ -3023,8 +3085,12 @@ SyncFsm.prototype.setupSoapCall = function(state, eventOnResponse, method)
 
 	if (this.fsm.aActionExit[state])
 		this.fsm.aActionExit['stSoapResponse'] = this.fsm.aActionExit[state];
+	else
+		this.fsm.aActionExit['stSoapResponse'] = this.exitActionSoapResponse;
+		
 
-	this.state.m_logger.debug("setupSoapCall: soap final state: " + this.fsm.transitions[state][eventOnResponse]);
+	this.state.m_logger.debug("setupSoapCall: stSoapResponse evNext is: " + this.fsm.transitions[state][eventOnResponse]);
+	this.state.m_logger.debug("setupSoapCall: stSoapResponse aActionExit is: " + this.fsm.aActionExit[state]); // blah
 }
 
 SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
@@ -3340,10 +3406,12 @@ function SyncFsmState(id_fsm)
 	this.mapIdSyncGalContact = null;      
 	this.SyncGalToken        = null;
 	this.SyncGalTokenChanged = false;
-	this.aSyncContact        = new Object(); // each property is a ZimbraContact object returned in GetContactResponse
 	this.SyncMd              = null;         // this gives us the time on the server
-	this.SyncToken           = null;         
+	this.SyncToken           = null;         // the 'token' received in <SyncResponse>
+	this.SyncTokenInRequest  = null;         // the 'token' given to    <SyncRequest>
 	this.aQueue              = new Object(); // associative array of contact ids - ids added in SyncResponse, deleted in GetContactResponse
+	this.isRedoSyncRequest   = false;        // we may need to do <SyncRequest> again - the second time without a token
+	this.aSyncContact        = new Object(); // each property is a ZimbraContact object returned in GetContactResponse
 	this.aSuo                = null;         // container for source update operations - populated in SyncPrepare
 	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
 

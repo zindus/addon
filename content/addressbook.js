@@ -88,11 +88,14 @@ ZimbraAddressBook.forEachCard = function(uri, functor)
 	{
 		var item = enm.currentItem();
 
+		dump("am here 111\n");
 		fContinue = functor.run(uri, item);
+		dump("am here 112\n");
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		try { enm.next(); } catch(ex) { fContinue = false; }
+		dump("am here 113\n");
 	}
 }
 
