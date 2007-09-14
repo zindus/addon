@@ -676,16 +676,21 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 						zfcServer.get(id).set(attribute);  // update existing item
 						msg += " - updated id in map";
 					}
-					else if (this.state.SyncTokenInRequest)
+					else if (l == '1')
 					{
-						this.state.isRedoSyncRequest = true;
-						msg += " - new folder seen - need to do another <SyncRequest>";
+						if (this.state.SyncTokenInRequest)
+						{
+							this.state.isRedoSyncRequest = true;
+							msg += " - new folder seen - need to do another <SyncRequest>";
+						}
+						else
+						{
+							zfcServer.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, attribute));  // add new item
+							msg += " - adding folder to map";
+						}
 					}
 					else
-					{
-						zfcServer.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, attribute));  // add new item
-						msg += " - adding folder to map";
-					}
+						msg += " - ignoring non top-level folder ";
 
 					this.state.m_logger.debug(msg);
 				}
@@ -2529,21 +2534,23 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				bucket      = SORT_ORDER[i];
 				msg        += " about to move folder to trash: " + name_winner;
 
-				if (this.isFolderPresentInSource(sourceid_target, ZIMBRA_ID_TRASH, name_winner))
-				{
-					var d = new Date(); // with this new name, the "move to trash" has a fighting change of success!
-					// would prefer an iso8601 date but zimbra doesnt allow folder names to contain colons
-					var newname = "/Trash/" + name_winner + "-" + hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
-	        		                                       "-" + hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+				// add the date to the folder's name in the Trash to avoid name clashes
+				// this isn't guaranteed to work of course, but if it doesn't, the sync will abort
+				// and the folder will re-appear on the next slow sync.  No drama, the user will just scratch their head and
+				// then complain and/or retry.  The correct logic is "retry until success" but it's complex to code...
+				//
+				var d = new Date();
+				// would prefer an iso8601 date but zimbra doesnt allow folder names to contain colons
+				var newname = "/Trash/" + name_winner + "-" + hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
+	        	                                        "-" + hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 
-					msg += " - avoiding name clash in Trash by renaming this folder to: " + newname;
+				msg += " - name of the folder in the Trash will be: " + newname;
 
-					// with op=update, the server does the move before the rename so still fails because of folder name conflict in Trash
-					// soapArg     = newObject('id', luid_target, 'op', 'update', ZinFeedItem.ATTR_NAME, newname, 'l', ZIMBRA_ID_TRASH);
-					soapArg     = newObject('id', luid_target, 'op', 'rename', ZinFeedItem.ATTR_NAME, newname);
-				}
-				else
-					soapArg     = newObject('id', luid_target, 'op', 'move', 'l', ZIMBRA_ID_TRASH);
+				// op == 'move' is what we'd use if we weren't changing it's name
+				// soapArg     = newObject('id', luid_target, 'op', 'move', 'l', ZIMBRA_ID_TRASH);
+				// with op=update, the server does the move before the rename so still fails because of folder name conflict in Trash
+				// soapArg     = newObject('id', luid_target, 'op', 'update', ZinFeedItem.ATTR_NAME, newname, 'l', ZIMBRA_ID_TRASH);
+				soapArg     = newObject('id', luid_target, 'op', 'rename', ZinFeedItem.ATTR_NAME, newname);
 				break;
 
 			case Suo.DEL | ZinFeedItem.TYPE_CN:
@@ -2807,11 +2814,13 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 	var gid;
 	var aGidsToDelete = new Array();
 
-	// this.state.m_logger.debug("998899: after UpdateZm, zfcZm: " + this.state.sources[this.state.sourceid_zm]['zfcLuid'].toString());
-	// this.state.m_logger.debug("998899: after UpdateZm, zfcGid: " + this.state.zfcGid.toString());
+	this.state.m_logger.debug("entryActionUpdateCleanup: zfcTb: " + this.state.sources[this.state.sourceid_tb]['zfcLuid'].toString());
+	this.state.m_logger.debug("entryActionUpdateCleanup: zfcZm: " + this.state.sources[this.state.sourceid_zm]['zfcLuid'].toString());
+	this.state.m_logger.debug("entryActionUpdateCleanup: zfcGid: " + this.state.zfcGid.toString());
 
-	// 1. delete the gid when all the mapitems source maps have a ZinFeedItem.ATTR_DEL attribute
-	//    delete the mapping between a gid and an luid when the luid is not of interest
+	//  delete the luid item if (thunderbird: it has a DEL attribute) or (zimbra: it's not of interest)
+	//  delete the mapping between a gid and an luid when the luid is not of interest
+	//
 	
 	var functor_foreach_luid = {
 		state: this.state,
@@ -2823,26 +2832,19 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 
 			// delete luids and their link to the gid when ZinFeedItem.ATTR_DEL is set
 			//
-			if (zfi.isPresent(ZinFeedItem.ATTR_DEL))
+			if ( (this.state.sources[sourceid]['format'] == FORMAT_TB && zfi.isPresent(ZinFeedItem.ATTR_DEL)) ||
+			     (this.state.sources[sourceid]['format'] == FORMAT_ZM && !SyncFsm.isOfInterest(zfc, zfi.id())) )
 			{
 				zfc.del(luid);
-				this.state.m_logger.debug("2332 - cleanup: sourceid: " + sourceid + " - deleted luid: " + luid);
+				this.state.m_logger.debug("entryActionUpdateCleanup: sourceid: " + sourceid + " - deleted luid: " + luid);
 
 				if (gid)
 				{
 					this.state.zfcGid.get(gid).del(sourceid);
 					delete this.state.aReverseGid[sourceid][luid];
 
-					this.state.m_logger.debug("2332 - cleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid);
+					this.state.m_logger.debug("entryActionUpdateCleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid);
 				}
-			}
-			else if (this.state.sources[sourceid]['format'] == FORMAT_ZM && gid && !SyncFsm.isOfInterest(zfc, zfi.id()))
-			{
-				// for zimbra luids, delete the link to the gid if the luid is no longer of interest
-				//
-				this.state.zfcGid.get(gid).del(sourceid);
-				delete this.state.aReverseGid[sourceid][luid];
-				this.state.m_logger.debug("2332 - cleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid + " as the item is no longer of interest");
 			}
 
 			return true;
@@ -2852,6 +2854,8 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 	for (sourceid in this.state.sources)
 		this.state.sources[sourceid]['zfcLuid'].forEach(functor_foreach_luid, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 
+	// delete the gid when all the mapitems source maps have a ZinFeedItem.ATTR_DEL attribute
+	//
 	var functor_count_luids_in_gid = {
 		count: 0,
 		run: function(sourceid, luid)
@@ -2870,11 +2874,11 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 
 			zfi.forEach(functor_count_luids_in_gid, ZinFeedItem.ITER_SOURCEID);
 
-			this.state.m_logger.debug("2332 - cleanup: zfi: " + zfi.toString() + " count: " + functor_count_luids_in_gid.count);
+			this.state.m_logger.debug("entryActionUpdateCleanup: zfi: " + zfi.toString() + " count: " + functor_count_luids_in_gid.count);
 
 			if (functor_count_luids_in_gid.count == 0)
 			{
-				this.state.m_logger.debug("2332 - cleanup: gid: " + zfi.id() + " had no links to luids - deleted.");
+				this.state.m_logger.debug("entryActionUpdateCleanup: gid: " + zfi.id() + " had no luid properties - deleted.");
 				this.state.zfcGid.del(zfi.id());
 			}
 
@@ -2950,25 +2954,6 @@ SyncFsm.prototype.resetLsoVer = function(gid, zfi)
 		this.state.m_logger.debug("9664: gid ver set to: " + ver + " and zfi: " + zfi.toString());
 	}
 
-}
-
-SyncFsm.prototype.isFolderPresentInSource = function(sourceid, luid_parent, name)
-{
-	var isPresent = false;
-
-	var functor = {
-		run: function(zfi)
-		{
-			if (zfi.get('l') == luid_parent && zfi.isPresent(ZinFeedItem.ATTR_NAME) && zfi.get(ZinFeedItem.ATTR_NAME) == name)
-				isPresent = true;
-
-			return !isPresent;
-		}
-	};
-
-	this.state.sources[sourceid]['zfcLuid'].forEach(functor, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
-
-	return isPresent;
 }
 
 SyncFsm.prototype.feedItemTypeFromGid = function(gid, sourceid)
@@ -3070,7 +3055,8 @@ SyncFsm.forEachFlavour = function(format)
 //
 SyncFsm.prototype.setupSoapCall = function(state, eventOnResponse, method)
 {
-	this.state.m_logger.debug("setupSoapCall: state: " + state + " eventOnResponse: " + eventOnResponse + " method: " + method);
+	this.state.m_logger.debug("setupSoapCall: state: " + state + " eventOnResponse: " + eventOnResponse + " method: " + method +
+	                          " evNext will be: " + this.fsm.transitions[state][eventOnResponse]);
 
 	var args = new Array();
 	for (var i = SyncFsm.prototype.setupSoapCall.length; i < arguments.length; i++)
@@ -3087,10 +3073,6 @@ SyncFsm.prototype.setupSoapCall = function(state, eventOnResponse, method)
 		this.fsm.aActionExit['stSoapResponse'] = this.fsm.aActionExit[state];
 	else
 		this.fsm.aActionExit['stSoapResponse'] = this.exitActionSoapResponse;
-		
-
-	this.state.m_logger.debug("setupSoapCall: stSoapResponse evNext is: " + this.fsm.transitions[state][eventOnResponse]);
-	this.state.m_logger.debug("setupSoapCall: stSoapResponse aActionExit is: " + this.fsm.aActionExit[state]); // blah
 }
 
 SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
