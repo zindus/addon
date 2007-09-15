@@ -36,7 +36,7 @@ function ZinMaestro()
 	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
 	this.m_a_fsmstate = new Object();
 	this.m_logger     = newZinLogger("ZinMaestro");
-	this.m_logger.level(ZinLogger.NONE); // TODO remove me - just wanted to shut the maestro up for a bit
+	this.m_logger.level(ZinLogger.NONE);
 
 	this.TOPIC                 = ZinMaestro.TOPIC;
 	this.DO_FUNCTOR_REGISTER   = ZinMaestro.DO_FUNCTOR_REGISTER;

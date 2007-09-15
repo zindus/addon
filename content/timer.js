@@ -64,8 +64,7 @@ function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
 
 	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfo               = new SyncFsmObserver();
-	this.m_messengerWindow   = null;
-	this.m_addressbookWindow = null;
+	this.m_messengerWindow   = null;  // also considered putting status here: this.m_addressbookWindow = null;
 	this.m_id_fsm_functor    = id_fsm_functor;
 	this.m_delay_on_repeat   = delay_on_repeat; // null implies ONE_SHOT, non-null implies REPEAT frequency in seconds
 	this.m_is_fsm_functor_first_entry = true;
@@ -101,9 +100,6 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.m_is_fsm_functor_first_entry = false;
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
-			// set m_messengerWindow and m_addressbookWindow...
-			// TODO: m_addressbookWindow
-			//
 			var a_id = { 'zindus-statuspanel' : null };
 
 			this.getWindowsContainingElementIds(a_id);

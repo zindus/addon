@@ -1551,18 +1551,13 @@ SyncFsm.prototype.updateGidFromSources = function()
 					this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: key: " + key);
 
 					if (isPropertyPresent(aChecksum, key) && aToLength(aChecksum[key]) > 0)
-					{
-						// matched a checksum - treat this as a twin for the moment - TODO - confirm that the fields match...
-						//
 						for (var luid_possible in aChecksum[key])
 							if (aChecksum[key][luid_possible] && this.context.isTwin(this.state.sourceid_tb, sourceid, luid_possible, luid))
 							{
 								luid_tb = luid_possible;
+								this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: matched a checksum: luid_tb: " + luid_tb);
 								break;
 							}
-
-						this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: matched a checksum: luid_tb: " + luid_tb);
-					}
 
 					if (luid_tb)
 					{
