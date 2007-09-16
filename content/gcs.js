@@ -34,6 +34,8 @@ Gcs.bimap_state = new BiMap(
 
 function Gcs(sourceid_winner, state)
 {
+	zinAssert(typeof(sourceid_winner) == 'number' && Gcs.bimap_state.isPresent(state));
+
 	this.sourceid_winner = sourceid_winner;
 	this.state           = state;
 }

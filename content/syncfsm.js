@@ -1431,7 +1431,7 @@ SyncFsm.isOfInterest = function(zfc, id)
 		}
 	}
 
-	gLogger.debug("SyncFsm.isOfInterest: blah: id: " + id + " returns: " + ret);
+	// gLogger.debug("SyncFsm.isOfInterest: blah: id: " + id + " returns: " + ret);
 
 	return ret;
 }
@@ -1775,7 +1775,7 @@ SyncFsm.prototype.buildGcs = function()
 		{
 			this.state.m_logger.debug("buildGcs: about to determine winner for sourceid: " + sourceid + " zfi: " + zfi.toString());
 
-			if (SyncFsm.isOfInterest(sources[sourceid]['zfcLuid'], zfi.id()))
+			if (SyncFsm.isOfInterest(this.state.sources[sourceid]['zfcLuid'], zfi.id()))
 			{
 				var luid = zfi.id();
 				var gid  = reverse[sourceid][luid];
@@ -1864,22 +1864,6 @@ SyncFsm.prototype.buildGcs = function()
 				zinAssert(cVerMatchesGid == 0 && cChangeOfNote == 0);
 
 				ret = new Gcs(propertyFromObject(aNeverSynced), Gcs.WIN);
-				
-				if (0)
-				{
-				if (cNeverSynced == 1)
-					ret = new Gcs(propertyFromObject(aNeverSynced), Gcs.WIN);
-				else
-				{
-					// a slow sync matched these items
-					// by declaring tb the winner here, the zm sources get (unnecessarily) updated
-					// and as a result, all the versioning meta-data gets set currently
-					// at some point, this can be made more efficient by setting the versioning meta-data
-					// when the twins are identified...
-					zinAssert(isPropertyPresent(aNeverSynced, sourceid_tb));
-					ret = new Gcs(sourceid_tb, Gcs.WIN);
-				}
-				}
 			}
 			else if (cChangeOfNote == 0)
 			{
@@ -1890,11 +1874,11 @@ SyncFsm.prototype.buildGcs = function()
 				ret = new Gcs(propertyFromObject(aChangeOfNote), Gcs.WIN);
 			else
 			{
-				var lowest_sourceid = 100000;
+				var lowest_sourceid = null;
 
 				for (var i in aChangeOfNote)
-					if (aChangeOfNote[i] < lowest_sourceid)
-						lowest_sourceid = aChangeOfNote[i];
+					if (lowest_sourceid == null || aChangeOfNote[i] < lowest_sourceid)
+						lowest_sourceid = i;
 
 				ret = new Gcs(lowest_sourceid, Gcs.CONFLICT);
 			}
@@ -1904,8 +1888,6 @@ SyncFsm.prototype.buildGcs = function()
 			return ret;
 		}
 	};
-
-	var sources = this.state.sources; // bring the name into scope
 
 	for (sourceid in this.state.sources)
 		aZfcCandidate[sourceid].forEach(functor_foreach_candidate, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
@@ -1931,7 +1913,7 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 	{
 		suo = null;
 
-		var msg = "55432 - suoBuildWinners:";
+		var msg = "suoBuildWinners: gid: " + gid + " winning sourceid: " + aGcs[gid].sourceid_winner;
 
 		switch (aGcs[gid].state)
 		{
@@ -1941,9 +1923,6 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 				var sourceid  = winner;
 				var zfcWinner = this.state.sources[winner]['zfcLuid']; // this.getZfc(winner) 
 				var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(winner)); // this.getLuid(collection, sourceid)
-				// this.getZfc(winner).getLuid(collection, sourceid)
-
-				msg += " gid: " + gid + " target sourceid: " + sourceid;
 
 				if (!zfiWinner.isPresent(ZinFeedItem.ATTR_LS)) // winner is new to gid
 				{
@@ -1986,7 +1965,6 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 	return aSuoResult;
 }
 
-
 // The suo's returned by this method are organised into buckets to suit later processing (by source, by operation, by content type):
 // - aSuo[sourceid][Suo.ADD | ZinFeedItem.TYPE_FL][id] = suo
 // - for Suo.MOD and Suo.DEL, id is the target luid (so that the zimbra response can easily find the the corresponding suo,
@@ -2009,19 +1987,17 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	{
 		suo = null;
 
-		var msg = "55434 - suoBuildLosers:";
+		var msg = "suoBuildLosers:  gid: " + gid + " losing  sourceid: " + sourceid + " gcs: " + aGcs[gid].toString();
 
 		switch (aGcs[gid].state)
 		{
 			case Gcs.WIN:
 			case Gcs.CONFLICT:
 			{
-				var winner = aGcs[gid].sourceid_winner;
+				var winner    = aGcs[gid].sourceid_winner;
 				var zfcWinner = this.state.sources[winner]['zfcLuid'];
 				var zfcTarget = this.state.sources[sourceid]['zfcLuid'];
 				var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(winner));
-
-				msg += " gid: " + gid + " target sourceid: " + sourceid;
 
 				if (!zfcGid.get(gid).isPresent(sourceid))
 				{
@@ -2036,7 +2012,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 					}
 				}
 				else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
-					msg += " lso and version match gid - do nothing"; // do nothing
+					msg += " lso and version match gid - do nothing";
 				else if (zfiWinner.isPresent(ZinFeedItem.ATTR_DEL))
 					suo = new Suo(gid, winner, sourceid, Suo.DEL);
 				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.id()))
@@ -2096,7 +2072,7 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 	{
 		suo = aSuoWinners[i];
 
-		this.state.m_logger.debug("2277 - acting on suo: - " + " suo: "  + suo.toString());
+		this.state.m_logger.debug("suoRunWinners: " + " suo: "  + suo.toString());
 
 		var zfcWinner   = this.state.sources[suo.sourceid_winner]['zfcLuid'];
 		var luid_winner = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
@@ -2107,7 +2083,7 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 
 SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 {
-	this.updateTbLuidMap();                      // 2.  update the local thunderbird map...
+	this.updateTbLuidMap();
 	continuation('evNext');
 }
 
@@ -2115,14 +2091,14 @@ SyncFsm.prototype.entryActionSyncPrepare = function(state, event, continuation)
 {
 	var aSuoWinners;
 
-	this.updateGidFromSources();                 // 4.  map all luids into a single namespace (the gid)
-	var aGcs = this.buildGcs();                  // 5.  reconcile the sources (via the gid) into a single truth (the sse output array) 
-	this.buildPreUpdateWinners(aGcs);            // 6.  save state of winners before they are updated (to distinguish an ms vs md update)
-	this.settleSomeConflicts();                  // 7.  a bit of conflict handling
-	aSuoWinners = this.suoBuildWinners(aGcs);    // 8.  generate operations required to bring meta-data for winners up to date
-	this.suoRunWinners(aSuoWinners);             // 9.  run the operations for winners
-	this.state.aSuo = this.suoBuildLosers(aGcs); // 10. generate the operations required to bring the losing sources up to date
-	                                             // ... subsequent state(s) run the suo's for the losers in this.state.aSuo
+	this.updateGidFromSources();                 // 1.  map all luids into a single namespace (the gid)
+	var aGcs = this.buildGcs();                  // 2.  reconcile the sources (via the gid) into a single truth (the sse output array) 
+	this.buildPreUpdateWinners(aGcs);            // 3.  save state of winners before they are updated (to distinguish an ms vs md update)
+	this.settleSomeConflicts();                  // 4.  a bit of conflict handling
+	aSuoWinners = this.suoBuildWinners(aGcs);    // 5.  generate operations required to bring meta-data for winners up to date
+	this.suoRunWinners(aSuoWinners);             // 6.  run the operations that update winner meta-data
+	this.state.aSuo = this.suoBuildLosers(aGcs); // 7.  generate the operations required to bring the losing sources up to date
+	                                             //     subsequent state(s) run the suo's for the losers in this.state.aSuo
 
 	continuation('evNext');
 }
@@ -2973,9 +2949,8 @@ SyncFsm.prototype.resetLsoVer = function(gid, zfi)
 		lsoFromZfiAttributes.set(ZinFeedItem.ATTR_VER, ver);
 		zfi.set(ZinFeedItem.ATTR_LS, lsoFromZfiAttributes.toString());
 
-		this.state.m_logger.debug("9664: gid ver set to: " + ver + " and zfi: " + zfi.toString());
+		this.state.m_logger.debug("resetLsoVer: gid: " + gid + " ver set to: " + ver + " and zfi is now: " + zfi.toString());
 	}
-
 }
 
 SyncFsm.prototype.feedItemTypeFromGid = function(gid, sourceid)
