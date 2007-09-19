@@ -64,7 +64,7 @@ SyncFsm.getFsm = function(context)
 		stGetContact:     { evCancel: 'final', evNext:  'stSyncGal',        evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContact' },
 		stSyncGal:        { evCancel: 'final', evNext:  'stSyncGalCommit',  evSoapRequest: 'stSoapRequest'                           },
 		stSyncGalCommit:  { evCancel: 'final', evNext:  'stConverge'                                                                 },
-		stConverge:       { evCancel: 'final', evNext:  'stUpdateTb'                                                                 },
+		stConverge:       { evCancel: 'final', evNext:  'stUpdateTb',                                       evLackIntegrity: 'final' },
 		stUpdateTb:       { evCancel: 'final', evNext:  'stUpdateZm'                                                                 },
 		stUpdateZm:       { evCancel: 'final', evNext:  'stUpdateCleanup',  evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateZm'   },
 		stUpdateCleanup:  { evCancel: 'final', evNext:  'stCommit',                                         evLackIntegrity: 'final' },
@@ -1132,21 +1132,19 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	//   "addressbooks have changed in a way that I can't follow - giving up"
 	// - DONE filter out dupes                                                     ==> warning and give up
 	// - DONE filter out reserved folder names and those with invalid characters   ==> warning and give up
-	// - filter out pab has remained invariant                                ==> warning and give up
+	// - DONE filter out pab has remained invariant                                ==> warning and give up
 	// - DONE filter out mailing lists
 	// - DONE do deletion detection
 	//
 
-// somewhere in this routine we might want to handle:
-// - deleting the PAB ==> how to handle?
-// - renaming the PAB ==> how to handle?
-//
+	var tb_emailed_contacts = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, ZM_EMAILED_CONTACTS);
 	var zfcTbPreMerge = zinCloneObject(this.state.sources[this.state.sourceid_tb]['zfcLuid']);
 
 	aUri = this.loadTbMergeZfcWithAddressBook();
 	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);
 	passed = this.loadTbTestFolderNameRules();
-	// passed = this.loadTbTestPab(zfcTbPreMerge);
+	passed = passed && this.loadTbTestReservedFolderInvariant(zfcTbPreMerge, TB_PAB);
+	passed = passed && this.loadTbTestReservedFolderInvariant(zfcTbPreMerge, tb_emailed_contacts);
 
 	var nextEvent = 'evNext';
 
@@ -1156,15 +1154,65 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
-SyncFsm.prototype.loadTbTestPab = function(zfcTbPre)
+SyncFsm.prototype.loadTbTestReservedFolderInvariant = function(zfcTbPre, name)
 {
-	var pabIdPre, pabIdPost, pabPrefIdPre, pabPrefIdPost;
+	var idPre, idPost, prefidPre, prefidPost;
 	var zfcTbPost = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
 
-	[ pabIdPre, pabPrefIdPre ] = this.pabIdFromZfc(zfcTbPre);
-	[ pabIdPost, pabPrefIdPost ] = this.pabIdFromZfc(zfcTbPost);
+	zinAssert(!this.state.stopFailCode);
 
+	if (!this.state.isSlowSync)
+	{
+		[ idPre, prefidPre ]   = this.loadTbLookupFolderInZfc(zfcTbPre, name);
+		[ idPost, prefidPost ] = this.loadTbLookupFolderInZfc(zfcTbPost, name);
 
+		this.state.m_logger.debug("loadTbTestPab: blah: name: " + name +
+			" idPre: " + idPre + " idPost: " + idPost +
+			" prefidPre: " + prefidPre + " prefidPost: " + prefidPost);
+
+		if (!idPost || prefidPre != prefidPost)    // no folder by this name or it changed since last sync
+		{
+			this.state.stopFailCode   = 'FailOnFolderReservedChanged';
+			this.state.stopFailDetail = name;
+		}
+	}
+
+	this.state.m_logger.debug("loadTbTestPab: blah: name: " + name + " returns: " + (this.state.stopFailCode == null));
+
+	return this.state.stopFailCode == null;
+}
+
+SyncFsm.prototype.loadTbLookupFolderInZfc = function(zfc, name)
+{
+	var zfiPab = null;
+
+	var functor = {
+		run: function(zfi)
+		{
+			var ret = true;
+
+			if (zfi.type() == ZinFeedItem.TYPE_FL &&
+				zfi.isPresent(ZinFeedItem.ATTR_NAME) &&
+				zfi.get(ZinFeedItem.ATTR_NAME) == name)
+			{
+				zfiPab = zfi;
+				ret = false;
+			}
+
+			return ret;
+		}
+	};
+
+	zfc.forEach(functor, ZinFeedCollection.ITER_UNRESERVED);
+
+	var ret;
+
+	if (zfiPab)
+		ret = [ zfiPab.id(), zfiPab.get(ZinFeedItem.ATTR_TPI) ];
+	else
+		ret = [ null, null ];
+
+	return ret;
 }
 
 SyncFsm.isZmFolderReservedName = function(name)
@@ -1481,10 +1529,6 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	zfcTb.forEach(functor_mark_deleted, ZinFeedCollection.ITER_UNRESERVED);
 }
 
-SyncFsm.TB_FOLDER_NAME_DUPLICATE = 0x01;
-SyncFsm.TB_FOLDER_NAME_RESERVED  = 0x02;
-SyncFsm.TB_FOLDER_NAME_INVALID   = 0x04;
-
 SyncFsm.prototype.loadTbTestFolderNameRules = function()
 {
 	var zfcTb = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
@@ -1527,14 +1571,14 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 	if (aToLength(functor.a_folder_violation) > 0)
 	{
 		var name = propertyFromObject(functor.a_folder_violation);
-		this.state.loadTbFailCode   = functor.a_folder_violation[name];
-		this.state.loadTbFailDetail = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, name);
+		this.state.stopFailCode   = functor.a_folder_violation[name];
+		this.state.stopFailDetail = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, name);
 
-		this.state.m_logger.debug("loadTbTestFolderNameRules: blah: loadTbFailCode: " + this.state.loadTbFailCode +
-		                                                    " loadTbFailDetail: " + this.state.loadTbFailDetail);
+		this.state.m_logger.debug("loadTbTestFolderNameRules: blah: stopFailCode: " + this.state.stopFailCode +
+		                                                    " stopFailDetail: " + this.state.stopFailDetail);
 	}
 
-	var ret = this.state.loadTbFailCode == null;
+	var ret = this.state.stopFailCode == null;
 
 	this.state.m_logger.debug("loadTbTestFolderNameRules: blah: returns: " + ret);
 
@@ -2192,8 +2236,44 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	return aSuoResult;
 }
 
-SyncFsm.prototype.settleSomeConflicts = function()
+SyncFsm.prototype.testFolderNameDuplicate = function(aGcs)
 {
+	var aFolderName = new Object();
+	var name;
+
+	zinAssert(!this.state.stopFailCode);
+
+	for (var gid in aGcs)
+	{
+		var sourceid = aGcs[gid].sourceid;
+		var zfc      = this.state.sources[sourceid]['zfcLuid'];
+		var format   = this.state.sources[sourceid]['format'];
+		var luid     = this.state.zfcGid.get(gid).get(sourceid);
+		var zfi      = zfc.get(luid);
+
+		if (zfi.type() == ZinFeedItem.TYPE_FL)
+		{
+			zinAssert(zfi.isPresent(ZinFeedItem.ATTR_NAME));
+
+			name = ZinContactConverter.instance().convertFolderName(format, FORMAT_TB, zfi.get(ZinFeedItem.ATTR_NAME));
+
+			if (isPropertyPresent(aFolderName, name))
+			{
+				this.state.stopFailCode   = 'FailOnFolderNameClash';
+				this.state.stopFailDetail = name;
+				break;
+			}
+			else
+				aFolderName[name] = gid;
+		}
+	}
+
+	var ret = this.state.stopFailCode == null;
+
+	this.state.m_logger.debug("testFolderNameDuplicate: blah: aFolderName: " + aToString(aFolderName));
+	this.state.m_logger.debug("testFolderNameDuplicate: blah: returns: " + ret + " stopFailCode: " + this.state.stopFailCode);
+
+	return ret;
 }
 
 SyncFsm.prototype.buildPreUpdateWinners = function(aGcs)
@@ -2229,17 +2309,27 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 SyncFsm.prototype.entryActionConverge = function(state, event, continuation)
 {
 	var aSuoWinners;
+	var passed;
 
-	this.updateGidFromSources();                 // 1.  map all luids into a single namespace (the gid)
-	var aGcs = this.buildGcs();                  // 2.  reconcile the sources (via the gid) into a single truth (the sse output array) 
-	this.buildPreUpdateWinners(aGcs);            // 3.  save state of winners before they are updated (to distinguish an ms vs md update)
-	this.settleSomeConflicts();                  // 4.  a bit of conflict handling
-	aSuoWinners = this.suoBuildWinners(aGcs);    // 5.  generate operations required to bring meta-data for winners up to date
-	this.suoRunWinners(aSuoWinners);             // 6.  run the operations that update winner meta-data
-	this.state.aSuo = this.suoBuildLosers(aGcs); // 7.  generate the operations required to bring the losing sources up to date
-	                                             //     subsequent state(s) run the suo's for the losers in this.state.aSuo
+	this.updateGidFromSources();                     // 1.  map all luids into a single namespace (the gid)
+	var aGcs = this.buildGcs();                      // 2.  reconcile the sources (via the gid) into a single truth (the sse output array) 
+	this.buildPreUpdateWinners(aGcs);                // 3.  save winner state before it gets updated to distinguish an ms vs md update
+	passed = this.testFolderNameDuplicate(aGcs);     // 4.  a bit of conflict detection
 
-	continuation('evNext');
+	if (passed)
+	{
+		aSuoWinners = this.suoBuildWinners(aGcs);    // 5.  generate operations required to bring meta-data for winners up to date
+		this.suoRunWinners(aSuoWinners);             // 6.  run the operations that update winner meta-data
+		this.state.aSuo = this.suoBuildLosers(aGcs); // 7.  generate the operations required to bring the losing sources up to date
+		                                             //     subsequent state(s) run the suo's for the losers in this.state.aSuo
+	}
+
+	var nextEvent = 'evNext';
+
+	if (!passed)
+		nextEvent = 'evLackIntegrity';
+
+	continuation(nextEvent);
 }
 
 SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
@@ -3526,8 +3616,8 @@ function SyncFsmState(id_fsm)
 	this.aQueue              = new Object(); // associative array of contact ids - ids added in SyncResponse, deleted in GetContactResponse
 	this.isRedoSyncRequest   = false;        // we may need to do <SyncRequest> again - the second time without a token
 	this.aSyncContact        = new Object(); // each property is a ZimbraContact object returned in GetContactResponse
-	this.loadTbFailCode      = null;         // if stLoadTb continues on evLackIntegrity, these values are set for the observer
-	this.loadTbFailDetail    = null;
+	this.stopFailCode        = null;         // if stLoadTb or stConverge continue on evLackIntegrity, these values are set for the observer
+	this.stopFailDetail      = null;
 	this.aSuo                = null;         // container for source update operations - populated in Converge
 	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
 

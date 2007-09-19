@@ -39,7 +39,9 @@ function SyncFsmExitStatus()
 		FailOnUnknown                 : 6,  // this should never be!
 		FailOnFolderNameDuplicate     : 7,  // 
 		FailOnFolderNameReserved      : 8,  // 
-		FailOnFolderNameInvalid       : 9
+		FailOnFolderNameInvalid       : 9,
+		FailOnFolderReservedChanged   : 10,
+		FailOnFolderNameClash         : 11  // the same folder name entered the namespace from both tb and zm sides
 	};
 }
 
@@ -80,11 +82,10 @@ SyncFsmExitStatus.prototype.failcode = function()
 SyncFsmExitStatus.prototype.isFailOnFolder = function()
 {
 	var code = this.failcode();
-	dump("am here 58: code: " + code + "\n");
 
-	var ret = ((code == 'FailOnFolderNameDuplicate') || (code == 'FailOnFolderNameReserved') || (code == 'FailOnFolderNameInvalid'));
-
-	dump("isFailOnFolder: returns: " + ret + "\n");
+	var ret = ((code == 'FailOnFolderNameDuplicate') || (code == 'FailOnFolderNameReserved') ||
+	           (code == 'FailOnFolderNameInvalid')   || (code == 'FailOnFolderReservedChanged') ||
+	           (code == 'FailOnFolderNameClash'));
 
 	return ret;
 }

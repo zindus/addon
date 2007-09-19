@@ -199,10 +199,11 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 						es.failcode('FailOnIntegrityBadCredentials');
 					else if (fsmstate.oldstate == 'stLoad')
 						es.failcode('FailOnIntegrityDataStoreIn');
-					else if (fsmstate.oldstate == 'stLoadTb')
+					else if (fsmstate.oldstate == 'stLoadTb' || fsmstate.oldstate == 'stConverge')
 					{
-						es.failcode(context.state.loadTbFailCode);   // one of the FailOnFolderName* codes
-						es.m_fail_detail = context.state.loadTbFailDetail;
+						dump("am here 1: stopFailCode: " + context.state.stopFailCode + "\n");
+						es.failcode(context.state.stopFailCode);   // one of the FailOnFolderName* codes
+						es.m_fail_detail = context.state.stopFailDetail;
 					}
 					else if (fsmstate.oldstate == 'stUpdateCleanup')
 						es.failcode('FailOnIntegrityDataStoreOut'); // this indicates a bug in our code

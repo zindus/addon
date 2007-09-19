@@ -209,8 +209,7 @@ Prefs.prototype.msgFromSyncFsmPayload = function(payload, sbsSuccess, sbsFailure
 		else
 		{
 			msg += stringBundleString(sbsFailure);
-			var stringid = exitStatus.failCodeStringId();
-			msg += "\n" + stringBundleString(stringid);
+			msg += "\n" + stringBundleString(exitStatus.failCodeStringId());
 
 			if (exitStatus.failcode() == 'FailOnFault')
 			{
