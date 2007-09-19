@@ -54,7 +54,8 @@ SyncFsm.getFsm = function(context)
 	fsm.transitions = {
 		start:            { evCancel: 'final', evStart: 'stAuth',                                           evLackIntegrity: 'final' },
 		stAuth:           { evCancel: 'final', evNext:  'stLoad',           evSoapRequest: 'stSoapRequest'                           },
-		stLoad:           { evCancel: 'final', evNext:  'stGetAccountInfo', evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final' },
+		stLoad:           { evCancel: 'final', evNext:  'stLoadTb',         evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final' },
+		stLoadTb:         { evCancel: 'final', evNext:  'stGetAccountInfo',                                 evLackIntegrity: 'final' },
 		stGetAccountInfo: { evCancel: 'final', evNext:  'stGetInfo',        evSoapRequest: 'stSoapRequest'                           },
 		stGetInfo:        { evCancel: 'final', evNext:  'stCheckLicense',   evSoapRequest: 'stSoapRequest'                           },
 		stCheckLicense:   { evCancel: 'final', evNext:  'stSync',           evSoapRequest: 'stSoapRequest'                           },
@@ -62,8 +63,7 @@ SyncFsm.getFsm = function(context)
 		stSyncResult:     { evCancel: 'final', evNext:  'stGetContact',     evRepeat:      'stSync'                                  },
 		stGetContact:     { evCancel: 'final', evNext:  'stSyncGal',        evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContact' },
 		stSyncGal:        { evCancel: 'final', evNext:  'stSyncGalCommit',  evSoapRequest: 'stSoapRequest'                           },
-		stSyncGalCommit:  { evCancel: 'final', evNext:  'stLoadTb'                                                                   },
-		stLoadTb:         { evCancel: 'final', evNext:  'stConverge',                                       evLackIntegrity: 'final' },
+		stSyncGalCommit:  { evCancel: 'final', evNext:  'stConverge'                                                                 },
 		stConverge:       { evCancel: 'final', evNext:  'stUpdateTb'                                                                 },
 		stUpdateTb:       { evCancel: 'final', evNext:  'stUpdateZm'                                                                 },
 		stUpdateZm:       { evCancel: 'final', evNext:  'stUpdateCleanup',  evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateZm'   },
@@ -276,7 +276,9 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	if (cExist == 0)
 	{
-		this.state.m_logger.debug("entryActionLoad: data files didn't exist - initialising...");
+		this.state.m_logger.debug("entryActionLoad: data files didn't exist - initialising - will do a slow sync");
+
+		this.state.isSlowSync = true;
 
 		this.initialiseZfcLastSync();
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
@@ -291,17 +293,6 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		nextEvent = 'evLackIntegrity';
 
 	continuation(nextEvent);
-}
-
-SyncFsm.prototype.isSlowSync = function(sourceid)
-{
-	zinAssert(this.state.sources[sourceid]['format'] == FORMAT_ZM);
-
-	var ret = !this.state.zfcLastSync.get(sourceid).isPresent('SyncToken');
-
-	this.state.m_logger.debug("isSlowSync: sourceid: " + sourceid + " returns: " + ret);
-
-	return ret;
 }
 
 // Here's what's tested:
@@ -606,8 +597,7 @@ SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 	var SyncTokenInRequest = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncToken');
 
 	// slow sync <==> no "last sync token"
-	zinAssert((!SyncTokenInRequest && this.isSlowSync(this.state.sourceid_zm)) ||
-	           (SyncTokenInRequest && !this.isSlowSync(this.state.sourceid_zm)));
+	zinAssert((!SyncTokenInRequest && this.state.isSlowSync) || (SyncTokenInRequest && !this.state.isSlowSync));
 
 	if (this.state.isRedoSyncRequest)
 		SyncTokenInRequest = null;
@@ -1151,9 +1141,12 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 // - deleting the PAB ==> how to handle?
 // - renaming the PAB ==> how to handle?
 //
+	var zfcTbPreMerge = zinCloneObject(this.state.sources[this.state.sourceid_tb]['zfcLuid']);
+
 	aUri = this.loadTbMergeZfcWithAddressBook();
 	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);
 	passed = this.loadTbTestFolderNameRules();
+	// passed = this.loadTbTestPab(zfcTbPreMerge);
 
 	var nextEvent = 'evNext';
 
@@ -1163,16 +1156,27 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
+SyncFsm.prototype.loadTbTestPab = function(zfcTbPre)
+{
+	var pabIdPre, pabIdPost, pabPrefIdPre, pabPrefIdPost;
+	var zfcTbPost = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
+
+	[ pabIdPre, pabPrefIdPre ] = this.pabIdFromZfc(zfcTbPre);
+	[ pabIdPost, pabPrefIdPost ] = this.pabIdFromZfc(zfcTbPost);
+
+
+}
+
 SyncFsm.isZmFolderReservedName = function(name)
 {
 	// for the list used by the zimbra web client, see ZimbraWebClient/WebRoot/js/zimbraMail/share/model/ZmFolder.js 
 	// even though 'contacts' and 'emailed contacts' are reserved names, they aren't in the list below
 	// because we expect them to have corresponding tb addressbooks
 	//
-	var reReservedFolderNames = /inbox|trash|junk|sent|drafts|tags|calendar|notebook|chats/i;
+	var reReservedFolderNames = /^\s*(inbox|trash|junk|sent|drafts|tags|calendar|notebook|chats)\s*$/i;
 	var ret = name.match(reReservedFolderNames) != null;
 
-	// gLogger.debug("isZmFolderReservedName: name: " + name + " returns: " + ret);
+	gLogger.debug("isZmFolderReservedName: name: " + name + " returns: " + ret);
 
 	return ret;
 }
@@ -1765,13 +1769,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 	[ bimapTbFolderLuid ] = ZinFeed.getTopLevelFolderLuidBimap(this.state.sources[this.state.sourceid_tb]['zfcLuid'],
 		                                   ZinFeedItem.ATTR_NAME, ZinFeedCollection.ITER_UNRESERVED);
 
-	var isSlowSync = false;
-
-	for (sourceid in this.state.sources)
-		if (this.state.sources[sourceid]['format'] == FORMAT_ZM && this.isSlowSync(sourceid))
-			isSlowSync = true;
-
-	if (isSlowSync)
+	if (this.state.isSlowSync)
 	{
 		var aChecksum = new Object(); // aChecksum[sourceid][checksum][luid] = true;
 
@@ -1795,7 +1793,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 		// zfc.forEach(functor_foreach_luid_fast_sync, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 
-		if ((format == FORMAT_TB) || (format == FORMAT_ZM && !this.isSlowSync(sourceid)))
+		if (format == FORMAT_TB || !this.state.isSlowSync)
 			zfc.forEach(functor_foreach_luid_fast_sync, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 		else
 			zfc.forEach(functor_foreach_luid_slow_sync, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
@@ -3515,6 +3513,7 @@ function SyncFsmState(id_fsm)
 	this.lifetime            = null;
 	this.soapURL             = null;         // see setCredentials() -  and may be modified by a <soapURL> response from GetAccountInfo
 	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
+	this.isSlowSync          = false;        // true iff no data files
 	this.isZimbraFeatureGalEnabled = false;     // GetInfo ==> FALSE ==> don't do SyncGalRequest
 	this.mapiStatus          = null;         // CheckLicenseStatus
 	this.aSyncGalContact     = null;         // SyncGal

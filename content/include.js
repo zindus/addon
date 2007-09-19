@@ -32,20 +32,21 @@ function include(url)
 	{
 		var is_exception = false;
 
-		// ret = loader.loadSubScript(url);  // note - this is here for debugging only - otherwise the url is included twice!
-
-		try {
-			ret = loader.loadSubScript(url);
-		}
-		catch (ex)
-		{
-			is_exception = true;
-
-			if (typeof alert == 'function')
-				alert(ex.message + " stack: \n" + ex.stack);
-			else
-				print(ex.message + " stack: \n" + ex.stack);
-		}
+		if (true)
+			ret = loader.loadSubScript(url);  // note - this is here for debugging only - otherwise the url is included twice!
+		else
+			try {
+				ret = loader.loadSubScript(url);
+			}
+			catch (ex)
+			{
+				is_exception = true;
+	
+				if (typeof alert == 'function')
+					alert(ex.message + " stack: \n" + ex.stack);
+				else
+					print(ex.message + " stack: \n" + ex.stack);
+			}
 
 		if (false)
 		if (is_exception) // this is the code from Assert()
