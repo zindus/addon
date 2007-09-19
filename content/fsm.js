@@ -21,15 +21,13 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/maestro.js");
-
 // Notes:
 // - only entry actions should call continuation() - not sure what happens
 //   if continuation() is called from a transition or exit action.
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.18 2007-07-31 07:04:18 cvsuser Exp $
+// $Id: fsm.js,v 1.19 2007-09-19 04:44:46 cvsuser Exp $
 
 if (typeof fsmlogger != 'object' || !fsmlogger)
     fsmlogger = newZinLogger("fsm");

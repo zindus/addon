@@ -21,9 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/contactconverter.js");
-include("chrome://zindus/content/crc32.js");
-
 function ZimbraAddressBook()
 {
 }
@@ -88,14 +85,11 @@ ZimbraAddressBook.forEachCard = function(uri, functor)
 	{
 		var item = enm.currentItem();
 
-		dump("am here 111\n");
 		fContinue = functor.run(uri, item);
-		dump("am here 112\n");
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		try { enm.next(); } catch(ex) { fContinue = false; }
-		dump("am here 113\n");
 	}
 }
 
@@ -107,30 +101,9 @@ ZimbraAddressBook.crc32 = function(properties)
 		if (properties[i].length > 0)
 			ret |= crc32(i + ":" + properties[i]);
 
-	// newZinLogger("ZimbraAddressBook").debug("crc32: crc: " + ret);
+	// newZinLogger("ZimbraAddressBook").debug("crc32: returns crc: " + ret);
 
 	return ret;
-}
-
-ZimbraAddressBook.contactPropertyChecksum = function(properties)
-{
-	var i, j, length;
-	var charcount = 1;
-	var checksum = 0;
-
-	for (i in properties)
-	{
-		length = properties[i].length;
-
-		for (j = 0; j < length; j++)
-		{
-			var tmp = checksum;
-			checksum = (checksum + ((charcount % 10) * properties[i].charCodeAt(j))) % Number.MAX_VALUE;
-			charcount++;
-		}
-	}
-
-	return checksum;
 }
 
 ZimbraAddressBook.instanceAbook = function()

@@ -32,16 +32,21 @@ Gcs.bimap_state = new BiMap(
 	['win',   'conflict', ]);
 
 
-function Gcs(sourceid_winner, state)
+function Gcs(sourceid, state)
 {
-	zinAssert(typeof(sourceid_winner) == 'number' && Gcs.bimap_state.isPresent(state));
+	// TODO remove me
+	// gLogger.debug("Gcs: sourceid: " + sourceid); // blah
+	// gLogger.debug("Gcs: state:    " + state);
+	// gLogger.debug("Gcs: Gcs.bimap_state.isPresent(state): " + Gcs.bimap_state.isPresent(state));
 
-	this.sourceid_winner = sourceid_winner;
-	this.state           = state;
+	zinAssert(isSourceId(sourceid) && Gcs.bimap_state.isPresent(state));
+
+	this.sourceid = sourceid;
+	this.state    = state;
 }
 
 Gcs.prototype.toString = function()
 {
-	return  "winner: " + this.sourceid_winner +
+	return  "winner: " + this.sourceid +
 			" state: " + Gcs.bimap_state.lookup(this.state);
 }

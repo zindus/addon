@@ -21,12 +21,9 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/utils.js");
 include("chrome://zindus/content/syncfsm.js");
-include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/payload.js");
-include("chrome://zindus/content/logger.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsmobserver.js");
 

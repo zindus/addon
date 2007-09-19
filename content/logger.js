@@ -23,10 +23,10 @@
 
 // simple logging api, no appenders
 
-include("chrome://zindus/content/utils.js");
-include("chrome://zindus/content/bimap.js");
-include("chrome://zindus/content/mozillapreferences.js");
-include("chrome://zindus/content/Filesystem.js");
+// include("chrome://zindus/content/utils.js");
+// include("chrome://zindus/content/bimap.js");
+// include("chrome://zindus/content/mozillapreferences.js");
+// include("chrome://zindus/content/Filesystem.js");
 
 ZinLogger.NONE  = 6;
 ZinLogger.FATAL = 5;

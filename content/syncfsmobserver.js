@@ -104,7 +104,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 {
 	var ret = false;
 	var a_states_of_interest = { stAuth : 0,      stLoad: 1,     stSync: 2,           stSyncResult: 2,
-	                             stGetContact: 3, stSyncGal: 4,  stLoadTb : 5,        stSyncPrepare: 6,
+	                             stGetContact: 3, stSyncGal: 4,  stLoadTb : 5,        stConverge: 6,
 								 stUpdateTb: 7,   stUpdateZm: 8, stUpdateCleanup: 9,  final: 10 };
 
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
@@ -123,7 +123,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 			case 'stSyncResult':    this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
 			case 'stSyncGal':       this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
 			case 'stLoadTb':        this.progressReportOnSource(context.state.sourceid_zm, "GetItem");    break;
-			case 'stSyncPrepare':   this.progressReportOn("Converge");                                    break;
+			case 'stConverge':      this.progressReportOn("Converge");                                    break;
 			case 'stUpdateTb':      this.progressReportOnSource(context.state.sourceid_tb, "Put");        break;
 			case 'stUpdateCleanup': this.progressReportOn("Saving");                                      break;
 
@@ -196,13 +196,18 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 					es.m_exit_status = 1;
 
 					if (fsmstate.oldstate == 'start')
-						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityBadCredentials;
+						es.failcode('FailOnIntegrityBadCredentials');
 					else if (fsmstate.oldstate == 'stLoad')
-						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityDataStoreIn;
+						es.failcode('FailOnIntegrityDataStoreIn');
+					else if (fsmstate.oldstate == 'stLoadTb')
+					{
+						es.failcode(context.state.loadTbFailCode);   // one of the FailOnFolderName* codes
+						es.m_fail_detail = context.state.loadTbFailDetail;
+					}
 					else if (fsmstate.oldstate == 'stUpdateCleanup')
-						es.m_fail_code = SyncFsmExitStatus.FailOnIntegrityDataStoreOut; // this indicates a bug in our code
+						es.failcode('FailOnIntegrityDataStoreOut'); // this indicates a bug in our code
 					else
-						es.m_fail_code = SyncFsmExitStatus.FailOnUnknown;
+						es.failcode('FailOnUnknown');
 				}
 				else if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
 					es.m_exit_status = 0;
@@ -211,18 +216,23 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				else
 				{
 					es.m_exit_status = 1;
-					es.m_fail_code   = context.state.m_soap_state.failCode();
+					es.failcode(context.state.m_soap_state.failCode());
 
-					if (es.m_fail_code == SyncFsmExitStatus.FailOnFault)
+					if (es.failcode() == 'FailOnFault')
 					{
 						if (context.state.m_soap_state.m_faultstring)
 							es.m_fail_detail = context.state.m_soap_state.m_faultstring;
 						else if (context.state.m_soap_state.m_faultcode)
 							es.m_fail_detail = context.state.m_soap_state.m_faultcode;
+
+						es.m_fail_soapmethod = context.state.m_soap_state.m_method;
 					}
 				}
 
-				zinAssert(es.m_fail_code != SyncFsmExitStatus.FailOnUnknown);
+				if (es.m_exit_status != 0)
+					es.m_fail_fsmoldstate = fsmstate.oldstate;
+
+				zinAssert(es.failcode() != 'FailOnUnknown');
 
 				this.m_logger.debug("exit status: " + es.toString());
 

@@ -118,7 +118,11 @@ function stringBundleString(id_string)
 	}
 	catch (e)
 	{
-		gLogger.error("Exception: e");
+		if (typeof(gLogger) == 'object' && typeof(gLogger.error) == 'function')
+			gLogger.error("stringBundleString: id_string: " + id_string + " exception: " + e);
+		else
+			dump("stringBundleString: gLogger undefined: id_string: " + id_string + " exception: " + e);
+
 		is_exception = true;
 	}
 
@@ -212,6 +216,7 @@ function isInArray(item, a)
 
 function isPropertyPresent(obj, property)
 {
+	zinAssert(typeof(obj) == 'object');
 	zinAssert(arguments.length == 2); // this function has two arguments!
 
 	return (typeof(obj[property]) != 'undefined');
@@ -317,6 +322,11 @@ function hyphenate()
 	return ret;
 }
 
+function isSourceId(sourceid)
+{
+	return (sourceid == SOURCEID_ZM || sourceid == SOURCEID_TB);
+}
+
 // see:
 // http://www.sitepoint.com/blogs/2006/01/17/javascript-inheritance/
 //
@@ -330,4 +340,12 @@ function copyPrototype(child, parent)
 
 	for (var i in parent.prototype)
 		child.prototype[i] = parent.prototype[i]; 
+}
+
+function dateSuffixForFolder()
+{
+	var d = new Date();
+
+	return " " + hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
+	       "-" + hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 }

@@ -21,9 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/utils.js");
-include("chrome://zindus/content/logger.js");
-
 // A few places in this class there are properties and methods that are both static and per-object.
 // The static ones are a nicer idiom for users of the notify* methods.
 // Instead of creating a ZinMaestro object, the call is just ZinMaestro.notifyFunctorRegister().

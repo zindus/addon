@@ -21,8 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/logger.js");
-include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/timer.js");
 

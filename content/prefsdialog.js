@@ -29,8 +29,8 @@ include("chrome://zindus/content/passwordmanager.js");
 include("chrome://zindus/content/mozillapreferences.js");
 include("chrome://zindus/content/utils.js");
 include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
+include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/timer.js");
 
@@ -130,7 +130,18 @@ Prefs.prototype.onCommand = function(id_target)
 			payload.m_syncfsm = new TwoWayFsm(state);
 
 			var win = window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
-			win.hidechrome = true;
+
+			var exitStatus = payload.m_result;
+
+			if (exitStatus.m_exit_status != 0)
+			{
+				msg = this.msgFromSyncFsmPayload(payload, "statusSyncSucceeded", "statusSyncFailed");
+
+				if (msg == "")
+					msg = "sync failed - no detail available";
+
+				alert(msg);
+			}
 
 			break;
 
@@ -146,35 +157,10 @@ Prefs.prototype.onCommand = function(id_target)
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
-			// if the prefs dialog was cancelled while we were syncing, string bundles wont be available, so we try/catch...
-			//
-			try {
-				var exitStatus = payload.m_result;
-				var msg = "";
+			msg = this.msgFromSyncFsmPayload(payload, "statusAuthSucceeded", "statusAuthFailed");
 
-				if (exitStatus.m_exit_status == 0)
-					msg += stringBundleString("statusAuthSucceeded");
-				else
-				{
-					msg += stringBundleString("statusAuthFailed");
-					msg += "\n";
-					msg += SyncFsmExitStatus.failCodeAsString(exitStatus.m_fail_code);
-
-					if (exitStatus.m_fail_code == SyncFsmExitStatus.FailOnFault)
-						msg += "\n" + exitStatus.m_fail_detail;
-					else if (exitStatus.m_fail_code == SyncFsmExitStatus.FailOnCancel)
-						msg += "\n" + stringBundleString("statusFailOnCancelDetail");
-					else if (exitStatus.m_fail_code == SyncFsmExitStatus.FailOnService)
-						msg += "\n" + stringBundleString("statusFailOnServiceDetail");
-					else if (exitStatus.m_fail_code == SyncFsmExitStatus.FailOnIntegrity)
-						msg += "\n" + exitStatus.m_fail_detail;
-				}
-
+			if (msg != "")
 				alert(msg);
-			} catch (ex)
-			{
-				// do nothing
-			}
 
 			break;
 
@@ -207,6 +193,44 @@ Prefs.prototype.onCommand = function(id_target)
 			// do nothing
 			break;
 	}
+}
+
+Prefs.prototype.msgFromSyncFsmPayload = function(payload, sbsSuccess, sbsFailure)
+{
+	var msg = "";
+
+	// if the prefs dialog was cancelled while we were syncing, string bundles wont be available, so we try/catch...
+	//
+	try {
+		var exitStatus = payload.m_result;
+
+		if (exitStatus.m_exit_status == 0)
+			msg += stringBundleString(sbsSuccess);
+		else
+		{
+			msg += stringBundleString(sbsFailure);
+			var stringid = exitStatus.failCodeStringId();
+			msg += "\n" + stringBundleString(stringid);
+
+			if (exitStatus.failcode() == 'FailOnFault')
+			{
+				msg += "\n" + exitStatus.m_fail_detail;
+				msg += "\n" + stringBundleString("statusFailSoapMethod") + " " + exitStatus.m_fail_soapmethod;
+			}
+			else if (exitStatus.failcode() == 'FailOnCancel')
+				msg += "\n" + stringBundleString("statusFailOnCancelDetail");
+			else if (exitStatus.failcode() == 'FailOnService')
+				msg += "\n" + stringBundleString("statusFailOnServiceDetail");
+			else if (exitStatus.isFailOnFolder())
+				msg += ": " + exitStatus.m_fail_detail;  // add the name of the offending folder
+		}
+	} catch (ex)
+	{
+		this.m_logger.debug("msgFromSyncFsmPayload: exception: " + ex.message);
+		// do nothing
+	}
+
+	return msg;
 }
 
 Prefs.prototype.initialiseView = function()

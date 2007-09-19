@@ -21,12 +21,14 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-const APP_VERSION_NUMBER="0.1.5";          // variable substitution by the build process would make sense for these two identifiers except
-const APP_NAME="zindus";                   // that during development, thunderbird directly references the source tree...
+const APP_VERSION_NUMBER="0.1.5";        // variable substitution by the build process would make sense for these two identifiers except
+const APP_NAME="zindus";                 // that during development, thunderbird directly references the source tree...
 
 const SOAP_REQUEST_FAILED = -12344;      // fake an error code to workaround a bug in mozilla soap
 
-const ZIMBRA_ID_TRASH = 3;               // see: ZimbraServer/src/java/com/zimbra/cs/mailbox/Mailbox.java
+const ZM_ID_TRASH         = 3;           // see: ZimbraServer/src/java/com/zimbra/cs/mailbox/Mailbox.java
+const ZM_CONTACTS         = "Contacts";
+const ZM_EMAILED_CONTACTS = "Emailed Contacts";
 
 const TBCARD_ATTRIBUTE_LUID     = "zid"; // user-defined attributes associated with thunderbird cards
 const TBCARD_ATTRIBUTE_CHECKSUM = "zcs";

@@ -21,8 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/syncfsmobserver.js");
 
 function ZinTimer(functor)

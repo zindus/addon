@@ -23,7 +23,7 @@
 
 function include(url)
 {
-	// dump(msg);
+	// dump("include: " + url + "\n");
 
 	var loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"].getService(Components.interfaces.mozIJSSubScriptLoader);
 	var ret;
@@ -32,7 +32,7 @@ function include(url)
 	{
 		var is_exception = false;
 
-		ret = loader.loadSubScript(url);
+		// ret = loader.loadSubScript(url);  // note - this is here for debugging only - otherwise the url is included twice!
 
 		try {
 			ret = loader.loadSubScript(url);

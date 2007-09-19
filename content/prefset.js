@@ -21,9 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/utils.js");
-include("chrome://zindus/content/mozillapreferences.js");
-
 function PrefSet(prefprefix, a)
 {
 	this.m_id            = -1;

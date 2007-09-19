@@ -21,8 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/bimap.js");
-
 ZinFeedCollection.ITER_ALL        = 0;   // various flavours of foreach
 ZinFeedCollection.ITER_UNRESERVED = 1;   // only call functor when key == id and id > ID_MAX_RESERVED
 
@@ -376,9 +374,7 @@ ZinFeed.getTopLevelFolderLuidBimap = function(zfc, attr, iter_flavour)
 
 		run: function(zfi)
 		{
-			if (zfi.get(ZinFeedItem.ATTR_TYPE) == this.type_fl &&
-			    zfi.get('l') == '1' &&
-				zfi.get('id') != ZIMBRA_ID_TRASH)
+			if (zfi.get(ZinFeedItem.ATTR_TYPE) == this.type_fl && zfi.get('l') == '1')
 			{
 				this.m_a_id.push(zfi.get(ZinFeedItem.ATTR_ID));
 				this.m_a_attr.push(zfi.get(attr));
@@ -392,7 +388,7 @@ ZinFeed.getTopLevelFolderLuidBimap = function(zfc, attr, iter_flavour)
 
 	var bimap = new BiMap(functor.m_a_id, functor.m_a_attr);
 
-	return bimap;
+	return [ bimap, functor.m_a_id ];
 }
 
 ZinFeed.getContactIdsForParent = function(zfc, l)

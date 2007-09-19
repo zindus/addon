@@ -21,8 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/utils.js");
-
 Filesystem.DIRECTORY_PROFILE = "profile";  // C:\Documents and Settings\user\Application Data\Thunderbird\Profiles\blah
 Filesystem.DIRECTORY_APP     = APP_NAME;   //                                                                      blah\zindus
 Filesystem.DIRECTORY_LOG     = "log";      //                                                                      blah\zindus\log
