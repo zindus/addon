@@ -1128,66 +1128,65 @@ SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation
 	continuation('evNext');
 }
 
-SyncFsm.prototype.filterTbLuidMap = function()
+SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 {
+	var aUri;
+	var passed;
 
-	var maxNameLength = 128;
-	var name, luid;
-	var newname = null;
-	var bimapTbFolderLuid;
-	var a_id = new Array();
-	
-	// TODO - this isn't right - thunderbird allows multiple addressbooks of the same name!
-
-	[ bimapTbFolderLuid, a_id ] = ZinFeed.getTopLevelFolderLuidBimap(this.state.sources[this.state.sourceid_tb]['zfcLuid'],
-		                                   ZinFeedItem.ATTR_NAME, ZinFeedCollection.ITER_UNRESERVED);
-
-	for (var i = 0; i < a_id.length; i++)
-	{
-		luid = a_id[i];
-		name = bimapTbFolderLuid.lookup(luid, null);
-
-		this.state.m_logger.debug("renameTbFoldersToComplyWithZmRules: blah: name: " + name);
-
-		name = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, name);
-
-		if (name == ZM_CONTACTS || name == ZM_EMAILED_CONTACTS)
-			continue;
-
-		if (SyncFsm.isZmFolderContainsInvalidCharacter(name))
-			newname = SyncFsm.stripInvalidCharactersFromZmFolderName(name);
-		else
-			newname = name;
-
-		if (SyncFsm.isZmFolderReservedName(newname))
-			newname += dateSuffixForFolder();
-		else if (newname.length > maxNameLength)
-			newname = newname.substr(0, maxNameLength) + dateSuffixForFolder();
-
-		this.state.m_logger.debug("renameTbFoldersToComplyWithZmRules: blah: newname: " + newname);
-
-		if (name != newname)
-		{
-			newname = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, newname);
-
-			var uri = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(this.state.sourceid_tb, luid));
-
-			if (uri)
-			{
-				ZimbraAddressBook.renameAddressBook(uri, newname);
-				var zfc = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
-				zfc.get(luid).set(ZinFeedItem.ATTR_NAME, newname);
-
-				this.state.m_logger.debug("renamed thunderbird folder name: " + name + " to: " + newname + " because it contained invalid characters or was a reserved word");
-			}
-		}
-	}
-}
+	// TODO clean me up
+	// maybe I oughn't merge these two bits of information too early, ie, distinguish:
+	// - list of what's there now, from 
+	// - what was there
+	// - am I willing to give up convergence - yes, it's the safe thing to do.
+	//   for folder duplicates or a change in the pab's prefid, abort with this:
+	//   "addressbooks have changed in a way that I can't follow - giving up"
+	// - DONE filter out dupes                                                     ==> warning and give up
+	// - DONE filter out reserved folder names and those with invalid characters   ==> warning and give up
+	// - filter out pab has remained invariant                                ==> warning and give up
+	// - DONE filter out mailing lists
+	// - DONE do deletion detection
+	//
 
 // somewhere in this routine we might want to handle:
 // - deleting the PAB ==> how to handle?
 // - renaming the PAB ==> how to handle?
 //
+	aUri = this.loadTbMergeZfcWithAddressBook();
+	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);
+	passed = this.loadTbTestFolderNameRules();
+
+	var nextEvent = 'evNext';
+
+	if (!passed)
+		nextEvent = 'evLackIntegrity';
+
+	continuation(nextEvent);
+}
+
+SyncFsm.isZmFolderReservedName = function(name)
+{
+	// for the list used by the zimbra web client, see ZimbraWebClient/WebRoot/js/zimbraMail/share/model/ZmFolder.js 
+	// even though 'contacts' and 'emailed contacts' are reserved names, they aren't in the list below
+	// because we expect them to have corresponding tb addressbooks
+	//
+	var reReservedFolderNames = /inbox|trash|junk|sent|drafts|tags|calendar|notebook|chats/i;
+	var ret = name.match(reReservedFolderNames) != null;
+
+	// gLogger.debug("isZmFolderReservedName: name: " + name + " returns: " + ret);
+
+	return ret;
+}
+
+SyncFsm.isZmFolderContainsInvalidCharacter = function(name)
+{
+	var reInvalidCharacter = /[:/\"\t\r\n]/;
+	var ret = name.match(reInvalidCharacter) != null;
+
+	// gLogger.debug("isZmFolderContainsInvalidCharacter: name: " + name + " returns: " + ret);
+
+	return ret;
+}
+
 SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 {
 	var functor_foreach_card, functor_foreach_addressbook;
@@ -1292,26 +1291,6 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	aUri = new Array();
 
 	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
-
-	// TODO - is this a good place to handle duplicate folders of the same name and
-	//      - issues like if the PAB's prefid changed we lost sync and need a reset
-	//
-	// if (name == TB_PAB && elem.dirPrefId != pabPrefId)
-	// {
-	// 	this.state.m_logger.warn("Personal Address Book has changed - reset may be required."); // switching prefids
-	// }
-	// maybe I oughn't merge these two bits of information too early, ie, distinguish:
-	// - list of what's there now, from 
-	// - what was there
-	// - am I willing to give up convergence - yes, it's the safe thing to do.
-	//   for folder duplicates or a change in the pab's prefid, abort with this:
-	//   "addressbooks have changed in a way that I can't follow - giving up"
-	// - DONE filter out dupes                                                     ==> warning and give up
-	// - DONE filter out reserved folder names and those with invalid characters   ==> warning and give up
-	// - filter out pab has remained invariant                                ==> warning and give up
-	// - DONE filter out mailing lists
-	// - DONE do deletion detection
-	//
 
 	return aUri;
 }
@@ -2249,126 +2228,6 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 	}
 }
 
-SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
-{
-	var aUri;
-	var passed;
-
-	aUri = this.loadTbMergeZfcWithAddressBook();
-	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);
-	passed = this.loadTbTestFolderNameRules();
-
-	// this.filterTbLuidMap();
-	// this.renameTbFoldersToComplyWithZmRules();
-	var nextEvent = 'evNext';
-
-	if (!passed)
-		nextEvent = 'evLackIntegrity';
-
-	continuation(nextEvent);
-}
-
-SyncFsm.isZmFolderReservedName = function(name)
-{
-	// for the list used by the zimbra web client, see ZimbraWebClient/WebRoot/js/zimbraMail/share/model/ZmFolder.js 
-	// even though 'contacts' and 'emailed contacts' are reserved names, they aren't in the list below
-	// because we expect them to have corresponding tb addressbooks
-	//
-	var reReservedFolderNames = /inbox|trash|junk|sent|drafts|tags|calendar|notebook|chats/i;
-	var ret = name.match(reReservedFolderNames) != null;
-
-	gLogger.debug("isZmFolderReservedName: name: " + name + " returns: " + ret);
-
-	return ret;
-}
-
-SyncFsm.isZmFolderContainsInvalidCharacter = function(name)
-{
-	var reInvalidCharacter = /[:/\"\t\r\n]/;
-	var ret = name.match(reInvalidCharacter) != null;
-
-	gLogger.debug("isZmFolderContainsInvalidCharacter: name: " + name + " returns: " + ret);
-
-	return ret;
-}
-
-SyncFsm.stripInvalidCharactersFromZmFolderName = function(name)
-{
-	var reInvalidCharacter = /[:/\"\t\r\n]/;
-	var ret = "";
-
-	for (var i = 0; i < name.length; i++)
-		if (name.charAt(i).match(reInvalidCharacter) == null)
-			ret += name.charAt(i);
-
-	gLogger.debug("stripInvalidCharactersFromZmFolderName: name: " + name + " returns: " + ret);
-
-	return ret;
-}
-
-// trying to avoid a failure to converge by duplicating zimbra's rules on folder names within thunderbird
-// isn't a great idea.  The zimbra web client does it, but they have control over the UI.
-// Given that we're not going to overlay the thunderbird ui, a better way for us would be to try to update zimbra, notice the failure, 
-// then take action on the local folder depending on the nature of the failure.  But that'd be a heap of work, so
-// here we make a pitiful stab at avoid things which the zimbra server would definitely fail.
-// It doesn't catch everything - for example if someone renames "Emailed Contacts", thunderbird would try to rename
-// "Emailed Contacts" on the server which would fail - there's a lot of edge cases...
-
-SyncFsm.prototype.renameTbFoldersToComplyWithZmRules = function()
-{
-	var maxNameLength = 100; // 128 in the zimbra source but hey, it's still generous (leave some room for the date suffix)
-	var name, luid;
-	var newname = null;
-	var bimapTbFolderLuid;
-	var a_id = new Array();
-	
-	// TODO - this isn't right - thunderbird allows multiple addressbooks of the same name!
-
-	[ bimapTbFolderLuid, a_id ] = ZinFeed.getTopLevelFolderLuidBimap(this.state.sources[this.state.sourceid_tb]['zfcLuid'],
-		                                   ZinFeedItem.ATTR_NAME, ZinFeedCollection.ITER_UNRESERVED);
-
-	for (var i = 0; i < a_id.length; i++)
-	{
-		luid = a_id[i];
-		name = bimapTbFolderLuid.lookup(luid, null);
-
-		this.state.m_logger.debug("renameTbFoldersToComplyWithZmRules: blah: name: " + name);
-
-		name = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, name);
-
-		if (name == ZM_CONTACTS || name == ZM_EMAILED_CONTACTS)
-			continue;
-
-		if (SyncFsm.isZmFolderContainsInvalidCharacter(name))
-			newname = SyncFsm.stripInvalidCharactersFromZmFolderName(name);
-		else
-			newname = name;
-
-		if (SyncFsm.isZmFolderReservedName(newname))
-			newname += dateSuffixForFolder();
-		else if (newname.length > maxNameLength)
-			newname = newname.substr(0, maxNameLength) + dateSuffixForFolder();
-
-		this.state.m_logger.debug("renameTbFoldersToComplyWithZmRules: blah: newname: " + newname);
-
-		if (name != newname)
-		{
-			newname = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, newname);
-
-			var uri = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(this.state.sourceid_tb, luid));
-
-			if (uri)
-			{
-				ZimbraAddressBook.renameAddressBook(uri, newname);
-				var zfc = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
-				zfc.get(luid).set(ZinFeedItem.ATTR_NAME, newname);
-
-				this.state.m_logger.debug("renamed thunderbird folder name: " + name + " to: " + newname + " because it contained invalid characters or was a reserved word");
-			}
-		}
-	}
-}
-
 SyncFsm.prototype.entryActionConverge = function(state, event, continuation)
 {
 	var aSuoWinners;
@@ -3238,9 +3097,6 @@ SyncFsm.prototype.feedItemTypeFromGid = function(gid, sourceid)
 	var luid = this.state.zfcGid.get(gid).get(sourceid);
 	return this.state.sources[sourceid]['zfcLuid'].get(luid).type();
 }
-
-// TODO - assert that users can't add a "zindus/Trash" or "zindus/GAL" folder
-//
 
 SyncFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
 {

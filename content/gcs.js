@@ -34,7 +34,6 @@ Gcs.bimap_state = new BiMap(
 
 function Gcs(sourceid, state)
 {
-	// TODO remove me
 	// gLogger.debug("Gcs: sourceid: " + sourceid); // blah
 	// gLogger.debug("Gcs: state:    " + state);
 	// gLogger.debug("Gcs: Gcs.bimap_state.isPresent(state): " + Gcs.bimap_state.isPresent(state));
