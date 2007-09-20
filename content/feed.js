@@ -28,6 +28,7 @@ ZinFeedItem.ITER_ALL              = 0;   //
 ZinFeedItem.ITER_SOURCEID         = 1;   // don't call functor when key == id or key == ZinFeedItem.ATTR_VER
 
 ZinFeedItem.ID_AUTO_INCREMENT = 0;      // this id is the one with the 'next' attribute
+ZinFeedItem.ID_STATUS         = 0;      // this id is used in the status zfc
 ZinFeedItem.ID_MAX_RESERVED   = 256;    // the 'next' attribute of the AUTO_INCREMENT item starts at this value + 1.
 
 ZinFeedItem.ATTR_MS   = 'ms';

@@ -235,12 +235,27 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 				zinAssert(es.failcode() != 'FailOnUnknown');
 
-				this.m_logger.debug("exit status: " + es.toString());
-
 				this.m_logger.debug("SyncFsmObserver: update: blah: conflicts: " +
 					(context.state.aConflicts.length == 0 ? "none" : aToString(context.state.aConflicts)));
 
+				es.m_count_conflicts = context.state.aConflicts.length;
+
+				this.m_logger.debug("exit status: " + es.toString());
+
 				this.exitStatus(es);
+
+				// save to zfcStatus
+				//
+				var zfcStatus = new ZinFeedCollection();
+				zfcStatus.filename("status.txt");
+				var date = new Date().toLocaleString();
+				var zfiStatus = new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_STATUS,
+				                                      'date', date,
+													  'exitstatus', es.m_exit_status,
+													  'conflicts', es.m_count_conflicts);
+
+				zfcStatus.set(zfiStatus);
+				zfcStatus.save();
 
 				// there are three bits of "exit status" that the outside world might be interested in
 				// ZinMaestro.FSM_ID_TWOWAY:
