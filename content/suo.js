@@ -34,6 +34,10 @@ Suo.bimap_opcode = new BiMap(
 	[ Suo.ADD, Suo.MOD,  Suo.DEL,  Suo.MDU            ],
 	[ 'add',   'modify', 'delete', 'meta-data-update' ]);
 
+Suo.bimap_opcode_past_tense = new BiMap(
+	[ Suo.ADD,   Suo.MOD,    Suo.DEL   ],
+	[ 'added',   'modified', 'deleted' ]);
+
 function Suo(gid, sourceid_winner, sourceid_target, opcode)
 {
 	this.gid             = gid;
@@ -53,6 +57,11 @@ Suo.prototype.toString = function()
 Suo.opcodeAsString = function(opcode)
 {
 	return Suo.bimap_opcode.lookup(opcode);
+}
+
+Suo.opcodeAsStringPastTense = function(opcode)
+{
+	return Suo.bimap_opcode_past_tense.lookup(opcode);
 }
 
 function SuoCollection()

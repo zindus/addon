@@ -1289,9 +1289,6 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 
 				var name = elem.dirName;
 				msg = "addressbook of interest to zindus: " + msg;
-				dump(" am here 32: " + "\n");
-				dump(" am here 33: " + msg + "\n");
-				dump(" am here 34: " + zfcTb.toString() + "\n");
 
 				if (!bimapTbFolderLuid.isPresent(null, elem.dirPrefId))
 				{
@@ -1412,14 +1409,9 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 		run: function(uri, item)
 		{
-			dump("am here 0\n");
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
-			dump("am here 01\n");
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-			dump("am here 1\n");
 			var msg = "1177 - pass 3 - card key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard);
-			dump("am here 2: " + msg + "\n");
-			dump("am here 3: " + zfcTb.toString() + "\n");
 
 			var isInTopLevelFolder = false;
 
@@ -1445,10 +1437,6 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 				if (! (id > ZinFeedItem.ID_MAX_RESERVED)) // id might be null (not present) or zero (reset after the map was deleted)
 				{
-				dump(" am here 32: " + "\n");
-				dump(" am here 33: " + msg + "\n");
-				dump(" am here 34: " + zfcTb.toString() + "\n");
-
 					id = ZinFeed.autoIncrement(zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
 
 					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, id);
@@ -2178,10 +2166,11 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 			case Gcs.WIN:
 			case Gcs.CONFLICT:
 			{
-				var winner    = aGcs[gid].sourceid;
-				var zfcWinner = this.state.sources[winner]['zfcLuid'];
+				var sourceid_winner = aGcs[gid].sourceid;
+				var zfcWinner = this.state.sources[sourceid_winner]['zfcLuid'];
 				var zfcTarget = this.state.sources[sourceid]['zfcLuid'];
-				var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(winner));
+				var luid_winner = zfcGid.get(gid).get(sourceid_winner);
+				var zfiWinner = zfcWinner.get(luid_winner);
 
 				if (!zfcGid.get(gid).isPresent(sourceid))
 				{
@@ -2198,16 +2187,35 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 				else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
 					msg += " lso and version match gid - do nothing";
 				else if (zfiWinner.isPresent(ZinFeedItem.ATTR_DEL))
-					suo = new Suo(gid, winner, sourceid, Suo.DEL);
+					suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
 				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.id()))
-					suo = new Suo(gid, winner, sourceid, Suo.DEL);
+					suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
 				else if (zfcTarget.get(zfcGid.get(gid).get(sourceid)).isPresent(ZinFeedItem.ATTR_DEL))
 				{
 					msg += " - winner modified but loser had been deleted - ";
 					suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
 				}
 				else
-					suo = new Suo(gid, winner, sourceid, Suo.MOD);
+					suo = new Suo(gid, sourceid_winner, sourceid, Suo.MOD);
+
+				if (aGcs[gid].state == Gcs.CONFLICT)
+				{
+					zinAssert(suo);
+
+					var conflict_msg = "";
+					
+					var source_name_winner = this.state.sources[sourceid_winner]['name'];
+					var source_name_loser  = this.state.sources[sourceid]['name'];
+					var format_winner      = this.state.sources[sourceid_winner]['format'];
+
+					conflict_msg += "conflict: " + (zfiWinner.type() == ZinFeedItem.TYPE_CN ? "contact: " : "addressbook: ") +
+					                this.shortLabelForLuid(sourceid_winner, luid_winner, FORMAT_TB) +
+									" on " + source_name_winner +
+									" wins and item on " + source_name_loser +
+									" is " + Suo.opcodeAsStringPastTense(suo.opcode);
+
+					this.state.aConflicts.push(conflict_msg);
+				}
 
 				break;
 			}
@@ -2234,6 +2242,54 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	}
 
 	return aSuoResult;
+}
+
+SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
+{
+	dump("am here 21\n");
+	var zfc    = this.state.sources[sourceid]['zfcLuid'];
+	var format = this.state.sources[sourceid]['format'];
+	var zfi    = zfc.get(luid);
+	var ret    = "";
+	var key;
+
+	dump("am here 22\n");
+
+	this.state.m_logger.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid: " + luid + " target_format: " + target_format);
+
+	dump("am here 23\n");
+
+	if (zfi.type() == ZinFeedItem.TYPE_FL)
+		ret += "folder: " + ZinContactConverter.instance().convertFolderName(format, target_format, zfi.get(ZinFeedItem.ATTR_NAME));
+	else
+	{
+		zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
+
+	dump("am here 24\n");
+
+		ret += "contact: ";
+
+		var properties = this.getContactFromLuid(sourceid, luid, format);
+		
+		key = (format == FORMAT_TB) ? 'DisplayName' : 'fullName';
+
+	dump("am here 25\n");
+
+		if (isPropertyPresent(properties, key))
+			ret += "<" + properties[key] + "> ";
+
+		key = (format == FORMAT_TB) ? "PrimaryEmail" : "email";
+
+	dump("am here 25\n");
+
+		if (isPropertyPresent(properties, key))
+			ret += properties[key];
+	}
+
+	this.state.m_logger.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid: " + luid + " target_format: " + target_format +
+	                          " returns: " + ret);
+
+	return ret;
 }
 
 SyncFsm.prototype.testFolderNameDuplicate = function(aGcs)
@@ -3123,6 +3179,9 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 
 SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 {
+	this.state.m_logger.debug("entryActionCommit: soapURL: "  + this.state.sources[this.state.sourceid_zm]['soapURL']);
+	this.state.m_logger.debug("entryActionCommit: username: " + this.state.sources[this.state.sourceid_zm]['username']);
+
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('SyncToken', this.state.SyncToken);
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('soapURL', this.state.sources[this.state.sourceid_zm]['soapURL']);
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('username', this.state.sources[this.state.sourceid_zm]['username']);
@@ -3310,8 +3369,10 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	soapCall.transportURI = this.state.soapURL;
 	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
 
-	this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
-
+	if (soapstate.m_method == "AuthRequest")
+		this.state.m_logger.debug("soap request: " + "<AuthRequest>"); // dont want password going into the log
+	else
+		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 
 	// if soapCall is passed bad args (eg if transportURI is an email address), asyncInvoke() doesn't return!
 	// the cases I've found are handled during the integrity checking at the start of the fsm.
@@ -3619,6 +3680,7 @@ function SyncFsmState(id_fsm)
 	this.stopFailCode        = null;         // if stLoadTb or stConverge continue on evLackIntegrity, these values are set for the observer
 	this.stopFailDetail      = null;
 	this.aSuo                = null;         // container for source update operations - populated in Converge
+	this.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
 
 	this.m_preferences  = new MozillaPreferences();
@@ -3647,12 +3709,14 @@ SyncFsmState.prototype.setCredentials = function()
 {
 	if (arguments.length == 3)
 	{
+		this.m_logger.debug("setCredentials: load from arguments"); // blah
 		this.sources[SOURCEID_ZM]['soapURL']  = arguments[0];
 		this.sources[SOURCEID_ZM]['username'] = arguments[1];
 		this.sources[SOURCEID_ZM]['password'] = arguments[2];
 	}
 	else
 	{
+		this.m_logger.debug("setCredentials: load from password manager"); // blah
 		// load credentials from preferences and the password manager
 		//
 		var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
@@ -3662,6 +3726,8 @@ SyncFsmState.prototype.setCredentials = function()
 		  this.sources[SOURCEID_ZM]['soapURL'],
 		  this.sources[SOURCEID_ZM]['password'] ] = PrefSetHelper.getUserUrlPw(prefset, PrefSet.SERVER_USERNAME, PrefSet.SERVER_URL);
 	}
+
+	this.m_logger.debug("setCredentials: blah: typeof(this.sources[SOURCEID_ZM]['username']): " + typeof(this.sources[SOURCEID_ZM]['username'])); // blah
 
 	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
 }

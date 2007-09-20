@@ -237,6 +237,9 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 				this.m_logger.debug("exit status: " + es.toString());
 
+				this.m_logger.debug("SyncFsmObserver: update: blah: conflicts: " +
+					(context.state.aConflicts.length == 0 ? "none" : aToString(context.state.aConflicts)));
+
 				this.exitStatus(es);
 
 				// there are three bits of "exit status" that the outside world might be interested in

@@ -228,5 +228,8 @@ PrefSetHelper.getUserUrlPw = function(prefset, pref_user, pref_url)
 	pm = new PasswordManager();
 	pw = pm.get(url, username);
 
-	return [ username, url, pw ];
+	// we return String(x) because we want their typeof() to be 'string' instead of 'object'
+	// see: http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:String#Description
+	//
+	return [ String(username), String(url), String(pw) ];
 }

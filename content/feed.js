@@ -252,6 +252,14 @@ ZinFeedItem.prototype.set = function(arg1, arg2)
 {
 	if (arguments.length == 2)
 	{
+		if (typeof(arg2) != 'object' && arg2 != null) // blah
+			; // do nothing
+		else
+		{
+			dump("ZinFeedItem.set: blah: arg1: " + arg1 + " arg2: " + arg2 + " typeof(arg2): " + typeof(arg2) + "\n");
+			newZinLogger("ZinFeedItem").debug("ZinFeedItem.set: blah: arg1: " + arg1 + " arg2: " + arg2 + " typeof(arg2): " + typeof(arg2));
+		}
+
 		zinAssert(typeof(arg2) != 'object' && arg2 != null);
 
 		this.m_properties[arg1] = arg2;
