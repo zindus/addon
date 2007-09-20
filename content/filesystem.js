@@ -87,6 +87,8 @@ Filesystem.createDirectoryIfRequired = function(code)
 {
 	var nsifile = Filesystem.getDirectory(code);
 
+	dump("Filesystem.createDirectoryIfRequired: debug for blah: sunny: nsifile.path: " + nsifile.path + "\n");
+
 	if (!nsifile.exists() || !nsifile.isDirectory()) 
 		nsifile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 }

@@ -225,8 +225,19 @@ PrefSetHelper.getUserUrlPw = function(prefset, pref_user, pref_url)
 	username = prefset.getProperty(pref_user);
 	url      = prefset.getProperty(pref_url);
 
-	pm = new PasswordManager();
-	pw = pm.get(url, username);
+	if (username != null && url != null)
+	{
+		pm = new PasswordManager();
+		pw = pm.get(url, username);
+	}
+	else
+		pw = "";
+
+	if (username == null) username = "";
+	if (url == null)      url = "";
+
+	// dump("PrefSetHelper.getUserUrlPw: blah2: username: " + (username == null ? "isnull" : username) +
+	//                                            " url: " + (url == null ? "isnull" : url) + "\n");
 
 	// we return String(x) because we want their typeof() to be 'string' instead of 'object'
 	// see: http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:String#Description

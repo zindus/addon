@@ -125,6 +125,8 @@ SyncFsm.prototype.cancel = function(timeoutID)
 
 	this.state.m_logger.debug("cancel: cleared timeoutID: " + timeoutID);
 
+	// TODO - sunny pressed cancel here and it said m_soap_state no properties
+	//
 	if (this.state.m_soap_state.m_callcompletion)
 	{
 		var ret = this.state.m_soap_state.m_callcompletion.abort();

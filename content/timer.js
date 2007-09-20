@@ -98,14 +98,14 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.m_is_fsm_functor_first_entry = false;
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
-			var a_id = { 'zindus-statuspanel' : null };
+			var a_id = { 'zindus-progresspanel' : null };
 
 			this.getWindowsContainingElementIds(a_id);
 
-			if (a_id['zindus-statuspanel'])
-				this.m_messengerWindow = a_id['zindus-statuspanel'];
+			if (a_id['zindus-progresspanel'])
+				this.m_messengerWindow = a_id['zindus-progresspanel'];
 
-			this.m_messengerWindow.document.getElementById('zindus-statuspanel').setAttribute('hidden', false);
+			this.m_messengerWindow.document.getElementById('zindus-progresspanel').setAttribute('hidden', false);
 
 			var state = new TwoWayFsmState();
 			state.setCredentials();
@@ -123,13 +123,13 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
-			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-statuspanel"))
+			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-progresspanel"))
 			{
 				// the window might have disappeared between when we iterated all open windows and now - so we test that
 				// the element exists just before setting it's attribute...
 				//
-				var el_statuspanel_progress_meter = this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-meter");
-				var el_statuspanel_progress_label = this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-label");
+				var el_statuspanel_progress_meter = this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-meter");
+				var el_statuspanel_progress_label = this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label");
 
 				el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 				el_statuspanel_progress_label.setAttribute('value', this.m_sfo.progressToString());
@@ -157,10 +157,10 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				// do nothing
 			}
 
-			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-statuspanel"))
+			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-progresspanel"))
 			{
-				this.m_messengerWindow.document.getElementById("zindus-statuspanel-progress-label").setAttribute('value', msg);
-				this.m_messengerWindow.document.getElementById('zindus-statuspanel').setAttribute('hidden', true);
+				this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label").setAttribute('value', msg);
+				this.m_messengerWindow.document.getElementById('zindus-progresspanel').setAttribute('hidden', true);
 			}
 
 			newZinLogger().info("sync finish: " + getUTCAndLocalTime());

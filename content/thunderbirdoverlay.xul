@@ -70,13 +70,19 @@
 	</toolbox>	
 
 	<hbox id="statusTextBox" >
-		<statusbarpanel hidden="true" id="zindus-statuspanel" insertbefore="statusbar-progresspanel" onclick="alert('you clicked me 1');" >
-			<label id="zindus-statuspanel-label-prefix" value="zindus:" /> <!-- onclick="alert('you clicked me 2');"  -->
+		<statusbarpanel hidden="true" id="zindus-progresspanel" insertbefore="statusbar-progresspanel" >
+			<label id="zindus-progresspanel-label-prefix" value="zindus:" /> <!-- onclick="alert('you clicked me 2');"  -->
 			<stack>
-				<progressmeter id="zindus-statuspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" /> <!--  -->
-				<label id="zindus-statuspanel-progress-label" value="" style="max-width: 20px" crop="end" />
+				<progressmeter id="zindus-progresspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" /> <!--  -->
+				<label id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
 			</stack>
 		</statusbarpanel>
+		<statusbarpanel hidden="false" id="zindus-statuspanel" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
+			<image id="zindus-statuspanel-logo" src="chrome://zindus/images/zindus4-16x16.jpg" /> <!-- rc="images/img_book_car.jpg" -->
+			<label id="zindus-statuspanel-status" value="!" />
+		</statusbarpanel>
+		<!--
+		-->
 	</hbox>
 	<!-- 
 	<statusbar id="status-bar" >
