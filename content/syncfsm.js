@@ -37,8 +37,6 @@ include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/passwordmanager.js");
 
-SyncFsm.FILE_LASTSYNC = "lastsync";
-SyncFsm.FILE_GID      = "gid";
 SyncFsm.ABSPECIAL_GAL = "GAL";
 
 function SyncFsm(state)
@@ -209,8 +207,8 @@ SyncFsm.prototype.loadZfcs = function(a_zfc)
 {
 	var cExist = 0;
 
-	a_zfc[SyncFsm.FILE_GID      + ".txt"] = this.state.zfcGid      = new ZinFeedCollection();
-	a_zfc[SyncFsm.FILE_LASTSYNC + ".txt"] = this.state.zfcLastSync = new ZinFeedCollection();
+	a_zfc[Filesystem.FILENAME_GID]      = this.state.zfcGid      = new ZinFeedCollection();
+	a_zfc[Filesystem.FILENAME_LASTSYNC] = this.state.zfcLastSync = new ZinFeedCollection();
 
 	for (var i in this.state.sources)
 	{
@@ -437,7 +435,7 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 
 			var id =  mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 
-			if (id > 0 || id.length > 0)  // the TBCARD_ATTRIBUTE_LUID for cards in the GAL is an ldap dn which is why we test for length>0
+			if (id && (id > 0 || id.length > 0)) // the TBCARD_ATTRIBUTE_LUID for cards in the GAL is an ldap dn which is why we test for length>0
 			{
 				mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, 0); // delete would be more natural but not supported by api
 				mdbCard.editCardToDatabase(uri);
@@ -3303,7 +3301,7 @@ SyncFsm.removeLogfile = function()
 	// remove the logfile
 	//
 	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
-	file.append(LOGFILE_NAME);
+	file.append(Filesystem.FILENAME_LOGFILE);
 
 	if (file.exists() && !file.isDirectory())
 		file.remove(false);
@@ -3472,7 +3470,6 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	var soapstate = this.state.m_soap_state;
 	var nextEvent = null;
 
-	dump("am here 1\n");
 	this.state.m_logger.debug("entryActionSoapResponse: m_method: " + soapstate.m_method);
 
 	zinAssert(soapstate.isPostResponse());
@@ -3482,14 +3479,11 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	// soapstate.m_faultcode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
 	//
 
-	dump("am here 2\n");
 	if (soapstate.m_method == "CheckLicense" && soapstate.m_fault_element_xml)
 		nextEvent = 'evNext';
 	else if (soapstate.m_response)
 	{
-	dump("am here 3\n");
 		var node = ZinXpath.getSingleValue(ZinXpath.queryFromMethod(soapstate.m_method), soapstate.m_response, soapstate.m_response);
-	dump("am here 4\n");
 
 		if (node)
 			nextEvent = 'evNext'; // we found a BlahResponse element - all is well
@@ -3502,7 +3496,6 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	else 
 	{
 		var msg = "soap error - ";  // note that we didn't say "fault" here - it could be a sending/service error
-	dump("am here 5\n");
 
 		if (soapstate.m_service_code != 0 && soapstate.m_service_code != null)
 			msg += "m_service_code == " + soapstate.m_service_code;
@@ -3515,7 +3508,6 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 		nextEvent = 'evCancel';
 	}
-	dump("am here 6\n");
 
 	this.state.m_logger.debug("entryActionSoapResponse: calls continuation with: " + nextEvent);
 

@@ -26,6 +26,7 @@ include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/payload.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsmobserver.js");
+include("chrome://zindus/content/statuspanel.js");
 
 function SyncWindow()
 {
@@ -110,7 +111,14 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (fsmstate.isFinal())
 		{
-			this.m_payload.m_result = this.m_sfo.exitStatus();
+			var es = this.m_sfo.exitStatus();
+			this.m_payload.m_result = es;
+			StatusPanel.save(es);
+
+			var win = getWindowContainingElementId('zindus-statuspanel');
+
+			if (win)
+				StatusPanel.update(win);
 
 			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 

@@ -45,11 +45,9 @@ function onLoad(event)
 
 			var maestro = new ZinMaestro();
 
-			if (!maestro.osIsRegistered())
+			if (!ObserverService.isRegistered(maestro.TOPIC))
 			{
-				logger.debug("creating ZinMaestro and registering it with nsIObserverService");
-
-				maestro.osRegister();
+				ObserverService.register(maestro, maestro.TOPIC);
 
 				var preferences = new MozillaPreferences();
 
@@ -68,6 +66,8 @@ function onLoad(event)
 				else
 					logger.debug("not starting timer.");
 			}
+
+			StatusPanel.update(window);
 		}
 	}
 	catch (ex)

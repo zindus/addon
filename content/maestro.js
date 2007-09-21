@@ -27,6 +27,7 @@
 // But, when "this" is called back by the observer service, the file of source code is no longer loaded into javascript scope,
 // so the static methods are gone.  So anything that's required by .observe() must be a per-object method.  Hence the duplication.
 //
+include("chrome://zindus/content/observerservice.js");
 
 function ZinMaestro()
 {
@@ -61,6 +62,7 @@ ZinMaestro.ID_FUNCTOR_SYNCWINDOW         = "syncwindow";
 ZinMaestro.ID_FUNCTOR_PREFSDIALOG        = "prefsdialog";
 ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG  = "timer-prefsdialog";
 ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY      = "timer-overlay";
+ZinMaestro.ID_FUNCTOR_STATUS_PANELY      = "status-panel";
 
 ZinMaestro.prototype.toString = function()
 {
@@ -200,60 +202,6 @@ ZinMaestro.prototype.functorNotifyOnRegister = function(id_functor)
 	functor.call(context, id_fsm_match ? this.m_a_fsmstate[id_fsm_match] : null);
 }
 
-ZinMaestro.prototype.osRegister = function()
-{
-	this.m_logger.debug("osRegister: ");
-
-	this.observerService().addObserver(this, this.TOPIC, false);
-}
-
-ZinMaestro.prototype.osUnregister = function()
-{
-	this.m_logger.debug("osUnregister: ");
-
-	this.observerService().removeObserver(this, this.name);
-}
-
-ZinMaestro.observerService = function()
-{
-	return Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService);
-}
-
-ZinMaestro.prototype.observerService = ZinMaestro.observerService;
-
-ZinMaestro.prototype.osIsRegistered = function()
-{
-	var enumerator = this.observerService().enumerateObservers(this.TOPIC);
-	var count = 0;
-
-	while (enumerator.hasMoreElements())
-	{
-		try
-		{
-			var o = enumerator.getNext().QueryInterface(Components.interfaces.nsIObserver);
-
-			this.m_logger.debug("isMyTopicRegistered: o: " + aToString(o));
-
-			count++;
-		}
-		catch (e)
-		{
-			this.m_logger.error("exception while enumerating: e: " + e);
-		}
-	}
-
-	this.m_logger.debug("osIsRegistered: returns: " + (count > 0));
-
-	return count > 0;
-}
-
-ZinMaestro.osNotify = function(subject, data)
-{
-	// ZinMaestro.logger.debug("osNotify: data == " + data);
-
-	ZinMaestro.observerService().notifyObservers(subject, ZinMaestro.TOPIC, data);
-}
-
 ZinMaestro.wrapForJS = function(obj)
 {
 	obj.wrappedJSObject = obj;
@@ -265,19 +213,21 @@ ZinMaestro.notifyFunctorRegister = function(context, functor, id_functor, a_id_f
 {
 	// ZinMaestro.logger.debug("notifyFunctorRegister: id_functor == " + id_functor + " a_id_fsm: " + aToString(a_id_fsm));
 
-	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)), this.DO_FUNCTOR_REGISTER);
+	// TODO - should the this'es below really be "this" ??
+
+	ObserverService.notify(ZinMaestro.TOPIC, ZinMaestro.wrapForJS(newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)), this.DO_FUNCTOR_REGISTER);
 }
 
 ZinMaestro.notifyFunctorUnregister = function(id_functor)
 {
 	// ZinMaestro.logger.debug("notifyFunctorUnregister: id_functor == " + id_functor);
 
-	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('id_functor', id_functor)), this.DO_FUNCTOR_UNREGISTER);
+	ObserverService.notify(ZinMaestro.TOPIC, ZinMaestro.wrapForJS(newObject('id_functor', id_functor)), this.DO_FUNCTOR_UNREGISTER);
 }
 
 ZinMaestro.notifyFsmState = function(fsmstate)
 {
 	// ZinMaestro.logger.debug("notifyFsmStatusUpdate: fsmstate: " + fsmstate.toString());
 
-	ZinMaestro.osNotify(ZinMaestro.wrapForJS(newObject('fsmstate', fsmstate)), this.DO_FSM_STATE_UPDATE);
+	ObserverService.notify(ZinMaestro.TOPIC, ZinMaestro.wrapForJS(newObject('fsmstate', fsmstate)), this.DO_FSM_STATE_UPDATE);
 }

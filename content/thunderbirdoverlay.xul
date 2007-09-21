@@ -37,6 +37,7 @@
 	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/logger.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/statuspanel.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/syncfsm.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/thunderbirdoverlay.js" />
 	<!--
@@ -77,9 +78,16 @@
 				<label id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
 			</stack>
 		</statusbarpanel>
-		<statusbarpanel hidden="false" id="zindus-statuspanel" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
-			<image id="zindus-statuspanel-logo" src="chrome://zindus/content/zindus-4.jpg" /> <!-- rc="images/img_book_car.jpg" -->
-			<label id="zindus-statuspanel-status" value="!" />
+		<statusbarpanel id="zindus-statuspanel" hidden="false" tooltiptext="fred" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
+			<image id="zindus-statuspanel-logo" src="chrome://zindus/content/zindus-5-16x16-grey.jpg" /> <!-- rc="images/img_book_car.jpg" -->
+		<!--
+			<image id="zindus-statuspanel-logo" src="chrome://zindus/content/zindus-4.jpg" />
+			<image id="zindus-statuspanel-alert"  hidden="true" src="" width="16" height="16" class="alert-icon" />
+			<image id="zindus-statuspanel-error"  hidden="true" src="" width="16" height="16" class="error-icon" />
+		-->
+			<label id="zindus-statuspanel-alert" hidden="true" value="!" />
+			<label id="zindus-statuspanel-error" hidden="true" value="X" />
+			<label id="zindus-statuspanel-insync" hidden="true" value="Y" />
 		</statusbarpanel>
 		<!--
 		-->

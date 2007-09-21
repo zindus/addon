@@ -93,6 +93,9 @@ Prefs.prototype.onAccept = function()
 
 	var pm = new PasswordManager();
 
+	// TODO - this is causing problems for sunny - perhaps put an exception around the removeUser
+	//
+
 	if ((url != prev_url || username != prev_username) && pm.get(prev_url, prev_username))
 		pm.del(prev_url, prev_username);
 
@@ -135,7 +138,8 @@ Prefs.prototype.onCommand = function(id_target)
 
 			if (exitStatus.m_exit_status != 0)
 			{
-				msg = this.msgFromSyncFsmPayload(payload, "statusSyncSucceeded", "statusSyncFailed");
+				dump("am here 221\n");
+				msg = SyncFsmExitStatus.asMessage(exitStatus, "statusSyncSucceeded", "statusSyncFailed");
 
 				if (msg == "")
 					msg = "sync failed - no detail available";
@@ -157,7 +161,9 @@ Prefs.prototype.onCommand = function(id_target)
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
-			msg = this.msgFromSyncFsmPayload(payload, "statusAuthSucceeded", "statusAuthFailed");
+			var exitStatus = payload.m_result;
+				dump("am here 222\n");
+			msg = SyncFsmExitStatus.asMessage(exitStatus, "statusAuthSucceeded", "statusAuthFailed");
 
 			if (msg != "")
 				alert(msg);
@@ -193,43 +199,6 @@ Prefs.prototype.onCommand = function(id_target)
 			// do nothing
 			break;
 	}
-}
-
-Prefs.prototype.msgFromSyncFsmPayload = function(payload, sbsSuccess, sbsFailure)
-{
-	var msg = "";
-
-	// if the prefs dialog was cancelled while we were syncing, string bundles wont be available, so we try/catch...
-	//
-	try {
-		var exitStatus = payload.m_result;
-
-		if (exitStatus.m_exit_status == 0)
-			msg += stringBundleString(sbsSuccess);
-		else
-		{
-			msg += stringBundleString(sbsFailure);
-			msg += "\n" + stringBundleString(exitStatus.failCodeStringId());
-
-			if (exitStatus.failcode() == 'FailOnFault')
-			{
-				msg += "\n" + exitStatus.m_fail_detail;
-				msg += "\n" + stringBundleString("statusFailSoapMethod") + " " + exitStatus.m_fail_soapmethod;
-			}
-			else if (exitStatus.failcode() == 'FailOnCancel')
-				msg += "\n" + stringBundleString("statusFailOnCancelDetail");
-			else if (exitStatus.failcode() == 'FailOnService')
-				msg += "\n" + stringBundleString("statusFailOnServiceDetail");
-			else if (exitStatus.isFailOnFolder())
-				msg += ": " + exitStatus.m_fail_detail;  // add the name of the offending folder
-		}
-	} catch (ex)
-	{
-		this.m_logger.debug("msgFromSyncFsmPayload: exception: " + ex.message);
-		// do nothing
-	}
-
-	return msg;
 }
 
 Prefs.prototype.initialiseView = function()

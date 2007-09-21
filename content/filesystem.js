@@ -26,6 +26,11 @@ Filesystem.DIRECTORY_APP     = APP_NAME;   //                                   
 Filesystem.DIRECTORY_LOG     = "log";      //                                                                      blah\zindus\log
 Filesystem.DIRECTORY_DATA    = "data";     //                                                                      blah\zindus\data
 
+Filesystem.FILENAME_LOGFILE  = "logfile.txt";
+Filesystem.FILENAME_LASTSYNC = "lastsync.txt";
+Filesystem.FILENAME_GID      = "gid.txt";
+Filesystem.FILENAME_STATUS   = "status.txt";
+
 Filesystem.aDirectory = new Object();
 
 // from prio.h

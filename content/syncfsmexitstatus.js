@@ -21,6 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
+include("chrome://zindus/content/utils.js");
+
 function SyncFsmExitStatus()
 {
 	this.m_exit_status      = null;
@@ -45,6 +47,8 @@ function SyncFsmExitStatus()
 		FailOnFolderNameClash         : 11  // the same folder name entered the namespace from both tb and zm sides
 	};
 }
+
+SyncFsmExitStatus.prototype.stringBundleString = stringBundleString;
 
 SyncFsmExitStatus.prototype.toString = function()
 {
@@ -92,3 +96,38 @@ SyncFsmExitStatus.prototype.isFailOnFolder = function()
 
 	return ret;
 }
+
+SyncFsmExitStatus.asMessage = function(context, sbsSuccess, sbsFailure)
+{
+	var msg = "";
+
+	// if the dialog was cancelled while we were syncing, string bundles wont be available, so we try/catch...
+	//
+	try {
+		if (context.m_exit_status == 0)
+			msg += stringBundleString(sbsSuccess);
+		else
+		{
+			msg += stringBundleString(sbsFailure);
+			msg += "\n" + stringBundleString(context.failCodeStringId());
+
+			if (context.failcode() == 'FailOnFault')
+			{
+				msg += "\n" + context.m_fail_detail;
+				msg += "\n" + stringBundleString("statusFailSoapMethod") + " " + context.m_fail_soapmethod;
+			}
+			else if (context.failcode() == 'FailOnCancel')
+				msg += "\n" + stringBundleString("statusFailOnCancelDetail");
+			else if (context.failcode() == 'FailOnService')
+				msg += "\n" + stringBundleString("statusFailOnServiceDetail");
+			else if (context.isFailOnFolder())
+				msg += ": " + context.m_fail_detail;  // add the name of the offending folder
+		}
+	} catch (ex) {
+		dump("asMessage: exception: " + ex.message + "\n");
+		newZinLogger("SyncFsmExitStatus").debug("asMessage: exception: " + ex.message);
+	}
+
+	return msg;
+}
+

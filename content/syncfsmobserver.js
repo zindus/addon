@@ -244,29 +244,6 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 				this.exitStatus(es);
 
-				// save to zfcStatus
-				//
-				var zfcStatus = new ZinFeedCollection();
-				zfcStatus.filename("status.txt");
-				var date = new Date().toLocaleString();
-				var zfiStatus = new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_STATUS,
-				                                      'date', date,
-													  'exitstatus', es.m_exit_status,
-													  'conflicts', es.m_count_conflicts);
-
-				zfcStatus.set(zfiStatus);
-				zfcStatus.save();
-
-				// there are three bits of "exit status" that the outside world might be interested in
-				// ZinMaestro.FSM_ID_TWOWAY:
-				// - last sync success: (time, maybe other stuff like conflicts...)
-				// - last sync:         (time, success/fail and optional failure reason)
-				// - an idea: next sync: when scheduled?
-				//
-				// ZinMaestro.FSM_ID_AUTHONLY:
-				// - last auth: (time, success/fail and optional failure reason)
-				//
-
 				break;
 		}
 
@@ -285,4 +262,3 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 	return ret;
 }
-

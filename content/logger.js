@@ -23,22 +23,12 @@
 
 // simple logging api, no appenders
 
-// include("chrome://zindus/content/utils.js");
-// include("chrome://zindus/content/bimap.js");
-// include("chrome://zindus/content/mozillapreferences.js");
-// include("chrome://zindus/content/Filesystem.js");
-
-dump("am y 3\n");
-
 ZinLogger.NONE  = 6;
 ZinLogger.FATAL = 5;
 ZinLogger.ERROR = 4;
 ZinLogger.WARN  = 3;
 ZinLogger.INFO  = 2;
 ZinLogger.DEBUG = 1;
-
-dump("am y 4\n");
-dump("am y 5\n");
 
 function ZinLogger(level, prefix)
 {
@@ -79,7 +69,7 @@ function ZinLogAppender()
 	this.m_logfile_size_max = prefs.getIntPref(prefs.branch(), "system.logfileSizeMax");
 	this.m_logfile          = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
 
-	this.m_logfile.append(LOGFILE_NAME);
+	this.m_logfile.append(Filesystem.FILENAME_LOGFILE);
 	// dump("logfile.path == " + this.m_logfile.path + "\n");
 
 	this.bimap_LEVEL = new BiMap(

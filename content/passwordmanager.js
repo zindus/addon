@@ -37,8 +37,7 @@ PasswordManager.prototype.get = function(server, login)
 {
 	var value = null;
 
-	try
-	{
+	try {
 		var hostname = { value: "" };
 		var username = { value: "" };
 		var password = { value: "" };
@@ -49,8 +48,7 @@ PasswordManager.prototype.get = function(server, login)
 
 		value = password.value;
 	}
-	catch (ex)
-	{
+	catch (ex) {
 		// do nothing - if (server, login) doesn't exist the component throws an exception
 	}
 
@@ -61,13 +59,18 @@ PasswordManager.prototype.del = function(server, login)
 {
 	var pm = this.m_pm.QueryInterface(Components.interfaces.nsIPasswordManager);
 
-	pm.removeUser(server, login);
+	try {
+		pm.removeUser(server, login);
+	}
+	catch (ex) {
+		// do nothing - if (server, login) doesn't exist the component throws an exception
+		newZinLogger("PasswordManager").debug("PasswordManager.del: server: " + server + " login: " + login);
+	}
 }
 
 PasswordManager.prototype.set = function(server, login, password)
 {
-	try
-	{
+	try {
 		var pm = this.m_pm.QueryInterface(Components.interfaces.nsIPasswordManager);
 
 		// Here we have to remove the old password first, because
@@ -77,7 +80,7 @@ PasswordManager.prototype.set = function(server, login, password)
 	}
 	catch (ex)
 	{
-		// Do nothing here; an exception will be thrown if this is a new server/login combination
+		newZinLogger("PasswordManager").debug("PasswordManager.set: server: " + server + " login: " + login);
 	}
 
 	this.m_pm.addUser(server, login, password);

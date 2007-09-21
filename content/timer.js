@@ -22,6 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/syncfsmobserver.js");
+include("chrome://zindus/content/statuspanel.js");
 
 function ZinTimer(functor)
 {
@@ -98,14 +99,10 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.m_is_fsm_functor_first_entry = false;
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
-			var a_id = { 'zindus-progresspanel' : null };
+			this.m_messengerWindow = getWindowContainingElementId('zindus-progresspanel');
 
-			this.getWindowsContainingElementIds(a_id);
-
-			if (a_id['zindus-progresspanel'])
-				this.m_messengerWindow = a_id['zindus-progresspanel'];
-
-			this.m_messengerWindow.document.getElementById('zindus-progresspanel').setAttribute('hidden', false);
+			if (this.m_messengerWindow)
+				this.m_messengerWindow.document.getElementById('zindus-progresspanel').setAttribute('hidden', false);
 
 			var state = new TwoWayFsmState();
 			state.setCredentials();
@@ -141,27 +138,17 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			// TODO - display the exit status - and fix the code below
 			// one option: put something in the status panel and set a timer that eventually hides the status panel
 
-			// if messengerWindow disappeared while we were syncing, string bundles wont be available, so we try/catch...
-			//
-			if (0)
-			try {
-				var exitStatus = this.m_sfo.exitStatus();
-				var msg = "";
-
-				if (exitStatus.m_exit_status == 0)
-					msg += stringBundleString("statusLastSync") + ": " + getUTCAndLocalTime();
-				else
-					msg += stringBundleString("statusLastSyncFailed");
-			} catch (ex)
-			{
-				// do nothing
-			}
+			var es = this.m_sfo.exitStatus();
+			StatusPanel.save(es);
 
 			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-progresspanel"))
 			{
-				this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label").setAttribute('value', msg);
+				this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label").setAttribute('value', "");
 				this.m_messengerWindow.document.getElementById('zindus-progresspanel').setAttribute('hidden', true);
 			}
+
+			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-statuspanel"))
+				StatusPanel.update(this.m_messengerWindow);
 
 			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 
@@ -181,36 +168,5 @@ ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
 		var functor = this.copy();
 		var timer = new ZinTimer(functor);
 		timer.start(delay);
-	}
-}
-
-ZinTimerFunctorSync.prototype.getWindowsContainingElementIds = function(a_id_orig)
-{
-	var a_id = zinCloneObject(a_id_orig);
-
-	// Good background reading:
-	//   http://developer.mozilla.org/en/docs/Working_with_windows_in_chrome_code
-	// which links to this page, which offers the code snippet below:
-	//   http://developer.mozilla.org/en/docs/nsIWindowMediator
-	//
-	// perhaps someone one day will tell me how to find messengerWindow more efficiently vs the current approach of iterating through
-	// all open windows
-	//
-	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
-
-	var windowtype = "";
-	var enumerator = wm.getEnumerator(windowtype);
-
-	while(enumerator.hasMoreElements() && aToLength(a_id) > 0)
-	{
-		var win = enumerator.getNext(); // win is [Object ChromeWindow] (just like window)
-
-		for (var id in a_id)
-			if (win.document.getElementById(id))
-			{
-				a_id_orig[id] = win;
-				delete a_id[id]; // remove it - once an id is found in one window, we assume it's unique and stop looking for it
-				break;
-			}
 	}
 }
