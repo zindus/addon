@@ -65,27 +65,30 @@ BiMap.prototype.getObjAndKey = function(key_a, key_b)
 		key = key_b;
 	}
 
-	return [ obj, key ];
+	// this used to return [ obj, key ] but that didn't prove to be portable
+	// (some linux javascript interpreters (JavaScript-C 1.6 pre-release 1 2006-04-04  report an error with this sort of assigment:
+	// [ a, b ] = blah();
+	//
+	var ret = new Object();
+	ret.obj = obj;
+	ret.key = key;
+	return ret;
 }
 
 BiMap.prototype.lookup = function(key_a, key_b)
 {
-	var obj, key;
+	var tmp = this.getObjAndKey(key_a, key_b);
 
-	[ obj, key ] = this.getObjAndKey(key_a, key_b);
+	zinAssert(isPropertyPresent(tmp.obj, tmp.key));
 
-	zinAssert(isPropertyPresent(obj, key));
-
-	return obj[key];
+	return tmp.obj[tmp.key];
 }
 
 BiMap.prototype.isPresent = function(key_a, key_b)
 {
-	var ret;
+	var tmp = this.getObjAndKey(key_a, key_b);
 
-	[ obj, key ] = this.getObjAndKey(key_a, key_b);
-
-	return isPropertyPresent(obj, key);
+	return isPropertyPresent(tmp.obj, tmp.key);
 }
 
 BiMap.prototype.toString = function()

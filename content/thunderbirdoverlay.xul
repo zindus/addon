@@ -78,7 +78,7 @@
 			</stack>
 		</statusbarpanel>
 		<statusbarpanel hidden="false" id="zindus-statuspanel" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
-			<image id="zindus-statuspanel-logo" src="chrome://zindus/images/zindus4-16x16.jpg" /> <!-- rc="images/img_book_car.jpg" -->
+			<image id="zindus-statuspanel-logo" src="chrome://zindus/content/zindus-4.jpg" /> <!-- rc="images/img_book_car.jpg" -->
 			<label id="zindus-statuspanel-status" value="!" />
 		</statusbarpanel>
 		<!--

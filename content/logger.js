@@ -28,6 +28,8 @@
 // include("chrome://zindus/content/mozillapreferences.js");
 // include("chrome://zindus/content/Filesystem.js");
 
+dump("am y 3\n");
+
 ZinLogger.NONE  = 6;
 ZinLogger.FATAL = 5;
 ZinLogger.ERROR = 4;
@@ -35,9 +37,8 @@ ZinLogger.WARN  = 3;
 ZinLogger.INFO  = 2;
 ZinLogger.DEBUG = 1;
 
-ZinLogger.bimap_LEVEL = new BiMap(
-	[ZinLogger.NONE, ZinLogger.FATAL, ZinLogger.ERROR, ZinLogger.WARN, ZinLogger.INFO, ZinLogger.DEBUG],
-	['none',         'fatal',         'error',         'warn',         'info',         'debug'        ]);
+dump("am y 4\n");
+dump("am y 5\n");
 
 function ZinLogger(level, prefix)
 {
@@ -80,6 +81,10 @@ function ZinLogAppender()
 
 	this.m_logfile.append(LOGFILE_NAME);
 	// dump("logfile.path == " + this.m_logfile.path + "\n");
+
+	this.bimap_LEVEL = new BiMap(
+		[ZinLogger.NONE, ZinLogger.FATAL, ZinLogger.ERROR, ZinLogger.WARN, ZinLogger.INFO, ZinLogger.DEBUG],
+		['none',         'fatal',         'error',         'warn',         'info',         'debug'        ]);
 }
 
 ZinLogAppender.instance = function()
@@ -96,7 +101,7 @@ ZinLogAppender.prototype.log = function(level, prefix, msg)
 	var max_level_length = 7;
 	var max_prefix_length = 15;
 	
-	message += new String(ZinLogger.bimap_LEVEL.lookup(level, null) + ":   ").substr(0, max_level_length);
+	message += new String(this.bimap_LEVEL.lookup(level, null) + ":   ").substr(0, max_level_length);
 
 	if (prefix)
 		message += new String(prefix.substr(0, max_prefix_length) + ":                ").substr(0, max_prefix_length + 1) + " ";
@@ -151,7 +156,7 @@ ZinLogAppender.prototype.fileOpen = function()
 
 	try
 	{
-		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
+		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_RDONLY | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
 
 		if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
 			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
@@ -168,6 +173,7 @@ ZinLogAppender.prototype.fileOpen = function()
 	{
 		if (typeof(is_first_logging_file_open_exception) == 'undefined')
 		{
+			dump("fileOpen: exception opening file: " + this.m_logfile.path + "\n");
 			Components.utils.reportError(e);
 			is_first_logging_file_open_exception = true;
 		}

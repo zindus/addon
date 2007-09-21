@@ -1165,14 +1165,17 @@ SyncFsm.prototype.loadTbTestReservedFolderInvariant = function(zfcTbPre, name)
 
 	if (!this.state.isSlowSync)
 	{
-		[ idPre, prefidPre ]   = this.loadTbLookupFolderInZfc(zfcTbPre, name);
-		[ idPost, prefidPost ] = this.loadTbLookupFolderInZfc(zfcTbPost, name);
+		var pre  = this.loadTbLookupFolderInZfc(zfcTbPre, name);
+		var post = this.loadTbLookupFolderInZfc(zfcTbPost, name);
+
+		var id = 0;
+		var prefid = 1;
 
 		this.state.m_logger.debug("loadTbTestPab: blah: name: " + name +
-			" idPre: " + idPre + " idPost: " + idPost +
-			" prefidPre: " + prefidPre + " prefidPost: " + prefidPost);
+			" pre[id]: " + pre[id] + " post[id]: " + post[id] +
+			" pre[prefid]: " + pre[prefid] + " post[prefid]: " + post[prefid]);
 
-		if (!idPost || prefidPre != prefidPost)    // no folder by this name or it changed since last sync
+		if (!post[id] || pre[prefid] != post[prefid])    // no folder by this name or it changed since last sync
 		{
 			this.state.stopFailCode   = 'FailOnFolderReservedChanged';
 			this.state.stopFailDetail = name;
@@ -1248,8 +1251,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	var sourceid = this.state.sourceid_tb;
 	var zfcTb = this.state.sources[sourceid]['zfcLuid'];
 
-	var bimapTbFolderLuid;
-	[ bimapTbFolderLuid ] = ZinFeed.getTopLevelFolderLuidBimap(zfcTb, ZinFeedItem.ATTR_TPI, ZinFeedCollection.ITER_UNRESERVED);
+	var bimapTbFolderLuid = ZinFeed.getTopLevelFolderLuidBimap(zfcTb, ZinFeedItem.ATTR_TPI, ZinFeedCollection.ITER_UNRESERVED);
 
 	this.state.m_logger.debug("loadTbMergeZfcWithAddressBook: bimapTbFolderLuid == " + bimapTbFolderLuid.toString());
 
@@ -1773,10 +1775,10 @@ SyncFsm.prototype.updateGidFromSources = function()
 				                          " - not of interest");
 			else if (zfi.type() == ZinFeedItem.TYPE_CN)
 			{
-				var properties;
-				var name_parent;
+				var a = this.context.getPropertiesNameOfParentFromSource(sourceid, luid);
+				var properties  = a[0];
+				var name_parent = a[1];
 
-				[ properties, name_parent ] = this.context.getPropertiesNameOfParentFromSource(sourceid, luid);
 
 				if (!properties)
 					return true; // no checksum for this card means it'll never be part of a twin
@@ -1799,8 +1801,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 		}
 	};
 
-	var bimapTbFolderLuid;
-	[ bimapTbFolderLuid ] = ZinFeed.getTopLevelFolderLuidBimap(this.state.sources[this.state.sourceid_tb]['zfcLuid'],
+	var bimapTbFolderLuid = ZinFeed.getTopLevelFolderLuidBimap(this.state.sources[this.state.sourceid_tb]['zfcLuid'],
 		                                   ZinFeedItem.ATTR_NAME, ZinFeedCollection.ITER_UNRESERVED);
 
 	if (this.state.isSlowSync)
@@ -1894,11 +1895,13 @@ SyncFsm.prototype.getPropertiesNameOfParentFromSource = function(sourceid, luid)
 //
 SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b)
 {
-	var properties_a, properties_b;
+	var a, properties_a, properties_b;
 	var count_match = 0;
 
-	[ properties_a ] = this.getPropertiesNameOfParentFromSource(sourceid_a, luid_a);
-	[ properties_b ] = this.getPropertiesNameOfParentFromSource(sourceid_b, luid_b);
+	a = this.getPropertiesNameOfParentFromSource(sourceid_a, luid_a);
+	properties_a = a[0];
+	a = this.getPropertiesNameOfParentFromSource(sourceid_b, luid_b);
+	properties_b = a[0];
 
 	var length_a = aToLength(properties_a);
 	var length_b = aToLength(properties_b);
@@ -2248,18 +2251,13 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 
 SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 {
-	dump("am here 21\n");
 	var zfc    = this.state.sources[sourceid]['zfcLuid'];
 	var format = this.state.sources[sourceid]['format'];
 	var zfi    = zfc.get(luid);
 	var ret    = "";
 	var key;
 
-	dump("am here 22\n");
-
 	this.state.m_logger.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid: " + luid + " target_format: " + target_format);
-
-	dump("am here 23\n");
 
 	if (zfi.type() == ZinFeedItem.TYPE_FL)
 		ret += "folder: " + ZinContactConverter.instance().convertFolderName(format, target_format, zfi.get(ZinFeedItem.ATTR_NAME));
@@ -2267,22 +2265,16 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	{
 		zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
 
-	dump("am here 24\n");
-
 		ret += "contact: ";
 
 		var properties = this.getContactFromLuid(sourceid, luid, format);
 		
 		key = (format == FORMAT_TB) ? 'DisplayName' : 'fullName';
 
-	dump("am here 25\n");
-
 		if (isPropertyPresent(properties, key))
 			ret += "<" + properties[key] + "> ";
 
 		key = (format == FORMAT_TB) ? "PrimaryEmail" : "email";
-
-	dump("am here 25\n");
 
 		if (isPropertyPresent(properties, key))
 			ret += properties[key];
@@ -3371,8 +3363,10 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	soapCall.transportURI = this.state.soapURL;
 	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
 
-	if (soapstate.m_method == "AuthRequest")
-		this.state.m_logger.debug("soap request: " + "<AuthRequest>"); // dont want password going into the log
+	this.state.m_logger.debug("soap request: blah: method: " + soapstate.m_method);
+
+	if (soapstate.m_method == "Auth")
+		this.state.m_logger.debug("soap request: " + "<AuthRequest> suppressed"); // dont want password going into the log
 	else
 		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 
@@ -3478,6 +3472,7 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	var soapstate = this.state.m_soap_state;
 	var nextEvent = null;
 
+	dump("am here 1\n");
 	this.state.m_logger.debug("entryActionSoapResponse: m_method: " + soapstate.m_method);
 
 	zinAssert(soapstate.isPostResponse());
@@ -3487,11 +3482,14 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	// soapstate.m_faultcode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
 	//
 
+	dump("am here 2\n");
 	if (soapstate.m_method == "CheckLicense" && soapstate.m_fault_element_xml)
 		nextEvent = 'evNext';
 	else if (soapstate.m_response)
 	{
+	dump("am here 3\n");
 		var node = ZinXpath.getSingleValue(ZinXpath.queryFromMethod(soapstate.m_method), soapstate.m_response, soapstate.m_response);
+	dump("am here 4\n");
 
 		if (node)
 			nextEvent = 'evNext'; // we found a BlahResponse element - all is well
@@ -3504,6 +3502,7 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	else 
 	{
 		var msg = "soap error - ";  // note that we didn't say "fault" here - it could be a sending/service error
+	dump("am here 5\n");
 
 		if (soapstate.m_service_code != 0 && soapstate.m_service_code != null)
 			msg += "m_service_code == " + soapstate.m_service_code;
@@ -3516,6 +3515,7 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 		nextEvent = 'evCancel';
 	}
+	dump("am here 6\n");
 
 	this.state.m_logger.debug("entryActionSoapResponse: calls continuation with: " + nextEvent);
 
@@ -3724,9 +3724,11 @@ SyncFsmState.prototype.setCredentials = function()
 		var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
 		prefset.load(SOURCEID_ZM);
 
-		[ this.sources[SOURCEID_ZM]['username'],
-		  this.sources[SOURCEID_ZM]['soapURL'],
-		  this.sources[SOURCEID_ZM]['password'] ] = PrefSetHelper.getUserUrlPw(prefset, PrefSet.SERVER_USERNAME, PrefSet.SERVER_URL);
+		var a = PrefSetHelper.getUserUrlPw(prefset, PrefSet.SERVER_USERNAME, PrefSet.SERVER_URL);
+
+		this.sources[SOURCEID_ZM]['username'] = a[0];
+		this.sources[SOURCEID_ZM]['soapURL']  = a[1];
+		this.sources[SOURCEID_ZM]['password'] = a[2];
 	}
 
 	this.m_logger.debug("setCredentials: blah: typeof(this.sources[SOURCEID_ZM]['username']): " + typeof(this.sources[SOURCEID_ZM]['username'])); // blah

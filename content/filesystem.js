@@ -31,6 +31,8 @@ Filesystem.aDirectory = new Object();
 // from prio.h
 Filesystem.PERM_PR_IRUSR  = 0400;  // Read  by owner
 Filesystem.PERM_PR_IWUSR  = 0200;  // Write by owner
+Filesystem.PERM_PR_IXUSR  = 0100;  // Write by owner
+Filesystem.PERM_PR_IRWXU  = 0700;  // R/W/X by owner
 
 Filesystem.FLAG_PR_RDONLY      = 0x01;
 Filesystem.FLAG_PR_WRONLY      = 0x02;
@@ -87,10 +89,16 @@ Filesystem.createDirectoryIfRequired = function(code)
 {
 	var nsifile = Filesystem.getDirectory(code);
 
-	dump("Filesystem.createDirectoryIfRequired: debug for blah: sunny: nsifile.path: " + nsifile.path + "\n");
-
 	if (!nsifile.exists() || !nsifile.isDirectory()) 
-		nsifile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
+		try {
+			nsifile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRWXU);
+		}
+		catch (e) {
+			var msg1 = stringBundleString("errorFilesystemCreateDirectoryFailed");
+			var msg2 = stringBundleString("errorFilesystemCreateDirectoryFailedSuggest");
+			alert(msg1 + "\n" + nsifile.path + "\n" + msg2 + "\n" + e);
+			// alert("Unable to create directory:\n  " + nsifile.path + "\nSuggest checking file/directory permissions.\nException: " + e);
+		}
 }
 
 Filesystem.createDirectoriesIfRequired = function()

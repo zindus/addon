@@ -397,7 +397,7 @@ ZinFeed.getTopLevelFolderLuidBimap = function(zfc, attr, iter_flavour)
 
 	var bimap = new BiMap(functor.m_a_id, functor.m_a_attr);
 
-	return [ bimap, functor.m_a_id ];
+	return bimap;
 }
 
 ZinFeed.getContactIdsForParent = function(zfc, l)
