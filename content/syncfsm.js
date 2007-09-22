@@ -254,12 +254,12 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	var sourceid_zm = this.state.sourceid_zm;
 
-	this.state.m_logger.debug("entryActionLoad: blah: zfcLastSync soapURL: "  +
+	this.state.m_logger.debug("entryActionLoad: last sync soapURL: "  +
 	   ( this.state.zfcLastSync.isPresent(sourceid_zm) ? this.state.zfcLastSync.get(sourceid_zm).getOrNull('soapURL') : "not present"));
-	this.state.m_logger.debug("entryActionLoad: blah: zfcLastSync username: "  +
+	this.state.m_logger.debug("entryActionLoad: last sync username: "  +
 	   ( this.state.zfcLastSync.isPresent(sourceid_zm) ? this.state.zfcLastSync.get(sourceid_zm).getOrNull('username') : "not present"));
-	this.state.m_logger.debug("entryActionLoad: blah: sources soapURL:  " + this.state.sources[sourceid_zm]['soapURL']);
-	this.state.m_logger.debug("entryActionLoad: blah: sources username: " + this.state.sources[sourceid_zm]['username']);
+	this.state.m_logger.debug("entryActionLoad: this sync soapURL:  " + this.state.sources[sourceid_zm]['soapURL']);
+	this.state.m_logger.debug("entryActionLoad: this sync username: " + this.state.sources[sourceid_zm]['username']);
 
 
 	if (cExist != 0 && (this.state.zfcLastSync.get(sourceid_zm).getOrNull('soapURL')  != this.state.sources[sourceid_zm]['soapURL'] ||
@@ -270,8 +270,6 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		SyncFsm.removeZfcs();
 
 		cExist = this.loadZfcs(a_zfc);
-
-		this.state.m_logger.debug("entryActionLoad: blah: after remove+load, zfcGid: " + this.state.zfcGid.toString());
 	}
 
 	if (cExist == 0)
@@ -542,31 +540,61 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
 
-	var soapURL     = null;
+	var newSoapURL  = null;
 	var xpath_query = "/soap:Envelope/soap:Body/za:GetAccountInfoResponse/za:soapURL";
 	var functor     = new FunctorArrayOfTextNodeValue();
 
+	dump("am here 1\n");
 	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
+	dump("am here 2\n");
 
 	if (functor.a.length == 1)
-		soapURL = functor.a[0];
+		newSoapURL = functor.a[0];
 	else if (functor.a.length > 1)
 	{
+	dump("am here 3\n");
 		var scheme = this.state.m_preferences.getCharPref(this.state.m_preferences.branch(), "system.preferSchemeForSoapUrl");
 		var scheme_length = scheme.length;
+		var scheme_url     = null;
+		var is_current_url = false;
 
-		for (var i = 0; i < functor.a.length && (soapURL == null); i++)
+	dump("am here 3.1\n");
+		for (var i = 0; i < functor.a.length; i++)
+		{
+	dump("am here 4\n");
 			if (functor.a[i].substr(0, scheme_length) == scheme)
-				soapURL = functor.a[i];
+				scheme_url = functor.a[i];
 
-		if (!soapURL)
-			this.state.m_logger.warn("Unexpected soap response - multiple soapURL's returned and none are https");
+			if (functor.a[i] == this.state.soapURL)
+				is_current_url = true;
+		}
+	dump("am here 5\n");
+
+		// if the url that the user entered in the server settings is returned by the server, use that
+		// otherwise, prefer a url of type preferSchemeForSoapUrl (http or https)
+		// otherwise, use the first one
+		//
+		if (is_current_url)
+			; // do nothing
+		else if (scheme_url)
+			newSoapURL = scheme_url;
+		else
+			newSoapURL = functor.a[0];
+	dump("am here 6\n");
 	}
 
-	if (soapURL)
-		this.state.soapURL = soapURL;
+	var msg = "";
 
-	// this.state.m_logger.debug("exitActionGetAccountInfo: soapURL: " + soapURL + " this.state.soapURL == " + this.state.soapURL);
+	if (newSoapURL)
+	{
+	dump("am here 7\n");
+		this.state.soapURL = newSoapURL;
+		msg = " changed from: " + this.state.soapURL;
+	}
+
+	msg = "exitActionGetAccountInfo: soapURL: " + this.state.soapURL + msg;
+
+	this.state.m_logger.debug(msg);
 }
 
 SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
@@ -1169,7 +1197,7 @@ SyncFsm.prototype.loadTbTestReservedFolderInvariant = function(zfcTbPre, name)
 		var id = 0;
 		var prefid = 1;
 
-		this.state.m_logger.debug("loadTbTestPab: blah: name: " + name +
+		this.state.m_logger.debug("loadTbTestPab: name: " + name +
 			" pre[id]: " + pre[id] + " post[id]: " + post[id] +
 			" pre[prefid]: " + pre[prefid] + " post[prefid]: " + post[prefid]);
 
@@ -1180,7 +1208,7 @@ SyncFsm.prototype.loadTbTestReservedFolderInvariant = function(zfcTbPre, name)
 		}
 	}
 
-	this.state.m_logger.debug("loadTbTestPab: blah: name: " + name + " returns: " + (this.state.stopFailCode == null));
+	this.state.m_logger.debug("loadTbTestPab: name: " + name + " returns: " + (this.state.stopFailCode == null));
 
 	return this.state.stopFailCode == null;
 }
@@ -1564,8 +1592,8 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 		this.state.stopFailCode   = functor.a_folder_violation[name];
 		this.state.stopFailDetail = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, name);
 
-		this.state.m_logger.debug("loadTbTestFolderNameRules: blah: stopFailCode: " + this.state.stopFailCode +
-		                                                    " stopFailDetail: " + this.state.stopFailDetail);
+		// this.state.m_logger.debug("loadTbTestFolderNameRules: blah: stopFailCode: " + this.state.stopFailCode +
+		//                                                    " stopFailDetail: " + this.state.stopFailDetail);
 	}
 
 	var ret = this.state.stopFailCode == null;
@@ -1658,7 +1686,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 		run: function(zfi)
 		{
 			var luid = zfi.id();
-			var msg  = "functor_foreach_luid_fast_sync: building gid - sourceid: " + sourceid + " and luid: " + luid;
+			var msg  = "fast_sync: sourceid: " + sourceid + " and luid: " + luid;
 
 			if (isPropertyPresent(reverse[sourceid], luid))
 			{
@@ -1687,7 +1715,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 		run: function(zfi)
 		{
 			var luid = zfi.id();
-			var msg  = "functor_foreach_luid_slow_sync: building gid - sourceid: " + sourceid + " and luid: " + luid;
+			var msg  = "slow_sync: sourceid: " + sourceid + " and luid: " + luid;
 			var luid_tb = null;
 			var gid;
 
@@ -1723,8 +1751,6 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
 
-					this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: key: " + key);
-
 					if (isPropertyPresent(aChecksum, key) && aToLength(aChecksum[key]) > 0)
 						for (var luid_possible in aChecksum[key])
 							if (aChecksum[key][luid_possible] && this.context.isTwin(this.state.sourceid_tb, sourceid, luid_possible, luid))
@@ -1736,7 +1762,6 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 					if (luid_tb)
 					{
-						this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: twin: luid_tb: " + luid_tb);
 						gid = this.context.twinInGid(sourceid, luid, this.state.sourceid_tb, luid_tb, reverse);
 						msg += " twin: contact with tb luid: " + luid_tb + " at gid: " + gid;
 
@@ -1769,14 +1794,13 @@ SyncFsm.prototype.updateGidFromSources = function()
 			var luid_parent;
 
 			if (!SyncFsm.isOfInterest(zfc, zfi.id()))
-				this.state.m_logger.debug("functor_foreach_luid_do_checksum: sourceid: " + sourceid + " luid: " + luid +
+				this.state.m_logger.debug("do_checksum: sourceid: " + sourceid + " luid: " + luid +
 				                          " - not of interest");
 			else if (zfi.type() == ZinFeedItem.TYPE_CN)
 			{
 				var a = this.context.getPropertiesNameOfParentFromSource(sourceid, luid);
 				var properties  = a[0];
 				var name_parent = a[1];
-
 
 				if (!properties)
 					return true; // no checksum for this card means it'll never be part of a twin
@@ -2436,9 +2460,9 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				msg += " properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
 				l_winner = zfiWinner.get('l');                                // luid of the parent folder in the source
-				                                                              this.state.m_logger.debug("84739: l_winner: " + l_winner);
+				                                                              // this.state.m_logger.debug("84739: l_winner: " + l_winner);
 				l_gid    = this.state.aReverseGid[sourceid_winner][l_winner]; // gid  of the parent folder
-				                                                              this.state.m_logger.debug("84739: l_gid: " + l_gid);
+				                                                              // this.state.m_logger.debug("84739: l_gid: " + l_gid);
 				l_target = zfcGid.get(l_gid).get(sourceid_target);            // luid of the parent folder in the target
 				uri      = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
 				abCard   = ZimbraAddressBook.addCard(uri, FORMAT_TB, properties, attributes);
@@ -2875,7 +2899,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 	var response = this.state.m_soap_state.m_response;
 	var change = new Object();
 	var updateZmPackage = this.state.updateZmPackage;
-	var msg = "3377: ";
+	var msg = "exitActionUpdateZm: ";
 
 	ZinXpath.setConditional(change, 'token', "/soap:Envelope/soap:Header/z:context/z:change/attribute::token", response, null);
 
@@ -2888,7 +2912,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 		return;
 	}
 
-	this.state.m_logger.debug("33771: updateZmPackage: " + aToString(updateZmPackage) + " and change.token: " + change.token);
+	this.state.m_logger.debug("exitActionUpdateZm: " + aToString(updateZmPackage) + " and change.token: " + change.token);
 
 	var functor_create_blah_response = {
 		state: this.state,
@@ -2911,8 +2935,6 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
 			else
 			{
-				this.state.m_logger.debug("updateZmPackage.indexSuo: " + updateZmPackage.indexSuo);
-
 				suo = this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket][updateZmPackage.indexSuo];
 
 				delete this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket][updateZmPackage.indexSuo];
@@ -3361,8 +3383,6 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	soapCall.transportURI = this.state.soapURL;
 	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
 
-	this.state.m_logger.debug("soap request: blah: method: " + soapstate.m_method);
-
 	if (soapstate.m_method == "Auth")
 		this.state.m_logger.debug("soap request: " + "<AuthRequest> suppressed"); // dont want password going into the log
 	else
@@ -3703,14 +3723,12 @@ SyncFsmState.prototype.setCredentials = function()
 {
 	if (arguments.length == 3)
 	{
-		this.m_logger.debug("setCredentials: load from arguments"); // blah
 		this.sources[SOURCEID_ZM]['soapURL']  = arguments[0];
 		this.sources[SOURCEID_ZM]['username'] = arguments[1];
 		this.sources[SOURCEID_ZM]['password'] = arguments[2];
 	}
 	else
 	{
-		this.m_logger.debug("setCredentials: load from password manager"); // blah
 		// load credentials from preferences and the password manager
 		//
 		var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
@@ -3722,8 +3740,6 @@ SyncFsmState.prototype.setCredentials = function()
 		this.sources[SOURCEID_ZM]['soapURL']  = a[1];
 		this.sources[SOURCEID_ZM]['password'] = a[2];
 	}
-
-	this.m_logger.debug("setCredentials: blah: typeof(this.sources[SOURCEID_ZM]['username']): " + typeof(this.sources[SOURCEID_ZM]['username'])); // blah
 
 	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
 }

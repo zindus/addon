@@ -113,6 +113,18 @@ ZinContactConverter.prototype.setup = function()
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "namePrefix"      )); // eg "Mr."
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "nameSuffix"      )); // eg "Mr."
 
+	// Don't generate debug messages if unable to convert these attributes...
+	// eg. the <cn> elements returned by SyncGal include ldap attributes
+	// Enumerating these here might be ok at first to confirm completeness but will have diminishing value after a while.
+	// The trouble is that the response from the zimbra server lumps together all the attributes of a contact and provides
+	// no way of distinguishing contact content from metadata so we can't be sure we're converting all attributes relevent to content.
+	//
+	this.m_dont_convert = newObject("zimbraId",                    0,
+	                                "objectClass",                 0,
+	                                "createTimeStamp",             0,
+	                                "zimbraMailForwardingAddress", 0,
+	                                "modifyTimeStamp",             0);
+
 	var aIndex = [FORMAT_TB, FORMAT_ZM];
 	var i, j, k;
 	this.m_map = new Object();
@@ -144,14 +156,6 @@ ZinContactConverter.prototype.setup = function()
 	this.m_address_line = new Object();
 	this.m_address_line[FORMAT_ZM] = { "homeStreet" :  0, "workStreet"   : 0 };
 	this.m_address_line[FORMAT_TB] = { "HomeAddress":  0, "HomeAddress2" : 0, "WorkAddress" : 0, "WorkAddress2" : 0 };
-
-	// don't generate warnings if unable to convert these attributes
-	// eg. the <cn> elements returned by SyncGal include ldap attributes
-	//
-	this.m_dont_convert = newObject("zimbraId",        0,
-	                                "objectClass",     0,
-	                                "createTimeStamp", 0,
-	                                "modifyTimeStamp", 0);
 }
 
 ZinContactConverter.prototype.convert = function(format_to, format_from, properties_from)
@@ -187,7 +191,7 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 				}
 				else
 				{
-					this.m_logger.warn("Ignoring contact field that we don't have a mapping for: " +
+					this.m_logger.debug("Ignoring contact field that we don't have a mapping for: " +
 					                  "from: " + this.m_bimap_format.lookup(format_from, null) + " " +
 					                  "field: "  + key_from);
 				}

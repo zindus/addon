@@ -27,10 +27,13 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.19 2007-09-19 04:44:46 cvsuser Exp $
+// $Id: fsm.js,v 1.20 2007-09-22 04:17:55 cvsuser Exp $
 
 if (typeof fsmlogger != 'object' || !fsmlogger)
+{
     fsmlogger = newZinLogger("fsm");
+	fsmlogger.level(ZinLogger.NONE);
+}
 
 function FsmSanityCheck(context)
 {
@@ -55,8 +58,7 @@ function FsmSanityCheck(context)
 
 			states[stateTo] = true;
 
-			// fsmlogger.debug("stateTo: " + stateTo);
-			// fsmlogger.debug("event: "   + event);
+			// fsmlogger.debug("stateTo: " + stateTo + " event: " + event);
 		}
 	}
 

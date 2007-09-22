@@ -97,8 +97,6 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	{
 		this.m_timeoutID = fsmstate.timeoutID;
 
-		this.m_logger.debug("functor: timeoutID: " + this.m_timeoutID);
-
 		var is_window_update_required = this.m_sfo.update(fsmstate);
 
 		if (is_window_update_required)

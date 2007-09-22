@@ -52,7 +52,7 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 	var key = null;
 	var value = null;
 
-	this.m_logger.debug("loadFromNode: node.nodeName == " + node.nodeName);
+	// this.m_logger.debug("loadFromNode: node.nodeName == " + node.nodeName);
 
 	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
@@ -72,7 +72,7 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 	//
 	var nodelist_of_a = node.getElementsByTagNameNS(ns, "a");
 
-	this.m_logger.debug("nodelist_of_a.length == " + nodelist_of_a.length + "\n");
+	// this.m_logger.debug("nodelist_of_a.length == " + nodelist_of_a.length");
 
 	for (var i = 0; i < nodelist_of_a.length; i++)
 	{
@@ -123,7 +123,7 @@ function FunctorArrayOfTextNodeValue()
 
 FunctorArrayOfTextNodeValue.prototype.run = function(doc, node)
 {
-	gLogger.debug("77225: node.nodeType == " + node.nodeType + " node.childNodes.length: " + node.childNodes.length);
+	// gLogger.debug("77225: node.nodeType == " + node.nodeType + " node.childNodes.length: " + node.childNodes.length);
 
 	if (node.childNodes.length == 1 && node.childNodes.item(0).nodeType == Node.TEXT_NODE)
 		this.a.push(new String(node.childNodes.item(0).nodeValue));

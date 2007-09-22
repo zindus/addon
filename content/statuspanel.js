@@ -51,7 +51,6 @@ StatusPanel.save = function(es)
 	zfcStatus.save();
 }
 
-
 StatusPanel.update = function(win)
 {
 	var zfcStatus = new ZinFeedCollection();
@@ -87,19 +86,23 @@ StatusPanel.update = function(win)
 		}
 
 		tooltip = tooltip_prefix + ": " + tooltip;
-
-		logger.debug("update: status: " + status + " tooltiptext: " + tooltip);
-
-		var obj = { alert : null, error : null, insync : null };
-
-		for (var x in obj)
-		{
-			win.document.getElementById("zindus-statuspanel-" + x).hidden = (status != x);
-			dump("am here 11: " + x + " is hidden: " + (status != x) + "\n");
-		}
-				
-		win.document.getElementById("zindus-statuspanel").tooltipText = tooltip;
 	}
 	else
-		logger.debug("update: no status available");
+	{
+		status = "alert";
+		tooltip = stringBundleString("statusLastSyncNever");
+	}
+
+	logger.debug("update: status: " + status + " tooltip: " + tooltip);
+
+	var obj = { alert : '!', error : 'X', insync : 'Y' };
+
+	for (var x in obj)
+	{
+		win.document.getElementById("zindus-statuspanel-" + x).hidden = (status != x);
+		win.document.getElementById("zindus-statuspanel-" + x).value  = obj[x];
+		logger.debug("update: " + x + " is hidden: " + (status != x) + " value: " + obj[x]);
+	}
+				
+	win.document.getElementById("zindus-statuspanel").tooltipText = tooltip;
 }

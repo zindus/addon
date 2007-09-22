@@ -62,7 +62,7 @@ ZinFeedCollection.prototype.filename = function()
 	if (arguments.length == 1)
 		this.m_filename = arguments[0];
 
-	gLogger.debug("filename: " + this.m_filename);
+	// gLogger.debug("filename: " + this.m_filename);
 	return this.m_filename;
 }
 

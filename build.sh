@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.5 2007-07-26 21:47:53 cvsuser Exp $
+# $Id: build.sh,v 1.6 2007-09-22 04:17:55 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -62,7 +62,7 @@ ROOT_DIR=`pwd`
 TMP_DIR=$ROOT_DIR/build
 
 #uncomment to debug
-# set -x
+set -x
 
 # remove any left-over files from previous build
 rm -f $APP_NAME.jar $XPI_FILE_NAME files
@@ -72,17 +72,15 @@ $BEFORE_BUILD
 
 [ $? -ne "0" ] && exit 1
 
-set +x
-
 mkdir --parents --verbose $TMP_DIR/chrome
 
-$ROOT_DIR/$BEFORE_JAR
+$BEFORE_JAR
 
 # generate the JAR file, excluding CVS, SVN, and temporary files
 JAR_FILE=$TMP_DIR/chrome/$APP_NAME.jar
 echo "Generating $JAR_FILE..."
 for CHROME_SUBDIR in $CHROME_PROVIDERS; do
-  find $CHROME_SUBDIR \( -path '*CVS*' -o -path '*.svn*' \) -prune -o -type f -print | grep -v \~ >> files
+  find $CHROME_SUBDIR \( -path '*CVS*' -o -path '*.svn*' -o -path '*.swp' \) -prune -o -type f -print | grep -v \~ >> files
 done
 
 zip -0 -r $JAR_FILE -@ < files
@@ -93,7 +91,7 @@ zip -0 -r $JAR_FILE -@ < files
 echo "Copying various files to $TMP_DIR folder..."
 for DIR in $ROOT_DIRS; do
   mkdir $TMP_DIR/$DIR
-  FILES="`find $DIR \( -path '*CVS*' -o -path '*.svn*' \) -prune -o -type f -print | grep -v \~`"
+  FILES="`find $DIR \( -path '*CVS*' -o -path '*.svn*' -o -path '*.swp' \) -prune -o -type f -print | grep -v \~`"
   echo $FILES >> files
   cp --verbose --parents $FILES $TMP_DIR
 done

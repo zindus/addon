@@ -34,8 +34,6 @@ include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/timer.js");
 
-var is_developer_mode = true; // true ==> expose buttons in the UI
-
 function Prefs()
 {
 	this.m_prefset_server      = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
@@ -48,11 +46,14 @@ function Prefs()
 
 	this.m_is_fsm_running      = false;
 	this.m_logger              = newZinLogger("Prefs");
+
+	var preferences = new MozillaPreferences();
+	this.is_developer_mode     = (preferences.getCharPrefOrNull(preferences.branch(), "system.developer_mode") == "true");
 }
 
 Prefs.prototype.onLoad = function(target)
 {
-	if (is_developer_mode)
+	if (this.is_developer_mode)
 	{
 		document.getElementById("zindus-prefs-general-button-test-harness").removeAttribute('hidden');
 		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('hidden');

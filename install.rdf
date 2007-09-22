@@ -7,20 +7,20 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.1.5</em:version>
+    <em:version>0.1.10</em:version>
 
     <em:targetApplication>
       <Description>
         <!-- Thunderbird -->
         <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id>
-        <em:minVersion>1.0.*</em:minVersion>
+        <em:minVersion>2.0.0.5</em:minVersion>
         <em:maxVersion>2.0.*</em:maxVersion>
       </Description>
     </em:targetApplication>
 
     <em:name>Zindus</em:name>
     <em:optionsURL>chrome://zindus/content/prefsdialog.xul</em:optionsURL>
-    <em:description>This extension synchronizes the address book with a zimbra server.</em:description>
+    <em:description>Synchronize the address book with a zimbra server.</em:description>
     <em:creator>Moniker Pty. Ltd.</em:creator>
     <em:creator>Leni Mayo</em:creator>
     <em:homepageURL>http://www.zindus.com/</em:homepageURL>  
