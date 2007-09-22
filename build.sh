@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.6 2007-09-22 04:17:55 cvsuser Exp $
+# $Id: build.sh,v 1.7 2007-09-22 04:29:33 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -62,7 +62,7 @@ ROOT_DIR=`pwd`
 TMP_DIR=$ROOT_DIR/build
 
 #uncomment to debug
-set -x
+# set -x
 
 # remove any left-over files from previous build
 rm -f $APP_NAME.jar $XPI_FILE_NAME files

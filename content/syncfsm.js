@@ -1131,10 +1131,11 @@ SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation
 		{
 			var zc = this.state.aSyncGalContact[aAdd[i]];
 
-			this.state.m_logger.debug("entryActionSyncGalCommit: about to write aSyncGalContact[" + aAdd[i] + "] == \n" + zc.toString());
-
 			var attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
 			var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+
+			this.state.m_logger.debug("entryActionSyncGalCommit: adding aSyncGalContact[" + aAdd[i] + "]: " +
+			                            this.shortLabelForContactProperties(FORMAT_ZM, properties));
 
 			ZimbraAddressBook.addCard(uri, FORMAT_TB, properties, attributes);
 		}
@@ -2287,23 +2288,31 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	{
 		zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
 
-		ret += "contact: ";
-
 		var properties = this.getContactFromLuid(sourceid, luid, format);
 		
-		key = (format == FORMAT_TB) ? 'DisplayName' : 'fullName';
-
-		if (isPropertyPresent(properties, key))
-			ret += "<" + properties[key] + "> ";
-
-		key = (format == FORMAT_TB) ? "PrimaryEmail" : "email";
-
-		if (isPropertyPresent(properties, key))
-			ret += properties[key];
+		ret += "contact: " + this.shortLabelForContactProperties(format, properties);
 	}
 
-	this.state.m_logger.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid: " + luid + " target_format: " + target_format +
-	                          " returns: " + ret);
+	// this.state.m_logger.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid: " + luid + " target_format: " + target_format +
+	//                           " returns: " + ret);
+
+	return ret;
+}
+
+SyncFsm.prototype.shortLabelForContactProperties = function(format, properties)
+{
+	var ret = "";
+	var key;
+
+	key = (format == FORMAT_TB) ? 'DisplayName' : 'fullName';
+
+	if (isPropertyPresent(properties, key))
+		ret += "<" + properties[key] + "> ";
+
+	key = (format == FORMAT_TB) ? "PrimaryEmail" : "email";
+
+	if (isPropertyPresent(properties, key))
+		ret += properties[key];
 
 	return ret;
 }
