@@ -94,9 +94,6 @@ Prefs.prototype.onAccept = function()
 
 	var pm = new PasswordManager();
 
-	// TODO - this is causing problems for sunny - perhaps put an exception around the removeUser
-	//
-
 	if ((url != prev_url || username != prev_username) && pm.get(prev_url, prev_username))
 		pm.del(prev_url, prev_username);
 
@@ -190,6 +187,7 @@ Prefs.prototype.onCommand = function(id_target)
 		case "zindus-prefs-general-button-reset":
 			SyncFsm.removeZfcs();
 			SyncFsm.removeLogfile();
+			StatusPanel.update();
 			break;
 
 		case "zindus-prefs-tab-general":

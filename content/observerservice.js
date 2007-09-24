@@ -43,7 +43,7 @@ ObserverService.isRegistered = function(topic)
 		try {
 			var o = enumerator.getNext().QueryInterface(Components.interfaces.nsIObserver);
 
-			dump("observerServiceIsRegistered: blah: o: " + aToString(o) + "\n");
+			// dump("observerServiceIsRegistered: blah: o: " + aToString(o) + "\n");
 
 			count++;
 		}
@@ -52,7 +52,7 @@ ObserverService.isRegistered = function(topic)
 		}
 	}
 
-	dump("ObserverService.isRegistered: blah: returns: " + (count > 0));
+	// dump("ObserverService.isRegistered: blah: returns: " + (count > 0) + "\n");
 
 	return count > 0;
 }

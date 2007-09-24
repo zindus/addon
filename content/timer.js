@@ -37,7 +37,10 @@ ZinTimer.prototype.start = function(delay)
 {
 	zinAssert(arguments.length == 1);
 
-	this.m_logger.debug("start: delay: " + delay);
+	var today = new Date();
+	var timeInMs = Date.now();
+	var dateExpires = new Date(timeInMs + 1000 * delay);
+	this.m_logger.info("start: timer scheduled to fire : " + dateExpires.toLocaleString() );
 
 	zinAssert(typeof delay == 'number');
 
@@ -57,15 +60,18 @@ ZinTimer.prototype.notify = function(timer)
     this.m_functor.run();
 }
 
-function ZinTimerFunctorSync(id_fsm_functor, delay_on_repeat)
+function ZinTimerFunctorSync(id_fsm_functor, a_delay_on_repeat)
 {
-	zinAssert(arguments.length == 2 && (typeof(delay_on_repeat) == 'number' || delay_on_repeat == null));
+	zinAssert((arguments.length == 2 && typeof(a_delay_on_repeat) == 'object' &&
+	                                    parseInt(a_delay_on_repeat[0]) > 0 &&
+										parseInt(a_delay_on_repeat[1]) > 0 ) ||
+	          (arguments.length == 1 && a_delay_on_repeat == null));
 
 	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfo               = new SyncFsmObserver();
 	this.m_messengerWindow   = null;  // also considered putting status here: this.m_addressbookWindow = null;
 	this.m_id_fsm_functor    = id_fsm_functor;
-	this.m_delay_on_repeat   = delay_on_repeat; // null implies ONE_SHOT, non-null implies REPEAT frequency in seconds
+	this.m_a_delay_on_repeat = a_delay_on_repeat; // null implies ONE_SHOT, non-null implies REPEAT frequency in seconds
 	this.m_is_fsm_functor_first_entry = true;
 }
 
@@ -78,7 +84,7 @@ ZinTimerFunctorSync.prototype.run = function()
 
 ZinTimerFunctorSync.prototype.copy = function()
 {
-	return new ZinTimerFunctorSync(this.m_id_fsm_functor, this.m_delay_on_repeat);
+	return new ZinTimerFunctorSync(this.m_id_fsm_functor, this.m_a_delay_on_repeat);
 }
 	
 ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
@@ -90,9 +96,9 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		if (fsmstate)
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running: " +
-			                      (this.m_delay_on_repeat ? "about to retry" : "single-shot - no retry"));
+			                      (this.m_a_delay_on_repeat ? "about to retry" : "single-shot - no retry"));
 
-			this.setNextTimer(10);  // retry in 10 seconds
+			this.setNextTimer([10,0]);  // retry in 10 seconds
 		}
 		else
 		{
@@ -114,8 +120,6 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 	else
 	{
-		this.m_logger.debug("ZinTimerFunctorSync.onFsmStateChangeFunctor: 744: ");
-
 		var is_window_update_required = this.m_sfo.update(fsmstate);
 
 		if (is_window_update_required)
@@ -135,9 +139,6 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (fsmstate.isFinal())
 		{
-			// TODO - display the exit status - and fix the code below
-			// one option: put something in the status panel and set a timer that eventually hides the status panel
-
 			var es = this.m_sfo.exitStatus();
 			StatusPanel.save(es);
 
@@ -152,19 +153,20 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 
-			this.setNextTimer(this.m_delay_on_repeat);
+			this.setNextTimer(this.m_a_delay_on_repeat);
 		}
 	}
 }
 
-ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
+ZinTimerFunctorSync.prototype.setNextTimer = function(a_delay)
 {
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 
-	if (delay)
+	if (a_delay)
 	{
-		this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + delay);
+		this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + a_delay.toString());
 
+		var delay = randomPlusOrMinus(a_delay[0], a_delay[1]);
 		var functor = this.copy();
 		var timer = new ZinTimer(functor);
 		timer.start(delay);

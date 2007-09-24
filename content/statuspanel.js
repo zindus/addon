@@ -97,12 +97,18 @@ StatusPanel.update = function(win)
 
 	var obj = { alert : '!', error : 'X', insync : 'Y' };
 
-	for (var x in obj)
+	if (arguments.length == 0)
+		win = getWindowContainingElementId('zindus-statuspanel');
+
+	if (win)
 	{
-		win.document.getElementById("zindus-statuspanel-" + x).hidden = (status != x);
-		win.document.getElementById("zindus-statuspanel-" + x).value  = obj[x];
-		logger.debug("update: " + x + " is hidden: " + (status != x) + " value: " + obj[x]);
+		for (var x in obj)
+		{
+			win.document.getElementById("zindus-statuspanel-" + x).hidden = (status != x);
+			win.document.getElementById("zindus-statuspanel-" + x).value  = obj[x];
+			// logger.debug("update: " + x + " is hidden: " + (status != x) + " value: " + obj[x]);
+		}
+
+		win.document.getElementById("zindus-statuspanel").tooltipText = tooltip;
 	}
-				
-	win.document.getElementById("zindus-statuspanel").tooltipText = tooltip;
 }

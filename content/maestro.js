@@ -213,9 +213,9 @@ ZinMaestro.notifyFunctorRegister = function(context, functor, id_functor, a_id_f
 {
 	// ZinMaestro.logger.debug("notifyFunctorRegister: id_functor == " + id_functor + " a_id_fsm: " + aToString(a_id_fsm));
 
-	// TODO - should the this'es below really be "this" ??
-
-	ObserverService.notify(ZinMaestro.TOPIC, ZinMaestro.wrapForJS(newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)), this.DO_FUNCTOR_REGISTER);
+	ObserverService.notify(ZinMaestro.TOPIC,
+	            ZinMaestro.wrapForJS(newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)),
+				ZinMaestro.DO_FUNCTOR_REGISTER);
 }
 
 ZinMaestro.notifyFunctorUnregister = function(id_functor)

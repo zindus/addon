@@ -49,6 +49,16 @@ function zinAssert(expr)
 	}
 }
 
+
+function zinAssertAndLog(expr, msg)
+{
+	if (!expr)
+	{
+		newZinLogger("Utils").error(msg)
+		zinAssert(expr);
+	}
+}
+
 function zinCloneObject(obj)
 {
 	var ret;
@@ -393,6 +403,15 @@ function getWindowContainingElementId(id)
 
 	if (a_id[id])
 		ret = a_id[id];
+
+	return ret;
+}
+
+// eg 24 +/- 4 is a number between 16 and 28...
+//
+function randomPlusOrMinus(central, varies_by)
+{
+	var ret = central - varies_by + Math.floor(Math.random() * (2 * varies_by + 1));
 
 	return ret;
 }

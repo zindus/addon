@@ -112,6 +112,7 @@ ZinContactConverter.prototype.setup = function()
 	//
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "namePrefix"      )); // eg "Mr."
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "nameSuffix"      )); // eg "Mr."
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "initials"        ));
 
 	// Don't generate debug messages if unable to convert these attributes...
 	// eg. the <cn> elements returned by SyncGal include ldap attributes
@@ -191,7 +192,7 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 				}
 				else
 				{
-					this.m_logger.debug("Ignoring contact field that we don't have a mapping for: " +
+					this.m_logger.warn("Ignoring contact field that we don't have a mapping for: " +
 					                  "from: " + this.m_bimap_format.lookup(format_from, null) + " " +
 					                  "field: "  + key_from);
 				}

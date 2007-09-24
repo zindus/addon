@@ -49,17 +49,20 @@ function onLoad(event)
 			{
 				ObserverService.register(maestro, maestro.TOPIC);
 
-				var preferences = new MozillaPreferences();
+				var prefs = new MozillaPreferences();
 
-				if (preferences.getCharPrefOrNull(preferences.branch(), "general.manualsynconly") != "true")
+				if (prefs.getCharPrefOrNull(prefs.branch(), "general.manualsynconly") != "true")
 				{
-					var delay_on_repeat = parseInt(preferences.getIntPref(preferences.branch(), "system.timerDelay"));
-					var delay_on_start  = Math.floor(Math.random() * (delay_on_repeat + 1)); // randomise clients to avoid hammering server
+					// the first sync happens sometime in the second hour after startup (randomised to avoid hammering server)
+					// then system.timerDelay also randomised
+					//
+					var varies_by = 4 * 3600;
+					var delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelay"));
+					var delay_on_start  = randomPlusOrMinus(1.5 * 3600, .5 * 3600);
 
-					logger.debug("starting timer: delay_on_start:" + delay_on_start +
-					                                                " delay_on_repeat: " + delay_on_repeat);
+					logger.debug("delay_on_start:" + delay_on_start + " delay_on_repeat: " + delay_on_repeat);
 
-					var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, delay_on_repeat);
+					var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, [delay_on_repeat, varies_by]);
 					var timer = new ZinTimer(functor);
 					timer.start(delay_on_start);
 				}

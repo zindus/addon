@@ -112,11 +112,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var es = this.m_sfo.exitStatus();
 			this.m_payload.m_result = es;
 			StatusPanel.save(es);
-
-			var win = getWindowContainingElementId('zindus-statuspanel');
-
-			if (win)
-				StatusPanel.update(win);
+			StatusPanel.update();
 
 			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 
