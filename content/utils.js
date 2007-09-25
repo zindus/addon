@@ -44,6 +44,11 @@ function zinAssert(expr)
 			else
 				print(ex.message + " stack: \n" + ex.stack);
 
+			var win = getWindowContainingElementId('zindus-syncwindow');
+
+			if (win)
+				win.document.getElementById('zindus-syncwindow').acceptDialog();
+
 			throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
 		}
 	}

@@ -356,7 +356,7 @@ SyncFsm.prototype.isConsistentSources = function()
 			//
 			if (this.state.sources[sourceid]['format'] == FORMAT_ZM && !SyncFsm.isOfInterest(zfc, zfi.id()))
 			{
-				this.state.m_logger.debug("isConsistentSources: inconsistency item not of interest: sourceid: " + sourceid +
+				this.state.m_logger.debug("isConsistentSources: inconsistency re: item not of interest: sourceid: " + sourceid +
 				                          " luid: " + luid + " zfi: " + zfi.toString() );
 				is_consistent = false;
 			}
@@ -371,8 +371,11 @@ SyncFsm.prototype.isConsistentSources = function()
 
 			// a zimbra source might have a ZinFeedItem.ATTR_DEL attribute because of a network or server failure
 			// only test thunderbird
+			// Later ... realised that this should also test ZM because if there's a network or server failure the
+			// luid map doesn't get update so this should never happen.
+			// && this.state.sources[sourceid]['format'] == FORMAT_TB 
 			//
-			if (is_consistent && this.state.sources[sourceid]['format'] == FORMAT_TB && zfi.isPresent(ZinFeedItem.ATTR_DEL))
+			if (is_consistent && zfi.isPresent(ZinFeedItem.ATTR_DEL))
 			{
 				this.state.m_logger.debug("isConsistentSources: inconsistency re: ATTR_DEL: sourceid: " + sourceid + " luid: " + luid);
 				is_consistent = false;
@@ -506,6 +509,68 @@ SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuatio
 	continuation('evSoapRequest');
 }
 
+SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
+{
+	if (!this.state.m_soap_state.m_response || event == "evCancel")
+		return;
+
+	var newSoapURL  = null;
+	var xpath_query = "/soap:Envelope/soap:Body/za:GetAccountInfoResponse/za:soapURL";
+	var functor     = new FunctorArrayOfTextNodeValue();
+
+	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
+
+	if (functor.a.length == 1)
+		newSoapURL = functor.a[0];
+	else if (functor.a.length > 1)
+	{
+		var scheme = this.state.m_preferences.getCharPref(this.state.m_preferences.branch(), "system.preferSchemeForSoapUrl");
+		var scheme_length = scheme.length;
+		var scheme_url     = null;
+		var is_current_url = false;
+
+		for (var i = 0; i < functor.a.length; i++)
+		{
+			if (functor.a[i].substr(0, scheme_length) == scheme)
+				scheme_url = functor.a[i];
+
+			if (functor.a[i] == this.state.soapURL)
+				is_current_url = true;
+		}
+
+		// if the url that the user entered in the server settings is returned by the server, use that
+		// otherwise, prefer a url of type preferSchemeForSoapUrl (http or https)
+		// otherwise, use the first one
+		//
+		if (is_current_url)
+			; // do nothing
+		else if (scheme_url)
+			newSoapURL = scheme_url;
+		else
+			newSoapURL = functor.a[0];
+	}
+
+	var msg = "";
+
+	if (newSoapURL)
+	{
+		// this.state.soapURL = newSoapURL;
+		// msg = " changed from: " + this.state.soapURL;
+
+		// Through testing, it seems that a non-trivial number of zimbra installations (the soho types) have misconfigured servers,
+		// so while the url supplied for authentication works, the one returned by GetAccountInfo doesn't
+		// (eg it uses a domain name that's not in the public dns).
+		// The correct thing to do here is to test the new url on the next soap request and if it didn't work,
+		// fall back to the one that's known to work.
+		//
+		msg = " the server suggested that we use a new soapURL: " + newSoapURL + " but this feature has been temporarily disabled";
+	}
+
+	msg = "exitActionGetAccountInfo: soapURL: " + this.state.soapURL + msg;
+
+	this.state.m_logger.debug(msg);
+}
+
 SyncFsm.prototype.entryActionGetInfo = function(state, event, continuation)
 {
 	this.setupSoapCall(state, 'evNext', "GetInfo");
@@ -534,68 +599,6 @@ SyncFsm.prototype.exitActionGetInfo = function(state, event)
 	else
 		this.state.m_logger.warn("expected <attr name='zimbraFeatureGalEnabled'>xxx</attr> in <GetInfoResponse> - default: " +
 		                          (this.state.isZimbraFeatureGalEnabled ? "" : "don't") + " sync GAL");
-}
-
-SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
-{
-	if (!this.state.m_soap_state.m_response || event == "evCancel")
-		return;
-
-	var newSoapURL  = null;
-	var xpath_query = "/soap:Envelope/soap:Body/za:GetAccountInfoResponse/za:soapURL";
-	var functor     = new FunctorArrayOfTextNodeValue();
-
-	dump("am here 1\n");
-	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
-	dump("am here 2\n");
-
-	if (functor.a.length == 1)
-		newSoapURL = functor.a[0];
-	else if (functor.a.length > 1)
-	{
-	dump("am here 3\n");
-		var scheme = this.state.m_preferences.getCharPref(this.state.m_preferences.branch(), "system.preferSchemeForSoapUrl");
-		var scheme_length = scheme.length;
-		var scheme_url     = null;
-		var is_current_url = false;
-
-	dump("am here 3.1\n");
-		for (var i = 0; i < functor.a.length; i++)
-		{
-	dump("am here 4\n");
-			if (functor.a[i].substr(0, scheme_length) == scheme)
-				scheme_url = functor.a[i];
-
-			if (functor.a[i] == this.state.soapURL)
-				is_current_url = true;
-		}
-	dump("am here 5\n");
-
-		// if the url that the user entered in the server settings is returned by the server, use that
-		// otherwise, prefer a url of type preferSchemeForSoapUrl (http or https)
-		// otherwise, use the first one
-		//
-		if (is_current_url)
-			; // do nothing
-		else if (scheme_url)
-			newSoapURL = scheme_url;
-		else
-			newSoapURL = functor.a[0];
-	dump("am here 6\n");
-	}
-
-	var msg = "";
-
-	if (newSoapURL)
-	{
-	dump("am here 7\n");
-		this.state.soapURL = newSoapURL;
-		msg = " changed from: " + this.state.soapURL;
-	}
-
-	msg = "exitActionGetAccountInfo: soapURL: " + this.state.soapURL + msg;
-
-	this.state.m_logger.debug(msg);
 }
 
 SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
@@ -3402,11 +3405,15 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	zinAssert(!soapstate.isPostResponse());
 	zinAssert(soapstate.isStateConsistent());
 
+	this.state.m_logger.debug("soap request: soapURL:" + this.state.soapURL); // TODO remove me
+
 	soapCall.transportURI = this.state.soapURL;
 	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
 
 	if (soapstate.m_method == "Auth")
-		this.state.m_logger.debug("soap request: " + "<AuthRequest> suppressed"); // dont want password going into the log
+		// TODO put me back
+		// this.state.m_logger.debug("soap request: " + "<AuthRequest> suppressed"); // dont want password going into the log
+		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 	else
 		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 
@@ -3529,7 +3536,14 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 			nextEvent = 'evNext'; // we found a BlahResponse element - all is well
 		else
 		{
+			// an example: I've been able to make zimbra soap server might return this:
+			// <parsererror xmlns="http://www.mozilla.org/newlayout/xml/parsererror.xml">XML Parsing Error: mismatched tag.
+			//  Expected: &lt;/META&gt;.
+			// Location: https://zimbra.home.bains.org/service/soap/
+			// Line Number 5, Column 3:<sourcetext>&lt;/HEAD&gt;&lt;BODY&gt; --^</sourcetext></parsererror>
+
 			nextEvent = 'evCancel';
+			soapstate.is_mismatched_response = true;
 			this.state.m_logger.error("soap response isn't a fault and doesn't match our request - about to cancel");
 		}
 	}
@@ -3562,17 +3576,18 @@ SyncFsm.prototype.exitActionSoapResponse = function(state, event)
 
 function SoapState()
 {
-	this.m_zsd               = new ZimbraSoapDocument();
-	this.m_method            = null;  // the prefix of the soap method, eg: "Auth" or "GetContacts"
-	this.m_callcompletion    = null;  // the object returned by soapCall.asyncInvoke()
+	this.m_zsd                  = new ZimbraSoapDocument();
+	this.m_method               = null;  // the prefix of the soap method, eg: "Auth" or "GetContacts"
+	this.m_callcompletion       = null;  // the object returned by soapCall.asyncInvoke()
 
-	this.m_response          = null;  // SOAPResponse.message - the xml soap message response, assuming all was well
-	this.m_service_code      = null;  // 
-	this.m_faultcode         = null;  // These are derived from the soap fault element
-	this.m_fault_element_xml = null;  // the soap:Fault element as string xml
-	this.m_fault_detail      = null;
-	this.m_faultstring       = null;
-	this.is_cancelled        = false;
+	this.m_response             = null;  // SOAPResponse.message - the xml soap message response
+	this.m_service_code         = null;  // 
+	this.m_faultcode            = null;  // These are derived from the soap fault element
+	this.m_fault_element_xml    = null;  // the soap:Fault element as string xml
+	this.m_fault_detail         = null;
+	this.m_faultstring          = null;
+	this.is_cancelled           = false;
+	this.is_mismatched_response = false;
 
 	zinAssert(this.isStateConsistent());
 	zinAssert(this.isPreResponse());
@@ -3586,10 +3601,14 @@ SoapState.prototype.failCode = function()
 
 	if (this.is_cancelled)                     ret = 'FailOnCancel';
 	else if (!this.m_callcompletion)           ret = 'FailOnUnknown';  // pre-request:       not a failure
+	else if (this.is_mismatched_response)      ret = 'FailOnMismatchedResponse';
 	else if (this.m_response != null)          ret = 'FailOnUnknown';  // response recieved: not a failure
 	else if (this.m_service_code != 0)         ret = 'FailOnService';
 	else if (this.m_fault_element_xml != null) ret = 'FailOnFault';
 	else                                       ret = 'FailOnUnknown';  // this really is unknown
+
+	if (ret == 'FailOnUnknown')
+		newZinLogger("SoapState").debug("failCode: " + ret + " and this: " + this.toString());
 
 	return ret;
 }
@@ -3650,13 +3669,15 @@ SoapState.prototype.faultLoadFromSoapFault = function(fault)
 
 SoapState.prototype.toString = function()
 {
-	var ret = "\n callcompletn = "     + (this.m_callcompletion ? "non-null" : "null") +
-	          "\n service code = "     + this.m_service_code +
-	          "\n fault code = "       + this.m_faultcode +
-	          "\n fault string = "     + this.m_faultstring +
-	          "\n fault detail = "     + this.m_fault_detail +
-	          "\n fault elementxml = " + this.m_fault_element_xml +
-	          "\n response = "         + this.m_response;
+	var ret = "\n callcompletn = "        + (this.m_callcompletion ? "non-null" : "null") +
+	          "\n cancelled    = "        + this.is_cancelled +
+	          "\n mismatched_response = " + this.is_mismatched_response +
+	          "\n service code = "        + this.m_service_code +
+	          "\n fault code = "          + this.m_faultcode +
+	          "\n fault string = "        + this.m_faultstring +
+	          "\n fault detail = "        + this.m_fault_detail +
+	          "\n fault elementxml = "    + this.m_fault_element_xml +
+	          "\n response = "            + xmlDocumentToString(this.m_response);
 
 	return ret;
 }
@@ -3762,6 +3783,8 @@ SyncFsmState.prototype.setCredentials = function()
 	}
 
 	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
+
+	this.m_logger.debug("setCredentials: this.sources[zm][soapURL]: " + this.sources[SOURCEID_ZM]['soapURL']);
 }
 
 function AuthOnlyFsmState() { this.SyncFsmState(ZinMaestro.FSM_ID_AUTHONLY); }

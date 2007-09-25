@@ -94,7 +94,6 @@ ZinContactConverter.prototype.setup = function()
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "callbackPhone"  ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "homePhone2"     ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "homeFax"        ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "pager"          ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "carPhone"       ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherStreet"    ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherCity"      ));
@@ -207,6 +206,10 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 
 	if (a_normalised_line["home"].length > 0 || a_normalised_line["work"].length > 0)
 		this.outputNormalisedAddressLine(format_to, properties_to, a_normalised_line);
+
+	this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
+	                                 " properties_from: " + aToString(properties_from) +
+									 " returns properties_to: " + aToString(properties_to));
 		
 	return properties_to;
 }
