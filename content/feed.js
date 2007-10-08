@@ -41,6 +41,7 @@ ZinFeedItem.ATTR_ID   = 'id';
 ZinFeedItem.ATTR_TPI  = 'tpi';  // thunderbird pref id - see http://www.xulplanet.com/references/xpcomref/ifaces/nsIAbDirectory.html
 ZinFeedItem.ATTR_TYPE = 'type';
 ZinFeedItem.ATTR_NAME = 'name';
+ZinFeedItem.ATTR_PRES = 'pres'; // present
 ZinFeedItem.ATTR_CS   = 'cs';   // checksum - not persisted
 
 ZinFeedItem.TYPE_FL   = 0x01; // folder

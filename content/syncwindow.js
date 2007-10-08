@@ -111,8 +111,12 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			var es = this.m_sfo.exitStatus();
 			this.m_payload.m_result = es;
-			StatusPanel.save(es);
-			StatusPanel.update();
+
+			if (fsmstate.context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY)
+			{
+				StatusPanel.save(es);
+				StatusPanel.update();
+			}
 
 			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 

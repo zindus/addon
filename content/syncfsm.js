@@ -294,16 +294,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
-// Here's what's tested:
-// - thunderbird source:
-//   - confirm that there are no ZinFeedItem.ATTR_DEL flags in thunderbird sources
-//     (there can only be a ZinFeedItem.ATTR_DEL flag in a zimbra source if there was a network or server failure)
-// - confirm that everything in a source map is in the gid - for zimbra this is qualified by isOfInterest()
-// - confirm that everything in the gid is in a source map
-// - confirm that no item in a map has the 'present' flag - this should have got deleted and isn't meant to be persisted
-//
-// Could also (but don't) test for:
-// - 'l'   attributes are correct
+// Could also (but don't) test that:
 // - 'ver' attributes make sense
 
 SyncFsm.prototype.isConsistentDataStore = function()
@@ -352,9 +343,9 @@ SyncFsm.prototype.isConsistentSources = function()
 		{
 			var luid = zfi.id();
 
-			// all items in a zimbra source must be of interest
+			// all items in a source must be of interest (which means that the 'l' attribute is correct)
 			//
-			if (this.state.sources[sourceid]['format'] == FORMAT_ZM && !SyncFsm.isOfInterest(zfc, zfi.id()))
+			if (is_consistent && !SyncFsm.isOfInterest(zfc, zfi.id()))
 			{
 				this.state.m_logger.debug("isConsistentSources: inconsistency re: item not of interest: sourceid: " + sourceid +
 				                          " luid: " + luid + " zfi: " + zfi.toString() );
@@ -363,29 +354,25 @@ SyncFsm.prototype.isConsistentSources = function()
 
 			// all items in a source must be in the gid (tested via reference to aReverse)
 			//
-			if (!isPropertyPresent(this.state.aReverseGid[sourceid], luid))
+			if (is_consistent && !isPropertyPresent(this.state.aReverseGid[sourceid], luid))
 			{
 				this.state.m_logger.debug("isConsistentSources: inconsistency vs gid: sourceid: " + sourceid + " luid: " + luid);
 				is_consistent = false;
 			}
 
-			// a zimbra source might have a ZinFeedItem.ATTR_DEL attribute because of a network or server failure
-			// only test thunderbird
-			// Later ... realised that this should also test ZM because if there's a network or server failure the
-			// luid map doesn't get update so this should never happen.
-			// && this.state.sources[sourceid]['format'] == FORMAT_TB 
+			// These items shouldn't be persisted in a source map.
+			// No items should be marked as deleted because if we were unable to update a zimbra server because of
+			// a network outage, we wouldn't have saved the source map.
 			//
-			if (is_consistent && zfi.isPresent(ZinFeedItem.ATTR_DEL))
-			{
-				this.state.m_logger.debug("isConsistentSources: inconsistency re: ATTR_DEL: sourceid: " + sourceid + " luid: " + luid);
-				is_consistent = false;
-			}
+			var a = [ ZinFeedItem.ATTR_DEL, ZinFeedItem.ATTR_PRES ];
 
-			if (is_consistent && zfi.isPresent('present'))
-			{
-				this.state.m_logger.debug("isConsistentSources: inconsistency re: 'present': sourceid: " + sourceid + " luid: " + luid);
-				is_consistent = false;
-			}
+			for (var i = 0; is_consistent && i < a.length; i++)
+				if (zfi.isPresent(a[i]))
+				{
+					this.state.m_logger.debug("isConsistentSources: inconsistency re: " + a[i] + ": sourceid: " + sourceid +
+				                                                                             " luid: " + luid);
+					is_consistent = false;
+				}
 
 			return is_consistent;
 		}
@@ -1348,7 +1335,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 				}
 
 				aUri[elem.directoryProperties.URI] = id;
-				zfcTb.get(id).set('present', '1');  // this drives deletion detection
+				zfcTb.get(id).set(ZinFeedItem.ATTR_PRES, '1');  // this drives deletion detection
 
 				msg += " - elem.directoryProperties." +
 				       " URI: "      + elem.directoryProperties.URI +
@@ -1502,7 +1489,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 						msg += " found:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
 				}
 
-				zfcTb.get(id).set('present', '1');
+				zfcTb.get(id).set(ZinFeedItem.ATTR_PRES, '1');
 			}
 			else
 				msg += " - ignored";
@@ -1517,10 +1504,10 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		ZimbraAddressBook.forEachCard(uri, functor_foreach_card);
 
 	// deletion detection works as follows.
-	// 1. a 'present' attribute was added in pass 3 above
+	// 1. a ZinFeedItem.ATTR_PRES attribute was added in pass 3 above
 	// 2. iterate through the map
-	//    - an item without a 'present' attribute is marked as deleted
-	//    - remove the 'present' attribute so that it's not saved
+	//    - an item without a ZinFeedItem.ATTR_PRES attribute is marked as deleted
+	//    - remove the ZinFeedItem.ATTR_PRES attribute so that it's not saved
 	// 
 
 	var functor_mark_deleted = {
@@ -1530,8 +1517,8 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		{
 			if (zfi.isPresent(ZinFeedItem.ATTR_DEL))
 				; // do nothing
-			else if (zfi.isPresent('present'))
-				zfi.del('present');
+			else if (zfi.isPresent(ZinFeedItem.ATTR_PRES))
+				zfi.del(ZinFeedItem.ATTR_PRES);
 			else
 			{
 				zfi.set(ZinFeedItem.ATTR_DEL, 1);
@@ -1644,7 +1631,7 @@ SyncFsm.addToGid = function(zfcGid, sourceid, luid, reverse)
 {
 	var gid = ZinFeed.autoIncrement(zfcGid.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
 
-	zfcGid.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, gid, 'present', 1, sourceid, luid));
+	zfcGid.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, gid, ZinFeedItem.ATTR_PRES, 1, sourceid, luid));
 
 	reverse[sourceid][luid] = gid;
 
@@ -1690,7 +1677,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 			if (isPropertyPresent(reverse[sourceid], luid))
 			{
-				zfcGid.get(reverse[sourceid][luid]).set('present', 1);
+				zfcGid.get(reverse[sourceid][luid]).set(ZinFeedItem.ATTR_PRES, 1);
 				msg += " - already in gid";
 			}
 			else if (SyncFsm.isOfInterest(zfc, zfi.id()))
@@ -1864,8 +1851,8 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 		run: function(zfi)
 		{
-			if (zfi.isPresent('present'))
-				zfi.del('present');
+			if (zfi.isPresent(ZinFeedItem.ATTR_PRES))
+				zfi.del(ZinFeedItem.ATTR_PRES);
 			else
 			{
 				this.state.m_logger.warn("Found a gid unreferenced by any sourceid/luid.  This shouldn't happen.  Deleting...");

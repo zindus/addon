@@ -27,13 +27,14 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.7 2007-09-22 04:29:33 cvsuser Exp $
+# $Id: build.sh,v 1.8 2007-10-08 22:30:25 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
 # specified in command-line. Available config variables:
 APP_NAME=           # short-name, jar and xpi files name. Must be lowercase with no spaces
 APP_VERSION_NUMBER= # eg: 0.1
+APP_VERSION_TESTING= # either empty or a date string depending on whether we're cutting a production or testing release
 CHROME_PROVIDERS=   # which chrome providers we have (space-separated list)
 CLEAN_UP=           # delete the jar / "files" when done?       (1/0)
 ROOT_FILES=         # put these files in root of xpi (space separated list of leaf filenames)
@@ -49,7 +50,13 @@ else
   . $1
 fi
 
-export APP_NAME APP_VERSION_NUMBER  # BEFORE_BUILD might use these...
+if [ "$APP_VERSION_RELTYPE" = "testing" ]; then
+	APP_VERSION_NUMBER=$APP_VERSION_NUMBER.`date +%Y%m%d.%H%M%S`
+fi
+
+XPI_FILE_NAME=$APP_NAME-$APP_VERSION_NUMBER-$PLATFORM_ID.xpi
+
+export APP_NAME APP_VERSION_NUMBER XPI_FILE_NAME APP_VERSION_RELTYPE # BEFORE_BUILD or AFTER_BUILD might use these...
 
 if [ -z $APP_NAME ]; then
   echo "You need to create build config file first!"
@@ -57,7 +64,6 @@ if [ -z $APP_NAME ]; then
   exit;
 fi
 
-XPI_FILE_NAME=$APP_NAME-$APP_VERSION_NUMBER-$PLATFORM_ID.xpi
 ROOT_DIR=`pwd`
 TMP_DIR=$ROOT_DIR/build
 
@@ -95,6 +101,30 @@ for DIR in $ROOT_DIRS; do
   echo $FILES >> files
   cp --verbose --parents $FILES $TMP_DIR
 done
+
+cp install.rdf /tmp/install.rdf
+sed -r "s#<em:version>(.*)</em:version>#<em:version>$APP_VERSION_NUMBER</em:version>#" < install.rdf > asd
+# cat asd
+mv asd install.rdf
+
+updateURL="    <em:updateURL>http://www.zindus.com/download/update-xpi.php?item_id=%ITEM_ID%\&amp;item_version=%ITEM_VERSION%\&amp;item_status=%ITEM_STATUS%\&amp;app_id=%APP_ID%\&amp;app_os=%APP_OS%\&amp;app_abi=%APP_ABI%"
+
+if [ "$APP_VERSION_RELTYPE" = "testing" ]; then
+	sed -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=testing</em:updateURL>#" < install.rdf > asd
+	# cat asd
+	mv asd install.rdf
+elif [ "$APP_VERSION_RELTYPE" = "prod-zindus" ]; then
+	sed -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=prod-zindus</em:updateURL>#" < install.rdf > asd
+	# cat asd
+	mv asd install.rdf
+elif [ "$APP_VERSION_RELTYPE" = "prod-amo" ]; then
+	sed -r "s#.*<em:updateURL>.*</em:updateURL>.*#    <!-- <em:updateURL></em:updateURL> -->#" < install.rdf > asd
+	# cat asd
+	mv asd install.rdf
+else
+	echo Undefined APP_VERSION_RELTYPE - aborting
+	exit 1
+fi
 
 # Copy other files to the root of future XPI.
 for ROOT_FILE in $ROOT_FILES install.rdf chrome.manifest; do
