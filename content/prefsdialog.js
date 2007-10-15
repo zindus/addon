@@ -114,6 +114,11 @@ Prefs.prototype.onAccept = function()
 	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_PREFSDIALOG);
 }
 
+Prefs.prototype.onHelp = function(url)
+{
+	this.openURL(url);
+}
+
 Prefs.prototype.onCommand = function(id_target)
 {
 	this.m_logger.debug("onCommand: target: " + id_target);
@@ -136,7 +141,6 @@ Prefs.prototype.onCommand = function(id_target)
 
 			if (exitStatus.m_exit_status != 0)
 			{
-				dump("am here 221\n");
 				msg = SyncFsmExitStatus.asMessage(exitStatus, "statusSyncSucceeded", "statusSyncFailed");
 
 				if (msg == "")
@@ -160,7 +164,6 @@ Prefs.prototype.onCommand = function(id_target)
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
 			var exitStatus = payload.m_result;
-				dump("am here 222\n");
 			msg = SyncFsmExitStatus.asMessage(exitStatus, "statusAuthSucceeded", "statusAuthFailed");
 
 			if (msg != "")
@@ -262,19 +265,31 @@ Prefs.prototype.updateView = function()
 
 Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	// this.m_logger.debug("onFsmStateChangeFunctor: fsmstate: " + (fsmstate ? fsmstate.toString() : "null") );
+	this.m_logger.debug("onFsmStateChangeFunctor: fsmstate: " + (fsmstate ? fsmstate.toString() : "null") );
 
-	if (fsmstate)
-		if (fsmstate.isStart())
-		{
-			this.m_logger.debug("onFsmStateChangeFunctor: fsm started");
-			this.m_is_fsm_running = true;
-			this.updateView();
-		}
-		else if (fsmstate.isFinal())
-		{
-			this.m_logger.debug("onFsmStateChangeFunctor: fsm finished");
-			this.m_is_fsm_running = false;
-			this.updateView();
-		}
+	if (fsmstate && ! fsmstate.isFinal())
+	{
+		this.m_logger.debug("onFsmStateChangeFunctor: fsm is running");
+		this.m_is_fsm_running = true;
+		this.updateView();
+	}
+	else
+	{
+		this.m_logger.debug("onFsmStateChangeFunctor: fsm either wasn't running or just finished");
+		this.m_is_fsm_running = false;
+		this.updateView();
+	}
+}
+
+// See: http://developer.mozilla.org/en/docs/Opening_a_Link_in_the_Default_Browser
+//
+Prefs.prototype.openURL = function(url)
+{
+	var ioservice = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
+	var uriToOpen = ioservice.newURI(url, null, null);
+
+	var extps = Components.classes["@mozilla.org/uriloader/external-protocol-service;1"]
+	                      .getService(Components.interfaces.nsIExternalProtocolService);
+
+	extps.loadURI(uriToOpen, null);
 }

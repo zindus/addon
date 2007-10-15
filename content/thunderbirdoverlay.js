@@ -34,7 +34,6 @@ function onLoad(event)
 	{
 		newZinLogger().info("startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
 
-		// We dont want to do this each time a new window is opened
 		var messengerWindow = document.getElementById("messengerWindow");
 
 		if (messengerWindow)
@@ -54,21 +53,27 @@ function onLoad(event)
 				if (prefs.getCharPrefOrNull(prefs.branch(), "general.manualsynconly") != "true")
 				{
 					// the first sync happens sometime in the second hour after startup (randomised to avoid hammering server)
-					// then system.timerDelay also randomised
+					// subsequent firings also randomised
+					// .toFixed(0) rounds to the nearest integer.
 					//
-					var varies_by = 4 * 3600;
-					var delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelay"));
-					var delay_on_start  = randomPlusOrMinus(1.5 * 3600, .5 * 3600);
+					var delay_on_repeat, delay_on_start;
+
+					delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnRepeat"));
+					delay_on_start  = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnStart"));
+					delay_on_start  = randomPlusOrMinus(delay_on_start, (1/2 * delay_on_start).toFixed(0));
 
 					logger.debug("delay_on_start:" + delay_on_start + " delay_on_repeat: " + delay_on_repeat);
 
-					var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, [delay_on_repeat, varies_by]);
+					var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY,
+					                                       [delay_on_repeat, (1/6 * delay_on_repeat).toFixed(0)]);
 					var timer = new ZinTimer(functor);
 					timer.start(delay_on_start);
 				}
 				else
-					logger.debug("not starting timer.");
+					logger.debug("manual sync only - not starting timer.");
 			}
+			else
+				logger.debug("ObserverService is already registered so don't reregister or start timer.");
 
 			StatusPanel.update(window);
 		}

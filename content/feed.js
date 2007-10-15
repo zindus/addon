@@ -372,23 +372,18 @@ ZinFeed.autoIncrement = function(zfi, key)
 	return ret;
 }
 
-// ZinFeed.getBimapTopLevelFolderLuidName = function(zfc)
-// if attr == 'name' this method returns a bimap of 'id' and 'name'.
-ZinFeed.getTopLevelFolderLuidBimap = function(zfc, attr, iter_flavour)
+ZinFeed.getTopLevelFolderHash = function(zfc, attr_key, attr_value, iter_flavour)
 {
+	var result = new Object();
+
 	var functor =
 	{
-		m_a_id:   new Array(),
-		m_a_attr: new Array(),
 		type_fl:  ZinFeedItem.typeAsString(ZinFeedItem.TYPE_FL),
 
 		run: function(zfi)
 		{
 			if (zfi.get(ZinFeedItem.ATTR_TYPE) == this.type_fl && zfi.get('l') == '1')
-			{
-				this.m_a_id.push(zfi.get(ZinFeedItem.ATTR_ID));
-				this.m_a_attr.push(zfi.get(attr));
-			}
+				result[zfi.get(attr_key)] = zfi.get(attr_value);
 
 			return true;
 		}
@@ -396,9 +391,7 @@ ZinFeed.getTopLevelFolderLuidBimap = function(zfc, attr, iter_flavour)
 
 	zfc.forEach(functor, iter_flavour);
 
-	var bimap = new BiMap(functor.m_a_id, functor.m_a_attr);
-
-	return bimap;
+	return result;
 }
 
 ZinFeed.getContactIdsForParent = function(zfc, l)

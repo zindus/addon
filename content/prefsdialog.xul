@@ -30,15 +30,16 @@
 <dialog
 	id="zindus-prefs-dialog"
 	title="&ZinPrefs.title;"
-	buttons="accept"
+	buttons="accept,extra2"
+	buttonlabelextra2="&ZinPrefs.buttonlabelextra2;"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	onload="window.wd = new Prefs; window.wd.onLoad(event.target);"
 	oncommand="window.wd.onCommand(event.target.id);"
 	ondialogaccept="window.wd.onAccept();"
 	ondialogcancel="window.wd.onCancel();"
+	ondialogextra2="window.wd.onHelp('http://test.zindus.net/blog/faq/');"
 	>
-
 
 	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
@@ -47,6 +48,9 @@
 	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/prefsdialog.js"/>
 	<!--
+	Notes:
+	- couldn't get the "help" button above to work - use extra2 (which defaults to appearing on the left hand side) instead
+	- TODO - replace 'http://test.zindus.net/blog/faq/' with a real url
 	-->
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>

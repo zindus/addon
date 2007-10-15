@@ -1263,9 +1263,10 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	var sourceid = this.state.sourceid_tb;
 	var zfcTb = this.state.sources[sourceid]['zfcLuid'];
 
-	var bimapTbFolderLuid = ZinFeed.getTopLevelFolderLuidBimap(zfcTb, ZinFeedItem.ATTR_TPI, ZinFeedCollection.ITER_UNRESERVED);
+	var mapTbFolderTpiToId = ZinFeed.getTopLevelFolderHash(zfcTb, ZinFeedItem.ATTR_TPI, ZinFeedItem.ATTR_ID,
+	                                                             ZinFeedCollection.ITER_UNRESERVED);
 
-	this.state.m_logger.debug("loadTbMergeZfcWithAddressBook: bimapTbFolderLuid == " + bimapTbFolderLuid.toString());
+	this.state.m_logger.debug("loadTbMergeZfcWithAddressBook: mapTbFolderTpiToId == " + aToString(mapTbFolderTpiToId));
 
 	// identify the zimbra addressbooks
 	//
@@ -1297,16 +1298,15 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			// this.state.m_logger.debug("loadTbMergeZfcWithAddressBook: blah: dirName.indexOf: " + elem.dirName.indexOf("/", this.prefix.length));
 
 			if (elem.directoryProperties.dirType == ZimbraAddressBook.kPABDirectory &&
-			    ((elem.dirName.substring(0, this.prefix.length) == this.prefix &&
-			     elem.dirName.indexOf("/", this.prefix.length) == -1) ||
-			    (elem.dirName == TB_PAB) ) )
+			    ((elem.dirName.substring(0, this.prefix.length) == this.prefix && elem.dirName.indexOf("/", this.prefix.length) == -1) ||
+			     (elem.dirName == TB_PAB) ) )
 			{
 				var id;
 
 				var name = elem.dirName;
 				msg = "addressbook of interest to zindus: " + msg;
 
-				if (!bimapTbFolderLuid.isPresent(null, elem.dirPrefId))
+				if (!isPropertyPresent(mapTbFolderTpiToId, elem.dirPrefId))
 				{
 					id = ZinFeed.autoIncrement(zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
 
@@ -1318,7 +1318,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 				}
 				else
 				{
-					id = bimapTbFolderLuid.lookup(null, elem.dirPrefId);
+					id = mapTbFolderTpiToId[elem.dirPrefId];
 
 					// the mozilla addressbook hasn't implemented elem.lastModifiedDate (for folders)
 					// so we do our own change detection
@@ -1382,12 +1382,27 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	var zfcTb = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
 
 	functor_foreach_card = {
+		state: this.state, // for logger only - TODO remove after debugged
 		run: function(uri, item)
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
 
 			if (abCard.isMailList)
 				aMailListUri[abCard.mailListURI] = uri;
+
+			// if a sync gets cancelled somewhere between assigning+writing luid attributes to cards and saving the map,
+			// we might end up with a card with an luid attribute but without the luid being in the map
+			// Here, we remove any such attributes...
+
+			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+			var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+
+			if (id > ZinFeedItem.ID_MAX_RESERVED && !zfcTb.isPresent(id))
+			{
+				this.state.m_logger.debug("loadTbExclude : card had attribute luid: " + id + " that wasn't in the map - removed");
+				mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, 0); // delete would be more natural but not supported by api
+				mdbCard.editCardToDatabase(uri);
+			}
 
 			return true;
 		}
@@ -1396,7 +1411,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	for (uri in aUri)
 		ZimbraAddressBook.forEachCard(uri, functor_foreach_card);
 
-	this.state.m_logger.debug("1177 - pass 1 - aMailListUri == " + aToString(aMailListUri));
+	this.state.m_logger.debug("loadTbExclude pass 1 - aMailListUri == " + aToString(aMailListUri));
 
 	// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
 	//
@@ -1416,7 +1431,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	for (uri in aMailListUri)
 		ZimbraAddressBook.forEachCard(uri, functor_foreach_card);
 
-	this.state.m_logger.debug("1177 - pass 2 - aCardKeysToExclude == " + aToString(aCardKeysToExclude));
+	this.state.m_logger.debug("loadTbExclude pass 2 - aCardKeysToExclude == " + aToString(aCardKeysToExclude));
 
 	// pass 3 - iterate through the cards in the zindus folders excluding mailing list uris and cards with keys in aCardKeysToExclude
 	//
@@ -1427,7 +1442,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-			var msg = "1177 - pass 3 - card key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard);
+			var msg = "loadTbExclude pass 3 - card key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard);
 
 			var isInTopLevelFolder = false;
 
@@ -1441,11 +1456,11 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 			}
 
-			// this.state.m_logger.debug("1177 - pass 3: blah: " +
-			//                           " uri: " + uri +
-			//                           " key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard) +
-			//                           " card: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) +
-			//                           " isInTopLevelFolder: " + isInTopLevelFolder );
+			// this.state.m_logger.debug("loadTbExclude pass 3: blah: " +
+			//                          " uri: " + uri +
+			//                          " key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard) +
+			//                          " card: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) +
+			//                          " isInTopLevelFolder: " + isInTopLevelFolder );
 
 			if (isInTopLevelFolder)
 			{
@@ -1465,7 +1480,17 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 				}
 				else
 				{
+					zinAssert(zfcTb.isPresent(id)); // See the validity checking in pass 1 above
+
 					var zfi = zfcTb.get(id);
+
+					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: id: " + id);
+					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: zfi: " + zfi.toString());
+					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: l: " + zfi.get('l'));
+					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: uri: " + uri);
+					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: aUri[uri]: " + aUri[uri]);
+					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: md: " + zfi.get(ZinFeedItem.ATTR_MD) );
+					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: lastModifiedDate: " + abCard.lastModifiedDate);
 
 					// if things have changed, update the map...
 					//
@@ -1487,6 +1512,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 					}
 					else
 						msg += " found:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
+
 				}
 
 				zfcTb.get(id).set(ZinFeedItem.ATTR_PRES, '1');
@@ -1522,7 +1548,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			else
 			{
 				zfi.set(ZinFeedItem.ATTR_DEL, 1);
-				this.state.m_logger.debug("1177 - marking as deleted: " + zfi.toString());
+				this.state.m_logger.debug("loadTbExclude - marking as deleted: " + zfi.toString());
 				ZinFeed.autoIncrement(zfi, (zfi.type() == ZinFeedItem.TYPE_FL) ? ZinFeedItem.ATTR_MS : ZinFeedItem.ATTR_REV);
 			}
 
@@ -1546,7 +1572,7 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 		{
 			var ret = true;
 
-			if (zfi.type() == ZinFeedItem.TYPE_FL)
+			if (zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isPresent(ZinFeedItem.ATTR_DEL))
 			{
 				zinAssert(zfi.isPresent(ZinFeedItem.ATTR_NAME));
 				var name = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, zfi.get(ZinFeedItem.ATTR_NAME));
@@ -1715,9 +1741,9 @@ SyncFsm.prototype.updateGidFromSources = function()
 					var name   = zfi.get(ZinFeedItem.ATTR_NAME);
 					var abName = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, name);
 
-					if (bimapTbFolderLuid.isPresent(null, abName))
+					if (isPropertyPresent(mapTbFolderNameToId, abName))
 					{
-						luid_tb = bimapTbFolderLuid.lookup(null, abName);
+						luid_tb = mapTbFolderNameToId[abName];
 						gid = this.context.twinInGid(sourceid, luid, this.state.sourceid_tb, luid_tb, reverse)
 						msg += " twin: folder with tb luid: " + luid_tb + " at gid: " + gid;
 					}
@@ -1809,8 +1835,8 @@ SyncFsm.prototype.updateGidFromSources = function()
 		}
 	};
 
-	var bimapTbFolderLuid = ZinFeed.getTopLevelFolderLuidBimap(this.state.sources[this.state.sourceid_tb]['zfcLuid'],
-		                                   ZinFeedItem.ATTR_NAME, ZinFeedCollection.ITER_UNRESERVED);
+	var mapTbFolderNameToId = ZinFeed.getTopLevelFolderHash(this.state.sources[this.state.sourceid_tb]['zfcLuid'],
+		                                   ZinFeedItem.ATTR_NAME, ZinFeedItem.ATTR_ID, ZinFeedCollection.ITER_UNRESERVED);
 
 	if (this.state.isSlowSync)
 	{
@@ -2274,8 +2300,6 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	var ret    = "";
 	var key;
 
-	this.state.m_logger.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid: " + luid + " target_format: " + target_format);
-
 	if (zfi.type() == ZinFeedItem.TYPE_FL)
 		ret += "folder: " + ZinContactConverter.instance().convertFolderName(format, target_format, zfi.get(ZinFeedItem.ATTR_NAME));
 	else
@@ -2326,7 +2350,7 @@ SyncFsm.prototype.testFolderNameDuplicate = function(aGcs)
 		var luid     = this.state.zfcGid.get(gid).get(sourceid);
 		var zfi      = zfc.get(luid);
 
-		if (zfi.type() == ZinFeedItem.TYPE_FL)
+		if (zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isPresent(ZinFeedItem.ATTR_DEL))
 		{
 			zinAssert(zfi.isPresent(ZinFeedItem.ATTR_NAME));
 
@@ -2345,8 +2369,9 @@ SyncFsm.prototype.testFolderNameDuplicate = function(aGcs)
 
 	var ret = this.state.stopFailCode == null;
 
-	// this.state.m_logger.debug("testFolderNameDuplicate:" + " returns: " + ret +
-	//						     " aFolderName: " + aToString(aFolderName) + " stopFailCode: " + this.state.stopFailCode);
+	if (!ret)
+		this.state.m_logger.debug("testFolderNameDuplicate:" + " returns: " + ret +
+						          " aFolderName: " + aToString(aFolderName) + " stopFailCode: " + this.state.stopFailCode);
 
 	return ret;
 }
@@ -3398,9 +3423,7 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
 
 	if (soapstate.m_method == "Auth")
-		// TODO put me back
-		// this.state.m_logger.debug("soap request: " + "<AuthRequest> suppressed"); // dont want password going into the log
-		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
+		this.state.m_logger.debug("soap request: " + "<AuthRequest> suppressed"); // dont want password going into the log
 	else
 		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 

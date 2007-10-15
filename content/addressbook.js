@@ -101,7 +101,7 @@ ZimbraAddressBook.crc32 = function(properties)
 		if (properties[i].length > 0)
 			ret |= crc32(i + ":" + properties[i]);
 
-	// newZinLogger("ZimbraAddressBook").debug("crc32: returns crc: " + ret);
+	// newZinLogger("AddressBook").debug("crc32: returns crc: " + ret);
 
 	return ret;
 }
@@ -204,14 +204,14 @@ ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 
 		abCard.setCardValue(i, thunderbird_properties[i]);
 
-		// logger.debug("ZimbraAddressBook.addCard() - i == " + i + " and j == " + j);
-		// logger.debug("ZimbraAddressBook.addCard() calls abCard.setCardValue(" + i + ", " + thunderbird_properties[i] + ")");
+		// logger.debug("AddressBook.addCard() - i == " + i + " and j == " + j);
+		// logger.debug("AddressBook.addCard() calls abCard.setCardValue(" + i + ", " + thunderbird_properties[i] + ")");
 	}
 
 	for (i in extras)
 	{
 		mdbCard.setStringAttribute(i, extras[i]);
-		// logger.debug("ZimbraAddressBook.addCard() calls mdbCard.setStringAttribute(" + i + ", " + extras[i] + ")");
+		// logger.debug("AddressBook.addCard() calls mdbCard.setStringAttribute(" + i + ", " + extras[i] + ")");
 	}
 
 	mdbCard.editCardToDatabase(uri);

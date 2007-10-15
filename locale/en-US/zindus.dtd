@@ -5,6 +5,7 @@
 <!ENTITY ZinToolBarButton.tooltip                "preferences for the zindus extension">
 
 <!ENTITY ZinPrefs.title                         "Zindus Configuration Settings">
+<!ENTITY ZinPrefs.buttonlabelextra2             "Help">
 <!ENTITY ZinPrefsTabServer.label                "Server Settings">
 <!ENTITY ZinPrefsTabGeneral.label               "Preferences">
 <!ENTITY ZinPrefsSpacer.style                   "height:15px">

@@ -98,7 +98,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running: " +
 			                      (this.m_a_delay_on_repeat ? "about to retry" : "single-shot - no retry"));
 
-			this.setNextTimer([10,0]);  // retry in 10 seconds
+			this.setNextTimer([600,0]);  // retry in 10 minutes
 		}
 		else
 		{
