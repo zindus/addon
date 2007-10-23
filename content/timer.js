@@ -153,18 +153,27 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-statuspanel"))
 				StatusPanel.update(this.m_messengerWindow);
 
-			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
-
-			// we're outa here...
-			//
-			ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
-
-			if (this.m_a_delay_on_repeat)
-				this.setNextTimer(this.m_a_delay_on_repeat);
-
-			this.m_logger.debug("onFsmStateChangeFunctor: timer finished");
+			this.finish();
 		}
 	}
+}
+
+// we're outa here...
+//
+ZinTimerFunctorSync.prototype.finish = function()
+{
+	newZinLogger().info("sync finish: " + getUTCAndLocalTime());
+
+	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
+
+	if (this.m_a_delay_on_repeat)
+	{
+		var fire_in_seconds = this.setNextTimer(this.m_a_delay_on_repeat);
+
+		newZinLogger().info("sync next:   " + getUTCAndLocalTime(fire_in_seconds));
+	}
+
+	this.m_logger.debug("onFsmStateChangeFunctor: timer finished");
 }
 
 ZinTimerFunctorSync.prototype.setNextTimer = function(a_delay)
@@ -175,4 +184,6 @@ ZinTimerFunctorSync.prototype.setNextTimer = function(a_delay)
 	var functor = this.copy();
 	var timer = new ZinTimer(functor);
 	timer.start(delay);
+
+	return delay;
 }

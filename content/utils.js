@@ -284,9 +284,12 @@ function getTime()
 }
 
 // function getDateUTCString()
-function getUTCAndLocalTime()
+function getUTCAndLocalTime(increment)
 {
 	var date = new Date();
+
+	if (arguments.length == 1)
+		date.setUTCSeconds(date.getUTCSeconds() + increment);
 
 	return date.toUTCString() + " (local time: " + date.toLocaleString() + " )";
 }
