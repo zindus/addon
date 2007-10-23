@@ -58,14 +58,16 @@ ZinTimer.prototype.notify = function(timer)
 	zinAssert(typeof this.m_functor.run == 'function');
 
     this.m_functor.run();
+
+	this.m_timer = null; // break the circular reference that leaked memory
 }
 
 function ZinTimerFunctorSync(id_fsm_functor, a_delay_on_repeat)
 {
-	zinAssert((arguments.length == 2 && typeof(a_delay_on_repeat) == 'object' &&
-	                                    parseInt(a_delay_on_repeat[0]) > 0 &&
-										parseInt(a_delay_on_repeat[1]) > 0 ) ||
-	          (arguments.length == 1 && a_delay_on_repeat == null));
+	zinAssert(arguments.length == 2 && ( (a_delay_on_repeat == null) ||
+	                                     (typeof(a_delay_on_repeat) == 'object' &&
+	                                       parseInt(a_delay_on_repeat[0]) > 0 &&
+										   parseInt(a_delay_on_repeat[1]) > 0 ) ) );
 
 	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfo               = new SyncFsmObserver();
@@ -153,22 +155,24 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 
-			this.setNextTimer(this.m_a_delay_on_repeat);
+			// we're outa here...
+			//
+			ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
+
+			if (this.m_a_delay_on_repeat)
+				this.setNextTimer(this.m_a_delay_on_repeat);
+
+			this.m_logger.debug("onFsmStateChangeFunctor: timer finished");
 		}
 	}
 }
 
 ZinTimerFunctorSync.prototype.setNextTimer = function(a_delay)
 {
-	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
+	this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + a_delay.toString());
 
-	if (a_delay)
-	{
-		this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + a_delay.toString());
-
-		var delay = randomPlusOrMinus(a_delay[0], a_delay[1]);
-		var functor = this.copy();
-		var timer = new ZinTimer(functor);
-		timer.start(delay);
-	}
+	var delay = randomPlusOrMinus(a_delay[0], a_delay[1]);
+	var functor = this.copy();
+	var timer = new ZinTimer(functor);
+	timer.start(delay);
 }

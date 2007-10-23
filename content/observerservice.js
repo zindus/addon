@@ -73,7 +73,7 @@ ObserverService.register = function(obj, topic)
 
 ObserverService.unregister = function(obj, topic)
 {
-	dump("ObserverService.unregister: blah: \n");
+	newZinLogger("ObserverService").debug("ObserverService.unregister: topic: " + topic);
 
 	ObserverService.service().removeObserver(obj, topic);
 }

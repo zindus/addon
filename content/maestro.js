@@ -31,15 +31,20 @@ include("chrome://zindus/content/observerservice.js");
 
 function ZinMaestro()
 {
-	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
-	this.m_a_fsmstate = new Object();
-	this.m_logger     = newZinLogger("ZinMaestro");
-	this.m_logger.level(ZinLogger.NONE);
+	this.initialise();
 
 	this.TOPIC                 = ZinMaestro.TOPIC;
 	this.DO_FUNCTOR_REGISTER   = ZinMaestro.DO_FUNCTOR_REGISTER;
 	this.DO_FUNCTOR_UNREGISTER = ZinMaestro.DO_FUNCTOR_UNREGISTER;
 	this.DO_FSM_STATE_UPDATE   = ZinMaestro.DO_FSM_STATE_UPDATE;
+}
+
+ZinMaestro.prototype.initialise = function()
+{
+	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
+	this.m_a_fsmstate = new Object();
+	this.m_logger     = newZinLogger("ZinMaestro");
+	// this.m_logger.level(ZinLogger.NONE);
 }
 
 ZinMaestro.TOPIC = "ZindusMaestroObserver";
@@ -143,6 +148,7 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 				{
 					delete this.m_a_fsmstate[id_fsm];
 					this.m_logger.debug("observe: removing from m_a_fsmstate: " + id_fsm + " mastro is now: " + this.toString() );
+					// this.initialise();
 				}
 
 				break;

@@ -2306,9 +2306,14 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	{
 		zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
 
-		var properties = this.getContactFromLuid(sourceid, luid, format);
+		if (zfi.isPresent(ZinFeedItem.ATTR_DEL))
+			ret += "contact: <deleted>";
+		else
+		{
+			var properties = this.getContactFromLuid(sourceid, luid, format);
 		
-		ret += "contact: " + this.shortLabelForContactProperties(format, properties);
+			ret += "contact: " + this.shortLabelForContactProperties(format, properties);
+		}
 	}
 
 	// this.state.m_logger.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid: " + luid + " target_format: " + target_format +
@@ -2686,12 +2691,15 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				break;
 
 			case Suo.DEL | ZinFeedItem.TYPE_FL:
-				luid_target = zfiGid.get(sourceid_target);
-				uri         = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, luid_target));
+				luid_target     = zfiGid.get(sourceid_target);
+				var name_target = this.getTbAddressbookNameFromLuid(sourceid_target, luid_target);
+				uri             = ZimbraAddressBook.getAddressBookUri(name_target);
+
+				zinAssert(name != TB_PAB); // just a sanity thing in case something wierd happens elsewhere
 
 				if (uri)
 				{
-					msg += "Addressbook to be deleted: name: " + zfcTarget.get(luid_target).get(ZinFeedItem.ATTR_NAME) + " uri: " + uri;
+					msg += "Addressbook to be deleted: name: " + name_target + " uri: " + uri;
 
 					ZimbraAddressBook.deleteAddressBook(uri);
 					zfcTarget.get(luid_target).set(ZinFeedItem.ATTR_DEL, 1);
@@ -3119,9 +3127,15 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 	var l   = zfi.get('l');
 	var ret = null;
 
+	zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
+
 	if (this.state.sources[sourceid]['format'] == FORMAT_TB)
 	{
 		var uri    = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
+
+		// this.state.m_logger.debug("getContactFromLuid: sourceid: " + sourceid + " luid: " + luid + "uri: " + uri +
+		//                               "l: " + l + " abName: " + this.getTbAddressbookNameFromLuid(sourceid, l) );
+
 		var abCard = ZimbraAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
 
 		if (abCard)
@@ -3430,20 +3444,76 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	// if soapCall is passed bad args (eg if transportURI is an email address), asyncInvoke() doesn't return!
 	// the cases I've found are handled during the integrity checking at the start of the fsm.
 	//
-	this.state.m_soap_state.m_callcompletion = soapCall.asyncInvoke(
-	        function (response, call, error)
-			{
-				context.handleAsyncResponse(response, call, error, continuation, context);
-			}
-		);
+
+	this.state.blahCount++;
+
+	var x;
+	
+	     if (this.state.blahCount == 1) x = handleResponseClosure1;
+	else if (this.state.blahCount == 2) x = handleResponseClosure2;
+	else if (this.state.blahCount == 3) x = handleResponseClosure3;
+	else if (this.state.blahCount == 4) x = handleResponseClosure4;
+	else if (this.state.blahCount == 5) x = handleResponseClosure5;
+	else if (this.state.blahCount == 6) x = handleResponseClosure6;
+	else if (this.state.blahCount == 7) x = handleResponseClosure7;
+	else if (this.state.blahCount == 8) x = handleResponseClosure8;
+	else if (this.state.blahCount == 9) x = handleResponseClosure9;
+	else if (this.state.blahCount == 10) x = handleResponseClosure10;
+	else if (this.state.blahCount == 11) x = handleResponseClosure11;
+	else if (this.state.blahCount == 12) x = handleResponseClosure12;
+	else x = handleResponseClosure13;
+
+	// x = handleResponseClosure13;
+
+	this.state.m_logger.debug("entryActionSoapRequest: blahCount: " + this.state.blahCount);
+
+
+	x.context      = context;
+	x.continuation = continuation;
+
+	this.state.m_soap_state.m_callcompletion = soapCall.asyncInvoke(x);
+
+
+
+	// Ok, but use the debugging version above...
+	// handleResponseClosure.context      = context;
+	// handleResponseClosure.continuation = continuation;
+	// this.state.m_soap_state.m_callcompletion = soapCall.asyncInvoke(handleResponseClosure);
+
 	// this.state.m_logger.debug("m_callcompletion: evaluates to: " + (this.state.m_soap_state.m_callcompletion ? "true" : "false"));
 	// this.state.m_logger.debug("m_callcompletion.isComplete: " + this.state.m_soap_state.m_callcompletion.isComplete);
+}
+
+function handleResponseClosure1(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure2(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure3(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure4(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure5(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure6(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure7(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure8(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure9(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure10(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure11(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure12(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+function handleResponseClosure13(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
+
+
+function handleResponseClosure(response, call, error)
+{
+	arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context);
+	
+	// otherwise, the last call to a soap request will leak memory
+	//
+	arguments.callee.context = null;
+	arguments.callee.continuation = null;
+
 }
 
 // Note that "this" in this method could be anything - the mozilla SOAP API decides.
 // That's why we call continuation() here, so that the code that processes the response can refer to "this", rather than "context".
 //
-SyncFsm.prototype.handleAsyncResponse = function (response, call, error, continuation, context)
+SyncFsm.prototype.handleAsyncResponse = function (response, soapCall, error, continuation, context)
 {
 	var ret = false;
 	var soapstate = context.state.m_soap_state;
@@ -3502,6 +3572,10 @@ SyncFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 			{
 				soapstate.m_response = response.message;
 
+				// putzing around looking to plug a memory leak...
+				// var parser = new DOMParser();
+				// soapstate.m_response = parser.parseFromString(xmlDocumentToString(response.message), "text/xml");
+
 				context.state.m_logger.debug("handleAsyncResponse: response is " + xmlDocumentToString(response.message));
 			}
 		}
@@ -3518,6 +3592,9 @@ SyncFsm.prototype.handleAsyncResponse = function (response, call, error, continu
 		msg += " fault xml: " + soapstate.m_fault_element_xml;
 		context.state.m_logger.debug("handleAsyncResponse: " + msg);
 	}
+
+	context.state.m_soap_state.m_callcompletion.abort(); // experiment with getting rid of memory leaks - blah
+	delete soapCall; // experiment with getting rid of memory leaks - blah
 
 	continuation('evNext');
 
@@ -3687,7 +3764,7 @@ SoapState.prototype.toString = function()
 	          "\n fault string = "        + this.m_faultstring +
 	          "\n fault detail = "        + this.m_fault_detail +
 	          "\n fault elementxml = "    + this.m_fault_element_xml +
-	          "\n response = "            + xmlDocumentToString(this.m_response);
+	          "\n response = "            + (this.m_response ? xmlDocumentToString(this.m_response) : "null");
 
 	return ret;
 }
@@ -3717,6 +3794,7 @@ TwoWayFsm.prototype.setFsm = function()
 
 function SyncFsmState(id_fsm)
 {
+	this.blahCount = 0;
 	this.id_fsm              = id_fsm;
 	this.m_logger            = newZinLogger("SyncFsm");
 	this.m_soap_state        = null;

@@ -25,6 +25,7 @@ include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/timer.js");
 
 window.addEventListener("load", onLoad, false);
+window.addEventListener("unload", onUnLoad, false);
 
 function onLoad(event)
 {
@@ -43,6 +44,7 @@ function onLoad(event)
 			Filesystem.createDirectoriesIfRequired();
 
 			var maestro = new ZinMaestro();
+			window.maestro = maestro;
 
 			if (!ObserverService.isRegistered(maestro.TOPIC))
 			{
@@ -89,4 +91,30 @@ function zindusPrefsDialog()
 	window.openDialog("chrome://zindus/content/prefsdialog.xul", "_blank", "chrome,modal,centerscreen");
 
 	return true;
+}
+
+function onUnLoad(event)
+{
+	var logger = newZinLogger("thunderbirdoverlay");
+
+	try
+	{
+		var messengerWindow = document.getElementById("messengerWindow");
+
+		if (messengerWindow)
+		{
+			logger.debug("in messengerWindow - about to unload");
+
+			if (ObserverService.isRegistered(window.maestro.TOPIC))
+			{
+				ObserverService.unregister(maestro, window.maestro.TOPIC);
+			}
+			else
+				logger.debug("ObserverService isn't gistered so don't unregister.");
+		}
+	}
+	catch (ex)
+	{
+		alert(APP_NAME + " thunderbirdoverlay onUnLoad() : " + ex);
+	}
 }
