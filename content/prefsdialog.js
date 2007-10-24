@@ -182,11 +182,10 @@ Prefs.prototype.onCommand = function(id_target)
 			// The timer functor isn't doesn't support 'cancel' the way SyncWindow does.
 			// It should only be visible in the UI with debugging turned on anyways...
 			//
-			var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG, null)
+			var a_delay = newObject("centre", 0, "varies", 0, "repeat", 3);
+			var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG, a_delay)
 			var timer = new ZinTimer(functor);
 			timer.start(0);
-			// timer = null;
-			// functor = null;
 			break;
 
 		case "zindus-prefs-general-button-reset":

@@ -44,7 +44,38 @@ ZinTimer.prototype.start = function(delay)
 
 	zinAssert(typeof delay == 'number');
 
-	this.m_timer.initWithCallback(this, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
+	// this.m_timer.initWithCallback(this, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
+	// this.m_timer.initWithFuncCallback(timerNotify, this.m_functor, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
+
+	// x.m_functor = this.m_functor;
+	// x.m_logger  = this.m_logger;
+	// this.m_timer.initWithCallback(x, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
+
+	this.m_timer.initWithCallback(this.m_functor, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
+}
+
+var x = new Object();
+x.notify = function()
+{
+	this.m_logger.debug("notify: about to run callback: ");
+
+	zinAssert(typeof this.m_functor.run == 'function');
+
+    this.m_functor.run();
+}
+
+function timerNotify(functor)
+{
+	functor.run();
+}
+
+ZinTimer.prototype.cancel = function()
+{
+	this.m_timer.cancel();
+
+	this.m_timer   = null;  // break the circular reference that leaked memory
+	this.m_functor = null;
+	this.m_logger  = null;
 }
 
 // This method allows us to pass "this" into initWithCallback - it is called when the timer expires.
@@ -59,22 +90,27 @@ ZinTimer.prototype.notify = function(timer)
 
     this.m_functor.run();
 
-	this.m_timer = null; // break the circular reference that leaked memory
+	this.cancel();
 }
 
 function ZinTimerFunctorSync(id_fsm_functor, a_delay_on_repeat)
 {
-	zinAssert(arguments.length == 2 && ( (a_delay_on_repeat == null) ||
-	                                     (typeof(a_delay_on_repeat) == 'object' &&
-	                                       parseInt(a_delay_on_repeat[0]) > 0 &&
-										   parseInt(a_delay_on_repeat[1]) > 0 ) ) );
+	zinAssert(arguments.length == 2);
+	zinAssert(typeof(a_delay_on_repeat) == 'object');
+	zinAssert(parseInt(a_delay_on_repeat["centre"]) >= 0 && parseInt(a_delay_on_repeat["varies"]) >= 0);
+	zinAssert(a_delay_on_repeat["repeat"] == null || a_delay_on_repeat["repeat"] >= 0);
 
 	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfo               = new SyncFsmObserver();
 	this.m_messengerWindow   = null;  // also considered putting status here: this.m_addressbookWindow = null;
 	this.m_id_fsm_functor    = id_fsm_functor;
-	this.m_a_delay_on_repeat = a_delay_on_repeat; // null implies ONE_SHOT, non-null implies REPEAT frequency in seconds
+	this.m_a_delay_on_repeat = a_delay_on_repeat;
 	this.m_is_fsm_functor_first_entry = true;
+}
+
+ZinTimerFunctorSync.prototype.notify = function(timer)
+{
+	this.run();
 }
 
 ZinTimerFunctorSync.prototype.run = function()
@@ -97,10 +133,9 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	{
 		if (fsmstate)
 		{
-			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running: " +
-			                      (this.m_a_delay_on_repeat ? "about to retry" : "single-shot - no retry"));
+			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running: about to retry");
 
-			this.setNextTimer([600,0]);  // retry in 10 minutes
+			this.setNextTimer(this.calcDelay(600,0));  // retry in 10 minutes
 		}
 		else
 		{
@@ -166,9 +201,15 @@ ZinTimerFunctorSync.prototype.finish = function()
 
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 
-	if (this.m_a_delay_on_repeat)
+	if (this.m_a_delay_on_repeat["repeat"] != null)
+		this.m_a_delay_on_repeat["repeat"]--;
+
+	if (this.m_a_delay_on_repeat["repeat"] == null || this.m_a_delay_on_repeat["repeat"] > 0)
 	{
-		var fire_in_seconds = this.setNextTimer(this.m_a_delay_on_repeat);
+		this.m_logger.debug("finish: m_a_delay_on_repeat: " + this.m_a_delay_on_repeat["repeat"]);
+
+		var fire_in_seconds = this.calcDelay(this.m_a_delay_on_repeat["centre"], this.m_a_delay_on_repeat["varies"]);
+		this.setNextTimer(fire_in_seconds);
 
 		newZinLogger().info("sync next:   " + getUTCAndLocalTime(fire_in_seconds));
 	}
@@ -176,14 +217,16 @@ ZinTimerFunctorSync.prototype.finish = function()
 	this.m_logger.debug("onFsmStateChangeFunctor: timer finished");
 }
 
-ZinTimerFunctorSync.prototype.setNextTimer = function(a_delay)
+ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
 {
-	this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + a_delay.toString());
+	this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + delay);
 
-	var delay = randomPlusOrMinus(a_delay[0], a_delay[1]);
 	var functor = this.copy();
 	var timer = new ZinTimer(functor);
 	timer.start(delay);
+}
 
-	return delay;
+ZinTimerFunctorSync.prototype.calcDelay = function(centre, varies)
+{
+	return randomPlusOrMinus(centre, varies);
 }

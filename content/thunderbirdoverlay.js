@@ -27,6 +27,9 @@ include("chrome://zindus/content/timer.js");
 window.addEventListener("load", onLoad, false);
 window.addEventListener("unload", onUnLoad, false);
 
+// TODO - clean up the window.timer stuff and test for memory leaks
+// document your debugging technique for memory leaks
+
 function onLoad(event)
 {
 	var logger = newZinLogger("thunderbirdoverlay");
@@ -43,12 +46,12 @@ function onLoad(event)
 
 			Filesystem.createDirectoriesIfRequired();
 
-			var maestro = new ZinMaestro();
-			window.maestro = maestro;
-
-			if (!ObserverService.isRegistered(maestro.TOPIC))
+			if (!ObserverService.isRegistered(ZinMaestro.TOPIC))
 			{
-				ObserverService.register(maestro, maestro.TOPIC);
+				var maestro = new ZinMaestro();
+				window.maestro = maestro;
+
+				ObserverService.register(maestro, ZinMaestro.TOPIC);
 
 				var prefs = new MozillaPreferences();
 
@@ -66,10 +69,13 @@ function onLoad(event)
 
 					logger.debug("delay_on_start:" + delay_on_start + " delay_on_repeat: " + delay_on_repeat);
 
-					var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY,
-					                                       [delay_on_repeat, (1/6 * delay_on_repeat).toFixed(0)]);
+					var a_delay = newObject("centre", delay_on_repeat, "varies", (1/6 * delay_on_repeat).toFixed(0), "repeat", null);
+
+					var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, a_delay);
+
 					var timer = new ZinTimer(functor);
 					timer.start(delay_on_start);
+					window.timer = timer;
 				}
 				else
 					logger.debug("manual sync only - not starting timer.");
@@ -107,10 +113,18 @@ function onUnLoad(event)
 
 			if (ObserverService.isRegistered(window.maestro.TOPIC))
 			{
+				logger.debug("unregistering observer");
 				ObserverService.unregister(maestro, window.maestro.TOPIC);
 			}
 			else
-				logger.debug("ObserverService isn't gistered so don't unregister.");
+				logger.debug("ObserverService isn't registered so don't unregister.");
+
+			if (isPropertyPresent(window, "timer"))
+			{
+				logger.debug("cancelling timer");
+				window.timer.cancel();
+				window.timer = null;
+			}
 		}
 	}
 	catch (ex)
