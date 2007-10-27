@@ -44,53 +44,12 @@ ZinTimer.prototype.start = function(delay)
 
 	zinAssert(typeof delay == 'number');
 
-	// this.m_timer.initWithCallback(this, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
-	// this.m_timer.initWithFuncCallback(timerNotify, this.m_functor, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
-
-	// x.m_functor = this.m_functor;
-	// x.m_logger  = this.m_logger;
-	// this.m_timer.initWithCallback(x, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
-
 	this.m_timer.initWithCallback(this.m_functor, 1000 * delay, this.m_timer.TYPE_ONE_SHOT);
-}
-
-var x = new Object();
-x.notify = function()
-{
-	this.m_logger.debug("notify: about to run callback: ");
-
-	zinAssert(typeof this.m_functor.run == 'function');
-
-    this.m_functor.run();
-}
-
-function timerNotify(functor)
-{
-	functor.run();
 }
 
 ZinTimer.prototype.cancel = function()
 {
 	this.m_timer.cancel();
-
-	this.m_timer   = null;  // break the circular reference that leaked memory
-	this.m_functor = null;
-	this.m_logger  = null;
-}
-
-// This method allows us to pass "this" into initWithCallback - it is called when the timer expires.
-// This method gives the class an interface of nsITimerCallback, see:
-// http://www.xulplanet.com/references/xpcomref/ifaces/nsITimerCallback.html
-//
-ZinTimer.prototype.notify = function(timer)
-{
-	this.m_logger.debug("notify: about to run callback: ");
-
-	zinAssert(typeof this.m_functor.run == 'function');
-
-    this.m_functor.run();
-
-	this.cancel();
 }
 
 function ZinTimerFunctorSync(id_fsm_functor, a_delay_on_repeat)
@@ -108,6 +67,13 @@ function ZinTimerFunctorSync(id_fsm_functor, a_delay_on_repeat)
 	this.m_is_fsm_functor_first_entry = true;
 }
 
+// This method is called when the timer expires.
+// The notify method gives the class an interface of nsITimerCallback, see:
+// http://www.xulplanet.com/references/xpcomref/ifaces/nsITimerCallback.html
+// and allows us to pass the object into initWithCallback.
+// For a while, the notify() method was in the ZinTimer class, but that leaked memory because
+// it creates an xpcom cycle with m_timer holding the nsITimer instance.
+//
 ZinTimerFunctorSync.prototype.notify = function(timer)
 {
 	this.run();
@@ -135,7 +101,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running: about to retry");
 
-			this.setNextTimer(this.calcDelay(600,0));  // retry in 10 minutes
+			this.setNextTimer(this.calcDelay(610,0));  // retry in 10 minutes
 		}
 		else
 		{
@@ -219,11 +185,14 @@ ZinTimerFunctorSync.prototype.finish = function()
 
 ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
 {
-	this.m_logger.debug("onFsmStateChangeFunctor: rescheduling timer (seconds): " + delay);
+	this.m_logger.debug("setNextTimer: " + delay + " seconds");
 
 	var functor = this.copy();
-	var timer = new ZinTimer(functor);
-	timer.start(delay);
+
+	ZinMaestro.notifyTimerStart(delay, functor);
+
+	// var timer = new ZinTimer(functor);
+	// timer.start(delay);
 }
 
 ZinTimerFunctorSync.prototype.calcDelay = function(centre, varies)

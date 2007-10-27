@@ -49,7 +49,7 @@ function onLoad(event)
 			if (!ObserverService.isRegistered(ZinMaestro.TOPIC))
 			{
 				var maestro = new ZinMaestro();
-				window.maestro = maestro;
+				// window.maestro = maestro;
 
 				ObserverService.register(maestro, ZinMaestro.TOPIC);
 
@@ -73,9 +73,11 @@ function onLoad(event)
 
 					var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, a_delay);
 
-					var timer = new ZinTimer(functor);
-					timer.start(delay_on_start);
-					window.timer = timer;
+					ZinMaestro.notifyTimerStart(delay_on_start, functor);
+
+					// var timer = new ZinTimer(functor);
+					// timer.start(delay_on_start);
+					// window.timer = timer;
 				}
 				else
 					logger.debug("manual sync only - not starting timer.");
@@ -111,20 +113,20 @@ function onUnLoad(event)
 		{
 			logger.debug("in messengerWindow - about to unload");
 
-			if (ObserverService.isRegistered(window.maestro.TOPIC))
-			{
-				logger.debug("unregistering observer");
-				ObserverService.unregister(maestro, window.maestro.TOPIC);
-			}
-			else
-				logger.debug("ObserverService isn't registered so don't unregister.");
+			// if (ObserverService.isRegistered(ZinMaestro.TOPIC))
+			// {
+			//	logger.debug("unregistering observer");
+			//	ObserverService.unregister(maestro, ZinMaestro.TOPIC);
+			// }
+			// else
+			// 	logger.debug("ObserverService isn't registered so don't unregister.");
 
-			if (isPropertyPresent(window, "timer"))
-			{
-				logger.debug("cancelling timer");
-				window.timer.cancel();
-				window.timer = null;
-			}
+			// if (isPropertyPresent(window, "timer"))
+			// {
+				// logger.debug("cancelling timer");
+				// window.timer.cancel();
+				// window.timer = null;
+			// }
 		}
 	}
 	catch (ex)
