@@ -139,7 +139,7 @@ function onTimerFire()
 
 		logger.debug("about to call functor...");
 
-		window.wd.functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY);
+		window.wd.functor = new ZinTimerFunctorSync(hyphenate('-', ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, Date.parse(new Date(Date.now()))));
 
 		window.wd.functor.run();
 	}
