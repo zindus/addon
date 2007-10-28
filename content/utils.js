@@ -420,7 +420,7 @@ function randomPlusOrMinus(central, varies_by)
 {
 	var ret = central - varies_by + Math.floor(Math.random() * (2 * varies_by + 1));
 
-	newZinLogger("Utils").debug("randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
+	// newZinLogger("Utils").debug("randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
 
 	return ret;
 }

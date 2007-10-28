@@ -24,9 +24,9 @@
 include("chrome://zindus/content/syncfsmobserver.js");
 include("chrome://zindus/content/statuspanel.js");
 
-function ZinTimerFunctorSync(id_fsm_functor, on_finish_function)
+function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_context)
 {
-	zinAssert(arguments.length == 2);
+	zinAssert(arguments.length == 3);
 
 	this.m_logger             = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfo                = new SyncFsmObserver();
@@ -36,6 +36,7 @@ function ZinTimerFunctorSync(id_fsm_functor, on_finish_function)
 	this.m_timeoutID          = null;
 	this.is_running           = false;
 	this.m_on_finish_function = on_finish_function;
+	this.m_on_finish_context  = on_finish_context;
 	this.m_is_fsm_functor_first_entry = true;
 }
 
@@ -130,5 +131,5 @@ ZinTimerFunctorSync.prototype.finish = function()
 	this.is_running = false;
 
 	if (this.m_on_finish_function)
-		window.wd.timeoutID = window.setTimeout(this.m_on_finish_function, 1000);   // reset the timer
+		this.m_on_finish_context.m_timeoutID = window.setTimeout(this.m_on_finish_function, 1000, this.m_on_finish_context);   // reset the timer
 }

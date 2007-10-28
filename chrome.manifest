@@ -1,4 +1,4 @@
-overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/thunderbirdoverlay.xul
+overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/mailWindowOverlay.xul
 
 content zindus       content/
 

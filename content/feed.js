@@ -160,7 +160,7 @@ ZinFeedCollection.prototype.load = function()
 	functor.m_zfi = new ZinFeedItem();
 
 	var file = this.nsifile();
-	gLogger.debug("about to parse file: " + file.path);
+	// gLogger.debug("about to parse file: " + file.path);
 
 	if (file.exists() && !file.isDirectory())
 		Filesystem.fileReadByLine(file.path, functor);
