@@ -44,6 +44,8 @@ function Prefs()
 								   "zindus-prefs-general-verbose-logging"  ];
 	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
+	this.m_timeoutID           = null;
+
 	this.m_is_fsm_running      = false;
 	this.m_logger              = newZinLogger("Prefs");
 
@@ -77,6 +79,9 @@ Prefs.prototype.onCancel = function()
 	this.m_logger.debug("onCancel:");
 
 	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_PREFSDIALOG);
+
+	if (this.m_timeoutID)
+		window.clearTimeout(this.m_timeoutID);
 }
 
 Prefs.prototype.onAccept = function()
@@ -177,15 +182,7 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-run-timer":
-			// note that if you close the preferences window while this timer is running, the fsm is garbage collected
-			// but the maestro is never told (because the fsm never reached the 'final' state
-			// The timer functor isn't doesn't support 'cancel' the way SyncWindow does.
-			// It should only be visible in the UI with debugging turned on anyways...
-			//
-			var a_delay = newObject("centre", 0, "varies", 0, "repeat", 3);
-			var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG, a_delay)
-			var timer = new ZinTimer(functor);
-			timer.start(0);
+			this.m_timeoutID = window.setTimeout(this.onTimerFire, 0, this);
 			break;
 
 		case "zindus-prefs-general-button-reset":
@@ -202,6 +199,19 @@ Prefs.prototype.onCommand = function(id_target)
 			// do nothing
 			break;
 	}
+}
+
+Prefs.prototype.onTimerFire = function(context)
+{
+	// note that if you close the preferences window while this timer is running, the fsm is garbage collected
+	// but the maestro is never told (because the fsm never reached the 'final' state
+	// The timer functor isn't doesn't support 'cancel' the way SyncWindow does.
+	// It should only be visible in the UI with debugging turned on anyways...
+	//
+	context.m_logger.debug("onTimerFire: in here");
+	context.m_timeoutID = null;
+	var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG, null);
+	functor.run();
 }
 
 Prefs.prototype.initialiseView = function()

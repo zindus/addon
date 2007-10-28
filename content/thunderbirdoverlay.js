@@ -52,7 +52,7 @@ function onLoad(event)
 				window.wd.delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnRepeat"));
 				logger.debug("delay_on_repeat: " + window.wd.delay_on_repeat);
 
-				var x = timerDueDate();
+				var x = timerDetails();
 				var delay;
 
 				window.wd.last_sync_date = x['last_sync_date'];
@@ -64,7 +64,7 @@ function onLoad(event)
 
 				window.wd.timeoutID = window.setTimeout(onTimerFire, delay);
 
-				logger.info("sync next:   " + getUTCAndLocalTime(delay));
+				newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
 			}
 			else
 				logger.debug("manual sync only - not starting timer.");
@@ -124,7 +124,7 @@ function onTimerFire()
 	var logger = newZinLogger("onTimerFire");
 	logger.debug("entering onTimerFire...");
 
-	var x = timerDueDate();
+	var x = timerDetails();
 
 	if (window.wd.last_sync_date.toString() == x['last_sync_date'].toString())
 	{
@@ -139,7 +139,9 @@ function onTimerFire()
 
 		logger.debug("about to call functor...");
 
-		window.wd.functor = new ZinTimerFunctorSync(hyphenate('-', ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, Date.parse(new Date(Date.now()))));
+		var timer_id = hyphenate('-', ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, Date.parse(new Date(Date.now())));
+
+		window.wd.functor = new ZinTimerFunctorSync(timer_id, onTimerFire);
 
 		window.wd.functor.run();
 	}
@@ -153,11 +155,11 @@ function onTimerFire()
 
 		window.wd.timeoutID = window.setTimeout(onTimerFire, delay);
 
-		logger.info("sync next:   " + getUTCAndLocalTime(delay));
+		newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
 	}
 }
 
-function timerDueDate()
+function timerDetails()
 {
 	var last_sync_date = null;
 	var zfiStatus      = StatusPanel.getZfi();
@@ -202,7 +204,7 @@ function timerDueDate()
 
 	var ret = newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", last_sync_date);
 
-	newZinLogger().debug("timerDueDate returns: " + "\n" +
+	newZinLogger().debug("timerDetails returns: " + "\n" +
 	                     " now:            " + ret['now'] + "\n" +
 						 " last_sync_date: " + last_sync_date + "\n" +
 						 " next_sync_date: " + next_sync_date );
