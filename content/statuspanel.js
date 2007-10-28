@@ -51,18 +51,27 @@ StatusPanel.save = function(es)
 	zfcStatus.save();
 }
 
-StatusPanel.update = function(win)
+StatusPanel.getZfi = function()
 {
 	var zfcStatus = new ZinFeedCollection();
+	var zfiStatus = null;
+
 	zfcStatus.filename(Filesystem.FILENAME_STATUS);
 	zfcStatus.load();
 
-	var zfiStatus = null;
-	var logger = newZinLogger("StatusPanel");
-
 	if (zfcStatus.isPresent(ZinFeedItem.ID_STATUS))
-	{
 		zfiStatus = zfcStatus.get(ZinFeedItem.ID_STATUS);
+
+	return zfiStatus;
+}
+
+StatusPanel.update = function(win)
+{
+	var logger    = newZinLogger("StatusPanel");
+	var zfiStatus = StatusPanel.getZfi();
+
+	if (zfiStatus)
+	{
 		var exitstatus = zfiStatus.getOrNull('exitstatus');
 		var conflicts  = zfiStatus.getOrNull('conflicts');
 		var tooltip    = zfiStatus.getOrNull('date');

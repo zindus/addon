@@ -37,17 +37,15 @@ function ZinMaestro()
 	this.DO_FUNCTOR_REGISTER   = ZinMaestro.DO_FUNCTOR_REGISTER;
 	this.DO_FUNCTOR_UNREGISTER = ZinMaestro.DO_FUNCTOR_UNREGISTER;
 	this.DO_FSM_STATE_UPDATE   = ZinMaestro.DO_FSM_STATE_UPDATE;
-	this.DO_TIMER_START        = ZinMaestro.DO_TIMER_START;
 }
 
 ZinMaestro.prototype.initialise = function()
 {
 	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
 	this.m_a_fsmstate = new Object();
-	this.m_zintimer   = null;
 	this.m_logger     = newZinLogger("ZinMaestro");
 
-	// this.m_logger.level(ZinLogger.NONE);
+	// this.m_logger.level(ZinLogger_NONE);
 }
 
 ZinMaestro.TOPIC = "ZindusMaestroObserver";
@@ -55,7 +53,6 @@ ZinMaestro.TOPIC = "ZindusMaestroObserver";
 ZinMaestro.DO_FUNCTOR_REGISTER   = "do_register";
 ZinMaestro.DO_FUNCTOR_UNREGISTER = "do_unregister";
 ZinMaestro.DO_FSM_STATE_UPDATE   = "do_state_update";
-ZinMaestro.DO_TIMER_START        = "do_timer_start";
 
 ZinMaestro.logger = newZinLogger("ZinMaestro");
 
@@ -157,12 +154,6 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 
 				break;
 
-			case this.DO_TIMER_START:
-				zinAssert(isPropertyPresent(subject, 'delay') && isPropertyPresent(subject, 'functor'));
-				this.m_zintimer = new ZinTimer(subject['functor']);
-				this.m_zintimer.start(subject['delay']);
-				break;
-
 			default:
 				zinAssert(false);
 		}
@@ -246,9 +237,4 @@ ZinMaestro.notifyFsmState = function(fsmstate)
 	// ZinMaestro.logger.debug("notifyFsmState: fsmstate: " + fsmstate.toString());
 
 	ObserverService.notify(ZinMaestro.TOPIC, ZinMaestro.wrapForJS(newObject('fsmstate', fsmstate)), this.DO_FSM_STATE_UPDATE);
-}
-
-ZinMaestro.notifyTimerStart = function(delay, functor)
-{
-	ObserverService.notify(ZinMaestro.TOPIC, ZinMaestro.wrapForJS(newObject('delay', delay, 'functor', functor)), this.DO_TIMER_START);
 }

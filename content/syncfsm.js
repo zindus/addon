@@ -149,6 +149,7 @@ SyncFsm.prototype.cancel = function(timeoutID)
 
 		this.fsm.continuation('evCancel');
 	}
+
 }
 
 SyncFsm.prototype.entryActionStart = function(state, event, continuation)

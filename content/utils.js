@@ -283,13 +283,12 @@ function getTime()
 	return now.getTime();
 }
 
-// function getDateUTCString()
 function getUTCAndLocalTime(increment)
 {
 	var date = new Date();
 
 	if (arguments.length == 1)
-		date.setUTCSeconds(date.getUTCSeconds() + increment);
+		date.setUTCMilliseconds(date.getUTCMilliseconds() + increment);
 
 	return date.toUTCString() + " (local time: " + date.toLocaleString() + " )";
 }
@@ -420,6 +419,8 @@ function getWindowContainingElementId(id)
 function randomPlusOrMinus(central, varies_by)
 {
 	var ret = central - varies_by + Math.floor(Math.random() * (2 * varies_by + 1));
+
+	newZinLogger("Utils").debug("randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
 
 	return ret;
 }

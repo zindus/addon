@@ -52,19 +52,18 @@ ZinTimer.prototype.cancel = function()
 	this.m_timer.cancel();
 }
 
-function ZinTimerFunctorSync(id_fsm_functor, a_delay_on_repeat)
+function ZinTimerFunctorSync(id_fsm_functor)
 {
-	zinAssert(arguments.length == 2);
-	zinAssert(typeof(a_delay_on_repeat) == 'object');
-	zinAssert(parseInt(a_delay_on_repeat["centre"]) >= 0 && parseInt(a_delay_on_repeat["varies"]) >= 0);
-	zinAssert(a_delay_on_repeat["repeat"] == null || a_delay_on_repeat["repeat"] >= 0);
+	zinAssert(arguments.length == 1);
 
 	this.m_logger            = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfo               = new SyncFsmObserver();
-	this.m_messengerWindow   = null;  // also considered putting status here: this.m_addressbookWindow = null;
+	this.m_messengerWindow   = null;  // also considered putting status here: this.m_addressbookWindow = null;  TODO - can this be just window. ?
 	this.m_id_fsm_functor    = id_fsm_functor;
-	this.m_a_delay_on_repeat = a_delay_on_repeat;
 	this.m_is_fsm_functor_first_entry = true;
+	this.m_syncfsm           = null;
+	this.m_timeoutID         = null;
+	this.is_running          = false;
 }
 
 // This method is called when the timer expires.
@@ -79,6 +78,12 @@ ZinTimerFunctorSync.prototype.notify = function(timer)
 	this.run();
 }
 
+ZinTimerFunctorSync.prototype.cancel = function()
+{
+	if (this.is_running)
+		this.m_syncfsm.cancel(this.m_timeoutID);
+}
+
 ZinTimerFunctorSync.prototype.run = function()
 {
 	this.m_logger.debug("run: m_id_fsm_functor: " + this.m_id_fsm_functor);
@@ -88,7 +93,7 @@ ZinTimerFunctorSync.prototype.run = function()
 
 ZinTimerFunctorSync.prototype.copy = function()
 {
-	return new ZinTimerFunctorSync(this.m_id_fsm_functor, this.m_a_delay_on_repeat);
+	return new ZinTimerFunctorSync(this.m_id_fsm_functor);
 }
 	
 ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
@@ -99,9 +104,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	{
 		if (fsmstate)
 		{
-			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running: about to retry");
-
-			this.setNextTimer(this.calcDelay(610,0));  // retry in 10 minutes
+			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running - backing off");
 		}
 		else
 		{
@@ -117,12 +120,15 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			state.setCredentials();
 
 			newZinLogger().info("sync start:  " + getUTCAndLocalTime());
-			var syncfsm = new TwoWayFsm(state);
-			syncfsm.start();
+			this.m_syncfsm = new TwoWayFsm(state);
+			this.m_syncfsm.start();
+			this.is_running = true;
 		}
 	}
 	else
 	{
+		this.m_timeoutID = fsmstate.timeoutID;
+
 		var is_window_update_required = this.m_sfo.update(fsmstate);
 
 		if (is_window_update_required)
@@ -159,43 +165,12 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 }
 
-// we're outa here...
-//
 ZinTimerFunctorSync.prototype.finish = function()
 {
 	newZinLogger().info("sync finish: " + getUTCAndLocalTime());
 
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 
-	if (this.m_a_delay_on_repeat["repeat"] != null)
-		this.m_a_delay_on_repeat["repeat"]--;
-
-	if (this.m_a_delay_on_repeat["repeat"] == null || this.m_a_delay_on_repeat["repeat"] > 0)
-	{
-		this.m_logger.debug("finish: m_a_delay_on_repeat: " + this.m_a_delay_on_repeat["repeat"]);
-
-		var fire_in_seconds = this.calcDelay(this.m_a_delay_on_repeat["centre"], this.m_a_delay_on_repeat["varies"]);
-		this.setNextTimer(fire_in_seconds);
-
-		newZinLogger().info("sync next:   " + getUTCAndLocalTime(fire_in_seconds));
-	}
-
-	this.m_logger.debug("onFsmStateChangeFunctor: timer finished");
-}
-
-ZinTimerFunctorSync.prototype.setNextTimer = function(delay)
-{
-	this.m_logger.debug("setNextTimer: " + delay + " seconds");
-
-	var functor = this.copy();
-
-	ZinMaestro.notifyTimerStart(delay, functor);
-
-	// var timer = new ZinTimer(functor);
-	// timer.start(delay);
-}
-
-ZinTimerFunctorSync.prototype.calcDelay = function(centre, varies)
-{
-	return randomPlusOrMinus(centre, varies);
+	this.is_running = false;
+	window.wd.timeoutID = window.setTimeout(onTimerFire, 1000);   // reset the timer
 }
