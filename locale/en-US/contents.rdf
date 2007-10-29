@@ -1,0 +1,25 @@
+<!-- $Id: contents.rdf,v 1.1 2007-10-29 01:05:34 cvsuser Exp $ -->
+<!-- contents.rdf required for SeaMonkey -->
+
+<?xml version="1.0"?>
+<RDF:RDF xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:chrome="http://www.mozilla.org/rdf/chrome#">
+
+  <!-- list all the packages being supplied by this jar -->
+  <RDF:Seq about="urn:mozilla:locale:root">
+    <RDF:li resource="urn:mozilla:locale:en-US"/>
+  </RDF:Seq>
+
+  <!-- locale information -->
+  <RDF:Description about="urn:mozilla:locale:en-US"
+        chrome:displayName="English(US)"
+        chrome:author="Leni Mayo"
+        chrome:name="en-US">
+    <chrome:packages>
+      <RDF:Seq about="urn:mozilla:locale:en-US:packages">
+        <RDF:li resource="urn:mozilla:locale:en-US:zindus"/>
+      </RDF:Seq>
+    </chrome:packages>
+  </RDF:Description>
+
+</RDF:RDF>
