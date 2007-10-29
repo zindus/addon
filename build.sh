@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.8 2007-10-08 22:30:25 cvsuser Exp $
+# $Id: build.sh,v 1.9 2007-10-29 23:53:48 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -107,6 +107,12 @@ sed -r "s#<em:version>(.*)</em:version>#<em:version>$APP_VERSION_NUMBER</em:vers
 # cat asd
 mv asd install.rdf
 
+cp install.js /tmp/install.js
+sed -r "s#var version *= \"(.*)\";#var version             = \"$APP_VERSION_NUMBER\";#" < install.js > asd
+# cat asd
+mv asd install.js
+
+
 updateURL="    <em:updateURL>http://www.zindus.com/download/update-xpi.php?item_id=%ITEM_ID%\&amp;item_version=%ITEM_VERSION%\&amp;item_status=%ITEM_STATUS%\&amp;app_id=%APP_ID%\&amp;app_os=%APP_OS%\&amp;app_abi=%APP_ABI%"
 
 if [ "$APP_VERSION_RELTYPE" = "testing" ]; then
@@ -127,7 +133,7 @@ else
 fi
 
 # Copy other files to the root of future XPI.
-for ROOT_FILE in $ROOT_FILES install.rdf chrome.manifest; do
+for ROOT_FILE in $ROOT_FILES install.rdf chrome.manifest install.js; do
   cp --verbose $ROOT_FILE $TMP_DIR
   if [ -f $ROOT_FILE ]; then
     echo $ROOT_FILE >> files

@@ -1,7 +1,7 @@
-<!-- $Id: contents.rdf,v 1.1 2007-10-29 01:07:14 cvsuser Exp $ -->
+<?xml version="1.0"?>
+<!-- $Id: contents.rdf,v 1.2 2007-10-29 23:52:58 cvsuser Exp $ -->
 <!-- contents.rdf required for SeaMonkey -->
 
-<?xml version="1.0"?>
 <RDF:RDF xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
          xmlns:chrome="http://www.mozilla.org/rdf/chrome#">
 
