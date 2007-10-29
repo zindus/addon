@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+
+<!-- ***** BEGIN LICENSE BLOCK *****
+  
+  "The contents of this file are subject to the Mozilla Public License
+  Version 1.1 (the "License"); you may not use this file except in
+  compliance with the License. You may obtain a copy of the License at
+  http://www.mozilla.org/MPL/
+  
+  Software distributed under the License is distributed on an "AS IS"
+  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+  License for the specific language governing rights and limitations
+  under the License.
+  
+  The Original Code is Zindus Sync.
+  
+  The Initial Developer of the Original Code is Moniker Pty Ltd.
+ 
+  Portions created by Initial Developer are Copyright (C) 2007
+  the Initial Developer. All Rights Reserved.
+ 
+  Contributor(s): Leni Mayo
+  
+  ***** END LICENSE BLOCK ***** -->
+
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
+
+<dialog
+	id="zindus-prefs-dialog"
+	title="&ZinPrefs.title;"
+	buttons="accept,extra2"
+	buttonlabelextra2="&ZinPrefs.buttonlabelextra2;"
+	flex="1"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	onload="window.wd = new Prefs; window.wd.onLoad(event.target);"
+	oncommand="window.wd.onCommand(event.target.id);"
+	ondialogaccept="window.wd.onAccept();"
+	ondialogcancel="window.wd.onCancel();"
+	ondialogextra2="window.wd.onHelp('http://test.zindus.net/blog/faq/');"
+	>
+
+	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/utils.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/prefsdialog.js"/>
+	<!--
+	Notes:
+	- couldn't get the "help" button above to work - use extra2 (which defaults to appearing on the left hand side) instead
+	- TODO - replace 'http://test.zindus.net/blog/faq/' with a real url
+	-->
+
+	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
+
+	<tabbox id="zindus-prefs-tabbox" orient="vertical" flex="1" > <!-- selectedIndex="1"  -->
+		<tabs>
+			<tab id="zindus-prefs-tab-server"  label="&ZinPrefsTabServer.label;"  />
+			<tab id="zindus-prefs-tab-general" label="&ZinPrefsTabGeneral.label;" />
+		</tabs>
+		<tabpanels flex="1">
+
+			<command id="zindus-prefs-cmd-sync"    oncommand=" window.wd.onCommand(event.explicitOriginalTarget.id);" />
+
+			<!-- Server -->
+
+			<vbox flex="1" >
+				<grid flex="1" style="&ZinPrefsServerGrid.style;" > 
+					<columns>
+						<column style="margin-left:15px" />
+						<column flex="1" />
+					</columns>
+					<rows>
+						<description xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
+							&ZinPrefsServerUrlDescription.value;
+						</description>
+						<row>
+							<label value="&ZinPrefsServerUrl.label;" />
+							<textbox id="zindus-prefs-server-url" />
+						</row>
+						<description value="&ZinPrefsServerUsernameDescription.value;" style="&ZinPrefsServerDescription.style;" />
+						<row>
+							<label value="&ZinPrefsServerUsername.label;:" />
+							<textbox id="zindus-prefs-server-username" />
+							<label value="" />
+						</row>
+						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+						<row>
+							<label value="&ZinPrefsServerPassword.label;:" />
+							<textbox id="zindus-prefs-server-password" type="password" />
+						</row>
+						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+						<row>
+							<label value="" />
+							<hbox align="left" >
+								<button id="zindus-prefs-server-button-authonly"
+								        align="center" label="&ZinPrefsServerTestConnection.label;"
+										accesskey="&ZinPrefsServerTestConnection.accesskey;" command="zindus-prefs-cmd-sync" />
+							</hbox>
+						</row>
+						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+					</rows>
+				</grid>
+			</vbox>
+
+			<!-- General -->
+
+			<vbox flex="1" style="margin:20px" >
+				<description xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
+					&ZinPrefsGeneralIntroduction.value;
+				</description>
+				<spacer style="height:30px;" flex="1"/> 
+				<groupbox id="zindus-prefs-general-group-advanced-settings" pack="center" >
+				    <caption label="&ZinPrefsGeneralGroupAdvanced.label;"/>
+					<vbox align="left" >
+					<checkbox id="zindus-prefs-general-manual-sync-only" label="&ZinPrefsGeneralManualSyncOnly.label;" checked="false" />
+					<checkbox id="zindus-prefs-general-verbose-logging"  label="&ZinPrefsGeneralVerboseLogging.label;" checked="false" />
+					</vbox>
+				</groupbox>
+				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				<groupbox pack="center" >
+				    <caption label="&ZinPrefsGeneralGroupActions.label;"/>
+					<hbox align="right" >
+						<button id="zindus-prefs-general-button-test-harness" hidden="true"
+						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTestHarness.label;" />
+						<button id="zindus-prefs-general-button-run-timer" hidden="true"
+						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTimer.label;" />
+						<button id="zindus-prefs-general-button-reset"
+						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonReset.label;"
+								accesskey="&ZinPrefsGeneralButtonReset.accesskey;" />
+						<spacer flex="1"/> 
+						<button id="zindus-prefs-general-button-sync-now"
+						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonSyncNow.label;"
+								accesskey="&ZinPrefsGeneralButtonSyncNow.accesskey;" />
+					</hbox>
+				</groupbox>
+			</vbox>
+		</tabpanels>
+	</tabbox>
+</dialog>
