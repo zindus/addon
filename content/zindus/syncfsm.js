@@ -36,6 +36,7 @@ include("chrome://zindus/content/mozillapreferences.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/passwordmanager.js");
+include("chrome://zindus/content/stopwatch.js");
 
 SyncFsm.ABSPECIAL_GAL = "GAL";
 
@@ -61,8 +62,10 @@ SyncFsm.getFsm = function(context)
 		stSyncResult:     { evCancel: 'final', evNext:  'stGetContact',     evRepeat:      'stSync'                                  },
 		stGetContact:     { evCancel: 'final', evNext:  'stSyncGal',        evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContact' },
 		stSyncGal:        { evCancel: 'final', evNext:  'stSyncGalCommit',  evSoapRequest: 'stSoapRequest'                           },
-		stSyncGalCommit:  { evCancel: 'final', evNext:  'stConverge'                                                                 },
-		stConverge:       { evCancel: 'final', evNext:  'stUpdateTb',                                       evLackIntegrity: 'final' },
+		stSyncGalCommit:  { evCancel: 'final', evNext:  'stConverge1'                                                                },
+		stConverge1:      { evCancel: 'final', evNext:  'stConverge2',                                      evLackIntegrity: 'final' },
+		stConverge2:      { evCancel: 'final', evNext:  'stConverge3',                                                               },
+		stConverge3:      { evCancel: 'final', evNext:  'stUpdateTb',                                                                },
 		stUpdateTb:       { evCancel: 'final', evNext:  'stUpdateZm'                                                                 },
 		stUpdateZm:       { evCancel: 'final', evNext:  'stUpdateCleanup',  evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateZm'   },
 		stUpdateCleanup:  { evCancel: 'final', evNext:  'stCommit',                                         evLackIntegrity: 'final' },
@@ -86,7 +89,9 @@ SyncFsm.getFsm = function(context)
 		stSyncGal:              context.entryActionSyncGal,
 		stSyncGalCommit:        context.entryActionSyncGalCommit,
 		stLoadTb:               context.entryActionLoadTb,
-		stConverge:             context.entryActionConverge,
+		stConverge1:            context.entryActionConverge1,
+		stConverge2:            context.entryActionConverge2,
+		stConverge3:            context.entryActionConverge3,
 		stUpdateTb:             context.entryActionUpdateTb,
 		stUpdateZm:             context.entryActionUpdateZm,
 		stUpdateCleanup:        context.entryActionUpdateCleanup,
@@ -1150,23 +1155,22 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	// Now, if there's a problem we just abort the sync and the user has to fix it.
 	//
 
-	var now = new Date(Date.now());
+	var stopwatch = new ZinStopWatch("entryActionLoadTb");
 
-	this.state.m_logger.debug("loadTb: 0. am here: ");
-	this.state.m_logger.debug("loadTb: 1. elapsed: " + (new Date(Date.now()) - now));
+	stopwatch.mark("1");
 	var zfcTbPreMerge = zinCloneObject(zfcTb);                 // 1. remember the tb luid's before merge so that we can follow changes
-	this.state.m_logger.debug("loadTb: 2. elapsed: " + (new Date(Date.now()) - now));
+	stopwatch.mark("2");
 	aUri = this.loadTbMergeZfcWithAddressBook();               // 2. merge the current tb luid map with the current addressbook(s)
-	this.state.m_logger.debug("loadTb: 3. elapsed: " + (new Date(Date.now()) - now));
+	stopwatch.mark("3");
 	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);  // 3. exclude mailing lists and their cards
-	this.state.m_logger.debug("loadTb: 4. elapsed: " + (new Date(Date.now()) - now));
+	stopwatch.mark("4");
 	passed = this.loadTbTestFolderNameRules();                 // 4. test for duplicate folder names, reserved names, illegal chars
-	this.state.m_logger.debug("loadTb: 5. elapsed: " + (new Date(Date.now()) - now));
+	stopwatch.mark("5");
 
 	if (!this.state.isSlowSync)
 	{
 		passed = passed && this.loadTbTestReservedFolderInvariant(zfcTbPreMerge, TB_PAB);
-	this.state.m_logger.debug("loadTb: 6. elapsed: " + (new Date(Date.now()) - now));
+		stopwatch.mark("6");
 
 		// early versions of the zimbra server didn't have an Emailed Contacts addressbook - leave out checking for now
 		//
@@ -1273,8 +1277,14 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	var sourceid = this.state.sourceid_tb;
 	var zfcTb = this.state.sources[sourceid]['zfcLuid'];
 
+	var stopwatch = new ZinStopWatch("loadTbMergeZfcWithAddressBook");
+
+	stopwatch.mark("1");
+
 	var mapTbFolderTpiToId = ZinFeed.getTopLevelFolderHash(zfcTb, ZinFeedItem.ATTR_TPI, ZinFeedItem.ATTR_ID,
 	                                                             ZinFeedCollection.ITER_UNRESERVED);
+
+	stopwatch.mark("2");
 
 	this.state.m_logger.debug("loadTbMergeZfcWithAddressBook: mapTbFolderTpiToId == " + aToString(mapTbFolderTpiToId));
 
@@ -1287,6 +1297,8 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 
 		run: function(elem)
 		{
+			stopwatch.mark("3");
+
 			var msg = "addressbook:" +
 			          " dirName: " + elem.dirName +
 			          " dirPrefId: " + elem.dirPrefId +
@@ -1363,7 +1375,9 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 
 	aUri = new Array();
 
+	stopwatch.mark("2");
 	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
+	stopwatch.mark("4");
 
 	return aUri;
 }
@@ -2419,38 +2433,53 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 	}
 }
 
-SyncFsm.prototype.entryActionConverge = function(state, event, continuation)
+// Converge is slow when "verbose logging" is turned on so it is broken up into three states.  This means:
+// - mozilla's failsafe stop/continue javascript dialog is less likely to pop up
+// - the user gets to see a little bit of movement in the progress bar between each state
+//
+SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 {
-	var aSuoWinners;
 	var passed;
-	var start = Date.now();
+	var stopwatch = new ZinStopWatch("entryActionConverge1");
+	stopwatch.mark("1");
 
-	this.state.m_logger.debug("entryActionConverge: 1: date: " + (Date.now() - start));
-	this.updateGidFromSources();                     // 1.  map all luids into a single namespace (the gid)
-	this.state.m_logger.debug("entryActionConverge: 2: date: " + (Date.now() - start));
-	var aGcs = this.buildGcs();                      // 2.  reconcile the sources (via the gid) into a single truth (the sse output array) 
-	this.state.m_logger.debug("entryActionConverge: 3: date: " + (Date.now() - start));
-	this.buildPreUpdateWinners(aGcs);                // 3.  save winner state before it gets updated to distinguish an ms vs md update
-	this.state.m_logger.debug("entryActionConverge: 4: date: " + (Date.now() - start));
-	passed = this.testFolderNameDuplicate(aGcs);     // 4.  a bit of conflict detection
-	this.state.m_logger.debug("entryActionConverge: 5: date: " + (Date.now() - start));
+	this.updateGidFromSources();                      // 1.  map all luids into a single namespace (the gid)
+	this.aGcs = this.buildGcs();                      // 2.  reconcile the sources (via the gid) into a single truth (the sse output array) 
+	this.buildPreUpdateWinners(this.aGcs);            // 3. save winner state before winner update to distinguish ms vs md update
+	passed = this.testFolderNameDuplicate(this.aGcs); // 4.  a bit of conflict detection
 
-	if (passed)
-	{
-		aSuoWinners = this.suoBuildWinners(aGcs);    // 5.  generate operations required to bring meta-data for winners up to date
-	this.state.m_logger.debug("entryActionConverge: 6: date: " + (Date.now() - start));
-		this.suoRunWinners(aSuoWinners);             // 6.  run the operations that update winner meta-data
-	this.state.m_logger.debug("entryActionConverge: 7: date: " + (Date.now() - start));
-		this.state.aSuo = this.suoBuildLosers(aGcs); // 7.  generate the operations required to bring the losing sources up to date
-	this.state.m_logger.debug("entryActionConverge: 8: date: " + (Date.now() - start));
-	}
+	stopwatch.mark("2");
 
-	var nextEvent = 'evNext';
-
-	if (!passed)
-		nextEvent = 'evLackIntegrity';
+	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
 
 	continuation(nextEvent);
+}
+
+SyncFsm.prototype.entryActionConverge2 = function(state, event, continuation)
+{
+	var aSuoWinners;
+	var stopwatch = new ZinStopWatch("entryActionConverge2");
+
+	stopwatch.mark("1");
+	aSuoWinners = this.suoBuildWinners(this.aGcs);    // 5.  generate operations required to bring meta-data for winners up to date
+	stopwatch.mark("2");
+	this.suoRunWinners(aSuoWinners);                  // 6.  run the operations that update winner meta-data
+	stopwatch.mark("3");
+
+	continuation('evNext');
+}
+
+SyncFsm.prototype.entryActionConverge3 = function(state, event, continuation)
+{
+	var stopwatch = new ZinStopWatch("entryActionConverge3");
+
+	stopwatch.mark("1");
+
+	this.state.aSuo = this.suoBuildLosers(this.aGcs);  // 7.  generate the operations required to bring the losing sources up to date
+
+	stopwatch.mark("2");
+
+	continuation('evNext');
 }
 
 SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
@@ -3830,6 +3859,7 @@ function SyncFsmState(id_fsm)
 	this.aSyncContact        = new Object(); // each property is a ZimbraContact object returned in GetContactResponse
 	this.stopFailCode        = null;         // if stLoadTb or stConverge continue on evLackIntegrity, these values are set for the observer
 	this.stopFailDetail      = null;
+	this.aGcs                = null;         // array of Global Converged State - passed between the phases of Converge
 	this.aSuo                = null;         // container for source update operations - populated in Converge
 	this.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response

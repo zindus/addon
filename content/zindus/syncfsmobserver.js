@@ -103,9 +103,10 @@ SyncFsmObserver.prototype.progressToString = function()
 SyncFsmObserver.prototype.update = function(fsmstate)
 {
 	var ret = false;
-	var a_states_of_interest = { stAuth : 0,      stLoad: 1,     stSync: 2,           stSyncResult: 2,
-	                             stGetContact: 3, stSyncGal: 4,  stLoadTb : 5,        stConverge: 6,
-								 stUpdateTb: 7,   stUpdateZm: 8, stUpdateCleanup: 9,  final: 10 };
+	var a_states_of_interest = { stAuth : 0,      stLoad: 1,       stSync: 2,            stSyncResult: 2,
+	                             stGetContact: 3, stSyncGal: 4,    stLoadTb : 5,       
+								 stConverge1: 6,  stConverge2: 7,  stConverge3: 8,
+								 stUpdateTb: 9,   stUpdateZm: 10,  stUpdateCleanup: 11,  final: 12 };
 
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
@@ -123,7 +124,9 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 			case 'stSyncResult':    this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
 			case 'stSyncGal':       this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
 			case 'stLoadTb':        this.progressReportOnSource(context.state.sourceid_zm, "GetItem");    break;
-			case 'stConverge':      this.progressReportOn("Converge");                                    break;
+			case 'stConverge1':     this.progressReportOn("Converge");                                    break;
+			case 'stConverge2':     this.progressReportOn("Converge");                                    break;
+			case 'stConverge3':     this.progressReportOn("Converge");                                    break;
 			case 'stUpdateTb':      this.progressReportOnSource(context.state.sourceid_tb, "Put");        break;
 			case 'stUpdateCleanup': this.progressReportOn("Saving");                                      break;
 
@@ -199,9 +202,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 						es.failcode('FailOnIntegrityBadCredentials');
 					else if (fsmstate.oldstate == 'stLoad')
 						es.failcode('FailOnIntegrityDataStoreIn');
-					else if (fsmstate.oldstate == 'stLoadTb' || fsmstate.oldstate == 'stConverge')
+					else if (fsmstate.oldstate == 'stLoadTb' || fsmstate.oldstate == 'stConverge1')
 					{
-						dump("am here 1: stopFailCode: " + context.state.stopFailCode + "\n");
 						es.failcode(context.state.stopFailCode);   // one of the FailOnFolderName* codes
 						es.m_fail_detail = context.state.stopFailDetail;
 					}
