@@ -54,56 +54,11 @@
 		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
 	</stringbundleset>
 
-	<!-- both Thunderbird and SeaMonkey -->
 	<menupopup id="taskPopup">
 		<menuitem label="&ZinToolsMenuItem.label;"
 		          accesskey="&ZinToolsMenuItem.accesskey;"
 		          insertafter="javaScriptConsole"
 				  oncommand="zindusPrefsDialog();" />
 	</menupopup>
-
-	<!-- Thunderbird only -->
-	<toolbox id="mail-toolbox" class="toolbox-top" mode="full">
-		<toolbarpalette id="MailToolbarPalette">
-			<toolbarbutton id="zindus-toolbarbutton"
-			               label="&ZinToolsMenuItem.label;"
-						   tooltiptext="&ZinToolBarButton.tooltip;"
-			               oncommand="zindusPrefsDialog();" />
-		</toolbarpalette>
-	</toolbox>	
-
-	<!-- Thunderbird -->
-	<hbox id="statusTextBox" >
-		<statusbarpanel hidden="true" id="zindus-progresspanel" insertbefore="statusbar-progresspanel" >
-			<label id="zindus-progresspanel-label-prefix" value="zindus:" /> <!-- onclick="alert('you clicked me 2');"  -->
-			<stack>
-				<progressmeter id="zindus-progresspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" />
-				<label id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
-			</stack>
-		</statusbarpanel>
-		<statusbarpanel id="zindus-statuspanel" tooltiptext="" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
-			<image id="zindus-statuspanel-logo"   src="chrome://zindus/content/zindus-16x16-grey.jpg" />
-			<label id="zindus-statuspanel-alert"  hidden="true" value="!" />
-			<label id="zindus-statuspanel-error"  hidden="true" value="X" />
-			<label id="zindus-statuspanel-insync" hidden="true" value="Y" />
-		</statusbarpanel>
-	</hbox>
-
-	<!-- SeaMonkey -->
-	<statusbar id="status-bar" >
-		<statusbarpanel hidden="true" id="zindus-progresspanel" insertbefore="unreadMessageCount" >
-			<label id="zindus-progresspanel-label-prefix" value="zindus:" /> <!-- onclick="alert('you clicked me 2');"  -->
-			<stack>
-				<progressmeter id="zindus-progresspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" />
-				<label id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
-			</stack>
-		</statusbarpanel>
-		<statusbarpanel id="zindus-statuspanel" tooltiptext="" insertbefore="unreadMessageCount" class="statusbarpanel-iconic" >
-			<image id="zindus-statuspanel-logo"   src="chrome://zindus/content/zindus-16x16-grey.jpg" />
-			<label id="zindus-statuspanel-alert"  hidden="true" value="!" />
-			<label id="zindus-statuspanel-error"  hidden="true" value="X" />
-			<label id="zindus-statuspanel-insync" hidden="true" value="Y" />
-		</statusbarpanel>
-	</statusbar>
 
 </overlay>
