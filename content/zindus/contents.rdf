@@ -26,6 +26,7 @@
 
   <RDF:Seq about="chrome://messenger/content/mailWindowOverlay.xul">
     <RDF:li>chrome://zindus/content/mailwindowoverlay.xul</RDF:li>
+    <RDF:li>chrome://zindus/content/mailwindowoverlay-sm.xul</RDF:li>
   </RDF:Seq>
 
 </RDF:RDF>

@@ -1150,14 +1150,23 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	// Now, if there's a problem we just abort the sync and the user has to fix it.
 	//
 
+	var now = new Date(Date.now());
+
+	this.state.m_logger.debug("loadTb: 0. am here: ");
+	this.state.m_logger.debug("loadTb: 1. elapsed: " + (new Date(Date.now()) - now));
 	var zfcTbPreMerge = zinCloneObject(zfcTb);                 // 1. remember the tb luid's before merge so that we can follow changes
+	this.state.m_logger.debug("loadTb: 2. elapsed: " + (new Date(Date.now()) - now));
 	aUri = this.loadTbMergeZfcWithAddressBook();               // 2. merge the current tb luid map with the current addressbook(s)
+	this.state.m_logger.debug("loadTb: 3. elapsed: " + (new Date(Date.now()) - now));
 	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);  // 3. exclude mailing lists and their cards
+	this.state.m_logger.debug("loadTb: 4. elapsed: " + (new Date(Date.now()) - now));
 	passed = this.loadTbTestFolderNameRules();                 // 4. test for duplicate folder names, reserved names, illegal chars
+	this.state.m_logger.debug("loadTb: 5. elapsed: " + (new Date(Date.now()) - now));
 
 	if (!this.state.isSlowSync)
 	{
 		passed = passed && this.loadTbTestReservedFolderInvariant(zfcTbPreMerge, TB_PAB);
+	this.state.m_logger.debug("loadTb: 6. elapsed: " + (new Date(Date.now()) - now));
 
 		// early versions of the zimbra server didn't have an Emailed Contacts addressbook - leave out checking for now
 		//
