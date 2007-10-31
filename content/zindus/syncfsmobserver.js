@@ -123,9 +123,9 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 			case 'stSync':          
 			case 'stSyncResult':    this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
 			case 'stSyncGal':       this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
-			case 'stLoadTb':        this.progressReportOnSource(context.state.sourceid_zm, "GetItem");    break;
-			case 'stConverge1':     this.progressReportOn("Converge");                                    break;
-			case 'stConverge2':     this.progressReportOn("Converge");                                    break;
+			case 'stLoadTb':        this.progressReportOnSource(context.state.sourceid_tb, "GetItem");    break;
+			case 'stConverge1':     
+			case 'stConverge2':     
 			case 'stConverge3':     this.progressReportOn("Converge");                                    break;
 			case 'stUpdateTb':      this.progressReportOnSource(context.state.sourceid_tb, "Put");        break;
 			case 'stUpdateCleanup': this.progressReportOn("Saving");                                      break;

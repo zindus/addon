@@ -843,7 +843,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		//   - contacts that are in the parent folders of interest, and
 		//   - contacts whose content has changed (indicated by the rev attribute being bumped)
 		//
-		this.state.m_logger.debug("11113 - aQueue: " + aToString(this.state.aQueue));
+		this.state.m_logger.debug("aQueue: " + aToString(this.state.aQueue));
 
 		if (this.state.isRedoSyncRequest)
 		{
@@ -1632,7 +1632,7 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 
 	var ret = this.state.stopFailCode == null;
 
-	this.state.m_logger.debug("loadTbTestFolderNameRules: blah: returns: " + ret);
+	this.state.m_logger.debug("loadTbTestFolderNameRules: returns: " + ret);
 
 	return ret;
 }
@@ -2444,11 +2444,16 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 	stopwatch.mark("1");
 
 	this.updateGidFromSources();                      // 1.  map all luids into a single namespace (the gid)
-	this.aGcs = this.buildGcs();                      // 2.  reconcile the sources (via the gid) into a single truth (the sse output array) 
-	this.buildPreUpdateWinners(this.aGcs);            // 3. save winner state before winner update to distinguish ms vs md update
-	passed = this.testFolderNameDuplicate(this.aGcs); // 4.  a bit of conflict detection
-
 	stopwatch.mark("2");
+
+	this.aGcs = this.buildGcs();                      // 2.  reconcile the sources (via the gid) into a single truth (the sse output array) 
+	stopwatch.mark("3");
+
+	this.buildPreUpdateWinners(this.aGcs);            // 3. save winner state before winner update to distinguish ms vs md update
+	stopwatch.mark("4");
+
+	passed = this.testFolderNameDuplicate(this.aGcs); // 4.  a bit of conflict detection
+	stopwatch.mark("5");
 
 	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
 
@@ -2461,8 +2466,10 @@ SyncFsm.prototype.entryActionConverge2 = function(state, event, continuation)
 	var stopwatch = new ZinStopWatch("entryActionConverge2");
 
 	stopwatch.mark("1");
+
 	aSuoWinners = this.suoBuildWinners(this.aGcs);    // 5.  generate operations required to bring meta-data for winners up to date
 	stopwatch.mark("2");
+
 	this.suoRunWinners(aSuoWinners);                  // 6.  run the operations that update winner meta-data
 	stopwatch.mark("3");
 

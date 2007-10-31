@@ -164,7 +164,7 @@ ZinMaestro.prototype.functorNotifyAll = function(id_fsm)
 {
 	var functor;
 
-	this.m_logger.debug("functorNotifyAll: id_fsm: " + id_fsm);
+	// this.m_logger.debug("functorNotifyAll: id_fsm: " + id_fsm);
 
 	for (var id_functor in this.m_a_functor)
 	{
@@ -178,7 +178,7 @@ ZinMaestro.prototype.functorNotifyAll = function(id_fsm)
 			var context = this.m_a_functor[id_functor]['context'];
 			var args    = isPropertyPresent(this.m_a_fsmstate, id_fsm) ? this.m_a_fsmstate[id_fsm] : null;
 
-			this.m_logger.debug("functorNotifyAll: " + id_functor + ": called with args: " + (args ? "fsmstate (see above)" : "null") );
+			this.m_logger.debug("functorNotifyAll: status of: " + id_fsm + " has changed - about to notify: " + id_functor + " passing arg: " + (args ? "fsmstate" : "null"));
 
 			functor.call(context, args);
 		}
