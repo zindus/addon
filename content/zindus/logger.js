@@ -30,10 +30,15 @@ ZinLogger.WARN  = 3;
 ZinLogger.INFO  = 2;
 ZinLogger.DEBUG = 1;
 
-function ZinLogger(level, prefix)
+function ZinLogger(level, prefix, appender)
 {
 	this.m_level    = level;
 	this.m_prefix   = prefix;
+
+	if (arguments.length == 3)
+		this.m_appender = appender;
+	else
+		this.m_appender = new ZinLogAppenderOpenClose();
 }
 
 ZinLogger.prototype.level = function()
@@ -52,7 +57,7 @@ ZinLogger.prototype.fatal = function(msg) { var l = ZinLogger.FATAL; if (this.le
 
 ZinLogger.prototype.log = function(l, msg)
 {
-	ZinLogAppender.instance().log(l, this.m_prefix, msg);
+	this.m_appender.log(l, this.m_prefix, msg);
 }
 
 // Only one appender is implemented, and it's implemented as a singleton.
@@ -60,9 +65,9 @@ ZinLogger.prototype.log = function(l, msg)
 // I discovered that zinCloneObject() just hangs when trying to clone an appender.
 // Rather than looking into why clone() doesn't work on one of the xpcom objects,
 // I just made the appender a singleton, which is better for speed too.
-// If there was an abstract base class, ZinLogAppender would have just one public method, namely log().
+// If there was an abstract base class, ZinLogAppenderOpenClose would have just one public method, namely log().
 //
-function ZinLogAppender()
+function ZinLogAppenderOpenClose()
 {
 	var prefs = new MozillaPreferences();
 
@@ -77,15 +82,15 @@ function ZinLogAppender()
 		['none',         'fatal',         'error',         'warn',         'info',         'debug'        ]);
 }
 
-ZinLogAppender.instance = function()
+ZinLogAppenderOpenClose.instance = function()
 {
-	if (typeof (ZinLogAppender.m_instance) == "undefined")
-		ZinLogAppender.m_instance = new ZinLogAppender();
+	if (typeof (ZinLogAppenderOpenClose.m_instance) == "undefined")
+		ZinLogAppenderOpenClose.m_instance = new ZinLogAppenderOpenClose();
 
-	return ZinLogAppender.m_instance;
+	return ZinLogAppenderOpenClose.m_instance;
 }
 
-ZinLogAppender.prototype.log = function(level, prefix, msg)
+ZinLogAppenderOpenClose.prototype.log = function(level, prefix, msg)
 {
 	var message = "";
 	var max_level_length = 7;
@@ -105,7 +110,7 @@ ZinLogAppender.prototype.log = function(level, prefix, msg)
 	this.logToConsoleService(level, message);
 }
 
-ZinLogAppender.prototype.logToConsoleService = function(level, message)
+ZinLogAppenderOpenClose.prototype.logToConsoleService = function(level, message)
 {
 	if (level == ZinLogger.WARN || level == ZinLogger.ERROR || level == ZinLogger.FATAL)
 	{
@@ -128,7 +133,7 @@ ZinLogAppender.prototype.logToConsoleService = function(level, message)
 	}
 }
 
-ZinLogAppender.prototype.logToFile = function(message)
+ZinLogAppenderOpenClose.prototype.logToFile = function(message)
 {
 	var os = this.fileOpen();
 
@@ -140,7 +145,7 @@ ZinLogAppender.prototype.logToFile = function(message)
 	}
 }
 
-ZinLogAppender.prototype.fileOpen = function()
+ZinLogAppenderOpenClose.prototype.fileOpen = function()
 {
 	var ret = null;
 
@@ -176,7 +181,7 @@ ZinLogAppender.prototype.fileOpen = function()
 	return ret;
 }
 
-ZinLogAppender.prototype.fileClose = function(os)
+ZinLogAppenderOpenClose.prototype.fileClose = function(os)
 {
 	if (typeof os != "undefined" && os != null)
 	{
@@ -197,3 +202,23 @@ function newZinLogger(prefix)
 {
 	return new ZinLogger(loggingLevel, prefix);
 }
+
+function ZinLogAppenderHoldOpen(state)
+{
+	this.ZinLogAppenderOpenClose();
+	this.m_os = this.fileOpen();
+}
+
+copyPrototype(ZinLogAppenderHoldOpen, ZinLogAppenderOpenClose);
+
+ZinLogAppenderHoldOpen.prototype.logToFile = function(message)
+{
+	if (typeof this.m_os != "undefined" && this.m_os != null)
+		this.m_os.write(message, message.length);
+}
+
+ZinLogAppenderHoldOpen.prototype.close = function(message)
+{
+	this.fileClose(this.m_os);
+}
+
