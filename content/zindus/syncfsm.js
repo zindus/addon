@@ -3306,7 +3306,7 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 
 SyncFsm.prototype.entryActionFinal = function(state, event, continuation)
 {
-	// do nothing
+	this.state.m_logappender.close();
 }
 
 SyncFsm.prototype.suoOpcode = function(suo)
@@ -3840,7 +3840,8 @@ function SyncFsmState(id_fsm)
 {
 	this.blahCount = 0;
 	this.id_fsm              = id_fsm;
-	this.m_logger            = newZinLogger("SyncFsm");
+	this.m_logappender       = new ZinLogAppenderHoldOpen(); // holds an output stream open - must be closed explicitly
+	this.m_logger            = new ZinLogger(loggingLevel, "SyncFsm", this.m_logappender);
 	this.m_soap_state        = null;
 	this.zfcLastSync         = null;                    // ZinFeedCollection - maintains state re: last sync (anchors, success/fail)
 	this.zfcGid              = null;                    // ZinFeedCollection - map of gid to (sourceid, luid)
