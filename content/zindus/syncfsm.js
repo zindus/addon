@@ -254,6 +254,8 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	var a_zfc = new Object(); // associative array of zfc, key is the file name
 
+	SyncFsm.removeZfcsIfNecessary();
+
 	cExist = this.loadZfcs(a_zfc);
 
 	this.state.m_logger.debug("entryActionLoad: number of file load attempts: " + aToLength(a_zfc) +
@@ -1487,6 +1489,10 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			if (isInTopLevelFolder)
 			{
 				var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+				var properties  = ZimbraAddressBook.getCardProperties(abCard);
+				var checksum    = ZimbraAddressBook.crc32(properties);
+
+				this.state.m_logger.debug("loadTbExclude pass 3: blah: checksum: " + checksum);
 
 				if (! (id > ZinFeedItem.ID_MAX_RESERVED)) // id might be null (not present) or zero (reset after the map was deleted)
 				{
@@ -1495,7 +1501,12 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, id);
 					mdbCard.editCardToDatabase(uri);
 
-					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id, ZinFeedItem.ATTR_MD, abCard.lastModifiedDate,
+					// zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id, ZinFeedItem.ATTR_MD, abCard.lastModifiedDate,
+					//                   ZinFeedItem.ATTR_REV, 1, 'l', aUri[uri]));
+
+					// TODO - this is a hack to use checksum instead of lastModifiedDate for change detection
+					// 
+					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id, ZinFeedItem.ATTR_MD, checksum,
 					                   ZinFeedItem.ATTR_REV, 1, 'l', aUri[uri]));
 
 					msg += " added:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfcTb.get(id).toString();
@@ -1506,17 +1517,9 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 					var zfi = zfcTb.get(id);
 
-					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: id: " + id);
-					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: zfi: " + zfi.toString());
-					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: l: " + zfi.get('l'));
-					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: uri: " + uri);
-					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: aUri[uri]: " + aUri[uri]);
-					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: md: " + zfi.get(ZinFeedItem.ATTR_MD) );
-					// this.state.m_logger.debug("loadTbExclude pass 3: blah 7: lastModifiedDate: " + abCard.lastModifiedDate);
-
 					// if things have changed, update the map...
 					//
-					if (zfi.get('l') != aUri[uri] || zfi.get(ZinFeedItem.ATTR_MD) != abCard.lastModifiedDate)
+					if (zfi.get('l') != aUri[uri] || zfi.get(ZinFeedItem.ATTR_MD) != checksum)
 					{
 						// abCard.lastModifiedDate is a bit flaky...
 						// 1. it is set to '0' when the contact is first created
@@ -1526,11 +1529,18 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 						//    This scenario might have been be a problem - except that a card's attributes aren't preserved
 						//    when it's moved from one folder to another.  So this scenario would get handled as a delete+add.
 
+						var reason = " reason: ";
+						if (zfi.get('l') != aUri[uri])
+							reason += " parent folder changed: l:" + zfi.get('l') + " aUri[uri]: " + aUri[uri];
+						if (zfi.get(ZinFeedItem.ATTR_MD) != abCard.lastModifiedDate)
+							reason += " lastModifiedDate changed: md: " + zfi.get(ZinFeedItem.ATTR_MD) + " lastModifiedDate: " + abCard.lastModifiedDate;
+
 						zfi.set(ZinFeedItem.ATTR_MD, abCard.lastModifiedDate);
 						zfi.set('l', aUri[uri]);
 						ZinFeed.autoIncrement(zfi, ZinFeedItem.ATTR_REV);
 
 						msg += " changed: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
+						msg += reason;
 					}
 					else
 						msg += " found:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
@@ -2060,6 +2070,9 @@ SyncFsm.prototype.buildGcs = function()
 
 						if (lso.get(ZinFeedItem.ATTR_VER) == zfcGid.get(gid).get(ZinFeedItem.ATTR_VER))
 						{
+							// TODO - why is this only tested if the gid's VER attribute matches that in the lso?
+							// in other words, when can they not match?
+							//
 							var res = lso.compare(zfi);
 
 							if (res == 0)
@@ -2277,11 +2290,12 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 					var source_name_winner = this.state.sources[sourceid_winner]['name'];
 					var source_name_loser  = this.state.sources[sourceid]['name'];
 					var format_winner      = this.state.sources[sourceid_winner]['format'];
+					var item               = (zfiWinner.type() == ZinFeedItem.TYPE_CN ? "contact" : "addressbook");
 
-					conflict_msg += "conflict: " + (zfiWinner.type() == ZinFeedItem.TYPE_CN ? "contact: " : "addressbook: ") +
+					conflict_msg += "conflict: " + item + ": " +
 					                this.shortLabelForLuid(sourceid_winner, luid_winner, FORMAT_TB) +
 									" on " + source_name_winner +
-									" wins and item on " + source_name_loser +
+									" wins and " + item + " on " + source_name_loser +
 									" is " + Suo.opcodeAsStringPastTense(suo.opcode);
 
 					this.state.aConflicts.push(conflict_msg);
@@ -2323,18 +2337,18 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	var key;
 
 	if (zfi.type() == ZinFeedItem.TYPE_FL)
-		ret += "folder: " + ZinContactConverter.instance().convertFolderName(format, target_format, zfi.get(ZinFeedItem.ATTR_NAME));
+		ret += ZinContactConverter.instance().convertFolderName(format, target_format, zfi.get(ZinFeedItem.ATTR_NAME));
 	else
 	{
 		zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
 
 		if (zfi.isPresent(ZinFeedItem.ATTR_DEL))
-			ret += "contact: <deleted>";
+			ret += "<deleted>";
 		else
 		{
 			var properties = this.getContactFromLuid(sourceid, luid, format);
 		
-			ret += "contact: " + this.shortLabelForContactProperties(format, properties);
+			ret += this.shortLabelForContactProperties(format, properties);
 		}
 	}
 
@@ -2872,6 +2886,8 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 			case Suo.MOD | ZinFeedItem.TYPE_FL:
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
 				name_winner = ZinContactConverter.instance().convertFolderName(format_winner, FORMAT_ZM, zfiWinner.get(ZinFeedItem.ATTR_NAME));
+				zinAssert(luid_target >= ZM_FIRST_USER_ID); // sanity check that we never modify any of zimbra's immutable folders
+
 				soapMethod  = "FolderAction";
 				soapArg     = newObject('id', luid_target, 'op', 'update', ZinFeedItem.ATTR_NAME, name_winner);
 				bucket      = SORT_ORDER[i];
@@ -2917,6 +2933,8 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 			case Suo.DEL | ZinFeedItem.TYPE_FL:
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
 				name_winner = ZinContactConverter.instance().convertFolderName(format_winner, FORMAT_ZM, zfiWinner.get(ZinFeedItem.ATTR_NAME));
+				zinAssert(luid_target >= ZM_FIRST_USER_ID); // sanity check that we never modify any of zimbra's immutable folders
+
 				soapMethod  = "FolderAction";
 				bucket      = SORT_ORDER[i];
 				msg        += " about to move folder to trash: " + name_winner;
@@ -3160,7 +3178,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 	if (aToLength(this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket]) == 0)
 	{
 		delete this.state.aSuo[updateZmPackage.sourceid][updateZmPackage.bucket];  // delete empty buckets
-		this.state.m_logger.debug("33771: deleted aSuo sourceid: " + sourceid + " bucket: " + updateZmPackage.bucket);
+		this.state.m_logger.debug("deleted aSuo sourceid: " + sourceid + " bucket: " + updateZmPackage.bucket);
 	}
 }
 
@@ -3423,6 +3441,68 @@ SyncFsm.removeLogfile = function()
 	if (file.exists() && !file.isDirectory())
 		file.remove(false);
 }
+
+SyncFsm.removeZfcsIfNecessary = function()
+{
+	var appversion     = null;
+	var zfiStatus      = StatusPanel.getZfi();
+
+	if (zfiStatus)
+		appversion = zfiStatus.getOrNull('appversion');
+
+	if ((zfiStatus && !appversion)  || (appversion && SyncFsm.compareToolkitVersionStrings(appversion, APP_VERSION_DATA_CONSISTENT_WITH) == -1))
+	{
+		newZinLogger().info("out of date data format - removing data files, forcing slow sync");
+		SyncFsm.removeZfcs();
+	}
+}
+
+
+// Compare two Toolkit version strings as defined at:
+// http://developer.mozilla.org/en/docs/Toolkit_version_format
+// return:
+//    -1 a <  b
+//    0  a == b
+//    1  a >  b
+// This routine doesn't implement the full comparison as required by the spec above,
+// but for zindus version numbers, which are <number>.<number> etc it gives the same result.
+// More detail...
+// The spec says that "version part" is itself parsed as a sequence of <number-a><string-b><number-c><string-d>
+// whereas our        "version part" is simply                         <number>
+// And in the spec, version parts are compared bytewise whereas here we compare two numbers.
+//
+SyncFsm.compareToolkitVersionStrings = function(string_a, string_b)
+{
+	var a_a = string_a.split(".");
+	var a_b = string_b.split(".");
+	var max_parts = (a_a.length > a_b.length) ? a_a.length : a_b.length;
+	var ret = 0;
+
+	for (var i = 0; (i < max_parts) && (ret == 0); i++)
+	{
+		var part_string_a = "1" + ((i < a_a.length) ? a_a[i] : "0"); // prefix with a digit because "043" wouldn't equal parseInt("043");
+		var part_string_b = "1" + ((i < a_b.length) ? a_b[i] : "0");
+
+		var part_int_a = parseInt(part_string_a, 10);
+		var part_int_b = parseInt(part_string_b, 10);
+
+		newZinLogger("blah").debug("compareToolkitVersionStrings: " + "part_string_a: " + part_string_a + 
+		                                "part_int_a.toString: " + part_int_a.toString());
+
+		zinAssert(part_int_a.toString() == part_string_a); // assert that the parts really are only numbers
+		zinAssert(part_int_b.toString() == part_string_b); // otherwise, our simplified comparison here is no good
+
+		if (part_int_a > part_int_b)
+			ret = 1;
+		else if (part_int_a < part_int_b)
+			ret = -1;
+	}
+
+	newZinLogger("blah").debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
+
+	return ret;
+}
+
 
 SyncFsm.setLsoToGid = function(zfiGid, zfiTarget)
 {

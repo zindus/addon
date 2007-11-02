@@ -45,7 +45,8 @@ StatusPanel.save = function(es)
 	var zfiStatus = new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_STATUS,
 									  'date', date,
 									  'exitstatus', es.m_exit_status,
-									  'conflicts', es.m_count_conflicts);
+									  'conflicts', es.m_count_conflicts,
+									  'appversion', APP_VERSION_NUMBER );
 
 	zfcStatus.set(zfiStatus);
 	zfcStatus.save();

@@ -41,7 +41,7 @@ function Lso(arg)
 					this.m_properties[Lso.aPartsZfi[i]] = zfi.get(Lso.aPartsZfi[i]);
 			break;
 		case 'string': // populate properties from a ZinFeedItem.ATTR_LS string
-			var a = arg.split("-");
+			var a = arg.split("#");
 			zinAssert(a.length == Lso.aPartsAll.length);
 			for (i = 0; i < Lso.aPartsAll.length; i++)
 				if (a[i].length > 0)
@@ -72,7 +72,7 @@ Lso.prototype.toString = function()
 			isFirst = false;
 		}
 		else
-			ret += "-" + this.m_properties[Lso.aPartsAll[i]];
+			ret += "#" + this.m_properties[Lso.aPartsAll[i]];
 
 	return ret;
 }

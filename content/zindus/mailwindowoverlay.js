@@ -67,7 +67,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 				var delay_on_start     = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnStart"));
 				this.m_delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnRepeat"));
 
-				var x = this.timerDetails();
+				var x = this.statusSummary();
 
 				this.m_last_sync_date = x['last_sync_date'];
 
@@ -131,9 +131,9 @@ ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 {
 	context.m_logger.debug("entering onTimerFire...");
 
-	var x = context.timerDetails();
+	var x = context.statusSummary();
 
-	if (context.m_last_sync_date.toString() == x['last_sync_date'].toString())
+	if (context.m_last_sync_date == null || context.m_last_sync_date.toString() == x['last_sync_date'].toString())
 	{
 		if (!ObserverService.isRegistered(ZinMaestro.TOPIC))
 		{
@@ -164,7 +164,7 @@ ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 	}
 }
 
-ZinMailWindowOverlay.prototype.timerDetails = function()
+ZinMailWindowOverlay.prototype.statusSummary = function()
 {
 	var last_sync_date = null;
 	var zfiStatus      = StatusPanel.getZfi();
@@ -204,7 +204,7 @@ ZinMailWindowOverlay.prototype.timerDetails = function()
 
 	var ret = newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", last_sync_date);
 
-	// this.m_logger.debug("timerDetails returns: " + "\n" +
+	// this.m_logger.debug("statusSummary returns: " + "\n" +
 	//                      " now:            " + ret['now'] + "\n" +
 	// 					 " last_sync_date: " + last_sync_date + "\n" +
 	// 					 " next_sync_date: " + next_sync_date );
