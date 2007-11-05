@@ -172,7 +172,7 @@ ZinTestHarness.prototype.testPropertyDelete = function()
 
 ZinTestHarness.prototype.testLso = function()
 {
-	var lso;
+	var zfi, lso, str;
 	// test constructor style #1
 	//
 	var d = new Date();
@@ -181,55 +181,81 @@ ZinTestHarness.prototype.testLso = function()
 	        " " +
 			hyphenate(":", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 
-	var zfi1 = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334,
-	                           ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_REV, 1235);
-	var zfi2 = zinCloneObject(zfi1);
+	zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334, ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_REV, 1235);
+	lso = new Lso(zfi);
+	str = "##1234#1235#"
 
-	lso = new Lso(zfi1);
+	// test a zimbra zfi against an lso generated from a zfi
+	//
+	ZinTestHarness.testLsoToString(lso, str);
+	ZinTestHarness.testLsoCompareZm(lso, zfi);
 
-	var str = "##1234#1235#"
-
-	// this.m_logger.debug("testLso: lso == " + aToString(lso));
-	// this.m_logger.debug("testLso: lso.toString() == " + lso.toString());
-
-	zinAssert(lso.toString() == str);
-
-	ZinTestHarness.testLsoCompare(lso, zfi1);
-
+	// test a zimbra zfi against an lso generated from a string
+	//
 	lso = new Lso(str);
+	ZinTestHarness.testLsoToString(lso, str);
+	ZinTestHarness.testLsoCompareZm(lso, zfi);
 
-	zinAssert(lso.toString() == str);
+	// test a thunderbird zfi against an lso generated from a zfi
+	//
+	zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334, ZinFeedItem.ATTR_CS, 1749681802);
+	lso = new Lso(zfi);
+	str = "#1749681802###";
+	ZinTestHarness.testLsoToString(lso, str);
+	ZinTestHarness.testLsoCompareTb(lso, zfi);
 
-	ZinTestHarness.testLsoCompare(lso, zfi2);
-	
 	return true;
 }
 
-ZinTestHarness.testLsoCompare = function(lso, zfi)
+ZinTestHarness.testLsoToString = function(lso, str)
 {
-	// this.m_logger.debug("testLso: lso.compare(zfi) == " + lso.compare(zfi));
+	zinAssert(lso.toString() == str);
+}
 
+ZinTestHarness.testLsoCompareZm = function(lso, zfiOrig)
+{
+	var zfi;
+
+	zfi = zinCloneObject(zfiOrig)
 	zinAssert(lso.compare(zfi) == 0);  // test compare() == 0;
 
+	zfi = zinCloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1235);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
-	zfi.set(ZinFeedItem.ATTR_MS, 1234);
+	zfi = zinCloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_REV, 1236);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
-	zfi.set(ZinFeedItem.ATTR_MS, 1234);
-	zfi.set(ZinFeedItem.ATTR_REV, 1235);
+	zfi = zinCloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_DEL, 1);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
+	zfi = zinCloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1233);
 	zfi.set(ZinFeedItem.ATTR_REV, 1235);
 	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
 
+	zfi = zinCloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1234);
 	zfi.set(ZinFeedItem.ATTR_REV, 1232);
 	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
+}
+
+ZinTestHarness.testLsoCompareTb = function(lso, zfiOrig)
+{
+	var zfi;
+
+	zfi = zinCloneObject(zfiOrig)
+	zinAssert(lso.compare(zfi) == 0);  // test compare() == 0;
+
+	zfi = zinCloneObject(zfiOrig)
+	zfi.set(ZinFeedItem.ATTR_DEL, 1);
+	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+
+	zfi = zinCloneObject(zfiOrig)
+	zfi.set(ZinFeedItem.ATTR_CS, 1111111111111);
+	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 }
 
 ZinTestHarness.prototype.testLogging = function()

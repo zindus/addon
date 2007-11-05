@@ -854,7 +854,10 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 		for (id in functor.ids)
 			if (zfcZm.isPresent(id))
+			{
 				zfcZm.get(id).set(ZinFeedItem.ATTR_DEL, 1);
+				this.state.m_logger.debug("entryActionSyncResult: found a deleted id: " + id + " zfi: " + zfcZm.get(id).toString());
+			}
 
 		// At the end of all this:
 		// - our map points to subset of items on the server - basically all folders with @view='contact' and their contacts
@@ -1524,8 +1527,6 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 				var properties  = ZimbraAddressBook.getCardProperties(abCard);
 				var checksum    = ZimbraAddressBook.crc32(properties);
 
-				this.state.m_logger.debug("loadTbExclude pass 3: blah: checksum: " + checksum);
-
 				if (! (id > ZinFeedItem.ID_MAX_RESERVED)) // id might be null (not present) or zero (reset after the map was deleted)
 				{
 					id = ZinFeed.autoIncrement(zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
@@ -2042,7 +2043,7 @@ SyncFsm.prototype.buildGcs = function()
 
 		run: function(zfi)
 		{
-			buildgcs_msg = "buildGcs: selecting a winner for sourceid: " + sourceid;
+			buildgcs_msg = "\n  buildGcs: candidate sourceid: " + sourceid;
 
 			if (SyncFsm.isOfInterest(this.state.sources[sourceid]['zfcLuid'], zfi.id()))
 			{
@@ -2081,7 +2082,7 @@ SyncFsm.prototype.buildGcs = function()
 						return true;
 
 					var zfi = aZfcCandidate[sourceid].get(luid);
-					var msg = "  buildGcs: compare: sourceid: " + sourceid + " zfi: " + zfi.toString();
+					var msg = "  buildGcs: compare:  sourceid: " + sourceid + " zfi: " + zfi.toString();
 
 					if (!zfi.isPresent(ZinFeedItem.ATTR_LS))
 					{
@@ -2279,10 +2280,12 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 			case Gcs.CONFLICT:
 			{
 				var sourceid_winner = aGcs[gid].sourceid;
-				var zfcWinner = this.state.sources[sourceid_winner]['zfcLuid'];
-				var zfcTarget = this.state.sources[sourceid]['zfcLuid'];
-				var luid_winner = zfcGid.get(gid).get(sourceid_winner);
-				var zfiWinner = zfcWinner.get(luid_winner);
+				var zfcWinner       = this.state.sources[sourceid_winner]['zfcLuid'];
+				var zfcTarget       = this.state.sources[sourceid]['zfcLuid'];
+				var luid_winner     = zfcGid.get(gid).get(sourceid_winner);
+				var zfiWinner       = zfcWinner.get(luid_winner);
+				var zfiTarget       = zfcGid.get(gid).isPresent(sourceid) ? zfcTarget.get(zfcGid.get(gid).get(sourceid)) : null;
+				var is_delete_pair  = false;
 
 				if (!zfcGid.get(gid).isPresent(sourceid))
 				{
@@ -2299,10 +2302,18 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 				else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
 					msg += " lso and version match gid - do nothing";
 				else if (zfiWinner.isPresent(ZinFeedItem.ATTR_DEL))
-					suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
+				{
+					if (!zfiTarget.isPresent(ZinFeedItem.ATTR_DEL))
+						suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
+					else
+					{
+						is_delete_pair = true;
+						msg += " - winner deleted but loser had also been deleted - do nothing";
+					}
+				}
 				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.id()))
 					suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
-				else if (zfcTarget.get(zfcGid.get(gid).get(sourceid)).isPresent(ZinFeedItem.ATTR_DEL))
+				else if (zfiTarget.isPresent(ZinFeedItem.ATTR_DEL))
 				{
 					msg += " - winner modified but loser had been deleted - ";
 					suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
@@ -2310,7 +2321,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 				else
 					suo = new Suo(gid, sourceid_winner, sourceid, Suo.MOD);
 
-				if (aGcs[gid].state == Gcs.CONFLICT)
+				if (aGcs[gid].state == Gcs.CONFLICT && !is_delete_pair)
 				{
 					zinAssert(suo);
 
@@ -2670,7 +2681,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					//
 					msg += " - parent folder hasn't changed";
 
-					zinAssert(isPropertyPresent(this.state.aSyncContact, luid_winner));
+					zinAssert(isPropertyPresent(this.state.aSyncContact, luid_winner), "luid_winner: " + luid_winner);
 
 					uri    = ZimbraAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
 					// this.state.m_logger.debug("entryActionUpdateTb: uri: " + uri + " luid_target: " + luid_target);
@@ -3278,7 +3289,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 	// this.state.m_logger.debug("entryActionUpdateCleanup: zfcZm: " + this.state.sources[this.state.sourceid_zm]['zfcLuid'].toString());
 	// this.state.m_logger.debug("entryActionUpdateCleanup: zfcGid: " + this.state.zfcGid.toString());
 
-	//  delete the luid item if (thunderbird: it has a DEL attribute) or (zimbra: it's not of interest)
+	//  delete the luid item if it has a DEL attribute or (zimbra: it's not of interest)
 	//  delete the mapping between a gid and an luid when the luid is not of interest
 	//
 	
@@ -3292,7 +3303,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 
 			// delete luids and their link to the gid when ZinFeedItem.ATTR_DEL is set
 			//
-			if ( (this.state.sources[sourceid]['format'] == FORMAT_TB && zfi.isPresent(ZinFeedItem.ATTR_DEL)) ||
+			if ( zfi.isPresent(ZinFeedItem.ATTR_DEL) ||
 			     (this.state.sources[sourceid]['format'] == FORMAT_ZM && !SyncFsm.isOfInterest(zfc, zfi.id())) )
 			{
 				zfc.del(luid);
@@ -3723,8 +3734,6 @@ SyncFsm.prototype.handleAsyncResponse = function (response, soapCall, error, con
 	}
 	else 
 	{
-		context.state.m_logger.debug("handleAsyncResponse: response.version is " + response.version);
-
 		if (response.fault != null)
 		{ 
 			soapstate.faultLoadFromSoapFault(response.fault);
@@ -3822,7 +3831,7 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 		nextEvent = 'evCancel';
 	}
 
-	this.state.m_logger.debug("entryActionSoapResponse: calls continuation with: " + nextEvent);
+	// this.state.m_logger.debug("entryActionSoapResponse: calls continuation with: " + nextEvent);
 
 	continuation(nextEvent); // the state that this corresponds to in the transitions table was set by setupSoapCall()
 }

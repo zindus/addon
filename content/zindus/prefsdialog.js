@@ -45,10 +45,10 @@ function Prefs()
 	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
 	this.m_timeoutID           = null;
-
+	this.m_maestro             = null;
 	this.m_is_fsm_running      = false;
 	this.m_logger              = newZinLogger("Prefs");
-	this.m_maestro             = null;
+	this.m_logger.level(ZinLogger.NONE);
 
 	var preferences = new MozillaPreferences();
 	this.is_developer_mode     = (preferences.getCharPrefOrNull(preferences.branch(), "system.developer_mode") == "true");
@@ -276,7 +276,6 @@ Prefs.prototype.updateView = function()
 
 	if (this.m_is_fsm_running)
 	{
-		this.m_logger.debug("updateView: fsm running");
 		document.getElementById("zindus-prefs-cmd-sync").setAttribute('disabled', true);
 	}
 	else if (!this.isServerSettingsComplete())
@@ -300,7 +299,7 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 	if (fsmstate && ! fsmstate.isFinal())
 	{
-		this.m_logger.debug("onFsmStateChangeFunctor: fsm is running");
+		// this.m_logger.debug("onFsmStateChangeFunctor: fsm is running");
 		this.m_is_fsm_running = true;
 		this.updateView();
 	}

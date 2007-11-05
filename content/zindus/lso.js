@@ -89,7 +89,9 @@ Lso.prototype.toString = function()
 //	  * the ms and rev attributes equal the corresponding parts of the ls attribute and 
 //      the DEL attribute is different from the DEL part of the ls attribute 
 //  * if the cs part isn't empty (and the ms part is):
-//    * the cs  attribute is different from the corresponding part of the ls attribute
+//    * the cs attribute is different from the corresponding part of the ls attribute or
+//    * the cs attributes is the same as the corresponding parts of the ls attribute and
+//      the DEL attribute is different from the DEL part of the ls attribute 
 // returns -1 otherwise
 //
 Lso.prototype.compare = function(zfi)
@@ -117,7 +119,8 @@ Lso.prototype.compare = function(zfi)
 		if (this.m_properties[CS] != "") zinAssert(this.m_properties[MS] == "");
 
 		if (this.m_properties[CS] != "")
-			isGreaterThan = (Lso.normalise(zfi, CS) != this.m_properties[CS]);
+			isGreaterThan = (Lso.normalise(zfi, CS) != this.m_properties[CS]) ||
+				  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL]) ;
 		else
 			isGreaterThan =
 			            (Lso.normalise(zfi, MS)  > this.m_properties[MS])  ||
