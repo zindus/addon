@@ -27,7 +27,7 @@ function zinAssert(expr)
 	{
 		try
 		{
-			throw new Error("Internal error in extension: assert failed");
+			throw new Error("Please report this assertion failure (include filenames and line numbers) to support@zindus.com: ");
 		}
 		catch(ex)
 		{

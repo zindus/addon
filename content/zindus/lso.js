@@ -52,7 +52,10 @@ function Lso(arg)
 	}
 }
 
-Lso.aPartsZfi = [ ZinFeedItem.ATTR_MS, ZinFeedItem.ATTR_MD, ZinFeedItem.ATTR_DEL ];
+// MS and REV drive  change detection for zimbra
+// CS         drives change detection for thunderbird
+//
+Lso.aPartsZfi = [ ZinFeedItem.ATTR_CS, ZinFeedItem.ATTR_MS, ZinFeedItem.ATTR_REV, ZinFeedItem.ATTR_DEL ];
 Lso.aPartsAll = [ ZinFeedItem.ATTR_VER ].concat(Lso.aPartsZfi);
 
 Lso.normalise = function(zfi, attr)
@@ -80,10 +83,13 @@ Lso.prototype.toString = function()
 // returns 0 ==> the properties in this object match the corresponding properties in the zfi.
 // returns 1 ==> the properties in the zfi suggest that it's newer than the properties in this object.
 //  By "suggest", we mean:
-//	* the ms attribute is greater than the ms part of the ls attribute or
-//	* the md attribute is greater than the md part of the ls attribute or
-//	* the ms and md attributes equal the corresponding parts of the ls attribute and 
-//    the DEL attribute is different from the DEL part of the ls attribute 
+//  * if the ms and rev parts aren't empty (and the cs part is):
+//	  * the ms  attribute is greater than the ms  part of the ls attribute or
+//	  * the rev attribute is greater than the rev part of the ls attribute or
+//	  * the ms and rev attributes equal the corresponding parts of the ls attribute and 
+//      the DEL attribute is different from the DEL part of the ls attribute 
+//  * if the cs part isn't empty (and the ms part is):
+//    * the cs  attribute is different from the corresponding part of the ls attribute
 // returns -1 otherwise
 //
 Lso.prototype.compare = function(zfi)
@@ -101,13 +107,27 @@ Lso.prototype.compare = function(zfi)
 	}
 
 	if (!isExactMatch)
-		isGreaterThan = (Lso.normalise(zfi, ZinFeedItem.ATTR_MS) > this.m_properties[ZinFeedItem.ATTR_MS]) ||
-		                (Lso.normalise(zfi, ZinFeedItem.ATTR_MD) > this.m_properties[ZinFeedItem.ATTR_MD]) ||
+	{
+		var MS  = ZinFeedItem.ATTR_MS;
+		var CS  = ZinFeedItem.ATTR_CS;
+		var REV = ZinFeedItem.ATTR_REV;
+		var DEL = ZinFeedItem.ATTR_DEL;
+
+		if (this.m_properties[MS] != "") zinAssert(this.m_properties[CS] == "");
+		if (this.m_properties[CS] != "") zinAssert(this.m_properties[MS] == "");
+
+		if (this.m_properties[CS] != "")
+			isGreaterThan = (Lso.normalise(zfi, CS) != this.m_properties[CS]);
+		else
+			isGreaterThan =
+			            (Lso.normalise(zfi, MS)  > this.m_properties[MS])  ||
+		                (Lso.normalise(zfi, REV) > this.m_properties[REV]) ||
 		                ( 
-							(Lso.normalise(zfi, ZinFeedItem.ATTR_MD) == this.m_properties[ZinFeedItem.ATTR_MD]) &&
-		                  	(Lso.normalise(zfi, ZinFeedItem.ATTR_MS) == this.m_properties[ZinFeedItem.ATTR_MS]) &&
-				  			(Lso.normalise(zfi, ZinFeedItem.ATTR_DEL) != this.m_properties[ZinFeedItem.ATTR_DEL])
+							(Lso.normalise(zfi, MS) == this.m_properties[MS]) &&
+		                  	(Lso.normalise(zfi, REV) == this.m_properties[REV]) &&
+				  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL])
 						);
+	}
 
 	if (isExactMatch)
 		ret = 0;

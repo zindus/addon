@@ -644,9 +644,9 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		nextEvent = 'evCancel';
 	else
 	{
-		var response  = this.state.m_soap_state.m_response;
+		var response = this.state.m_soap_state.m_response;
 		var sourceid = this.state.sourceid_zm;
-		var zfcServer = this.state.sources[sourceid]['zfcLuid'];
+		var zfcZm    = this.state.sources[sourceid]['zfcLuid'];
 		var id, functor, xpath_query;
 
 		ZinXpath.setConditional(this.state, 'SyncMd',    "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::md",    response, null);
@@ -682,15 +682,15 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 				var attribute = attributesFromNode(node);
 				var id = attribute['id'];
 				var l  = attribute['l'];
-				var msg = "111113 - found a <folder id='" + id +"' l='" + l + "'>";
+				var msg = "entryActionSyncResult: found a <folder id='" + id +"' l='" + l + "'>";
 
 				if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
 					this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
 				else
 				{
-					if (zfcServer.isPresent(id))
+					if (zfcZm.isPresent(id))
 					{
-						zfcServer.get(id).set(attribute);  // update existing item
+						zfcZm.get(id).set(attribute);  // update existing item
 						msg += " - updated id in map";
 					}
 					else if (l == '1')
@@ -702,7 +702,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 						}
 						else
 						{
-							zfcServer.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, attribute));  // add new item
+							zfcZm.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, attribute));  // add new item
 							msg += " - adding folder to map";
 						}
 					}
@@ -730,6 +730,9 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		//               in which case the id get added to the map in GetContactResponse
 		//
 
+		var change = new Object();
+		ZinXpath.setConditional(change, 'token', "/soap:Envelope/soap:Header/z:context/z:change/attribute::token", response, null);
+
 		xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:cn[not(@ids) and not(@type='group')]";
 
 		functor = {
@@ -740,7 +743,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 				var attribute = attributesFromNode(node);
 				var id = attribute['id'];
 				var l  = attribute['l'];
-				var msg = "11113 - found a <cn id='" + id +"' l='" + l + "'>";
+				var msg = "entryActionSyncResult: found a <cn id='" + id +"' l='" + l + "'>";
 				
 				// if the rev attribute is different from that in the map, it means a content change is pending so add the id to the queue,
 				// otherwise just add it to the map
@@ -752,24 +755,38 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 				{
 					var fAddToTheQueue = false;
 
-					if (!zfcServer.isPresent(id))
+					if (!zfcZm.isPresent(id))
 					{
 						fAddToTheQueue = true;
 						msg += " - first time it's been seen ";
 					}
 					else
 					{
-						var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcServer, id);
+						var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcZm, id);
 
-						var isRevChange = !isPropertyPresent(attribute, ZinFeedItem.ATTR_REV) ||
-										  !zfcServer.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
-										  attribute[ZinFeedItem.ATTR_REV] != zfcServer.get(id).get(ZinFeedItem.ATTR_REV);
+						// When we update a contact on the server the <ModifyContactResponse> includes a rev attribute (which we store)
+						// the next <SyncResponse> includes a <cn> element for the contact but without a rev attribute -
+						// perhaps because it already gave the client the rev attribute with the <ModifyContactResponse>.
+						// In the absence of a rev attribute on the <cn> element we use the change token to decide whether
+						// our rev of the contact is the same as that on the server.
+						// Note: <SyncResponse> also has a token="" attribute - no idea whether this merely duplicates the change token
+						// or whether it serves a different purpose
+						//
+						var rev_attr = null;
+						if (isPropertyPresent(attribute, ZinFeedItem.ATTR_REV))
+							rev_attr = attribute[ZinFeedItem.ATTR_REV];
+						else if (isPropertyPresent(change, 'token'))
+							rev_attr = change['token'];
 
-						zfcServer.get(id).set(attribute);
+						var isRevChange = !rev_attr ||
+										  !zfcZm.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
+										  rev_attr != zfcZm.get(id).get(ZinFeedItem.ATTR_REV);
+
+						zfcZm.get(id).set(attribute);
 
 						msg += " - updated id in map";
 
-						var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcServer, id);
+						var isInterestingPostUpdate = SyncFsm.isOfInterest(zfcZm, id);
 
 						if (!isRevChange && isInterestingPostUpdate && !isInterestingPreUpdate)
 						{
@@ -836,8 +853,8 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		ZinXpath.runFunctor(functor, xpath_query, response);
 
 		for (id in functor.ids)
-			if (zfcServer.isPresent(id))
-				zfcServer.get(id).set(ZinFeedItem.ATTR_DEL, 1);
+			if (zfcZm.isPresent(id))
+				zfcZm.get(id).set(ZinFeedItem.ATTR_DEL, 1);
 
 		// At the end of all this:
 		// - our map points to subset of items on the server - basically all folders with @view='contact' and their contacts
@@ -903,7 +920,7 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 
 	var xpath_query = "/soap:Envelope/soap:Body/zm:GetContactsResponse/zm:cn";
 	var functor     = new FunctorArrayOfContactsFromNodes(ZinXpath.nsResolver("zm")); // see <cn> above
-	var zfcServer   = this.state.sources[this.state.sourceid_zm]['zfcLuid'];
+	var zfcZm       = this.state.sources[this.state.sourceid_zm]['zfcLuid'];
 
 	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
 
@@ -922,15 +939,15 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 			if (this.state.aQueue[id])
 			{
 				if (functor.a[i].isMailList())
-					; // zfcServer.set(new ZinFeedItem(FEED_ITEM_TYPE_DL, functor.a[i].attribute)); // ignore mailing lists (for the moment)
+					; // zfcZm.set(new ZinFeedItem(FEED_ITEM_TYPE_DL, functor.a[i].attribute)); // ignore mailing lists (for the moment)
 				else
 				{
 					this.state.aSyncContact[id] = functor.a[i];
 
-					if (zfcServer.isPresent(id))
-						zfcServer.get(id).set(functor.a[i].attribute);                                // update existing item
+					if (zfcZm.isPresent(id))
+						zfcZm.get(id).set(functor.a[i].attribute);                                // update existing item
 					else
-						zfcServer.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, functor.a[i].attribute));  // add new item
+						zfcZm.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, functor.a[i].attribute));  // add new item
 
 					// this.state.m_logger.debug("111119: added this.state.aSyncContact[" + id + "] == " + this.state.aSyncContact[id]);
 				}
@@ -1148,10 +1165,7 @@ SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation
 
 SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 {
-	var aUri;
-	var passed;
 	var zfcTb = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
-	var tb_emailed_contacts = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, ZM_EMAILED_CONTACTS);
 
 	// A big decision in simplifying this code was the decision to give up convergence
 	// Now, if there's a problem we just abort the sync and the user has to fix it.
@@ -1162,19 +1176,23 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	stopwatch.mark("1");
 	var zfcTbPreMerge = zinCloneObject(zfcTb);                 // 1. remember the tb luid's before merge so that we can follow changes
 	stopwatch.mark("2");
-	aUri = this.loadTbMergeZfcWithAddressBook();               // 2. merge the current tb luid map with the current addressbook(s)
+	var aUri = this.loadTbMergeZfcWithAddressBook();           // 2. merge the current tb luid map with the current addressbook(s)
 	stopwatch.mark("3");
 	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);  // 3. exclude mailing lists and their cards
 	stopwatch.mark("4");
-	passed = this.loadTbTestFolderNameRules();                 // 4. test for duplicate folder names, reserved names, illegal chars
+	var passed = this.loadTbTestFolderNameRules();             // 4. test for duplicate folder names, reserved names, illegal chars
 	stopwatch.mark("5");
+
+	passed = passed && this.loadTbTestReservedFolderPresent(TB_PAB);
+	stopwatch.mark("6");
 
 	if (!this.state.isSlowSync)
 	{
 		passed = passed && this.loadTbTestReservedFolderInvariant(zfcTbPreMerge, TB_PAB);
-		stopwatch.mark("6");
+		stopwatch.mark("7");
 
 		// early versions of the zimbra server didn't have an Emailed Contacts addressbook - leave out checking for now
+		// var tb_emailed_contacts = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, ZM_EMAILED_CONTACTS);
 		//
 		// passed = passed && this.loadTbTestReservedFolderInvariant(zfcTbPreMerge, tb_emailed_contacts);
 	}
@@ -1187,21 +1205,35 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
+SyncFsm.prototype.loadTbTestReservedFolderPresent = function(name)
+{
+	var zfcTb = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
+	var a = this.loadTbLookupFolderInZfc(zfcTb, name);
+	var id = 0;
+
+	if (!a[id] || zfcTb.get(a[id]).isPresent(ZinFeedItem.ATTR_DEL))
+	{
+		this.state.stopFailCode   = 'FailOnFolderMustBePresent';
+		this.state.stopFailDetail = name;
+	}
+
+	return this.state.stopFailCode == null;
+}
+
 SyncFsm.prototype.loadTbTestReservedFolderInvariant = function(zfcTbPre, name)
 {
 	var idPre, idPost, prefidPre, prefidPost;
 	var zfcTbPost = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
+	var id = 0;
+	var prefid = 1;
 
 	zinAssert(!this.state.stopFailCode && !this.state.isSlowSync);
 
 	var pre  = this.loadTbLookupFolderInZfc(zfcTbPre, name);
 	var post = this.loadTbLookupFolderInZfc(zfcTbPost, name);
 
-	var id = 0;
-	var prefid = 1;
-
 	this.state.m_logger.debug("loadTbTestPab: name: " + name +
-		" pre[id]: " + pre[id] + " post[id]: " + post[id] +
+		" pre[id]: " + pre[id] + " post[id]: " + post[id] + 
 		" pre[prefid]: " + pre[prefid] + " post[prefid]: " + post[prefid]);
 
 	if (!post[id] || pre[prefid] != post[prefid])    // no folder by this name or it changed since last sync
@@ -1342,8 +1374,8 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 				{
 					id = mapTbFolderTpiToId[elem.dirPrefId];
 
-					// the mozilla addressbook hasn't implemented elem.lastModifiedDate (for folders)
-					// so we do our own change detection
+					// the mozilla addressbook doesn't offer anything useful for change detection for addressbooks so we do our own...
+					// 
 
 					var zfi = zfcTb.get(id);
 
@@ -1406,7 +1438,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	var zfcTb = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
 
 	functor_foreach_card = {
-		state: this.state, // for logger only - TODO remove after debugged
+		state: this.state, // for logger only
 		run: function(uri, item)
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
@@ -1480,11 +1512,11 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 			}
 
-			// this.state.m_logger.debug("loadTbExclude pass 3: blah: " +
-			//                          " uri: " + uri +
-			//                          " key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard) +
-			//                          " card: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) +
-			//                          " isInTopLevelFolder: " + isInTopLevelFolder );
+			// this.state.m_logger.debug("loadTbExclude pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
+			//                           " key: " + ZimbraAddressBook.nsIAbMDBCardToKey(mdbCard) +
+			//                           " card: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) +
+			//                           " properties: " + aToString(ZimbraAddressBook.getCardProperties(abCard)) +
+			//                           " checksum: " + ZimbraAddressBook.crc32(ZimbraAddressBook.getCardProperties(abCard)));
 
 			if (isInTopLevelFolder)
 			{
@@ -1501,13 +1533,8 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, id);
 					mdbCard.editCardToDatabase(uri);
 
-					// zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id, ZinFeedItem.ATTR_MD, abCard.lastModifiedDate,
-					//                   ZinFeedItem.ATTR_REV, 1, 'l', aUri[uri]));
-
-					// TODO - this is a hack to use checksum instead of lastModifiedDate for change detection
-					// 
-					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id, ZinFeedItem.ATTR_MD, checksum,
-					                   ZinFeedItem.ATTR_REV, 1, 'l', aUri[uri]));
+					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id, ZinFeedItem.ATTR_CS, checksum,
+					                   'l', aUri[uri]));
 
 					msg += " added:   " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfcTb.get(id).toString();
 				}
@@ -1519,25 +1546,16 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 					// if things have changed, update the map...
 					//
-					if (zfi.get('l') != aUri[uri] || zfi.get(ZinFeedItem.ATTR_MD) != checksum)
+					if (zfi.get('l') != aUri[uri] || zfi.get(ZinFeedItem.ATTR_CS) != checksum)
 					{
-						// abCard.lastModifiedDate is a bit flaky...
-						// 1. it is set to '0' when the contact is first created
-						// 2. moving a contact to a different folder then back resets lastModifiedDate to zero
-						//    so someone could create it, sync, move it to a different folder, change it, move it back
-						//    and it'd look as if there was no change.
-						//    This scenario might have been be a problem - except that a card's attributes aren't preserved
-						//    when it's moved from one folder to another.  So this scenario would get handled as a delete+add.
-
 						var reason = " reason: ";
 						if (zfi.get('l') != aUri[uri])
 							reason += " parent folder changed: l:" + zfi.get('l') + " aUri[uri]: " + aUri[uri];
-						if (zfi.get(ZinFeedItem.ATTR_MD) != abCard.lastModifiedDate)
-							reason += " lastModifiedDate changed: md: " + zfi.get(ZinFeedItem.ATTR_MD) + " lastModifiedDate: " + abCard.lastModifiedDate;
+						if (zfi.get(ZinFeedItem.ATTR_CS) != checksum)
+							reason += " checksum changed: cs: " + zfi.get(ZinFeedItem.ATTR_CS) + " checksum: " + checksum;
 
-						zfi.set(ZinFeedItem.ATTR_MD, abCard.lastModifiedDate);
+						zfi.set(ZinFeedItem.ATTR_CS, checksum);
 						zfi.set('l', aUri[uri]);
-						ZinFeed.autoIncrement(zfi, ZinFeedItem.ATTR_REV);
 
 						msg += " changed: " + ZimbraAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
 						msg += reason;
@@ -1581,7 +1599,6 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			{
 				zfi.set(ZinFeedItem.ATTR_DEL, 1);
 				this.state.m_logger.debug("loadTbExclude - marking as deleted: " + zfi.toString());
-				ZinFeed.autoIncrement(zfi, (zfi.type() == ZinFeedItem.TYPE_FL) ? ZinFeedItem.ATTR_MS : ZinFeedItem.ATTR_REV);
 			}
 
 			return true;
@@ -1788,17 +1805,19 @@ SyncFsm.prototype.updateGidFromSources = function()
 				else
 				{
 					zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
-					zinAssert(zfi.isPresent(ZinFeedItem.ATTR_CS));
-					var checksum = zfi.get(ZinFeedItem.ATTR_CS);
+					zinAssert(isPropertyPresent(aChecksum, sourceid) && isPropertyPresent(aChecksum[sourceid], luid));
+
+					var checksum    = aChecksum[sourceid][luid];
 					var luid_parent = zfi.get('l');
 					var name_parent = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB,
 					                                                                   zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
 
 					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
+					this.state.m_logger.debug("functor_foreach_luid_slow_sync: testing twin key: " + key);
 
-					if (isPropertyPresent(aChecksum, key) && aToLength(aChecksum[key]) > 0)
-						for (var luid_possible in aChecksum[key])
-							if (aChecksum[key][luid_possible] && this.context.isTwin(this.state.sourceid_tb, sourceid, luid_possible, luid))
+					if (isPropertyPresent(aHasChecksum, key) && aToLength(aHasChecksum[key]) > 0)
+						for (var luid_possible in aHasChecksum[key])
+							if (aHasChecksum[key][luid_possible] && this.context.isTwin(this.state.sourceid_tb, sourceid, luid_possible, luid))
 							{
 								luid_tb = luid_possible;
 								break;
@@ -1809,7 +1828,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 						gid = this.context.twinInGid(sourceid, luid, this.state.sourceid_tb, luid_tb, reverse);
 						msg += " twin: contact with tb luid: " + luid_tb + " at gid: " + gid;
 
-						delete aChecksum[key][luid_tb];
+						delete aHasChecksum[key][luid_tb];
 					}
 					else
 					{
@@ -1852,12 +1871,11 @@ SyncFsm.prototype.updateGidFromSources = function()
 				checksum = ZimbraAddressBook.crc32(properties);
 				var key = hyphenate('-', sourceid, name_parent, checksum);
 
-				if (!isPropertyPresent(aChecksum, key))
-					aChecksum[key] = new Object();
+				if (!isPropertyPresent(aHasChecksum, key))
+					aHasChecksum[key] = new Object();
 
-				aChecksum[key][luid] = true;
-
-				zfi.set(ZinFeedItem.ATTR_CS, checksum);
+				aHasChecksum[key][luid] = true;
+				aChecksum[sourceid][luid] = checksum;
 			}
 
 			// this.state.m_logger.debug("do_checksum: sourceid: " + sourceid + " luid: " + luid +
@@ -1872,19 +1890,24 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 	if (this.state.isSlowSync)
 	{
-		var aChecksum = new Object(); // aChecksum[sourceid][checksum][luid] = true;
+		var aHasChecksum = new Object(); // aHasChecksum[key][luid]   = true;
+		var aChecksum = new Object();    // aChecksum[sourceid][luid] = checksum;
 
 		for (sourceid in this.state.sources)
 		{
 			zfc = this.state.sources[sourceid]['zfcLuid'];
+			aChecksum[sourceid] = new Object();
 
 			this.state.m_logger.debug("about to run functor_foreach_luid_do_checksum for sourceid: " + sourceid);
 			zfc.forEach(functor_foreach_luid_do_checksum, SyncFsm.forEachFlavour(this.state.sources[sourceid]['format']));
 		}
 
-		// this.state.m_logger.debug("updateGidFromSources: aChecksum: ");
-		// for (var key in aChecksum)
-		// 	this.state.m_logger.debug("   key: " + key + " : " + aChecksum[key]);
+		// this.state.m_logger.debug("updateGidFromSources: aHasChecksum: ");
+		// for (var key in aHasChecksum)
+		// 	this.state.m_logger.debug("aHasChecksum  key: " + key + ": " + aHasChecksum[key]);
+		// for (sourceid in this.state.sources)
+		//	for (var luid in aChecksum[sourceid])
+		// 		this.state.m_logger.debug("aChecksum sourceid: " + sourceid + " luid: " + luid + ": " + aChecksum[sourceid][luid]);
 	}
 
 	for (sourceid in this.state.sources)
@@ -2014,7 +2037,8 @@ SyncFsm.prototype.buildGcs = function()
 
 	var buildgcs_msg;
 	var functor_foreach_candidate = {
-		state: this.state,
+		context: this,
+		state:   this.state,
 
 		run: function(zfi)
 		{
@@ -2042,13 +2066,14 @@ SyncFsm.prototype.buildGcs = function()
 		compare: function(gid)
 		{
 			var aNeverSynced   = new Object();
-			var aChangeOfNote  = new Object(); // not any old change, but a change where the ms or md attributes incremented
+			var aChangeOfNote  = new Object();
 			var aVerMatchesGid = new Object();
 			var ret = null;
 			var msg = "";
 
 			var functor_each_luid_in_gid = {
-				state: this.state,
+				context: this.context,
+				state:   this.state,
 
 				run: function(sourceid, luid)
 				{
@@ -2070,9 +2095,6 @@ SyncFsm.prototype.buildGcs = function()
 
 						if (lso.get(ZinFeedItem.ATTR_VER) == zfcGid.get(gid).get(ZinFeedItem.ATTR_VER))
 						{
-							// TODO - why is this only tested if the gid's VER attribute matches that in the lso?
-							// in other words, when can they not match?
-							//
 							var res = lso.compare(zfi);
 
 							if (res == 0)
@@ -2084,6 +2106,13 @@ SyncFsm.prototype.buildGcs = function()
 							{
 								aChangeOfNote[sourceid] = true;
 								msg += " added to aChangeOfNote";
+
+								dump("am here 1\n");
+								// sanity check that the Contact folder hasn't changed - it's supposed to be immutable (isn't it?)
+								//
+								if (this.state.sources[sourceid]['zfcLuid'].get(luid).type() == ZinFeedItem.TYPE_FL)
+									zinAssert(this.context.shortLabelForLuid(sourceid, luid, FORMAT_TB) != TB_PAB);
+								dump("am here 2\n");
 							}
 						}
 
@@ -2291,14 +2320,23 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 					var source_name_loser  = this.state.sources[sourceid]['name'];
 					var format_winner      = this.state.sources[sourceid_winner]['format'];
 					var item               = (zfiWinner.type() == ZinFeedItem.TYPE_CN ? "contact" : "addressbook");
+					var short_label_winner = this.shortLabelForLuid(sourceid_winner, luid_winner, FORMAT_TB);
 
-					conflict_msg += "conflict: " + item + ": " +
-					                this.shortLabelForLuid(sourceid_winner, luid_winner, FORMAT_TB) +
+					conflict_msg += "conflict: " + item + ": " + short_label_winner +
 									" on " + source_name_winner +
 									" wins and " + item + " on " + source_name_loser +
 									" is " + Suo.opcodeAsStringPastTense(suo.opcode);
 
 					this.state.aConflicts.push(conflict_msg);
+
+					// sanity check that PAB and Contacts are never in conflict
+					//
+					if (zfiWinner.type() == ZinFeedItem.TYPE_FL)
+					{
+						var luid_loser         = zfcGid.get(gid).get(sourceid);
+						var short_label_loser  = this.shortLabelForLuid(sourceid, luid_loser, FORMAT_TB);
+						zinAssert(short_label_winner != TB_PAB && short_label_loser != TB_PAB);
+					}
 				}
 
 				break;
@@ -2528,12 +2566,16 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 		zfiGid      = zfcGid.get(gid);
 		zfiWinner   = zfcWinner.get(luid_winner);
 		luid_target = null;  // if non-null at the bottom of loop, it means that a change was made
+		properties  = null;
 		msg = "";
 
 		this.state.m_logger.debug("entryActionUpdateTb: acting on suo: - opcode: " + Suo.opcodeAsString(SORT_ORDER[i] & Suo.MASK)
 			+ " type: " + ZinFeedItem.typeAsString(SORT_ORDER[i] & ZinFeedItem.TYPE_MASK)
 			+ " suo: "  + this.state.aSuo[this.state.sourceid_tb][SORT_ORDER[i]][indexSuo].toString());
 
+
+		if (SORT_ORDER[i] & ZinFeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
+			zinAssert(zfiWinner.get(ZinFeedItem.ATTR_NAME) != TB_PAB && zfiWinner.get(ZinFeedItem.ATTR_NAME) != ZM_CONTACTS);
 
 		switch(SORT_ORDER[i])
 		{
@@ -2555,6 +2597,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 				attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
 				properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+				var checksum    = ZimbraAddressBook.crc32(properties);
 
 				msg += " properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
@@ -2569,8 +2612,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				// msg += " l_winner: " + l_winner + " l_gid: " + l_gid + " l_target: " + l_target + " parent uri: " + uri;
 
 				zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, luid_target ,
-				                                                   ZinFeedItem.ATTR_MD, abCard.lastModifiedDate,
-				                                                   ZinFeedItem.ATTR_REV, 1,
+				                                                   ZinFeedItem.ATTR_CS, checksum,
 				                                                   'l', l_target));
 
 				zfiGid.set(sourceid_target, luid_target);
@@ -2686,7 +2728,11 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				}
 
 				if (abCard)
-					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, luid_target , ZinFeedItem.ATTR_MD, abCard.lastModifiedDate, ZinFeedItem.ATTR_REV, 1, 'l', l_target));  // rev gets reset to 1 on each modification - no big deal
+				{
+					zinAssert(properties);
+					var checksum    = ZimbraAddressBook.crc32(properties);
+					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, luid_target , ZinFeedItem.ATTR_CS, checksum, 'l', l_target));
+				}
 				else
 				{
 					luid_target = null;
@@ -2752,8 +2798,6 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				luid_target     = zfiGid.get(sourceid_target);
 				var name_target = this.getTbAddressbookNameFromLuid(sourceid_target, luid_target);
 				uri             = ZimbraAddressBook.getAddressBookUri(name_target);
-
-				zinAssert(name != TB_PAB); // just a sanity thing in case something wierd happens elsewhere
 
 				if (uri)
 				{
@@ -2863,6 +2907,9 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		zfiWinner       = zfcWinner.get(luid_winner);
 		l_winner        = zfiWinner.get('l');
 
+		if (SORT_ORDER[i] & ZinFeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
+			zinAssert(zfiWinner.get(ZinFeedItem.ATTR_NAME) != TB_PAB && zfiWinner.get(ZinFeedItem.ATTR_NAME) != ZM_CONTACTS);
+
 		switch(SORT_ORDER[i])
 		{
 			case Suo.ADD | ZinFeedItem.TYPE_FL:
@@ -2912,7 +2959,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 					var zfi = this.state.zfcPreUpdateWinners.get(suo.gid);
 					var lso = new Lso(zfi.get(ZinFeedItem.ATTR_LS));
 
-					soapMethod = (zfi.get(ZinFeedItem.ATTR_MD) > lso.get(ZinFeedItem.ATTR_MD)) ? "ModifyContact" : "ContactAction";
+					soapMethod = (zfi.get(ZinFeedItem.ATTR_REV) > lso.get(ZinFeedItem.ATTR_REV)) ? "ModifyContact" : "ContactAction";
 				}
 
 				if (soapMethod == "ModifyContact")
@@ -3210,8 +3257,13 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 	}
 	else
 	{
-		var zc = this.state.aSyncContact[luid_winner]; // the ZimbraContact object that arrived via GetContactResponse
-		ret = ZinContactConverter.instance().convert(format_to, FORMAT_ZM, zc.element);
+		if (isPropertyPresent(this.state.aSyncContact, luid))
+		{
+			var zc = this.state.aSyncContact[luid]; // the ZimbraContact object that arrived via GetContactResponse
+			ret = ZinContactConverter.instance().convert(format_to, FORMAT_ZM, zc.element);
+		}
+		else
+			ret = "contact sourceid: " + sourceid + " luid: " + luid;
 	}
 
 	return ret;
@@ -3486,9 +3538,6 @@ SyncFsm.compareToolkitVersionStrings = function(string_a, string_b)
 		var part_int_a = parseInt(part_string_a, 10);
 		var part_int_b = parseInt(part_string_b, 10);
 
-		newZinLogger("blah").debug("compareToolkitVersionStrings: " + "part_string_a: " + part_string_a + 
-		                                "part_int_a.toString: " + part_int_a.toString());
-
 		zinAssert(part_int_a.toString() == part_string_a); // assert that the parts really are only numbers
 		zinAssert(part_int_b.toString() == part_string_b); // otherwise, our simplified comparison here is no good
 
@@ -3498,7 +3547,7 @@ SyncFsm.compareToolkitVersionStrings = function(string_a, string_b)
 			ret = -1;
 	}
 
-	newZinLogger("blah").debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
+	newZinLogger("").debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
 
 	return ret;
 }
@@ -3555,8 +3604,6 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	zinAssert(!soapstate.isPostResponse());
 	zinAssert(soapstate.isStateConsistent());
 
-	this.state.m_logger.debug("soap request: soapURL:" + this.state.soapURL); // TODO remove me
-
 	soapCall.transportURI = this.state.soapURL;
 	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
 
@@ -3569,6 +3616,7 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	// the cases I've found are handled during the integrity checking at the start of the fsm.
 	//
 
+	// TODO fixme
 	this.state.blahCount++;
 
 	var x;

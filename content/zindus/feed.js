@@ -32,8 +32,7 @@ ZinFeedItem.ID_STATUS         = 0;      // this id is used in the status zfc
 ZinFeedItem.ID_MAX_RESERVED   = 256;    // the 'next' attribute of the AUTO_INCREMENT item starts at this value + 1.
 
 ZinFeedItem.ATTR_MS   = 'ms';
-ZinFeedItem.ATTR_MD   = 'md';
-ZinFeedItem.ATTR_LS   = 'ls';   // last sync - concatenation of gid version, ms, md, DEL and OFI eg. 3-1234-1168484761-1-0
+ZinFeedItem.ATTR_LS   = 'ls';   // last sync - concatenation of gid version, ms, DEL etc eg. 1#-134217729### or 1##1801#1801#
 ZinFeedItem.ATTR_VER  = 'ver';  // only an attribute in the gid
 ZinFeedItem.ATTR_REV  = 'rev';
 ZinFeedItem.ATTR_DEL  = 'del';
@@ -41,8 +40,9 @@ ZinFeedItem.ATTR_ID   = 'id';
 ZinFeedItem.ATTR_TPI  = 'tpi';  // thunderbird pref id - see http://www.xulplanet.com/references/xpcomref/ifaces/nsIAbDirectory.html
 ZinFeedItem.ATTR_TYPE = 'type';
 ZinFeedItem.ATTR_NAME = 'name';
-ZinFeedItem.ATTR_PRES = 'pres'; // present
-ZinFeedItem.ATTR_CS   = 'cs';   // checksum - not persisted
+ZinFeedItem.ATTR_CS   = 'cs';   // checksum
+ZinFeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
+// not used: ZinFeedItem.ATTR_MD   = 'md';
 
 ZinFeedItem.TYPE_FL   = 0x01; // folder
 ZinFeedItem.TYPE_CN   = 0x02; // contact
@@ -346,9 +346,9 @@ ZinFeedItem.zimbraAttributesForType = function(type)
 	var ret;
 
 	switch (type) {
-		case ZinFeedItem.TYPE_FL: ret = [ZinFeedItem.ATTR_ID, ZinFeedItem.ATTR_MS, 'l', 'name'];                     break;
-		case ZinFeedItem.TYPE_CN: ret = [ZinFeedItem.ATTR_ID, ZinFeedItem.ATTR_MS, 'l', ZinFeedItem.ATTR_MD, ZinFeedItem.ATTR_REV]; break;
-		// not implemented: TYPE_FL ...  ['id', 'l', ZinFeedItem.ATTR_MD, FEED_ITEM_ATTR_REV, 'fileAsStr']
+		case ZinFeedItem.TYPE_FL: ret = [ZinFeedItem.ATTR_ID, ZinFeedItem.ATTR_MS, 'l', 'name'];               break;
+		case ZinFeedItem.TYPE_CN: ret = [ZinFeedItem.ATTR_ID, 'l', ZinFeedItem.ATTR_MS, ZinFeedItem.ATTR_REV]; break;
+		// not implemented: TYPE_DL ...  ['id', 'l', ZinFeedItem.ATTR_MD, FEED_ITEM_ATTR_REV, 'fileAsStr']
 		default: zinAssert(false);
 	}
 

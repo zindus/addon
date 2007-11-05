@@ -44,8 +44,9 @@ function SyncFsmExitStatus()
 		FailOnFolderNameDuplicate     : 8,  // 
 		FailOnFolderNameReserved      : 9,  // 
 		FailOnFolderNameInvalid       : 10,
-		FailOnFolderReservedChanged   : 11,
-		FailOnFolderNameClash         : 12  // the same folder name entered the namespace from both tb and zm sides
+		FailOnFolderMustBePresent     : 11,
+		FailOnFolderReservedChanged   : 12,
+		FailOnFolderNameClash         : 13  // the same folder name entered the namespace from both tb and zm sides
 	};
 }
 
@@ -93,7 +94,7 @@ SyncFsmExitStatus.prototype.isFailOnFolder = function()
 
 	var ret = ((code == 'FailOnFolderNameDuplicate') || (code == 'FailOnFolderNameReserved') ||
 	           (code == 'FailOnFolderNameInvalid')   || (code == 'FailOnFolderReservedChanged') ||
-	           (code == 'FailOnFolderNameClash'));
+	           (code == 'FailOnFolderMustBePresent') || (code == 'FailOnFolderNameClash'));
 
 	return ret;
 }

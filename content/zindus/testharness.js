@@ -31,15 +31,19 @@ function ZinTestHarness()
 
 ZinTestHarness.prototype.run = function()
 {
-	this.testCrc32();
-	// this.testLookupCard();
-	// this.testLogging();
-	// this.testZinFeedCollection();
-	// this.testFilesystem();
-	// this.testContactConverter();
-	// this.testContactConverterForFolderNames();
-	// this.testPropertyDelete();
-	// this.testLso();
+	var ret = true;
+
+	// ret = ret && this.testCrc32();
+	// ret = ret && this.testLookupCard();
+	// ret = ret && this.testLogging();
+	// ret = ret && this.testZinFeedCollection();
+	// ret = ret && this.testFilesystem();
+	// ret = ret && this.testContactConverter();
+	// ret = ret && this.testContactConverterForFolderNames();
+	// ret = ret && this.testPropertyDelete();
+	ret = ret && this.testLso();
+
+	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
 
 ZinTestHarness.prototype.testCrc32 = function()
@@ -177,12 +181,16 @@ ZinTestHarness.prototype.testLso = function()
 	        " " +
 			hyphenate(":", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 
-	var zfi1 = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334, ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_MD, 1168484761);
+	var zfi1 = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334,
+	                           ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_REV, 1235);
 	var zfi2 = zinCloneObject(zfi1);
 
 	lso = new Lso(zfi1);
 
-	var str = "-1234-1168484761-"
+	var str = "##1234#1235#"
+
+	// this.m_logger.debug("testLso: lso == " + aToString(lso));
+	// this.m_logger.debug("testLso: lso.toString() == " + lso.toString());
 
 	zinAssert(lso.toString() == str);
 
@@ -190,12 +198,11 @@ ZinTestHarness.prototype.testLso = function()
 
 	lso = new Lso(str);
 
-	// this.m_logger.debug("testLso: lso == " + aToString(lso));
-	// this.m_logger.debug("testLso: lso.toString() == " + lso.toString());
-
 	zinAssert(lso.toString() == str);
 
 	ZinTestHarness.testLsoCompare(lso, zfi2);
+	
+	return true;
 }
 
 ZinTestHarness.testLsoCompare = function(lso, zfi)
@@ -208,15 +215,20 @@ ZinTestHarness.testLsoCompare = function(lso, zfi)
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi.set(ZinFeedItem.ATTR_MS, 1234);
-	zfi.set(ZinFeedItem.ATTR_MS, 1168484762);
+	zfi.set(ZinFeedItem.ATTR_REV, 1236);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi.set(ZinFeedItem.ATTR_MS, 1234);
-	zfi.set(ZinFeedItem.ATTR_MS, 1168484761);
+	zfi.set(ZinFeedItem.ATTR_REV, 1235);
 	zfi.set(ZinFeedItem.ATTR_DEL, 1);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi.set(ZinFeedItem.ATTR_MS, 1233);
+	zfi.set(ZinFeedItem.ATTR_REV, 1235);
+	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
+
+	zfi.set(ZinFeedItem.ATTR_MS, 1234);
+	zfi.set(ZinFeedItem.ATTR_REV, 1232);
 	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
 }
 

@@ -38,7 +38,7 @@
 	oncommand="window.wd.onCommand(event.target.id);"
 	ondialogaccept="window.wd.onAccept();"
 	ondialogcancel="window.wd.onCancel();"
-	ondialogextra2="window.wd.onHelp('http://test.zindus.net/blog/faq/');"
+	ondialogextra2="window.wd.onHelp('http://www.zindus.com/blog/faq/');"
 	>
 
 	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
@@ -50,7 +50,6 @@
 	<!--
 	Notes:
 	- couldn't get the "help" button above to work - use extra2 (which defaults to appearing on the left hand side) instead
-	- TODO - replace 'http://test.zindus.net/blog/faq/' with a real url
 	-->
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
