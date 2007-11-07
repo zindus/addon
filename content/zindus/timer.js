@@ -131,5 +131,5 @@ ZinTimerFunctorSync.prototype.finish = function()
 	this.is_running = false;
 
 	if (this.m_on_finish_function)
-		this.m_on_finish_context.m_timeoutID = window.setTimeout(this.m_on_finish_function, 1000, this.m_on_finish_context);   // reset the timer
+		this.m_on_finish_context.m_timeoutID = window.setTimeout(this.m_on_finish_function, 1500, this.m_on_finish_context);   // reset the timer
 }
