@@ -35,7 +35,7 @@ function onLoad()
 
 function onUnLoad()
 {
-	window.zindus.onUnload();
+	window.zindus.onUnLoad();
 }
 
 function ZinMailWindowOverlay()

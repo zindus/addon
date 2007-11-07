@@ -148,6 +148,7 @@ ZinContactConverter.prototype.setup = function()
 	// So (for example)...
 	// m_map[FORMAT_TB][PrimaryEmail] == 4
 	// m_map[FORMAT_ZM][email] == 4
+	// m_equivalents[4][FORMAT_TB] = "PrimaryEmail";
 
 	this.m_bimap_format = new BiMap(
 		[FORMAT_TB,     FORMAT_ZM ],

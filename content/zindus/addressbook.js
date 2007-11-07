@@ -93,6 +93,12 @@ ZimbraAddressBook.forEachCard = function(uri, functor)
 	}
 }
 
+// We have to normalise the order in which we iterate through the properties so that two hashes with the same
+// keys result in the same crc.  We can't just iterate through the hash with for..in because that doesn't guarantee ordering
+// - the keys might not have been added to the hash in the same order.
+// We avoid a sort by relying on the fact that the keys are thunderbird contact properties.
+// The index into the Converter's table guarantees the ordering.
+//
 ZimbraAddressBook.crc32 = function(properties)
 {
 	var ret = 0;
@@ -102,21 +108,16 @@ ZimbraAddressBook.crc32 = function(properties)
 	for (var i in properties)
 		if (properties[i].length > 0)
 		{
-			// we have to normalise the order in which we iterate through the properties so that two hashes with the same
-			// set of keys result in the same string.  We can't just iterate through the hash because that doesn't guarantee ordering
-			// - the keys might not have been added in the same order.
-			// We avoid running a sort by relying on the fact that the keys are thunderbird contact properties.
-			// The index into the Converter's table guarantees the ordering.
-			//
 			zinAssert(isPropertyPresent(ZinContactConverter.instance().m_map[FORMAT_TB], i));
 			aSorted[ZinContactConverter.instance().m_map[FORMAT_TB][i]] = true;
 		}
 
 	function callback_concat_str(element, index, array) {
-		str += index + ":" + properties[ZinContactConverter.instance().m_equivalents[index][FORMAT_TB]];
+		var key = ZinContactConverter.instance().m_equivalents[index][FORMAT_TB];
+		str += key + ":" + properties[key];
 		}
 
-	// after this, str == 0:Fred1:Bloggs2:Fred Bloggs4:fred.bloggs@example.com etc - the numbers are indexes into m_equivalents
+	// after this, str == FirstName:FredLastName:BloggsDisplayName:Fred BloggsPrimaryEmail:fred.bloggs@example.com
 	//
 	aSorted.forEach(callback_concat_str);
 
