@@ -116,9 +116,11 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 			if (this.m_timeoutID)
 			{
 				this.m_logger.debug("cancelling sync and timer...");
-				this.m_timer_functor.cancel();
 				window.clearTimeout(this.m_timeoutID);
 			}
+
+			if (this.m_timer_functor)
+				t_is.m_timer_functor.cancel();
 		}
 	}
 	catch (ex)
@@ -178,9 +180,12 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 	{
 		if (Date.parse(last_sync_date) > Date.parse(now)) // something wierd happened with time - last_sync_date is in the future!
 		{
-			next_sync_date = now;
+			next_sync_date = new Date(Date.parse(now) + 1000 * 3600); // schedule for an hour ahead - effectively, we're backing off 
 
-			this.m_logger.debug("something wierd happened with time - last_sync_date is in the future.  next_sync_date: " + next_sync_date);
+			this.m_logger.warn("Something wierd happened - time seems to have gone backwards! " +
+			                   "\n" + " current time:   " + now +
+			                   "\n" + " last_sync_date: " + last_sync_date + 
+							   "\n" + " next_sync_date: " + next_sync_date);
 		}
 		else 
 		{
