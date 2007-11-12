@@ -37,6 +37,7 @@ function SyncWindow()
 	this.m_logger    = newZinLogger("SyncWindow");
 	this.m_logger.level(ZinLogger.NONE);
 
+	this.m_messengerWindow          = null;
 	this.m_has_observer_been_called = false;
 }
 
@@ -103,16 +104,28 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
+			if (!this.m_messengerWindow)
+				this.m_messengerWindow = getWindowContainingElementId('zindus-progresspanel');
+
 			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
 			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
 			                                        stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString());
+
+			if (this.m_messengerWindow)
+			{
+				this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', true);
+				this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', false);
+			}
 		}
 
 		if (fsmstate.isFinal())
 		{
 			var es = this.m_sfo.exitStatus();
 			this.m_payload.m_result = es;
+
+			this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', false);
+			this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
 
 			if (fsmstate.context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY)
 			{

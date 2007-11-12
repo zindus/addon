@@ -24,19 +24,19 @@
 include("chrome://zindus/content/syncfsmobserver.js");
 include("chrome://zindus/content/statuspanel.js");
 
-function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_context)
+function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {
 	zinAssert(arguments.length == 3);
 
-	this.m_logger             = newZinLogger("ZinTimerFunctorSync");
-	this.m_sfo                = new SyncFsmObserver();
-	this.m_messengerWindow    = null;  // also considered putting status here: this.m_addressbookWindow = null;
-	this.m_id_fsm_functor     = id_fsm_functor;
-	this.m_syncfsm            = null;
-	this.m_timeoutID          = null;
-	this.is_running           = false;
-	this.m_on_finish_function = on_finish_function;
-	this.m_on_finish_context  = on_finish_context;
+	this.m_logger                 = newZinLogger("ZinTimerFunctorSync");
+	this.m_sfo                    = new SyncFsmObserver();
+	this.m_messengerWindow        = null;  // also considered putting status here: this.m_addressbookWindow = null;
+	this.m_id_fsm_functor         = id_fsm_functor;
+	this.m_syncfsm                = null;
+	this.m_timeoutID              = null;
+	this.is_running               = false;
+	this.m_on_finish_function     = on_finish_function;
+	this.m_on_finish_function_arg = on_finish_function_arg;
 	this.m_is_fsm_functor_first_entry = true;
 }
 
@@ -95,11 +95,15 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				// the window might have disappeared between when we iterated all open windows and now - so we test that
 				// the element exists just before setting it's attribute...
 				//
-				var el_statuspanel_progress_meter = this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-meter");
-				var el_statuspanel_progress_label = this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label");
+				var el_statuspanel_progress_meter  = this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-meter");
+				var el_statuspanel_progress_label  = this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label");
+				var el_statuspanel_logo            = this.m_messengerWindow.document.getElementById("zindus-statuspanel-logo");
+				var el_statuspanel_logo_processing = this.m_messengerWindow.document.getElementById("zindus-statuspanel-logo-processing");
 
 				el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 				el_statuspanel_progress_label.setAttribute('value', this.m_sfo.progressToString());
+				el_statuspanel_logo.setAttribute('hidden', true);
+				el_statuspanel_logo_processing.setAttribute('hidden', false);
 			}
 		}
 
@@ -112,6 +116,8 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			{
 				this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label").setAttribute('value', "");
 				this.m_messengerWindow.document.getElementById('zindus-progresspanel').setAttribute('hidden', true);
+				this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', false);
+				this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
 			}
 
 			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-statuspanel"))
@@ -131,5 +137,5 @@ ZinTimerFunctorSync.prototype.finish = function()
 	this.is_running = false;
 
 	if (this.m_on_finish_function)
-		this.m_on_finish_context.m_timeoutID = window.setTimeout(this.m_on_finish_function, 1500, this.m_on_finish_context);   // reset the timer
+		this.m_on_finish_function(this.m_on_finish_function_arg);
 }
