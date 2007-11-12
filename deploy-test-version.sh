@@ -1,6 +1,7 @@
 #!/bin/bash
-# $Id: deploy-test-version.sh,v 1.1 2007-11-12 06:19:20 cvsuser Exp $
+# $Id: deploy-test-version.sh,v 1.2 2007-11-12 21:35:07 cvsuser Exp $
 
+./build.sh
 
 FILE_NAME_FROM=asd
 FILE_NAME_TO=xpiversion.inc.php
