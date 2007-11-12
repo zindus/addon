@@ -230,7 +230,7 @@ Prefs.prototype.onTimerFire = function(context)
 	//
 	context.m_logger.debug("onTimerFire: in here");
 	context.m_timeoutID = null;
-	var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG, null, null);
+	var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_PREFSDIALOG_TIMER, null, null);
 	functor.run();
 }
 

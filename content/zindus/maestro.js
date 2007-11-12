@@ -66,9 +66,8 @@ ZinMaestro.FSM_GROUP_SYNC  = newObject(ZinMaestro.FSM_ID_TWOWAY, 0, ZinMaestro.F
 //
 ZinMaestro.ID_FUNCTOR_SYNCWINDOW         = "syncwindow";
 ZinMaestro.ID_FUNCTOR_PREFSDIALOG        = "prefsdialog";
-ZinMaestro.ID_FUNCTOR_TIMER_PREFSDIALOG  = "timer-prefsdialog";
-ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY      = "timer-overlay";
-ZinMaestro.ID_FUNCTOR_STATUS_PANELY      = "status-panel";
+ZinMaestro.ID_FUNCTOR_PREFSDIALOG_TIMER  = "prefsdialog-timer";
+ZinMaestro.ID_FUNCTOR_MAILWINDOW_TIMER   = "mailwindow-timer";
 
 ZinMaestro.prototype.toString = function()
 {

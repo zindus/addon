@@ -56,7 +56,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 		if (messengerWindow)
 		{
-			this.m_logger.info("startup: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
+			this.m_logger.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
 
 			Filesystem.createDirectoriesIfRequired();
 
@@ -103,8 +103,6 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 
 		if (messengerWindow)
 		{
-			this.m_logger.debug("in messengerWindow - about to unload");
-
 			if (ObserverService.isRegistered(ZinMaestro.TOPIC) && this.m_maestro)
 			{
 				this.m_logger.debug("unregistering observer");
@@ -120,7 +118,9 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 			}
 
 			if (this.m_timer_functor)
-				t_is.m_timer_functor.cancel();
+				this.m_timer_functor.cancel();
+
+			this.m_logger.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
 		}
 	}
 	catch (ex)
@@ -132,10 +132,12 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 {
 	context.m_logger.debug("entering onTimerFire...");
+	context.m_timeoutID = null; // allows us to do sanity checking
 
 	var x = context.statusSummary();
 
-	if (context.m_last_sync_date == null || context.m_last_sync_date.toString() == x['last_sync_date'].toString())
+	if (context.m_last_sync_date == null || x['last_sync_date'] == null
+	                                     || context.m_last_sync_date.toString() == x['last_sync_date'].toString())
 	{
 		if (!ObserverService.isRegistered(ZinMaestro.TOPIC))
 		{
@@ -146,24 +148,33 @@ ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 		else
 			context.m_logger.debug("ObserverService is already registered so don't reregister.");
 
-		var timer_id = hyphenate('-', ZinMaestro.ID_FUNCTOR_TIMER_OVERLAY, Date.parse(new Date(Date.now())));
+		var timer_id = hyphenate('-', ZinMaestro.ID_FUNCTOR_MAILWINDOW_TIMER, Date.parse(new Date(Date.now())));
 
-		context.m_timer_functor = new ZinTimerFunctorSync(timer_id, context.onTimerFire, context);
+		context.m_timer_functor = new ZinTimerFunctorSync(timer_id, context.scheduleTimer, context);
 
 		context.m_timer_functor.run();
 	}
 	else
-	{
-		context.m_logger.debug("timer fired - instead of running the functor we're rescheduling the timer");
+		context.scheduleTimer(context, x);
+}
 
-		var delay = x['next_sync_date'] - x['now'];
+ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
+{
+	context.m_logger.debug("entering scheduleTimer...");
 
-		context.m_last_sync_date = x['last_sync_date'];
+	zinAssert(arguments.length == 1 || arguments.length == 2);
+	zinAssert(context.m_timeoutID == null); // ensures that we never have > 1 oustanding timer
 
-		context.m_timeoutID = window.setTimeout(context.onTimerFire, delay, context);
+	if (arguments.length == 1)
+		x = context.statusSummary();
 
-		newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
-	}
+	var delay = x['next_sync_date'] - x['now'];
+
+	context.m_last_sync_date = x['last_sync_date'];
+
+	context.m_timeoutID = window.setTimeout(context.onTimerFire, delay, context);
+
+	newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
 }
 
 ZinMailWindowOverlay.prototype.statusSummary = function()

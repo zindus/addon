@@ -44,14 +44,15 @@
 			<label id="zindus-progresspanel-label-prefix" value="zindus:" /> <!-- onclick="alert('you clicked me 2');"  -->
 			<stack>
 				<progressmeter id="zindus-progresspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" />
-				<label id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
+				<label         id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
 			</stack>
 		</statusbarpanel>
 		<statusbarpanel id="zindus-statuspanel" tooltiptext="" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
-			<image id="zindus-statuspanel-logo"   src="chrome://zindus/content/zindus-16x16-grey.jpg" />
-			<label id="zindus-statuspanel-alert"  hidden="true" value="!" />
-			<label id="zindus-statuspanel-error"  hidden="true" value="X" />
-			<label id="zindus-statuspanel-insync" hidden="true" value="Y" />
+			<image id="zindus-statuspanel-logo"                            src="chrome://zindus/content/zindus-16x16-grey.jpg" />
+			<image id="zindus-statuspanel-logo-processing"   hidden="true" src="chrome://zindus/content/zindus-processing.gif" />
+			<label id="zindus-statuspanel-alert"             hidden="true" value="!" />
+			<label id="zindus-statuspanel-error"             hidden="true" value="X" />
+			<label id="zindus-statuspanel-insync"            hidden="true" value="Y" />
 		</statusbarpanel>
 	</hbox>
 
