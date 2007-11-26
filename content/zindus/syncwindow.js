@@ -34,7 +34,7 @@ function SyncWindow()
 	this.m_syncfsm   = null;
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
 	this.m_payload   = null; // we keep it around so that we can pass the results back
-	this.m_zwc       = null; // the collection of windows that have status+progress panels
+	this.m_zwc       = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_sfo       = new SyncFsmObserver();
 	this.m_logger    = newZinLogger("SyncWindow");
 	this.m_logger.level(ZinLogger.NONE);
@@ -103,6 +103,8 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
 
+		this.m_zwc.populate();
+
 		newZinLogger().info("sync start:  " + getUTCAndLocalTime());
 		this.m_syncfsm.start();
 	}
@@ -114,17 +116,10 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
-			if (!this.m_zwc)
-			{
-				this.m_zwc = new ZinWindowCollection('folderPaneBox', 'addressbookWindow'); // this used to say 'zindus-progresspanel'
-				this.m_zwc.populate();
-			}
-
 			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
 			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
 			                                        stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString());
-
 
 			functor.m_showlogo = false;
 			this.m_zwc.forEach(functor);

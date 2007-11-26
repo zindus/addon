@@ -31,7 +31,7 @@ function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_funct
 
 	this.m_logger                 = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfo                    = new SyncFsmObserver();
-	this.m_zwc                    = null; // the collection of windows that have status+progress panels
+	this.m_zwc                    = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_id_fsm_functor         = id_fsm_functor;
 	this.m_syncfsm                = null;
 	this.m_timeoutID              = null;
@@ -69,7 +69,6 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.m_is_fsm_functor_first_entry = false;
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
-			this.m_zwc = new ZinWindowCollection('folderPaneBox', 'addressbookWindow'); // this used to say 'zindus-progresspanel'
 			this.m_zwc.populate();
 
 			var functor_unhide_progresspanel = {

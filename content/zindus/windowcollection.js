@@ -21,13 +21,13 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function ZinWindowCollection()
+function ZinWindowCollection(a_id)
 {
 	this.m_h_a = new Object();
 	this.m_logger  = newZinLogger("ZinWindowCollection");
 
-	for (var i = 0; i < arguments.length; i++)
-		this.m_h_a[arguments[i]] = new Array();
+	for (var i = 0; i < a_id.length; i++)
+		this.m_h_a[a_id[i]] = new Array();
 }
 
 ZinWindowCollection.prototype.forEach = function(functor)
