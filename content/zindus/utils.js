@@ -377,7 +377,7 @@ function getWindowsContainingElementIds(a_id_orig)
 	//   http://developer.mozilla.org/en/docs/nsIWindowMediator
 	//
 	// perhaps someone one day will tell me how to find messengerWindow more efficiently vs the current approach of iterating through
-	// all open windows
+	// all open windows - leni - Mon Nov 26 18:21:03 AUSEDT 2007
 	//
 	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
 

@@ -40,14 +40,14 @@
 	</toolbox>	
 
 	<hbox id="statusTextBox" >
-		<statusbarpanel hidden="true" id="zindus-progresspanel" insertbefore="statusbar-progresspanel" >
+		<statusbarpanel id="zindus-progresspanel" hidden="true" insertbefore="statusbar-progresspanel" >
 			<label id="zindus-progresspanel-label-prefix" value="zindus:" /> <!-- onclick="alert('you clicked me 2');"  -->
 			<stack>
 				<progressmeter id="zindus-progresspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" />
 				<label         id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
 			</stack>
 		</statusbarpanel>
-		<statusbarpanel id="zindus-statuspanel" tooltiptext="" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
+		<statusbarpanel id="zindus-statuspanel" hidden="true" tooltiptext="" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
 			<image id="zindus-statuspanel-logo"                            src="chrome://zindus/content/zindus16x16-bw.gif" />
 			<image id="zindus-statuspanel-logo-processing"   hidden="true" src="chrome://zindus/content/zindus-processing.gif" />
 			<label id="zindus-statuspanel-alert"             hidden="true" value="!" />

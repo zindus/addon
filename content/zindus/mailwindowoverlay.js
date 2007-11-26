@@ -86,6 +86,18 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 			else
 				this.m_logger.debug("manual sync only - not starting timer.");
 
+			if (0)
+			{
+				// TODO - am here - this displays the icon but throws an assertion when sync starts
+				// reckon I need to do this for all windows with folderPaneBox ( not jus tone)s
+				var win = getWindowContainingElementId('folderPaneBox'); // zindus-statuspanel
+
+				if (win)
+					win.document.getElementById("zindus-statuspanel").hidden = false;
+			}
+
+			window.document.getElementById("zindus-statuspanel").hidden = false;
+
 			StatusPanel.update(window);
 		}
 	}
