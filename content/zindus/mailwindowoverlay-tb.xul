@@ -48,7 +48,7 @@
 			</stack>
 		</statusbarpanel>
 		<statusbarpanel id="zindus-statuspanel" tooltiptext="" insertbefore="statusbar-progresspanel" class="statusbarpanel-iconic" >
-			<image id="zindus-statuspanel-logo"                            src="chrome://zindus/content/zindus-16x16-grey.jpg" />
+			<image id="zindus-statuspanel-logo"                            src="chrome://zindus/content/zindus16x16-bw.gif" />
 			<image id="zindus-statuspanel-logo-processing"   hidden="true" src="chrome://zindus/content/zindus-processing.gif" />
 			<label id="zindus-statuspanel-alert"             hidden="true" value="!" />
 			<label id="zindus-statuspanel-error"             hidden="true" value="X" />
