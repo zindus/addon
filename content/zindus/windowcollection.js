@@ -24,6 +24,7 @@
 function ZinWindowCollection()
 {
 	this.m_h_a = new Object();
+	this.m_logger  = newZinLogger("ZinWindowCollection");
 
 	for (var i = 0; i < arguments.length; i++)
 		this.m_h_a[arguments[i]] = new Array();
@@ -68,11 +69,11 @@ ZinWindowCollection.prototype.populate = function()
 		for (var id in this.m_h_a)
 			if (win.document.getElementById(id))
 			{
-				// dump("ZinWindowCollection.populate: blah: found a window with id: " + id + (win.document.title ? win.document.title : "no title") + "\n");
+				this.m_logger.debug("found a window with id: " + id + (win.document.title ? win.document.title : "no title"));
 				this.m_h_a[id].push(win);
 				break;
 			}
-			// else
-				// dump("ZinWindowCollection.populate: blah: id: " + id + " not present in window title: " + (win.document.title ? win.document.title : "no title") + " id: " + (win.id ? win.id : "no id") + "\n");
+			else
+				this.m_logger.debug("id: " + id + " not present in window title: " + (win.document.title ? win.document.title : "no title") + " id: " + (win.id ? win.id : "no id"));
 	}
 }

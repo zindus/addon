@@ -109,7 +109,7 @@ StatusPanel.update = function(zwc)
 
 	if (arguments.length == 0)
 	{
-		zwc = new ZinWindowCollection('folderPaneBox'); // this used to say 'zindus-progresspanel'
+		zwc = new ZinWindowCollection('folderPaneBox', 'addressbookWindow'); // this used to say 'zindus-progresspanel'
 		zwc.populate();
 	}
 
@@ -122,7 +122,7 @@ StatusPanel.update = function(zwc)
 				// logger.debug("update: " + x + " is hidden: " + (status != x) + " value: " + obj[x]);
 			}
 
-			dump("am here updating status in window title: " + (win.document.title ? win.document.title : "no title") + "\n");
+			// dump("am here updating status in window title: " + (win.document.title ? win.document.title : "no title") + "\n");
 
 			win.document.getElementById("zindus-statuspanel").tooltipText = tooltip;
 			win.document.getElementById("zindus-statuspanel").hidden = false;

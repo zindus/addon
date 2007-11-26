@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+
+<!-- ***** BEGIN LICENSE BLOCK *****
+  
+  "The contents of this file are subject to the Mozilla Public License
+  Version 1.1 (the "License"); you may not use this file except in
+  compliance with the License. You may obtain a copy of the License at
+  http://www.mozilla.org/MPL/
+  
+  Software distributed under the License is distributed on an "AS IS"
+  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+  License for the specific language governing rights and limitations
+  under the License.
+  
+  The Original Code is Zindus Sync.
+  
+  The Initial Developer of the Original Code is Moniker Pty Ltd.
+ 
+  Portions created by Initial Developer are Copyright (C) 2007
+  the Initial Developer. All Rights Reserved.
+ 
+  Contributor(s): Leni Mayo
+  
+  ***** END LICENSE BLOCK ***** -->
+
+<!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
+
+<overlay
+	id="zindus-addressbookoverlay" 
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	>
+
+	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/utils.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/bimap.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/logger.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/feed.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/windowcollection.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/statuspanel.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/addressbookoverlay.js" />
+
+	<stringbundleset id="stringbundleset" >
+		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
+	</stringbundleset>
+
+
+	<statusbar id="status-bar" >
+		<statusbarpanel id="zindus-progresspanel" hidden="true" insertbefore="unreadMessageCount" >
+			<label id="zindus-progresspanel-label-prefix" value="zindus:" />
+			<stack>
+				<progressmeter id="zindus-progresspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" />
+				<label id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
+			</stack>
+		</statusbarpanel>
+		<statusbarpanel id="zindus-statuspanel" hidden="true" tooltiptext="" insertbefore="unreadMessageCount" class="statusbarpanel-iconic" >
+			<image id="zindus-statuspanel-logo"                            src="chrome://zindus/content/zindus16x16-bw.gif" />
+			<image id="zindus-statuspanel-logo-processing"   hidden="true" src="chrome://zindus/content/zindus-processing.gif" />
+			<label id="zindus-statuspanel-alert"             hidden="true" value="!" />
+			<label id="zindus-statuspanel-error"             hidden="true" value="X" />
+			<label id="zindus-statuspanel-insync"            hidden="true" value="Y" />
+		</statusbarpanel>
+	</statusbar>
+
+</overlay>

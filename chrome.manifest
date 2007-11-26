@@ -5,3 +5,4 @@ locale  zindus       en-US       locale/en-US/zindus/
 overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/mailwindowoverlay.xul
 overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/mailwindowoverlay-tb.xul
 
+overlay chrome://messenger/content/addressbook/addressbook.xul     chrome://zindus/content/addressbookoverlay.xul

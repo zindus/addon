@@ -116,7 +116,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			if (!this.m_zwc)
 			{
-				this.m_zwc = new ZinWindowCollection('folderPaneBox'); // this used to say 'zindus-progresspanel'
+				this.m_zwc = new ZinWindowCollection('folderPaneBox', 'addressbookWindow'); // this used to say 'zindus-progresspanel'
 				this.m_zwc.populate();
 			}
 

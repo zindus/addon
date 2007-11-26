@@ -2108,12 +2108,10 @@ SyncFsm.prototype.buildGcs = function()
 								aChangeOfNote[sourceid] = true;
 								msg += " added to aChangeOfNote";
 
-								dump("am here 1\n");
 								// sanity check that the Contact folder hasn't changed - it's supposed to be immutable (isn't it?)
 								//
 								if (this.state.sources[sourceid]['zfcLuid'].get(luid).type() == ZinFeedItem.TYPE_FL)
 									zinAssert(this.context.shortLabelForLuid(sourceid, luid, FORMAT_TB) != TB_PAB);
-								dump("am here 2\n");
 							}
 						}
 
