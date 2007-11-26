@@ -3621,78 +3621,29 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	else
 		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
 
-	// if soapCall is passed bad args (eg if transportURI is an email address), asyncInvoke() doesn't return!
-	// the cases I've found are handled during the integrity checking at the start of the fsm.
-	//
+	this.state.cCallsToSoap++;
+	this.state.m_logger.debug("entryActionSoapRequest: cCallsToSoap: " + this.state.cCallsToSoap);
 
-	// TODO fixme
-	this.state.blahCount++;
-
-	var x;
-	
-	     if (this.state.blahCount == 1) x = handleResponseClosure1;
-	else if (this.state.blahCount == 2) x = handleResponseClosure2;
-	else if (this.state.blahCount == 3) x = handleResponseClosure3;
-	else if (this.state.blahCount == 4) x = handleResponseClosure4;
-	else if (this.state.blahCount == 5) x = handleResponseClosure5;
-	else if (this.state.blahCount == 6) x = handleResponseClosure6;
-	else if (this.state.blahCount == 7) x = handleResponseClosure7;
-	else if (this.state.blahCount == 8) x = handleResponseClosure8;
-	else if (this.state.blahCount == 9) x = handleResponseClosure9;
-	else if (this.state.blahCount == 10) x = handleResponseClosure10;
-	else if (this.state.blahCount == 11) x = handleResponseClosure11;
-	else if (this.state.blahCount == 12) x = handleResponseClosure12;
-	else x = handleResponseClosure13;
-
-	// x = handleResponseClosure13;
-
-	this.state.m_logger.debug("entryActionSoapRequest: blahCount: " + this.state.blahCount);
-
-
-	x.context      = context;
-	x.continuation = continuation;
-
-	this.state.m_soap_state.m_callcompletion = soapCall.asyncInvoke(x);
-
-
-
-	// Ok, but use the debugging version above...
-	// handleResponseClosure.context      = context;
-	// handleResponseClosure.continuation = continuation;
-	// this.state.m_soap_state.m_callcompletion = soapCall.asyncInvoke(handleResponseClosure);
-
-	// this.state.m_logger.debug("m_callcompletion: evaluates to: " + (this.state.m_soap_state.m_callcompletion ? "true" : "false"));
-	// this.state.m_logger.debug("m_callcompletion.isComplete: " + this.state.m_soap_state.m_callcompletion.isComplete);
+	this.state.m_soap_state.m_callcompletion = soapCall.asyncInvoke(closureToHandleSoapResponse(context, continuation));
 }
 
-function handleResponseClosure1(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure2(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure3(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure4(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure5(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure6(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure7(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure8(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure9(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure10(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure11(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure12(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-function handleResponseClosure13(response, call, error) { arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context); arguments.callee.context = null; arguments.callee.continuation = null; }
-
-
-function handleResponseClosure(response, call, error)
+function closureToHandleSoapResponse(context, continuation)
 {
-	arguments.callee.context.handleAsyncResponse(response, call, error, arguments.callee.continuation, arguments.callee.context);
+	var ret = function (response, call, error)
+	{
+		context.handleAsyncResponse(response, call, error, continuation, context);
 	
-	// otherwise, the last call to a soap request will leak memory
-	//
-	arguments.callee.context = null;
-	arguments.callee.continuation = null;
+		// otherwise, the last call to a soap request leaks memory
+		//
+		context = null;
+		continuation = null;
+	}
 
+	return ret;
 }
 
 // Note that "this" in this method could be anything - the mozilla SOAP API decides.
-// That's why we call continuation() here, so that the code that processes the response can refer to "this", rather than "context".
+// That's why we call continuation() here, so that the scope chain (where "this" is the SyncFsm object) is restored.
 //
 SyncFsm.prototype.handleAsyncResponse = function (response, soapCall, error, continuation, context)
 {
@@ -3771,9 +3722,6 @@ SyncFsm.prototype.handleAsyncResponse = function (response, soapCall, error, con
 		msg += " fault xml: " + soapstate.m_fault_element_xml;
 		context.state.m_logger.debug("handleAsyncResponse: " + msg);
 	}
-
-	context.state.m_soap_state.m_callcompletion.abort(); // experiment with getting rid of memory leaks - blah
-	delete soapCall; // experiment with getting rid of memory leaks - blah
 
 	continuation('evNext');
 
@@ -3973,11 +3921,11 @@ TwoWayFsm.prototype.setFsm = function()
 
 function SyncFsmState(id_fsm)
 {
-	this.blahCount = 0;
 	this.id_fsm              = id_fsm;
 	this.m_logappender       = new ZinLogAppenderHoldOpen(); // holds an output stream open - must be closed explicitly
 	this.m_logger            = new ZinLogger(loggingLevel, "SyncFsm", this.m_logappender);
 	this.m_soap_state        = null;
+	this.cCallsToSoap        = 0;                       // handy for debugging the closure passed to soapCall.asyncInvoke()
 	this.zfcLastSync         = null;                    // ZinFeedCollection - maintains state re: last sync (anchors, success/fail)
 	this.zfcGid              = null;                    // ZinFeedCollection - map of gid to (sourceid, luid)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)
