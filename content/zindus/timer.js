@@ -22,6 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/syncfsmobserver.js");
+include("chrome://zindus/content/windowcollection.js");
 include("chrome://zindus/content/statuspanel.js");
 
 function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_function_arg)
@@ -30,7 +31,7 @@ function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_funct
 
 	this.m_logger                 = newZinLogger("ZinTimerFunctorSync");
 	this.m_sfo                    = new SyncFsmObserver();
-	this.m_messengerWindow        = null;  // also considered putting status here: this.m_addressbookWindow = null;
+	this.m_zwc                    = null; // the collection of windows that have status+progress panels
 	this.m_id_fsm_functor         = id_fsm_functor;
 	this.m_syncfsm                = null;
 	this.m_timeoutID              = null;
@@ -68,10 +69,16 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.m_is_fsm_functor_first_entry = false;
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
-			this.m_messengerWindow = getWindowContainingElementId('zindus-progresspanel');
+			this.m_zwc = new ZinWindowCollection('folderPaneBox'); // this used to say 'zindus-progresspanel'
+			this.m_zwc.populate();
 
-			if (this.m_messengerWindow)
-				this.m_messengerWindow.document.getElementById('zindus-progresspanel').setAttribute('hidden', false);
+			var functor_unhide_progresspanel = {
+				run: function(win) {
+					win.document.document.getElementById('zindus-progresspanel').setAttribute('hidden', false);
+				}
+			};
+
+			this.m_zwc.forEach(functor_unhide_progresspanel);
 
 			var state = new TwoWayFsmState();
 			state.setCredentials();
@@ -90,21 +97,27 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
-			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-progresspanel"))
-			{
-				// the window might have disappeared between when we iterated all open windows and now - so we test that
-				// the element exists just before setting it's attribute...
-				//
-				var el_statuspanel_progress_meter  = this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-meter");
-				var el_statuspanel_progress_label  = this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label");
-				var el_statuspanel_logo            = this.m_messengerWindow.document.getElementById("zindus-statuspanel-logo");
-				var el_statuspanel_logo_processing = this.m_messengerWindow.document.getElementById("zindus-statuspanel-logo-processing");
+			var functor_update_progresspanel = {
+				run: function(win) {
+					// the window might have disappeared between when we iterated all open windows and now - so we test that
+					// the element exists just before setting it's attribute...
+					//
+					if (win.document && win.document.getElementById("zindus-progresspanel"))
+					{
+						var el_statuspanel_progress_meter  = win.document.getElementById("zindus-progresspanel-progress-meter");
+						var el_statuspanel_progress_label  = win.document.getElementById("zindus-progresspanel-progress-label");
+						var el_statuspanel_logo            = win.document.getElementById("zindus-statuspanel-logo");
+						var el_statuspanel_logo_processing = win.document.getElementById("zindus-statuspanel-logo-processing");
 
-				el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
-				el_statuspanel_progress_label.setAttribute('value', this.m_sfo.progressToString());
-				el_statuspanel_logo.setAttribute('hidden', true);
-				el_statuspanel_logo_processing.setAttribute('hidden', false);
-			}
+						el_statuspanel_progress_meter.setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+						el_statuspanel_progress_label.setAttribute('value', this.m_sfo.progressToString());
+						el_statuspanel_logo.setAttribute('hidden', true);
+						el_statuspanel_logo_processing.setAttribute('hidden', false);
+					}
+				}
+			};
+
+			this.m_zwc.forEach(functor_update_progresspanel);
 		}
 
 		if (fsmstate.isFinal())
@@ -112,16 +125,21 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var es = this.m_sfo.exitStatus();
 			StatusPanel.save(es);
 
-			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-progresspanel"))
-			{
-				this.m_messengerWindow.document.getElementById("zindus-progresspanel-progress-label").setAttribute('value', "");
-				this.m_messengerWindow.document.getElementById('zindus-progresspanel').setAttribute('hidden', true);
-				this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', false);
-				this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
-			}
+			var functor_hide_progresspanel = {
+				run: function(win) {
+					if (win.document && win.document.getElementById("zindus-progresspanel"))
+					{
+						win.document.getElementById("zindus-progresspanel-progress-label").setAttribute('value', "");
+						win.document.getElementById('zindus-progresspanel').setAttribute('hidden', true);
+						win.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', false);
+						win.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
+					}
+				}
+			};
 
-			if (this.m_messengerWindow.document && this.m_messengerWindow.document.getElementById("zindus-statuspanel"))
-				StatusPanel.update(this.m_messengerWindow);
+			this.m_zwc.forEach(functor_hide_progresspanel);
+			
+			StatusPanel.update(this.m_zwc);
 
 			this.finish();
 		}

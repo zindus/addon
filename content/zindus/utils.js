@@ -367,53 +367,6 @@ function dateSuffixForFolder()
 	       "-" + hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 }
 
-function getWindowsContainingElementIds(a_id_orig)
-{
-	var a_id = zinCloneObject(a_id_orig);
-
-	// Good background reading:
-	//   http://developer.mozilla.org/en/docs/Working_with_windows_in_chrome_code
-	// which links to this page, which offers the code snippet below:
-	//   http://developer.mozilla.org/en/docs/nsIWindowMediator
-	//
-	// perhaps someone one day will tell me how to find messengerWindow more efficiently vs the current approach of iterating through
-	// all open windows - leni - Mon Nov 26 18:21:03 AUSEDT 2007
-	//
-	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
-
-	var windowtype = "";
-	var enumerator = wm.getEnumerator(windowtype);
-
-	while(enumerator.hasMoreElements() && aToLength(a_id) > 0)
-	{
-		var win = enumerator.getNext(); // win is [Object ChromeWindow] (just like window)
-
-		for (var id in a_id)
-			if (win.document.getElementById(id))
-			{
-				// dump("getWindowsContainingElementIds: blah: found a window with id: " + id + "\n");
-				a_id_orig[id] = win;
-				delete a_id[id]; // remove it - once an id is found in one window, we assume it's unique and stop looking for it
-				break;
-			}
-			// else
-			// 	dump("getWindowsContainingElementIds: blah: id: " + id + " not present in window title: " + (win.title ? win.title : "no title") + " id: " + (win.id ? win.id : "no id") + "\n");
-	}
-}
-
-function getWindowContainingElementId(id)
-{
-	var ret = null;
-	var a_id = newObject(id, null);
-
-	getWindowsContainingElementIds(a_id);
-
-	if (a_id[id])
-		ret = a_id[id];
-
-	return ret;
-}
-
 // eg 24 +/- 4 is a number between 16 and 28...
 //
 function randomPlusOrMinus(central, varies_by)

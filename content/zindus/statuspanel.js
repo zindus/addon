@@ -66,7 +66,7 @@ StatusPanel.getZfi = function()
 	return zfiStatus;
 }
 
-StatusPanel.update = function(win)
+StatusPanel.update = function(zwc)
 {
 	var logger    = newZinLogger("StatusPanel");
 	var zfiStatus = StatusPanel.getZfi();
@@ -108,17 +108,26 @@ StatusPanel.update = function(win)
 	var obj = { alert : '!', error : 'X', insync : 'Y' };
 
 	if (arguments.length == 0)
-		win = getWindowContainingElementId('zindus-statuspanel');
-
-	if (win)
 	{
-		for (var x in obj)
-		{
-			win.document.getElementById("zindus-statuspanel-" + x).hidden = (status != x);
-			win.document.getElementById("zindus-statuspanel-" + x).value  = obj[x];
-			// logger.debug("update: " + x + " is hidden: " + (status != x) + " value: " + obj[x]);
-		}
-
-		win.document.getElementById("zindus-statuspanel").tooltipText = tooltip;
+		zwc = new ZinWindowCollection('folderPaneBox'); // this used to say 'zindus-progresspanel'
+		zwc.populate();
 	}
+
+	var functor = {
+		run: function(win) {
+			for (var x in obj)
+			{
+				win.document.getElementById("zindus-statuspanel-" + x).hidden = (status != x);
+				win.document.getElementById("zindus-statuspanel-" + x).value  = obj[x];
+				// logger.debug("update: " + x + " is hidden: " + (status != x) + " value: " + obj[x]);
+			}
+
+			dump("am here updating status in window title: " + (win.document.title ? win.document.title : "no title") + "\n");
+
+			win.document.getElementById("zindus-statuspanel").tooltipText = tooltip;
+			win.document.getElementById("zindus-statuspanel").hidden = false;
+		}
+	};
+
+	zwc.forEach(functor);
 }

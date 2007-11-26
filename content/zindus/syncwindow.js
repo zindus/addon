@@ -26,6 +26,7 @@ include("chrome://zindus/content/filesystem.js");
 include("chrome://zindus/content/payload.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsmobserver.js");
+include("chrome://zindus/content/windowcollection.js");
 include("chrome://zindus/content/statuspanel.js");
 
 function SyncWindow()
@@ -33,11 +34,11 @@ function SyncWindow()
 	this.m_syncfsm   = null;
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
 	this.m_payload   = null; // we keep it around so that we can pass the results back
+	this.m_zwc       = null; // the collection of windows that have status+progress panels
 	this.m_sfo       = new SyncFsmObserver();
 	this.m_logger    = newZinLogger("SyncWindow");
 	this.m_logger.level(ZinLogger.NONE);
 
-	this.m_messengerWindow          = null;
 	this.m_has_observer_been_called = false;
 }
 
@@ -83,6 +84,15 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	this.m_logger.debug("functor: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
+	var functor = {
+		m_showlogo: false,
+
+		run: function(win) {
+			win.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', !this.m_showlogo);
+			win.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', this.m_showlogo);
+		}
+	};
+
 	if (!this.m_has_observer_been_called)
 	{
 		// fsmstate should be null on first call to observer because the 'sync now' button should be disabled if the fsm is running
@@ -104,19 +114,20 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
-			if (!this.m_messengerWindow)
-				this.m_messengerWindow = getWindowContainingElementId('zindus-progresspanel');
+			if (!this.m_zwc)
+			{
+				this.m_zwc = new ZinWindowCollection('folderPaneBox'); // this used to say 'zindus-progresspanel'
+				this.m_zwc.populate();
+			}
 
 			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
 			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
 			                                        stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString());
 
-			if (this.m_messengerWindow)
-			{
-				this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', true);
-				this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', false);
-			}
+
+			functor.m_showlogo = false;
+			this.m_zwc.forEach(functor);
 		}
 
 		if (fsmstate.isFinal())
@@ -124,8 +135,8 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var es = this.m_sfo.exitStatus();
 			this.m_payload.m_result = es;
 
-			this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', false);
-			this.m_messengerWindow.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
+			functor.m_showlogo = true;
+			this.m_zwc.forEach(functor);
 
 			if (fsmstate.context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY)
 			{
