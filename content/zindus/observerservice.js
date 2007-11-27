@@ -33,7 +33,6 @@ ObserverService.service = function()
 
 ObserverService.isRegistered = function(topic)
 {
-	dump("topic: " + topic + "\n");
 	var os = ObserverService.service();
 	var enumerator = os.enumerateObservers(topic);
 	var count = 0;
