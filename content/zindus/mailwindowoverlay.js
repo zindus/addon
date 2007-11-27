@@ -56,7 +56,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 		if (messengerWindow)
 		{
-			this.m_logger.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
+			this.m_logger.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
 
 			Filesystem.createDirectoriesIfRequired();
 
@@ -81,7 +81,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 				this.m_timeoutID = window.setTimeout(this.onTimerFire, delay, this);
 
-				newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
+				newZinLogger().info("sync next:   " + getFriendlyTimeString(delay));
 			}
 			else
 				this.m_logger.debug("manual sync only - not starting timer.");
@@ -120,7 +120,7 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 			if (this.m_timer_functor)
 				this.m_timer_functor.cancel();
 
-			this.m_logger.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
+			this.m_logger.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
 		}
 	}
 	catch (ex)
@@ -148,7 +148,7 @@ ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 		else
 			context.m_logger.debug("ObserverService is already registered so don't reregister.");
 
-		var timer_id = hyphenate('-', ZinMaestro.ID_FUNCTOR_MAILWINDOW_TIMER, Date.parse(new Date(Date.now())));
+		var timer_id = hyphenate('-', ZinMaestro.ID_FUNCTOR_MAILWINDOW_TIMER, Date.now());
 
 		context.m_timer_functor = new ZinTimerFunctorSync(timer_id, context.scheduleTimer, context);
 
@@ -174,14 +174,14 @@ ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 
 	context.m_timeoutID = window.setTimeout(context.onTimerFire, delay, context);
 
-	newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
+	newZinLogger().info("sync next:   " + getFriendlyTimeString(delay));
 }
 
 ZinMailWindowOverlay.prototype.statusSummary = function()
 {
 	var last_sync_date = null;
 	var zfiStatus      = StatusPanel.getZfi();
-	var now            = new Date(Date.now());
+	var now            = new Date();
 	var next_sync_date = now;
 
 	if (zfiStatus)
@@ -189,10 +189,10 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 
 	if (last_sync_date)
 	{
-		if (Date.parse(last_sync_date) > Date.parse(now)) // something wierd happened with time - last_sync_date is in the future!
+		if ((last_sync_date - now) > 0) // something wierd happened with time - last_sync_date is in the future!
 		{
-			next_sync_date = new Date(Date.parse(now) + 1000 * 3600); // schedule for an hour ahead - effectively, we're backing off 
-
+			next_sync_date = new Date();
+			next_sync_date.setUTCMilliseconds(now.getUTCMilliseconds() + 1000 * 3600); // schedule for an hour ahead - ie, back off...
 			this.m_logger.warn("Something wierd happened - time seems to have gone backwards! " +
 			                   "\n" + " current time:   " + now +
 			                   "\n" + " last_sync_date: " + last_sync_date + 
@@ -200,10 +200,11 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 		}
 		else 
 		{
-			next_sync_date = new Date(Date.parse(last_sync_date) +
+			next_sync_date = new Date();
+			next_sync_date.setUTCMilliseconds(last_sync_date.getUTCMilliseconds() + 
 			                   1000 * randomPlusOrMinus(this.m_delay_on_repeat, (1/6 * this.m_delay_on_repeat).toFixed(0)));
 
-			if (Date.parse(now) > Date.parse(next_sync_date))
+			if ((now - next_sync_date) > 0)
 			{
 				next_sync_date = now;
 				this.m_logger.debug("next sync is overdue, using now: " + next_sync_date);

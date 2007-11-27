@@ -105,7 +105,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_zwc.populate();
 
-		newZinLogger().info("sync start:  " + getUTCAndLocalTime());
+		newZinLogger().info("sync start:  " + getFriendlyTimeString());
 		this.m_syncfsm.start();
 	}
 	else 
@@ -139,7 +139,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				StatusPanel.update();
 			}
 
-			newZinLogger().info("sync finish: " + getUTCAndLocalTime());
+			newZinLogger().info("sync finish: " + getFriendlyTimeString());
 
 			document.getElementById('zindus-syncwindow').acceptDialog();
 		}

@@ -82,7 +82,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var state = new TwoWayFsmState();
 			state.setCredentials();
 
-			newZinLogger().info("sync start:  " + getUTCAndLocalTime());
+			newZinLogger().info("sync start:  " + getFriendlyTimeString());
 			this.m_syncfsm = new TwoWayFsm(state);
 			this.m_syncfsm.start();
 			this.is_running = true;
@@ -148,7 +148,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 ZinTimerFunctorSync.prototype.finish = function()
 {
-	newZinLogger().info("sync finish: " + getUTCAndLocalTime());
+	newZinLogger().info("sync finish: " + getFriendlyTimeString());
 
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 

@@ -283,14 +283,14 @@ function getTime()
 	return now.getTime();
 }
 
-function getUTCAndLocalTime(increment)
+function getFriendlyTimeString(increment)
 {
 	var date = new Date();
 
 	if (arguments.length == 1)
 		date.setUTCMilliseconds(date.getUTCMilliseconds() + increment);
 
-	return date.toUTCString() + " (local time: " + date.toLocaleString() + " )";
+	return date.toLocaleString();
 }
 
 function hyphenate()
