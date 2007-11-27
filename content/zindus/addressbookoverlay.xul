@@ -57,7 +57,7 @@
 		</statusbarpanel>
 		<statusbarpanel id="zindus-statuspanel" hidden="true" tooltiptext="" insertbefore="zindus-progresspanel" class="statusbarpanel-iconic" >
 			<image id="zindus-statuspanel-logo"                            src="chrome://zindus/content/zindus16x16-bw.gif" />
-			<image id="zindus-statuspanel-logo-processing"   hidden="true" src="chrome://zindus/content/zindus-processing.gif" />
+			<image id="zindus-statuspanel-logo-processing"   hidden="true" src="chrome://zindus/content/zindus-processing-bw.gif" />
 			<label id="zindus-statuspanel-alert"             hidden="true" value="!" />
 			<label id="zindus-statuspanel-error"             hidden="true" value="X" />
 			<label id="zindus-statuspanel-insync"            hidden="true" value="Y" />

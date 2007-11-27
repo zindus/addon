@@ -652,7 +652,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		ZinXpath.setConditional(this.state, 'SyncMd',    "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::md",    response, null);
 		ZinXpath.setConditional(this.state, 'SyncToken', "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::token", response, null);
 
-		// TODO - what if the sync token went backwards (eg if the server had to restore from backups) ??
+		// Hm ... what if the sync token went backwards (eg if the server had to restore from backups) ??
 
 		// Things we're expecting:
 		// <folder view="contact" ms="2713" md="1169690090" l="1" name="address-book-3" id="563"><acl/></folder>
