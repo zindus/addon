@@ -186,7 +186,10 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 	var next_sync_date = now;
 
 	if (zfiStatus)
-		last_sync_date = new Date(zfiStatus.getOrNull('date'));
+	{
+		last_sync_date = new Date();
+		last_sync_date.setTime(zfiStatus.getOrNull('date'));
+	}
 
 	if (last_sync_date)
 	{

@@ -41,9 +41,9 @@ StatusPanel.save = function(es)
 {
 	var zfcStatus = new ZinFeedCollection();
 	zfcStatus.filename(Filesystem.FILENAME_STATUS);
-	var date = new Date().toUTCString(); // we used to use toLocaleString() here but found a bug with Date.parse() under Linux
+	var now = new Date();
 	var zfiStatus = new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_STATUS,
-									  'date', date,
+									  'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
 									  'exitstatus', es.m_exit_status,
 									  'conflicts', es.m_count_conflicts,
 									  'appversion', APP_VERSION_NUMBER );
@@ -75,9 +75,12 @@ StatusPanel.update = function(zwc)
 	{
 		var exitstatus = zfiStatus.getOrNull('exitstatus');
 		var conflicts  = zfiStatus.getOrNull('conflicts');
-		var tooltip    = new Date(zfiStatus.getOrNull('date')).toLocaleString();
 		var status     = null;
-		var tooltip_prefix;
+		var tooltip, tooltip_prefix;
+
+		var last_sync_date = new Date();
+		last_sync_date.setTime(zfiStatus.getOrNull('date'));
+		tooltip = last_sync_date.toLocaleString();
 
 		if (exitstatus != 0)
 		{
