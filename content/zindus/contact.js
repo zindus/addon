@@ -56,10 +56,6 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 
 	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
-	// the only attribute we know/care about is id
-	// dump("77225: namednodemap.item(i)... " + " nodeName == " + node.attributes.item(i).nodeName +
-	//      " nodeType == " + node.attributes.item(i).nodeType + " nodeValue == " + node.attributes.item(i).nodeValue + "\n");
-
 	if (node.hasAttributes())
 	{
 		for (var i = 0; i < node.attributes.length; i++)
@@ -80,8 +76,6 @@ ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
 		key = null;
 		value = null;
 		
-		// dump("77222: elementA.nodeName == " + elementA.nodeName + " hasChildNodes() " + elementA.hasChildNodes() + " childNodes.length is " + elementA.childNodes.length + "\n");
-
 		if (elementA.childNodes.length == 1 && elementA.childNodes.item(0).nodeType == Node.TEXT_NODE)
 			value = elementA.childNodes.item(0).nodeValue;
 
@@ -123,8 +117,6 @@ function FunctorArrayOfTextNodeValue()
 
 FunctorArrayOfTextNodeValue.prototype.run = function(doc, node)
 {
-	// gLogger.debug("77225: node.nodeType == " + node.nodeType + " node.childNodes.length: " + node.childNodes.length);
-
 	if (node.childNodes.length == 1 && node.childNodes.item(0).nodeType == Node.TEXT_NODE)
 		this.a.push(new String(node.childNodes.item(0).nodeValue));
 }

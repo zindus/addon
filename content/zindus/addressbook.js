@@ -115,7 +115,7 @@ ZimbraAddressBook.crc32 = function(properties)
 	function callback_concat_str(element, index, array) {
 		var key = ZinContactConverter.instance().m_equivalents[index][FORMAT_TB];
 		str += key + ":" + properties[key];
-		}
+	}
 
 	// after this, str == FirstName:FredLastName:BloggsDisplayName:Fred BloggsPrimaryEmail:fred.bloggs@example.com
 	//
@@ -184,13 +184,6 @@ ZimbraAddressBook.deleteCards = function(uri, cardsArray)
 	dir.deleteCards(cardsArray);
 }
 
-// ZimbraAddressBook.moveCard = function(uri_to, abCard)
-// {
-//	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-//	var dir = rdf.GetResource(uri_to).QueryInterface(Components.interfaces.nsIAbDirectory);
-//	dir.dropCard(abCard, false);
-// }
-
 ZimbraAddressBook.addCard = function(uri, format, standard, extras)
 {
 	zinAssert(uri != null && isPropertyPresent(ZinContactConverter.instance().m_map, format) && standard != null && extras != null);
@@ -231,10 +224,7 @@ ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 	}
 
 	for (i in extras)
-	{
 		mdbCard.setStringAttribute(i, extras[i]);
-		// logger.debug("AddressBook.addCard() calls mdbCard.setStringAttribute(" + i + ", " + extras[i] + ")");
-	}
 
 	mdbCard.editCardToDatabase(uri);
 

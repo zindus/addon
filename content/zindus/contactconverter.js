@@ -26,7 +26,7 @@ function ZinContactConverter()
 	this.m_equivalents = null; // an array of objects where each object is an n-tuplet of pairs of (format, contact property)
 	this.m_map         = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
 
-    this.m_bimap_folder_name = new BiMap(
+	this.m_bimap_folder_name = new BiMap(
 			[FORMAT_TB, FORMAT_ZM   ],
 			[TB_PAB,    ZM_CONTACTS ])
 

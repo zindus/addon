@@ -40,12 +40,13 @@ function onUnLoad()
 
 function ZinMailWindowOverlay()
 {
-	this.m_logger          = newZinLogger("MailWindowOverlay");
-	this.m_delay_on_repeat = null;
-	this.m_last_sync_date  = null;
-	this.m_timeoutID       = null;
-	this.m_maestro         = null;
-	this.m_timer_functor   = null;
+	this.m_logger           = newZinLogger("MailWindowOverlay");
+	this.m_logger_no_prefix = newZinLogger("");
+	this.m_delay_on_repeat  = null;
+	this.m_last_sync_date   = null;
+	this.m_timeoutID        = null;
+	this.m_maestro          = null;
+	this.m_timer_functor    = null;
 }
 
 ZinMailWindowOverlay.prototype.onLoad = function()
@@ -56,7 +57,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 		if (messengerWindow)
 		{
-			this.m_logger.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
+			this.m_logger_no_prefix.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
 
 			Filesystem.createDirectoriesIfRequired();
 
@@ -81,7 +82,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 				this.m_timeoutID = window.setTimeout(this.onTimerFire, delay, this);
 
-				newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
+				this.m_logger_no_prefix.info("sync next:   " + getFriendlyTimeString(delay));
 			}
 			else
 				this.m_logger.debug("manual sync only - not starting timer.");
@@ -120,7 +121,7 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 			if (this.m_timer_functor)
 				this.m_timer_functor.cancel();
 
-			this.m_logger.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
+			this.m_logger_no_prefix.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
 		}
 	}
 	catch (ex)
@@ -174,7 +175,7 @@ ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 
 	context.m_timeoutID = window.setTimeout(context.onTimerFire, delay, context);
 
-	newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
+	context.m_logger_no_prefix.info("sync next:   " + getFriendlyTimeString(delay));
 }
 
 ZinMailWindowOverlay.prototype.statusSummary = function()

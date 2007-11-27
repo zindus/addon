@@ -25,7 +25,7 @@ function PasswordManager()
 {
 	this.m_pm = null;
 
-    this.createInstance();
+	this.createInstance();
 }
 
 PasswordManager.prototype.createInstance = function()

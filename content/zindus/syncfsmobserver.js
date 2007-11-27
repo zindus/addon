@@ -104,9 +104,9 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 {
 	var ret = false;
 	var a_states_of_interest = { stAuth : 0,      stLoad: 1,       stSync: 2,            stSyncResult: 2,
-	                             stGetContact: 3, stSyncGal: 4,    stLoadTb : 5,       
-								 stConverge1: 6,  stConverge2: 7,  stConverge3: 8,
-								 stUpdateTb: 9,   stUpdateZm: 10,  stUpdateCleanup: 11,  final: 12 };
+	                             stGetContact: 3, stSyncGal: 4,    stLoadTb : 5,
+	                             stConverge1: 6,  stConverge2: 7,  stConverge3: 8,
+	                             stUpdateTb: 9,   stUpdateZm: 10,  stUpdateCleanup: 11,  final: 12 };
 
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 

@@ -170,8 +170,8 @@ ZinFeedCollection.prototype.save = function()
 {
 	var content = this.toString("\n");
 
-	// put an addtional newline at the end of the file because nsILineInputStream.readLine doesn't return TRUE on the very last newline
-	// so the functor used in load() doesn't get called.
+	// put an addtional newline at the end of the file because nsILineInputStream.readLine doesn't return TRUE 
+	// on the very last newline so the functor used in load() doesn't get called.
 	//
 	content += "\n";
 
@@ -254,14 +254,6 @@ ZinFeedItem.prototype.set = function(arg1, arg2)
 {
 	if (arguments.length == 2)
 	{
-		if (typeof(arg2) != 'object' && arg2 != null) // blah
-			; // do nothing
-		else
-		{
-			dump("ZinFeedItem.set: blah: arg1: " + arg1 + " arg2: " + arg2 + " typeof(arg2): " + typeof(arg2) + "\n");
-			newZinLogger("ZinFeedItem").debug("ZinFeedItem.set: blah: arg1: " + arg1 + " arg2: " + arg2 + " typeof(arg2): " + typeof(arg2));
-		}
-
 		zinAssert(typeof(arg2) != 'object' && arg2 != null);
 
 		this.m_properties[arg1] = arg2;

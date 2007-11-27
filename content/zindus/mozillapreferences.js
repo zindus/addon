@@ -26,7 +26,7 @@
 
 function MozillaPreferences()
 {
-    this.m_branch        = null;
+	this.m_branch        = null;
 	this.m_defaultbranch = null;
 }
 

@@ -103,7 +103,7 @@ ZinLogAppenderOpenClose.prototype.log = function(level, prefix, msg)
 
 	message += msg + "\n";
 
-    dump(message);
+	dump(message);
 
 	this.logToFile(message);
 

@@ -148,14 +148,10 @@ function stringBundleString(id_string)
 
 function xmlDocumentToString(doc)
 {
-	// dump("xmlDocumentToString: typeof doc == " + typeof doc + "\n");
-	// dump("xmlDocumentToString: doc == " + doc + "\n");
 	zinAssert(doc != null);
 
 	var serializer = new XMLSerializer();
-	// dump("771. in xmlDocumentToString(), serializer is " + serializer + "\n");
-    var str = serializer.serializeToString(doc);
-	// dump("772. in xmlDocumentToString(), str is " + str + "\n");
+	var str = serializer.serializeToString(doc);
 
 	return str;
 }
@@ -303,11 +299,6 @@ function hyphenate()
 
 	zinAssert(arguments.length >= 2);
 
-	// dump("am here 31 - arguments: " + arguments.toString() + "\n");
-	// dump("am here 31 - arguments.length: " + arguments.length + "\n");
-	// dump("am here 32 - typeof arguments: " + typeof(arguments) + "\n");
-	// dump("am here 33 - typeof arguments[1]: " + typeof(arguments[1]) + "\n");
-
 	if (typeof arguments[1] == 'array')
 	{
 		args = arguments[i];
@@ -318,8 +309,6 @@ function hyphenate()
 		args = arguments;
 		startAt = 1;
 	}
-
-	// dump("am here 34 - args: " + args.toString() + "\n");
 
 	for (var i = startAt; i < args.length; i++)
 	{
@@ -333,8 +322,6 @@ function hyphenate()
 		else
 			ret += separator + args[i];
 	}
-
-	// dump("am here 35 - ret: " + ret + "\n");
 
 	return ret;
 }

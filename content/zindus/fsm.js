@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.2 2007-11-27 06:56:58 cvsuser Exp $
+// $Id: fsm.js,v 1.3 2007-11-27 21:27:03 cvsuser Exp $
 
 if (typeof fsmlogger != 'object' || !fsmlogger)
 {
@@ -136,9 +136,8 @@ function fsmTransitionDo(fsmstate)
 		// we add the continuation as a property of the fsm object to support context.cancel()
 		context.fsm.continuation = continuation;
 		fsmlogger.debug("TransitionDo: context.fsm.continuation set - about to call the entry action, newstate: " + newstate);
-		// fsmlogger.debug("TransitionDo: entryAction: " + context.fsm.aActionEntry[newstate].toString());
 
-    	context.fsm.aActionEntry[newstate].call(context, newstate, event, continuation);
+		context.fsm.aActionEntry[newstate].call(context, newstate, event, continuation);
 
 		// aActionEntry for the final state won't have a continuation so it doesn't lead to a transition
 		// so here we tell the maestro that the fsm is finished...

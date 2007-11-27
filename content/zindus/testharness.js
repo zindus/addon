@@ -48,19 +48,8 @@ ZinTestHarness.prototype.run = function()
 
 ZinTestHarness.prototype.testCrc32 = function()
 {
-	if (0)
-	{
-	var o = newObject("LastName", "02-last", "FirstName", "01-first-3", "PrimaryEmail", "08-email-1@moniker.net");
-	var a = new Array();
-
-	for (var i in o)
-		a[ZinContactConverter.instance().m_map[FORMAT_TB][i]] = o[i];
-
-	this.m_logger.debug("testCrc32: a: " + a.toString());
-	}
-
-	var left  = newObject("FirstName", "01-first-3", "LastName", "02-last", "PrimaryEmail", "08-email-1@moniker.net");
-	var right = newObject("LastName", "02-last", "PrimaryEmail", "08-email-1@moniker.net" , "FirstName", "01-first-3");
+	var left  = newObject("FirstName", "01-first-3", "LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com");
+	var right = newObject("LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com" , "FirstName", "01-first-3");
 
 	var crcLeft  = ZimbraAddressBook.crc32(left);
 	var crcRight = ZimbraAddressBook.crc32(right);
@@ -116,7 +105,7 @@ ZinTestHarness.prototype.testContactConverter = function()
 {
 	var element = new Object();
 
-	element['email']     = "leni@barkly.moniker.net";
+	element['email']     = "leni@barkly.zindus.com";
 	element['firstName'] = "leni";
 
 	var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, element);

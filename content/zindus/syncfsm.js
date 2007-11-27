@@ -244,7 +244,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	// Even though data is stored in at least four separate files: 1-tb.txt, 2-zm.txt, gid.txt, lastsync.txt 
 	// as far as integrity is concerned they are a single unit.
 	//
-	// We distinguish between three cases:
+	// Three cases are identified:
 	// 1. clean slate (ie post install or reset)          ==> initialise and nextEvent == evNext
 	// 2. all the files exist and have integrity          ==> continue   and nextEvent == evNext
 	// 3. some files don't exist or don't have integrity  ==> continue   and nextEvent == evLackIntegrity (user is notified)
@@ -779,8 +779,8 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 							rev_attr = change['token'];
 
 						var isRevChange = !rev_attr ||
-										  !zfcZm.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
-										  rev_attr != zfcZm.get(id).get(ZinFeedItem.ATTR_REV);
+						                  !zfcZm.get(id).isPresent(ZinFeedItem.ATTR_REV)  ||
+						                   rev_attr != zfcZm.get(id).get(ZinFeedItem.ATTR_REV);
 
 						zfcZm.get(id).set(attribute);
 
@@ -2657,7 +2657,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				// 1. the contact's content didn't change, it just got moved from one folder to another (l attribute in the map changed)
 				// 2. the contact's content changed (might have changed folders as well)
 				// These scenarios are distinguished by whether the zimbra server bumped the rev attribute or not.
-				// See: http://wiki.ho.moniker.net/index.php/LedapZimbraSynchronisation#rev_attribute
+				// See: http://wiki/index.php/LedapZimbraSynchronisation#rev_attribute
 				// A content change bumps the rev attribute in which case we would have issued a GetContactRequest
 				// So in the event of a content change, the source is this.state.aSyncContact[luid_winner],
 				// otherwise it's the contact in the thunderbird addressbook.
@@ -3701,10 +3701,6 @@ SyncFsm.prototype.handleAsyncResponse = function (response, soapCall, error, con
 			else
 			{
 				soapstate.m_response = response.message;
-
-				// putzing around looking to plug a memory leak...
-				// var parser = new DOMParser();
-				// soapstate.m_response = parser.parseFromString(xmlDocumentToString(response.message), "text/xml");
 
 				context.state.m_logger.debug("handleAsyncResponse: response is " + xmlDocumentToString(response.message));
 			}

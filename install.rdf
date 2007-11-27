@@ -6,7 +6,7 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.6.7</em:version>  <!-- version populated by build script -->
+    <em:version>0.6.7.3</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <Description>
