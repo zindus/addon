@@ -56,7 +56,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 		if (messengerWindow)
 		{
-			this.m_logger.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
+			this.m_logger.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
 
 			Filesystem.createDirectoriesIfRequired();
 
@@ -81,7 +81,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 				this.m_timeoutID = window.setTimeout(this.onTimerFire, delay, this);
 
-				newZinLogger().info("sync next:   " + getFriendlyTimeString(delay));
+				newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
 			}
 			else
 				this.m_logger.debug("manual sync only - not starting timer.");
@@ -120,7 +120,7 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 			if (this.m_timer_functor)
 				this.m_timer_functor.cancel();
 
-			this.m_logger.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
+			this.m_logger.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getUTCAndLocalTime());
 		}
 	}
 	catch (ex)
@@ -174,7 +174,7 @@ ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 
 	context.m_timeoutID = window.setTimeout(context.onTimerFire, delay, context);
 
-	newZinLogger().info("sync next:   " + getFriendlyTimeString(delay));
+	newZinLogger().info("sync next:   " + getUTCAndLocalTime(delay));
 }
 
 ZinMailWindowOverlay.prototype.statusSummary = function()
