@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-prod-version.sh,v 1.1 2007-11-12 21:35:41 cvsuser Exp $
+# $Id: deploy-prod-version.sh,v 1.2 2007-11-27 06:56:58 cvsuser Exp $
 
 echo -n "have you edited build-config.sh to set APP_VERSION_NUMBER and set APP_VERSION_RELTYPE='prod-zindus' ? "
 read is_version_updated
@@ -8,7 +8,7 @@ if [ "$is_version_updated" == "y" ]; then
 	./build.sh
 
 	FILE_NAME_FROM=asd
-	FILE_NAME_TO=xpiversion.inc.php
+	FILE_NAME_TO=xpiversion.prod.inc.php
 	APPVERSION=`sed -r "s#<em:version>(.*)</em:version>#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
 
 	RELEASE_TAG=`echo $APPVERSION | sed 's/\./_/g'`
@@ -18,8 +18,7 @@ if [ "$is_version_updated" == "y" ]; then
 	cvs commit -m ""
 	cvs tag $RELEASE_TAG
 
-	# $GLOBALS['zindus']['reltype']['prod']['version']  = "
-	sed -r "s#($GLOBALS\['zindus'\]\['reltype'\]\['prod'\]\['version'\]  = \")(.*)\";#\1$APPVERSION\";#" < deploy-test-version.sh.inc.php > asd
+	sed -r "s#($GLOBALS\['zindus'\]\['reltype'\]\['prod'\]\['version'\]  = \")(.*)\";#\1$APPVERSION\";#" < deploy-prod-version.sh.inc.php > asd
 
 	copy_to_host=tanner.moniker.net
 

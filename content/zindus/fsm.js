@@ -12,7 +12,7 @@
  * 
  * The Original Code is Zindus Sync.
  * 
- * The Initial Developer of the Original Code is Moniker Pty Ltd.
+ * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
  * Portions created by Initial Developer are Copyright (C) 2007
  * the Initial Developer. All Rights Reserved.
@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.1 2007-10-29 23:50:24 cvsuser Exp $
+// $Id: fsm.js,v 1.2 2007-11-27 06:56:58 cvsuser Exp $
 
 if (typeof fsmlogger != 'object' || !fsmlogger)
 {

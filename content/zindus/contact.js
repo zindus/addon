@@ -12,7 +12,7 @@
  * 
  * The Original Code is Zindus Sync.
  * 
- * The Initial Developer of the Original Code is Moniker Pty Ltd.
+ * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
  * Portions created by Initial Developer are Copyright (C) 2007
  * the Initial Developer. All Rights Reserved.

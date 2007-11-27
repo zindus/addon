@@ -6,22 +6,22 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.6.6.20071126.214737</em:version>  <!-- version populated by build script -->
+    <em:version>0.6.6.20071127.174417</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <Description>
         <!-- Thunderbird -->
         <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id>
-        <em:minVersion>2.0.0.5</em:minVersion>
-        <em:maxVersion>2.0.*</em:maxVersion>
+        <em:minVersion>2.0.0.0</em:minVersion>
+        <em:maxVersion>2.0.9</em:maxVersion>
       </Description>
     </em:targetApplication>
 
     <em:name>Zindus</em:name>
     <em:optionsURL>chrome://zindus/content/prefsdialog.xul</em:optionsURL>
     <em:description>Synchronize the address book with a zimbra server.</em:description>
-    <em:creator>Toolware Pty. Ltd.</em:creator>
     <em:creator>Leni Mayo</em:creator>
+    <em:contributor>Sunny Bains</em:contributor>
     <em:homepageURL>http://www.zindus.com/</em:homepageURL>  
     <em:hidden>false</em:hidden>
     <em:iconURL>chrome://zindus/content/zindus32x32.gif</em:iconURL>
