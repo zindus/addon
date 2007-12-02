@@ -26,6 +26,7 @@
 
 function MozillaPreferences()
 {
+	this.m_prefix        = "extensions." + APP_NAME + ".";
 	this.m_branch        = null;
 	this.m_defaultbranch = null;
 }
@@ -39,7 +40,7 @@ MozillaPreferences.prototype.branch = function()
 			var instance = Components.classes["@mozilla.org/preferences-service;1"].
 		                                       getService(Components.interfaces.nsIPrefService);
 	
-			this.m_branch = instance.getBranch(APP_NAME + ".");
+			this.m_branch = instance.getBranch(this.m_prefix);
 		}
 		catch(ex)
 		{
@@ -59,7 +60,7 @@ MozillaPreferences.prototype.defaultbranch = function()
 			var instance = Components. classes["@mozilla.org/preferences-service;1"].
 		                                        getService(Components.interfaces.nsIPrefService);
 	
-			this.m_defaultbranch = instance.getDefaultBranch(APP_NAME + ".");
+			this.m_defaultbranch = instance.getDefaultBranch(this.m_prefithis.m_prefix);
 		}
 		catch(ex)
 		{
@@ -111,7 +112,7 @@ MozillaPreferences.prototype.getCharPref = function(branch, key, value)
 	return ret;
 }
 
-MozillaPreferences.prototype.getCharPrefOrNull = function(branch, key, value)
+MozillaPreferences.prototype.getCharPrefOrNull = function(branch, key)
 {
 	var ret = null;
 

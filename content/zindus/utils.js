@@ -364,3 +364,45 @@ function randomPlusOrMinus(central, varies_by)
 
 	return ret;
 }
+
+// Compare two Toolkit version strings as defined at:
+// http://developer.mozilla.org/en/docs/Toolkit_version_format
+// return:
+//    -1 a <  b
+//    0  a == b
+//    1  a >  b
+// This routine doesn't implement the full comparison as required by the spec above,
+// but for zindus version numbers, which are <number>.<number> etc it gives the same result.
+// More detail...
+// The spec says that "version part" is itself parsed as a sequence of <number-a><string-b><number-c><string-d>
+// whereas our        "version part" is simply                         <number>
+// And in the spec, version parts are compared bytewise whereas here we compare two numbers.
+//
+compareToolkitVersionStrings = function(string_a, string_b)
+{
+	var a_a = string_a.split(".");
+	var a_b = string_b.split(".");
+	var max_parts = (a_a.length > a_b.length) ? a_a.length : a_b.length;
+	var ret = 0;
+
+	for (var i = 0; (i < max_parts) && (ret == 0); i++)
+	{
+		var part_string_a = "1" + ((i < a_a.length) ? a_a[i] : "0"); // prefix with a digit because "043" wouldn't equal parseInt("043");
+		var part_string_b = "1" + ((i < a_b.length) ? a_b[i] : "0");
+
+		var part_int_a = parseInt(part_string_a, 10);
+		var part_int_b = parseInt(part_string_b, 10);
+
+		zinAssert(part_int_a.toString() == part_string_a); // assert that the parts really are only numbers
+		zinAssert(part_int_b.toString() == part_string_b); // otherwise, our simplified comparison here is no good
+
+		if (part_int_a > part_int_b)
+			ret = 1;
+		else if (part_int_a < part_int_b)
+			ret = -1;
+	}
+
+	newZinLogger("").debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
+
+	return ret;
+}

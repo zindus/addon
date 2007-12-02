@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
+         xmlns:NC="http://home.netscape.com/NC-rdf#"
+         xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAEBnZG+9qCT7qALKFgBwmnKYek6GnbnO62ETb/mueVhydP/Zt+J7fw9/OypNnDTP9vEmTeQPXKLfHWmD5rJv3iftOfgjR2RSP0oNG05lIuqHJvJCW7qG2o9TO7m39Yv7GyMh/m5qXXmNOc/E69NpAX9LZY0MzKJqkoQ4W0CeKiWX">
+    <em:updates RDF:resource="rdf:#$IEjs8"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$JEjs8"
+                   em:version="0.6.13">
+    <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
+  </RDF:Description>
+  <RDF:Seq RDF:about="rdf:#$IEjs8">
+    <RDF:li RDF:resource="rdf:#$JEjs8"/>
+  </RDF:Seq>
+  <RDF:Description RDF:about="rdf:#$MEjs8"
+                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
+                   em:minVersion="2.0b2"
+                   em:maxVersion="2.0.0.*"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.6.13-tb.xpi" />
+</RDF:RDF>

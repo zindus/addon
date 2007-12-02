@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.10 2007-11-12 06:19:09 cvsuser Exp $
+# $Id: build.sh,v 1.11 2007-12-02 07:07:57 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -102,35 +102,40 @@ for DIR in $ROOT_DIRS; do
   cp --verbose --parents $FILES $TMP_DIR
 done
 
-cp install.rdf /tmp/install.rdf
-sed -r "s#<em:version>(.*)</em:version>#<em:version>$APP_VERSION_NUMBER</em:version>#" < install.rdf > asd
-# cat asd
-mv asd install.rdf
+# update.rdf
+#
+MINVERSION=`sed -r "s#<em:minVersion>(.*)</em:minVersion>#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
+MAXVERSION=`sed -r "s#<em:maxVersion>(.*)</em:maxVersion>#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
+DOWNLOAD_DIR=http://www.zindus.com/download/xpi
+sed -i -r "s#em:version=\"(.*)\"#em:version=\"$APP_VERSION_NUMBER\"#" update.rdf
+sed -i -r "s#em:updateLink=\"(.*)\"#em:updateLink=\"$DOWNLOAD_DIR/zindus-$APP_VERSION_NUMBER-tb.xpi\"#" update.rdf
+sed -i -r "s#em:minVersion=\"(.*)\"#em:minVersion=\"$MINVERSION\"#" update.rdf
+sed -i -r "s#em:maxVersion=\"(.*)\"#em:maxVersion=\"$MAXVERSION\"#" update.rdf
 
-cp install.js /tmp/install.js
-sed -r "s#var version *= \"(.*)\";#var version             = \"$APP_VERSION_NUMBER\";#" < install.js > asd
-# cat asd
-mv asd install.js
-
+# install.rdf
+#
+sed -i -r "s#<em:version>(.*)</em:version>#<em:version>$APP_VERSION_NUMBER</em:version>#" install.rdf
 
 updateURL="    <em:updateURL>http://www.zindus.com/download/xpi-update-rdf.php?item_id=%ITEM_ID%\&amp;item_version=%ITEM_VERSION%\&amp;item_status=%ITEM_STATUS%\&amp;app_id=%APP_ID%\&amp;app_os=%APP_OS%\&amp;app_abi=%APP_ABI%"
+updateKey="    <em:updateKey>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyC+XK8GT8SJpfhxXZu7MM+ALv/OmcRfP3m2m6DzWrB121ToA3zEfUOfD568gDuKExpptuomgNyYRUB32yCQfmHryMS4fXXuG49JGlQq7kMNXW+aSp7IE5Q6DExVhLZ0jOSXk+alWbTWLFpXNLuI0n72T291Otmq0YEyrlqx3UbwIDAQAB</em:updateKey>"
 
 if [ "$APP_VERSION_RELTYPE" = "testing" ]; then
-	sed -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=testing</em:updateURL>#" < install.rdf > asd
-	# cat asd
-	mv asd install.rdf
+	sed -i -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=testing</em:updateURL>#" install.rdf
+	sed -i -r "s#.*<em:updateKey>.*</em:updateKey>.*#$updateKey#" install.rdf
 elif [ "$APP_VERSION_RELTYPE" = "prod-zindus" ]; then
-	sed -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=prod-zindus</em:updateURL>#" < install.rdf > asd
-	# cat asd
-	mv asd install.rdf
+	sed -i -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=prod-zindus</em:updateURL>#" install.rdf
+	sed -i -r "s#.*<em:updateKey>.*</em:updateKey>.*#$updateKey#" install.rdf
 elif [ "$APP_VERSION_RELTYPE" = "prod-amo" ]; then
-	sed -r "s#.*<em:updateURL>.*</em:updateURL>.*#    <!-- <em:updateURL></em:updateURL> -->#" < install.rdf > asd
-	# cat asd
-	mv asd install.rdf
+	sed -i -r "s#.*<em:updateURL>.*</em:updateURL>.*#    <!-- <em:updateURL></em:updateURL> -->#" install.rdf
+	sed -i -r "s#.*<em:updateKey>.*</em:updateKey>.*#    <!-- <em:updateKey></em:updateKey> -->#" install.rdf
 else
 	echo Undefined APP_VERSION_RELTYPE - aborting
 	exit 1
 fi
+
+# install.js
+#
+sed -i -r "s#var version *= \"(.*)\";#var version             = \"$APP_VERSION_NUMBER\";#" install.js
 
 # Copy other files to the root of future XPI.
 for ROOT_FILE in $ROOT_FILES install.rdf chrome.manifest install.js; do

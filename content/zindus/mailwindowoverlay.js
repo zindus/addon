@@ -59,6 +59,8 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 		{
 			this.m_logger_no_prefix.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
 
+			this.migratePrefs();
+
 			Filesystem.createDirectoriesIfRequired();
 
 			var prefs = new MozillaPreferences();
@@ -239,3 +241,33 @@ function zindusPrefsDialog()
 
 	return true;
 }
+
+// migrate the zindus.blah preferences to the mozilla convention extensions.zindus.blah
+// delete once confident all users are on version >= 0.6.13
+//
+ZinMailWindowOverlay.prototype.migratePrefs = function()
+{
+	var mpOld = new MozillaPreferences();
+	mpOld.m_prefix = APP_NAME + ".";
+
+	var mpNew = new MozillaPreferences();
+
+	var a = [ "server.2.url", "server.2.username", "general.manualsynconly", "general.verboselogging" ];
+
+	this.m_logger.debug("wondering whether to migrate prefs... ");
+
+	for (var i = 0; i < a.length; i++)
+	{
+		var value = mpOld.getCharPrefOrNull(mpOld.branch(), a[i]);
+		this.m_logger.debug("wondering whether to migrate pref: " + a[i]);
+
+		if (value != null)
+		{
+			mpNew.branch().setCharPref(a[i], value);
+			mpOld.branch().deleteBranch(a[i]);
+			this.m_logger.debug("migrated pref: " + a[i] + " value: " + value);
+		}
+	}
+
+}
+
