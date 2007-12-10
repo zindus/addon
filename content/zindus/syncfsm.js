@@ -1354,9 +1354,8 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			// this.state.m_logger.debug("TbAddressBook: blah: dirName.substring: " + elem.dirName.substring(0, this.prefix.length));
 			// this.state.m_logger.debug("TbAddressBook: blah: dirName.indexOf: " + elem.dirName.indexOf("/", this.prefix.length));
 
-			if (elem.directoryProperties.dirType == ZimbraAddressBook.kPABDirectory &&
-			    ((elem.dirName.substring(0, this.prefix.length) == this.prefix && elem.dirName.indexOf("/", this.prefix.length) == -1) ||
-			     (elem.dirName == TB_PAB) ) )
+			if ((elem.dirName.substring(0, this.prefix.length) == this.prefix && elem.dirName.indexOf("/", this.prefix.length) == -1) ||
+			     (elem.dirName == TB_PAB) )
 			{
 				var id;
 

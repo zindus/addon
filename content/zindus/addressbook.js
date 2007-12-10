@@ -66,7 +66,8 @@ ZimbraAddressBook.forEachAddressBook = function(functor)
 	{
 		var elem = nodes.getNext().QueryInterface(Components.interfaces.nsIAbDirectory);
 
-		fContinue = functor.run(elem);
+		if (elem.directoryProperties.dirType == ZimbraAddressBook.kPABDirectory)
+			fContinue = functor.run(elem);
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 	}
