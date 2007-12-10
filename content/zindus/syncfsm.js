@@ -287,10 +287,15 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 		this.state.isSlowSync = true;
 
+		this.state.m_logger.debug("entryActionLoad: debug issue #13: am here 1");
 		this.initialiseZfcLastSync();
+		this.state.m_logger.debug("entryActionLoad: debug issue #13: am here 2");
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
+		this.state.m_logger.debug("entryActionLoad: debug issue #13: am here 3");
 		this.initialiseZfcAutoIncrement(this.state.sources[this.state.sourceid_tb]['zfcLuid']);
+		this.state.m_logger.debug("entryActionLoad: debug issue #13: am here 4");
 		this.initialiseTbAddressbook();
+		this.state.m_logger.debug("entryActionLoad: debug issue #13: am here 5");
 
 		nextEvent = 'evNext';
 	}

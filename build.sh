@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.11 2007-12-02 07:07:57 cvsuser Exp $
+# $Id: build.sh,v 1.12 2007-12-10 21:26:02 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -102,11 +102,14 @@ for DIR in $ROOT_DIRS; do
   cp --verbose --parents $FILES $TMP_DIR
 done
 
+
 # update.rdf
 #
+set -x
 MINVERSION=`sed -r "s#<em:minVersion>(.*)</em:minVersion>#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
 MAXVERSION=`sed -r "s#<em:maxVersion>(.*)</em:maxVersion>#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
 DOWNLOAD_DIR=http://www.zindus.com/download/xpi
+set +x
 sed -i -r "s#em:version=\"(.*)\"#em:version=\"$APP_VERSION_NUMBER\"#" update.rdf
 sed -i -r "s#em:updateLink=\"(.*)\"#em:updateLink=\"$DOWNLOAD_DIR/zindus-$APP_VERSION_NUMBER-tb.xpi\"#" update.rdf
 sed -i -r "s#em:minVersion=\"(.*)\"#em:minVersion=\"$MINVERSION\"#" update.rdf
