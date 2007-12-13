@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-prod-version.sh,v 1.4 2007-12-02 07:07:57 cvsuser Exp $
+# $Id: deploy-prod-version.sh,v 1.5 2007-12-13 03:25:59 cvsuser Exp $
 
 export APP_VERSION_RELTYPE="prod-zindus"
 
@@ -34,7 +34,7 @@ if [ "$is_version_updated" == "y" ]; then
 		scp -q update.rdf $copy_to_host:/home/httpd/zindus.com/htdocs/download/update-prod.rdf
 
 		rm $FILE_NAME_FROM
-		echo External-facing prod-zindus version changed to $APPVERSION
+		echo External-facing $APP_VERSION_RELTYPE version changed to $APPVERSION
 	else
 		echo aborted.
 	fi

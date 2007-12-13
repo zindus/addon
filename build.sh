@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.12 2007-12-10 21:26:02 cvsuser Exp $
+# $Id: build.sh,v 1.13 2007-12-13 03:25:59 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -50,7 +50,7 @@ else
   . $1
 fi
 
-if [ "$APP_VERSION_RELTYPE" = "testing" ]; then
+if [ "$APP_VERSION_RELTYPE" = "testing" -o "$APP_VERSION_RELTYPE" = "dev" ]; then
 	APP_VERSION_NUMBER=$APP_VERSION_NUMBER.`date +%Y%m%d.%H%M%S`
 fi
 
@@ -122,11 +122,8 @@ sed -i -r "s#<em:version>(.*)</em:version>#<em:version>$APP_VERSION_NUMBER</em:v
 updateURL="    <em:updateURL>http://www.zindus.com/download/xpi-update-rdf.php?item_id=%ITEM_ID%\&amp;item_version=%ITEM_VERSION%\&amp;item_status=%ITEM_STATUS%\&amp;app_id=%APP_ID%\&amp;app_os=%APP_OS%\&amp;app_abi=%APP_ABI%"
 updateKey="    <em:updateKey>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyC+XK8GT8SJpfhxXZu7MM+ALv/OmcRfP3m2m6DzWrB121ToA3zEfUOfD568gDuKExpptuomgNyYRUB32yCQfmHryMS4fXXuG49JGlQq7kMNXW+aSp7IE5Q6DExVhLZ0jOSXk+alWbTWLFpXNLuI0n72T291Otmq0YEyrlqx3UbwIDAQAB</em:updateKey>"
 
-if [ "$APP_VERSION_RELTYPE" = "testing" ]; then
-	sed -i -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=testing</em:updateURL>#" install.rdf
-	sed -i -r "s#.*<em:updateKey>.*</em:updateKey>.*#$updateKey#" install.rdf
-elif [ "$APP_VERSION_RELTYPE" = "prod-zindus" ]; then
-	sed -i -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=prod-zindus</em:updateURL>#" install.rdf
+if [ "$APP_VERSION_RELTYPE" = "prod-zindus" -o "$APP_VERSION_RELTYPE" = "testing" -o "$APP_VERSION_RELTYPE" = "dev" ]; then
+	sed -i -r "s#.*<em:updateURL>.*</em:updateURL>.*#$updateURL\&amp;reltype=$APP_VERSION_RELTYPE</em:updateURL>#" install.rdf
 	sed -i -r "s#.*<em:updateKey>.*</em:updateKey>.*#$updateKey#" install.rdf
 elif [ "$APP_VERSION_RELTYPE" = "prod-amo" ]; then
 	sed -i -r "s#.*<em:updateURL>.*</em:updateURL>.*#    <!-- <em:updateURL></em:updateURL> -->#" install.rdf
