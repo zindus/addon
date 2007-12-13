@@ -303,22 +303,36 @@ ZimbraAddressBook.nsIAbMDBCardToKey = function(mdbCard)
 	return hyphenate('-', mdbCard.dbTableID, mdbCard.dbRowID, mdbCard.key);
 }
 
-ZimbraAddressBook.PabAsString = function()
+ZimbraAddressBook.getPabURI = function()
 {
-	var aResult = new Array();
+	var pabByUri  = null;
+	var pabByName = null;
+	var ret = null;
+	var msg;
 
 	var functor_foreach_addressbook = {
 		run: function(elem) {
-			if (ZimbraAddressBook.isElemPab(elem))
+
+			if (elem.directoryProperties.URI == ZimbraAddressBook.kPersonalAddressbookURI)
 			{
-				var msg = "addressbook:" +
-				          " dirName: " + elem.dirName +
-				          " dirPrefId: " + elem.dirPrefId +
-					      " URI: "      + elem.directoryProperties.URI;
+				msg = "pabByUri:  addressbook:" +
+				      " dirName: " + elem.dirName +
+				      " dirPrefId: " + elem.dirPrefId +
+				      " URI: "      + elem.directoryProperties.URI;
+				newZinLogger("AddressBook").debug(msg);
 
-				newZinLogger("AddressBook").debug("PabAsString: pushes: " + elem.dirName);
+				pabByUri = elem.directoryProperties.URI;
+			}
 
-				aResult.push(elem.dirName);
+			if (elem.dirName == "Personal Address Book")
+			{
+				msg = "pabByName: addressbook:" +
+				      " dirName: " + elem.dirName +
+				      " dirPrefId: " + elem.dirPrefId +
+				      " URI: "      + elem.directoryProperties.URI;
+				newZinLogger("AddressBook").debug(msg);
+
+				pabByName = elem.directoryProperties.URI;
 			}
 
 			return true;
@@ -327,19 +341,30 @@ ZimbraAddressBook.PabAsString = function()
 
 	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
 
-	zinAssert(aResult.length == 1);
+	if (pabByUri)
+	{
+		ret = pabByUri;
+		msg = "m_pab_uri set to pabByUri: " + ret;
+	}
+	else if (pabByName)
+	{
+		ret = pabByName;
+		msg = "m_pab_uri set to pabByName: " + ret;
+	}
+	else
+	{
+		msg = "m_pab_uri not set! ";
+	}
 
-	newZinLogger("AddressBook").debug("PabAsString: typeof: " + typeof(ZimbraAddressBook.m_PabAsString));
+	if (typeof(ZimbraAddressBook.m_pab_uri) == "undefined")
+		ZimbraAddressBook.m_pab_uri = new String(ret);
 
-	if (typeof(ZimbraAddressBook.m_PabAsString) == "undefined")
-		ZimbraAddressBook.m_PabAsString = new String(aResult[0]);
-
-	return ZimbraAddressBook.m_PabAsString;
+	return ZimbraAddressBook.m_pab_uri;
 }
 
 ZimbraAddressBook.isElemPab = function(elem)
 {
-	return (elem.directoryProperties.URI == ZimbraAddressBook.kPersonalAddressbookURI);
+	return (ZimbraAddressBook.getPabURI() == elem.directoryProperties.URI);
 }
 
 ZimbraAddressBook.getAbNameNormalised = function(elem)
