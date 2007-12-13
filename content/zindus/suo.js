@@ -38,6 +38,10 @@ Suo.bimap_opcode_past_tense = new BiMap(
 	[ Suo.ADD,   Suo.MOD,    Suo.DEL   ],
 	[ 'added',   'modified', 'deleted' ]);
 
+Suo.bimap_opcode_UI = new BiMap(
+	[ Suo.ADD,   Suo.MOD,     Suo.DEL   ],
+	[ 'suoAdd',  'suoModify', 'delete' ]);  // these are string ids from zindus.properties
+
 function Suo(gid, sourceid_winner, sourceid_target, opcode)
 {
 	this.gid             = gid;
@@ -62,6 +66,11 @@ Suo.opcodeAsString = function(opcode)
 Suo.opcodeAsStringPastTense = function(opcode)
 {
 	return Suo.bimap_opcode_past_tense.lookup(opcode);
+}
+
+Suo.opcodeAsStringForUI = function(opcode)
+{
+	return stringBundleString(Suo.bimap_opcode_UI.lookup(opcode));
 }
 
 function SuoCollection()

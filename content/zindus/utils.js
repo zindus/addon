@@ -119,17 +119,21 @@ FunctorAnyDuplicatesInPrefsetCollection.prototype.run = function(prefset)
 	}
 }
 
-function stringBundleString(id_string)
+function stringBundleString(id_string, args)
 {
 	var stringbundle = document.getElementById("zindus-stringbundle");
 	var ret = "";
 	var is_exception = false;
 
-	zinAssert(stringbundle != null);
+	zinAssert(arguments.length == 1 || arguments.length == 2);
+	zinAssertAndLog(stringbundle != null, "unknown string id: " + id_string);
 
 	try
 	{
-		ret = stringbundle.getString(APP_NAME + "." + id_string);
+		if (arguments.length == 1)
+			ret = stringbundle.getString(APP_NAME + "." + id_string);
+		else if (arguments.length == 2)
+			ret = stringbundle.getFormattedString(APP_NAME + "." + id_string, args); // untested!
 	}
 	catch (e)
 	{
@@ -218,7 +222,7 @@ function aToLength(obj)
 
 function isInArray(item, a)
 {
-	zinAssert(typeof a == 'array');
+	zinAssert(typeof a == 'object' && typeof a.indexOf == 'function');
 
 	return a.indexOf(item) != -1;
 }

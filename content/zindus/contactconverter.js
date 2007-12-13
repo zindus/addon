@@ -27,8 +27,8 @@ function ZinContactConverter()
 	this.m_map         = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
 
 	this.m_bimap_folder_name = new BiMap(
-			[FORMAT_TB, FORMAT_ZM   ],
-			[TB_PAB,    ZM_CONTACTS ])
+			[FORMAT_TB,  FORMAT_ZM   ],
+			[TB_PAB,     ZM_CONTACTS ])
 
 	this.m_app_name_with_slash = APP_NAME + "/";
 
@@ -106,12 +106,19 @@ ZinContactConverter.prototype.setup = function()
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "birthday"       ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "fileAs"         ));
 
-	// these fields aren't in the zimbra web UI but they are supported by the zimbra server
-	// these are just the ones I've found by playing with Outlook sync - there might me more...
+	// these fields aren't in the zimbra web UI but are supported by the zimbra server
+	// these are just the ones found through experimenting with Outlook sync - there are certainly more...
+	// Must consider whether there is a better way, eg: query/determine the entire list...
 	//
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "namePrefix"      )); // eg "Mr."
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "nameSuffix"      )); // eg "Mr."
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "initials"        ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "namePrefix"        )); // eg "Mr."
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "nameSuffix"        ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "initials"          ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email4"            ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email5"            ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email6"            ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "office"            ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "outlookUserField1" ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "zimbraCalResType"  ));
 
 	// Don't generate debug messages if unable to convert these attributes...
 	// eg. the <cn> elements returned by SyncGal include ldap attributes

@@ -25,27 +25,34 @@ function ZimbraAddressBook()
 {
 }
 
-ZimbraAddressBook.kPABDirectory = 2; // == nsIAbDirectoryProperties.dirType ==> mork address book
-                                     // see mozilla/mailnews/addrbook/...  src/nsDirPrefs.h and resources/content/addressbook.js
+                                                                              // source references relative to mozilla/mailnews/addrbook/
+ZimbraAddressBook.kPABDirectory = 2;                                          // == nsIAbDirectoryProperties.dirType ==> mork address book
+                                                                              // see src/nsDirPrefs.h and resources/content/addressbook.js
+ZimbraAddressBook.kPersonalAddressbookURI = "moz-abmdbdirectory://abook.mab"; // see: resources/content/abCommon.js
 
 ZimbraAddressBook.getAddressBookUri = function(name)
 {
+	var ret = null;
+
 	var functor =
 	{
 		run: function(elem)
 		{
 			if (elem.dirName == name)
-				this.uri = elem.directoryProperties.URI;
+				ret = elem.directoryProperties.URI;
 			else
-				this.uri = null;
+				ret = null;
 		
-			return this.uri == null;
+			return ret == null;
 		}
 	};
 
-	ZimbraAddressBook.forEachAddressBook(functor);
+	if (name == TB_PAB)
+		ret = ZimbraAddressBook.kPersonalAddressbookURI;
+	else
+		ZimbraAddressBook.forEachAddressBook(functor);
 
-	return functor.uri;
+	return ret;
 }
 
 ZimbraAddressBook.getAddressBookPrefId = function(uri)
@@ -296,3 +303,46 @@ ZimbraAddressBook.nsIAbMDBCardToKey = function(mdbCard)
 	return hyphenate('-', mdbCard.dbTableID, mdbCard.dbRowID, mdbCard.key);
 }
 
+ZimbraAddressBook.PabAsString = function()
+{
+	var aResult = new Array();
+
+	var functor_foreach_addressbook = {
+		run: function(elem) {
+			if (ZimbraAddressBook.isElemPab(elem))
+			{
+				var msg = "addressbook:" +
+				          " dirName: " + elem.dirName +
+				          " dirPrefId: " + elem.dirPrefId +
+					      " URI: "      + elem.directoryProperties.URI;
+
+				newZinLogger("AddressBook").debug("PabAsString: pushes: " + elem.dirName);
+
+				aResult.push(elem.dirName);
+			}
+
+			return true;
+		}
+	};
+
+	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
+
+	zinAssert(aResult.length == 1);
+
+	newZinLogger("AddressBook").debug("PabAsString: typeof: " + typeof(ZimbraAddressBook.m_PabAsString));
+
+	if (typeof(ZimbraAddressBook.m_PabAsString) == "undefined")
+		ZimbraAddressBook.m_PabAsString = new String(aResult[0]);
+
+	return ZimbraAddressBook.m_PabAsString;
+}
+
+ZimbraAddressBook.isElemPab = function(elem)
+{
+	return (elem.directoryProperties.URI == ZimbraAddressBook.kPersonalAddressbookURI);
+}
+
+ZimbraAddressBook.getAbNameNormalised = function(elem)
+{
+	return ZimbraAddressBook.isElemPab(elem) ? TB_PAB : elem.dirName;
+}

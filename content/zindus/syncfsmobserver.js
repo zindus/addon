@@ -202,13 +202,11 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 						es.failcode('FailOnIntegrityBadCredentials');
 					else if (fsmstate.oldstate == 'stLoad')
 						es.failcode('FailOnIntegrityDataStoreIn');
-					else if (fsmstate.oldstate == 'stLoadTb' || fsmstate.oldstate == 'stConverge1')
+					else if (isInArray(fsmstate.oldstate, [ 'stLoadTb', 'stConverge1', 'stUpdateCleanup' ]))
 					{
-						es.failcode(context.state.stopFailCode);   // one of the FailOnFolderName* codes
+						es.failcode(context.state.stopFailCode);
 						es.m_fail_detail = context.state.stopFailDetail;
 					}
-					else if (fsmstate.oldstate == 'stUpdateCleanup')
-						es.failcode('FailOnIntegrityDataStoreOut'); // this indicates a bug in our code
 					else
 						es.failcode('FailOnUnknown');
 				}
