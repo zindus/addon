@@ -1,5 +1,7 @@
 #!/bin/bash
-# $Id: deploy-prod-version.sh,v 1.5 2007-12-13 03:25:59 cvsuser Exp $
+# $Id: deploy-prod-version.sh,v 1.6 2007-12-13 20:55:08 cvsuser Exp $
+
+. deploy-common.sh
 
 export APP_VERSION_RELTYPE="prod-zindus"
 
@@ -10,16 +12,13 @@ if [ "$is_version_updated" == "y" ]; then
 	./build.sh
 
 	echo -n "have you signed update.rdf with mccoy ? "
-	read is_signed
+	# read is_signed
+	is_signed="y"
 	if [ "$is_signed" == "y" ]; then
 
-		FILE_NAME_FROM=asd
-		FILE_NAME_TO=xpiversion.prod.inc.php
-		APPVERSION=`sed -r "s#<em:version>(.*)</em:version>#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
+		APPVERSION=`get_appversion`
 
-		echo '<?php'                                                                 >  $FILE_NAME_FROM
-		echo '$GLOBALS["zindus"]["reltype"]["prod"]["version"]  = "'"$APPVERSION"'";'>> $FILE_NAME_FROM
-		echo '?>'                                                                    >> $FILE_NAME_FROM
+		generate_and_copy_rdfs $APPVERSION 'prod'
 
 		RELEASE_TAG=`echo $APPVERSION | sed 's/\./_/g'`
 		RELEASE_TAG="release-"$RELEASE_TAG
@@ -27,14 +26,6 @@ if [ "$is_version_updated" == "y" ]; then
 
 		cvs commit -m ""
 		cvs tag $RELEASE_TAG
-
-		copy_to_host=tanner.moniker.net
-
-		scp -q $FILE_NAME_FROM $copy_to_host:/home/httpd/zindus.com/php-include/$FILE_NAME_TO
-		scp -q update.rdf $copy_to_host:/home/httpd/zindus.com/htdocs/download/update-prod.rdf
-
-		rm $FILE_NAME_FROM
-		echo External-facing $APP_VERSION_RELTYPE version changed to $APPVERSION
 	else
 		echo aborted.
 	fi

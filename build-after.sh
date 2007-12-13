@@ -1,6 +1,5 @@
 #!/bin/bash
-# $Id: build-after.sh,v 1.5 2007-12-13 03:25:59 cvsuser Exp $
-
+# $Id: build-after.sh,v 1.6 2007-12-13 20:55:08 cvsuser Exp $
 
 if [ "$APP_VERSION_RELTYPE" = "dev" -o "$APP_VERSION_RELTYPE" = "testing" -o "$APP_VERSION_RELTYPE" = "prod-zindus" ]; then
 	copy_to_host=tanner.moniker.net
