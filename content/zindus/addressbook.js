@@ -48,7 +48,7 @@ ZimbraAddressBook.getAddressBookUri = function(name)
 	};
 
 	if (name == TB_PAB)
-		ret = ZimbraAddressBook.kPersonalAddressbookURI;
+		ret = ZimbraAddressBook.getPabURI();
 	else
 		ZimbraAddressBook.forEachAddressBook(functor);
 
@@ -339,25 +339,29 @@ ZimbraAddressBook.getPabURI = function()
 		}
 	};
 
-	ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
-
-	if (pabByUri)
-	{
-		ret = pabByUri;
-		msg = "m_pab_uri set to pabByUri: " + ret;
-	}
-	else if (pabByName)
-	{
-		ret = pabByName;
-		msg = "m_pab_uri set to pabByName: " + ret;
-	}
-	else
-	{
-		msg = "m_pab_uri not set! ";
-	}
-
 	if (typeof(ZimbraAddressBook.m_pab_uri) == "undefined")
+	{
+		ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
+	
+		if (pabByUri)
+		{
+			ret = pabByUri;
+			msg = "m_pab_uri set to pabByUri: " + ret;
+		}
+		else if (pabByName)
+		{
+			ret = pabByName;
+			msg = "m_pab_uri set to pabByName: " + ret;
+		}
+		else
+		{
+			msg = "m_pab_uri not set! ";
+		}
+
+		newZinLogger("AddressBook").debug(msg);
+
 		ZimbraAddressBook.m_pab_uri = new String(ret);
+	}
 
 	return ZimbraAddressBook.m_pab_uri;
 }

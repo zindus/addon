@@ -206,7 +206,9 @@ SyncFsm.prototype.exitActionAuth = function(state, event)
 	{
 		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
 		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
-		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "sessionId", this.state, 'sessionId');
+		// zimbra servers in the 3.x and 4.x series returned sessionId - the 5.x series don't.
+		// 3.x and 4.x don't seem to need it - perhaps it's inferred from the authToken - now ignored...
+		// conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "sessionId", this.state, 'sessionId');
 	}
 }
 
@@ -254,7 +256,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	var a_zfc = new Object(); // associative array of zfc, key is the file name
 
-	SyncFsm.removeZfcsIfNecessary();
+	this.removeZfcsIfNecessary();
 
 	cExist = this.loadZfcs(a_zfc);
 
@@ -1179,21 +1181,21 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	stopwatch.mark("1");
 	this.state.zfcTbPreMerge = zinCloneObject(zfcTb);          // 1. remember the tb luid's before merge so that we can follow changes
-	stopwatch.mark("2");
+
 	var aUri = this.loadTbMergeZfcWithAddressBook();           // 2. merge the current tb luid map with the current addressbook(s)
-	stopwatch.mark("3");
+	stopwatch.mark("2");
 	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);  // 3. exclude mailing lists and their cards
-	stopwatch.mark("4");
+	stopwatch.mark("3");
 	var passed = this.loadTbTestFolderNameRules();             // 4. test for duplicate folder names, reserved names, illegal chars
-	stopwatch.mark("5");
+	stopwatch.mark("4");
 
 	passed = passed && this.isFolderPresentInZfcTb(TB_PAB);
-	stopwatch.mark("6");
+	stopwatch.mark("5");
 
 	if (!this.state.isSlowSync)
 	{
 		passed = passed && this.isTbReservedFolderInvariant(TB_PAB);
-		stopwatch.mark("7");
+		stopwatch.mark("6");
 	}
 
 	var nextEvent = 'evNext';
@@ -3563,19 +3565,23 @@ SyncFsm.removeLogfile = function()
 		file.remove(false);
 }
 
-SyncFsm.removeZfcsIfNecessary = function()
+SyncFsm.prototype.removeZfcsIfNecessary = function()
 {
-	var appversion     = null;
-	var zfiStatus      = StatusPanel.getZfi();
+	var appversion = null;
+	var zfiStatus  = StatusPanel.getZfi();
 
 	if (zfiStatus)
 		appversion = zfiStatus.getOrNull('appversion');
 
 	if ((zfiStatus && !appversion)  || (appversion && compareToolkitVersionStrings(appversion, APP_VERSION_DATA_CONSISTENT_WITH) == -1))
 	{
-		newZinLogger().info("out of date data format - removing data files, forcing slow sync");
+		this.state.m_logger.debug("removeZfcsIfNecessary: data format is out of date: appversion: " + appversion + 
+		                          " more recent than: " + APP_VERSION_DATA_CONSISTENT_WITH);
+		this.state.m_logger.info("out of date data format - removing data files, forcing slow sync");
 		SyncFsm.removeZfcs();
 	}
+	else
+		this.state.m_logger.debug("removeZfcsIfNecessary: data format is up-to-date, appversion: " + appversion);
 }
 
 SyncFsm.setLsoToGid = function(zfiGid, zfiTarget)
@@ -3607,7 +3613,7 @@ SyncFsm.prototype.setupSoapCall = function(state, eventOnResponse, method)
 
 	this.state.m_soap_state = new SoapState();
 	this.state.m_soap_state.m_method = method;
-	this.state.m_soap_state.m_zsd.context(this.state.authToken, this.state.sessionId);
+	this.state.m_soap_state.m_zsd.context(this.state.authToken);
 	this.state.m_soap_state.m_zsd[method].apply(this.state.m_soap_state.m_zsd, args);
 
 	this.fsm.transitions['stSoapResponse']['evNext'] = this.fsm.transitions[state][eventOnResponse];
@@ -3943,7 +3949,6 @@ function SyncFsmState(id_fsm)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)
 
 	this.authToken           = null;         // Auth
-	this.sessionId           = null;
 	this.lifetime            = null;
 	this.soapURL             = null;         // see setCredentials() -  and may be modified by a <soapURL> response from GetAccountInfo
 	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
