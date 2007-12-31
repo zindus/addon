@@ -65,6 +65,12 @@ ZimbraSoapDocument.prototype.context = function(authToken)
 	var elContext   = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "context");
 	var elNonotify  = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "nonotify");
 	var elNoqualify = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "noqualify");
+	var elUserAgent = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "UserAgent");
+
+	// UserAgent is useless to zindus - we add it so that server administrators can see what's going on
+	//
+	elUserAgent.setAttribute("name", APP_NAME);
+	elUserAgent.setAttribute("version", APP_VERSION_NUMBER);
 
 	// noqualify controls the formatting of returned id's and distinguishes whether the owner of the mailbox 
 	// matches the principal.  Since there's no delegation of authority here, we use noqualify.
@@ -74,6 +80,7 @@ ZimbraSoapDocument.prototype.context = function(authToken)
 
 	elHeader.appendChild(elContext);
 
+	elContext.appendChild(elUserAgent);
 	elContext.appendChild(elNonotify);
 	elContext.appendChild(elNoqualify);
 

@@ -650,6 +650,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		var sourceid = this.state.sourceid_zm;
 		var zfcZm    = this.state.sources[sourceid]['zfcLuid'];
 		var id, functor, xpath_query;
+		var isAnyChangeToFolders = false;
 
 		ZinXpath.setConditional(this.state, 'SyncMd',    "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::md",    response, null);
 		ZinXpath.setConditional(this.state, 'SyncToken', "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::token", response, null);
@@ -682,17 +683,19 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 			run: function(doc, node)
 			{
 				var attribute = attributesFromNode(node);
-				var id = attribute['id'];
-				var l  = attribute['l'];
-				var msg = "entryActionSyncResult: found a <folder id='" + id +"' l='" + l + "'>";
+				var id   = attribute['id'];
+				var l    = attribute['l'];
+				var name = attribute['name'];
+				var msg  = "entryActionSyncResult: found a <folder id='" + id +"' l='" + l + "' name='" + name + "'>";
 
-				if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l'))
-					this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
+				if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, 'l') || !isPropertyPresent(attribute, 'name'))
+					this.state.m_logger.error("<folder> element is missing a necessary attribute - ignoring: " + aToString(attribute));
 				else
 				{
 					if (zfcZm.isPresent(id))
 					{
 						zfcZm.get(id).set(attribute);  // update existing item
+						isAnyChangeToFolders = true;
 						msg += " - updated id in map";
 					}
 					else if (l == '1')
@@ -757,21 +760,29 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 				{
 					var fAddToTheQueue = false;
 
-					if (!zfcZm.isPresent(id)) // && SyncFsm.isOfInterest(zfcZm, l)) // ignore contacts that appear in the Trash and other uninteresting folders
+					if (!zfcZm.isPresent(id))
 					{
-						fAddToTheQueue = true;
-						msg += " - first time it's been seen ";
+						if (SyncFsm.isOfInterest(zfcZm, l))
+						{
+							fAddToTheQueue = true;
+							msg += " - first time it's been seen ";
+						}
+						else
+						{
+							msg += " - isn't of interest - ignored";
+						}
 					}
 					else
 					{
 						var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcZm, id);
 
-						// When we update a contact on the server the <ModifyContactResponse> includes a rev attribute (which we store)
-						// the next <SyncResponse> includes a <cn> element for the contact but without a rev attribute -
-						// perhaps because it already gave the client the rev attribute with the <ModifyContactResponse>.
-						// In the absence of a rev attribute on the <cn> element we use the change token to decide whether
-						// our rev of the contact is the same as that on the server.
-						// Note: <SyncResponse> also has a token="" attribute - no idea whether this merely duplicates the change token
+						// When a contact is updated on the server the rev attribute returned with <ModifyContactResponse>
+						// is written to the map.
+						// The <cn> element returned with the next <SyncResponse> doesn't have a rev attribute -
+						// perhaps the zimbra server figures it already gave the client the rev attribute with the <ModifyContactResponse>.
+						// In the absence of a rev attribute on the <cn> element we use the token attribute in the <change> element
+						// in the soap header to decide whether our rev of the contact is the same as that on the server.
+						// Note: <SyncResponse> also has a token attribute - no idea whether this merely duplicates the one in the header
 						// or whether it serves a different purpose
 						//
 						var rev_attr = null;
@@ -815,20 +826,6 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 		ZinXpath.runFunctor(functor, xpath_query, response);
 
-		functor = {
-			ids: new Object(),
-
-			run: function(doc, node)
-			{
-				zinAssert(node.nodeType == Node.ATTRIBUTE_NODE);
-				
-				var ids = node.nodeValue;
-
-				for each (var id in ids.split(","))
-					this.ids[id] = true;
-			}
-		};
-
 		// <cn ids="567,480,501"/>
 		//   This element appears as a child of a <folder> element
 		//     ==> add each id to the queue for GetContactRequest
@@ -836,33 +833,100 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		//
 		// xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder[@l='1' and (@view='contact' or @name='Trash')]/zm:cn/@ids";
 		//
-		xpath_query = xpath_query_folders + "/zm:cn/@ids";
+		xpath_query = xpath_query_folders + "/zm:cn[@ids]";
 
-		ZinXpath.runFunctor(functor, xpath_query, response);
+		var functor_folder_ids = {
+			ids: new Object(),
+			state: this.state,
 
-		for (id in functor.ids)
+			run: function(doc, node)
+			{
+				zinAssert(node.nodeType == Node.ELEMENT_NODE);
+
+				var attribute = attributesFromNode(node);
+				var parent_folder_attribute = attributesFromNode(node.parentNode);
+				var parent_folder_id = parent_folder_attribute['id'];
+
+				// this.state.m_logger.debug("functor_folder_ids: attribute['ids']: " + attribute['ids']);
+				// this.state.m_logger.debug("functor_folder_ids: parent_folder_attribute: " + aToString(parent_folder_attribute));
+				// this.state.m_logger.debug("functor_folder_ids: node.nodeType: " + node.nodeType);
+				// this.state.m_logger.debug("functor_folder_ids: node.parentNode.nodeType: " + (node.parentNode == null ? "null" : node.parentNode.nodeType));
+
+				if (SyncFsm.isOfInterest(zfcZm, parent_folder_id))
+				{
+					for each (var id in attribute['ids'].split(','))
+						this.ids[id] = true;
+				}
+				else
+				{
+					this.state.m_logger.debug("ignored <cn ids='" + attribute['ids'] +
+					                              "'> - because parent folder id='" + parent_folder_id + "' isn't of interest");
+				}
+			}
+		};
+
+		ZinXpath.runFunctor(functor_folder_ids, xpath_query, response);
+
+		for (id in functor_folder_ids.ids)
 			this.state.aQueue[id] = true;
 
 		// <deleted ids="561,542"/>
 		//   ==> set the ZinFeedItem.ATTR_DEL flag in the map
 		// Some of the deleted ids might not relate to contacts at all
 		// So we may never have seen them and no map entry exists.
-		// So the ZinFeedItem.ATTR_DEL flag is set only on items already in the map.
+		// The ZinFeedItem.ATTR_DEL flag is set only on items already in the map.
 		//
 		xpath_query = "/soap:Envelope/soap:Body/zm:SyncResponse//zm:deleted/@ids";
-		functor.ids = new Object();
 
-		ZinXpath.runFunctor(functor, xpath_query, response);
+		var functor_deleted_ids = {
+			ids: new Object(),
 
-		for (id in functor.ids)
+			run: function(doc, node)
+			{
+				zinAssert(node.nodeType == Node.ATTRIBUTE_NODE);
+
+				for each (var id in node.nodeValue.split(","))
+					this.ids[id] = true;
+			}
+		};
+
+		ZinXpath.runFunctor(functor_deleted_ids, xpath_query, response);
+
+		for (id in functor_deleted_ids.ids)
 			if (zfcZm.isPresent(id))
 			{
 				zfcZm.get(id).set(ZinFeedItem.ATTR_DEL, 1);
-				this.state.m_logger.debug("entryActionSyncResult: found a deleted id: " + id + " zfi: " + zfcZm.get(id).toString());
+				this.state.m_logger.debug("found a deleted id: " + id + " zfi: " + zfcZm.get(id).toString());
 			}
 
+		// Finally, if there was any change to a folder, iterate through contacts and fake an ATTR_DEL on any contact that's
+		// no longer of interest (eg because it's folder moved to Trash
+
+		var functor_fake_del_on_contacts_that_arent_of_interest = {
+			state: this.state,
+
+			run: function(zfi)
+			{
+				if (zfi.type() == ZinFeedItem.TYPE_CN)
+				{
+					var id = zfi.id();
+
+					if (!SyncFsm.isOfInterest(zfcZm, id))
+					{
+						zfcZm.get(id).set(ZinFeedItem.ATTR_DEL, 1);
+						this.state.m_logger.debug("faking a delete on a contact that's no longer of interest: id: " + id);
+					}
+				}
+
+				return true;
+			}
+		};
+
+		if (isAnyChangeToFolders)
+			zfcZm.forEach(functor_fake_del_on_contacts_that_arent_of_interest, ZinFeedItem.ITER_SOURCEID);
+
 		// At the end of all this:
-		// - our map points to subset of items on the server - basically all folders with @view='contact' and their contacts
+		// - our map points to subset of items on the server - basically all top-level folders with @view='contact' and their contacts
 		// - this.state.aQueue is populated with the ids of:
 		//   - contacts that are in the parent folders of interest, and
 		//   - contacts whose content has changed (indicated by the rev attribute being bumped)
@@ -2496,7 +2560,7 @@ SyncFsm.prototype.shouldEmailedContactsBePresent = function()
 	var id = this.lookupFolderInZfc(zfcZm, ZM_EMAILED_CONTACTS);
 	var passed = true;
 
-	if (!id || zfcZm.get(id).isPresent(ZinFeedItem.ATTR_DEL)) // no need to test locally
+	if (!id || zfcZm.get(id).isPresent(ZinFeedItem.ATTR_DEL))
 	{
 		this.state.m_logger.debug("shouldEmailedContactsBePresent: server doesn't have: " + ZM_EMAILED_CONTACTS);
 	}
@@ -2506,7 +2570,7 @@ SyncFsm.prototype.shouldEmailedContactsBePresent = function()
 	}
 	else if (this.state.isSlowSync)
 	{
-		this.state.m_logger.debug("shouldEmailedContactsBePresent: isSlowSync: " + this.state.isSlowSync); // no need to test locally
+		this.state.m_logger.debug("shouldEmailedContactsBePresent: id: " + id + " isSlowSync: " + this.state.isSlowSync);
 	}
 	else
 	{
@@ -3558,11 +3622,17 @@ SyncFsm.removeLogfile = function()
 {
 	// remove the logfile
 	//
-	file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
+	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
 	file.append(Filesystem.FILENAME_LOGFILE);
 
 	if (file.exists() && !file.isDirectory())
-		file.remove(false);
+	{
+		// file.remove(false);
+		// Save the old logfile.  Often folk have a problem, "reset" to fix it, then email support and we don't know
+		// what happened because the logfile is gone.
+		//
+		file.moveTo(null, Filesystem.FILENAME_LOGFILE + ".old");
+	}
 }
 
 SyncFsm.prototype.removeZfcsIfNecessary = function()

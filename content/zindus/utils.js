@@ -181,6 +181,7 @@ function attributesFromNode(node)
 	return ret;
 }
 
+
 // return a printable string for an associatve array
 //
 function aToString(obj)
