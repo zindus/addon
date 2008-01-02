@@ -33,6 +33,7 @@
 	<toolbox id="mail-toolbox" class="toolbox-top" mode="full">
 		<toolbarpalette id="MailToolbarPalette">
 			<toolbarbutton id="zindus-toolbarbutton"
+			               class="toolbarbutton-1"
 			               label="&ZinToolsMenuItem.label;"
 						   tooltiptext="&ZinToolBarButton.tooltip;"
 			               oncommand="zindusPrefsDialog();" />

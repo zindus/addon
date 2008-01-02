@@ -206,9 +206,7 @@ SyncFsm.prototype.exitActionAuth = function(state, event)
 	{
 		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
 		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
-		// zimbra servers in the 3.x and 4.x series returned sessionId - the 5.x series don't.
-		// 3.x and 4.x don't seem to need it - perhaps it's inferred from the authToken - now ignored...
-		// conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "sessionId", this.state, 'sessionId');
+		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "sessionId", this.state, 'sessionId');
 	}
 }
 
@@ -3683,7 +3681,7 @@ SyncFsm.prototype.setupSoapCall = function(state, eventOnResponse, method)
 
 	this.state.m_soap_state = new SoapState();
 	this.state.m_soap_state.m_method = method;
-	this.state.m_soap_state.m_zsd.context(this.state.authToken);
+	this.state.m_soap_state.m_zsd.context(this.state.authToken, this.state.sessionId);
 	this.state.m_soap_state.m_zsd[method].apply(this.state.m_soap_state.m_zsd, args);
 
 	this.fsm.transitions['stSoapResponse']['evNext'] = this.fsm.transitions[state][eventOnResponse];
@@ -4018,7 +4016,8 @@ function SyncFsmState(id_fsm)
 	this.zfcGid              = null;                    // ZinFeedCollection - map of gid to (sourceid, luid)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)
 
-	this.authToken           = null;         // Auth
+	this.authToken           = null;         // AuthResponse
+	this.sessionId           = null;         // AuthResponse - 3.x and 4.x zimbra servers return sessionId - 5.x servers don't.
 	this.lifetime            = null;
 	this.soapURL             = null;         // see setCredentials() -  and may be modified by a <soapURL> response from GetAccountInfo
 	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.

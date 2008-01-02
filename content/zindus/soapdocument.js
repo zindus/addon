@@ -59,7 +59,7 @@ ZimbraSoapDocument.prototype.toString = function()
 	return xmlDocumentToString(this.doc);
 }
 
-ZimbraSoapDocument.prototype.context = function(authToken)
+ZimbraSoapDocument.prototype.context = function(authToken, sessionId)
 {
 	var elHeader    = this.doc.createElementNS(ZimbraSoapDocument.NS_SOAP_ENVELOPE, "soap:Header");
 	var elContext   = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "context");
@@ -86,13 +86,20 @@ ZimbraSoapDocument.prototype.context = function(authToken)
 
 	if (authToken != null)
 	{
-		// zinAssert(sessionId != null);
-
 		var elAuthtoken = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "authToken");
 
 		elAuthtoken.textContent = authToken;
 
 		elContext.appendChild(elAuthtoken);
+
+		if (sessionId != null)
+		{
+			var elSession   = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "sessionId");
+
+			elSession.setAttribute("id", sessionId);
+
+			elContext.appendChild(elSession);
+		}
 	}
 }
 
