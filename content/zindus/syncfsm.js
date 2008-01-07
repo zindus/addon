@@ -1788,10 +1788,54 @@ SyncFsm.prototype.twinInGid = function(sourceid, luid, sourceid_tb, luid_tb, rev
 	var zfcTb = this.state.sources[sourceid_tb]['zfcLuid'];
 	var zfcZm = this.state.sources[sourceid]['zfcLuid'];
 
-	this.resetLsoVer(gid, zfcTb.get(luid_tb));          // set VER in gid and LS attribute in the tb luid map
+	this.resetLsoVer(gid, zfcTb.get(luid_tb));             // set VER in gid and LS attribute in the tb luid map
 	SyncFsm.setLsoToGid(zfcGid.get(gid), zfcZm.get(luid)); // set                LS attribute in the zm luid map
 
 	return gid;
+}
+
+// Some items on the server are supposed to be immutable (Contacts folder) but in fact the ms and md attributes may change.
+// This method detects that and resets the gid's and the LS attributes in the sources to the new values so that buildGcs
+// won't see any change.
+SyncFsm.prototype.workaroundForImmutables = function()
+{
+	var sourceid_tb = this.state.sourceid_tb;
+	var sourceid_zm = this.state.sourceid_zm;
+	var zfcTb   = this.state.sources[sourceid_tb]['zfcLuid'];
+	var zfcZm   = this.state.sources[sourceid_zm]['zfcLuid'];
+	var zfcGid  = this.state.zfcGid;
+	var reverse = this.state.aReverseGid; // bring it into the local namespace
+	var luid_zm    = ZM_ID_CONTACTS;
+
+	if (zfcZm.isPresent(luid_zm) &&
+	    zfcZm.get(luid_zm).get(ZinFeedItem.ATTR_NAME) == ZM_CONTACTS &&
+		zfcZm.get(luid_zm).isPresent(ZinFeedItem.ATTR_LS))
+	{
+		zinAssert(isPropertyPresent(reverse[sourceid_zm], luid_zm));
+
+		var zfiZm = zfcZm.get(luid_zm);
+		var lso = new Lso(zfiZm.get(ZinFeedItem.ATTR_LS));
+		var gid = reverse[sourceid_zm][luid_zm];
+		zinAssert(zfcGid.isPresent(gid) && zfcGid.get(gid).isPresent(sourceid_tb));
+		var luid_tb = zfcGid.get(gid).get(sourceid_tb);
+
+		if (lso.get(ZinFeedItem.ATTR_VER) == zfcGid.get(gid).get(ZinFeedItem.ATTR_VER))
+		{
+			var res = lso.compare(zfiZm);
+
+			if (res != 0)
+			{
+				// this would result in a change of note in buildGcs...
+				//
+				this.resetLsoVer(gid, zfiZm);                             // set VER in gid and LS attribute in the zm luid map
+				SyncFsm.setLsoToGid(zfcGid.get(gid), zfcTb.get(luid_tb)); // set                LS attribute in the tb luid map
+
+				var name   = zfiZm.get(ZinFeedItem.ATTR_NAME);
+				this.state.m_logger.debug("workaroundForImmutables: Zimbra folder '" + name + "' changed!  Resetting gid's ver and source zfi LS attributes for sourceid: " + this.state.sourceid_zm + " and luid: " + luid_zm);
+
+			}
+		}
+	}
 }
 
 SyncFsm.prototype.updateGidFromSources = function()
@@ -2605,16 +2649,19 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 
 	if (passed)
 	{
-		this.updateGidFromSources();                      // 1.  map all luids into a single namespace (the gid)
+		this.updateGidFromSources();                      // 1. map all luids into a single namespace (the gid)
 		stopwatch.mark("2");
 
-		this.aGcs = this.buildGcs();                      // 2.  reconcile the sources (via the gid) into a single truth (the sse output array) 
+		this.workaroundForImmutables();
+
+		this.aGcs = this.buildGcs();                      // 2. reconcile the sources (via the gid) into a single truth
+		                                                  //    this is the sse output array - winners and conflicts have now been selected
 		stopwatch.mark("3");
 
 		this.buildPreUpdateWinners(this.aGcs);            // 3. save winner state before winner update to distinguish ms vs md update
 		stopwatch.mark("4");
 
-		passed = this.testFolderNameDuplicate(this.aGcs); // 4.  a bit of conflict detection
+		passed = this.testFolderNameDuplicate(this.aGcs); // 4. a bit of conflict detection
 	}
 
 	stopwatch.mark("5");
@@ -3546,8 +3593,6 @@ SyncFsm.prototype.resetLsoVer = function(gid, zfi)
 	{
 		lsoFromZfiAttributes.set(ZinFeedItem.ATTR_VER, ver);
 		zfi.set(ZinFeedItem.ATTR_LS, lsoFromZfiAttributes.toString());
-
-		// this.state.m_logger.debug("resetLsoVer: gid: " + gid + " ver set to: " + ver + " and zfi is now: " + zfi.toString());
 	}
 }
 
@@ -4087,7 +4132,10 @@ SyncFsmState.prototype.setCredentials = function()
 		this.sources[SOURCEID_ZM]['password'] = credentials[2];
 	}
 
-	this.sources[SOURCEID_ZM]['soapURL'] += "/service/soap/";
+	if (this.sources[SOURCEID_ZM]['soapURL'].charAt(this.sources[SOURCEID_ZM]['soapURL'].length - 1) != '/')
+		this.sources[SOURCEID_ZM]['soapURL'] += '/';
+
+	this.sources[SOURCEID_ZM]['soapURL'] += "service/soap/";
 
 	this.m_logger.debug("setCredentials: this.sources[zm][soapURL]: " + this.sources[SOURCEID_ZM]['soapURL']);
 }
