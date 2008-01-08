@@ -1,8 +1,10 @@
 <!-- See http://books.mozdev.org/html/mozilla-chp-11-sect-4.html for the naming scheme -->
 
-<!ENTITY ZinToolsMenuItem.label                  "zindus">
-<!ENTITY ZinToolsMenuItem.accesskey              "z">
-<!ENTITY ZinToolBarButton.tooltip                "preferences for the zindus extension">
+<!ENTITY ZinToolsMenuItem.label                 "Zindus">
+<!ENTITY ZinToolsMenuItem.accesskey             "z">
+<!ENTITY ZinToolBarButton.tooltip               "preferences for the zindus extension">
+
+<!ENTITY ZinProgressPanelPrefix.label           "Zindus:">
 
 <!ENTITY ZinPrefs.title                         "Zindus Configuration Settings">
 <!ENTITY ZinPrefs.buttonlabelextra2             "Help">

@@ -32,7 +32,7 @@
 
 	<statusbar id="status-bar" >
 		<statusbarpanel id="zindus-progresspanel" hidden="true" insertbefore="unreadMessageCount" >
-			<label id="zindus-progresspanel-label-prefix" value="zindus:" />
+			<label id="zindus-progresspanel-label-prefix" value="&ZinProgressPanelPrefix.label;" />
 			<stack>
 				<progressmeter id="zindus-progresspanel-progress-meter" mode="normal" style="max-width: 20px; opacity: .25" value="50%" />
 				<label id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
