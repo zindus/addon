@@ -1,0 +1,7 @@
+#zindus-toolbarbutton {
+	list-style-image: url("chrome://zindus/skin/zindus24x24-tmp.gif");
+}
+
+toolbar[iconsize="small"] #zindus-toolbarbutton {
+	list-style-image: url("chrome://zindus/skin/zindus16x16.gif");
+}

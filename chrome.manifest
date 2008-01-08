@@ -1,9 +1,8 @@
-content zindus       content/zindus/
-
+content zindus                        content/zindus/
 locale  zindus       en-US            locale/en-US/zindus/
+skin    zindus       classic/1.0      skin/classic/zindus/
 
 overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/mailwindowoverlay.xul
 overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/mailwindowoverlay-tb.xul
-
 overlay chrome://messenger/content/addressbook/addressbook.xul     chrome://zindus/content/addressbookoverlay.xul
-
+style   chrome://global/content/customizeToolbar.xul               chrome://zindus/skin/zindus.css
