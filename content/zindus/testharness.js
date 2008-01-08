@@ -51,8 +51,8 @@ ZinTestHarness.prototype.testCrc32 = function()
 	var left  = newObject("FirstName", "01-first-3", "LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com");
 	var right = newObject("LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com" , "FirstName", "01-first-3");
 
-	var crcLeft  = ZimbraAddressBook.crc32(left);
-	var crcRight = ZimbraAddressBook.crc32(right);
+	var crcLeft  = ZinAddressBook.crc32(left);
+	var crcRight = ZinAddressBook.crc32(right);
 
 	zinAssert(crcLeft == crcLeft);
 }
@@ -61,15 +61,15 @@ ZinTestHarness.prototype.testLookupCard = function()
 {
 	var uri    = "moz-abmdbdirectory://abook.mab";
 	var luid   = 258;
-	var abCard = ZimbraAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
+	var abCard = ZinAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
 
 	this.m_logger.debug("testLookupCard: abCard: "                   + (abCard ? "non-null" : "null"));
 
 	if (abCard)
 	{
-	this.m_logger.debug("testLookupCard: abCard: "                   + ZimbraAddressBook.nsIAbCardToPrintable(abCard));
-	this.m_logger.debug("testLookupCard: abCard: isANormalCard: "    + abCard.isANormalCard);
-	this.m_logger.debug("testLookupCard: abCard: isAnEmailAddress: " + abCard.isAnEmailAddress);
+		this.m_logger.debug("testLookupCard: abCard: "                   + ZinAddressBook.nsIAbCardToPrintable(abCard));
+		this.m_logger.debug("testLookupCard: abCard: isANormalCard: "    + abCard.isANormalCard);
+		this.m_logger.debug("testLookupCard: abCard: isAnEmailAddress: " + abCard.isAnEmailAddress);
 	}
 }
 

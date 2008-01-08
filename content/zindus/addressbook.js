@@ -21,16 +21,16 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function ZimbraAddressBook()
+function ZinAddressBook()
 {
 }
 
-                                                                              // source references relative to mozilla/mailnews/addrbook/
-ZimbraAddressBook.kPABDirectory = 2;                                          // == nsIAbDirectoryProperties.dirType ==> mork address book
-                                                                              // see src/nsDirPrefs.h and resources/content/addressbook.js
-ZimbraAddressBook.kPersonalAddressbookURI = "moz-abmdbdirectory://abook.mab"; // see: resources/content/abCommon.js
+                                                                           // source references relative to mozilla/mailnews/addrbook/
+ZinAddressBook.kPABDirectory = 2;                                          // == nsIAbDirectoryProperties.dirType ==> mork address book
+                                                                           // see src/nsDirPrefs.h and resources/content/addressbook.js
+ZinAddressBook.kPersonalAddressbookURI = "moz-abmdbdirectory://abook.mab"; // see: resources/content/abCommon.js
 
-ZimbraAddressBook.getAddressBookUri = function(name)
+ZinAddressBook.getAddressBookUri = function(name)
 {
 	var ret = null;
 
@@ -48,21 +48,21 @@ ZimbraAddressBook.getAddressBookUri = function(name)
 	};
 
 	if (name == TB_PAB)
-		ret = ZimbraAddressBook.getPabURI();
+		ret = ZinAddressBook.getPabURI();
 	else
-		ZimbraAddressBook.forEachAddressBook(functor);
+		ZinAddressBook.forEachAddressBook(functor);
 
 	return ret;
 }
 
-ZimbraAddressBook.getAddressBookPrefId = function(uri)
+ZinAddressBook.getAddressBookPrefId = function(uri)
 {
 	var rdf  = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir  = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	return dir.dirPrefId;
 }
 
-ZimbraAddressBook.forEachAddressBook = function(functor)
+ZinAddressBook.forEachAddressBook = function(functor)
 {
 	var rdf   = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var root  = rdf.GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
@@ -73,14 +73,14 @@ ZimbraAddressBook.forEachAddressBook = function(functor)
 	{
 		var elem = nodes.getNext().QueryInterface(Components.interfaces.nsIAbDirectory);
 
-		if (elem.directoryProperties.dirType == ZimbraAddressBook.kPABDirectory)
+		if (elem.directoryProperties.dirType == ZinAddressBook.kPABDirectory)
 			fContinue = functor.run(elem);
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 	}
 }
 
-ZimbraAddressBook.forEachCard = function(uri, functor)
+ZinAddressBook.forEachCard = function(uri, functor)
 {
 	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
@@ -107,7 +107,7 @@ ZimbraAddressBook.forEachCard = function(uri, functor)
 // We avoid a sort by relying on the fact that the keys are thunderbird contact properties.
 // The index into the Converter's table guarantees the ordering.
 //
-ZimbraAddressBook.crc32 = function(properties)
+ZinAddressBook.crc32 = function(properties)
 {
 	var ret = 0;
 	var str = "";
@@ -136,30 +136,30 @@ ZimbraAddressBook.crc32 = function(properties)
 	return ret;
 }
 
-ZimbraAddressBook.instanceAbook = function()
+ZinAddressBook.instanceAbook = function()
 {
 	return Components.classes["@mozilla.org/addressbook;1"].createInstance(Components.interfaces.nsIAddressBook);
 }
 
-ZimbraAddressBook.newAbDirectoryProperties = function(name)
+ZinAddressBook.newAbDirectoryProperties = function(name)
 {
 	var abProps = Components.classes["@mozilla.org/addressbook/properties;1"].
 	                createInstance(Components.interfaces.nsIAbDirectoryProperties);
 
 	abProps.description = name;
-	abProps.dirType     = ZimbraAddressBook.kPABDirectory;
+	abProps.dirType     = ZinAddressBook.kPABDirectory;
 
 	return abProps;
 }
 
-ZimbraAddressBook.newAddressBook = function(name)
+ZinAddressBook.newAddressBook = function(name)
 {
-	abProps = ZimbraAddressBook.newAbDirectoryProperties(name);
-	ZimbraAddressBook.instanceAbook().newAddressBook(abProps);
+	abProps = ZinAddressBook.newAbDirectoryProperties(name);
+	ZinAddressBook.instanceAbook().newAddressBook(abProps);
 	return abProps.URI;
 }
 
-ZimbraAddressBook.deleteAddressBook = function(uri)
+ZinAddressBook.deleteAddressBook = function(uri)
 {
 	var rdf  = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir  = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
@@ -172,27 +172,27 @@ ZimbraAddressBook.deleteAddressBook = function(uri)
 	arrayDir.AppendElement(dir);
 	arrayRoot.AppendElement(root);
 
-	ZimbraAddressBook.instanceAbook().deleteAddressBooks(ds, arrayRoot, arrayDir);
+	ZinAddressBook.instanceAbook().deleteAddressBooks(ds, arrayRoot, arrayDir);
 }
 
-ZimbraAddressBook.renameAddressBook = function(uri, name)
+ZinAddressBook.renameAddressBook = function(uri, name)
 {
 	var rdf  = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir  = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	var root = rdf.GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
 	var ds   = rdf.GetDataSource("rdf:addressdirectory");
 
-	ZimbraAddressBook.instanceAbook().modifyAddressBook(ds, root, dir, ZimbraAddressBook.newAbDirectoryProperties(name));
+	ZinAddressBook.instanceAbook().modifyAddressBook(ds, root, dir, ZinAddressBook.newAbDirectoryProperties(name));
 }
 
-ZimbraAddressBook.deleteCards = function(uri, cardsArray)
+ZinAddressBook.deleteCards = function(uri, cardsArray)
 {
 	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	dir.deleteCards(cardsArray);
 }
 
-ZimbraAddressBook.addCard = function(uri, format, standard, extras)
+ZinAddressBook.addCard = function(uri, format, standard, extras)
 {
 	zinAssert(uri != null && isPropertyPresent(ZinContactConverter.instance().m_map, format) && standard != null && extras != null);
 
@@ -202,12 +202,12 @@ ZimbraAddressBook.addCard = function(uri, format, standard, extras)
 	                      createInstance().QueryInterface(Components.interfaces.nsIAbCard);
 	var realCard = dir.addCard(abstractCard);
 
-	ZimbraAddressBook.updateCard(realCard, uri, format, standard, extras);
+	ZinAddressBook.updateCard(realCard, uri, format, standard, extras);
 
 	return realCard;
 }
 
-ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
+ZinAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var i, j, key;
@@ -244,7 +244,7 @@ ZimbraAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 	return abCard;
 }
 
-ZimbraAddressBook.getCardProperties = function(abCard)
+ZinAddressBook.getCardProperties = function(abCard)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var i, j, key, value;
@@ -261,7 +261,7 @@ ZimbraAddressBook.getCardProperties = function(abCard)
 	return ret;
 }
 
-ZimbraAddressBook.getCardAttributes = function(abCard)
+ZinAddressBook.getCardAttributes = function(abCard)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var ret     = new Object();
@@ -280,30 +280,30 @@ ZimbraAddressBook.getCardAttributes = function(abCard)
 	return ret;
 }
 
-ZimbraAddressBook.lookupCard = function(uri, key, value)
+ZinAddressBook.lookupCard = function(uri, key, value)
 {
 	zinAssert(uri && key && value);
 
 	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-	var abCard = ZimbraAddressBook.instanceAbook().getAbDatabaseFromURI(uri).getCardFromAttribute(dir, key, value, false);
+	var abCard = ZinAddressBook.instanceAbook().getAbDatabaseFromURI(uri).getCardFromAttribute(dir, key, value, false);
 
 	return abCard; // an nsIABCard
 }
 
-ZimbraAddressBook.nsIAbCardToPrintable = function(abCard)
+ZinAddressBook.nsIAbCardToPrintable = function(abCard)
 {
 	return (abCard.isMailList ? abCard.mailListURI : abCard.getCardValue("PrimaryEmail"));
 }
 
-ZimbraAddressBook.nsIAbMDBCardToKey = function(mdbCard)
+ZinAddressBook.nsIAbMDBCardToKey = function(mdbCard)
 {
 	zinAssert(typeof(mdbCard) == 'object' && mdbCard != null);
 
 	return hyphenate('-', mdbCard.dbTableID, mdbCard.dbRowID, mdbCard.key);
 }
 
-ZimbraAddressBook.getPabURI = function()
+ZinAddressBook.getPabURI = function()
 {
 	var pabByUri  = null;
 	var pabByName = null;
@@ -313,7 +313,7 @@ ZimbraAddressBook.getPabURI = function()
 	var functor_foreach_addressbook = {
 		run: function(elem) {
 
-			if (elem.directoryProperties.URI == ZimbraAddressBook.kPersonalAddressbookURI)
+			if (elem.directoryProperties.URI == ZinAddressBook.kPersonalAddressbookURI)
 			{
 				msg = "pabByUri:  addressbook:" +
 				      " dirName: " + elem.dirName +
@@ -339,9 +339,9 @@ ZimbraAddressBook.getPabURI = function()
 		}
 	};
 
-	if (typeof(ZimbraAddressBook.m_pab_uri) == "undefined")
+	if (typeof(ZinAddressBook.m_pab_uri) == "undefined")
 	{
-		ZimbraAddressBook.forEachAddressBook(functor_foreach_addressbook);
+		ZinAddressBook.forEachAddressBook(functor_foreach_addressbook);
 	
 		if (pabByUri)
 		{
@@ -360,18 +360,18 @@ ZimbraAddressBook.getPabURI = function()
 
 		newZinLogger("AddressBook").debug(msg);
 
-		ZimbraAddressBook.m_pab_uri = new String(ret);
+		ZinAddressBook.m_pab_uri = new String(ret);
 	}
 
-	return ZimbraAddressBook.m_pab_uri;
+	return ZinAddressBook.m_pab_uri;
 }
 
-ZimbraAddressBook.isElemPab = function(elem)
+ZinAddressBook.isElemPab = function(elem)
 {
-	return (ZimbraAddressBook.getPabURI() == elem.directoryProperties.URI);
+	return (ZinAddressBook.getPabURI() == elem.directoryProperties.URI);
 }
 
-ZimbraAddressBook.getAbNameNormalised = function(elem)
+ZinAddressBook.getAbNameNormalised = function(elem)
 {
-	return ZimbraAddressBook.isElemPab(elem) ? TB_PAB : elem.dirName;
+	return ZinAddressBook.isElemPab(elem) ? TB_PAB : elem.dirName;
 }
