@@ -23,7 +23,7 @@
   
   ***** END LICENSE BLOCK ***** -->
 
-<!-- <?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?> -->
+<?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
@@ -36,6 +36,7 @@
 		<toolbarpalette id="MailToolbarPalette">
 			<toolbarbutton 
 			               id="zindus-toolbarbutton"
+			               class="toolbarbutton-1"
 			               label="&ZinToolsMenuItem.label;"
 						   tooltiptext="&ZinToolBarButton.tooltip;"
 			               oncommand="zindusPrefsDialog();" />
