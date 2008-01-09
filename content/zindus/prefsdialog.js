@@ -41,6 +41,7 @@ function Prefs()
 
 	this.m_checkbox_properties = PrefSet.GENERAL_PROPERTIES;
 	this.m_checkbox_ids        = [ "zindus-prefs-general-manual-sync-only",
+								   "zindus-prefs-general-is-gal-enabled",
 								   "zindus-prefs-general-verbose-logging"  ];
 	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 

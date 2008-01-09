@@ -29,6 +29,7 @@
 <!ENTITY ZinPrefsGeneralGroupActions.label      "Actions">
 <!ENTITY ZinPrefsGeneralManualSyncOnly.label    "Manual sync (stops auto sync)">
 <!ENTITY ZinPrefsGeneralVerboseLogging.label    "Verbose logging">
+<!ENTITY ZinPrefsGeneralIsGalEnabled.label      "Global Address List (GAL)">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.label     "Sync Now">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey "S">
 <!ENTITY ZinPrefsGeneralButtonReset.label       "Reset">

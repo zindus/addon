@@ -104,7 +104,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 {
 	var ret = false;
 	var a_states_of_interest = { stAuth : 0,      stLoad: 1,       stSync: 2,            stSyncResult: 2,
-	                             stGetContact: 3, stSyncGal: 4,    stLoadTb : 5,
+	                             stGetContact: 3, stGalSync: 4,    stLoadTb : 5,
 	                             stConverge1: 6,  stConverge2: 7,  stConverge3: 8,
 	                             stUpdateTb: 9,   stUpdateZm: 10,  stUpdateCleanup: 11,  final: 12 };
 
@@ -122,7 +122,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 			case 'stLoad':          this.progressReportOn("Load");                                        break;
 			case 'stSync':          
 			case 'stSyncResult':    this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
-			case 'stSyncGal':       this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
+			case 'stGalSync':       this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
 			case 'stLoadTb':        this.progressReportOnSource(context.state.sourceid_tb, "GetItem");    break;
 			case 'stConverge1':     
 			case 'stConverge2':     
@@ -250,8 +250,14 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				break;
 		}
 
-		var percentage_complete = 0;
-		percentage_complete += a_states_of_interest[fsmstate.newstate] / a_states_of_interest['final'];
+
+		var percentage_complete = a_states_of_interest[fsmstate.newstate] / a_states_of_interest['final'];
+
+		// TODO - just trying to work out whether to skip the percentage complete stuff if the state isn't of interest
+		if (!isPropertyPresent(a_states_of_interest, fsmstate.newstate))
+		{
+			this.m_logger.warn("SyncFsmObserver.update: fsmstate.newstate not present in a_states_of_interest, percentage_complete: " + percentage_complete);
+		}
 
 		if (this.get(SyncFsmObserver.PROG_MAX) > 0)
 			percentage_complete += (1 / a_states_of_interest['final']) * (this.get(SyncFsmObserver.PROG_CNT) / this.get(SyncFsmObserver.PROG_MAX));

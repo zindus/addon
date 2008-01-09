@@ -60,9 +60,10 @@ SyncFsm.getFsm = function(context)
 		stCheckLicense:   { evCancel: 'final', evNext:  'stSync',           evSoapRequest: 'stSoapRequest'                           },
 		stSync:           { evCancel: 'final', evNext:  'stSyncResult',     evSoapRequest: 'stSoapRequest'                           },
 		stSyncResult:     { evCancel: 'final', evNext:  'stGetContact',     evRepeat:      'stSync'                                  },
-		stGetContact:     { evCancel: 'final', evNext:  'stSyncGal',        evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContact' },
-		stSyncGal:        { evCancel: 'final', evNext:  'stSyncGalCommit',  evSoapRequest: 'stSoapRequest'                           },
-		stSyncGalCommit:  { evCancel: 'final', evNext:  'stConverge1'                                                                },
+		stGetContact:     { evCancel: 'final', evNext:  'stGalConsider',    evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContact' },
+		stGalConsider:    { evCancel: 'final', evNext:  'stGalSync',        evSkip:        'stGalCommit'                             },
+		stGalSync:        { evCancel: 'final', evNext:  'stGalCommit',      evSoapRequest: 'stSoapRequest'                           },
+		stGalCommit:      { evCancel: 'final', evNext:  'stConverge1'                                                                },
 		stConverge1:      { evCancel: 'final', evNext:  'stConverge2',                                      evLackIntegrity: 'final' },
 		stConverge2:      { evCancel: 'final', evNext:  'stConverge3',                                                               },
 		stConverge3:      { evCancel: 'final', evNext:  'stUpdateTb',                                                                },
@@ -87,8 +88,9 @@ SyncFsm.getFsm = function(context)
 		stSync:                 context.entryActionSync,
 		stSyncResult:           context.entryActionSyncResult,
 		stGetContact:           context.entryActionGetContact,
-		stSyncGal:              context.entryActionSyncGal,
-		stSyncGalCommit:        context.entryActionSyncGalCommit,
+		stGalConsider:          context.entryActionGalConsider,
+		stGalSync:              context.entryActionGalSync,
+		stGalCommit:            context.entryActionGalCommit,
 		stConverge1:            context.entryActionConverge1,
 		stConverge2:            context.entryActionConverge2,
 		stConverge3:            context.entryActionConverge3,
@@ -109,7 +111,7 @@ SyncFsm.getFsm = function(context)
 		stGetInfo:        context.exitActionGetInfo,
 		stCheckLicense:   context.exitActionCheckLicense,
 		stGetContact:     context.exitActionGetContact,
-		stSyncGal:        context.exitActionSyncGal,
+		stGalSync:        context.exitActionGalSync,
 		stUpdateZm:       context.exitActionUpdateZm,
 		stSoapResponse:   context.exitActionSoapResponse  /* this gets tweaked by setupSoapCall */
 	};
@@ -581,6 +583,8 @@ SyncFsm.prototype.exitActionGetInfo = function(state, event)
 	var xpath_query = "/soap:Envelope/soap:Body/za:GetInfoResponse/za:attrs/za:attr[@name='zimbraFeatureGalEnabled']";
 	var functor     = new FunctorArrayOfTextNodeValue();
 
+	if (0)  // don't bother with zimbraFeatureGalEnabled - should the call to GetInfo be removed completely?
+	{
 	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
 
 	if (functor.a.length == 1)
@@ -594,6 +598,7 @@ SyncFsm.prototype.exitActionGetInfo = function(state, event)
 	else
 		this.state.m_logger.warn("expected <attr name='zimbraFeatureGalEnabled'>xxx</attr> in <GetInfoResponse> - default: " +
 		                          (this.state.isZimbraFeatureGalEnabled ? "" : "don't") + " sync GAL");
+	}
 }
 
 SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
@@ -1027,50 +1032,51 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 	}
 }
 
-SyncFsm.prototype.entryActionSyncGal = function(state, event, continuation)
+SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 {
 	var nextEvent = null;
 
-	if (!this.state.isZimbraFeatureGalEnabled)
-	{
-		this.state.m_soap_state.m_response = null;
-		nextEvent = 'evNext';
-	}
-	else
-	{
-		var SyncGalMdInterval = parseInt(this.state.m_preferences.getIntPref(this.state.m_preferences.branch(),
-		                                                                     "system.SyncGalMdInterval"));
-		var SyncMd = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncMd');
+	this.state.isGalEnabled = (this.state.m_preferences.getCharPrefOrNull(prefs.branch(), "general.isGalEnabled") == "true");
 
-		this.state.m_logger.debug("entryActionSyncGal: SyncGalMdInterval == " + SyncGalMdInterval +
-		                                             " SyncMd: " + SyncMd + " this.state.SyncMd: " + this.state.SyncMd);
+	this.state.m_logger.debug("entryActionGalConsider: isGalEnabled: " + this.state.isGalEnabled);
 
-		if (SyncMd == null || (this.state.SyncMd > (SyncMd + SyncGalMdInterval)))
-		{
-			this.state.SyncGalToken = null;
-
-			this.state.m_logger.debug("entryActionSyncGal Gal either expired or had no state - this.state.SyncGalToken set to null to force replacement of GAL");
-
-			// When this.state.SyncGalToken is set to null:
-			// - we don't supply a token attribute to <SyncGalRequest>, which means the entire gal is returned with the response, and
-			// - when we get the response, we entirely replace the local copy of the GAL
-		}
-		else
-		{
-			this.state.SyncGalToken = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncGalToken');
-
-			this.state.m_logger.debug("entryActionSyncGal Gal hasn't expired - this.state.SyncGalToken == " + this.state.SyncGalToken);
-		}
-
-		this.setupSoapCall(state, 'evNext', "SyncGal", this.state.SyncGalToken);
-
-		nextEvent = 'evSoapRequest';
-	}
+	nextEvent = this.state.isGalEnabled ? 'evNext' : 'evSkip';
 
 	continuation(nextEvent);
 }
 
-SyncFsm.prototype.exitActionSyncGal = function(state, event)
+SyncFsm.prototype.entryActionGalSync = function(state, event, continuation)
+{
+	var SyncGalMdInterval = parseInt(this.state.m_preferences.getIntPref(this.state.m_preferences.branch(),
+	                                                                     "system.SyncGalMdInterval"));
+	var SyncMd = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncMd');
+
+	this.state.m_logger.debug("entryActionGalSync: SyncGalMdInterval == " + SyncGalMdInterval +
+	                                             " SyncMd: " + SyncMd + " this.state.SyncMd: " + this.state.SyncMd);
+
+	if (SyncMd == null || (this.state.SyncMd > (SyncMd + SyncGalMdInterval)))
+	{
+		this.state.SyncGalToken = null;
+
+		this.state.m_logger.debug("entryActionGalSync: Gal either expired or had no state - this.state.SyncGalToken set to null to force replacement of GAL");
+
+		// When this.state.SyncGalToken is set to null:
+		// - we don't supply a token attribute to <SyncGalRequest>, which means the entire gal is returned with the response, and
+		// - when we get the response, we entirely replace the local copy of the GAL
+	}
+	else
+	{
+		this.state.SyncGalToken = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncGalToken');
+
+		this.state.m_logger.debug("entryActionGalSync: Gal hasn't expired - this.state.SyncGalToken == " + this.state.SyncGalToken);
+	}
+
+	this.setupSoapCall(state, 'evNext', "SyncGal", this.state.SyncGalToken);
+
+	continuation('evSoapRequest');
+}
+
+SyncFsm.prototype.exitActionGalSync = function(state, event)
 {
 	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
@@ -1104,7 +1110,7 @@ SyncFsm.prototype.exitActionSyncGal = function(state, event)
 
 		if (0)
 		{
-			this.state.m_logger.debug("exitActionSyncGal: SyncGalToken: " + SyncGalToken +
+			this.state.m_logger.debug("exitActionGalSync: SyncGalToken: " + SyncGalToken +
 		                          	" this.state.SyncGalToken: " + this.state.SyncGalToken );
 
 			for (var i in this.state.aSyncGalContact)
@@ -1115,25 +1121,25 @@ SyncFsm.prototype.exitActionSyncGal = function(state, event)
 		}
 	}
 	else
-		this.state.m_logger.debug("exitActionSyncGal: SyncGalResponse: token is unchanged - ignoring any <cn> elements in the response");
+		this.state.m_logger.debug("exitActionGalSync: SyncGalResponse: token is unchanged - ignoring any <cn> elements in the response");
 }
 
-// the reference to this.state.SyncMd here is why SyncGalCommit must come *after* SyncResponse
+// the reference to this.state.SyncMd here is why GalCommit must come *after* SyncResponse
 //
-SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation)
+SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 {
 	var aAdd   = new Array(); // each element in the array is an index into aSyncGalContact
 	var abName = APP_NAME + ">" + SyncFsm.ABSPECIAL_GAL;
 	var uri    = ZinAddressBook.getAddressBookUri(abName);
 
-	if (this.state.isZimbraFeatureGalEnabled && uri == null)
+	if (this.state.isGalEnabled && uri == null)
 	{
 		ZinAddressBook.newAddressBook(abName);
 
 		uri = ZinAddressBook.getAddressBookUri(abName);
 	}
 
-	if (!this.state.isZimbraFeatureGalEnabled)
+	if (!this.state.isGalEnabled)
 	{
 		if (uri)
 			ZinAddressBook.deleteAddressBook(uri);
@@ -1144,7 +1150,7 @@ SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation
 	else if (!uri)
 		this.state.m_logger.error("Unable to find or create the GAL addresbook - skipping GAL sync");
 	else if (this.state.aSyncGalContact == null)
-		this.state.m_logger.debug("entryActionSyncGal: nothing to commit - SyncGalToken: " + this.state.SyncGalToken);
+		this.state.m_logger.debug("entryActionGalCommit: nothing to commit - SyncGalToken: " + this.state.SyncGalToken);
 	else
 	{
 		// since aSyncGalContact is only populated if there's a change in token, it seems reasonable to assert that length is > 0
@@ -1163,7 +1169,7 @@ SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation
 			// flush cards out of the GAL address book that don't match cards in the contacts received from zimbra and
 			// if there's a match, mark the corresponding zimbra contact so that it doesn't get added again below
 			//
-			this.state.m_logger.debug("entryActionSyncGalCommit: SyncGalTokenChanged is true so wiping contacts that aren't in the SyncGalResponse");
+			this.state.m_logger.debug("entryActionGalCommit: SyncGalTokenChanged is true so wiping contacts that aren't in the SyncGalResponse");
 			var context = this;
 
 			var functor = {
@@ -1218,7 +1224,7 @@ SyncFsm.prototype.entryActionSyncGalCommit = function(state, event, continuation
 			var attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
 			var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
-			this.state.m_logger.debug("entryActionSyncGalCommit: adding aSyncGalContact[" + aAdd[i] + "]: " +
+			this.state.m_logger.debug("entryActionGalCommit: adding aSyncGalContact[" + aAdd[i] + "]: " +
 			                            this.shortLabelForContactProperties(FORMAT_ZM, properties));
 
 			ZinAddressBook.addCard(uri, FORMAT_TB, properties, attributes);
@@ -4067,8 +4073,8 @@ function SyncFsmState(id_fsm)
 	this.soapURL             = null;         // see setCredentials() -  and may be modified by a <soapURL> response from GetAccountInfo
 	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
 	this.isSlowSync          = false;        // true iff no data files
-	this.isZimbraFeatureGalEnabled = false;     // GetInfo ==> FALSE ==> don't do SyncGalRequest
 	this.mapiStatus          = null;         // CheckLicenseStatus
+	this.isGalEnabled        = false;        // 
 	this.aSyncGalContact     = null;         // SyncGal
 	this.mapIdSyncGalContact = null;      
 	this.SyncGalToken        = null;
