@@ -253,18 +253,10 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 		var percentage_complete = a_states_of_interest[fsmstate.newstate] / a_states_of_interest['final'];
 
-		// TODO - just trying to work out whether to skip the percentage complete stuff if the state isn't of interest
-		if (!isPropertyPresent(a_states_of_interest, fsmstate.newstate))
-		{
-			this.m_logger.warn("SyncFsmObserver.update: fsmstate.newstate not present in a_states_of_interest, percentage_complete: " + percentage_complete);
-		}
-
 		if (this.get(SyncFsmObserver.PROG_MAX) > 0)
 			percentage_complete += (1 / a_states_of_interest['final']) * (this.get(SyncFsmObserver.PROG_CNT) / this.get(SyncFsmObserver.PROG_MAX));
 
 		percentage_complete = percentage_complete * 100 + "%";
-
-		// this.m_logger.debug("4401: percentage_complete: " + percentage_complete);
 
 		this.set(SyncFsmObserver.PERCENTAGE_COMPLETE, percentage_complete);
 	}
