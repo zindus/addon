@@ -235,9 +235,6 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 				zinAssert(es.failcode() != 'FailOnUnknown');
 
-				this.m_logger.debug("conflict: update: blah: conflicts: " +
-					(context.state.aConflicts.length == 0 ? "none" : aToString(context.state.aConflicts)));
-
 				for (var i = 0; i < context.state.aConflicts.length; i++)
 					this.m_logger.info("conflict: " + context.state.aConflicts[i]);
 

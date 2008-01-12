@@ -27,8 +27,8 @@ function ZinContactConverter()
 	this.m_map         = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
 
 	this.m_bimap_folder_name = new BiMap(
-			[FORMAT_TB,  FORMAT_ZM   ],
-			[TB_PAB,     ZM_CONTACTS ])
+			[FORMAT_TB,  FORMAT_ZM               ],
+			[TB_PAB,     ZM_NAME_FOLDER_CONTACTS ])
 
 	this.m_app_name_with_slash = APP_NAME + "/";
 
