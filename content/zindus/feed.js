@@ -191,6 +191,7 @@ ZinFeedCollection.prototype.toString = function(eol_char_arg)
 	return ret;
 }
 
+
 // The constructor takes one of three styles of arguments:
 // - 0 arguments
 // - 2 arguments                where the first argument is type and
@@ -328,6 +329,36 @@ ZinFeedItem.prototype.toString = function(eol_char_arg)
 	return ret;
 }
 
+ZinFeedItem.prototype.increment = function(key)
+{
+	zinAssert(this.isPresent(key));
+
+	var value = this.get(key);
+
+	zinAssert(!isNaN(value));
+
+	var ret = parseInt(value);
+
+	this.set(key, ret + 1);
+
+	return ret;
+}
+
+ZinFeedItem.prototype.decrement = function(key)
+{
+	zinAssert(this.isPresent(key));
+
+	var value = this.get(key);
+
+	zinAssert(!isNaN(value));
+
+	var ret = parseInt(value);
+
+	this.set(key, ret - 1);
+
+	return ret;
+}
+
 ZinFeedItem.typeAsString = function(type)
 {
 	return ZinFeedItem.TYPE_BIMAP.lookup(type, null);
@@ -349,19 +380,6 @@ ZinFeedItem.zimbraAttributesForType = function(type)
 
 function ZinFeed()
 {
-}
-
-ZinFeed.autoIncrement = function(zfi, key)
-{
-	zinAssert(typeof(zfi) == 'object' && zfi != null && zfi.isPresent(key));
-
-	var ret = parseInt(zfi.get(key));
-
-	zinAssert(ret > 0);
-
-	zfi.set(key, ret + 1);
-
-	return ret;
 }
 
 ZinFeed.getTopLevelFolderHash = function(zfc, attr_key, attr_value, iter_flavour)

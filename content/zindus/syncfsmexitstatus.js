@@ -47,7 +47,8 @@ function SyncFsmExitStatus()
 		FailOnFolderMustBePresent     : { 'folder' : 1 }, // 12.
 		FailOnFolderReservedChanged   : { 'folder' : 1 }, // 13.
 		FailOnFolderNameClash         : { 'folder' : 1 }, // 14. the same folder name entered the namespace from both tb and zm sides
-		FailOnUnableToUpdateZm        : { 'folder' : 0 }  // 15. soap response in UpdateZm contained unexpected element - assume that it failed
+		FailOnUnableToUpdateZm        : { 'folder' : 0 }, // 15. soap response in UpdateZm had an unexpected element - assume that it failed
+		FailOnNoXpath                 : { 'folder' : 0 }  // 16. 
 	};
 }
 

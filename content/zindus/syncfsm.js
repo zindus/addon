@@ -169,6 +169,11 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	{
 		nextEvent = 'evCancel';
 	}
+	else if (typeof(document.evaluate) != 'function')
+	{
+		this.state.stopFailCode = 'FailOnNoXpath';
+		nextEvent = 'evLackIntegrity';
+	}
 	else
 	{
 		var url      = this.state.sources[this.state.sourceid_zm]['soapURL'];
@@ -182,7 +187,10 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 			nextEvent = 'evStart';
 		}
 		else
+		{
+			this.state.stopFailCode = 'FailOnIntegrityBadCredentials';
 			nextEvent = 'evLackIntegrity';
+		}
 	}
 
 	this.state.m_logger.debug("entryActionStart: nextEvent: " + nextEvent);
@@ -1053,14 +1061,60 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 {
 	var nextEvent = null;
+	var zfcLastSync = this.state.zfcLastSync;
+	var sourceid_zm = this.state.sourceid_zm;
+	var if_fewer_recheck;
 
 	this.state.stopwatch.mark("entryActionGalConsider");
 
-	this.state.isGalEnabled = (this.state.m_preferences.getCharPrefOrNull(prefs.branch(), "general.isGalEnabled") == "true");
+	this.state.SyncGalEnabled = this.state.m_preferences.getCharPrefOrNull(prefs.branch(), "general.SyncGalEnabled");
 
-	this.state.m_logger.debug("entryActionGalConsider: isGalEnabled: " + this.state.isGalEnabled);
+	if (!isInArray(this.state.SyncGalEnabled, [ "yes", "no", "if-fewer" ] ))
+	{
+		this.state.m_logger.warn("entryActionGalConsider: bad preference value for SyncGalEnabled: " + this.state.SyncGalEnabled +
+		                         " - setting to 'no'");
 
-	nextEvent = this.state.isGalEnabled ? 'evNext' : 'evSkip';
+		this.state.SyncGalEnabled = "no";
+	}
+
+	this.state.m_logger.debug("entryActionGalConsider: SyncGalEnabled: " + this.state.SyncGalEnabled);
+
+	if (this.state.SyncGalEnabled == "no")
+		nextEvent = 'evSkip';
+	else
+	{
+		var SyncGalMdInterval = this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalMdInterval");
+		var SyncMd = parseInt(zfcLastSync.get(sourceid_zm).getOrNull('SyncMd'));
+		var isSyncGalEnabledChanged = this.state.SyncGalEnabled != zfcLastSync.get(sourceid_zm).getOrNull('SyncGalEnabled')
+
+		this.state.m_logger.debug("entryActionGalConsider:" +
+												 " isSyncGalEnabledChanged: " + isSyncGalEnabledChanged +
+	                                             " SyncMd: " + SyncMd + " this.state.SyncMd: " + this.state.SyncMd +
+	                                             " SyncGalMdInterval == " + SyncGalMdInterval +
+	                                             " (SyncMd + SyncGalMdInterval) == " + (SyncMd + SyncGalMdInterval) );
+
+
+		if (isSyncGalEnabledChanged || SyncMd == null || (this.state.SyncMd > (SyncMd + SyncGalMdInterval)))
+		{
+			this.state.SyncGalTokenInRequest = null;
+
+			this.state.m_logger.debug("entryActionGalSync: Gal expired or had no state or 'Sync Gal' preference changed - " +
+			                          "this.state.SyncGalTokenInRequest set to null");
+		}
+		else
+		{
+			this.state.SyncGalTokenInRequest = zfcLastSync.get(sourceid_zm).getOrNull('SyncGalToken');
+
+			this.state.m_logger.debug("entryActionGalSync: Gal hasn't expired - this.state.SyncGalTokenInRequest == " +
+			                          this.state.SyncGalTokenInRequest);
+		}
+
+		if (this.state.SyncGalEnabled == "if-fewer")
+			nextEvent = (zfcLastSync.get(sourceid_zm).isPresent('SyncGalEnabledRecheck') &&
+			             parseInt(zfcLastSync.get(sourceid_zm).get('SyncGalEnabledRecheck')) > 0) ? 'evSkip' : 'evNext';
+		else
+			nextEvent = 'evNext';
+	}
 
 	continuation(nextEvent);
 }
@@ -1069,33 +1123,7 @@ SyncFsm.prototype.entryActionGalSync = function(state, event, continuation)
 {
 	this.state.stopwatch.mark("entryActionGalSync");
 
-	var SyncGalMdInterval = parseInt(this.state.m_preferences.getIntPref(this.state.m_preferences.branch(),
-	                                                                     "system.SyncGalMdInterval"));
-	var SyncMd = parseInt(this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncMd'));
-
-	this.state.m_logger.debug("entryActionGalSync:" +
-	                                             " SyncMd: " + SyncMd + " this.state.SyncMd: " + this.state.SyncMd +
-	                                             " SyncGalMdInterval == " + SyncGalMdInterval +
-	                                             " (SyncMd + SyncGalMdInterval) == " + (SyncMd + SyncGalMdInterval) );
-
-	if (SyncMd == null || (this.state.SyncMd > (SyncMd + SyncGalMdInterval)))
-	{
-		this.state.SyncGalToken = null;
-
-		this.state.m_logger.debug("entryActionGalSync: Gal either expired or had no state - this.state.SyncGalToken set to null to force replacement of GAL");
-
-		// When this.state.SyncGalToken is set to null:
-		// - we don't supply a token attribute to <SyncGalRequest>, which means the entire gal is returned with the response, and
-		// - when we get the response, we entirely replace the local copy of the GAL
-	}
-	else
-	{
-		this.state.SyncGalToken = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull('SyncGalToken');
-
-		this.state.m_logger.debug("entryActionGalSync: Gal hasn't expired - this.state.SyncGalToken == " + this.state.SyncGalToken);
-	}
-
-	this.setupSoapCall(state, 'evNext', "SyncGal", this.state.SyncGalToken);
+	this.setupSoapCall(state, 'evNext', "SyncGal", this.state.SyncGalTokenInRequest);
 
 	continuation('evSoapRequest');
 }
@@ -1105,16 +1133,10 @@ SyncFsm.prototype.exitActionGalSync = function(state, event)
 	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
 
-	var SyncGalToken = null;
-	var functor = new FunctorArrayOfContactsFromNodes(ZinXpath.nsResolver("za")); // see SyncGalResponse below
-	var response = this.state.m_soap_state.m_response;
+	var xpath_query = "/soap:Envelope/soap:Body/za:SyncGalResponse/attribute::token";
+	var warn_msg    = "SyncGalResponse received without a token attribute - don't know how to handle so ignoring it...";
 
-	var node = ZinXpath.getSingleValue("/soap:Envelope/soap:Body/za:SyncGalResponse/@token", response, response);
-
-	if (node && node.nodeValue)
-		SyncGalToken = node.nodeValue;
-	else
-		this.state.m_logger.warn("SyncGalResponse received without a token attribute - don't know how to handle so ignoring it...");
+	ZinXpath.setConditional(this.state, 'SyncGalTokenInResponse', xpath_query, this.state.m_soap_state.m_response, warn_msg);
 
 	// zimbra server versions 4.0.x and 4.5 does some caching thing whereby it returns <cn> elements
 	// in the SyncGalResponse even though the token is unchanged vs the previous response.
@@ -1122,20 +1144,19 @@ SyncFsm.prototype.exitActionGalSync = function(state, event)
 	// Here, aSyncGalContact gets populated with the <cn> child elements of <SyncGalResponse> only when
 	// the token attribute is present and different from the previous response.
 	//
-	if (SyncGalToken != null && SyncGalToken != this.state.SyncGalToken)
+	if (this.state.SyncGalTokenInResponse != null && this.state.SyncGalTokenInRequest != this.state.SyncGalTokenInResponse)
 	{
-		ZinXpath.runFunctor(functor, "/soap:Envelope/soap:Body/za:SyncGalResponse/za:cn", this.state.m_soap_state.m_response);
+		var functor = new FunctorArrayOfContactsFromNodes(ZinXpath.nsResolver("za")); // see SyncGalResponse below
 
-		this.state.SyncGalToken        = SyncGalToken;
-		this.state.SyncGalTokenChanged = true;
+		ZinXpath.runFunctor(functor, "/soap:Envelope/soap:Body/za:SyncGalResponse/za:cn", this.state.m_soap_state.m_response);
 
 		this.state.aSyncGalContact     = functor.a;
 		this.state.mapIdSyncGalContact = functor.mapId;
 
 		if (0)
 		{
-			this.state.m_logger.debug("exitActionGalSync: SyncGalToken: " + SyncGalToken +
-		                          	" this.state.SyncGalToken: " + this.state.SyncGalToken );
+			this.state.m_logger.debug("exitActionGalSync: SyncGalTokenInRequest: "  + this.state.SyncGalTokenInRequest +
+		                          	                    " SyncGalTokenInResponse: " + this.state.SyncGalTokenInResponse );
 
 			for (var i in this.state.aSyncGalContact)
 				this.state.m_logger.debug("11443378: aSyncGalContact[" + i + "] == \n" + this.state.aSyncGalContact[i].toString());
@@ -1155,28 +1176,59 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	var aAdd   = new Array(); // each element in the array is an index into aSyncGalContact
 	var abName = APP_NAME + ">" + SyncFsm.ABSPECIAL_GAL;
 	var uri    = ZinAddressBook.getAddressBookUri(abName);
+	var zc, attributes, properties, isGalEnabled;
+	var zfcLastSync = this.state.zfcLastSync;
+	var sourceid_zm = this.state.sourceid_zm;
 
 	this.state.stopwatch.mark("entryActionGalCommit");
 
-	if (this.state.isGalEnabled && uri == null)
+	// work out whether the Gal is enabled by our preferences or not
+
+	if (this.state.SyncGalEnabled == "no")
+		isGalEnabled = false;
+	else if (this.state.SyncGalEnabled == "yes")
+		isGalEnabled = true;
+	else
 	{
-		ZinAddressBook.newAddressBook(abName);
+		zinAssert(this.state.SyncGalEnabled == "if-fewer");
 
-		uri = ZinAddressBook.getAddressBookUri(abName);
+		// if request == null and response is non-null 
+
+		if (this.state.SyncGalTokenInRequest == null && this.state.SyncGalTokenInResponse != null)
+		{
+			// reconsider...
+			//
+			var if_fewer = this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalEnabledIfFewer");
+
+			this.state.m_logger.debug("entryActionGalCommit: if_fewer: " + if_fewer + " this.state.aSyncGalContact.length: " +
+			                          (this.state.aSyncGalContact != null ? this.state.aSyncGalContact.length : "null"));
+
+			isGalEnabled = (this.state.aSyncGalContact == null || this.state.aSyncGalContact.length < if_fewer);
+		}
+		else
+			isGalEnabled = !zfcLastSync.get(sourceid_zm).isPresent('SyncGalEnabledRecheck'); // stay as we are
+
+		this.state.m_logger.debug("entryActionGalCommit: this.state.SyncGalEnabled: " + this.state.SyncGalEnabled);
 	}
+		
+	this.state.m_logger.debug("entryActionGalCommit: isGalEnabled: " + isGalEnabled +
+	                          " this.state.SyncGalEnabled: " + this.state.SyncGalEnabled);
 
-	if (!this.state.isGalEnabled)
+	if (isGalEnabled && uri == null)
+		uri = ZinAddressBook.newAddressBook(abName);
+
+	if (!isGalEnabled)
 	{
 		if (uri)
 			ZinAddressBook.deleteAddressBook(uri);
 
-		if (this.state.zfcLastSync.get(this.state.sourceid_zm).isPresent('SyncGalToken'))
-			this.state.zfcLastSync.get(this.state.sourceid_zm).del('SyncGalToken');
+		if (zfcLastSync.get(sourceid_zm).isPresent('SyncGalToken'))
+			zfcLastSync.get(sourceid_zm).del('SyncGalToken');
 	}
 	else if (!uri)
 		this.state.m_logger.error("Unable to find or create the GAL addresbook - skipping GAL sync");
-	else if (this.state.aSyncGalContact == null)
-		this.state.m_logger.debug("entryActionGalCommit: nothing to commit - SyncGalToken: " + this.state.SyncGalToken);
+	else if (this.state.SyncGalTokenInResponse == null || this.state.SyncGalTokenInRequest == this.state.SyncGalTokenInResponse)
+		this.state.m_logger.debug("entryActionGalCommit: nothing to commit - SyncGalTokenInResponse: " + this.state.SyncGalTokenInResponse);
 	else
 	{
 		// since aSyncGalContact is only populated if there's a change in token, it seems reasonable to assert that length is > 0
@@ -1184,19 +1236,48 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 		//
 		// zinAssert(this.state.aSyncGalContact.length > 0 && this.state.SyncGalTokenChanged);
 
+		var element;
+
 		for (var i in this.state.aSyncGalContact)
 		{
+			// First, we remove Zimbra <cn> properties that don't map to a thunderbird property because...
+			// 1. background: for <cn> elements that come from an addressbook, email, email2 and email3 have corresponding
+			//    fields in Zimbra's web-UI
+			// 2. for <cn> elements that come from SyncGalResponse, email2, email3, email4, etc are set to the aliases for the account
+			//    a. don't want Zm:email2 to map to Tb:SecondEmail
+			//    b. don't want to implement regexp matching mapping Zm:email* to Tb:null
+			//    c. if/when we preserve Zimbra contact fields that don't have a corresponding Thunderbird field, we won't
+			//       want to do it for GAL contacts 'cos they're never written back to Zimbra.
+
+			element = new Object();
+
+			for (var j in this.state.aSyncGalContact[i].element)
+			{
+				if (ZinContactConverter.instance().isKeyConverted(FORMAT_TB, FORMAT_ZM, j))
+					element[j] = this.state.aSyncGalContact[i].element[j];
+			}
+
+			this.state.aSyncGalContact[i].element = element;
+
 			var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncGalContact[i].element);
+
 			this.state.aSyncGalContact[i].checksum = ZinAddressBook.crc32(properties);
 		}
 
-		if (this.state.SyncGalTokenChanged)
+		// Here, the logic is:
+		// 1. if SyncGalTokenInRequest was null, then we 
+		//    - flush cards out of the GAL address book that don't match cards in the contacts received from zimbra and
+		//      if there's a match, mark the corresponding zimbra contact so that it doesn't get added again below
+		//      ... by "match", we mean the id and the checksum are the same
+		//    else (SyncGalTokenInRequest != null)
+		//    - any cards in Tb with the same id as cards in the SyncGalResponse are overwritten
+		// 2. any new cards in the response that aren't in Tb are added
+
+		if (this.state.SyncGalTokenInRequest == null)
 		{
-			// flush cards out of the GAL address book that don't match cards in the contacts received from zimbra and
-			// if there's a match, mark the corresponding zimbra contact so that it doesn't get added again below
-			//
-			this.state.m_logger.debug("entryActionGalCommit: SyncGalTokenChanged is true so wiping contacts that aren't in the SyncGalResponse");
+			this.state.m_logger.debug("entryActionGalCommit: SyncGalTokenInRequest == null so wiping contacts that aren't in the SyncGalResponse");
 			var functor = {
+				aCardsToBeDeleted: new Array(),
 				state: this.state,
 
 				run: function(uri, item)
@@ -1210,28 +1291,26 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 					if (id != null && typeof index != 'undefined' && checksum == this.state.aSyncGalContact[index].checksum)
 					{
 						this.state.aSyncGalContact[index].present = true;
-						// TODO - added this back to help with debugging for S. Clark
-						this.state.m_logger.debug("entryActionGalCommit: card in both Tb and SyncGalResponse - don't update: " + ZinAddressBook.nsIAbCardToPrintable(abCard));
+						this.state.m_logger.debug("entryActionGalCommit: " +
+						                          " issue #31: card in both Tb and SyncGalResponse - don't update: " +
+						                          ZinAddressBook.nsIAbCardToPrintable(abCard));
 					}
 					else
 					{
-						this.cardsToBeDeletedArray.AppendElement(abCard);
-						// TODO - added this back to help with debugging for S. Clark
-						this.state.m_logger.debug("entryActionGalCommit: card in Tb but not SyncGalResponse - mark for deletion: id: " +
-						                                                     (id != null ? id : "null") +
-						                                                     " card: " + ZinAddressBook.nsIAbCardToPrintable(abCard));
+						this.aCardsToBeDeleted.push(abCard);
+
+						this.state.m_logger.debug("entryActionGalCommit: " +
+						                          "issue #31: card in Tb but not SyncGalResponse marked for deletion: id: " +
+						                          (id != null ? id : "null") + " card: " + ZinAddressBook.nsIAbCardToPrintable(abCard));
 					}
 
 					return true;
 				}
 			};
 
-			functor.cardsToBeDeletedArray = Components.classes["@mozilla.org/supports-array;1"].createInstance().
-		                     QueryInterface(Components.interfaces.nsISupportsArray);
-
 			ZinAddressBook.forEachCard(uri, functor);
 
-			ZinAddressBook.deleteCards(uri, functor.cardsToBeDeletedArray);
+			ZinAddressBook.deleteCards(uri, functor.aCardsToBeDeleted);
 
 			for (var i in this.state.aSyncGalContact)
 				if (!this.state.aSyncGalContact[i].present)
@@ -1239,26 +1318,89 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 		}
 		else
 		{
+			this.state.m_logger.debug("entryActionGalCommit: SyncGalTokenInRequest != null - " +
+			                          "looking for Tb cards to overwrite where the Tb card id matches a contact in the SyncGalResponse...");
+
+			var functor = {
+				state: this.state,
+
+				run: function(uri, item)
+				{
+					var abCard   = item.QueryInterface(Components.interfaces.nsIAbCard);
+					var mdbCard  = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+					var id       = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+					var index    = this.state.mapIdSyncGalContact[id];
+
+					if (id != null && typeof index != 'undefined')
+					{
+						zc = this.state.aSyncGalContact[index];
+
+						attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
+						properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+
+						this.state.m_logger.debug("entryActionGalCommit: issue #31: " + "updating card: id: " + id);
+
+						ZinAddressBook.updateCard(abCard, uri, FORMAT_TB, properties, attributes);
+
+						this.state.aSyncGalContact[index].present = true;
+					}
+
+					return true;
+				}
+			}
+
+			ZinAddressBook.forEachCard(uri, functor);
+
 			for (var i in this.state.aSyncGalContact)
-				aAdd.push(i);
+				if (!this.state.aSyncGalContact[i].present)
+					aAdd.push(i);
 		}
 
 		for (var i in aAdd)
 		{
-			var zc = this.state.aSyncGalContact[aAdd[i]];
+			zc = this.state.aSyncGalContact[aAdd[i]];
 
-			var attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
-			var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+			attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
+			properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
 			this.state.m_logger.debug("entryActionGalCommit: adding aSyncGalContact[" + aAdd[i] + "]: " +
 			                            this.shortLabelForContactProperties(FORMAT_TB, properties));
 
 			ZinAddressBook.addCard(uri, FORMAT_TB, properties, attributes);
 		}
-
-		this.state.zfcLastSync.get(this.state.sourceid_zm).set('SyncMd', this.state.SyncMd);
-		this.state.zfcLastSync.get(this.state.sourceid_zm).set('SyncGalToken', this.state.SyncGalToken);
 	}
+
+	if (this.state.SyncGalTokenInResponse) // remember that this state is run even though SyncGalRequest wasn't called...
+	{
+		zfcLastSync.get(sourceid_zm).set('SyncGalToken', this.state.SyncGalTokenInResponse);
+		zfcLastSync.get(sourceid_zm).set('SyncMd',         this.state.SyncMd);
+	}
+
+	zfcLastSync.get(sourceid_zm).set('SyncGalEnabled', this.state.SyncGalEnabled);
+
+	if (this.state.SyncGalEnabled == "if-fewer" && this.state.SyncGalTokenInRequest == null && !isGalEnabled)
+	{
+		this.state.m_logger.debug("entryActionGalCommit: blah: am here 1");
+
+		if (!zfcLastSync.get(sourceid_zm).isPresent('SyncGalEnabledRecheck'))
+		{
+			this.state.m_logger.debug("entryActionGalCommit: blah: am here 2");
+			zfcLastSync.get(sourceid_zm).set('SyncGalEnabledRecheck',
+			                 this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalEnabledRecheck"));
+		}
+		else
+		{
+			this.state.m_logger.debug("entryActionGalCommit: blah: am here 3");
+
+			if (zfcLastSync.get(sourceid_zm).get('SyncGalEnabledRecheck') <= 1)
+				zfcLastSync.get(sourceid_zm).del('SyncGalEnabledRecheck');
+			else
+				zfcLastSync.get(sourceid_zm).decrement('SyncGalEnabledRecheck');
+		}
+	}
+
+	if ((isGalEnabled || this.state.SyncGalEnabled != "if-fewer") && zfcLastSync.get(sourceid_zm).isPresent('SyncGalEnabledRecheck'))
+		zfcLastSync.get(sourceid_zm).del('SyncGalEnabledRecheck');
 		
 	continuation('evNext');
 }
@@ -1420,7 +1562,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	functor_foreach_addressbook =
 	{
 		state:  this.state,
-		prefix: ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, ""),
+		prefix: ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, ""),
 
 		run: function(elem)
 		{
@@ -1455,7 +1597,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 
 				if (!isPropertyPresent(mapTbFolderTpiToId, elem.dirPrefId))
 				{
-					id = ZinFeed.autoIncrement(zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
+					id = zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
 					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_ID, id , 'l', 1, ZinFeedItem.ATTR_NAME, name,
 					    ZinFeedItem.ATTR_MS, 1,
@@ -1474,7 +1616,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 					if (zfi.get(ZinFeedItem.ATTR_NAME) != name)
 					{
 						zfi.set(ZinFeedItem.ATTR_NAME, name);
-						ZinFeed.autoIncrement(zfi, ZinFeedItem.ATTR_MS);
+						zfi.increment(ZinFeedItem.ATTR_MS);
 
 						msg += " - folder changed: " + zfi.toString();
 					}
@@ -1617,7 +1759,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 				if (! (id > ZinFeedItem.ID_MAX_RESERVED)) // id might be null (not present) or zero (reset after the map was deleted)
 				{
-					id = ZinFeed.autoIncrement(zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
+					id = zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
 					mdbCard.setStringAttribute(TBCARD_ATTRIBUTE_LUID, id);
 					mdbCard.editCardToDatabase(uri);
@@ -1713,7 +1855,7 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 			if (zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isPresent(ZinFeedItem.ATTR_DEL))
 			{
 				zinAssert(zfi.isPresent(ZinFeedItem.ATTR_NAME));
-				var name = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, zfi.get(ZinFeedItem.ATTR_NAME));
+				var name = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, zfi.get(ZinFeedItem.ATTR_NAME));
 
 				if (!isPropertyPresent(this.a_folder_count, name))
 					this.a_folder_count[name] = true;
@@ -1740,7 +1882,7 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 	{
 		var name = propertyFromObject(functor.a_folder_violation);
 		this.state.stopFailCode   = functor.a_folder_violation[name];
-		this.state.stopFailDetail = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, name);
+		this.state.stopFailDetail = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, name);
 
 		// this.state.m_logger.debug("loadTbTestFolderNameRules: blah: stopFailCode: " + this.state.stopFailCode +
 		//                                                    " stopFailDetail: " + this.state.stopFailDetail);
@@ -1793,7 +1935,7 @@ SyncFsm.isOfInterest = function(zfc, id)
 
 SyncFsm.addToGid = function(zfcGid, sourceid, luid, reverse)
 {
-	var gid = ZinFeed.autoIncrement(zfcGid.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
+	var gid = zfcGid.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
 	zfcGid.set(new ZinFeedItem(null, ZinFeedItem.ATTR_ID, gid, ZinFeedItem.ATTR_PRES, 1, sourceid, luid));
 
@@ -1928,7 +2070,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 				if (zfi.type() == ZinFeedItem.TYPE_FL)
 				{
 					var name   = zfi.get(ZinFeedItem.ATTR_NAME);
-					var abName = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, name);
+					var abName = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, name);
 
 					if (isPropertyPresent(mapTbFolderNameToId, abName))
 					{
@@ -1949,7 +2091,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 					var checksum    = aChecksum[sourceid][luid];
 					var luid_parent = zfi.get('l');
-					var name_parent = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB,
+					var name_parent = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM,
 					                                                                   zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
 
 					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
@@ -2001,7 +2143,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 				                          " - not of interest");
 			else if (zfi.type() == ZinFeedItem.TYPE_CN)
 			{
-				var a = this.context.getPropertiesNameOfParentFromSource(sourceid, luid);
+				var a = this.context.getPropertiesAndParentNameFromSource(sourceid, luid);
 				var properties  = a[0];
 				var name_parent = a[1];
 
@@ -2090,7 +2232,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 	this.state.m_logger.debug("updateGidFromSources: reverse: " + aToString(this.state.aReverseGid));
 }
 
-SyncFsm.prototype.getPropertiesNameOfParentFromSource = function(sourceid, luid)
+SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid)
 {
 	var properties, name_parent;
 	var zfc = this.state.sources[sourceid]['zfcLuid'];
@@ -2109,14 +2251,14 @@ SyncFsm.prototype.getPropertiesNameOfParentFromSource = function(sourceid, luid)
 		properties  = abCard ? ZinAddressBook.getCardProperties(abCard) : null;
 
 		if (!properties)
-			this.state.m_logger.warn("getPropertiesNameOfParentFromSource: unable to retrieve properties for card: " +
+			this.state.m_logger.warn("getPropertiesAndParentNameFromSource: unable to retrieve properties for card: " +
 									 " sourceid: " + sourceid + " luid: " + luid + " uri: " + uri);
 	}
 	else
 	{
 		zinAssert(isPropertyPresent(this.state.aSyncContact, luid));
 		properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncContact[luid].element);
-		name_parent = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
+		name_parent = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
 	}
 
 	return [ properties, name_parent ];
@@ -2129,9 +2271,9 @@ SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b)
 	var a, properties_a, properties_b;
 	var count_match = 0;
 
-	a = this.getPropertiesNameOfParentFromSource(sourceid_a, luid_a);
+	a = this.getPropertiesAndParentNameFromSource(sourceid_a, luid_a);
 	properties_a = a[0];
-	a = this.getPropertiesNameOfParentFromSource(sourceid_b, luid_b);
+	a = this.getPropertiesAndParentNameFromSource(sourceid_b, luid_b);
 	properties_b = a[0];
 
 	var length_a = aToLength(properties_a);
@@ -2523,7 +2665,7 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	var key;
 
 	if (zfi.type() == ZinFeedItem.TYPE_FL)
-		ret += ZinContactConverter.instance().convertFolderName(format, target_format, zfi.get(ZinFeedItem.ATTR_NAME));
+		ret += ZinContactConverter.instance().convertFolderName(target_format, format, zfi.get(ZinFeedItem.ATTR_NAME));
 	else
 	{
 		zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
@@ -2581,7 +2723,7 @@ SyncFsm.prototype.testFolderNameDuplicate = function(aGcs)
 		{
 			zinAssert(zfi.isPresent(ZinFeedItem.ATTR_NAME));
 
-			name = ZinContactConverter.instance().convertFolderName(format, FORMAT_TB, zfi.get(ZinFeedItem.ATTR_NAME));
+			name = ZinContactConverter.instance().convertFolderName(FORMAT_TB, format, zfi.get(ZinFeedItem.ATTR_NAME));
 
 			if (isPropertyPresent(aFolderName, name))
 			{
@@ -2653,7 +2795,7 @@ SyncFsm.prototype.shouldEmailedContactsBePresent = function()
 	}
 	else
 	{
-		var abName = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, ZM_NAME_AUTO_CONTACTS);
+		var abName = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, ZM_NAME_AUTO_CONTACTS);
 		this.state.m_logger.debug("shouldEmailedContactsBePresent: server has " + ZM_NAME_AUTO_CONTACTS +
 		                          " folder - testing for presence/mutation of tb addressbook: " + abName);
 
@@ -2781,7 +2923,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				// update the gid with the new luid
 				// update the reverse array 
 
-				luid_target = ZinFeed.autoIncrement(zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
+				luid_target = zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
 				zinAssert(this.state.aSyncContact, luid_winner);
 				zc = this.state.aSyncContact[luid_winner]; // the ZimbraContact object that arrived via GetContactResponse
@@ -2816,7 +2958,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 			case Suo.ADD | ZinFeedItem.TYPE_FL:
 				var name   = zfiWinner.get(ZinFeedItem.ATTR_NAME);
-				var abName = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, name);
+				var abName = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, name);
 
 				if (!ZinAddressBook.getAddressBookUri(abName))
 				{
@@ -2824,7 +2966,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					uri = ZinAddressBook.newAddressBook(abName);
 
-					luid_target = ZinFeed.autoIncrement(zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT), 'next');
+					luid_target = zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
 					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_ID, luid_target, ZinFeedItem.ATTR_NAME, abName, 'l', 1,
 					                       ZinFeedItem.ATTR_MS, 1,
@@ -2910,11 +3052,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 							msg += " - content didn't change";
 						}
 
-						var cardsToBeDeletedArray = Components.classes["@mozilla.org/supports-array;1"].createInstance().
-						                                   QueryInterface(Components.interfaces.nsISupportsArray);
-						cardsToBeDeletedArray.AppendElement(abCard);
-
-						ZinAddressBook.deleteCards(uri_from, cardsToBeDeletedArray);
+						ZinAddressBook.deleteCards(uri_from, [ abCard ]);
 
 						msg += " - card deleted - card added: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
@@ -2950,7 +3088,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					ZinAddressBook.renameAddressBook(uri, name_winner);
 
 					zfcTarget.get(luid_target).set(ZinFeedItem.ATTR_NAME, name_winner);
-					ZinFeed.autoIncrement(zfcTarget.get(luid_target), ZinFeedItem.ATTR_MS);
+					zfcTarget.get(luid_target).increment(ZinFeedItem.ATTR_MS);
 				}
 				else
 				{
@@ -2972,11 +3110,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				{
 					msg += "Card to be deleted: " + ZinAddressBook.nsIAbCardToPrintable(abCard);
 
-					var cardsToBeDeletedArray = Components.classes["@mozilla.org/supports-array;1"].createInstance().
-					                                   QueryInterface(Components.interfaces.nsISupportsArray);
-					cardsToBeDeletedArray.AppendElement(abCard);
-
-					ZinAddressBook.deleteCards(uri, cardsToBeDeletedArray);
+					ZinAddressBook.deleteCards(uri, [ abCard ]);
 
 					zfcTarget.get(luid_target).set(ZinFeedItem.ATTR_DEL, 1);
 				}
@@ -3111,7 +3245,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		switch(SORT_ORDER[i])
 		{
 			case Suo.ADD | ZinFeedItem.TYPE_FL:
-				name_winner = ZinContactConverter.instance().convertFolderName(format_winner, FORMAT_ZM, zfiWinner.get(ZinFeedItem.ATTR_NAME));
+				name_winner = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, format_winner, zfiWinner.get(ZinFeedItem.ATTR_NAME));
 				soapMethod  = "CreateFolder";
 				soapArg     = newObject(ZinFeedItem.ATTR_NAME, name_winner, 'l', l_winner);
 				bucket      = SORT_ORDER[i];
@@ -3130,7 +3264,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 			case Suo.MOD | ZinFeedItem.TYPE_FL:
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-				name_winner = ZinContactConverter.instance().convertFolderName(format_winner, FORMAT_ZM, zfiWinner.get(ZinFeedItem.ATTR_NAME));
+				name_winner = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, format_winner, zfiWinner.get(ZinFeedItem.ATTR_NAME));
 				zinAssert(luid_target >= ZM_FIRST_USER_ID, "luid: " + luid_target + "folder name: " + name_winner); // sanity check that we never modify any of zimbra's immutable folders
 
 				soapMethod  = "FolderAction";
@@ -3177,7 +3311,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 			case Suo.DEL | ZinFeedItem.TYPE_FL:
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-				name_winner = ZinContactConverter.instance().convertFolderName(format_winner, FORMAT_ZM, zfiWinner.get(ZinFeedItem.ATTR_NAME));
+				name_winner = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, format_winner, zfiWinner.get(ZinFeedItem.ATTR_NAME));
 				zinAssert(luid_target >= ZM_FIRST_USER_ID); // sanity check that we never modify any of zimbra's immutable folders
 
 				soapMethod  = "FolderAction";
@@ -3629,7 +3763,7 @@ SyncFsm.prototype.resetLsoVer = function(gid, zfi)
 	        lsoFromLsAttribute.get(ZinFeedItem.ATTR_VER) != zfiGid.get(ZinFeedItem.ATTR_VER) ||
 			lsoFromLsAttribute.compare(zfi) != 0 )
 	{
-		ZinFeed.autoIncrement(this.state.zfcGid.get(gid), ZinFeedItem.ATTR_VER);
+		this.state.zfcGid.get(gid).increment(ZinFeedItem.ATTR_VER);
 		ver = zfiGid.get(ZinFeedItem.ATTR_VER);
 	}
 
@@ -3657,7 +3791,7 @@ SyncFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
 	zinAssert(zfc.isPresent(luid));
 
 	var name = zfc.get(luid).get(ZinFeedItem.ATTR_NAME);
-	var ret  = ZinContactConverter.instance().convertFolderName(format, FORMAT_TB, name);
+	var ret  = ZinContactConverter.instance().convertFolderName(FORMAT_TB, format, name);
 
 	return ret;
 }
@@ -4113,11 +4247,11 @@ function SyncFsmState(id_fsm)
 	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
 	this.isSlowSync          = false;        // true iff no data files
 	this.mapiStatus          = null;         // CheckLicenseStatus
-	this.isGalEnabled        = false;        // 
 	this.aSyncGalContact     = null;         // SyncGal
 	this.mapIdSyncGalContact = null;      
-	this.SyncGalToken        = null;
-	this.SyncGalTokenChanged = false;
+	this.SyncGalEnabled      = null;         // From the preference of the same name.  Possible values: yes, no, if-fewer
+	this.SyncGalTokenInRequest  = null;
+	this.SyncGalTokenInResponse = null;
 	this.SyncMd              = null;         // this gives us the time on the server
 	this.SyncToken           = null;         // the 'token' received in <SyncResponse>
 	this.SyncTokenInRequest  = null;         // the 'token' given to    <SyncRequest>

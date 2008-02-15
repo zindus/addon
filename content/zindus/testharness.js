@@ -38,10 +38,10 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testFilesystem();
-	// ret = ret && this.testContactConverter();
-	// ret = ret && this.testContactConverterForFolderNames();
 	// ret = ret && this.testPropertyDelete();
-	ret = ret && this.testLso();
+	// ret = ret && this.testLso();
+	// ret = ret && this.testContactConverter();
+	ret = ret && this.testContactConverterForFolderNames();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -121,19 +121,21 @@ ZinTestHarness.prototype.testContactConverterForFolderNames = function()
 
 	this.m_logger.debug("testContactConverterForFolderNames: start");
 
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, "")            == prefix);
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, "")            == prefix);
 
 	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_ZM, "fred")        == "fred");
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, "fred")        == prefix + "fred");
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, "zindus/fred") == "fred");
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, "fred")        == prefix + "fred");
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, "zindus/fred") == "fred");
 	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_TB, "zindus/fred") == "zindus/fred");
 
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, TB_PAB)        == "Contacts");
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, TB_PAB)        == "Contacts");
 	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_TB, TB_PAB)        == TB_PAB);
 	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_ZM, "Contacts")    == "Contacts");
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, "Contacts")    == TB_PAB);
+	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, "Contacts")    == TB_PAB);
 
 	this.m_logger.debug("testContactConverterForFolderNames: finish");
+
+	return true;
 }
 
 ZinTestHarness.prototype.testPropertyDelete = function()

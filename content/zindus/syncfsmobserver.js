@@ -199,7 +199,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 					es.m_exit_status = 1;
 
 					if (fsmstate.oldstate == 'start')
-						es.failcode('FailOnIntegrityBadCredentials');
+						es.failcode(context.state.stopFailCode);
 					else if (fsmstate.oldstate == 'stLoad')
 						es.failcode('FailOnIntegrityDataStoreIn');
 					else if (isInArray(fsmstate.oldstate, [ 'stLoadTb', 'stConverge1', 'stUpdateCleanup' ]))

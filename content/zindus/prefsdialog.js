@@ -39,11 +39,14 @@ function Prefs()
 	this.m_prefset_server      = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
 	this.m_prefset_general     = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
-	this.m_checkbox_properties = PrefSet.GENERAL_PROPERTIES;
+	this.m_checkbox_properties = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING ];
 	this.m_checkbox_ids        = [ "zindus-prefs-general-manual-sync-only",
-								   "zindus-prefs-general-is-gal-enabled",
 								   "zindus-prefs-general-verbose-logging"  ];
 	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
+
+	this.m_gal_radio_ids       = [ "zindus-prefs-general-gal-yes", "zindus-prefs-general-gal-if-fewer", "zindus-prefs-general-gal-no" ];
+	this.m_gal_radio_values    = [                          "yes",                          "if-fewer",                          "no" ];
+	this.m_gal_radio_bimap     = new BiMap(this.m_gal_radio_values, this.m_gal_radio_ids);
 
 	this.m_timeoutID           = null;
 	this.m_maestro             = null;
@@ -51,8 +54,8 @@ function Prefs()
 	this.m_logger              = newZinLogger("Prefs");
 	this.m_logger.level(ZinLogger.NONE);
 
-	var preferences = new MozillaPreferences();
-	this.is_developer_mode     = (preferences.getCharPrefOrNull(preferences.branch(), "system.developer_mode") == "true");
+	this.m_preferences         = new MozillaPreferences();
+	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
 }
 
 Prefs.prototype.onLoad = function(target)
@@ -133,6 +136,11 @@ Prefs.prototype.onAccept = function()
 	for (var i = 0; i < this.m_checkbox_properties.length; i++)
 		this.m_prefset_general.setProperty(this.m_checkbox_properties[i],
 			document.getElementById(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked ? "true" : "false" );
+
+	// general tab - Gal radiogroup
+	//
+	var gal_value = this.m_gal_radio_bimap.lookup(null, document.getElementById("zindus-prefs-general-gal-enabled").selectedItem.id);
+	this.m_prefset_general.setProperty(PrefSet.GENERAL_SYNC_GAL_ENABLED, gal_value);
 
 	this.m_prefset_server.save();
 	this.m_prefset_general.save();
@@ -251,6 +259,18 @@ Prefs.prototype.initialiseView = function()
 		document.getElementById(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked =
 		           (this.m_prefset_general.getProperty(this.m_checkbox_properties[i]) == "true");
 
+	// general tab - Gal radiogroup
+	//
+	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), "system.SyncGalEnabledIfFewer");
+
+	var msg = stringBundleString("prefsGalIfFewerPartOne") + " " + if_fewer + " " + stringBundleString("prefsGalIfFewerPartTwo");
+
+	document.getElementById("zindus-prefs-general-gal-if-fewer").label = msg;
+
+	var SyncGalEnabled = this.m_prefset_general.getProperty(PrefSet.GENERAL_SYNC_GAL_ENABLED);
+	var selectedGalRadioId = this.m_gal_radio_bimap.lookup(SyncGalEnabled, null);
+	document.getElementById("zindus-prefs-general-gal-enabled").selectedItem = document.getElementById(selectedGalRadioId);
+	
 	var selectedTab = this.isServerSettingsComplete() ? "zindus-prefs-tab-general" : "zindus-prefs-tab-server";
 
 	document.getElementById("zindus-prefs-tabbox").selectedTab = document.getElementById(selectedTab);

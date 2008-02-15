@@ -27,7 +27,8 @@ function zinAssert(expr)
 	{
 		try
 		{
-			throw new Error("Please report this assertion failure (include filenames and line numbers) to support@zindus.com: ");
+			throw new Error("Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n"
+				+ APP_NAME + " version " + APP_VERSION_NUMBER + ": " );
 		}
 		catch(ex)
 		{

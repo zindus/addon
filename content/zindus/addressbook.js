@@ -185,10 +185,17 @@ ZinAddressBook.renameAddressBook = function(uri, name)
 	ZinAddressBook.instanceAbook().modifyAddressBook(ds, root, dir, ZinAddressBook.newAbDirectoryProperties(name));
 }
 
-ZinAddressBook.deleteCards = function(uri, cardsArray)
+ZinAddressBook.deleteCards = function(uri, aCards)
 {
 	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+
+	var cardsArray = Components.classes["@mozilla.org/supports-array;1"].createInstance().
+	                            QueryInterface(Components.interfaces.nsISupportsArray);
+
+	for (var i = 0; i < aCards.length; i++)
+		cardsArray.AppendElement(aCards[i]);
+
 	dir.deleteCards(cardsArray);
 }
 
@@ -282,7 +289,9 @@ ZinAddressBook.getCardAttributes = function(abCard)
 
 ZinAddressBook.lookupCard = function(uri, key, value)
 {
-	zinAssert(uri && key && value);
+	zinAssert(uri);
+	zinAssert(key);
+	zinAssert(value);
 
 	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
 	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);

@@ -41,9 +41,9 @@ PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME
 
 PrefSet.GENERAL                  = "general";
 PrefSet.GENERAL_MANUAL_SYNC_ONLY = "manualsynconly";
-PrefSet.GENERAL_IS_GAL_ENABLED   = "isGalEnabled";
 PrefSet.GENERAL_VERBOSE_LOGGING  = "verboselogging";
-PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_IS_GAL_ENABLED, PrefSet.GENERAL_VERBOSE_LOGGING ];
+PrefSet.GENERAL_SYNC_GAL_ENABLED = "SyncGalEnabled";
+PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING, PrefSet.GENERAL_SYNC_GAL_ENABLED ];
 
 // Both id and branch are optional
 // id is option because there might only be a single subsection under prefprefix

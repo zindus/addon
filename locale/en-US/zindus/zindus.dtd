@@ -2,7 +2,7 @@
 
 <!ENTITY ZinToolsMenuItem.label                 "Zindus">
 <!ENTITY ZinToolsMenuItem.accesskey             "z">
-<!ENTITY ZinToolBarButton.tooltip               "preferences for the zindus extension">
+<!ENTITY ZinToolBarButton.tooltip               "Zindus Preferences">
 
 <!ENTITY ZinProgressPanelPrefix.label           "Zindus:">
 
@@ -12,24 +12,26 @@
 <!ENTITY ZinPrefsTabGeneral.label               "Preferences">
 <!ENTITY ZinPrefsSpacer.style                   "height:15px">
 
-<!ENTITY ZinPrefsServerGrid.style               "margin-left:10px; margin-right:20px; ">
-<!ENTITY ZinPrefsServerDescription.style        "margin-top:10px; margin-bottom:10px; padding:5px ">
+<!ENTITY ZinPrefsServerGrid.style               "margin-left:10px; margin-right:20px; margin-top:10px ">
+<!ENTITY ZinPrefsServerDescription.style        "margin-top:5px; margin-bottom:10px; padding:5px ">
 <!ENTITY ZinPrefsServerLabel.style              "margin-left:20px">
-<!ENTITY ZinPrefsServerUrlDescription.value     "Type the url you use to log on to your zimbra server.
+<!ENTITY ZinPrefsServerUrlDescription.value     "Type the url you use to log on to your Zimbra server.
                                                  <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
 <!ENTITY ZinPrefsServerUrl.label                "Server Url:">
-<!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on to the zimbra server.">
+<!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on to the Zimbra server.">
 <!ENTITY ZinPrefsServerUsername.label           "Email Address">
 <!ENTITY ZinPrefsServerPassword.label           "Password">
 <!ENTITY ZinPrefsServerTestConnection.label     "Test Connection to Server">
 <!ENTITY ZinPrefsServerTestConnection.accesskey "T">
 
-<!ENTITY ZinPrefsGeneralIntroduction.value      "Restart thunderbird after changing settings to be sure they are in effect.">
+<!ENTITY ZinPrefsGeneralIntroduction.value      "Restart Thunderbird after changing settings to be sure they are in effect.">
 <!ENTITY ZinPrefsGeneralGroupAdvanced.label     "Settings">
 <!ENTITY ZinPrefsGeneralGroupActions.label      "Actions">
 <!ENTITY ZinPrefsGeneralManualSyncOnly.label    "Manual sync (stops auto sync)">
 <!ENTITY ZinPrefsGeneralVerboseLogging.label    "Verbose logging">
-<!ENTITY ZinPrefsGeneralIsGalEnabled.label      "Global Address List (GAL)">
+<!ENTITY ZinPrefsGeneralGal.label               "Global Address List (GAL)">
+<!ENTITY ZinPrefsGeneralGalYes.label            "Yes">
+<!ENTITY ZinPrefsGeneralGalNo.label             "No">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.label     "Sync Now">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey "S">
 <!ENTITY ZinPrefsGeneralButtonReset.label       "Reset">

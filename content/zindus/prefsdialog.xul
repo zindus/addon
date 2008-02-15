@@ -65,7 +65,7 @@
 
 			<!-- Server -->
 
-			<vbox flex="1" >
+			<vbox flex="1" pack="center" >
 				<grid flex="1" style="&ZinPrefsServerGrid.style;" > 
 					<columns>
 						<column style="margin-left:15px" />
@@ -85,12 +85,12 @@
 							<textbox id="zindus-prefs-server-username" />
 							<label value="" />
 						</row>
-						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+						<spacer style="&ZinPrefsSpacer.style;" />  <!-- flex="1"  -->
 						<row>
 							<label value="&ZinPrefsServerPassword.label;:" />
 							<textbox id="zindus-prefs-server-password" type="password" />
 						</row>
-						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+						<spacer style="&ZinPrefsSpacer.style;" /> 
 						<row>
 							<label value="" />
 							<hbox align="left" >
@@ -110,14 +110,22 @@
 				<description xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
 					&ZinPrefsGeneralIntroduction.value;
 				</description>
-				<spacer style="height:30px;" flex="1"/> 
+				<!-- <spacer style="height:30px;" flex="1"/> -->
 				<groupbox id="zindus-prefs-general-group-advanced-settings" pack="center" >
-				    <caption label="&ZinPrefsGeneralGroupAdvanced.label;"/>
+					<caption label="&ZinPrefsGeneralGroupAdvanced.label;"/>
 					<vbox align="left" >
 					<checkbox id="zindus-prefs-general-manual-sync-only" label="&ZinPrefsGeneralManualSyncOnly.label;" checked="false" />
-					<checkbox id="zindus-prefs-general-is-gal-enabled"   label="&ZinPrefsGeneralIsGalEnabled.label;"   checked="true" />
 					<checkbox id="zindus-prefs-general-verbose-logging"  label="&ZinPrefsGeneralVerboseLogging.label;" checked="true" />
 					</vbox>
+				</groupbox>
+				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				<groupbox pack="center" >
+					<caption label="&ZinPrefsGeneralGal.label;" />
+					<radiogroup id="zindus-prefs-general-gal-enabled">
+						<radio id="zindus-prefs-general-gal-yes"      label="&ZinPrefsGeneralGalYes.label;" />
+						<radio id="zindus-prefs-general-gal-if-fewer" label="" /> <!-- selected="true" -->
+						<radio id="zindus-prefs-general-gal-no"       label="&ZinPrefsGeneralGalNo.label;" />
+					</radiogroup>
 				</groupbox>
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
 				<groupbox pack="center" >

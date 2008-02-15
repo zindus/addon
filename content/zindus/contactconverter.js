@@ -105,6 +105,9 @@ ZinContactConverter.prototype.setup = function()
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherURL"       ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "birthday"       ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "fileAs"         ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress1"     ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress2"     ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress3"     ));
 
 	// these fields aren't in the zimbra web UI but are supported by the zimbra server
 	// these are just the ones found through experimenting with Outlook sync - there are certainly more...
@@ -118,7 +121,6 @@ ZinContactConverter.prototype.setup = function()
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email6"            ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "office"            ));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "outlookUserField1" ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "zimbraCalResType"  ));
 
 	// Don't generate debug messages if unable to convert these attributes...
 	// eg. the <cn> elements returned by SyncGal include ldap attributes
@@ -130,6 +132,7 @@ ZinContactConverter.prototype.setup = function()
 	                                "objectClass",                 0,
 	                                "createTimeStamp",             0,
 	                                "zimbraMailForwardingAddress", 0,
+	                                "zimbraCalResType",            0,
 	                                "modifyTimeStamp",             0);
 
 	var aIndex = [FORMAT_TB, FORMAT_ZM];
@@ -334,7 +337,7 @@ ZinContactConverter.prototype.lineFromNewlineSeparated = function(properties_fro
 	}
 }
 
-ZinContactConverter.prototype.convertFolderName = function(format_from, format_to, name)
+ZinContactConverter.prototype.convertFolderName = function(format_to, format_from, name)
 {
 	var ret;
 
@@ -356,4 +359,14 @@ ZinContactConverter.prototype.convertFolderName = function(format_from, format_t
 	//                     " returns: " + ret);
 
 	return ret;
+}
+
+ZinContactConverter.prototype.isKeyConverted = function(format_to, format_from, key)
+{
+	zinAssert(format_to   == FORMAT_TB || format_to   == FORMAT_ZM);
+	zinAssert(format_from == FORMAT_TB || format_from == FORMAT_ZM);
+
+	var index_to = this.m_map[format_from][key];
+
+	return typeof(index_to) != 'undefined' && this.m_equivalents[index_to][format_to] != null;
 }
