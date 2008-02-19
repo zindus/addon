@@ -79,7 +79,6 @@ PrefSet.prototype.load = function(id, branch)
 		catch (ex)
 		{
 			// do nothing
-			// dump("PrefSet::load(" + id + ") - did not load preference for this.m_properties[" + i + "] - ex is " + ex + "\n");
 		}
 
 		// this.m_logger.debug("load: loaded preference " + this.makePrefKey(id, i) + " == " + this.m_properties[i] + "\n");
@@ -115,7 +114,6 @@ PrefSet.prototype.save = function()
 	catch (ex)
 	{
 		// do nothing
-		// dump("PrefSet::save(" + this.m_id + ") - did not save preference for this.m_properties[" + i + "] - ex is " + ex + "\n");
 	}
 	
 	return retval;
@@ -135,14 +133,11 @@ PrefSet.prototype.remove = function()
 	{
 		prefs.deleteBranch(this.makePrefKey(this.m_id));
 
-		// dump("PrefSet.prototype.remove - deleted preferences for " + this.makePrefKey(this.m_id) + "\n");
-
 		retval = true;
 	}
 	catch (ex)
 	{
 		// do nothing
-		// dump("PrefSet::save(" + this.m_id + ") - did not save preference for this.m_properties[" + i + "] - ex is " + ex + "\n");
 	}
 	
 	return retval;
@@ -236,9 +231,6 @@ PrefSetHelper.getUserUrlPw = function(prefset, pref_user, pref_url)
 
 	if (username == null) username = "";
 	if (url == null)      url = "";
-
-	// dump("PrefSetHelper.getUserUrlPw: blah2: username: " + (username == null ? "isnull" : username) +
-	//                                            " url: " + (url == null ? "isnull" : url) + "\n");
 
 	// we return String(x) because we want their typeof() to be 'string' instead of 'object'
 	// see: http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:String#Description

@@ -23,12 +23,13 @@
 
 function zinAssert(expr)
 {
-	if (!expr)
+	if (!expr || arguments.length != 1)
 	{
 		try
 		{
-			throw new Error("Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n"
-				+ APP_NAME + " version " + APP_VERSION_NUMBER + ": " );
+			throw new Error("Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
+				            APP_NAME + " version " + APP_VERSION_NUMBER + "\n" +
+				            "See http://www.zindus.com/faq-extension/#toc-reporting-bugs\n");
 		}
 		catch(ex)
 		{
@@ -108,15 +109,9 @@ FunctorAnyDuplicatesInPrefsetCollection.prototype.run = function(prefset)
 		}
 
 		if (this.m_sofar[key] == null)
-		{
 			this.m_sofar[key] = true;
-			dump("FunctorAnyDuplicatesInPrefsetCollection - adding key: " + key + "\n");
-		}
 		else
-		{
 			this.m_duplicate = true;
-			dump("FunctorAnyDuplicatesInPrefsetCollection - found duplicate key: " + key + "\n");
-		}
 	}
 }
 
@@ -318,7 +313,7 @@ function hyphenate()
 
 	for (var i = startAt; i < args.length; i++)
 	{
-		zinAssert(typeof(args[i]) == 'string' || typeof(args[i]) == 'number');
+		zinAssertAndLog(typeof(args[i]) == 'string' || typeof(args[i]) == 'number', args[i] + " is not a string or number, typeof: " + typeof(args[i]));
 
 		if (isFirst)
 		{

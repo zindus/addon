@@ -28,6 +28,7 @@ include("chrome://zindus/content/contact.js");
 include("chrome://zindus/content/addressbook.js");
 include("chrome://zindus/content/crc32.js");
 include("chrome://zindus/content/contactconverter.js");
+include("chrome://zindus/content/folderconverter.js");
 include("chrome://zindus/content/feed.js");
 include("chrome://zindus/content/suo.js");
 include("chrome://zindus/content/gcs.js");
@@ -598,24 +599,21 @@ SyncFsm.prototype.exitActionGetInfo = function(state, event)
 	if (!this.state.m_soap_state.m_response || event == "evCancel")
 		return;
 
-	var xpath_query = "/soap:Envelope/soap:Body/za:GetInfoResponse/za:attrs/za:attr[@name='zimbraFeatureGalEnabled']";
+	if (0)
+	{
+	var xpath_query = "/soap:Envelope/soap:Body/za:GetInfoResponse/za:attrs/za:attr[@name='zimbraPrefLocale']";
 	var functor     = new FunctorArrayOfTextNodeValue();
 
-	if (0)  // don't bother with zimbraFeatureGalEnabled - should the call to GetInfo be removed completely?
-	{
 	ZinXpath.runFunctor(functor, xpath_query, this.state.m_soap_state.m_response);
 
 	if (functor.a.length == 1)
 	{
-		var re = /TRUE/i;
+		this.state.zimbraPrefLocale = functor.a[0];
 
-		this.state.isZimbraFeatureGalEnabled = re.test(functor.a[0]);
-
-		this.state.m_logger.debug("exitActionGetInfo: isZimbraFeatureGalEnabled: " + this.state.isZimbraFeatureGalEnabled);
+		this.state.m_logger.debug("exitActionGetInfo: zimbraPrefLocale: " + this.state.zimbraPrefLocale);
 	}
 	else
-		this.state.m_logger.warn("expected <attr name='zimbraFeatureGalEnabled'>xxx</attr> in <GetInfoResponse> - default: " +
-		                          (this.state.isZimbraFeatureGalEnabled ? "" : "don't") + " sync GAL");
+		this.state.m_logger.debug("exitActionGetInfo: zimbraPrefLocale: not present");
 	}
 }
 
@@ -1380,18 +1378,13 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 	if (this.state.SyncGalEnabled == "if-fewer" && this.state.SyncGalTokenInRequest == null && !isGalEnabled)
 	{
-		this.state.m_logger.debug("entryActionGalCommit: blah: am here 1");
-
 		if (!zfcLastSync.get(sourceid_zm).isPresent('SyncGalEnabledRecheck'))
 		{
-			this.state.m_logger.debug("entryActionGalCommit: blah: am here 2");
 			zfcLastSync.get(sourceid_zm).set('SyncGalEnabledRecheck',
 			                 this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalEnabledRecheck"));
 		}
 		else
 		{
-			this.state.m_logger.debug("entryActionGalCommit: blah: am here 3");
-
 			if (zfcLastSync.get(sourceid_zm).get('SyncGalEnabledRecheck') <= 1)
 				zfcLastSync.get(sourceid_zm).del('SyncGalEnabledRecheck');
 			else
@@ -1416,6 +1409,7 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	this.state.stopwatch.mark("entryActionLoadTb: 1");
 	this.state.zfcTbPreMerge = zinCloneObject(zfcTb);          // 1. remember the tb luid's before merge so that we can follow changes
 
+	this.loadTbLocaliseEmailedContacts();                     // 1.1 if slow sync, make sure emailed contacts is in the locale
 	var aUri = this.loadTbMergeZfcWithAddressBook();           // 2. merge the current tb luid map with the current addressbook(s)
 	this.state.stopwatch.mark("entryActionLoadTb: 2");
 	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);  // 3. exclude mailing lists and their cards
@@ -1448,7 +1442,7 @@ SyncFsm.prototype.isFolderPresentInZfcTb = function(name)
 	if (!id || zfcTb.get(id).isPresent(ZinFeedItem.ATTR_DEL))
 	{
 		this.state.stopFailCode   = 'FailOnFolderMustBePresent';
-		this.state.stopFailDetail = name;
+		this.state.stopFailDetail = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, name);
 	}
 
 	return this.state.stopFailCode == null;
@@ -1466,7 +1460,7 @@ SyncFsm.prototype.isTbReservedFolderInvariant = function(name)
 	var pre_prefid  = pre_id  ? zfcTbPre.get(pre_id).get(ZinFeedItem.ATTR_TPI) : null;
 	var post_prefid = post_id ? zfcTbPost.get(post_id).get(ZinFeedItem.ATTR_TPI) : null;
 
-	this.state.m_logger.debug("loadTbTestPab: name: " + name +
+	this.state.m_logger.debug("isTbReservedFolderInvariant: name: " + name +
 		" pre_id: " + pre_id + " post_id: " + post_id + 
 		" pre_prefid: " + pre_prefid + " post_prefid: " + post_prefid);
 
@@ -1476,7 +1470,7 @@ SyncFsm.prototype.isTbReservedFolderInvariant = function(name)
 		this.state.stopFailDetail = name;
 	}
 
-	this.state.m_logger.debug("loadTbTestPab: name: " + name + " returns: " + (this.state.stopFailCode == null));
+	this.state.m_logger.debug("isTbReservedFolderInvariant: name: " + name + " returns: " + (this.state.stopFailCode == null));
 
 	return this.state.stopFailCode == null;
 }
@@ -1538,6 +1532,62 @@ SyncFsm.isZmFolderContainsInvalidCharacter = function(name)
 	return ret;
 }
 
+SyncFsm.prototype.getAbNameNormalised = function(elem)
+{
+	var ret;
+
+	if (ZinAddressBook.isElemPab(elem))
+		ret = TB_PAB;
+	else if (elem.dirName == this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS))
+		ret = TB_EMAILED_CONTACTS;
+	else 
+		ret = elem.dirName;
+
+	return ret;
+}
+
+SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
+{
+	this.state.m_logger.debug("LocaliseEmailedContacts: isSlowSync: " + this.state.isSlowSync);
+
+	if (this.state.isSlowSync)
+	{
+		// doing this before applying localisation gives us "zindus/Emailed Contacts"
+		//
+		var ab_non_localised = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS);
+
+		var localised_emailed_contacts = this.state.m_folder_converter.recalculate_localised_emailed_contacts();
+
+		this.state.m_folder_converter.localised_emailed_contacts(localised_emailed_contacts);
+
+		this.state.m_logger.debug("LocaliseEmailedContacts: localised_emailed_contacts: " + localised_emailed_contacts);
+
+		this.state.zfcLastSync.get(this.state.sourceid_zm).set('EmailedContacts', localised_emailed_contacts);
+
+		var ab_localised = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS);
+
+		this.state.m_logger.debug("LocaliseEmailedContacts: ab_non_localised: "+ ab_non_localised + " ab_localised: " + ab_localised);
+
+		// if there's a "zindus/Emailed Contacts" addressbook, rename it to the localised equivalent
+		//
+		if (ab_localised != ab_non_localised)
+		{
+			var uri = ZinAddressBook.getAddressBookUri(ab_non_localised);
+
+			if (uri)
+			{
+				this.state.m_logger.debug("LocaliseEmailedContacts: renaming " + ab_non_localised + " to " + ab_localised + " uri: " + uri);
+
+				ZinAddressBook.renameAddressBook(uri, ab_localised);
+			}
+			else
+				this.state.m_logger.debug("LocaliseEmailedContacts: not present: " + ab_non_localised);
+		}
+	}
+	else
+		this.state.m_folder_converter.localised_emailed_contacts(this.state.zfcLastSync.get(this.state.sourceid_zm).get('EmailedContacts'));
+}
+
 SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 {
 	var functor_foreach_card, functor_foreach_addressbook;
@@ -1561,8 +1611,8 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	//
 	functor_foreach_addressbook =
 	{
-		state:  this.state,
-		prefix: ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, ""),
+		context: this,
+		prefix: this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, ""),
 
 		run: function(elem)
 		{
@@ -1580,23 +1630,25 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			// look for zindus/<folder-name> but don't permit '/'es in <folder-name> because:
 			// - we only support addressbook folders that are immediate children of the root folder - note the l='1' below.
 
-			// this.state.m_logger.debug("TbAddressBook: blah: dirName: " + elem.dirName);
-			// this.state.m_logger.debug("TbAddressBook: blah: prefix: " + this.prefix);
-			// this.state.m_logger.debug("TbAddressBook: blah: prefix length: " + this.prefix.length);
-			// this.state.m_logger.debug("TbAddressBook: blah: dirName.substring: " + elem.dirName.substring(0, this.prefix.length));
-			// this.state.m_logger.debug("TbAddressBook: blah: dirName.indexOf: " + elem.dirName.indexOf("/", this.prefix.length));
+			// context.state.m_logger.debug("TbAddressBook: blah: dirName: " + elem.dirName);
+			// context.state.m_logger.debug("TbAddressBook: blah: prefix: " + this.prefix);
+			// context.state.m_logger.debug("TbAddressBook: blah: prefix length: " + this.prefix.length);
+			// context.state.m_logger.debug("TbAddressBook: blah: dirName.substring: " + elem.dirName.substring(0, this.prefix.length));
+			// context.state.m_logger.debug("TbAddressBook: blah: dirName.indexOf: " + elem.dirName.indexOf("/", this.prefix.length));
 
 			if ((elem.dirName.substring(0, this.prefix.length) == this.prefix && elem.dirName.indexOf("/", this.prefix.length) == -1) ||
 			     (ZinAddressBook.isElemPab(elem)) )
 			{
 				var id;
 
-				var name = ZinAddressBook.getAbNameNormalised(elem);
+				var name = this.context.getAbNameNormalised(elem);
 
 				msg = "addressbook of interest to zindus: " + msg;
 
 				if (!isPropertyPresent(mapTbFolderTpiToId, elem.dirPrefId))
 				{
+					this.context.state.m_logger.debug("zfcTb.toString(): " + zfcTb.toString());
+
 					id = zfcTb.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
 					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_ID, id , 'l', 1, ZinFeedItem.ATTR_NAME, name,
@@ -1634,7 +1686,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			else
 				msg = "ignored: " + msg;
 
-			this.state.m_logger.debug("loadTbMergeZfcWithAddressBook: " + msg);
+			this.context.state.m_logger.debug("loadTbMergeZfcWithAddressBook: " + msg);
 		
 			return true;
 		}
@@ -1846,6 +1898,7 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 	var functor = {
 		a_folder_count:     new Object(),
 		a_folder_violation: new Object(),
+		m_folder_converter: this.state.m_folder_converter,
 		// state: this.state,
 
 		run: function(zfi)
@@ -1855,7 +1908,7 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 			if (zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isPresent(ZinFeedItem.ATTR_DEL))
 			{
 				zinAssert(zfi.isPresent(ZinFeedItem.ATTR_NAME));
-				var name = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, zfi.get(ZinFeedItem.ATTR_NAME));
+				var name = this.m_folder_converter.convertForMap(FORMAT_ZM, FORMAT_TB, zfi.get(ZinFeedItem.ATTR_NAME));
 
 				if (!isPropertyPresent(this.a_folder_count, name))
 					this.a_folder_count[name] = true;
@@ -1882,10 +1935,7 @@ SyncFsm.prototype.loadTbTestFolderNameRules = function()
 	{
 		var name = propertyFromObject(functor.a_folder_violation);
 		this.state.stopFailCode   = functor.a_folder_violation[name];
-		this.state.stopFailDetail = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, name);
-
-		// this.state.m_logger.debug("loadTbTestFolderNameRules: blah: stopFailCode: " + this.state.stopFailCode +
-		//                                                    " stopFailDetail: " + this.state.stopFailDetail);
+		this.state.stopFailDetail = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, name);
 	}
 
 	var ret = this.state.stopFailCode == null;
@@ -1973,11 +2023,11 @@ SyncFsm.prototype.twinInGid = function(sourceid, luid, sourceid_tb, luid_tb, rev
 //
 SyncFsm.prototype.workaroundForImmutables = function()
 {
-	this.workaroundForImmutable(ZM_ID_FOLDER_CONTACTS, ZM_NAME_FOLDER_CONTACTS);
-	this.workaroundForImmutable(ZM_ID_FOLDER_AUTO_CONTACTS, ZM_NAME_AUTO_CONTACTS);
+	this.workaroundForImmutable(ZM_ID_FOLDER_CONTACTS);
+	this.workaroundForImmutable(ZM_ID_FOLDER_AUTO_CONTACTS);
 }
 
-SyncFsm.prototype.workaroundForImmutable = function(luid_zm, name_zm)
+SyncFsm.prototype.workaroundForImmutable = function(luid_zm)
 {
 	var sourceid_tb = this.state.sourceid_tb;
 	var sourceid_zm = this.state.sourceid_zm;
@@ -1987,7 +2037,6 @@ SyncFsm.prototype.workaroundForImmutable = function(luid_zm, name_zm)
 	var reverse     = this.state.aReverseGid; // bring it into the local namespace
 
 	if (zfcZm.isPresent(luid_zm) &&
-	    zfcZm.get(luid_zm).get(ZinFeedItem.ATTR_NAME) == name_zm &&
 		zfcZm.get(luid_zm).isPresent(ZinFeedItem.ATTR_LS))
 	{
 		zinAssert(isPropertyPresent(reverse[sourceid_zm], luid_zm));
@@ -2070,7 +2119,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 				if (zfi.type() == ZinFeedItem.TYPE_FL)
 				{
 					var name   = zfi.get(ZinFeedItem.ATTR_NAME);
-					var abName = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, name);
+					var abName = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM, name);
 
 					if (isPropertyPresent(mapTbFolderNameToId, abName))
 					{
@@ -2091,8 +2140,8 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 					var checksum    = aChecksum[sourceid][luid];
 					var luid_parent = zfi.get('l');
-					var name_parent = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM,
-					                                                                   zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
+					var name_parent = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM,
+					                                                                  zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
 
 					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
 					this.state.m_logger.debug("functor_foreach_luid_slow_sync: testing twin key: " + key);
@@ -2234,19 +2283,21 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid)
 {
-	var properties, name_parent;
+	var properties, name_parent_map;
 	var zfc = this.state.sources[sourceid]['zfcLuid'];
 	var zfi = zfc.get(luid);
 	var luid_parent = zfi.get('l');
+	var format = this.state.sources[sourceid]['format'];
 
 	zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
 
-	if (this.state.sources[sourceid]['format'] == FORMAT_TB)
+	if (format == FORMAT_TB)
 	{
 		zinAssert(zfi.isPresent('l'));
 
-		name_parent = this.getTbAddressbookNameFromLuid(sourceid, luid_parent);
-		var uri     = ZinAddressBook.getAddressBookUri(name_parent);
+		var name_parent_public = this.state.m_folder_converter.convertForPublic(FORMAT_TB, format,
+		                                                                           zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
+		var uri     = ZinAddressBook.getAddressBookUri(name_parent_public);
 		var abCard  = uri ? ZinAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid) : null;
 		properties  = abCard ? ZinAddressBook.getCardProperties(abCard) : null;
 
@@ -2258,10 +2309,11 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 	{
 		zinAssert(isPropertyPresent(this.state.aSyncContact, luid));
 		properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncContact[luid].element);
-		name_parent = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
 	}
 
-	return [ properties, name_parent ];
+	name_parent_map = this.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
+
+	return [ properties, name_parent_map ];
 }
 
 // return true iff all the fields in both contacts exactly match
@@ -2416,17 +2468,18 @@ SyncFsm.prototype.buildGcs = function()
 			       " aVerMatchesGid: " + aToString(aVerMatchesGid) +
 			       " aChangeOfNote: "  + aToString(aChangeOfNote);
 
-			zinAssert(cNeverSynced == 0 || cNeverSynced == 1, buildgcs_msg + "\n" + msg);
+			zinAssertAndLog(cNeverSynced == 0 || cNeverSynced == 1, "gid: " + gid + " cNeverSynced: " + cNeverSynced + " " +
+			                                                   buildgcs_msg + "\n" + msg);
 
 			if (cNeverSynced == 1)
 			{
-				zinAssert(cVerMatchesGid == 0 && cChangeOfNote == 0, msg);
+				zinAssertAndLog(cVerMatchesGid == 0 && cChangeOfNote == 0, msg);
 
 				ret = new Gcs(propertyFromObject(aNeverSynced), Gcs.WIN);
 			}
 			else if (cChangeOfNote == 0)
 			{
-				zinAssert(isPropertyPresent(aVerMatchesGid, sourceid_tb), buildgcs_msg + "\n" + msg);
+				zinAssertAndLog(isPropertyPresent(aVerMatchesGid, sourceid_tb), buildgcs_msg + "\n" + msg);
 				ret = new Gcs(sourceid_tb, Gcs.WIN);
 			}
 			else if (cChangeOfNote == 1)
@@ -2665,7 +2718,7 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	var key;
 
 	if (zfi.type() == ZinFeedItem.TYPE_FL)
-		ret += ZinContactConverter.instance().convertFolderName(target_format, format, zfi.get(ZinFeedItem.ATTR_NAME));
+		ret += this.state.m_folder_converter.convertForPublic(target_format, format, zfi.get(ZinFeedItem.ATTR_NAME));
 	else
 	{
 		zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
@@ -2723,7 +2776,7 @@ SyncFsm.prototype.testFolderNameDuplicate = function(aGcs)
 		{
 			zinAssert(zfi.isPresent(ZinFeedItem.ATTR_NAME));
 
-			name = ZinContactConverter.instance().convertFolderName(FORMAT_TB, format, zfi.get(ZinFeedItem.ATTR_NAME));
+			name = this.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi.get(ZinFeedItem.ATTR_NAME));
 
 			if (isPropertyPresent(aFolderName, name))
 			{
@@ -2778,16 +2831,12 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 SyncFsm.prototype.shouldEmailedContactsBePresent = function()
 {
 	var zfcZm = this.state.sources[this.state.sourceid_zm]['zfcLuid'];
-	var id = this.lookupFolderInZfc(zfcZm, ZM_NAME_AUTO_CONTACTS);
+	var id = ZM_ID_FOLDER_AUTO_CONTACTS;
 	var passed = true;
 
-	if (!id || zfcZm.get(id).isPresent(ZinFeedItem.ATTR_DEL))
+	if (!zfcZm.isPresent(id) || zfcZm.get(id).isPresent(ZinFeedItem.ATTR_DEL))
 	{
-		this.state.m_logger.debug("shouldEmailedContactsBePresent: server doesn't have: " + ZM_NAME_AUTO_CONTACTS);
-	}
-	else if (id >= ZM_FIRST_USER_ID)
-	{
-		this.state.m_logger.debug("shouldEmailedContactsBePresent: " + ZM_NAME_AUTO_CONTACTS + " is present but mutable");
+		this.state.m_logger.debug("shouldEmailedContactsBePresent: server doesn't have: " + ZM_FOLDER_EMAILED_CONTACTS);
 	}
 	else if (this.state.isSlowSync)
 	{
@@ -2795,21 +2844,18 @@ SyncFsm.prototype.shouldEmailedContactsBePresent = function()
 	}
 	else
 	{
-		var abName = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, ZM_NAME_AUTO_CONTACTS);
-		this.state.m_logger.debug("shouldEmailedContactsBePresent: server has " + ZM_NAME_AUTO_CONTACTS +
-		                          " folder - testing for presence/mutation of tb addressbook: " + abName);
+		this.state.m_logger.debug("shouldEmailedContactsBePresent: server has: " + ZM_FOLDER_EMAILED_CONTACTS);
 
-		passed = passed && this.isFolderPresentInZfcTb(abName);
+		passed = passed && this.isFolderPresentInZfcTb(TB_EMAILED_CONTACTS);
 
-		this.state.m_logger.debug("shouldEmailedContactsBePresent: isFolderPresentInZfcTb: passed: " + passed);
+		this.state.m_logger.debug("shouldEmailedContactsBePresent: present: " + passed);
 
-		passed = passed && this.isTbReservedFolderInvariant(abName);
+		passed = passed && this.isTbReservedFolderInvariant(TB_EMAILED_CONTACTS);
 
-		this.state.m_logger.debug("shouldEmailedContactsBePresent: isTbReservedFolderInvariant: passed: " + passed);
-
+		this.state.m_logger.debug("shouldEmailedContactsBePresent: invariant: " + passed);
 	}
 
-	this.state.m_logger.debug("shouldEmailedContactsBePresent: passed:" + passed);
+	this.state.m_logger.debug("shouldEmailedContactsBePresent: passed: " + passed);
 
 	return passed;
 }
@@ -2912,7 +2958,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 
 		if (SORT_ORDER[i] & ZinFeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
-			zinAssert(zfiWinner.get(ZinFeedItem.ATTR_NAME) != TB_PAB && zfiWinner.get(ZinFeedItem.ATTR_NAME) != ZM_NAME_FOLDER_CONTACTS);
+			zinAssert(zfiWinner.get(ZinFeedItem.ATTR_NAME) != TB_PAB && zfiWinner.get(ZinFeedItem.ATTR_NAME) != ZM_FOLDER_CONTACTS);
 
 		switch(SORT_ORDER[i])
 		{
@@ -2925,7 +2971,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 				luid_target = zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
-				zinAssert(this.state.aSyncContact, luid_winner);
+				zinAssert(isPropertyPresent(this.state.aSyncContact, luid_winner));
 				zc = this.state.aSyncContact[luid_winner]; // the ZimbraContact object that arrived via GetContactResponse
 
 				msg += "About to add a contact to the thunderbird addressbook, gid: " + gid + " and luid_winner: " + luid_winner;
@@ -2958,7 +3004,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 			case Suo.ADD | ZinFeedItem.TYPE_FL:
 				var name   = zfiWinner.get(ZinFeedItem.ATTR_NAME);
-				var abName = ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, name);
+				var abName = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, name);
 
 				if (!ZinAddressBook.getAddressBookUri(abName))
 				{
@@ -2968,7 +3014,11 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					luid_target = zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
-					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_ID, luid_target, ZinFeedItem.ATTR_NAME, abName, 'l', 1,
+					var name_for_map = this.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM, name);
+
+					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_ID, luid_target,
+					                       ZinFeedItem.ATTR_NAME, name_for_map,
+										   'l', 1,
 					                       ZinFeedItem.ATTR_MS, 1,
 										   ZinFeedItem.ATTR_TPI, ZinAddressBook.getAddressBookPrefId(uri)));
 
@@ -2976,7 +3026,8 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					this.state.aReverseGid[sourceid_target][luid_target] = gid;
 				}
 				else
-					this.state.m_logger.warn("Was about to create an addressbook: " + abName + " but it already exists.  This shouldn't happen.");
+					this.state.m_logger.warn("Was about to create an addressbook: " + abName +
+					                         " but it already exists.  This shouldn't happen.");
 
 				break;
 
@@ -3007,7 +3058,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					//
 					msg += " - parent folder hasn't changed";
 
-					zinAssert(isPropertyPresent(this.state.aSyncContact, luid_winner), "luid_winner: " + luid_winner);
+					zinAssertAndLog(isPropertyPresent(this.state.aSyncContact, luid_winner), "luid_winner: " + luid_winner);
 
 					uri    = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
 					// this.state.m_logger.debug("entryActionUpdateTb: uri: " + uri + " luid_target: " + luid_target);
@@ -3084,16 +3135,20 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					zinAssert(zfiWinner.get('l') == 1); // luid of the parent folder in the winner == 1
 
-					var name_winner = this.getTbAddressbookNameFromLuid(sourceid_winner, luid_winner);
-					ZinAddressBook.renameAddressBook(uri, name_winner);
+					var name_winner_public = this.getTbAddressbookNameFromLuid(sourceid_winner, luid_winner);
+					var name_winner_map    = this.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM,
+					                                                                        zfiWinner.get(ZinFeedItem.ATTR_NAME));
 
-					zfcTarget.get(luid_target).set(ZinFeedItem.ATTR_NAME, name_winner);
+					ZinAddressBook.renameAddressBook(uri, name_winner_public);
+
+					zfcTarget.get(luid_target).set(ZinFeedItem.ATTR_NAME, name_winner_map);
 					zfcTarget.get(luid_target).increment(ZinFeedItem.ATTR_MS);
 				}
 				else
 				{
-					this.state.m_logger.warn("Was about to rename an addressbook: " + this.getTbAddressbookNameFromLuid(sourceid_target, luid_target) +
-					             " but it didn't exist.  This shouldn't happen.");
+					this.state.m_logger.warn("Was about to rename an addressbook: " +
+					                         this.getTbAddressbookNameFromLuid(sourceid_target, luid_target) +
+											 " but it didn't exist.  This shouldn't happen.");
 
 					luid_target = null
 				}
@@ -3240,12 +3295,13 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		l_winner        = zfiWinner.get('l');
 
 		if (SORT_ORDER[i] & ZinFeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
-			zinAssert(zfiWinner.get(ZinFeedItem.ATTR_NAME) != TB_PAB && zfiWinner.get(ZinFeedItem.ATTR_NAME) != ZM_NAME_FOLDER_CONTACTS);
+			zinAssert(zfiWinner.get(ZinFeedItem.ATTR_NAME) != TB_PAB && zfiWinner.get(ZinFeedItem.ATTR_NAME) != ZM_FOLDER_CONTACTS);
 
 		switch(SORT_ORDER[i])
 		{
 			case Suo.ADD | ZinFeedItem.TYPE_FL:
-				name_winner = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, format_winner, zfiWinner.get(ZinFeedItem.ATTR_NAME));
+				name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner,
+				                                                              zfiWinner.get(ZinFeedItem.ATTR_NAME));
 				soapMethod  = "CreateFolder";
 				soapArg     = newObject(ZinFeedItem.ATTR_NAME, name_winner, 'l', l_winner);
 				bucket      = SORT_ORDER[i];
@@ -3264,8 +3320,9 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 			case Suo.MOD | ZinFeedItem.TYPE_FL:
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-				name_winner = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, format_winner, zfiWinner.get(ZinFeedItem.ATTR_NAME));
-				zinAssert(luid_target >= ZM_FIRST_USER_ID, "luid: " + luid_target + "folder name: " + name_winner); // sanity check that we never modify any of zimbra's immutable folders
+				name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner,
+				                                                                 zfiWinner.get(ZinFeedItem.ATTR_NAME));
+				zinAssertAndLog(luid_target >= ZM_FIRST_USER_ID, "luid: " + luid_target + "folder name: " + name_winner); // sanity check that we never modify any of zimbra's immutable folders
 
 				soapMethod  = "FolderAction";
 				soapArg     = newObject('id', luid_target, 'op', 'update', ZinFeedItem.ATTR_NAME, name_winner);
@@ -3311,7 +3368,8 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 			case Suo.DEL | ZinFeedItem.TYPE_FL:
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-				name_winner = ZinContactConverter.instance().convertFolderName(FORMAT_ZM, format_winner, zfiWinner.get(ZinFeedItem.ATTR_NAME));
+				name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner,
+				                                                                zfiWinner.get(ZinFeedItem.ATTR_NAME));
 				zinAssert(luid_target >= ZM_FIRST_USER_ID); // sanity check that we never modify any of zimbra's immutable folders
 
 				soapMethod  = "FolderAction";
@@ -3587,7 +3645,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 
 	if (this.state.sources[sourceid]['format'] == FORMAT_TB)
 	{
-		var uri    = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
+		var uri = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
 
 		// this.state.m_logger.debug("getContactFromLuid: sourceid: " + sourceid + " luid: " + luid + "uri: " + uri +
 		//                               "l: " + l + " abName: " + this.getTbAddressbookNameFromLuid(sourceid, l) );
@@ -3785,13 +3843,10 @@ SyncFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
 	var zfc    = this.state.sources[sourceid]['zfcLuid'];
 	var format = this.state.sources[sourceid]['format'];
 
-	if (!zfc.isPresent(luid))
-		this.state.m_logger.debug("getTbAddressbookNameFromLuid: sourceid: " + sourceid + " luid: " + luid);
-
-	zinAssert(zfc.isPresent(luid));
+	zinAssertAndLog(zfc.isPresent(luid), "sourceid: " + sourceid + " luid: " + luid);
 
 	var name = zfc.get(luid).get(ZinFeedItem.ATTR_NAME);
-	var ret  = ZinContactConverter.instance().convertFolderName(FORMAT_TB, format, name);
+	var ret  = this.state.m_folder_converter.convertForPublic(FORMAT_TB, format, name);
 
 	return ret;
 }
@@ -4267,7 +4322,9 @@ function SyncFsmState(id_fsm)
 	this.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
 	this.isUpdateZmFailed    = false;        // true iff a soap response couldn't be understood
 
-	this.m_preferences  = new MozillaPreferences();
+	this.m_preferences       = new MozillaPreferences();
+	this.m_folder_converter  = new ZinFolderConverter();
+
 	this.m_bimap_format = new BiMap(
 		[FORMAT_TB, FORMAT_ZM],
 		['tb',      'zm'     ]);

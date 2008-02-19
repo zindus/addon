@@ -50,7 +50,7 @@ BiMap.prototype.getObjAndKey = function(key_a, key_b)
 	var c = 0;
 	c += (key_a == null) ? 0 : 1;
 	c += (key_b == null) ? 0 : 1;
-	zinAssert(c == 1); // exactly one of the keys must be non-null
+	zinAssertAndLog(c == 1, "key_a: " + key_a + " key_b: " + key_b + " " + this.toString()); // exactly one of the keys must be non-null
 
 	var obj, key;
 

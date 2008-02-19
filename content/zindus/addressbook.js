@@ -47,7 +47,7 @@ ZinAddressBook.getAddressBookUri = function(name)
 		}
 	};
 
-	if (name == TB_PAB)
+	if (name == ZinAddressBook.m_pab_name)
 		ret = ZinAddressBook.getPabURI();
 	else
 		ZinAddressBook.forEachAddressBook(functor);
@@ -314,8 +314,25 @@ ZinAddressBook.nsIAbMDBCardToKey = function(mdbCard)
 
 ZinAddressBook.getPabURI = function()
 {
+	if (typeof(ZinAddressBook.m_pab_uri) == "undefined")
+		ZinAddressBook.setupPab();
+
+	return ZinAddressBook.m_pab_uri;
+}
+
+ZinAddressBook.getPabName = function()
+{
+	if (typeof(ZinAddressBook.m_pab_name) == "undefined")
+		ZinAddressBook.setupPab();
+
+	return ZinAddressBook.m_pab_name;
+}
+
+ZinAddressBook.setupPab = function()
+{
 	var pabByUri  = null;
 	var pabByName = null;
+	var pabName   = null;
 	var ret = null;
 	var msg;
 
@@ -324,24 +341,16 @@ ZinAddressBook.getPabURI = function()
 
 			if (elem.directoryProperties.URI == ZinAddressBook.kPersonalAddressbookURI)
 			{
-				msg = "pabByUri:  addressbook:" +
-				      " dirName: " + elem.dirName +
-				      " dirPrefId: " + elem.dirPrefId +
-				      " URI: "      + elem.directoryProperties.URI;
-				newZinLogger("AddressBook").debug(msg);
-
-				pabByUri = elem.directoryProperties.URI;
+				pabByUri      = new Object();
+				pabByUri.uri  = elem.directoryProperties.URI;
+				pabByUri.name = elem.dirName;
 			}
 
 			if (elem.dirName == "Personal Address Book")
 			{
-				msg = "pabByName: addressbook:" +
-				      " dirName: " + elem.dirName +
-				      " dirPrefId: " + elem.dirPrefId +
-				      " URI: "      + elem.directoryProperties.URI;
-				newZinLogger("AddressBook").debug(msg);
-
-				pabByName = elem.directoryProperties.URI;
+				pabByName      = new Object();
+				pabByName.uri  = elem.directoryProperties.URI;
+				pabByName.name = elem.dirName;
 			}
 
 			return true;
@@ -351,36 +360,27 @@ ZinAddressBook.getPabURI = function()
 	if (typeof(ZinAddressBook.m_pab_uri) == "undefined")
 	{
 		ZinAddressBook.forEachAddressBook(functor_foreach_addressbook);
+
+		var logger = newZinLogger("AddressBook");
 	
 		if (pabByUri)
 		{
-			ret = pabByUri;
-			msg = "m_pab_uri set to pabByUri: " + ret;
+			ZinAddressBook.m_pab_uri  = String(pabByUri.uri);
+			ZinAddressBook.m_pab_name = String(pabByUri.name);
+			logger.debug("m_pab_uri selected by uri: uri: " + ZinAddressBook.m_pab_uri + " name: " + ZinAddressBook.m_pab_name);
 		}
 		else if (pabByName)
 		{
-			ret = pabByName;
-			msg = "m_pab_uri set to pabByName: " + ret;
+			ZinAddressBook.m_pab_uri  = String(pabByName.uri);  // create a primitive string so that typeof() == "string" not "object"
+			ZinAddressBook.m_pab_name = String(pabByName.name);
+			logger.debug("m_pab_uri selected by name: uri: " + ZinAddressBook.m_pab_uri + " name: " + ZinAddressBook.m_pab_name);
 		}
 		else
-		{
-			msg = "m_pab_uri not set! ";
-		}
-
-		newZinLogger("AddressBook").debug(msg);
-
-		ZinAddressBook.m_pab_uri = new String(ret);
+			logger.error("Couldn't find Personal Address Book");
 	}
-
-	return ZinAddressBook.m_pab_uri;
 }
 
 ZinAddressBook.isElemPab = function(elem)
 {
 	return (ZinAddressBook.getPabURI() == elem.directoryProperties.URI);
-}
-
-ZinAddressBook.getAbNameNormalised = function(elem)
-{
-	return ZinAddressBook.isElemPab(elem) ? TB_PAB : elem.dirName;
 }

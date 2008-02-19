@@ -26,7 +26,11 @@
 
 function MozillaPreferences()
 {
-	this.m_prefix        = "extensions." + APP_NAME + ".";
+	if (arguments.length == 0)
+		this.m_prefix = "extensions." + APP_NAME + ".";
+	else
+		this.m_prefix = arguments[0];
+
 	this.m_branch        = null;
 	this.m_defaultbranch = null;
 }
@@ -60,7 +64,7 @@ MozillaPreferences.prototype.defaultbranch = function()
 			var instance = Components. classes["@mozilla.org/preferences-service;1"].
 		                                        getService(Components.interfaces.nsIPrefService);
 	
-			this.m_defaultbranch = instance.getDefaultBranch(this.m_prefithis.m_prefix);
+			this.m_defaultbranch = instance.getDefaultBranch(this.m_prefix);
 		}
 		catch(ex)
 		{

@@ -41,7 +41,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
 	// ret = ret && this.testContactConverter();
-	ret = ret && this.testContactConverterForFolderNames();
+	ret = ret && this.testFolderConverter();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -113,27 +113,78 @@ ZinTestHarness.prototype.testContactConverter = function()
 	this.m_logger.debug("3233: testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
 }
 
-ZinTestHarness.prototype.testContactConverterForFolderNames = function()
+ZinTestHarness.prototype.testFolderConverter = function()
 {
-	var name, format_from, format_to;
+	this.m_logger.debug("testFolderConverter: start");
+	var converter = new ZinFolderConverter();
 
-	var prefix = APP_NAME + "/";
+	this.testFolderConverterSuiteOne(converter, "convertForMap");
+	this.testFolderConverterSuiteOne(converter, "convertForPublic");
 
-	this.m_logger.debug("testContactConverterForFolderNames: start");
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_PAB)             == ZinAddressBook.getPabName());
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, ZM_FOLDER_CONTACTS) == ZinAddressBook.getPabName());
 
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, "")            == prefix);
+	var localised_emailed_contacts;
 
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_ZM, "fred")        == "fred");
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, "fred")        == prefix + "fred");
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, "zindus/fred") == "fred");
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_TB, "zindus/fred") == "zindus/fred");
+	// test without localisation
+	//
+	localised_emailed_contacts = ZM_FOLDER_EMAILED_CONTACTS;
 
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_TB, TB_PAB)        == "Contacts");
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_TB, TB_PAB)        == TB_PAB);
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_ZM, FORMAT_ZM, "Contacts")    == "Contacts");
-	zinAssert(ZinContactConverter.instance().convertFolderName(FORMAT_TB, FORMAT_ZM, "Contacts")    == TB_PAB);
+	this.testFolderConverterSuiteTwo(converter, localised_emailed_contacts);
 
-	this.m_logger.debug("testContactConverterForFolderNames: finish");
+	// test localisation by language
+	//
+	converter.localised_emailed_contacts(converter.recalculate_localised_emailed_contacts("fr"));
+	localised_emailed_contacts = "Personnes contact\u00e9es par mail";
+
+	this.testFolderConverterSuiteTwo(converter, localised_emailed_contacts);
+
+	// test localisation by language and location
+	//
+	converter.localised_emailed_contacts(converter.recalculate_localised_emailed_contacts("fr_FR"));
+
+	this.testFolderConverterSuiteTwo(converter, localised_emailed_contacts);
+
+	this.m_logger.debug("testFolderConverter: finish");
+
+	return true;
+}
+
+ZinTestHarness.prototype.testFolderConverterSuiteTwo = function(converter, localised_emailed_contacts)
+{
+	var prefix = converter.m_app_name_with_slash;
+
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS)        == prefix + localised_emailed_contacts);
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, ZM_FOLDER_EMAILED_CONTACTS) == prefix + localised_emailed_contacts);
+}
+
+ZinTestHarness.prototype.testFolderConverterSuiteOne = function(converter, method)
+{
+	var prefix = converter.m_app_name_with_slash;
+
+	// test convertForMap
+	//
+	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, "")                 == prefix);
+
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, "fred")             == "fred");
+	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, "fred")             == prefix + "fred");
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, "zindus/fred")      == "fred");
+	zinAssert(converter[method](FORMAT_TB, FORMAT_TB, "zindus/fred")      == "zindus/fred");
+
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, TB_PAB)             == ZM_FOLDER_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, ZM_FOLDER_CONTACTS) == ZM_FOLDER_CONTACTS);
+
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, TB_EMAILED_CONTACTS)        == ZM_FOLDER_EMAILED_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, ZM_FOLDER_EMAILED_CONTACTS) == ZM_FOLDER_EMAILED_CONTACTS);
+
+	if (method != "convertForPublic") // these are tested separately
+	{
+		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, TB_PAB)             == TB_PAB);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, ZM_FOLDER_CONTACTS) == TB_PAB);
+
+		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS)        == TB_EMAILED_CONTACTS);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, ZM_FOLDER_EMAILED_CONTACTS) == TB_EMAILED_CONTACTS);
+	}
 
 	return true;
 }
