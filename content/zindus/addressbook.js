@@ -193,10 +193,19 @@ ZinAddressBook.deleteCards = function(uri, aCards)
 	var cardsArray = Components.classes["@mozilla.org/supports-array;1"].createInstance().
 	                            QueryInterface(Components.interfaces.nsISupportsArray);
 
+	var logger = newZinLogger("AddressBook"); // TODO - this debugging is for issue#31 - remove once it is closed
+
 	for (var i = 0; i < aCards.length; i++)
+	{
+		logger.debug("deleteCards: prepare: " + ZinAddressBook.nsIAbCardToPrintableVerbose(aCards[i]));
 		cardsArray.AppendElement(aCards[i]);
+	}
+
+	logger.debug("deleteCards: about to delete");
 
 	dir.deleteCards(cardsArray);
+
+	logger.debug("deleteCards: done");
 }
 
 ZinAddressBook.addCard = function(uri, format, standard, extras)
@@ -303,6 +312,23 @@ ZinAddressBook.lookupCard = function(uri, key, value)
 ZinAddressBook.nsIAbCardToPrintable = function(abCard)
 {
 	return (abCard.isMailList ? abCard.mailListURI : abCard.getCardValue("PrimaryEmail"));
+}
+
+ZinAddressBook.nsIAbCardToPrintableVerbose = function(abCard)
+{
+	var ret;
+
+	if (abCard.isMailList)
+		ret = "maillist uri: " + abCard.mailListURI
+	else
+	{
+		var properties = ZinAddressBook.getCardProperties(abCard);
+		var attributes = ZinAddressBook.getCardAttributes(abCard);
+
+		ret = "properties: " + aToString(properties) + " attributes: " + aToString(attributes);
+	}
+
+	return ret;
 }
 
 ZinAddressBook.nsIAbMDBCardToKey = function(mdbCard)

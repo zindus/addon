@@ -300,7 +300,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	if (cExist == 0)
 	{
-		this.state.m_logger.debug("entryActionLoad: data files didn't exist - initialising - will do a slow sync");
+		this.state.m_logger.debug("entryActionLoad: data files didn't exist - initialising maps and tb attributes...");
 
 		this.state.isSlowSync = true;
 
@@ -315,6 +315,8 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		nextEvent = 'evNext';
 	else
 		nextEvent = 'evLackIntegrity';
+
+	this.state.m_logger.debug("entryActionLoad: isSlowSync: " + this.state.isSlowSync);
 
 	continuation(nextEvent);
 }
@@ -1783,7 +1785,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-			var msg = "loadTbExclude pass 3 - card key: " + ZinAddressBook.nsIAbMDBCardToKey(mdbCard);
+			var msg = "loadTbExclude pass 3: uri: " + uri + " card key: " + ZinAddressBook.nsIAbMDBCardToKey(mdbCard);
 
 			var isInTopLevelFolder = false;
 
@@ -1819,7 +1821,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id, ZinFeedItem.ATTR_CS, checksum,
 					                   'l', aUri[uri]));
 
-					msg += " added:   " + ZinAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfcTb.get(id).toString();
+					msg += " added:   " + ZinAddressBook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfcTb.get(id).toString(); // TODO remove Verbose
 				}
 				else
 				{
@@ -1840,11 +1842,11 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 						zfi.set(ZinFeedItem.ATTR_CS, checksum);
 						zfi.set('l', aUri[uri]);
 
-						msg += " changed: " + ZinAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
+						msg += " changed: " + ZinAddressBook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();  // TODO remove Verbose
 						msg += reason;
 					}
 					else
-						msg += " found:   " + ZinAddressBook.nsIAbCardToPrintable(abCard) + " - map: " + zfi.toString();
+						msg += " found:   " + ZinAddressBook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();  // TODO remove Verbose
 
 				}
 
@@ -3315,7 +3317,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				soapMethod = "CreateContact";
 				soapArg    = newObject('properties', properties, 'l', l_target);
 				bucket     = SORT_ORDER[i];
-				msg       += " about to add contact: " + properties;
+				msg       += " about to add contact: ";
 				break;
 
 			case Suo.MOD | ZinFeedItem.TYPE_FL:

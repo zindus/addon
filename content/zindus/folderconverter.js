@@ -149,6 +149,8 @@ ZinFolderConverter.prototype.emailed_contacts_per_locale = function(key)
 	// A locale eg 'en-US' is made up of language (en) and nation/location (US)
 	// This list aims to be a superset of Zimbra's supported locales...
 	//
+	// Note - if any of these translations change, there will have to be code that migrates the old name to the new...
+	//
 	var localeString =
 	{
 		da    : "Kontakter, der er sendt mail til",
