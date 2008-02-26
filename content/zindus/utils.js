@@ -117,13 +117,22 @@ FunctorAnyDuplicatesInPrefsetCollection.prototype.run = function(prefset)
 
 function stringBundleString(id_string, args)
 {
-	var stringbundle = document.getElementById("zindus-stringbundle");
+	var string_bundle_id = "zindus-stringbundle";
+
+	var stringbundle = document.getElementById(string_bundle_id);
 	var ret = "";
 	var is_exception = false;
 
 	zinAssert(arguments.length == 1 || arguments.length == 2);
-	zinAssertAndLog(stringbundle != null, "unknown string id: " + id_string);
 
+	if (stringbundle == null)
+	{
+		ret = "Unable to load string-bundle: " + string_bundle_id;
+
+		if (typeof(gLogger) == 'object' && typeof(gLogger.error) == 'function')
+			gLogger.error(ret);
+	}
+	else
 	try
 	{
 		if (arguments.length == 1)
@@ -141,7 +150,7 @@ function stringBundleString(id_string, args)
 		is_exception = true;
 	}
 
-	zinAssert(!is_exception);
+	zinAssertAndLog(!is_exception, id_string);
 
 	return ret;
 }
@@ -327,9 +336,14 @@ function hyphenate()
 	return ret;
 }
 
-function isSourceId(sourceid)
+function isValidSourceId(sourceid)
 {
 	return (sourceid == SOURCEID_ZM || sourceid == SOURCEID_TB);
+}
+
+function isValidFormat(format)
+{
+	return (format == FORMAT_TB || format == FORMAT_ZM);
 }
 
 // see:
@@ -404,6 +418,28 @@ compareToolkitVersionStrings = function(string_a, string_b)
 	}
 
 	newZinLogger("").debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
+
+	return ret;
+}
+
+// turn obj into a string and pad it out to a given length with spaces - helpul in lining up output in the absence of s/printf
+//
+function strPadTo(obj, length)
+{
+	var ret = "";
+	var str = new String(obj);
+
+	if (str.length >= length)
+		ret = str;
+	else
+	{
+		var count = length - str.length;
+
+		for (var i = 0; i < count; i++)
+			ret += " ";
+
+		ret = str + ret;
+	}
 
 	return ret;
 }

@@ -38,7 +38,7 @@ function Gcs(sourceid, state)
 	// gLogger.debug("Gcs: state:    " + state);
 	// gLogger.debug("Gcs: Gcs.bimap_state.isPresent(state): " + Gcs.bimap_state.isPresent(state));
 
-	zinAssert(isSourceId(sourceid) && Gcs.bimap_state.isPresent(state));
+	zinAssert(isValidSourceId(sourceid) && Gcs.bimap_state.isPresent(state));
 
 	this.sourceid = sourceid;
 	this.state    = state;

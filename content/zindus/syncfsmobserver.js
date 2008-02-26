@@ -202,7 +202,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 						es.failcode(context.state.stopFailCode);
 					else if (fsmstate.oldstate == 'stLoad')
 						es.failcode('FailOnIntegrityDataStoreIn');
-					else if (isInArray(fsmstate.oldstate, [ 'stLoadTb', 'stConverge1', 'stUpdateCleanup' ]))
+					else if (isInArray(fsmstate.oldstate, [ 'stLoadTb', 'stConverge1', 'stConverge3', 'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);
 						es.m_fail_detail = context.state.stopFailDetail;

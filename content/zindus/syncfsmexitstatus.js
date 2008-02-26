@@ -38,8 +38,8 @@ function SyncFsmExitStatus()
 		FailOnMismatchedResponse      : { 'folder' : 0 }, // 3.  sent BlahRequest and received FooResponse (expected BlahResponse)
 		FailOnCancel                  : { 'folder' : 0 }, // 4.  user cancelled
 		FailOnIntegrityBadCredentials : { 'folder' : 0 }, // 5.  something dodgy about url, username or password - dont proceed
-		FailOnIntegrityDataStoreIn    : { 'folder' : 0 }, // 6.  something dodgy about url, username or password - dont proceed
-		FailOnIntegrityDataStoreOut   : { 'folder' : 0 }, // 7.  something dodgy about url, username or password - dont proceed
+		FailOnIntegrityDataStoreIn    : { 'folder' : 0 }, // 6.  something dodgy about the data store that just got loaded
+		FailOnIntegrityDataStoreOut   : { 'folder' : 0 }, // 7.  internal error - we've created a data store that's dodgy
 		FailOnUnknown                 : { 'folder' : 0 }, // 8.  this should never be!
 		FailOnFolderNameDuplicate     : { 'folder' : 1 }, // 9.
 		FailOnFolderNameReserved      : { 'folder' : 1 }, // 10.
@@ -47,8 +47,9 @@ function SyncFsmExitStatus()
 		FailOnFolderMustBePresent     : { 'folder' : 1 }, // 12.
 		FailOnFolderReservedChanged   : { 'folder' : 1 }, // 13.
 		FailOnFolderNameClash         : { 'folder' : 1 }, // 14. the same folder name entered the namespace from both tb and zm sides
-		FailOnUnableToUpdateZm        : { 'folder' : 0 }, // 15. soap response in UpdateZm had an unexpected element - assume that it failed
-		FailOnNoXpath                 : { 'folder' : 0 }  // 16. 
+		FailOnFolderSourceUpdate      : { 'folder' : 1 }, // 15. the source update operations can't be applied with confidence
+		FailOnUnableToUpdateZm        : { 'folder' : 0 }, // 16. soap response in UpdateZm had an unexpected element - assume that it failed
+		FailOnNoXpath                 : { 'folder' : 0 }  // 17. 
 	};
 }
 

@@ -21,6 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
+include("chrome://zindus/content/crc32.js");
+
 function ZinContactConverter()
 {
 	this.m_equivalents = null; // an array of objects where each object is an n-tuplet of pairs of (format, contact property)
@@ -168,8 +170,7 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 	var key_from, index_to, key_to;
 	var a_normalised_line = newObject("home", new Array(), "work", new Array());
 
-	zinAssert(format_to   == FORMAT_TB || format_to   == FORMAT_ZM);
-	zinAssert(format_from == FORMAT_TB || format_from == FORMAT_ZM);
+	zinAssert(isValidFormat(format_to) && isValidFormat(format_from));
 
 	var properties_to = new Object();
 
@@ -333,10 +334,68 @@ ZinContactConverter.prototype.lineFromNewlineSeparated = function(properties_fro
 
 ZinContactConverter.prototype.isKeyConverted = function(format_to, format_from, key)
 {
-	zinAssert(format_to   == FORMAT_TB || format_to   == FORMAT_ZM);
-	zinAssert(format_from == FORMAT_TB || format_from == FORMAT_ZM);
+	zinAssert(isValidFormat(format_to) && isValidFormat(format_from));
 
 	var index_to = this.m_map[format_from][key];
 
-	return typeof(index_to) != 'undefined' && this.m_equivalents[index_to][format_to] != null;
+	return typeof(index_to) != 'undefined' && (this.m_equivalents[index_to][format_to] != null ||
+	                                           isPropertyPresent(this.m_address_line[format_from], key));
+}
+
+// We have to normalise the order in which we iterate through the properties so that two hashes with the same
+// keys result in the same crc.  We can't just iterate through the hash with for..in because that doesn't guarantee ordering
+// - the keys might not have been added to the hash in the same order.
+// We avoid a sort by relying on the fact that the keys are thunderbird contact properties.
+// The index into the Converter's table guarantees the ordering.
+//
+ZinContactConverter.prototype.crc32 = function(properties)
+{
+	var ret = 0;
+	var str = "";
+	var aSorted = new Array();
+
+	for (var i in properties)
+		if (properties[i].length > 0)
+		{
+			index_to = ZinContactConverter.instance().m_map[FORMAT_TB][i];
+
+			if (typeof(index_to) != 'undefined')
+			{
+				// ignore properties which don't have a bidirectional mapping
+				//
+				if (this.isKeyConverted(FORMAT_ZM, FORMAT_TB, i))
+					aSorted[index_to] = true;
+
+			}
+			else
+				zinAssertAndLog(false, "properties: " + aToString(properties) + " i: " + i);
+
+		}
+
+	function callback_concat_str(element, index, array) {
+		var key = ZinContactConverter.instance().m_equivalents[index][FORMAT_TB];
+		str += key + ":" + properties[key];
+	}
+
+	// after this, str == FirstName:FredLastName:BloggsDisplayName:Fred BloggsPrimaryEmail:fred.bloggs@example.com
+	//
+	aSorted.forEach(callback_concat_str);
+
+	ret = crc32(str);
+
+	return ret;
+}
+
+ZinContactConverter.prototype.removeKeysNotCommonToBothFormats = function(format_from, properties)
+{
+	var keys_to_remove = new Object();
+	var format_to = (format_from == FORMAT_ZM ? FORMAT_TB : FORMAT_ZM);
+	var i;
+
+	for (i in properties)
+		if (!ZinContactConverter.instance().isKeyConverted(format_to, format_from, i))
+			keys_to_remove[i] = true;
+
+	for (i in keys_to_remove)
+		delete properties[i];
 }
