@@ -34,7 +34,6 @@ ZinTestHarness.prototype.run = function()
 	var ret = true;
 
 	// ret = ret && this.testCrc32();
-	// ret = ret && this.testLookupCard();
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testFilesystem();
@@ -55,22 +54,6 @@ ZinTestHarness.prototype.testCrc32 = function()
 	var crcRight = ZinContactConverter.instance().crc32(right);
 
 	zinAssert(crcLeft == crcLeft);
-}
-
-ZinTestHarness.prototype.testLookupCard = function()
-{
-	var uri    = "moz-abmdbdirectory://abook.mab";
-	var luid   = 258;
-	var abCard = ZinAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
-
-	this.m_logger.debug("testLookupCard: abCard: "                   + (abCard ? "non-null" : "null"));
-
-	if (abCard)
-	{
-		this.m_logger.debug("testLookupCard: abCard: "                   + ZinAddressBook.nsIAbCardToPrintable(abCard));
-		this.m_logger.debug("testLookupCard: abCard: isANormalCard: "    + abCard.isANormalCard);
-		this.m_logger.debug("testLookupCard: abCard: isAnEmailAddress: " + abCard.isAnEmailAddress);
-	}
 }
 
 ZinTestHarness.prototype.testZinFeedCollection = function()
@@ -134,14 +117,14 @@ ZinTestHarness.prototype.testFolderConverter = function()
 
 	// test localisation by language
 	//
-	converter.localised_emailed_contacts(converter.recalculate_localised_emailed_contacts("fr"));
+	converter.localised_emailed_contacts(converter.translate_emailed_contacts("fr"));
 	localised_emailed_contacts = "Personnes contact\u00e9es par mail";
 
 	this.testFolderConverterSuiteTwo(converter, localised_emailed_contacts);
 
 	// test localisation by language and location
 	//
-	converter.localised_emailed_contacts(converter.recalculate_localised_emailed_contacts("fr_FR"));
+	converter.localised_emailed_contacts(converter.translate_emailed_contacts("fr_FR"));
 
 	this.testFolderConverterSuiteTwo(converter, localised_emailed_contacts);
 

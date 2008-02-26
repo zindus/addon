@@ -23,49 +23,58 @@
 
 function ZinAddressBook()
 {
+	this.m_pab_name = null;
+	this.m_pab_uri  = null;
+
+	this.m_nsIRDFService = null;
+	this.m_map_name_to_uri = null;
+
+	this.m_logger = newZinLogger("AddressBook");
 }
 
-                                                                           // source references relative to mozilla/mailnews/addrbook/
-ZinAddressBook.kPABDirectory = 2;                                          // == nsIAbDirectoryProperties.dirType ==> mork address book
-                                                                           // see src/nsDirPrefs.h and resources/content/addressbook.js
-ZinAddressBook.kPersonalAddressbookURI = "moz-abmdbdirectory://abook.mab"; // see: resources/content/abCommon.js
+const kPABDirectory           = 2;                                   // == nsIAbDirectoryProperties.dirType ==> mork address book
+const kPersonalAddressbookURI = "moz-abmdbdirectory://abook.mab";    // see: resources/content/abCommon.js
 
-ZinAddressBook.getAddressBookUri = function(name)
+ZinAddressBook.prototype.getAddressBookUri = function(name)
 {
 	var ret = null;
 
 	var functor =
 	{
+		context : this,
+
 		run: function(elem)
 		{
-			if (elem.dirName == name)
-				ret = elem.directoryProperties.URI;
-			else
-				ret = null;
+			var key   = elem.dirName;
+			var value = elem.directoryProperties.URI;
+
+			if (key == this.context.getPabName())
+				value = this.context.getPabURI();
 		
-			return ret == null;
+			this.context.m_map_name_to_uri[key] = value;
+
+			return true;
 		}
 	};
 
-	if (name == ZinAddressBook.m_pab_name)
-		ret = ZinAddressBook.getPabURI();
-	else
-		ZinAddressBook.forEachAddressBook(functor);
+	if (!this.m_map_name_to_uri)
+	{
+		this.m_map_name_to_uri = new Object();
+		this.forEachAddressBook(functor);
+	}
 
-	return ret;
+	return isPropertyPresent(this.m_map_name_to_uri, name) ? this.m_map_name_to_uri[name] : null;
 }
 
-ZinAddressBook.getAddressBookPrefId = function(uri)
+ZinAddressBook.prototype.getAddressBookPrefId = function(uri)
 {
-	var rdf  = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var dir  = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	return dir.dirPrefId;
 }
 
-ZinAddressBook.forEachAddressBook = function(functor)
+ZinAddressBook.prototype.forEachAddressBook = function(functor)
 {
-	var rdf   = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var root  = rdf.GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
+	var root  = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
 	var nodes = root.childNodes;
 	var fContinue = true;
 
@@ -73,17 +82,16 @@ ZinAddressBook.forEachAddressBook = function(functor)
 	{
 		var elem = nodes.getNext().QueryInterface(Components.interfaces.nsIAbDirectory);
 
-		if (elem.directoryProperties.dirType == ZinAddressBook.kPABDirectory)
+		if (elem.directoryProperties.dirType == kPABDirectory)
 			fContinue = functor.run(elem);
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 	}
 }
 
-ZinAddressBook.forEachCard = function(uri, functor)
+ZinAddressBook.prototype.forEachCard = function(uri, functor)
 {
-	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	var enm = dir.childCards;
 	var fContinue = true;
 
@@ -101,35 +109,45 @@ ZinAddressBook.forEachCard = function(uri, functor)
 	}
 }
 
-ZinAddressBook.instanceAbook = function()
+ZinAddressBook.prototype.nsIAddressBook = function()
 {
 	return Components.classes["@mozilla.org/addressbook;1"].createInstance(Components.interfaces.nsIAddressBook);
 }
 
-ZinAddressBook.newAbDirectoryProperties = function(name)
+ZinAddressBook.prototype.nsIRDFService = function()
+{
+	if (!this.m_nsIRDFService)
+		this.m_nsIRDFService = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
+
+	return this.m_nsIRDFService;
+}
+
+ZinAddressBook.prototype.newAbDirectoryProperties = function(name)
 {
 	var abProps = Components.classes["@mozilla.org/addressbook/properties;1"].
 	                createInstance(Components.interfaces.nsIAbDirectoryProperties);
 
 	abProps.description = name;
-	abProps.dirType     = ZinAddressBook.kPABDirectory;
+	abProps.dirType     = kPABDirectory;
 
 	return abProps;
 }
 
-ZinAddressBook.newAddressBook = function(name)
+ZinAddressBook.prototype.newAddressBook = function(name)
 {
-	abProps = ZinAddressBook.newAbDirectoryProperties(name);
-	ZinAddressBook.instanceAbook().newAddressBook(abProps);
+	abProps = this.newAbDirectoryProperties(name);
+	this.nsIAddressBook().newAddressBook(abProps);
+
+	this.m_map_name_to_uri = null;
+
 	return abProps.URI;
 }
 
-ZinAddressBook.deleteAddressBook = function(uri)
+ZinAddressBook.prototype.deleteAddressBook = function(uri)
 {
-	var rdf  = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var dir  = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-	var root = rdf.GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
-	var ds   = rdf.GetDataSource("rdf:addressdirectory");
+	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
+	var ds   = this.nsIRDFService().GetDataSource("rdf:addressdirectory");
 
 	var arrayDir  = Components.classes["@mozilla.org/supports-array;1"].createInstance(Components.interfaces.nsISupportsArray);
 	var arrayRoot = Components.classes["@mozilla.org/supports-array;1"].createInstance(Components.interfaces.nsISupportsArray);
@@ -137,58 +155,57 @@ ZinAddressBook.deleteAddressBook = function(uri)
 	arrayDir.AppendElement(dir);
 	arrayRoot.AppendElement(root);
 
-	ZinAddressBook.instanceAbook().deleteAddressBooks(ds, arrayRoot, arrayDir);
+	this.m_map_name_to_uri = null;
+
+	this.nsIAddressBook().deleteAddressBooks(ds, arrayRoot, arrayDir);
 }
 
-ZinAddressBook.renameAddressBook = function(uri, name)
+ZinAddressBook.prototype.renameAddressBook = function(uri, name)
 {
-	var rdf  = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var dir  = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-	var root = rdf.GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
-	var ds   = rdf.GetDataSource("rdf:addressdirectory");
+	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
+	var ds   = this.nsIRDFService().GetDataSource("rdf:addressdirectory");
 
-	ZinAddressBook.instanceAbook().modifyAddressBook(ds, root, dir, ZinAddressBook.newAbDirectoryProperties(name));
+	this.m_map_name_to_uri = null;
+
+	this.nsIAddressBook().modifyAddressBook(ds, root, dir, this.newAbDirectoryProperties(name));
 }
 
-ZinAddressBook.deleteCards = function(uri, aCards)
+ZinAddressBook.prototype.deleteCards = function(uri, aCards)
 {
-	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 
 	var cardsArray = Components.classes["@mozilla.org/supports-array;1"].createInstance().
 	                            QueryInterface(Components.interfaces.nsISupportsArray);
 
-	var logger = newZinLogger("AddressBook"); // TODO - this debugging is for issue#31 - remove once it is closed
-
 	for (var i = 0; i < aCards.length; i++)
 	{
-		logger.debug("deleteCards: prepare: " + ZinAddressBook.nsIAbCardToPrintableVerbose(aCards[i]));
+		this.m_logger.debug("deleteCards: prepare: " + this.nsIAbCardToPrintableVerbose(aCards[i]));
 		cardsArray.AppendElement(aCards[i]);
 	}
 
-	logger.debug("deleteCards: about to delete");
+	this.m_logger.debug("deleteCards: about to delete");
 
 	dir.deleteCards(cardsArray);
 
-	logger.debug("deleteCards: done");
+	this.m_logger.debug("deleteCards: done");
 }
 
-ZinAddressBook.addCard = function(uri, format, standard, extras)
+ZinAddressBook.prototype.addCard = function(uri, format, standard, extras)
 {
 	zinAssert(uri != null && isPropertyPresent(ZinContactConverter.instance().m_map, format) && standard != null && extras != null);
 
-	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	var abstractCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].
 	                      createInstance().QueryInterface(Components.interfaces.nsIAbCard);
 	var realCard = dir.addCard(abstractCard);
 
-	ZinAddressBook.updateCard(realCard, uri, format, standard, extras);
+	this.updateCard(realCard, uri, format, standard, extras);
 
 	return realCard;
 }
 
-ZinAddressBook.updateCard = function(abCard, uri, format, standard, extras)
+ZinAddressBook.prototype.updateCard = function(abCard, uri, format, standard, extras)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var i, j, key;
@@ -207,9 +224,6 @@ ZinAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 		key = ZinContactConverter.instance().m_equivalents[j][FORMAT_TB]; zinAssert(key != null);
 
 		abCard.setCardValue(i, thunderbird_properties[i]);
-
-		// logger.debug("AddressBook.addCard() - i == " + i + " and j == " + j);
-		// logger.debug("AddressBook.addCard() calls abCard.setCardValue(" + i + ", " + thunderbird_properties[i] + ")");
 	}
 
 	for (i in extras)
@@ -225,7 +239,7 @@ ZinAddressBook.updateCard = function(abCard, uri, format, standard, extras)
 	return abCard;
 }
 
-ZinAddressBook.getCardProperties = function(abCard)
+ZinAddressBook.prototype.getCardProperties = function(abCard)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var i, j, key, value;
@@ -242,7 +256,7 @@ ZinAddressBook.getCardProperties = function(abCard)
 	return ret;
 }
 
-ZinAddressBook.getCardAttributes = function(abCard)
+ZinAddressBook.prototype.getCardAttributes = function(abCard)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var ret     = new Object();
@@ -261,65 +275,35 @@ ZinAddressBook.getCardAttributes = function(abCard)
 	return ret;
 }
 
-ZinAddressBook.lookupCard = function(uri, key, value)
+ZinAddressBook.prototype.lookupCard = function(uri, key, value)
 {
 	zinAssert(uri);
 	zinAssert(key);
 	zinAssert(value);
 
-	var rdf = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var dir = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-	var abCard = ZinAddressBook.instanceAbook().getAbDatabaseFromURI(uri).getCardFromAttribute(dir, key, value, false);
+	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var abCard = this.nsIAddressBook().getAbDatabaseFromURI(uri).getCardFromAttribute(dir, key, value, false);
 
 	return abCard; // an nsIABCard
 }
 
-ZinAddressBook.nsIAbCardToPrintable = function(abCard)
+ZinAddressBook.prototype.getPabURI = function()
 {
-	return (abCard.isMailList ? abCard.mailListURI : abCard.getCardValue("PrimaryEmail"));
+	if (!this.m_pab_uri)
+		this.setupPab();
+
+	return this.m_pab_uri;
 }
 
-ZinAddressBook.nsIAbCardToPrintableVerbose = function(abCard)
+ZinAddressBook.prototype.getPabName = function()
 {
-	var ret;
+	if (!this.m_pab_name)
+		this.setupPab();
 
-	if (abCard.isMailList)
-		ret = "maillist uri: " + abCard.mailListURI
-	else
-	{
-		var properties = ZinAddressBook.getCardProperties(abCard);
-		var attributes = ZinAddressBook.getCardAttributes(abCard);
-
-		ret = "properties: " + aToString(properties) + " attributes: " + aToString(attributes);
-	}
-
-	return ret;
+	return this.m_pab_name;
 }
 
-ZinAddressBook.nsIAbMDBCardToKey = function(mdbCard)
-{
-	zinAssert(typeof(mdbCard) == 'object' && mdbCard != null);
-
-	return hyphenate('-', mdbCard.dbTableID, mdbCard.dbRowID, mdbCard.key);
-}
-
-ZinAddressBook.getPabURI = function()
-{
-	if (typeof(ZinAddressBook.m_pab_uri) == "undefined")
-		ZinAddressBook.setupPab();
-
-	return ZinAddressBook.m_pab_uri;
-}
-
-ZinAddressBook.getPabName = function()
-{
-	if (typeof(ZinAddressBook.m_pab_name) == "undefined")
-		ZinAddressBook.setupPab();
-
-	return ZinAddressBook.m_pab_name;
-}
-
-ZinAddressBook.setupPab = function()
+ZinAddressBook.prototype.setupPab = function()
 {
 	var pabByUri  = null;
 	var pabByName = null;
@@ -330,7 +314,7 @@ ZinAddressBook.setupPab = function()
 	var functor_foreach_addressbook = {
 		run: function(elem) {
 
-			if (elem.directoryProperties.URI == ZinAddressBook.kPersonalAddressbookURI)
+			if (elem.directoryProperties.URI == kPersonalAddressbookURI)
 			{
 				pabByUri      = new Object();
 				pabByUri.uri  = elem.directoryProperties.URI;
@@ -348,30 +332,54 @@ ZinAddressBook.setupPab = function()
 		}
 	};
 
-	if (typeof(ZinAddressBook.m_pab_uri) == "undefined")
-	{
-		ZinAddressBook.forEachAddressBook(functor_foreach_addressbook);
+	this.forEachAddressBook(functor_foreach_addressbook);
 
-		var logger = newZinLogger("AddressBook");
-	
-		if (pabByUri)
-		{
-			ZinAddressBook.m_pab_uri  = String(pabByUri.uri);
-			ZinAddressBook.m_pab_name = String(pabByUri.name);
-			logger.debug("m_pab_uri selected by uri: uri: " + ZinAddressBook.m_pab_uri + " name: " + ZinAddressBook.m_pab_name);
-		}
-		else if (pabByName)
-		{
-			ZinAddressBook.m_pab_uri  = String(pabByName.uri);  // create a primitive string so that typeof() == "string" not "object"
-			ZinAddressBook.m_pab_name = String(pabByName.name);
-			logger.debug("m_pab_uri selected by name: uri: " + ZinAddressBook.m_pab_uri + " name: " + ZinAddressBook.m_pab_name);
-		}
-		else
-			logger.error("Couldn't find Personal Address Book");
+	if (pabByUri)
+	{
+		this.m_pab_uri  = String(pabByUri.uri);
+		this.m_pab_name = String(pabByUri.name);
+		this.m_logger.debug("m_pab_uri selected by uri: uri: " + this.m_pab_uri + " name: " + this.m_pab_name);
 	}
+	else if (pabByName)
+	{
+		this.m_pab_uri  = String(pabByName.uri);  // create a primitive string so that typeof() == "string" not "object"
+		this.m_pab_name = String(pabByName.name);
+		this.m_logger.debug("m_pab_uri selected by name: uri: " + this.m_pab_uri + " name: " + this.m_pab_name);
+	}
+	else
+		this.m_logger.error("Couldn't find Personal Address Book");
 }
 
-ZinAddressBook.isElemPab = function(elem)
+ZinAddressBook.prototype.isElemPab = function(elem)
 {
-	return (ZinAddressBook.getPabURI() == elem.directoryProperties.URI);
+	return (this.getPabURI() == elem.directoryProperties.URI);
+}
+
+ZinAddressBook.prototype.nsIAbCardToPrintable = function(abCard)
+{
+	return (abCard.isMailList ? abCard.mailListURI : abCard.getCardValue("PrimaryEmail"));
+}
+
+ZinAddressBook.prototype.nsIAbCardToPrintableVerbose = function(abCard)
+{
+	var ret;
+
+	if (abCard.isMailList)
+		ret = "maillist uri: " + abCard.mailListURI
+	else
+	{
+		var properties = this.getCardProperties(abCard);
+		var attributes = this.getCardAttributes(abCard);
+
+		ret = "properties: " + aToString(properties) + " attributes: " + aToString(attributes);
+	}
+
+	return ret;
+}
+
+ZinAddressBook.prototype.nsIAbMDBCardToKey = function(mdbCard)
+{
+	zinAssert(typeof(mdbCard) == 'object' && mdbCard != null);
+
+	return hyphenate('-', mdbCard.dbTableID, mdbCard.dbRowID, mdbCard.key);
 }

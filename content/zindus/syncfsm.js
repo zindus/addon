@@ -471,16 +471,18 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 
 	var functor_foreach_addressbook = {
 		functor: null,
+		state: this.state,
+
 		run: function(elem)
 		{
-			ZinAddressBook.forEachCard(elem.directoryProperties.URI, this.functor);
+			this.state.m_addressbook.forEachCard(elem.directoryProperties.URI, this.functor);
 
 			return true;
 		}
 	};
 
 	functor_foreach_addressbook.functor = functor_foreach_card;
-	ZinAddressBook.forEachAddressBook(functor_foreach_addressbook);
+	this.state.m_addressbook.forEachAddressBook(functor_foreach_addressbook);
 }
 
 // build a two dimensional associative array for reverse lookups - meaning given a sourceid and luid, find the gid.
@@ -1182,7 +1184,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 {
 	var aAdd   = new Array(); // each element in the array is an index into aSyncGalContact
 	var abName = APP_NAME + ">" + AB_GAL;
-	var uri    = ZinAddressBook.getAddressBookUri(abName);
+	var uri    = this.state.m_addressbook.getAddressBookUri(abName);
 	var zc, attributes, properties, isGalEnabled;
 	var zfcLastSync = this.state.zfcLastSync;
 	var sourceid_zm = this.state.sourceid_zm;
@@ -1222,12 +1224,12 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	                          " this.state.SyncGalEnabled: " + this.state.SyncGalEnabled);
 
 	if (isGalEnabled && uri == null)
-		uri = ZinAddressBook.newAddressBook(abName);
+		uri = this.state.m_addressbook.newAddressBook(abName);
 
 	if (!isGalEnabled)
 	{
 		if (uri)
-			ZinAddressBook.deleteAddressBook(uri);
+			this.state.m_addressbook.deleteAddressBook(uri);
 
 		if (zfcLastSync.get(sourceid_zm).isPresent('SyncGalToken'))
 			zfcLastSync.get(sourceid_zm).del('SyncGalToken');
@@ -1292,7 +1294,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 						this.state.aSyncGalContact[index].present = true;
 						this.state.m_logger.debug("entryActionGalCommit: " +
 						                          " issue #31: card in both Tb and SyncGalResponse - don't update: " +
-						                          ZinAddressBook.nsIAbCardToPrintable(abCard));
+						                          this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 					}
 					else
 					{
@@ -1300,16 +1302,17 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 						this.state.m_logger.debug("entryActionGalCommit: " +
 						                          "issue #31: card in Tb but not SyncGalResponse marked for deletion: id: " +
-						                          (id != null ? id : "null") + " card: " + ZinAddressBook.nsIAbCardToPrintable(abCard));
+						                          (id != null ? id : "null") +
+												  " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 					}
 
 					return true;
 				}
 			};
 
-			ZinAddressBook.forEachCard(uri, functor);
+			this.state.m_addressbook.forEachCard(uri, functor);
 
-			ZinAddressBook.deleteCards(uri, functor.aCardsToBeDeleted);
+			this.state.m_addressbook.deleteCards(uri, functor.aCardsToBeDeleted);
 
 			for (var i in this.state.aSyncGalContact)
 				if (!this.state.aSyncGalContact[i].present)
@@ -1339,7 +1342,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 						this.state.m_logger.debug("entryActionGalCommit: issue #31: " + "updating card: id: " + id);
 
-						ZinAddressBook.updateCard(abCard, uri, FORMAT_TB, properties, attributes);
+						this.state.m_addressbook.updateCard(abCard, uri, FORMAT_TB, properties, attributes);
 
 						this.state.aSyncGalContact[index].present = true;
 					}
@@ -1348,7 +1351,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 				}
 			}
 
-			ZinAddressBook.forEachCard(uri, functor);
+			this.state.m_addressbook.forEachCard(uri, functor);
 
 			for (var i in this.state.aSyncGalContact)
 				if (!this.state.aSyncGalContact[i].present)
@@ -1365,7 +1368,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 			this.state.m_logger.debug("entryActionGalCommit: adding aSyncGalContact[" + aAdd[i] + "]: " +
 			                            this.shortLabelForContactProperties(FORMAT_TB, properties));
 
-			ZinAddressBook.addCard(uri, FORMAT_TB, properties, attributes);
+			this.state.m_addressbook.addCard(uri, FORMAT_TB, properties, attributes);
 		}
 	}
 
@@ -1537,7 +1540,7 @@ SyncFsm.prototype.getAbNameNormalised = function(elem)
 {
 	var ret;
 
-	if (ZinAddressBook.isElemPab(elem))
+	if (this.state.m_addressbook.isElemPab(elem))
 		ret = TB_PAB;
 	else if (elem.dirName == this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS))
 		ret = TB_EMAILED_CONTACTS;
@@ -1553,31 +1556,36 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 
 	if (this.state.isSlowSync)
 	{
-		// doing this before applying localisation gives us "zindus/Emailed Contacts"
-		//
-		var ab_non_localised           = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS);
-		var localised_emailed_contacts = this.state.m_folder_converter.recalculate_localised_emailed_contacts();
+		var uri, old_translation, old_localised_ab;
+		var translation = this.state.m_folder_converter.translate_emailed_contacts();
 
-		this.state.m_folder_converter.localised_emailed_contacts(localised_emailed_contacts);
+		this.state.m_folder_converter.localised_emailed_contacts(translation);
 
-		this.state.zfcLastSync.get(this.state.sourceid_zm).set('EmailedContacts', localised_emailed_contacts);
+		this.state.zfcLastSync.get(this.state.sourceid_zm).set('EmailedContacts', translation);
 
 		var ab_localised = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS);
 
-		msg += " localised_emailed_contacts: " + localised_emailed_contacts +
-		       " ab_non_localised: "+ ab_non_localised + " ab_localised: " + ab_localised;
-
 		// if there's a "zindus/Emailed Contacts" addressbook, rename it to the localised equivalent
 		//
-		if (ab_localised != ab_non_localised)
+		uri = this.state.m_addressbook.getAddressBookUri(ab_localised);
+
+		msg += " translate_emailed_contacts: " + translation + " ab_localised: " + ab_localised + " uri: " + uri;
+
+		if (!uri)
 		{
-			var uri = ZinAddressBook.getAddressBookUri(ab_non_localised);
-
-			if (uri)
+			for (old_translation in this.state.m_folder_converter.m_locale_names_to_migrate)
 			{
-				msg += " renaming " + ab_non_localised + " to " + ab_localised + " uri: " + uri;
+				old_localised_ab = this.state.m_folder_converter.m_app_name_with_slash + old_translation;
 
-				ZinAddressBook.renameAddressBook(uri, ab_localised);
+				uri = this.state.m_addressbook.getAddressBookUri(old_localised_ab);
+
+				if (uri)
+				{
+					msg += " renaming " + old_localised_ab + " to " + ab_localised + " uri: " + uri;
+
+					this.state.m_addressbook.renameAddressBook(uri, ab_localised);
+					break;
+				}
 			}
 		}
 	}
@@ -1621,7 +1629,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			          " dirName: " + elem.dirName +
 			          " dirPrefId: " + elem.dirPrefId +
 				      " URI: "      + elem.directoryProperties.URI +
-			          " ZinAddressBook.isElemPab(elem): " + (ZinAddressBook.isElemPab(elem) ? "yes" : "no") +
+			          " isElemPab(elem): " + (this.context.state.m_addressbook.isElemPab(elem) ? "yes" : "no") +
 			          " lastModifiedDate: " + elem.lastModifiedDate +
 			          " description: " + elem.description +
 			          " supportsMailingLists: " + elem.supportsMailingLists;
@@ -1629,14 +1637,14 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			// look for zindus/<folder-name> but don't permit '/'es in <folder-name> because:
 			// - we only support addressbook folders that are immediate children of the root folder - note the l='1' below.
 
-			// context.state.m_logger.debug("TbAddressBook: blah: dirName: " + elem.dirName);
-			// context.state.m_logger.debug("TbAddressBook: blah: prefix: " + this.prefix);
-			// context.state.m_logger.debug("TbAddressBook: blah: prefix length: " + this.prefix.length);
-			// context.state.m_logger.debug("TbAddressBook: blah: dirName.substring: " + elem.dirName.substring(0, this.prefix.length));
-			// context.state.m_logger.debug("TbAddressBook: blah: dirName.indexOf: " + elem.dirName.indexOf("/", this.prefix.length));
+			// this.context.state.m_logger.debug("TbAddressBook: blah: dirName: " + elem.dirName);
+			// this.context.state.m_logger.debug("TbAddressBook: blah: prefix: " + this.prefix);
+			// this.context.state.m_logger.debug("TbAddressBook: blah: prefix length: " + this.prefix.length);
+			// this.context.state.m_logger.debug("TbAddressBook: blah: dirName.substr: " + elem.dirName.substring(0, this.prefix.length));
+			// this.context.state.m_logger.debug("TbAddressBook: blah: dirName.indexOf: " + elem.dirName.indexOf("/", this.prefix.length));
 
 			if ((elem.dirName.substring(0, this.prefix.length) == this.prefix && elem.dirName.indexOf("/", this.prefix.length) == -1) ||
-			     (ZinAddressBook.isElemPab(elem)) )
+			     (this.context.state.m_addressbook.isElemPab(elem)) )
 			{
 				var id;
 
@@ -1692,7 +1700,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	aUri = new Array();
 
 	stopwatch.mark("2");
-	ZinAddressBook.forEachAddressBook(functor_foreach_addressbook);
+	this.state.m_addressbook.forEachAddressBook(functor_foreach_addressbook);
 	stopwatch.mark("4");
 
 	return aUri;
@@ -1747,7 +1755,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	};
 
 	for (uri in aUri)
-		ZinAddressBook.forEachCard(uri, functor_foreach_card);
+		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
 
 	this.state.m_logger.debug("loadTbExclude pass 1 - aMailListUri == " + aToString(aMailListUri));
 
@@ -1760,14 +1768,14 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		{
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
 
-			aCardKeysToExclude[ZinAddressBook.nsIAbMDBCardToKey(mdbCard)] = aMailListUri[uri];
+			aCardKeysToExclude[this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard)] = aMailListUri[uri];
 
 			return true;
 		}
 	};
 
 	for (uri in aMailListUri)
-		ZinAddressBook.forEachCard(uri, functor_foreach_card);
+		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
 
 	this.state.m_logger.debug("loadTbExclude pass 2 - aCardKeysToExclude == " + aToString(aCardKeysToExclude));
 
@@ -1780,13 +1788,13 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-			var msg = "loadTbExclude pass 3: uri: " + uri + " card key: " + ZinAddressBook.nsIAbMDBCardToKey(mdbCard);
+			var msg = "loadTbExclude pass 3: uri: " + uri + " card key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
 
 			var isInTopLevelFolder = false;
 
 			if (!abCard.isMailList)
 			{
-				var key = ZinAddressBook.nsIAbMDBCardToKey(mdbCard);
+				var key = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
 
 				if ( !isPropertyPresent(aCardKeysToExclude, key) ||
 				    (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] == uri))
@@ -1795,15 +1803,15 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			}
 
 			// this.state.m_logger.debug("loadTbExclude pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
-			//                           " key: " + ZinAddressBook.nsIAbMDBCardToKey(mdbCard) +
-			//                           " card: " + ZinAddressBook.nsIAbCardToPrintable(abCard) +
-			//                           " properties: " + aToString(ZinAddressBook.getCardProperties(abCard)) +
-			//                           " checksum: " + ZinContactConverter.instance().crc32(ZinAddressBook.getCardProperties(abCard)));
+			//                           " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard) +
+			//                           " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
+			//                           " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
+			//                           " checksum: " + ZinContactConverter.instance().crc32(this.state.m_addressbook.getCardProperties(abCard)));
 
 			if (isInTopLevelFolder)
 			{
 				var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
-				var properties  = ZinAddressBook.getCardProperties(abCard);
+				var properties  = this.state.m_addressbook.getCardProperties(abCard);
 				var checksum    = ZinContactConverter.instance().crc32(properties);
 
 				if (! (id > ZinFeedItem.ID_MAX_RESERVED)) // id might be null (not present) or zero (reset after the map was deleted)
@@ -1816,7 +1824,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 					zfcTb.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, id, ZinFeedItem.ATTR_CS, checksum,
 					                   'l', aUri[uri]));
 
-					msg += " added:   " + ZinAddressBook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfcTb.get(id).toString(); // TODO remove Verbose
+					msg += " added:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfcTb.get(id).toString(); // TODO remove Verbose
 				}
 				else
 				{
@@ -1837,11 +1845,11 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 						zfi.set(ZinFeedItem.ATTR_CS, checksum);
 						zfi.set('l', aUri[uri]);
 
-						msg += " changed: " + ZinAddressBook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();  // TODO remove Verbose
+						msg += " changed: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();  // TODO remove Verbose
 						msg += reason;
 					}
 					else
-						msg += " found:   " + ZinAddressBook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();  // TODO remove Verbose
+						msg += " found:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();  // TODO remove Verbose
 
 				}
 
@@ -1857,7 +1865,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	};
 
 	for (uri in aUri)
-		ZinAddressBook.forEachCard(uri, functor_foreach_card);
+		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
 
 	// deletion detection works as follows.
 	// 1. a ZinFeedItem.ATTR_PRES attribute was added in pass 3 above
@@ -2297,9 +2305,9 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 
 		var name_parent_public = this.state.m_folder_converter.convertForPublic(FORMAT_TB, format,
 		                                                                           zfc.get(luid_parent).get(ZinFeedItem.ATTR_NAME));
-		var uri     = ZinAddressBook.getAddressBookUri(name_parent_public);
-		var abCard  = uri ? ZinAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid) : null;
-		properties  = abCard ? ZinAddressBook.getCardProperties(abCard) : null;
+		var uri     = this.state.m_addressbook.getAddressBookUri(name_parent_public);
+		var abCard  = uri ? this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid) : null;
+		properties  = abCard ? this.state.m_addressbook.getCardProperties(abCard) : null;
 
 		if (properties)
 			ZinContactConverter.instance().removeKeysNotCommonToBothFormats(FORMAT_TB, properties);
@@ -3050,8 +3058,8 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				l_gid    = this.state.aReverseGid[sourceid_winner][l_winner]; // gid  of the parent folder
 				                                                              // this.state.m_logger.debug("84739: l_gid: " + l_gid);
 				l_target = zfcGid.get(l_gid).get(sourceid_target);            // luid of the parent folder in the target
-				uri      = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-				abCard   = ZinAddressBook.addCard(uri, FORMAT_TB, properties, attributes);
+				uri      = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+				abCard   = this.state.m_addressbook.addCard(uri, FORMAT_TB, properties, attributes);
 
 				// msg += " l_winner: " + l_winner + " l_gid: " + l_gid + " l_target: " + l_target + " parent uri: " + uri;
 
@@ -3067,11 +3075,11 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				var name   = zfiWinner.get(ZinFeedItem.ATTR_NAME);
 				var abName = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, name);
 
-				if (!ZinAddressBook.getAddressBookUri(abName))
+				if (!this.state.m_addressbook.getAddressBookUri(abName))
 				{
 					msg += "About to add a thunderbird addressbook (folder), gid: " + gid + " and luid_winner: " + luid_winner;
 
-					uri = ZinAddressBook.newAddressBook(abName);
+					uri = this.state.m_addressbook.newAddressBook(abName);
 
 					luid_target = zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
@@ -3081,7 +3089,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					                       ZinFeedItem.ATTR_NAME, name_for_map,
 										   'l', 1,
 					                       ZinFeedItem.ATTR_MS, 1,
-										   ZinFeedItem.ATTR_TPI, ZinAddressBook.getAddressBookPrefId(uri)));
+										   ZinFeedItem.ATTR_TPI, this.state.m_addressbook.getAddressBookPrefId(uri)));
 
 					zfiGid.set(sourceid_target, luid_target);
 					this.state.aReverseGid[sourceid_target][luid_target] = gid;
@@ -3121,9 +3129,9 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					zinAssertAndLog(isPropertyPresent(this.state.aSyncContact, luid_winner), "luid_winner: " + luid_winner);
 
-					uri    = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+					uri    = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
 					// this.state.m_logger.debug("entryActionUpdateTb: uri: " + uri + " luid_target: " + luid_target);
-					abCard = ZinAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
+					abCard = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
 					// this.state.m_logger.debug("entryActionUpdateTb: card: " + abCard);
 
 					if (abCard)
@@ -3135,16 +3143,16 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 						msg += " setting card to: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-						ZinAddressBook.updateCard(abCard, uri, FORMAT_TB, properties, attributes);
+						this.state.m_addressbook.updateCard(abCard, uri, FORMAT_TB, properties, attributes);
 					}
 				}
 				else
 				{
 					msg += " - parent folder changed"; // implement as delete+add
 
-					var uri_from = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_current));
-					var uri_to   = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-					abCard       = ZinAddressBook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid_target);
+					var uri_from = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_current));
+					var uri_to   = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+					abCard       = this.state.m_addressbook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid_target);
 
 					if (abCard)
 					{
@@ -3158,17 +3166,17 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 						}
 						else
 						{
-							attributes = ZinAddressBook.getCardAttributes(abCard);
-							properties = ZinAddressBook.getCardProperties(abCard);
+							attributes = this.state.m_addressbook.getCardAttributes(abCard);
+							properties = this.state.m_addressbook.getCardProperties(abCard);
 
 							msg += " - content didn't change";
 						}
 
-						ZinAddressBook.deleteCards(uri_from, [ abCard ]);
+						this.state.m_addressbook.deleteCards(uri_from, [ abCard ]);
 
 						msg += " - card deleted - card added: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-						ZinAddressBook.addCard(uri_to, FORMAT_TB, properties, attributes);
+						this.state.m_addressbook.addCard(uri_to, FORMAT_TB, properties, attributes);
 					}
 				}
 
@@ -3188,7 +3196,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 			case Suo.MOD | ZinFeedItem.TYPE_FL:
 				luid_target = zfiGid.get(sourceid_target);
-				uri         = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, luid_target));
+				uri         = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, luid_target));
 
 				if (uri)
 				{
@@ -3200,7 +3208,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					var name_winner_map    = this.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM,
 					                                                                        zfiWinner.get(ZinFeedItem.ATTR_NAME));
 
-					ZinAddressBook.renameAddressBook(uri, name_winner_public);
+					this.state.m_addressbook.renameAddressBook(uri, name_winner_public);
 
 					zfcTarget.get(luid_target).set(ZinFeedItem.ATTR_NAME, name_winner_map);
 					zfcTarget.get(luid_target).increment(ZinFeedItem.ATTR_MS);
@@ -3219,14 +3227,14 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 			case Suo.DEL | ZinFeedItem.TYPE_CN:
 				luid_target = zfiGid.get(sourceid_target);
 				l_target    = zfcTarget.get(luid_target).get('l');
-				uri         = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-				abCard      = ZinAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
+				uri         = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+				abCard      = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
 
 				if (abCard)
 				{
-					msg += "Card to be deleted: " + ZinAddressBook.nsIAbCardToPrintable(abCard);
+					msg += "Card to be deleted: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard);
 
-					ZinAddressBook.deleteCards(uri, [ abCard ]);
+					this.state.m_addressbook.deleteCards(uri, [ abCard ]);
 
 					zfcTarget.get(luid_target).set(ZinFeedItem.ATTR_DEL, 1);
 				}
@@ -3242,13 +3250,13 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 			case Suo.DEL | ZinFeedItem.TYPE_FL:
 				luid_target     = zfiGid.get(sourceid_target);
 				var name_target = this.getTbAddressbookNameFromLuid(sourceid_target, luid_target);
-				uri             = ZinAddressBook.getAddressBookUri(name_target);
+				uri             = this.state.m_addressbook.getAddressBookUri(name_target);
 
 				if (uri)
 				{
 					msg += "Addressbook to be deleted: name: " + name_target + " uri: " + uri;
 
-					ZinAddressBook.deleteAddressBook(uri);
+					this.state.m_addressbook.deleteAddressBook(uri);
 					zfcTarget.get(luid_target).set(ZinFeedItem.ATTR_DEL, 1);
 				}
 				else
@@ -3702,16 +3710,16 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 
 	if (this.state.sources[sourceid]['format'] == FORMAT_TB)
 	{
-		var uri = ZinAddressBook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
+		var uri = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
 
 		// this.state.m_logger.debug("getContactFromLuid: sourceid: " + sourceid + " luid: " + luid + "uri: " + uri +
 		//                               "l: " + l + " abName: " + this.getTbAddressbookNameFromLuid(sourceid, l) );
 
-		var abCard = ZinAddressBook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
+		var abCard = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
 
 		if (abCard)
 		{
-			ret = ZinAddressBook.getCardProperties(abCard);
+			ret = this.state.m_addressbook.getCardProperties(abCard);
 			ret = ZinContactConverter.instance().convert(format_to, FORMAT_TB, ret);
 		}
 		else
@@ -4381,6 +4389,9 @@ function SyncFsmState(id_fsm)
 
 	this.m_preferences       = new MozillaPreferences();
 	this.m_folder_converter  = new ZinFolderConverter();
+
+	this.m_addressbook       = new ZinAddressBook();
+	this.m_folder_converter.localised_pab(this.m_addressbook.getPabName());
 
 	this.m_bimap_format = new BiMap(
 		[FORMAT_TB, FORMAT_ZM],

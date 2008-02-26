@@ -30,7 +30,42 @@ function ZinFolderConverter()
 	                                           [TB_EMAILED_CONTACTS,     ZM_FOLDER_EMAILED_CONTACTS ]);
 
 	this.m_app_name_with_slash = APP_NAME + "/";
-	this.m_localised_emailed_contacts = null;  // the localised equivalent of "Emailed Contacts" eg "Personnes contactées par mail"
+
+	this.m_localised_pab = null;               // the localised equivalent of "Personal Address Book" eg "Adresses Personnelles"
+	this.m_localised_emailed_contacts = null;  // the localised equivalent of "Emailed Contacts"      eg "Personnes contactées par mail"
+
+	// A locale eg 'en-US' is made up of language (en) and nation/location (US)
+	// This list aims to be a superset of Zimbra's supported locales...
+	//
+	// Note - if any of these translations change, there will have to be code that migrates the old name to the new...
+	//
+	this.m_locale_map  =
+	{
+		da    : "Kontakter, der er sendt mail til",
+		de    : "Mailempf\u00e4nger",
+		es    : "Contactos respondidos",
+		fr    : "Personnes contact\u00e9es par mail", // Nation component removed - was fr_FR
+		it    : "Contatti usati per email",
+		ja    : "\u30e1\u30fc\u30eb\u3092\u9001\u4fe1\u3057\u305f\u9023\u7d61\u5148",
+		ko    : "\uc774\uba54\uc77c\ud55c \uc5f0\ub77d\ucc98",
+		pl    : "Kontakty e-mail",
+		pt    : "Contatos que receberam e-mail",      // Nation component removed - was pt_BR
+		ru    : "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043d\u044b\u0435 \u043f\u043e \u044d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u043d\u043e\u0439 \u043f\u043e\u0447\u0442\u0435 \u043a\u043e\u043d\u0442\u0430\u043a\u0442\u044b",
+		sv    : "E-postkontakter",
+		zh_CN : "\u7535\u5b50\u90ae\u4ef6\u8054\u7cfb\u4eba",
+		zh_HK : "\u96fb\u5b50\u90f5\u4ef6\u806f\u7d61\u4eba"
+	};
+
+	this.m_locale_names_to_migrate = new Object();
+
+	// add any deprecated translations here...
+
+	this.m_locale_names_to_migrate["Emailed Contacts"] = true;
+
+	// add the current set of translations...
+	//
+	for (var i in this.m_locale_map)
+		this.m_locale_names_to_migrate[this.m_locale_map[i]] = true;
 
 	this.m_logger = newZinLogger("ZinFolderConverter");
 }
@@ -76,14 +111,14 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, na
 
 ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from, name)
 {
-	zinAssert(arguments.length == 3); // catch programming errors
+	zinAssert(arguments.length == 3 && this.m_localised_pab); // catch programming errors
 
 	var ret = this.convertForMap(format_to, format_from, name);
 
 	if (format_to == FORMAT_TB)
 	{
 		if (ret == TB_PAB)
-			ret = ZinAddressBook.getPabName();
+			ret = this.m_localised_pab;
 		else if (ret == TB_EMAILED_CONTACTS)
 			ret = this.m_app_name_with_slash +
 			              (this.m_localised_emailed_contacts ? this.m_localised_emailed_contacts : ZM_FOLDER_EMAILED_CONTACTS);
@@ -92,6 +127,18 @@ ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from,
 	zinAssert(ret);
 
 	return ret;
+}
+
+ZinFolderConverter.prototype.localised_pab = function()
+{
+	if (arguments.length == 1)
+	{
+		this.m_localised_pab = arguments[0];
+
+		this.m_logger.debug("localised_pab: set to: " + this.m_localised_pab);
+	}
+
+	return this.m_localised_pab;
 }
 
 ZinFolderConverter.prototype.localised_emailed_contacts = function()
@@ -111,7 +158,7 @@ ZinFolderConverter.prototype.localised_emailed_contacts = function()
 // 2. Thunderbird's "general.useragent.locale" preference (if set)
 // 3. "Emailed Contacts"
 //
-ZinFolderConverter.prototype.recalculate_localised_emailed_contacts = function()
+ZinFolderConverter.prototype.translate_emailed_contacts = function()
 {
 	var ret = ZM_FOLDER_EMAILED_CONTACTS;
 	var value;
@@ -124,60 +171,38 @@ ZinFolderConverter.prototype.recalculate_localised_emailed_contacts = function()
 	else
 		locale = prefs.getCharPrefOrNull(prefs.branch(), "locale");
 
-	this.m_logger.debug("recalculate_localised_emailed_contacts: general.useragent.locale: " + locale);
+	this.m_logger.debug("translate_emailed_contacts: general.useragent.locale: " + locale);
 
 	// if (this.state.zimbraPrefLocale && value = this.emailed_contacts_per_locale(this.state.zimbraPrefLocale))
 	// {
 	// 	ret = value;
-	// 	this.m_logger.debug("recalculate_localised_emailed_contacts: selected on the basis of zimbraPrefLocale");
+	// 	this.m_logger.debug("translate_emailed_contacts: selected on the basis of zimbraPrefLocale");
 	// }
 
 	if (locale && (value = this.emailed_contacts_per_locale(locale)))
 	{
 		ret = value;
 
-		this.m_logger.debug("recalculate_localised_emailed_contacts: selected on the basis of general.useragent.locale");
+		this.m_logger.debug("translate_emailed_contacts: selected on the basis of general.useragent.locale");
 	}
 
-	this.m_logger.debug("recalculate_localised_emailed_contacts: returns: " + ret);
+	this.m_logger.debug("translate_emailed_contacts: returns: " + ret);
 
 	return ret;
 }
 
 ZinFolderConverter.prototype.emailed_contacts_per_locale = function(key)
 {
-	// A locale eg 'en-US' is made up of language (en) and nation/location (US)
-	// This list aims to be a superset of Zimbra's supported locales...
-	//
-	// Note - if any of these translations change, there will have to be code that migrates the old name to the new...
-	//
-	var localeString =
-	{
-		da    : "Kontakter, der er sendt mail til",
-		de    : "Mailempf\u00e4nger",
-		es    : "Contactos respondidos",
-		fr    : "Personnes contact\u00e9es par mail", // Nation component removed - was fr_FR
-		it    : "Contatti usati per email",
-		ja    : "\u30e1\u30fc\u30eb\u3092\u9001\u4fe1\u3057\u305f\u9023\u7d61\u5148",
-		ko    : "\uc774\uba54\uc77c\ud55c \uc5f0\ub77d\ucc98",
-		pl    : "Kontakty e-mail",
-		pt    : "Contatos que receberam e-mail",      // Nation component removed - was pt_BR
-		ru    : "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043d\u044b\u0435 \u043f\u043e \u044d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u043d\u043e\u0439 \u043f\u043e\u0447\u0442\u0435 \u043a\u043e\u043d\u0442\u0430\u043a\u0442\u044b",
-		sv    : "E-postkontakter",
-		zh_CN : "\u7535\u5b50\u90ae\u4ef6\u8054\u7cfb\u4eba",
-		zh_HK : "\u96fb\u5b50\u90f5\u4ef6\u806f\u7d61\u4eba"
-	};
-
 	var ret = null;
 
-	if (isPropertyPresent(localeString, key))
-		ret = localeString[key];
+	if (isPropertyPresent(this.m_locale_map, key))
+		ret = this.m_locale_map[key];
 	else
 	{
 		key = key.substr(0, 2);
 
-		if (isPropertyPresent(localeString, key))
-			ret = localeString[key];
+		if (isPropertyPresent(this.m_locale_map, key))
+			ret = this.m_locale_map[key];
 	}
 
 	return ret;
