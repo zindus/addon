@@ -82,7 +82,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var state = new TwoWayFsmState();
 			state.setCredentials();
 
-			newZinLogger().info("sync start:  " + getFriendlyTimeString());
+			newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 			this.m_syncfsm = new TwoWayFsm(state);
 			this.m_syncfsm.start();
 			this.is_running = true;

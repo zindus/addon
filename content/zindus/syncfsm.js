@@ -1276,47 +1276,29 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 		if (this.state.SyncGalTokenInRequest == null)
 		{
-			this.state.m_logger.debug("entryActionGalCommit: SyncGalTokenInRequest == null so wiping contacts that aren't in the SyncGalResponse");
-			var functor = {
-				aCardsToBeDeleted: new Array(),
-				state: this.state,
+			this.state.m_logger.debug("entryActionGalCommit: SyncGalTokenInRequest == null ==> recreating the GAL");
 
-				run: function(uri, item)
-				{
-					var abCard   = item.QueryInterface(Components.interfaces.nsIAbCard);
-					var mdbCard  = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-					var id       = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
-					var checksum = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_CHECKSUM);
-					var index    = this.state.mapIdSyncGalContact[id];
+			zinAssertAndLog(uri && abName, "uri: " + uri + " abName: " + abName);
 
-					if (id != null && typeof index != 'undefined' && checksum == this.state.aSyncGalContact[index].checksum)
-					{
-						this.state.aSyncGalContact[index].present = true;
-						this.state.m_logger.debug("entryActionGalCommit: " +
-						                          " issue #31: card in both Tb and SyncGalResponse - don't update: " +
-						                          this.state.m_addressbook.nsIAbCardToPrintable(abCard));
-					}
-					else
-					{
-						this.aCardsToBeDeleted.push(abCard);
+			// Instead of deleting/adding/repopulating the GAL addressbook, the code here used to:
+			// 1. iterate through the cards in the GAL addressbook,
+			// 2. delete cards not in the SyncGalResponse
+			// 3. populate aAdd with the remainder
+			// But ... for reasons I don't understand (see issue #31), every now and again, the deleteCards() method
+			// would simply hang - ie fail to return.  Several users reported this and it happened
+			// to me once too.  I could never reproduce it.  This approach avoids using deleteCards() entirely.
+			// deleteCards() also gets called by UpdateTb but it never seems to hang when called from there, perhaps
+			// because the array only ever contains a single element when called from there - but this is only speculation.
+			// I notice that the interface to deleteCards() has changed in Tbv3 - perhaps some bugs have been cleaned up
+			// or perhaps it was a mork garbage-collection issue - it's impossible to tell.
+			// leni - Wed Feb 27 11:30:36 AUSEDT 2008
 
-						this.state.m_logger.debug("entryActionGalCommit: " +
-						                          "issue #31: card in Tb but not SyncGalResponse marked for deletion: id: " +
-						                          (id != null ? id : "null") +
-												  " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
-					}
+			this.state.m_addressbook.deleteAddressBook(uri);
 
-					return true;
-				}
-			};
-
-			this.state.m_addressbook.forEachCard(uri, functor);
-
-			this.state.m_addressbook.deleteCards(uri, functor.aCardsToBeDeleted);
+			uri = this.state.m_addressbook.newAddressBook(abName);
 
 			for (var i in this.state.aSyncGalContact)
-				if (!this.state.aSyncGalContact[i].present)
-					aAdd.push(i);
+				aAdd.push(i);
 		}
 		else
 		{
@@ -1339,8 +1321,6 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 						attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
 						properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
-
-						this.state.m_logger.debug("entryActionGalCommit: issue #31: " + "updating card: id: " + id);
 
 						this.state.m_addressbook.updateCard(abCard, uri, FORMAT_TB, properties, attributes);
 
@@ -2637,12 +2617,12 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 					//
 					if (!zfiWinner.isPresent(ZinFeedItem.ATTR_DEL) && SyncFsm.isOfInterest(zfcWinner, zfiWinner.id()))
 					{
-						msg += " - source not present in gid";
+						msg += " - source not in gid";
 						suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
 					}
 				}
 				else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
-					msg += " lso and version match gid - do nothing";
+					msg += " winner matches gid - do nothing";
 				else if (zfiWinner.isPresent(ZinFeedItem.ATTR_DEL))
 				{
 					if (!zfiTarget.isPresent(ZinFeedItem.ATTR_DEL))
@@ -2650,7 +2630,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 					else
 					{
 						is_delete_pair = true;
-						msg += " - winner deleted but loser had also been deleted - do nothing";
+						msg += " - both winner and loser deleted - do nothing";
 					}
 				}
 				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.id()))
@@ -3074,22 +3054,24 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 			case Suo.ADD | ZinFeedItem.TYPE_FL:
 				var name   = zfiWinner.get(ZinFeedItem.ATTR_NAME);
 				var abName = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, name);
+				var tpi;
 
 				if (!this.state.m_addressbook.getAddressBookUri(abName))
 				{
 					msg += "About to add a thunderbird addressbook (folder), gid: " + gid + " and luid_winner: " + luid_winner;
 
 					uri = this.state.m_addressbook.newAddressBook(abName);
+					tpi = this.state.m_addressbook.getAddressBookPrefId(uri);
 
 					luid_target = zfcTarget.get(ZinFeedItem.ID_AUTO_INCREMENT).increment('next');
 
 					var name_for_map = this.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM, name);
 
 					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_ID, luid_target,
-					                       ZinFeedItem.ATTR_NAME, name_for_map,
-										   'l', 1,
-					                       ZinFeedItem.ATTR_MS, 1,
-										   ZinFeedItem.ATTR_TPI, this.state.m_addressbook.getAddressBookPrefId(uri)));
+					                       ZinFeedItem.ATTR_NAME, name_for_map, 'l', 1,
+					                       ZinFeedItem.ATTR_MS, 1, ZinFeedItem.ATTR_TPI, tpi));
+
+					msg += ".  Added: luid_target: " + luid_target + " name_for_map: " + name_for_map + " tpi: " + tpi;
 
 					zfiGid.set(sourceid_target, luid_target);
 					this.state.aReverseGid[sourceid_target][luid_target] = gid;
@@ -3750,8 +3732,9 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		var gid;
 		var aGidsToDelete = new Array();
 
-		// this.state.m_logger.debug("UpdateCleanup: zfcTb: " + this.state.sources[this.state.sourceid_tb]['zfcLuid'].toString());
-		// this.state.m_logger.debug("UpdateCleanup: zfcZm: " + this.state.sources[this.state.sourceid_zm]['zfcLuid'].toString());
+		this.state.m_logger.debug("UpdateCleanup: zfcTb:\n" + this.state.sources[this.state.sourceid_tb]['zfcLuid'].toString());
+		this.state.m_logger.debug("UpdateCleanup: zfcZm:\n" + this.state.sources[this.state.sourceid_zm]['zfcLuid'].toString());
+
 		// this.state.m_logger.debug("UpdateCleanup: zfcGid: " + this.state.zfcGid.toString());
 
 		//  delete the luid item if it has a DEL attribute or (zimbra: it's not of interest)
@@ -3978,21 +3961,34 @@ SyncFsm.removeLogfile = function()
 
 SyncFsm.prototype.removeZfcsIfNecessary = function()
 {
-	var appversion = null;
+	var data_format_version = null;
 	var zfiStatus  = StatusPanel.getZfi();
+	var msg = "removeZfcsIfNecessary: ";
+	var is_out_of_date = false;
 
 	if (zfiStatus)
-		appversion = zfiStatus.getOrNull('appversion');
+		data_format_version = zfiStatus.getOrNull('appversion');
 
-	if ((zfiStatus && !appversion)  || (appversion && compareToolkitVersionStrings(appversion, APP_VERSION_DATA_CONSISTENT_WITH) == -1))
+	msg += "incompatible with versions older than: " + APP_VERSION_DATA_CONSISTENT_WITH + " the version here is: " + data_format_version;
+
+	if ((zfiStatus && !data_format_version) ||
+	    (data_format_version && compareToolkitVersionStrings(data_format_version, APP_VERSION_DATA_CONSISTENT_WITH) == -1))
 	{
-		this.state.m_logger.debug("removeZfcsIfNecessary: data format is out of date: appversion: " + appversion + 
-		                          " more recent than: " + APP_VERSION_DATA_CONSISTENT_WITH);
-		this.state.m_logger.info("out of date data format - removing data files, forcing slow sync");
-		SyncFsm.removeZfcs();
+		msg += " - out of date";
+
+		is_out_of_date = true;
 	}
 	else
-		this.state.m_logger.debug("removeZfcsIfNecessary: data format is up-to-date, appversion: " + appversion);
+		msg += " - ok";
+
+	this.state.m_logger.debug(msg);
+
+	if (is_out_of_date)
+	{
+		this.state.m_logger.info("data format was out of date - removing data files and forcing slow sync");
+
+		SyncFsm.removeZfcs();
+	}
 }
 
 SyncFsm.setLsoToGid = function(zfiGid, zfiTarget)

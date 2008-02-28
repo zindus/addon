@@ -393,7 +393,7 @@ function randomPlusOrMinus(central, varies_by)
 // whereas our        "version part" is simply                         <number>
 // And in the spec, version parts are compared bytewise whereas here we compare two numbers.
 //
-compareToolkitVersionStrings = function(string_a, string_b)
+function compareToolkitVersionStrings(string_a, string_b)
 {
 	var a_a = string_a.split(".");
 	var a_b = string_b.split(".");
