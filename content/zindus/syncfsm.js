@@ -57,9 +57,7 @@ function SyncFsm(state)
 
 SyncFsm.getFsm = function(context)
 {
-	var fsm = new Object();
-
-	fsm.transitions = {
+	var transitions = {
 		start:            { evCancel: 'final', evStart: 'stAuth',                                           evLackIntegrity: 'final' },
 		stAuth:           { evCancel: 'final', evNext:  'stLoad',           evSoapRequest: 'stSoapRequest'                           },
 		stLoad:           { evCancel: 'final', evNext:  'stLoadTb',         evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final' },
@@ -86,7 +84,7 @@ SyncFsm.getFsm = function(context)
 		stCommit:         { evCancel: 'final', evNext:  'final'                                                                      }
 	};
 
-	fsm.aActionEntry = {
+	var a_entry = {
 		start:                  context.entryActionStart,
 		stAuth:                 context.entryActionAuth,
 		stLoad:                 context.entryActionLoad,
@@ -114,7 +112,7 @@ SyncFsm.getFsm = function(context)
 		final:                  context.entryActionFinal
 	};
 
-	fsm.aActionExit = {
+	var a_exit = {
 		stAuth:           context.exitActionAuth,
 		stGetAccountInfo: context.exitActionGetAccountInfo,
 		stGetInfo:        context.exitActionGetInfo,
@@ -125,33 +123,36 @@ SyncFsm.getFsm = function(context)
 		stSoapResponse:   context.exitActionSoapResponse  /* this gets tweaked by setupSoapCall */
 	};
 
+	var fsm = new Fsm(transitions, a_entry, a_exit);
+
 	return fsm;
 }
 
-SyncFsm.prototype.start = function()
+SyncFsm.prototype.start = function(win)
 {
+	this.fsm.m_window = win;
 	fsmTransitionSchedule(this.state.id_fsm, null, 'start', 'evStart', this);
 }
 
 SyncFsm.prototype.cancel = function(timeoutID)
 {
+	if (this.state.m_soap_state != null)  // m_soap_state is set by setupSoapCall(), so it's not guaranteed to be set
+	{
+		if (this.state.m_soap_state.m_xhr)
+		{
+			this.state.m_soap_state.is_cancelled = true
+
+			this.state.m_logger.debug("about to call: m_xhr.abort()");
+
+			this.state.m_soap_state.m_xhr.abort();
+		}
+	}
+
 	window.clearTimeout(timeoutID);
 
 	this.state.m_logger.debug("cancel: cleared timeoutID: " + timeoutID);
 
-	if (this.state.m_soap_state != null)  // m_soap_state is set by setupSoapCall(), so it's not guaranteed to be set
-	{
-		if (this.state.m_soap_state.m_callcompletion)
-		{
-			var ret = this.state.m_soap_state.m_callcompletion.abort();
-
-			this.state.m_logger.debug("abort: m_callcompletion.abort() returns: " + ret);
-		}
-
-		this.state.m_soap_state.is_cancelled = true
-	}
-
-	if (typeof(this.fsm.continuation) != 'function')
+	if (!this.fsm.m_continuation)
 	{
 		// the fsm hasn't had a transition yet so there's no continuation
 		// so we just enter the start state and give it a cancel event
@@ -163,9 +164,8 @@ SyncFsm.prototype.cancel = function(timeoutID)
 	{
 		this.state.m_logger.debug("cancel: continuing on evCancel");
 
-		this.fsm.continuation('evCancel');
+		this.fsm.m_continuation('evCancel');
 	}
-
 }
 
 SyncFsm.prototype.entryActionStart = function(state, event, continuation)
@@ -189,7 +189,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		var username = this.state.sources[this.state.sourceid_zm]['username'];
 		var password = this.state.sources[this.state.sourceid_zm]['password'];
 
-		if (/^https?:\/\//.test(url) && username.length > 0 && password.length > 0)
+		if (/^https?:\/\//.test(url) && username.length > 0 && password.length > 0 && isValidUrl(url))
 		{
 			this.state.soapURL = this.state.sources[this.state.sourceid_zm]['soapURL'];
 
@@ -4012,7 +4012,7 @@ SyncFsm.forEachFlavour = function(format)
 SyncFsm.prototype.setupSoapCall = function(state, eventOnResponse, method)
 {
 	// this.state.m_logger.debug("setupSoapCall: state: " + state + " eventOnResponse: " + eventOnResponse + " method: " + method +
-	//                           " evNext will be: " + this.fsm.transitions[state][eventOnResponse]);
+	//                           " evNext will be: " + this.fsm.m_transitions[state][eventOnResponse]);
 
 	var args = new Array();
 	for (var i = SyncFsm.prototype.setupSoapCall.length; i < arguments.length; i++)
@@ -4023,17 +4023,16 @@ SyncFsm.prototype.setupSoapCall = function(state, eventOnResponse, method)
 	this.state.m_soap_state.m_zsd.context(this.state.authToken, this.state.sessionId);
 	this.state.m_soap_state.m_zsd[method].apply(this.state.m_soap_state.m_zsd, args);
 
-	this.fsm.transitions['stSoapResponse']['evNext'] = this.fsm.transitions[state][eventOnResponse];
+	this.fsm.m_transitions['stSoapResponse']['evNext'] = this.fsm.m_transitions[state][eventOnResponse];
 
-	if (this.fsm.aActionExit[state])
-		this.fsm.aActionExit['stSoapResponse'] = this.fsm.aActionExit[state];
+	if (this.fsm.m_a_exit[state])
+		this.fsm.m_a_exit['stSoapResponse'] = this.fsm.m_a_exit[state];
 	else
-		this.fsm.aActionExit['stSoapResponse'] = this.exitActionSoapResponse;
+		this.fsm.m_a_exit['stSoapResponse'] = this.exitActionSoapResponse;
 }
 
 SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 {
-	var soapCall = new SOAPCall();
 	var context  = this;
 	var soapstate = this.state.m_soap_state;
 
@@ -4042,115 +4041,77 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 	zinAssert(!soapstate.isPostResponse());
 	zinAssert(soapstate.isStateConsistent());
 
-	soapCall.transportURI = this.state.soapURL;
-	soapCall.message      = this.state.m_soap_state.m_zsd.doc;
+	soapstate.m_xhr = new XMLHttpRequest();
+	soapstate.m_xhr.open("POST", this.state.soapURL, true);
+	soapstate.m_xhr.onreadystatechange = closureToHandleXmlHttpResponse(context, continuation);
 
 	if (soapstate.m_method == "Auth")
 		this.state.m_logger.debug("soap request: " + "<AuthRequest> suppressed"); // dont want password going into the log
 	else
-		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapCall.message));
+		this.state.m_logger.debug("soap request: " + xmlDocumentToString(soapstate.m_zsd.doc));
 
 	this.state.cCallsToSoap++;
 	this.state.m_logger.debug("entryActionSoapRequest: cCallsToSoap: " + this.state.cCallsToSoap);
 
-	this.state.m_soap_state.m_callcompletion = soapCall.asyncInvoke(closureToHandleSoapResponse(context, continuation));
+	soapstate.m_xhr.send(soapstate.m_zsd.doc);
 }
 
-function closureToHandleSoapResponse(context, continuation)
+function closureToHandleXmlHttpResponse(context, continuation)
 {
-	var ret = function (response, call, error)
+	var ret = function()
 	{
-		context.handleAsyncResponse(response, call, error, continuation, context);
-	
-		// otherwise, the last call to a soap request leaks memory
-		//
-		context = null;
-		continuation = null;
+		if (context.state.m_soap_state.m_xhr.readyState == 4)
+		{
+			context.handleXmlHttpResponse(continuation, context);
+		}
 	}
 
 	return ret;
 }
 
-// Note that "this" in this method could be anything - the mozilla SOAP API decides.
-// That's why we call continuation() here, so that the scope chain (where "this" is the SyncFsm object) is restored.
-//
-SyncFsm.prototype.handleAsyncResponse = function (response, soapCall, error, continuation, context)
+SyncFsm.prototype.handleXmlHttpResponse = function (continuation, context)
 {
-	var ret = false;
 	var soapstate = context.state.m_soap_state;
+	var response = soapstate.m_xhr.responseXML;
+	var msg = "handleXmlHttpResponse: ";
 
-	zinAssert(!soapstate.is_cancelled); // we shouldn't be here because we called abort() on the m_callcompletion object!
-
-	soapstate.m_service_code = error;
-
-	// four scenarios here:
-	//   a) service failure
-	//      - documentation says that this is reported by a non-zero value for the error argument
-	//      - I also notice that when no web server is listening on the targetURI port, 
-	//        this function is called with error == 0 but response == null.  This seems like a bug...
-	//   b) soap fault and response.fault is non-null
-	//      - there is some sub-scenario here whereby response.fault.detail might be missing, possibly because of a namespace muddle
-	//      - the zimbra fault seems to stuff things up - need to isolate this test case better
-	//   c) soap fault and response.fault is null and error = 0 but response is a soap:Fault element.
-	//      This is a bug - either in zimbra's (document-style) response or mozilla (should look into this further)
-	//   d) <BlahResponse> document ==> success!
-	//
-
-	if (response == null && error == 0)
+	if (soapstate.is_cancelled)
 	{
-		// this is a workaround for (what I think is) a mozilla bug
-		// whereby if the web server isn't listening to the target URI,
-		// the callback gets executed with a null response and error code zero.
-		// here, we turn that into a non-zero error code.
-		//
-		soapstate.m_service_code = SOAP_REQUEST_FAILED;
-		context.state.m_logger.debug("handleAsyncResponse: soap service failure - error code set by fiat: " + soapstate.m_service_code);
+		soapstate.m_http_status_code = SOAP_REQUEST_FAILED;
+		msg += " cancelled - returning immediately";
+		context.state.m_logger.debug(msg);
+		return;
 	}
-	else if (error != 0)
-	{ 
-		context.state.m_logger.debug("handleAsyncResponse: soap service failure - error code is " + error);
-	}
-	else 
-	{
-		if (response.fault != null)
-		{ 
-			soapstate.faultLoadFromSoapFault(response.fault);
 
-			if (!soapstate.m_faultstring)
-				soapstate.faultLoadFromXml(response.fault.element);
-		}
-		else
+	try {
+		soapstate.m_http_status_code = soapstate.m_xhr.status;
+		msg += " http status is " + soapstate.m_http_status_code;
+	}
+	catch(e) {
+		soapstate.m_http_status_code = SOAP_REQUEST_FAILED;
+		msg += " http status set to: " + soapstate.m_http_status_code + " after soapstate.m_xhr.status threw an exception: " + e;
+	}
+
+	if (response)
+	{
+		var nodelist = response.getElementsByTagNameNS(ZimbraSoapDocument.NS_SOAP_ENVELOPE, "Fault");
+
+		if (nodelist.length > 0)
 		{
-			var nodelist = response.message.getElementsByTagNameNS(ZimbraSoapDocument.NS_SOAP_ENVELOPE, "Fault");
+			soapstate.faultLoadFromXml(response);
+			msg += " fault xml: " + soapstate.m_fault_element_xml;
+		}
+		else if (soapstate.m_http_status_code == 200)
+		{
+			soapstate.m_response = response;
 
-			if (nodelist.length > 0)
-			{
-				soapstate.faultLoadFromXml(response.message);
-			}
-			else
-			{
-				soapstate.m_response = response.message;
-
-				context.state.m_logger.debug("handleAsyncResponse: response is " + xmlDocumentToString(response.message));
-			}
+			msg += " response: " + xmlDocumentToString(response);
 		}
 	}
 
-	var msg;
-	if (soapstate.m_service_code != 0)
-		msg = "soap service failure - m_service_code is " + soapstate.m_service_code;
-	else if (soapstate.m_fault_element_xml)
-		msg = "soap fault: service code " + soapstate.m_service_code;
-
-	if (msg)
-	{
-		msg += " fault xml: " + soapstate.m_fault_element_xml;
-		context.state.m_logger.debug("handleAsyncResponse: " + msg);
-	}
+	context.state.m_logger.debug(msg);
 
 	continuation('evNext');
-
-	return true;
 }
 
 SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
@@ -4158,8 +4119,8 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	var soapstate = this.state.m_soap_state;
 	var nextEvent = null;
 
-	zinAssert(soapstate.isPostResponse());
-	zinAssert(soapstate.isStateConsistent());
+	zinAssertAndLog(soapstate.isPostResponse(), soapstate.toString());
+	zinAssertAndLog(soapstate.isStateConsistent(), soapstate.toString());
 
 	// For method == "CheckLicense", the fault varies depending on open-source vs non-open-source server:
 	// soapstate.m_faultcode == "service.UNKNOWN_DOCUMENT" or <soap:faultcode>soap:Client</soap:faultcode>
@@ -4190,8 +4151,8 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 	{
 		var msg = "soap error - ";  // note that we didn't say "fault" here - it could be a sending/service error
 
-		if (soapstate.m_service_code != 0 && soapstate.m_service_code != null)
-			msg += "m_service_code == " + soapstate.m_service_code;
+		if (soapstate.m_http_status_code != null && soapstate.m_http_status_code != 200)
+			msg += "m_http_status_code == " + soapstate.m_http_status_code;
 		else if (soapstate.m_fault_element_xml)
 			msg += "fault fields as shown: " + soapstate.toString();
 		else
@@ -4209,7 +4170,7 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 SyncFsm.prototype.exitActionSoapResponse = function(state, event)
 {
-	// this method's entry in the aActionExit table may be overwritten by setupSoapCall
+	// this method's entry in the m_a_exit table may be overwritten by setupSoapCall
 	// otherwise, do nothing...
 }
 
@@ -4217,10 +4178,10 @@ function SoapState()
 {
 	this.m_zsd                  = new ZimbraSoapDocument();
 	this.m_method               = null;  // the prefix of the soap method, eg: "Auth" or "GetContacts"
-	this.m_callcompletion       = null;  // the object returned by soapCall.asyncInvoke()
+	this.m_xhr                  = null;  // the XMLHttpRequest object
 
 	this.m_response             = null;  // SOAPResponse.message - the xml soap message response
-	this.m_service_code         = null;  // 
+	this.m_http_status_code     = null;
 	this.m_faultcode            = null;  // These are derived from the soap fault element
 	this.m_fault_element_xml    = null;  // the soap:Fault element as string xml
 	this.m_fault_detail         = null;
@@ -4239,11 +4200,11 @@ SoapState.prototype.failCode = function()
 	var ret;
 
 	if (this.is_cancelled)                     ret = 'FailOnCancel';
-	else if (!this.m_callcompletion)           ret = 'FailOnUnknown';  // pre-request:       not a failure
+	else if (!this.m_xhr)                      ret = 'FailOnUnknown';  // pre-request:       not a failure
 	else if (this.is_mismatched_response)      ret = 'FailOnMismatchedResponse';
 	else if (this.m_response != null)          ret = 'FailOnUnknown';  // response recieved: not a failure
-	else if (this.m_service_code != 0)         ret = 'FailOnService';
 	else if (this.m_fault_element_xml != null) ret = 'FailOnFault';
+	else if (this.m_http_status_code != 0)     ret = 'FailOnService';
 	else                                       ret = 'FailOnUnknown';  // this really is unknown
 
 	if (ret == 'FailOnUnknown')
@@ -4261,18 +4222,18 @@ SoapState.prototype.isPostResponse = function()
 {
 	var c = 0;
 
-	if (this.m_response != null)                                c++;
-	if (this.m_service_code != null && this.m_service_code !=0) c++;
-	if (this.m_fault_element_xml != null)                       c++;
+	if (this.m_response != null)                                           c++;  // a) a response
+	if (this.m_http_status_code != null && this.m_http_status_code != 200) c++;  // b) an error as determined by http status code
+	if (this.m_fault_element_xml != null)                                  c++;  // c) a soap fault fault in the body of the response
 
-	return (c == 1); // exactly one of these three things is true after a response
+	return (c == 1 || c == 2);
 }
 
-// pre-request would be m_callcompletion == null
+// pre-request would be m_xhr == null
 //
 SoapState.prototype.isPreResponse = function()
 {
-	return (this.m_response == null) && (this.m_service_code == null) && (this.m_faultcode == null) &&
+	return (this.m_response == null) && (this.m_http_status_code == null) && (this.m_faultcode == null) &&
 	       (this.m_fault_element_xml == null) && (this.m_fault_detail == null) && (this.m_faultstring == null);
 }
 
@@ -4308,10 +4269,10 @@ SoapState.prototype.faultLoadFromSoapFault = function(fault)
 
 SoapState.prototype.toString = function()
 {
-	var ret = "\n callcompletn = "        + (this.m_callcompletion ? "non-null" : "null") +
+	var ret = "\n xhr          = "        + (this.m_xhr ? this.m_xhr.readyState : "null") +
 	          "\n cancelled    = "        + this.is_cancelled +
 	          "\n mismatched_response = " + this.is_mismatched_response +
-	          "\n service code = "        + this.m_service_code +
+	          "\n http status code = "    + this.m_http_status_code +
 	          "\n fault code = "          + this.m_faultcode +
 	          "\n fault string = "        + this.m_faultstring +
 	          "\n fault detail = "        + this.m_fault_detail +
@@ -4336,7 +4297,7 @@ AuthOnlyFsm.prototype.setFsm = function()
 {
 	this.fsm = SyncFsm.getFsm(this);
 
-	this.fsm.transitions['stAuth']['evNext'] = 'final';
+	this.fsm.m_transitions['stAuth']['evNext'] = 'final';
 }
 
 TwoWayFsm.prototype.setFsm = function()

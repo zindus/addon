@@ -40,7 +40,9 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
 	// ret = ret && this.testContactConverter();
-	ret = ret && this.testFolderConverter();
+	// ret = ret && this.testFolderConverter();
+
+	ret = ret && this.testXmlHttpRequest();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -293,4 +295,26 @@ ZinTestHarness.prototype.testLogging = function()
 	logger.warn("hello, this is a warn");
 	logger.error("hello, this is a error");
 	logger.fatal("hello, this is a fatal");
+}
+
+ZinTestHarness.prototype.testXmlHttpRequest = function()
+{
+	var soapURL = "http://george.ho.moniker.net/service/soap/";
+	var zsd = new ZimbraSoapDocument();
+
+	zsd.context(null, null);
+	zsd.Auth("leni@george.ho.moniker.net", "qwe123qwe123", null);
+
+	var xhrCallback = function()
+	{
+		if (xhr.readyState==4) {
+			alert(xhr.status);
+			alert(xhr.responseText);
+		}
+	};
+
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", soapURL, true);
+	xhr.onreadystatechange=xhrCallback;
+	xhr.send(zsd.doc);
 }

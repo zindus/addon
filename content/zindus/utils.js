@@ -346,6 +346,21 @@ function isValidFormat(format)
 	return (format == FORMAT_TB || format == FORMAT_ZM);
 }
 
+function isValidUrl(url)
+{
+	var is_valid = true;
+	var xhr      = new XMLHttpRequest();
+
+	try {
+		xhr.open("HEAD", url, false);
+	}
+	catch(e) {
+		is_valid = false;
+	}
+
+	return is_valid;
+}
+
 // see:
 // http://www.sitepoint.com/blogs/2006/01/17/javascript-inheritance/
 //

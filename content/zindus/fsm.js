@@ -27,55 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.3 2007-11-27 21:27:03 cvsuser Exp $
-
-if (typeof fsmlogger != 'object' || !fsmlogger)
-{
-    fsmlogger = newZinLogger("fsm");
-	fsmlogger.level(ZinLogger.NONE);
-}
-
-function FsmSanityCheck(context)
-{
-	var states = new Object();
-
-	zinAssert(typeof context == 'object' && typeof context.fsm.transitions == 'object');
-
-	for (stateFrom in context.fsm.transitions)
-	{
-		states[stateFrom] = true;
-
-		// there has to be an entry action corresponding to the 'from' state in a transition
-		// otherwise the continuation wouldn't get called to execute the transition
-		//
-		// fsmlogger.debug("FsmSanityCheck: stateFrom: " + stateFrom);
-
-		zinAssert(typeof context.fsm.aActionEntry[stateFrom] == 'function');
-
-		for (event in context.fsm.transitions[stateFrom])
-		{
-			var stateTo = context.fsm.transitions[stateFrom][event];
-
-			states[stateTo] = true;
-
-			// fsmlogger.debug("stateTo: " + stateTo + " event: " + event);
-		}
-	}
-
-	for each (table in [context.fsm.aActionEntry, context.fsm.aActionExit])
-		for (mapping in table)
-		{
-			// fsmlogger.debug("FsmSanityCheck: mapping is " + mapping + "\n");
-
-			// if this assert fails, it means that there's an action for a state that's not in the transitions table.
-			//
-			zinAssert(typeof states[mapping] != 'undefined');
-
-			// if this assert fails, it means that the action function doesn't exist!
-			//
-			zinAssert(typeof table[mapping] == 'function');
-		}
-}
+// $Id: fsm.js,v 1.4 2008-03-01 08:04:21 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -86,37 +38,33 @@ function fsmTransitionDo(fsmstate)
 	var newstate = fsmstate.newstate;
 	var event    = fsmstate.event;
 	var context  = fsmstate.context;
+	var fsm      = context.fsm;
 
-	fsmlogger.debug("TransitionDo: fsmstate: " + fsmstate.toString() );
+	fsm.m_logger.debug("TransitionDo: fsmstate: " + fsmstate.toString() );
 
-	if (typeof context.fsm.transitions.isSeenOnce == 'undefined' || !context.fsm.transitions.isSeenOnce)
+	fsm.sanityCheck();
+
+	if (fsm.m_a_entry[newstate])
 	{
-		FsmSanityCheck(context);
-
-		context.fsm.transitions.isSeenOnce = true;
-	}
-
-	if (context.fsm.aActionEntry[newstate])
-	{
-		// fsmlogger.debug("TransitionDo: calling entry action (to: " + newstate + ", event: " + event + ")");
+		// fsm.m_logger.debug("TransitionDo: calling entry action (to: " + newstate + ", event: " + event + ")");
 
 		var continuation = function(nextEvent) {
 				// See:  http://en.wikipedia.org/wiki/Closure_%28computer_science%29
 				// Closures are commonly used in functional programming to defer calculation, to hide state,
 				// and as arguments to higher-order functions
 				//
-				// newZinLogger("fsm").debug("blah1: newstate: " + newstate + " nextEvent: " + nextEvent);
-				// newZinLogger("fsm").debug("blah2: context.fsm.transitions: " + aToString(context.fsm.transitions));
+				// fsm.m_logger.debug("blah1: newstate: " + newstate + " nextEvent: " + nextEvent);
+				// fsm.m_logger.debug("blah2: context.fsm.m_transitions: " + aToString(context.fsm.m_transitions));
 				zinAssert(nextEvent);
 
-				if (context.fsm.aActionExit && context.fsm.aActionExit[newstate])
-					context.fsm.aActionExit[newstate].call(context, newstate, nextEvent);
+				if (fsm.m_a_exit[newstate])
+					fsm.m_a_exit[newstate].call(context, newstate, nextEvent);
             
-				zinAssert(isPropertyPresent(context.fsm.transitions, newstate));
+				zinAssert(isPropertyPresent(context.fsm.m_transitions, newstate));
 
-				var nextState = context.fsm.transitions[newstate][nextEvent];
+				var nextState = context.fsm.m_transitions[newstate][nextEvent];
 
-				// newZinLogger("fsm").debug("blah3: nextState: " + nextState);
+				// fsm.m_logger.debug("blah3: nextState: " + nextState);
 
 				if (nextState)
 				{
@@ -127,19 +75,18 @@ function fsmTransitionDo(fsmstate)
 					// Even though Finite State Machines in UML are supposed to silently ignore events that they don't know about,
 					// here we assert failure - because it's probably a programming error.
 					//
-					var logger = newZinLogger("fsm");
-					logger.debug("TransititionDo: about to assert: newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.transitions: " + aToString(context.fsm.transitions));
+					fsm.m_logger.debug("TransititionDo: about to assert: newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.m_transitions: " + aToString(context.fsm.m_transitions));
 					zinAssert(false);
 				}
 			}
 
 		// we add the continuation as a property of the fsm object to support context.cancel()
-		context.fsm.continuation = continuation;
-		fsmlogger.debug("TransitionDo: context.fsm.continuation set - about to call the entry action, newstate: " + newstate);
+		context.fsm.m_continuation = continuation;
+		fsm.m_logger.debug("TransitionDo: context.fsm.m_continuation set - about to call the entry action, newstate: " + newstate);
 
-		context.fsm.aActionEntry[newstate].call(context, newstate, event, continuation);
+		fsm.m_a_entry[newstate].call(context, newstate, event, continuation);
 
-		// aActionEntry for the final state won't have a continuation so it doesn't lead to a transition
+		// m_a_entry for the final state won't have a continuation so it doesn't lead to a transition
 		// so here we tell the maestro that the fsm is finished...
 		//
 		if (newstate == 'final')
@@ -160,7 +107,8 @@ function fsmTransitionDo(fsmstate)
 
 function fsmTransitionSchedule(id_fsm, oldstate, newstate, event, context)
 {
-	fsmlogger.debug("TransitionSchedule: entered: id_fsm: " + id_fsm + " oldstate: " + oldstate + " newstate: " + newstate + " event: " + event);
+	context.fsm.m_logger.debug("TransitionSchedule: entered: id_fsm: " + id_fsm + " oldstate: " + oldstate +
+	                                                                              " newstate: " + newstate + " event: " + event);
 
 	// release control in order to flip to the next transition - but the maestro holds a reference to fsmstate
 	//
@@ -170,23 +118,14 @@ function fsmTransitionSchedule(id_fsm, oldstate, newstate, event, context)
 	                            'event',     event,
 	                            'context',   context);
 
-	if (fsmstate.isStart())
-		context.fsm.continuation = null;
-		
-	var timeoutID = window.setTimeout(fsmTransitionDo, 0, fsmstate);
+	fsmstate.timeoutID = context.fsm.m_window.setTimeout(fsmTransitionDo, 0, fsmstate);
 
-	fsmstate.timeoutID = timeoutID;
 
-	fsmlogger.debug("TransitionSchedule: fsmstate.timeoutID: " + fsmstate.timeoutID);
+	context.fsm.m_logger.debug("TransitionSchedule: fsmstate: " + fsmstate.toString());
 
 	ZinMaestro.notifyFsmState(fsmstate);
 
-	logger = fsmlogger;
-
-	if (typeof logger != 'object' || !logger) // logger == null once the dialog goes away after the very last transition
-		logger = newZinLogger("fsm");
-
-	logger.debug("TransitionSchedule: exiting ");
+	context.fsm.m_logger.debug("TransitionSchedule: exiting ");
 }
 
 function FsmState()
@@ -215,3 +154,65 @@ FsmState.prototype.isStart = function()
 {
 	return typeof(this["newstate"]) == 'string' && this.newstate == "start";
 }
+
+function Fsm(transitions, a_entry, a_exit)
+{
+	zinAssert(arguments.length == 3);
+
+	this.m_transitions = transitions;
+	this.m_a_entry     = a_entry;
+	this.m_a_exit      = a_exit;
+
+	zinAssert(typeof(this.m_transitions) == 'object' && typeof(this.m_a_entry) == 'object' && typeof(this.m_a_exit) == 'object');
+
+	this.m_logger            = newZinLogger("fsm");  this.m_logger.level(ZinLogger.NONE);
+	this.m_continuation      = null;
+	this.m_is_sanity_checked = false;
+	this.m_window            = null;
+}
+
+Fsm.prototype.sanityCheck = function()
+{
+	if (this.m_is_sanity_checked)
+		return;
+	
+	this.m_is_sanity_checked = true;
+
+	var states = new Object();
+
+	for (stateFrom in this.m_transitions)
+	{
+		states[stateFrom] = true;
+
+		// there has to be an entry action corresponding to the 'from' state in a transition
+		// otherwise the continuation wouldn't get called to execute the transition
+		//
+		// this.m_logger.debug("sanityCheck: stateFrom: " + stateFrom);
+
+		zinAssert(typeof this.m_a_entry[stateFrom] == 'function');
+
+		for (event in this.m_transitions[stateFrom])
+		{
+			var stateTo = this.m_transitions[stateFrom][event];
+
+			states[stateTo] = true;
+
+			// this.m_logger.debug("sanityCheck: stateTo: " + stateTo + " event: " + event);
+		}
+	}
+
+	for each (table in [this.m_a_entry, this.m_a_exit])
+		for (mapping in table)
+		{
+			// this.m_logger.debug("sanityCheck: mapping is " + mapping + "\n");
+
+			// if this assert fails, it means that there's an action for a state that's not in the transitions table.
+			//
+			zinAssert(typeof states[mapping] != 'undefined');
+
+			// if this assert fails, it means that the action function doesn't exist!
+			//
+			zinAssert(typeof table[mapping] == 'function');
+		}
+}
+

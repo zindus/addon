@@ -106,7 +106,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		this.m_zwc.populate();
 
 		newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
-		this.m_syncfsm.start();
+		this.m_syncfsm.start(window);
 	}
 	else 
 	{
