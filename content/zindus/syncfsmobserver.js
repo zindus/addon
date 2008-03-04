@@ -172,7 +172,6 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				}
 				else
 					ret = false; // no need to update the UI
-
 				break;
 
 			case 'stGetContact':

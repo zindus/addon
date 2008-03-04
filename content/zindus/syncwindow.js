@@ -36,7 +36,7 @@ function SyncWindow()
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_sfo       = new SyncFsmObserver();
-	this.m_logger    = newZinLogger("SyncWindow"); // TODO this.m_logger.level(ZinLogger.NONE);
+	this.m_logger    = newZinLogger("SyncWindow"); this.m_logger.level(ZinLogger.NONE);
 
 	this.m_has_observer_been_called = false;
 }
