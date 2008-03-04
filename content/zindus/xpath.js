@@ -27,31 +27,6 @@ function ZinXpath()
 
 ZinXpath.logger = newZinLogger("ZinXpath");
 
-ZinXpath.nsResolverBimap = new BiMap(
-	[ "soap",                              "z",                          "za",                          "zm"                       ],
-	[ ZimbraSoapDocument.NS_SOAP_ENVELOPE, ZimbraSoapDocument.NS_ZIMBRA, ZimbraSoapDocument.NS_ACCOUNT, ZimbraSoapDocument.NS_MAIL ]);
-
-ZinXpath.nsOfMethod = {
-		Auth:           "za",
-		CheckLicense:   "za",
-		GetAccountInfo: "za",
-		GetInfo:        "za",
-		SyncGal:        "za",
-		GetContacts:    "zm",
-		Sync:           "zm",
-		CreateContact:  "zm", 
-		CreateFolder:   "zm", 
-		ContactAction:  "zm", 
-		FolderAction:   "zm", 
-		ModifyContact:  "zm",
-		last_notused:   null
-};
-
-ZinXpath.nsResolver = function(prefix)
-{
-	return ZinXpath.nsResolverBimap.lookup(prefix, null);
-};
-
 ZinXpath.setConditional = function(object, property, xpath_query, doc, warning_msg)
 {
 	zinAssert(xpath_query.indexOf("attribute::") > 0); // this function is only intended for xpath queries that return a single attribute
@@ -71,7 +46,7 @@ ZinXpath.getSingleValue = function(xpath_query, doc, contextNode)
 	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
 
 	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_TYPE;
-	var xpathResult     = doc.evaluate(xpath_query, contextNode, ZinXpath.nsResolver, xpathResultType, null);
+	var xpathResult     = doc.evaluate(xpath_query, contextNode, ZimbraSoapDocument.nsResolver, xpathResultType, null);
 
 	try {
 		if (xpathResult.resultType == XPathResult.ANY_UNORDERED_NODE_TYPE && xpathResult.singleNodeValue != null)
@@ -95,7 +70,7 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
 
 	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_ITERATOR_TYPE;
-	var xpathResult     = doc.evaluate(xpath_query, doc, ZinXpath.nsResolver, xpathResultType, null);
+	var xpathResult     = doc.evaluate(xpath_query, doc, ZimbraSoapDocument.nsResolver, xpathResultType, null);
 
 	try {
 		var node = xpathResult.iterateNext();
@@ -116,8 +91,6 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 
 ZinXpath.queryFromMethod = function(method)
 {
-	zinAssert(isPropertyPresent(ZinXpath.nsOfMethod, method));
-
-	return "/soap:Envelope/soap:Body/" + ZinXpath.nsOfMethod[method] + ":" + method + "Response";
+	return "/soap:Envelope/soap:Body/" + ZimbraSoapDocument.nsFromMethod(method) + ":" + method + "Response";
 }
 

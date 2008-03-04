@@ -25,9 +25,9 @@
 // - only entry actions should call continuation() - not sure what happens
 //   if continuation() is called from a transition or exit action.
 // - states are final when their entryAction()'s don't call continuation()
-//   observers rely on the convention there's only one such state and it's called 'final'
+//   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.4 2008-03-01 08:04:21 cvsuser Exp $
+// $Id: fsm.js,v 1.5 2008-03-04 20:05:28 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -180,7 +180,7 @@ Fsm.prototype.sanityCheck = function()
 
 	var states = new Object();
 
-	for (stateFrom in this.m_transitions)
+	for (var stateFrom in this.m_transitions)
 	{
 		states[stateFrom] = true;
 
@@ -191,7 +191,7 @@ Fsm.prototype.sanityCheck = function()
 
 		zinAssert(typeof this.m_a_entry[stateFrom] == 'function');
 
-		for (event in this.m_transitions[stateFrom])
+		for (var event in this.m_transitions[stateFrom])
 		{
 			var stateTo = this.m_transitions[stateFrom][event];
 
@@ -201,18 +201,12 @@ Fsm.prototype.sanityCheck = function()
 		}
 	}
 
-	for each (table in [this.m_a_entry, this.m_a_exit])
-		for (mapping in table)
+	for each (var table in [this.m_a_entry, this.m_a_exit])
+		for (var state in table)
 		{
-			// this.m_logger.debug("sanityCheck: mapping is " + mapping + "\n");
+			zinAssertAndLog(typeof states[state] != 'undefined', "state not in transitions table: " + state);
 
-			// if this assert fails, it means that there's an action for a state that's not in the transitions table.
-			//
-			zinAssert(typeof states[mapping] != 'undefined');
-
-			// if this assert fails, it means that the action function doesn't exist!
-			//
-			zinAssert(typeof table[mapping] == 'function');
+			zinAssertAndLog(typeof table[state] == 'function', "missing entry/exit action function for state: " + state);
 		}
 }
 

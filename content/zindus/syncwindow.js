@@ -36,8 +36,7 @@ function SyncWindow()
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_sfo       = new SyncFsmObserver();
-	this.m_logger    = newZinLogger("SyncWindow");
-	this.m_logger.level(ZinLogger.NONE);
+	this.m_logger    = newZinLogger("SyncWindow"); // TODO this.m_logger.level(ZinLogger.NONE);
 
 	this.m_has_observer_been_called = false;
 }
@@ -118,8 +117,18 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
 			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
-			document.getElementById('zindus-syncwindow-progress-description').setAttribute('value',
-			                                        stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString());
+
+			var elDescription = document.getElementById('zindus-syncwindow-progress-description');
+			var elHtml        = document.createElementNS("http://www.w3.org/1999/xhtml", "p");
+
+			elHtml.innerHTML = stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString();
+
+			if (!elDescription.hasChildNodes())
+				elDescription.appendChild(elHtml);
+			else
+				elDescription.replaceChild(elHtml, elDescription.firstChild);
+
+			this.m_logger.debug("ui: " + elHtml.innerHTML);
 
 			functor.m_showlogo = false;
 			this.m_zwc.forEach(functor);

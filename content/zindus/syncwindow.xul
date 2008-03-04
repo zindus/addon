@@ -50,10 +50,10 @@
 		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
 	</stringbundleset>
 
-	<vbox align="center" style="margin:30px" >
+	<vbox align="center" style="margin:20px" >
 		<progressmeter id="zindus-syncwindow-progress-meter" value="0%" style="&ZinSyncWindowProgressDescription.style;" />
 		<spacer style="&ZinPrefsSpacer.style;" flex="1" /> 
-		<description id="zindus-syncwindow-progress-description" style="&ZinSyncWindowProgressDescription.style;" />
+		<description  id="zindus-syncwindow-progress-description" style="width:30em; height:4em;" /> <!-- height:6em;   -->
 		<spacer style="&ZinPrefsSpacer.style;" flex="1" /> 
 		<button dlgtype="cancel" align="center" />
 	</vbox>

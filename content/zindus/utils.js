@@ -243,6 +243,32 @@ function isPropertyPresent(obj, property)
 	return (typeof(obj[property]) != 'undefined');
 }
 
+function isObjectKeyMatch(obj1, obj2)
+{
+	var i;
+	var ret = true;
+
+	if (ret)
+		for (i in obj1)
+			if (!isPropertyPresent(obj2, i))
+			{
+				ret = false;
+				newZinLogger("Utils").debug("isObjectKeyMatch: mismatched key: " + i);
+				break;
+			}
+
+	if (ret)
+		for (i in obj2)
+			if (!isPropertyPresent(obj1, i))
+			{
+				ret = false;
+				newZinLogger("Utils").debug("isObjectKeyMatch: mismatched key: " + i);
+				break;
+			}
+
+	return ret;
+}
+
 // takes either:
 // one argument - an array with an even number of elements
 // an even number of arguments

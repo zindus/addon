@@ -3,7 +3,7 @@
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <RDF:Description RDF:about="rdf:#$JEjs8"
-                   em:version="0.6.19.20080301.180955">
+                   em:version="0.6.19.20080301.190607">
     <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
   </RDF:Description>
   <RDF:Seq RDF:about="rdf:#$IEjs8">
@@ -17,5 +17,5 @@
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:minVersion="2.0b2"
                    em:maxVersion="2.0.0.*"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.6.19.20080301.180955-tb.xpi" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.6.19.20080301.190607-tb.xpi" />
 </RDF:RDF>

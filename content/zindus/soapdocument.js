@@ -29,22 +29,43 @@ function ZimbraSoapDocument()
 	this.doc.appendChild(this.envelope);
 }
 
-// - mozilla uses this url to imply SOAP 1.2:
-//   NS_SOAP_ENVELOPE = "http://www.w3.org/2001/09/soap-envelope";
-//   see mozilla/extensions/webservices/soap/src/nsSOAPUtils.cpp and nsSOAPMessage.cpp
-// - zimbra  uses this to url imply SOAP 1.2:
-//   NS_SOAP_ENVELOPE = "http://www.w3.org/2003/05/soap-envelope";
-// - zimbra responds to requests containing the 2001 with the 2003 url which mozilla doesn't understand.
-//   This is unlikely to be correct - it should either:
-//   - understand the 2001 url and respond with it, or
-//   - not understand the 2001 url and fall back to soap 1.1.
-// - in any case, both mozilla and zimbra agree that the NS_SOAP_ENVELOPE used below means soap 1.1
-// - see also xpath.js
-//
+ZimbraSoapDocument.nsFromMethod = function(method)
+{
+	var aMethod = {
+		Auth:           "za",
+		CheckLicense:   "za",
+		GetAccountInfo: "za",
+		GetInfo:        "za",
+		SyncGal:        "za",
+		ContactAction:  "zm", 
+		CreateContact:  "zm", 
+		CreateFolder:   "zm", 
+		GetContacts:    "zm",
+		FolderAction:   "zm", 
+		ModifyContact:  "zm",
+		FakeHead:       "zm",
+		Sync:           "zm",
+		last_notused:   null
+	};
+
+	zinAssertAndLog(isPropertyPresent(aMethod, method), "method missing from namespace table: " + method);
+
+	return aMethod[method];
+}
+
 ZimbraSoapDocument.NS_SOAP_ENVELOPE  = "http://schemas.xmlsoap.org/soap/envelope/";
 ZimbraSoapDocument.NS_ZIMBRA         = "urn:zimbra";
 ZimbraSoapDocument.NS_ACCOUNT        = "urn:zimbraAccount";
 ZimbraSoapDocument.NS_MAIL           = "urn:zimbraMail";
+
+ZimbraSoapDocument.nsResolverBimap = new BiMap(
+	[ "soap",                              "z",                          "za",                          "zm"                       ],
+	[ ZimbraSoapDocument.NS_SOAP_ENVELOPE, ZimbraSoapDocument.NS_ZIMBRA, ZimbraSoapDocument.NS_ACCOUNT, ZimbraSoapDocument.NS_MAIL ]);
+
+ZimbraSoapDocument.nsResolver = function(prefix)
+{
+	return ZimbraSoapDocument.nsResolverBimap.lookup(prefix, null);
+};
 
 ZimbraSoapDocument.prototype.setElementAsBody = function(element)
 {
@@ -243,6 +264,13 @@ ZimbraSoapDocument.prototype.FolderAction = function(args)
 ZimbraSoapDocument.prototype.ContactAction = function(args)
 {
 	this.ActionRequest("ContactActionRequest", args);
+}
+
+ZimbraSoapDocument.prototype.FakeHead = function(args)
+{
+	var elRequest = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "FakeHeadRequest");
+
+	this.setElementAsBody(elRequest);
 }
 
 ZimbraSoapDocument.prototype.ActionRequest = function(name, args)

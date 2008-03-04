@@ -103,32 +103,77 @@ SyncFsmObserver.prototype.progressToString = function()
 SyncFsmObserver.prototype.update = function(fsmstate)
 {
 	var ret = false;
-	var a_states_of_interest = { stAuth : 0,      stLoad: 1,       stSync: 2,            stSyncResult: 2,
-	                             stGetContact: 3, stGalSync: 4,    stLoadTb : 5,
-	                             stConverge1: 6,  stConverge2: 7,  stConverge3: 8,
-	                             stUpdateTb: 9,   stUpdateZm: 10,  stUpdateCleanup: 11,  final: 12 };
+	var c = 0;
+	var a_states = {
+		start:            { },
+		stAuth:           { count: c++ },
+		stLoad:           { count: c++ },
+		stLoadTb:         { count: c++ },
+		stGetAccountInfo: { count: c++ },
+		stSelectSoapUrl:  { count: c++ },
+		stGetInfo:        { count: c++ },
+		stCheckLicense:   { },
+		stSync:           { },
+		stSyncResult:     { },
+		stGetContact:     { count: c++ },
+		stGalConsider:    { },
+		stGalSync:        { count: c++ },
+		stGalCommit:      { },
+		stConverge1:      { count: c++ },
+		stConverge2:      { },
+		stConverge3:      { },
+		stUpdateTb:       { count: c++ },
+		stUpdateZm:       { count: c++ },
+		stUpdateCleanup:  { count: c++ },
+		stSoapRequest:    { },
+		stSoapResponse:   { },
+		stCommit:         { },
+		final:            { count: c++ }
+	};
 
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
-	if (isPropertyPresent(a_states_of_interest, fsmstate.newstate))
+	var context = fsmstate.context; // SyncFsm
+	this.state = context.state;
+
+	zinAssert(isObjectKeyMatch(a_states, context.fsm.m_transitions));
+
+	if (fsmstate.newstate && isPropertyPresent(a_states[fsmstate.newstate], 'count')) // fsmstate.newstate == null when oldstate == 'final'
 	{
-		var context = fsmstate.context; // SyncFsm
-		this.state = context.state;
 		ret = true;
 
 		switch(fsmstate.newstate)
 		{
-			case 'stAuth':          this.progressReportOnSource(context.state.sourceid_zm, "RemoteAuth"); break;
-			case 'stLoad':          this.progressReportOn("Load");                                        break;
+			case 'stAuth':           this.progressReportOnSource(context.state.sourceid_zm, "RemoteAuth");  break;
+			case 'stLoad':           this.progressReportOn("Load");                                         break;
+			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_zm, "AccountInfo"); break;
+			case 'stGetInfo':          
+			case 'stCheckLicense':          
 			case 'stSync':          
-			case 'stSyncResult':    this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync"); break;
-			case 'stGalSync':       this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");     break;
-			case 'stLoadTb':        this.progressReportOnSource(context.state.sourceid_tb, "GetItem");    break;
+			case 'stSyncResult':     this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync");  break;
+			case 'stGalSync':        
+			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");      break;
+			case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "Load");        break;
 			case 'stConverge1':     
 			case 'stConverge2':     
-			case 'stConverge3':     this.progressReportOn("Converge");                                    break;
-			case 'stUpdateTb':      this.progressReportOnSource(context.state.sourceid_tb, "Put");        break;
-			case 'stUpdateCleanup': this.progressReportOn("Saving");                                      break;
+			case 'stConverge3':      this.progressReportOn("Converge");                                     break;
+			case 'stUpdateTb':       this.progressReportOnSource(context.state.sourceid_tb, "PutOne");      break;
+			case 'stUpdateCleanup':  this.progressReportOn("Saving");                                       break;
+
+			case 'stSelectSoapUrl':
+				if (context.state.suggestedSoapURL)
+				{
+					this.progressReportOnSource(context.state.sourceid_zm, "SelectSoapUrl");
+					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP)
+					                                   + " " + context.state.suggestedSoapURL
+					                                   + "<br/>"
+					                                   + stringBundleString(this.tweakStringId("SelectSoapUrl2"))
+														);
+				}
+				else
+					ret = false; // no need to update the UI
+
+				break;
 
 			case 'stGetContact':
 				var id;
@@ -137,17 +182,19 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 				if (typeof(id) != 'undefined')
 				{
-					var op = this.buildOp(context.state.sourceid_zm, "GetItem");
+					var op = this.buildOp(context.state.sourceid_zm, "GetMany");
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
 						// this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP));
-						this.progressReportOnSource(context.state.sourceid_zm, "GetItem", aToLength(context.state.aQueue));
+						this.progressReportOnSource(context.state.sourceid_zm, "GetMany", aToLength(context.state.aQueue));
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 					}
 
 					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
 				}
+				else
+					ret = false; // no need to update the UI
 				break;
 
 			case 'stUpdateZm':
@@ -164,7 +211,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 				if (sourceid)
 				{
-					var op = this.buildOp(sourceid, "Put");
+					var op = this.buildOp(sourceid, "PutMany");
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
@@ -175,14 +222,19 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 										for (var z in context.state.aSuo[x][y])
 											cTotal++;
 
-						this.progressReportOnSource(sourceid, "Put", cTotal);
+						this.progressReportOnSource(sourceid, "PutMany", cTotal);
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 
-						// this.m_logger.debug("4401: this.get(SyncFsmObserver.OP): "+this.get(SyncFsmObserver.OP) + " cTotal: " + cTotal);
+						// this.m_logger.debug("update: stUpdateZm: this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP)
+						//                                                                          + " cTotal: " + cTotal);
 					}
 
 					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
 					this.m_logger.debug("4402: PROG_CNT: " + this.get(SyncFsmObserver.PROG_CNT));
+				}
+				else
+				{
+					this.progressReportOnSource(context.state.sourceid_zm, "PutOne", cTotal);
 				}
 				break;
 
@@ -194,7 +246,12 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 				var es = new SyncFsmExitStatus();
 
-				if (fsmstate.event == 'evLackIntegrity')
+				if (fsmstate.event == 'evCancel')
+				{
+					es.m_exit_status = 1;
+					es.failcode('FailOnCancel');
+				}
+				else if (fsmstate.event == 'evLackIntegrity')
 				{
 					es.m_exit_status = 1;
 
@@ -245,13 +302,16 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				this.exitStatus(es);
 
 				break;
+
+			default:
+				zinAssertAndLog(false, "missing case statement for: " + fsmstate.newstate);
 		}
 
 
-		var percentage_complete = a_states_of_interest[fsmstate.newstate] / a_states_of_interest['final'];
+		var percentage_complete = a_states[fsmstate.newstate]['count'] / a_states['final']['count'];
 
 		if (this.get(SyncFsmObserver.PROG_MAX) > 0)
-			percentage_complete += (1 / a_states_of_interest['final']) * (this.get(SyncFsmObserver.PROG_CNT) / this.get(SyncFsmObserver.PROG_MAX));
+			percentage_complete += (1 / a_states['final']['count']) * (this.get(SyncFsmObserver.PROG_CNT) / this.get(SyncFsmObserver.PROG_MAX));
 
 		percentage_complete = percentage_complete * 100 + "%";
 

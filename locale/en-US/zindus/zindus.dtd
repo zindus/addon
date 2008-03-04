@@ -39,4 +39,4 @@
 <!ENTITY ZinPrefsGeneralButtonTimer.label       "Run Timer">
 <!ENTITY ZinPrefsGeneralButtonTestHarness.label "Test Harness">
 
-<!ENTITY ZinSyncWindowProgressDescription.style "width:30em; ">
+<!ENTITY ZinSyncWindowProgressDescription.style "width:35em">
