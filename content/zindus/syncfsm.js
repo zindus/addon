@@ -1734,7 +1734,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	var zfcTb = this.state.sources[this.state.sourceid_tb]['zfcLuid'];
 
 	functor_foreach_card = {
-		state: this.state, // for logger only
+		state: this.state,
 		run: function(uri, item)
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
@@ -1770,11 +1770,16 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	var aCardKeysToExclude = new Object();
 
 	functor_foreach_card = {
+		state: this.state,
 		run: function(uri, item)
 		{
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
 
 			aCardKeysToExclude[this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard)] = aMailListUri[uri];
+
+			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
+			this.state.m_logger.debug("loadTbExclude pass 2: adding to aCardKeysToExclude: " +
+			                                 this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 
 			return true;
 		}
@@ -1794,19 +1799,14 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		{
 			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
 			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
-			var msg = "loadTbExclude pass 3: uri: " + uri + " card key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
+			var key = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
+			var msg = "loadTbExclude pass 3: uri: " + uri + " card key: " + key;
 
 			var isInTopLevelFolder = false;
 
-			if (!abCard.isMailList)
-			{
-				var key = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
-
-				if ( !isPropertyPresent(aCardKeysToExclude, key) ||
-				    (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] == uri))
+			if (!abCard.isMailList && ( !isPropertyPresent(aCardKeysToExclude, key) ||
+			                            (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] != uri)))
 					isInTopLevelFolder = true;
-
-			}
 
 			// this.state.m_logger.debug("loadTbExclude pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
 			//                           " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard) +
