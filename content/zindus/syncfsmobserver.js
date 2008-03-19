@@ -122,6 +122,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stConverge1:      { count: c++ },
 		stConverge2:      { },
 		stConverge3:      { },
+		stGetContactsDel: { count: c++ },
 		stUpdateTb:       { count: c++ },
 		stUpdateZm:       { count: c++ },
 		stUpdateCleanup:  { count: c++ },
@@ -136,7 +137,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 	var context = fsmstate.context; // SyncFsm
 	this.state = context.state;
 
-	zinAssert(isObjectKeyMatch(a_states, context.fsm.m_transitions));
+	zinAssert(isMatchObjectKeys(a_states, context.fsm.m_transitions));
 
 	if (fsmstate.newstate && isPropertyPresent(a_states[fsmstate.newstate], 'count')) // fsmstate.newstate == null when oldstate == 'final'
 	{
@@ -175,18 +176,15 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				break;
 
 			case 'stGetContact':
-				var id;
-				for (id in context.state.aQueue)
-					break;
-
-				if (typeof(id) != 'undefined')
+			case 'stGetContactsDel':
+				if (context.state.aContact.length > 0)
 				{
 					var op = this.buildOp(context.state.sourceid_zm, "GetMany");
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
 						// this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP));
-						this.progressReportOnSource(context.state.sourceid_zm, "GetMany", aToLength(context.state.aQueue));
+						this.progressReportOnSource(context.state.sourceid_zm, "GetMany", context.state.aContact.length);
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 					}
 
@@ -248,7 +246,20 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				if (fsmstate.event == 'evCancel')
 				{
 					es.m_exit_status = 1;
-					es.failcode('FailOnCancel');
+
+					if (context.state.m_soap_state.isFailed())
+					{
+						es.failcode(context.state.m_soap_state.failCode());
+
+						if (context.state.m_soap_state.m_faultstring)
+							es.m_fail_detail = context.state.m_soap_state.m_faultstring;
+						else if (context.state.m_soap_state.m_faultcode)
+							es.m_fail_detail = context.state.m_soap_state.m_faultcode;
+
+						es.m_fail_soapmethod = context.state.m_soap_state.m_method;
+					}
+					else
+						es.failcode('FailOnCancel');
 				}
 				else if (fsmstate.event == 'evLackIntegrity')
 				{
@@ -271,20 +282,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				else if (context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.event == 'evNext')
 					es.m_exit_status = 0;
 				else
-				{
-					es.m_exit_status = 1;
-					es.failcode(context.state.m_soap_state.failCode());
-
-					if (es.failcode() == 'FailOnFault')
-					{
-						if (context.state.m_soap_state.m_faultstring)
-							es.m_fail_detail = context.state.m_soap_state.m_faultstring;
-						else if (context.state.m_soap_state.m_faultcode)
-							es.m_fail_detail = context.state.m_soap_state.m_faultcode;
-
-						es.m_fail_soapmethod = context.state.m_soap_state.m_method;
-					}
-				}
+					zinAssert(false); // ensure that all cases are covered above
 
 				if (es.m_exit_status != 0)
 					es.m_fail_fsmoldstate = fsmstate.oldstate;

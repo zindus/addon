@@ -35,14 +35,17 @@ ZinTestHarness.prototype.run = function()
 
 	// ret = ret && this.testCrc32();
 	// ret = ret && this.testLogging();
-	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
 	// ret = ret && this.testContactConverter();
+	// ret = ret && this.testXmlHttpRequest();
+	// ret = ret && this.testZinFeedCollection();
+	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
+	// ret = ret && this.testFolderConverterPrefixClass();
 
-	ret = ret && this.testXmlHttpRequest();
+	ret = ret && this.testZuio();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -60,30 +63,34 @@ ZinTestHarness.prototype.testCrc32 = function()
 
 ZinTestHarness.prototype.testZinFeedCollection = function()
 {
-	var cfc = new ZinFeedCollection();
-	var cfi;
+	var zfc = new ZinFeedCollection();
+	var zfi;
 
-	cfi = new ZinFeedItem();
-	cfi.set('id', 0);
-	cfi.set('name1', "value1");
+	zfi = new ZinFeedItem();
+	zfi.set(ZinFeedItem.ATTR_KEY, 0);
+	zfi.set('name1', "value1");
 
-	cfc.set(cfi);
+	zfc.set(zfi);
 
-	var cfi2 = cfc.get(0);
-	cfi2.set('fred', 1);
+	var zfi = zfc.get(0);
+	zfi.set('fred', 1);
 
-	cfi = new ZinFeedItem();
-	cfi.set('id', 1);
-	cfi.set('name2', "value2");
-	cfi.set('name3', "value3");
+	zfi = new ZinFeedItem();
+	zfi.set(ZinFeedItem.ATTR_KEY, 1);
+	zfi.set('name2', "value2");
+	zfi.set('name3', "value3");
 
-	cfc.set(cfi);
+	zfc.set(zfi);
 
-	this.m_logger.debug("3233: cfc.toString() == \n" + cfc.toString());
+	this.m_logger.debug("3233: zfc.toString() == \n" + zfc.toString());
 
-	cfc.del(1);
+	zfc.del(1);
 
-	this.m_logger.debug("3233: cfc.toString() after del(1) == \n" + cfc.toString());
+	this.m_logger.debug("3233: zfc.toString() after del(1) == \n" + zfc.toString());
+
+	zfi = new ZinFeedItem(null, ZinFeedItem.ATTR_KEY, ZinFeedItem.KEY_STATUSPANEL , 'appversion', 1234 );
+
+	return true;
 }
 
 ZinTestHarness.prototype.testContactConverter = function()
@@ -98,16 +105,35 @@ ZinTestHarness.prototype.testContactConverter = function()
 	this.m_logger.debug("3233: testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
 }
 
+ZinTestHarness.prototype.testFolderConverterPrefixClass = function()
+{
+	this.m_logger.debug("testFolderConverter: start");
+	var converter = new ZinFolderConverter();
+
+	zinAssert(converter.prefixClass(converter.m_prefix_primary_account)   == ZinFolderConverter.PREFIX_CLASS_PRIMARY);
+	zinAssert(converter.prefixClass(converter.m_prefix_foreign_readonly)  == ZinFolderConverter.PREFIX_CLASS_SHARED);
+	zinAssert(converter.prefixClass(converter.m_prefix_foreign_readwrite) == ZinFolderConverter.PREFIX_CLASS_SHARED);
+	zinAssert(converter.prefixClass(converter.m_prefix_internal)          == ZinFolderConverter.PREFIX_CLASS_INTERNAL);
+	zinAssert(converter.prefixClass("fred")                               == ZinFolderConverter.PREFIX_CLASS_NONE);
+
+	return true;
+}
+
 ZinTestHarness.prototype.testFolderConverter = function()
 {
 	this.m_logger.debug("testFolderConverter: start");
 	var converter = new ZinFolderConverter();
 
 	this.testFolderConverterSuiteOne(converter, "convertForMap");
+
+	var addressbook = new ZinAddressBook();
+	var pabname = addressbook.getPabName();
+	converter.localised_pab(pabname);
+
 	this.testFolderConverterSuiteOne(converter, "convertForPublic");
 
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_PAB)             == ZinAddressBook.getPabName());
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, ZM_FOLDER_CONTACTS) == ZinAddressBook.getPabName());
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == pabname);
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == pabname);
 
 	var localised_emailed_contacts;
 
@@ -135,43 +161,41 @@ ZinTestHarness.prototype.testFolderConverter = function()
 	return true;
 }
 
-ZinTestHarness.prototype.testFolderConverterSuiteTwo = function(converter, localised_emailed_contacts)
-{
-	var prefix = converter.m_app_name_with_slash;
-
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS)        == prefix + localised_emailed_contacts);
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, ZM_FOLDER_EMAILED_CONTACTS) == prefix + localised_emailed_contacts);
-}
-
 ZinTestHarness.prototype.testFolderConverterSuiteOne = function(converter, method)
 {
-	var prefix = converter.m_app_name_with_slash;
-
 	// test convertForMap
 	//
-	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, "")                 == prefix);
+	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(""))                 == converter.m_prefix_primary_account);
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, "fred")             == "fred");
-	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, "fred")             == prefix + "fred");
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, "zindus/fred")      == "fred");
-	zinAssert(converter[method](FORMAT_TB, FORMAT_TB, "zindus/fred")      == "zindus/fred");
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName("fred"))             == "fred");
+	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName("x"))                == converter.m_prefix_primary_account + "x");
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "fred");
+	zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "zindus/fred");
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, TB_PAB)             == ZM_FOLDER_CONTACTS);
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, ZM_FOLDER_CONTACTS) == ZM_FOLDER_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == ZM_FOLDER_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == ZM_FOLDER_CONTACTS);
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, TB_EMAILED_CONTACTS)        == ZM_FOLDER_EMAILED_CONTACTS);
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, ZM_FOLDER_EMAILED_CONTACTS) == ZM_FOLDER_EMAILED_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == ZM_FOLDER_EMAILED_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == ZM_FOLDER_EMAILED_CONTACTS);
 
 	if (method != "convertForPublic") // these are tested separately
 	{
-		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, TB_PAB)             == TB_PAB);
-		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, ZM_FOLDER_CONTACTS) == TB_PAB);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == TB_PAB);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == TB_PAB);
 
-		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, TB_EMAILED_CONTACTS)        == TB_EMAILED_CONTACTS);
-		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, ZM_FOLDER_EMAILED_CONTACTS) == TB_EMAILED_CONTACTS);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == TB_EMAILED_CONTACTS);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == TB_EMAILED_CONTACTS);
 	}
 
 	return true;
+}
+
+ZinTestHarness.prototype.testFolderConverterSuiteTwo = function(converter, localised_emailed_contacts)
+{
+	var prefix = converter.m_prefix_primary_account;
+
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == prefix + localised_emailed_contacts);
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == prefix + localised_emailed_contacts);
 }
 
 ZinTestHarness.prototype.testPropertyDelete = function()
@@ -208,7 +232,7 @@ ZinTestHarness.prototype.testLso = function()
 	        " " +
 			hyphenate(":", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 
-	zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334, ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_REV, 1235);
+	zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, 334, ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_REV, 1235);
 	lso = new Lso(zfi);
 	str = "##1234#1235#"
 
@@ -225,7 +249,7 @@ ZinTestHarness.prototype.testLso = function()
 
 	// test a thunderbird zfi against an lso generated from a zfi
 	//
-	zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_ID, 334, ZinFeedItem.ATTR_CS, 1749681802);
+	zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, 334, ZinFeedItem.ATTR_CS, 1749681802);
 	lso = new Lso(zfi);
 	str = "#1749681802###";
 	ZinTestHarness.testLsoToString(lso, str);
@@ -317,4 +341,37 @@ ZinTestHarness.prototype.testXmlHttpRequest = function()
 	xhr.open("POST", soapURL, true);
 	xhr.onreadystatechange=xhrCallback;
 	xhr.send(zsd.doc);
+}
+
+ZinTestHarness.prototype.testPermFromZfi = function()
+{
+	var ret = true;
+	var zfi = new ZinFeedItem(ZinFeedItem.TYPE_RL, ZinFeedItem.ATTR_KEY, 334, ZinFeedItem.ATTR_PERM, "rwidxc");
+
+	ret = ret && SyncFsm.zmPermFromZfi(zfi) == ZM_PERM_READ | ZM_PERM_WRITE;
+
+	zfi.set(ZinFeedItem.ATTR_PERM, "r");
+
+	ret = ret && SyncFsm.zmPermFromZfi(zfi) == ZM_PERM_READ;
+
+	zfi.set(ZinFeedItem.ATTR_PERM, "");
+
+	ret = ret && SyncFsm.zmPermFromZfi(zfi) == ZM_PERM_NONE;
+
+	return ret;
+}
+
+ZinTestHarness.prototype.testZuio = function()
+{
+	var ret = true;
+	var key, zuio;
+
+	key = "123";
+	zuio = new Zuio(key);
+
+	ret = ret && zuio.id == 123;
+	ret = ret && zuio.zid == null;
+	ret = ret && !zuio.zid;
+
+	return ret;
 }

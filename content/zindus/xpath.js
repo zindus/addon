@@ -65,6 +65,18 @@ ZinXpath.getSingleValue = function(xpath_query, doc, contextNode)
 	return ret;
 }
 
+ZinXpath.setConditionalFromSingleElement = function(object, property, xpath_query, doc, warning_msg)
+{
+	var functor = new FunctorArrayOfTextNodeValue();
+
+	ZinXpath.runFunctor(functor, xpath_query, doc);
+
+	if (functor.a.length == 1)
+		object[property] = functor.a[0];
+	else if (warning_msg != null)
+		ZinXpath.logger.warn(warning_msg);
+}
+
 ZinXpath.runFunctor = function(functor, xpath_query, doc)
 {
 	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));

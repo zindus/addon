@@ -21,6 +21,11 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
+ZinFolderConverter.PREFIX_CLASS_NONE     = 1;
+ZinFolderConverter.PREFIX_CLASS_INTERNAL = 2;
+ZinFolderConverter.PREFIX_CLASS_PRIMARY  = 3;
+ZinFolderConverter.PREFIX_CLASS_SHARED   = 4;
+
 function ZinFolderConverter()
 {
 	this.m_bimap_pab = new BiMap(              [FORMAT_TB,               FORMAT_ZM                  ],
@@ -29,7 +34,12 @@ function ZinFolderConverter()
 	this.m_bimap_emailed_contacts = new BiMap( [FORMAT_TB,               FORMAT_ZM                  ],
 	                                           [TB_EMAILED_CONTACTS,     ZM_FOLDER_EMAILED_CONTACTS ]);
 
-	this.m_app_name_with_slash = APP_NAME + "/";
+	this.m_prefix_primary_account   = APP_NAME + "/";
+	this.m_prefix_foreign_readonly  = APP_NAME + "-";
+	this.m_prefix_foreign_readwrite = APP_NAME + "+";
+	this.m_prefix_internal          = APP_NAME + "_";
+
+	this.m_prefix_length = this.m_prefix_primary_account.length;  // and we assume that all prefixes have the same length
 
 	this.m_localised_pab = null;               // the localised equivalent of "Personal Address Book" eg "Adresses Personnelles"
 	this.m_localised_emailed_contacts = null;  // the localised equivalent of "Emailed Contacts"      eg "Personnes contactées par mail"
@@ -72,28 +82,35 @@ function ZinFolderConverter()
 
 // This method converts to/from ATTR_NAME attributes in Tb and Zm maps.
 // Note this this doesn't always return the public facing folder names because
-// Zm:Contacts maps to Tb:TB and Zm:Emailed Contacts maps to TB_EMAILED_CONTACTS.
+// Zm:Contacts maps to Tb:TB_PAB and Zm:Emailed Contacts maps to TB_EMAILED_CONTACTS.
 // For Zm, the map name is always the same as the name we get in the SyncResponse.
 // For Tb, the map name must be converted to a public-facing name (to handle TB_PAB and TB_EMAILED_CONTACTS)
+// The method has to take a zfi to distinguish between folders that the in the primary account vs foreign folders
 //
-ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, name)
+ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
 {
 	var ret;
 
 	zinAssert(arguments.length == 3); // catch programming errors
+	zinAssertAndLog(typeof(zfi) == 'object', " zfi ain't an ZinFeedItem object: " + zfi);
 
-	if (this.m_bimap_pab.lookup(format_from, null) == name)
+	zinAssertAndLog((zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == ZinFeedItem.TYPE_SF,
+	                  "can't convertForMap zfi: " + zfi.toString());
+
+	var name = zfi.get(ZinFeedItem.ATTR_NAME);
+
+	if (zfi.type() == ZinFeedItem.TYPE_FL && this.m_bimap_pab.lookup(format_from, null) == name)
 		ret = this.m_bimap_pab.lookup(format_to, null);
-	else if (this.m_bimap_emailed_contacts.lookup(format_from, null) == name)
+	else if (zfi.type() == ZinFeedItem.TYPE_FL && this.m_bimap_emailed_contacts.lookup(format_from, null) == name)
 		ret = this.m_bimap_emailed_contacts.lookup(format_to, null);
 	else if (format_from == format_to)
 		ret = name;
 	else if (format_to == FORMAT_TB)
-		ret = this.m_app_name_with_slash + name;
-	else
+		ret = this.selectPrefix(zfi) + name;
+	else // format_to == FORMAT_ZM
 	{
-		zinAssertAndLog(name.substring(0, this.m_app_name_with_slash.length) == this.m_app_name_with_slash, name);
-		ret = name.substring(this.m_app_name_with_slash.length)
+		zinAssertAndLog(this.prefixClass(name) != ZinFolderConverter.PREFIX_CLASS_NONE, name);
+		ret = name.substring(this.m_prefix_length)
 	}
 
 	// this.m_logger.debug("ZinFolderConverter.convert: name: " + name +
@@ -109,18 +126,18 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, na
 // are for internal-use only.  This routine returns their thunderbird addressbook names, and for all other ids
 // returns the item's ATTR_NAME.
 
-ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from, name)
+ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from, zfi)
 {
 	zinAssert(arguments.length == 3 && this.m_localised_pab); // catch programming errors
 
-	var ret = this.convertForMap(format_to, format_from, name);
+	var ret = this.convertForMap(format_to, format_from, zfi);
 
 	if (format_to == FORMAT_TB)
 	{
 		if (ret == TB_PAB)
 			ret = this.m_localised_pab;
 		else if (ret == TB_EMAILED_CONTACTS)
-			ret = this.m_app_name_with_slash +
+			ret = this.m_prefix_primary_account +
 			              (this.m_localised_emailed_contacts ? this.m_localised_emailed_contacts : ZM_FOLDER_EMAILED_CONTACTS);
 	}
 
@@ -208,3 +225,42 @@ ZinFolderConverter.prototype.emailed_contacts_per_locale = function(key)
 	return ret;
 }
 
+ZinFolderConverter.prototype.selectPrefix = function(zfi)
+{
+	var ret;
+
+	zinAssertAndLog((zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == ZinFeedItem.TYPE_SF,
+	                  "can't selectPrefix zfi: " + zfi.toString());
+	
+	if (zfi.type() == ZinFeedItem.TYPE_FL)
+		ret = this.m_prefix_primary_account;
+	else
+	{
+		var perm = zmPermFromZfi(zfi);
+
+		if (perm & ZM_PERM_WRITE)
+			ret = this.m_prefix_foreign_readwrite;
+		else if (perm & ZM_PERM_READ)
+			ret = this.m_prefix_foreign_readonly;
+		else
+			zinAssertAndLog(false, "unable to selectPrefix zfi: " + zfi.toString());
+	}
+
+	return ret;
+
+}
+
+ZinFolderConverter.prototype.prefixClass = function(str)
+{
+	var ret    = ZinFolderConverter.PREFIX_CLASS_NONE;
+	var prefix = str.substring(0, this.m_prefix_length);
+
+	if (prefix == this.m_prefix_primary_account)        ret = ZinFolderConverter.PREFIX_CLASS_PRIMARY;
+	else if (prefix == this.m_prefix_internal)          ret = ZinFolderConverter.PREFIX_CLASS_INTERNAL;
+	else if (prefix == this.m_prefix_foreign_readonly)  ret = ZinFolderConverter.PREFIX_CLASS_SHARED;
+	else if (prefix == this.m_prefix_foreign_readwrite) ret = ZinFolderConverter.PREFIX_CLASS_SHARED;
+
+	// this.m_logger.debug("prefixClass: str: " + str + " prefix: " + prefix + " returns: " + ret);
+
+	return ret;
+}

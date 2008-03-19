@@ -42,7 +42,7 @@ StatusPanel.save = function(es)
 	var zfcStatus = new ZinFeedCollection();
 	zfcStatus.filename(Filesystem.FILENAME_STATUS);
 	var now = new Date();
-	var zfiStatus = new ZinFeedItem(null, ZinFeedItem.ATTR_ID, ZinFeedItem.ID_STATUS,
+	var zfiStatus = new ZinFeedItem(null, ZinFeedItem.ATTR_KEY, ZinFeedItem.KEY_STATUSPANEL,
 									  'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
 									  'exitstatus', es.m_exit_status,
 									  'conflicts', es.m_count_conflicts,
@@ -60,8 +60,8 @@ StatusPanel.getZfi = function()
 	zfcStatus.filename(Filesystem.FILENAME_STATUS);
 	zfcStatus.load();
 
-	if (zfcStatus.isPresent(ZinFeedItem.ID_STATUS))
-		zfiStatus = zfcStatus.get(ZinFeedItem.ID_STATUS);
+	if (zfcStatus.isPresent(ZinFeedItem.KEY_STATUSPANEL))
+		zfiStatus = zfcStatus.get(ZinFeedItem.KEY_STATUSPANEL);
 
 	return zfiStatus;
 }

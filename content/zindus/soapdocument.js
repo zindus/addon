@@ -45,6 +45,7 @@ ZimbraSoapDocument.nsFromMethod = function(method)
 		ModifyContact:  "zm",
 		FakeHead:       "zm",
 		Sync:           "zm",
+		Batch:          "z",  // used in ForeignContactDelete
 		last_notused:   null
 	};
 
@@ -80,13 +81,14 @@ ZimbraSoapDocument.prototype.toString = function()
 	return xmlDocumentToString(this.doc);
 }
 
-ZimbraSoapDocument.prototype.context = function(authToken, sessionId)
+ZimbraSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 {
 	var elHeader    = this.doc.createElementNS(ZimbraSoapDocument.NS_SOAP_ENVELOPE, "soap:Header");
 	var elContext   = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "context");
 	var elNonotify  = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "nonotify");
 	var elNoqualify = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "noqualify");
-	var elUserAgent = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "UserAgent");
+	var elNoSession = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "nosession");
+	var elUserAgent = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "userAgent");
 
 	// UserAgent is useless to zindus - we add it so that server administrators can see what's going on
 	//
@@ -103,7 +105,10 @@ ZimbraSoapDocument.prototype.context = function(authToken, sessionId)
 
 	elContext.appendChild(elUserAgent);
 	elContext.appendChild(elNonotify);
-	elContext.appendChild(elNoqualify);
+	elContext.appendChild(elNoSession);
+
+	if (is_noqualify)
+		elContext.appendChild(elNoqualify);
 
 	if (authToken != null)
 	{
@@ -113,13 +118,14 @@ ZimbraSoapDocument.prototype.context = function(authToken, sessionId)
 
 		elContext.appendChild(elAuthtoken);
 
-		if (sessionId != null)
+		if (zimbraId != null)
 		{
-			var elSession   = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "sessionId");
+			var elAccount = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "account");
 
-			elSession.setAttribute("id", sessionId);
+			elAccount.setAttribute("by", "id");
+			elAccount.textContent = zimbraId;
 
-			elContext.appendChild(elSession);
+			elContext.appendChild(elAccount);
 		}
 	}
 }
@@ -150,12 +156,12 @@ ZimbraSoapDocument.prototype.Auth = function(name, password, virtualhost)
 	this.setElementAsBody(elRequest);
 }
 
-ZimbraSoapDocument.prototype.GetAccountInfo = function(name)
+ZimbraSoapDocument.prototype.GetAccountInfo = function(by, name)
 {
 	var elRequest = this.doc.createElementNS(ZimbraSoapDocument.NS_ACCOUNT, "GetAccountInfoRequest");
 	var elAccount = this.doc.createElementNS(ZimbraSoapDocument.NS_ACCOUNT, "account");
 
-	elAccount.setAttribute("by", "name");
+	elAccount.setAttribute("by", by);
 	elAccount.textContent = name;
 
 	elRequest.appendChild(elAccount);
@@ -258,19 +264,12 @@ ZimbraSoapDocument.prototype.CreateContact = function(args)
 
 ZimbraSoapDocument.prototype.FolderAction = function(args)
 {
-	this.ActionRequest("FolderActionRequest", args);
+	this.setElementAsBody(this.ActionRequest("FolderActionRequest", args));
 }
 
 ZimbraSoapDocument.prototype.ContactAction = function(args)
 {
-	this.ActionRequest("ContactActionRequest", args);
-}
-
-ZimbraSoapDocument.prototype.FakeHead = function(args)
-{
-	var elRequest = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "FakeHeadRequest");
-
-	this.setElementAsBody(elRequest);
+	this.setElementAsBody(this.ActionRequest("ContactActionRequest", args));
 }
 
 ZimbraSoapDocument.prototype.ActionRequest = function(name, args)
@@ -279,9 +278,16 @@ ZimbraSoapDocument.prototype.ActionRequest = function(name, args)
 	var elAction  = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "action");
 
 	for (var i in args)
-		elAction.setAttribute(i, args[i]); // expecting id, op, and either l or name
+		elAction.setAttribute(i, args[i]); // attributes passed in here include: id, op, l and name
 
 	elRequest.appendChild(elAction);
+
+	return elRequest;
+}
+
+ZimbraSoapDocument.prototype.FakeHead = function(args)
+{
+	var elRequest = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "FakeHeadRequest");
 
 	this.setElementAsBody(elRequest);
 }
@@ -312,6 +318,41 @@ ZimbraSoapDocument.prototype.ModifyContact = function(args)
 	}
 
 	elRequest.appendChild(elCn);
+
+	this.setElementAsBody(elRequest);
+}
+
+ZimbraSoapDocument.prototype.ForeignContactDelete = function(args)
+{
+	var elRequest = this.doc.createElementNS(ZimbraSoapDocument.NS_ZIMBRA, "BatchRequest");
+	var elCreate  = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "CreateContactRequest");
+	var elCn      = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "cn");
+	var i, elA;
+
+	zinAssert(isPropertyPresent(args, 'properties') && aToLength(args.properties) > 0 &&
+	          isPropertyPresent(args, 'zid') &&
+	          isPropertyPresent(args, 'id') );
+
+	elRequest.setAttribute("onerror", "stop");
+
+	elCn.setAttribute("l", ZM_ID_FOLDER_TRASH);
+
+	for (i in args.properties)
+	{
+		elA = this.doc.createElementNS(ZimbraSoapDocument.NS_MAIL, "a");
+		elA.setAttribute("n", i);
+		elA.textContent = args.properties[i];
+		elCn.appendChild(elA);
+	}
+
+	elCn.appendChild(elA);
+	elCreate.appendChild(elCn);
+
+	var delete_args = newObject("id", args.zid + ":" + args.id, "op", "delete");
+	elDeleteForeign = this.ActionRequest("ContactActionRequest", delete_args);
+
+	elRequest.appendChild(elCreate);
+	elRequest.appendChild(elDeleteForeign);
 
 	this.setElementAsBody(elRequest);
 }

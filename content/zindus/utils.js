@@ -237,13 +237,15 @@ function isInArray(item, a)
 
 function isPropertyPresent(obj, property)
 {
-	zinAssert(typeof(obj) == 'object');
-	zinAssert(arguments.length == 2); // this function has two arguments!
+	zinAssertAndLog(typeof(obj) == 'object', "argument[0] of this function should be a hash!"); // catch programming errors
+	zinAssertAndLog(arguments.length == 2,   "this function takes two arguments!");
 
 	return (typeof(obj[property]) != 'undefined');
 }
 
-function isObjectKeyMatch(obj1, obj2)
+// return true iff the keys in both objects match
+//
+function isMatchObjectKeys(obj1, obj2)
 {
 	var i;
 	var ret = true;
@@ -253,7 +255,7 @@ function isObjectKeyMatch(obj1, obj2)
 			if (!isPropertyPresent(obj2, i))
 			{
 				ret = false;
-				newZinLogger("Utils").debug("isObjectKeyMatch: mismatched key: " + i);
+				newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 
@@ -262,9 +264,26 @@ function isObjectKeyMatch(obj1, obj2)
 			if (!isPropertyPresent(obj1, i))
 			{
 				ret = false;
-				newZinLogger("Utils").debug("isObjectKeyMatch: mismatched key: " + i);
+				newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
+
+	return ret;
+}
+
+// return true iff each element in the array has a matching key in the object
+//
+function isMatchArrayElementInObject(a, obj)
+{
+	var ret = true;
+
+	for (var i = 0; i < a.length; i++)
+		if (!isPropertyPresent(obj, a[i]))
+		{
+			ret = false;
+			newZinLogger("Utils").debug("isMatchArrayElementInObject: mismatched key: " + a[i]);
+			break;
+		}
 
 	return ret;
 }
@@ -484,3 +503,23 @@ function strPadTo(obj, length)
 
 	return ret;
 }
+
+function zmPermFromZfi(zfi)
+{
+	var perm = zfi.getOrNull(ZinFeedItem.ATTR_PERM);
+	var ret  = ZM_PERM_NONE;
+
+	if (perm && perm.length > 0)
+	{
+		if (perm.indexOf('r') >= 0)
+			ret |= ZM_PERM_READ;
+
+		if (perm.indexOf('w') >= 0 && perm.indexOf('i'))
+			ret |= ZM_PERM_WRITE;
+	}
+
+	// gLogger.debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
+
+	return ret;
+}
+

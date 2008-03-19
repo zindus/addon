@@ -48,8 +48,9 @@ function SyncFsmExitStatus()
 		FailOnFolderReservedChanged   : { 'folder' : 1 }, // 13.
 		FailOnFolderNameClash         : { 'folder' : 1 }, // 14. the same folder name entered the namespace from both tb and zm sides
 		FailOnFolderSourceUpdate      : { 'folder' : 1 }, // 15. the source update operations can't be applied with confidence
-		FailOnUnableToUpdateZm        : { 'folder' : 0 }, // 16. soap response in UpdateZm had an unexpected element - assume that it failed
-		FailOnNoXpath                 : { 'folder' : 0 }  // 17. 
+		FailOnFolderCantCreateShared  : { 'folder' : 1 }, // 16. 
+		FailOnUnableToUpdateZm        : { 'folder' : 0 }, // 17. soap response in UpdateZm had an unexpected element - assume that it failed
+		FailOnNoXpath                 : { 'folder' : 0 }  // 18. 
 	};
 }
 
@@ -85,7 +86,7 @@ SyncFsmExitStatus.prototype.failcode = function()
 	if (arguments.length == 1)
 	{
 		this.m_fail_code = arguments[0];
-		zinAssert(isPropertyPresent(this.m_a_valid_code, this.m_fail_code));
+		zinAssertAndLog(isPropertyPresent(this.m_a_valid_code, this.m_fail_code), "unmatched code: " + this.m_fail_code);
 	}
 
 	return this.m_fail_code;

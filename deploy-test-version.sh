@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-test-version.sh,v 1.8 2007-12-13 20:55:08 cvsuser Exp $
+# $Id: deploy-test-version.sh,v 1.9 2008-03-19 22:05:10 cvsuser Exp $
 
 . deploy-common.sh
 
@@ -15,6 +15,8 @@ if [ "$is_signed" == "y" ]; then
 	APPVERSION=`get_appversion`
 
 	generate_and_copy_rdfs $APPVERSION 'testing'
+
+	cvs commit -m ""
 
 else
 	echo Aborted
