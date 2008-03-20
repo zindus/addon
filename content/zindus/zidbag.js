@@ -24,28 +24,32 @@
 // ZidBag:
 // - a_zid        an array of Zimbra account ids.
 // - m_index      gives us iterator state that allows us to walk through the zimbraIds as we cycle through GetAccountInfo and Sync
-// - a_properties contains properties associated with each of the zid's in the array.
+// - m_properties contains properties associated with each of the zid's in the array.
 //
 
 function ZidBag()
 {
 	this.a_zid        = new Array();
 	this.m_index      = 0;
-	this.a_properties = new Object();
+	this.m_properties = new Object();
 	this.a_valid_properties = { soapURL: 0, SyncToken: 0 };
 }
 
 ZidBag.prototype.toString = function()
 {
-	var i, j;
+	var i, j, zid;
 	var ret = "m_index: " + this.m_index + " a_zid: ";
+
+	zinAssert(this.a_zid.length == aToLength(this.m_properties));
 
 	for (i = 0; i < this.a_zid.length; i++)
 	{
-		ret += "\n " + i + ": " + strPadTo(this.a_zid[i], 36);
+		zid = this.a_zid[i];
 
-		for (j in this.a_properties[this.a_zid[i]])
-			ret += " " + j + ": " + this.a_properties[this.a_zid[i]][j];
+		ret += "\n " + i + ": " + strPadTo(zid, 36);
+
+		for (j in this.m_properties[zid])
+			ret += " " + j + ": " + this.get(zid, j);
 	}
 
 	return ret;
@@ -53,26 +57,37 @@ ZidBag.prototype.toString = function()
 
 ZidBag.prototype.push = function(zid)
 {
+	zinAssertAndLog(!isPropertyPresent(this.m_properties, zid), "zid: " + zid);
+
 	this.a_zid.push(zid);
-	this.a_properties[zid] = new Object();
+
+	this.m_properties[zid] = new Object();
 }
 
 ZidBag.prototype.set = function(zid, key, value)
 {
-	zinAssert(typeof(zid) != 'number');
-	zinAssertAndLog(isPropertyPresent(this.a_valid_properties, key), "zid: " + zid + " key: " + key + " value: " + value);
+	this.assert(zid, key);
 
-	this.a_properties[zid][key] = value;
+	this.m_properties[zid][key] = value;
 }
 
 ZidBag.prototype.get = function(zid, key)
 {
-	return this.a_properties[zid][key];
+	zinAssertAndLog(isPropertyPresent(this.m_properties[zid], key), "zid: " + zid + " key: " + key);
+	this.assert(zid, key);
+
+	return this.m_properties[zid][key];
 }
 
 ZidBag.prototype.isPresent = function(zid)
 {
-	return isPropertyPresent(this.a_properties,  zid);
+	return isPropertyPresent(this.m_properties,  zid);
+}
+
+ZidBag.prototype.assert = function(zid, key)
+{
+	zinAssertAndLog(isPropertyPresent(this.m_properties, zid), "zid: " + zid);
+	zinAssertAndLog(isPropertyPresent(this.a_valid_properties, key), "zid: " + zid + " key: " + key);
 }
 
 // This method can be called three ways:

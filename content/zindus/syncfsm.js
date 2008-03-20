@@ -1148,7 +1148,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 				msg = "SyncTokens:";
 
-				for (var zid in this.state.zidbag)
+				for (var zid in this.state.zidbag.m_properties)
 					if (isPropertyPresent(functor.aNewLink, zid))
 					{
 						this.state.zidbag.set(zid, 'SyncToken', null);
@@ -4488,7 +4488,7 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('soapURL',   this.state.sources[this.state.sourceid_zm]['soapURL']);
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('username',  this.state.sources[this.state.sourceid_zm]['username']);
 
-	for (zid in this.state.zidbag.a_properties)
+	for (zid in this.state.zidbag.m_properties)
 		this.state.zfcLastSync.get(this.state.sourceid_zm).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
 
 	this.state.zfcLastSync.save();
