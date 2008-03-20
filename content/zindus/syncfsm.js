@@ -33,6 +33,7 @@ include("chrome://zindus/content/suo.js");
 include("chrome://zindus/content/zuio.js");
 include("chrome://zindus/content/gcs.js");
 include("chrome://zindus/content/lso.js");
+include("chrome://zindus/content/removedatastore.js");
 include("chrome://zindus/content/mozillapreferences.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/prefset.js");
@@ -297,8 +298,6 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	var a_zfc = new Object(); // associative array of zfc, key is the file name
 
-	this.removeZfcsIfNecessary();
-
 	cExist = this.loadZfcs(a_zfc);
 
 	this.state.m_logger.debug("entryActionLoad: number of file load attempts: " + aToLength(a_zfc) +
@@ -319,7 +318,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	{
 		this.state.m_logger.debug("entryActionLoad: server url or username changed since last sync - doing a reset to force slow sync");
 
-		SyncFsm.removeZfcs();
+		RemoveDatastore.removeZfcs();
 
 		cExist = this.loadZfcs(a_zfc);
 	}
@@ -4616,79 +4615,6 @@ SyncFsm.prototype.isLsoVerMatch = function(gid, zfi)
 	}
 
 	return ret;
-}
-
-SyncFsm.removeZfcs = function()
-{
-	// One might imagine that the fsm timer might run during this but it can't because the code below doesn't release control
-
-	gLogger.debug("reset: ");
-
-	var file;
-	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
-
-	// remove files in the data directory
-	//
-	if (directory.exists() && directory.isDirectory())
-	{
-		var iter = directory.directoryEntries;
- 
-		while (iter.hasMoreElements())
-		{
-			file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
-
-			file.remove(false);
-		}
-	}
-}
-
-SyncFsm.removeLogfile = function()
-{
-	// remove the logfile
-	//
-	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
-	file.append(Filesystem.FILENAME_LOGFILE);
-
-	if (file.exists() && !file.isDirectory())
-	{
-		// file.remove(false);
-		// Save the old logfile.  Often folk have a problem, "reset" to fix it, then email support and we don't know
-		// what happened because the logfile is gone.
-		//
-		file.moveTo(null, Filesystem.FILENAME_LOGFILE + ".old");
-	}
-}
-
-SyncFsm.prototype.removeZfcsIfNecessary = function()
-{
-	var data_format_version = null;
-	var zfiStatus  = StatusPanel.getZfi();
-	var msg = "removeZfcsIfNecessary: ";
-	var is_out_of_date = false;
-
-	if (zfiStatus)
-		data_format_version = zfiStatus.getOrNull('appversion');
-
-	msg += "incompatible with versions older than: " + APP_VERSION_DATA_CONSISTENT_WITH + " the version here is: " + data_format_version;
-
-	if ((zfiStatus && !data_format_version) ||
-	    (data_format_version && compareToolkitVersionStrings(data_format_version, APP_VERSION_DATA_CONSISTENT_WITH) == -1))
-	{
-		msg += " - out of date";
-
-		is_out_of_date = true;
-	}
-	else
-		msg += " - ok";
-
-	this.state.m_logger.debug(msg);
-
-	if (is_out_of_date)
-	{
-		this.state.m_logger.info("data format was out of date - removing data files and forcing slow sync");
-
-		SyncFsm.removeZfcs();
-	}
 }
 
 SyncFsm.setLsoToGid = function(zfiGid, zfiTarget)

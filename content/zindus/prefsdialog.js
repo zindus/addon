@@ -25,6 +25,7 @@ include("chrome://zindus/content/prefset.js");
 include("chrome://zindus/content/bimap.js");
 include("chrome://zindus/content/payload.js");
 include("chrome://zindus/content/logger.js");
+include("chrome://zindus/content/removedatastore.js");
 include("chrome://zindus/content/passwordmanager.js");
 include("chrome://zindus/content/mozillapreferences.js");
 include("chrome://zindus/content/utils.js");
@@ -215,8 +216,8 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-reset":
-			SyncFsm.removeZfcs();
-			SyncFsm.removeLogfile();
+			RemoveDatastore.removeZfcs();
+			RemoveDatastore.removeLogfile();
 			StatusPanel.update();
 			break;
 

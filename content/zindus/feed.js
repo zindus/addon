@@ -114,7 +114,15 @@ ZinFeedCollection.prototype.get = function(key)
 
 ZinFeedCollection.prototype.set = function(zfi)
 {
-	zinAssert(zfi != null && typeof(zfi) == 'object' && zfi.isPresent(ZinFeedItem.ATTR_KEY));
+	zinAssert(zfi != null && typeof(zfi) == 'object');
+
+	// migration-note: remove ATTR_ID when xpi update indicates that no clients are on versions earlier than 0.6.19.20080320.111511
+	// ATTR_ID is only in the assertion below to allow status.txt versions pre 0.6.19.20080320.111511 to load - they had an id= but no key=
+	//
+	zinAssertAndLog(zfi.isPresent(ZinFeedItem.ATTR_KEY) ||
+	                zfi.isPresent(ZinFeedItem.ATTR_ID),
+					"zfi: " + zfi.toString());
+
 	this.m_collection[zfi.m_properties[ZinFeedItem.ATTR_KEY]] = zfi;
 }
 
