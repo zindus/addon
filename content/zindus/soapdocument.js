@@ -81,6 +81,15 @@ ZimbraSoapDocument.prototype.toString = function()
 	return xmlDocumentToString(this.doc);
 }
 
+ZimbraSoapDocument.prototype.toStringFiltered = function()
+{
+	var str1 = this.toString();
+	var str2 = str1.replace(/<password>.*<\/password>/,   "<password-suppressed/>");
+	var str3 = str2.replace(/<authToken>.*<\/authToken>/, "<authToken-suppressed/>");
+
+	return str3;
+}
+
 ZimbraSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 {
 	var elHeader    = this.doc.createElementNS(ZimbraSoapDocument.NS_SOAP_ENVELOPE, "soap:Header");

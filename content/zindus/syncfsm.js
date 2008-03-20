@@ -34,6 +34,7 @@ include("chrome://zindus/content/zuio.js");
 include("chrome://zindus/content/gcs.js");
 include("chrome://zindus/content/lso.js");
 include("chrome://zindus/content/removedatastore.js");
+include("chrome://zindus/content/zidbag.js");
 include("chrome://zindus/content/mozillapreferences.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/prefset.js");
@@ -205,11 +206,10 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 		if (/^https?:\/\//.test(url) && username.length > 0 && password.length > 0 && isValidUrl(url))
 		{
-			zinAssert(this.zimbraIdIsPrimaryUser());
+			zinAssert(this.state.zidbag.isPrimaryUser());
 
-			this.state.aZid[this.state.iZid] = null;
-			this.state.aZid[null]            = newObject('soapURL', this.state.sources[sourceid_zm]['soapURL']);
-
+			this.state.zidbag.push(null);
+			this.state.zidbag.set(null, 'soapURL', this.state.sources[sourceid_zm]['soapURL']);
 
 			nextEvent = 'evNext';
 		}
@@ -229,7 +229,7 @@ SyncFsm.prototype.entryActionAuth = function(state, event, continuation)
 {
 	this.state.stopwatch.mark("entryActionAuth");
 
-	this.setupHttpSoap(state, 'evNext', this.soapUrl(0), null, "Auth", 
+	this.setupHttpSoap(state, 'evNext', this.state.zidbag.soapUrl(0), null, "Auth", 
 	                          this.state.sources[this.state.sourceid_zm]['username'],
 	                          this.state.sources[this.state.sourceid_zm]['password']);
 
@@ -624,7 +624,7 @@ SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuatio
 	this.state.stopwatch.mark("entryActionGetAccountInfo");
 	var by, value;
 
-	if (this.zimbraIdIsPrimaryUser())
+	if (this.state.zidbag.isPrimaryUser())
 	{
 		by    = "name";
 		value = this.state.sources[this.state.sourceid_zm]['username'];
@@ -632,10 +632,10 @@ SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuatio
 	else
 	{
 		by    = "id";
-		value = this.zimbraId();
+		value = this.state.zidbag.zimbraId();
 	}
 
-	this.setupHttpSoap(state, 'evNext', this.soapUrl(), this.zimbraId(), "GetAccountInfo", by, value);
+	this.setupHttpSoap(state, 'evNext', this.state.zidbag.soapUrl(), this.state.zidbag.zimbraId(), "GetAccountInfo", by, value);
 
 	continuation('evSoapRequest');
 }
@@ -686,7 +686,7 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 	else
 		newSoapURL = functor.a[0];
 
-	if (newSoapURL != this.soapUrl())
+	if (newSoapURL != this.state.zidbag.soapUrl())
 		this.state.suggestedSoapURL = newSoapURL;
 
 	this.state.m_logger.debug("exitActionGetAccountInfo: suggestedSoapURL: " + this.state.suggestedSoapURL);
@@ -709,7 +709,7 @@ SyncFsm.prototype.entryActionSelectSoapUrl = function(state, event, continuation
 		this.setupHttpSoap(state, 'evNext', this.state.suggestedSoapURL, null, 'FakeHead');
 		nextEvent = 'evSoapRequest';
 	}
-	else if (this.zimbraIdIsPrimaryUser())
+	else if (this.state.zidbag.isPrimaryUser())
 		nextEvent = 'evNext';
 	else
 		nextEvent = 'evSkip';
@@ -726,12 +726,12 @@ SyncFsm.prototype.exitActionSelectSoapUrl = function(state, event)
 
 	if (this.state.m_soap_state.m_faultcode == "service.UNKNOWN_DOCUMENT")
 	{
-		this.state.aZid[this.zimbraId()] = newObject('soapURL', this.state.suggestedSoapURL);
+		this.state.zidbag.set(this.state.zidbag.zimbraId(), 'soapURL', this.state.suggestedSoapURL);
 
-		msg += " suggestedSoapURL works, switching to it: " + this.soapUrl();
+		msg += " suggestedSoapURL works, switching to it: " + this.state.zidbag.soapUrl();
 	}
 	else
-		msg += " suggestedSoapURL doesn't work, continuing with the one used for Auth: " + this.soapUrl();
+		msg += " suggestedSoapURL doesn't work, continuing with the one used for Auth: " + this.state.zidbag.soapUrl();
 
 	this.state.m_logger.debug(msg);
 }
@@ -740,7 +740,7 @@ SyncFsm.prototype.entryActionGetInfo = function(state, event, continuation)
 {
 	this.state.stopwatch.mark("entryActionGetInfo");
 
-	this.setupHttpSoap(state, 'evNext', this.soapUrl(), null, "GetInfo");
+	this.setupHttpSoap(state, 'evNext', this.state.zidbag.soapUrl(), null, "GetInfo");
 
 	continuation('evSoapRequest');
 }
@@ -766,7 +766,7 @@ SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
 {
 	this.state.stopwatch.mark("entryActionCheckLicense");
 
-	this.setupHttpSoap(state, 'evNext', this.soapUrl(), null, "CheckLicense");
+	this.setupHttpSoap(state, 'evNext', this.state.zidbag.soapUrl(), null, "CheckLicense");
 
 	continuation('evSoapRequest');
 }
@@ -791,14 +791,29 @@ SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 {
 	this.state.stopwatch.mark("entryActionSync");
 
-	if (this.state.isRedoSyncRequest)
-		this.state.SyncTokenInRequest = null;
-	else if (this.zimbraIdIsPrimaryUser())
-		this.state.SyncTokenInRequest = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull(Zuio.key('SyncToken', null));
-	else
-		this.state.SyncTokenInRequest = this.state.aZid[this.zimbraId()].SyncToken;
+	var msg = "";
 
-	this.setupHttpSoap(state, 'evNext', this.soapUrl(), this.zimbraId(), "Sync", this.state.SyncTokenInRequest);
+	if (this.state.isRedoSyncRequest)
+	{
+		this.state.SyncTokenInRequest = null;
+		msg += "isRedoSyncRequest:";
+	}
+	else if (this.state.zidbag.isPrimaryUser())
+	{
+		this.state.SyncTokenInRequest = this.state.zfcLastSync.get(this.state.sourceid_zm).getOrNull(Zuio.key('SyncToken', null));
+		msg += "isPrimaryUser:";
+	}
+	else
+	{
+		this.state.SyncTokenInRequest = this.state.zidbag.get(this.state.zidbag.zimbraId(), 'SyncToken');
+		msg += "zimbraId:";
+	}
+
+	this.state.m_logger.debug("entryActionSync: " + msg + " zimbraId: " + this.state.zidbag.zimbraId() +
+	                                                      " SyncTokenInRequest: " + this.state.SyncTokenInRequest);
+	this.state.m_logger.debug("entryActionSync: blah: zidbag: " + this.state.zidbag.toString());
+
+	this.setupHttpSoap(state, 'evNext', this.state.zidbag.soapUrl(), this.state.zidbag.zimbraId(), "Sync", this.state.SyncTokenInRequest);
 
 	continuation('evSoapRequest');
 }
@@ -1098,16 +1113,14 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		}
 		else
 		{
-			this.state.m_logger.debug("entryActionSyncResult: iZid: " + this.state.iZid);
-
-			if (this.zimbraIdIsPrimaryUser())
+			if (this.state.zidbag.isPrimaryUser())
 			{
-				// populate aZid based on the <link> elements of the primary user
+				// populate zidbag based on the <link> elements of the primary user
 				// also set the SyncToken attribute from zfcLastSync unless a new <link> elements appeared
 				//
 				functor = {
 					state: this.state,
-					soapUrl: this.soapUrl(0),
+					m_soapurl: this.state.zidbag.soapUrl(0),
 					aNewLink : new Object(),
 					run: function(zfi)
 					{
@@ -1117,10 +1130,10 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 							var zid = zfi.get(ZinFeedItem.ATTR_ZID);
 
-							if (!isPropertyPresent(this.state.aZid, zid))
+							if (!this.state.zidbag.isPresent(zid))
 							{
-								this.state.aZid.push(zid);
-								this.state.aZid[zid] = newObject('soapURL', this.soapUrl);
+								this.state.zidbag.push(zid);
+								this.state.zidbag.set(zid, 'soapURL', this.m_soapurl);
 							}
 
 							if (!zfi.isPresent(ZinFeedItem.ATTR_SKEY))
@@ -1135,24 +1148,20 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 				msg = "SyncTokens:";
 
-				for (i = 0; i < this.state.aZid.length; i++)
-				{
-					zid = this.state.aZid[i];
-
-					if (isPropertyPresent(functor.aNewLink, this.state.aZid[i]))
+				for (var zid in this.state.zidbag)
+					if (isPropertyPresent(functor.aNewLink, zid))
 					{
-						this.state.aZid[zid].SyncToken = null;
+						this.state.zidbag.set(zid, 'SyncToken', null);
 						msg += "\n " + zid + ": null (because a new link element was found)";
 					}
 					else
 					{
-						this.state.aZid[zid].SyncToken = this.state.zfcLastSync.get(sourceid_zm).getOrNull(Zuio.key('SyncToken', zid));
-						msg += "\n " + zid + ": " + this.state.aZid[zid].SyncToken;
+						key = Zuio.key('SyncToken', zid);
+						this.state.zidbag.set(zid, 'SyncToken', this.state.zfcLastSync.get(sourceid_zm).getOrNull(key));
+						msg += "\n " + zid + ": " + this.state.zidbag.get(zid, 'SyncToken');
 					}
-				}
 
 				this.state.m_logger.debug(msg);
-
 			}
 		}
 
@@ -1165,7 +1174,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 			this.state.SyncMd = SyncResponse.SyncMd;
 
 		if (isPropertyPresent(SyncResponse, 'SyncToken'))
-			this.state.aZid[change.acct].SyncToken = SyncResponse.SyncToken;
+			this.state.zidbag.set(change.acct, 'SyncToken', SyncResponse.SyncToken);
 
 		if (this.state.SyncMd == null)
 		{
@@ -1173,19 +1182,15 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 			nextEvent = 'evCancel';
 		}
-		else if ((this.state.aZid.length - 1) > this.state.iZid)
+		else if ((this.state.zidbag.a_zid.length - 1) > this.state.zidbag.m_index)
 		{
 			nextEvent = 'evDo';
-			this.state.iZid++;
+			this.state.zidbag.m_index++;
 		}
 		else
 			nextEvent = 'evNext';
 
-		msg = "entryActionSyncResult: iZid: " + this.state.iZid + " aZid: ";
-		for (i = 0; i < this.state.aZid.length; i++)
-			msg += "\n " + i + ": " + this.state.aZid[i] + " soapURL: "   + this.state.aZid[this.state.aZid[i]].soapURL +
-			                                               " SyncToken: " + this.state.aZid[this.state.aZid[i]].SyncToken;
-		this.state.m_logger.debug(msg);
+		this.state.m_logger.debug("entryActionSyncResult: zidbag: " + this.state.zidbag.toString());
 	}
 
 	continuation(nextEvent);
@@ -1209,7 +1214,7 @@ SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
 
 		this.state.m_logger.debug("entryActionGetContact: calling GetContactsRequest " + zuio.toString() );
 
-		this.setupHttpSoap(state, 'evRepeat', this.soapUrl(zuio.zid), zuio.zid, "GetContacts", zuio.id);
+		this.setupHttpSoap(state, 'evRepeat', this.state.zidbag.soapUrl(zuio.zid), zuio.zid, "GetContacts", zuio.id);
 
 		nextEvent = 'evSoapRequest';
 	}
@@ -1327,7 +1332,7 @@ SyncFsm.prototype.entryActionGalSync = function(state, event, continuation)
 {
 	this.state.stopwatch.mark("entryActionGalSync");
 
-	this.setupHttpSoap(state, 'evNext', this.soapUrl(0), null, "SyncGal", this.state.SyncGalTokenInRequest);
+	this.setupHttpSoap(state, 'evNext', this.state.zidbag.soapUrl(0), null, "SyncGal", this.state.SyncGalTokenInRequest);
 
 	continuation('evSoapRequest');
 }
@@ -4055,7 +4060,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 		this.state.m_logger.debug("entryActionUpdateZm: updateZmPackage: " + aToString(this.state.updateZmPackage));
 
-		this.setupHttpSoap(state, 'evRepeat', this.soapUrl(soap.zid), soap.zid, soap.method, soap.arg);
+		this.setupHttpSoap(state, 'evRepeat', this.state.zidbag.soapUrl(soap.zid), soap.zid, soap.method, soap.arg);
 
 		continuation('evSoapRequest');
 	}
@@ -4483,9 +4488,8 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('soapURL',   this.state.sources[this.state.sourceid_zm]['soapURL']);
 	this.state.zfcLastSync.get(this.state.sourceid_zm).set('username',  this.state.sources[this.state.sourceid_zm]['username']);
 
-	for (var i = 0; i < this.state.aZid.length; i++)
-		this.state.zfcLastSync.get(this.state.sourceid_zm).set(Zuio.key('SyncToken', this.state.aZid[i]),
-		                                                       this.state.aZid[this.state.aZid[i]].SyncToken);
+	for (zid in this.state.zidbag.a_properties)
+		this.state.zfcLastSync.get(this.state.sourceid_zm).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
 
 	this.state.zfcLastSync.save();
 
@@ -4513,41 +4517,6 @@ SyncFsm.prototype.suoOpcode = function(suo)
 
 SyncFsm.prototype.zfcTb = function() { return this.state.sources[this.state.sourceid_tb]['zfcLuid']; }
 SyncFsm.prototype.zfcZm = function() { return this.state.sources[this.state.sourceid_zm]['zfcLuid']; }
-
-// This method can be called three ways:
-// - no arguments: shorthand for calling the method with an argument of this.state.iZid
-// - number:       the argument is an index into the array, lookup the zid, then return the soapURL
-// - string:       the argument is a zid, return the soapURL
-//
-
-SyncFsm.prototype.soapUrl = function(arg)
-{
-	var ret;
-	
-	if (arguments.length  == 0)
-		ret = this.soapUrl(this.state.iZid);
-	else if (typeof(arg) == 'number')
-		ret = this.soapUrl(this.state.aZid[arg]);
-	else if (typeof(arg) == 'string' || arg == null)
-	{
-		ret = this.state.aZid[arg].soapURL;
-		this.state.m_logger.debug("soapUrl: arg: " + (typeof(arg) == 'undefined' ? "none" : arg)  + " returns: " + ret);
-	}
-	else
-		zinAssertAndLog(false, "invalid argument: " + arg);
-
-	return ret;
-}
-
-SyncFsm.prototype.zimbraId = function()
-{
-	return this.state.aZid[this.state.iZid];
-}
-
-SyncFsm.prototype.zimbraIdIsPrimaryUser = function()
-{
-	return this.state.aZid[this.state.iZid] == null; // this.state.zimbraId;
-}
 
 // if there's no ver in the gid, add it and reset the zfi ls
 // else if the zfi ls doesn't match either the zfi or the gid attributes, bump the gid's ver and reset the zfi's ls
@@ -4834,10 +4803,7 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 
 	this.state.cCallsToSoap++;
 
-	if (soapstate.m_method == 'Auth')
-		this.state.m_logger.debug("soap request #" + this.state.cCallsToSoap + ": <AuthRequest> suppressed"); // cleartext password here...
-	else
-		this.state.m_logger.debug("soap request: #" + this.state.cCallsToSoap + ": " + xmlDocumentToString(soapstate.m_zsd.doc));
+	this.state.m_logger.debug("soap request: #" + this.state.cCallsToSoap + ": " + soapstate.m_zsd.toStringFiltered());
 
 	if (soapstate.m_method == 'HEAD')
 	{
@@ -5127,8 +5093,7 @@ function SyncFsmState(id_fsm)
 	this.zfcPreUpdateWinners = new ZinFeedCollection(); // has the winning zfi's before they are updated to reflect their win (LS unchanged)
 	this.stopwatch           = new ZinStopWatch("SyncFsm");
 
-	this.aZid                = new Array();  // two roles: (1) indexed by iZid, element is zid or null and (2) key is zid, value is soapURL
-	this.iZid                = 0;
+	this.zidbag              = new ZidBag();
 	this.authToken           = null;         // AuthResponse
 	this.suggestedSoapURL    = null;         // a <soapURL> response returned in GetAccountInfo
 	this.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
@@ -5143,7 +5108,6 @@ function SyncFsmState(id_fsm)
 	this.SyncTokenInRequest  = null;         // the 'token' given to    <SyncRequest>
 	this.isAnyChangeToFolders = false;
 	this.zimbraId            = null;         // the zimbraId for the Auth username - returned by GetAccountInfoRespose
-	this.aZid                = new Array();  // an array of zimbraIds to run GetAccountInfo and Sync on - the Auth user's zid == null
 	this.aContact            = new Array();  // array of contact (zid, id) - push in SyncResponse, shift in GetContactResponse
 	this.isRedoSyncRequest   = false;        // we may need to do <SyncRequest> again - the second time without a token
 	this.aSyncContact        = new Object(); // each property is a ZimbraContact object returned in GetContactResponse
