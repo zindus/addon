@@ -466,13 +466,8 @@ SyncFsm.prototype.isConsistentSharedFolderReferences = function()
 					is_consistent = false;
 				}
 
-				if (is_consistent && !zfc.isPresent(Zuio.key(zfi.get(ZinFeedItem.ATTR_RID), zfi.get(ZinFeedItem.ATTR_ZID))))
-				{
-					error_msg += "<link> refers to non-existent foreign folder: " + zfi.toString();
-					is_consistent = false;
-				}
-
-				is_consistent = is_consistent && this.test_key_reference(zfi, ZinFeedItem.ATTR_SKEY);
+				if (zfi.isPresent(ZinFeedItem.ATTR_SKEY)) // <link> elements can be present without the foreign folder
+					is_consistent = is_consistent && this.test_key_reference(zfi, ZinFeedItem.ATTR_SKEY);
 			}
 
 			if (is_consistent && zfi.type() == ZinFeedItem.TYPE_FL && zfi.isForeign())
@@ -833,9 +828,17 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		var key, id, functor, xpath_query, msg;
 		var sourceid_zm = this.state.sourceid_zm;
 		var change = newObject('acct', null);
+		var a_foreign_folder_present = null;
 
 		ZinXpath.setConditional(change,       'token',    "/soap:Envelope/soap:Header/z:context/z:change/attribute::token", response, null);
 		ZinXpath.setConditional(change,       'acct',     "/soap:Envelope/soap:Header/z:context/z:change/attribute::acct",  response, null);
+
+		var node = ZinXpath.getSingleValue("/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder", response, response);
+
+		if (node && change.acct)
+			a_foreign_folder_present = new Object(); // turns on change detection for folders in foreign accounts
+
+		this.state.m_logger.debug("foreign folder change detection: " + (a_foreign_folder_present ? "on" : "off"));
 
 		// Hm ... what if the sync token went backwards (eg if the server had to restore from backups) ??
 
@@ -882,9 +885,11 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 				attribute[ZinFeedItem.ATTR_KEY] = key;
 
-				if (change.acct && type == ZinFeedItem.TYPE_LN)
-					; // ignore <link> elements that don't belong to the primary user because only an owner can share a folder
-				else if (zfcZm.isPresent(key))
+				// don't expect to see <link> elements in foreign accounts
+				//
+				zinAssert( !(change.acct && type == ZinFeedItem.TYPE_LN));
+
+				if (zfcZm.isPresent(key))
 				{
 					zfcZm.get(key).set(attribute);  // update existing item
 
@@ -909,6 +914,9 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 					is_processed = true;
 				}
 
+				if (is_processed && a_foreign_folder_present)
+					a_foreign_folder_present[key] = true;
+					
 				if (!is_processed)
 					msg += "ignoring: not of interest";
 
@@ -1095,6 +1103,25 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 			}
 		}
 
+		if (a_foreign_folder_present)
+		{
+			functor = {
+				state: this.state,
+				run: function(zfi)
+				{
+					if (zfi.type() == ZinFeedItem.TYPE_FL && zfi.isForeign() && !isPropertyPresent(a_foreign_folder_present, zfi.key()))
+					{
+						zfi.set(ZinFeedItem.ATTR_DEL, 1);
+						this.state.m_logger.debug("foreign folder change detection: marked deleted: " + zfi.toString());
+					}
+
+					return true;
+				}
+			};
+
+				zfcZm.forEach(functor);
+		}
+
 		// At the end of all this:
 		// - our map points to subset of items on the server - basically all top-level folders with @view='contact' and their contacts
 		// - this.state.aContact is populated with the ids of:
@@ -1144,7 +1171,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 					}
 				};
 
-				zfcZm.forEach(functor, ZinFeedCollection.ITER_NON_RESERVED);
+				zfcZm.forEach(functor);
 
 				msg = "SyncTokens:";
 
@@ -3024,7 +3051,7 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 	this.testForConflictingUpdateOperationsHelper(aName, Suo.DEL | ZinFeedItem.TYPE_SF);
 	this.testForConflictingUpdateOperationsHelper(aName, Suo.DEL | ZinFeedItem.TYPE_FL);
 
-	this.state.m_logger.debug("testForConflictingUpdateOperations: both added and deleted (look for >= 2): " + aToString(aName));
+	this.state.m_logger.debug("testForConflictingUpdateOperations: both added and deleted (failed if anything >= 2): " + aToString(aName));
 
 	for (var i in aName)
 		if (aName[i] >= 2)
@@ -3306,117 +3333,155 @@ SyncFsm.prototype.fakeDelOnUninterestingContacts = function()
 }
 
 // In zfcZm:
-// - create/update the TYPE_SF items
-// - remove TYPE_LN items for which there is no corresponding foreign folder
+// - pass 1: handle deletes - we need a separate pass for this in case a link to the a folder gets deleted then added in the same sync
+// - pass 2: create and update the TYPE_SF items
+// - pass 3: mark as deleted foreign folders which aren't pointed to by a <link>
 //
-SyncFsm.prototype.updateSharedFolders = function()
+SyncFsm.prototype.sharedFoldersUpdateZm = function()
 {
 	var zfcZm = this.zfcZm();
-	var functor;
-	var msg = "updateSharedFolders: ";
+	var msg = "sharedFoldersUpdateZm: ";
 
-	functor = {
+	var functor_pass_1 = {
 		run: function(zfi)
 		{
-			if (zfi.type() == ZinFeedItem.TYPE_LN)
+			if (zfi.type() == ZinFeedItem.TYPE_LN ||
+			    (zfi.type() == ZinFeedItem.TYPE_FL && zfi.isForeign()))
 			{
-				var keyForeignFolder = Zuio.key(zfi.get(ZinFeedItem.ATTR_RID), zfi.get(ZinFeedItem.ATTR_ZID));
+				var is_deleted = SyncFsm.sharedFoldersUpdateSfOnDel(zfcZm, zfi);
 
-				if (zfcZm.isPresent(keyForeignFolder))
-				{
-					var keyLink          = zfi.key();
-					var zfiLink          = zfi;
-					var zfiForeignFolder = zfcZm.get(keyForeignFolder);
-					var zfiSharedFolder;
-					var keySharedFolder;
-
-					if (!zfiForeignFolder.isPresent(ZinFeedItem.ATTR_SKEY))
-					{
-						keySharedFolder = Zuio.key(zfcZm.get(ZinFeedItem.KEY_AUTO_INCREMENT).increment('next'), "zindus-sf");
-
-						zinAssertAndLog(!zfcZm.isPresent(keySharedFolder), "auto-incrememented key shouldn't exist: " + keySharedFolder);
-
-						zfiSharedFolder = new ZinFeedItem(ZinFeedItem.TYPE_SF,
-		 				                                  ZinFeedItem.ATTR_KEY,  keySharedFolder,
-						                                  ZinFeedItem.ATTR_LKEY, keyLink,
-						                                  ZinFeedItem.ATTR_FKEY, keyForeignFolder );
-						                                  // for ATTR_L, ATTR_NAME, ATTR_MS, ATTR_PERM see updateSharedFolderItem()
-						zfcZm.set(zfiSharedFolder);
-
-						// these reverse-links make it easy to find the shared folder given either the <link> or foreign <folder>
-						//
-						zfcZm.get(keyLink).set(ZinFeedItem.ATTR_SKEY, keySharedFolder);
-						zfcZm.get(keyForeignFolder).set(ZinFeedItem.ATTR_SKEY, keySharedFolder);
-
-						msg += "\n added to map: " + zfiSharedFolder.toString();
-					}
-
-					SyncFsm.updateSharedFolderItem(zfcZm, zfiLink.key());
-				}
-				else
-				{
-					zfi.set(ZinFeedItem.ATTR_DEL, 1);
-					msg += "\n marking as deleted: " + zfi.toString();
-				}
+				if (is_deleted)
+					msg += "\n pass 1: TYPE_SF marked as deleted (and it's references removed) on the basis of: " + zfi.toString();
 			}
 
 			return true;
 		}
 	};
 
-	zfcZm.forEach(functor);
+	var functor_pass_2 = {
+		run: function(zfi)
+		{
+			if (zfi.type() == ZinFeedItem.TYPE_LN && !zfi.isPresent(ZinFeedItem.ATTR_DEL))
+			{
+				var keyFl = Zuio.key(zfi.get(ZinFeedItem.ATTR_RID), zfi.get(ZinFeedItem.ATTR_ZID));
 
-	functor = {
+				if (zfcZm.isPresent(keyFl) && !zfcZm.get(keyFl).isPresent(ZinFeedItem.ATTR_DEL))
+				{
+					var keyLn  = zfi.key();
+					var zfiLn  = zfi;
+					var zfiFl  = zfcZm.get(keyFl);
+					var zfiSf;
+
+					if (!zfiFl.isPresent(ZinFeedItem.ATTR_SKEY))
+					{
+						var keySf = Zuio.key(zfcZm.get(ZinFeedItem.KEY_AUTO_INCREMENT).increment('next'), "zindus-sf");
+
+						zinAssertAndLog(!zfcZm.isPresent(keySf), "auto-incrememented key shouldn't exist: " + keySf);
+
+						zfiSf = new ZinFeedItem(ZinFeedItem.TYPE_SF,
+	 				                                  	ZinFeedItem.ATTR_KEY,  keySf,
+					                                  	ZinFeedItem.ATTR_LKEY, keyLn,
+					                                  	ZinFeedItem.ATTR_FKEY, keyFl );
+					                                  	// for ATTR_L, ATTR_NAME, ATTR_MS, ATTR_PERM see sharedFoldersUpdateAttributes()
+						zfcZm.set(zfiSf);
+
+						// these reverse-links make it easy to find the shared folder given either the <link> or foreign <folder>
+						//
+						zfcZm.get(keyLn).set(ZinFeedItem.ATTR_SKEY, keySf);
+						zfcZm.get(keyFl).set(ZinFeedItem.ATTR_SKEY, keySf);
+
+						msg += "\n pass 2: added to map: " + zfiSf.toString();
+					}
+					else
+						zfiSf = zfcZm.get(zfiLn.get(ZinFeedItem.ATTR_SKEY));
+
+					msg += "\n pass 2: blah: before update: "+ "\n ln: " + zfiLn.toString() +
+					                                           "\n sf: " + zfiSf.toString() + "\n fl: " + zfiFl.toString();
+
+					SyncFsm.sharedFoldersUpdateAttributes(zfcZm, zfiLn.key());
+
+					msg += "\n pass 2: blah: after update: " + "\n ln: " + zfiLn.toString() +
+					                                           "\n sf: " + zfiSf.toString() + "\n fl: " + zfiFl.toString();
+				   }
+			}
+
+			return true;
+		}
+	};
+
+	var functor_pass_3 = {
 		run: function(zfi)
 		{
 			if (zfi.type() == ZinFeedItem.TYPE_FL && zfi.isForeign() && !zfi.isPresent(ZinFeedItem.ATTR_SKEY))
 			{
+				// ok to flush these out because if a <link> element appears, we do a SyncRequest on the foreign folder without a token
+				//
 				zfi.set(ZinFeedItem.ATTR_DEL, 1);
-				msg += "\n marking as deleted: " + zfi.toString();
+				msg += "\n pass 3: marked as deleted foreign folder not referenced by a <link>: " + zfi.toString();
 			}
 
 			return true;
 		}
 	};
 
-	zfcZm.forEach(functor);
+	zfcZm.forEach(functor_pass_1);
+	zfcZm.forEach(functor_pass_2);
+	zfcZm.forEach(functor_pass_3);
 
 	this.state.m_logger.debug(msg);
 }
 
-SyncFsm.updateSharedFolderItem = function(zfc, luid_link)
+SyncFsm.sharedFoldersUpdateSfOnDel = function(zfc, zfi)
 {
-	var zfiLink, zfiSharedFolder, zfiForeignFolder;
-	var msg = "updateSharedFolderItem: blah: ";
+	var ret = 0;
 
-	zfiLink = zfc.get(luid_link);
-
-	zinAssertAndLog(zfiLink.isPresent(ZinFeedItem.ATTR_SKEY), "luid_link: " + luid_link);
-
-	zfiSharedFolder = zfc.get(zfiLink.get(ZinFeedItem.ATTR_SKEY));
-
-	zinAssertAndLog(zfiSharedFolder.isPresent(ZinFeedItem.ATTR_FKEY), "zfiSharedFolder: " + zfiSharedFolder.toString());
-
-	zfiForeignFolder = zfc.get(zfiSharedFolder.get(ZinFeedItem.ATTR_FKEY));
-
-	msg += "\n before: "+ "\n ln: " + zfiLink.toString() + "\n sf: " + zfiSharedFolder.toString() + "\n fl: " + zfiForeignFolder.toString();
-
-	zfiSharedFolder.set( ZinFeedItem.ATTR_L,    zfiLink.get(ZinFeedItem.ATTR_L));
-	zfiSharedFolder.set( ZinFeedItem.ATTR_NAME, zfiLink.name());
-	zfiSharedFolder.set( ZinFeedItem.ATTR_MS,   ((zfiLink.get(ZinFeedItem.ATTR_MS) + 1) * (zfiForeignFolder.get(ZinFeedItem.ATTR_MS) + 1)));
-	zfiSharedFolder.set( ZinFeedItem.ATTR_PERM, zfiForeignFolder.get(ZinFeedItem.ATTR_PERM));
-
-	if (zfiLink.isPresent(ZinFeedItem.ATTR_DEL) || zfiForeignFolder.isPresent(ZinFeedItem.ATTR_DEL))
+	if (zfi.type() == ZinFeedItem.TYPE_LN && zfi.isPresent(ZinFeedItem.ATTR_DEL))
 	{
-		zfiSharedFolder.set( ZinFeedItem.ATTR_DEL, '1');
-		zfiLink.set(         ZinFeedItem.ATTR_DEL, '1');
-		zfiForeignFolder.set(ZinFeedItem.ATTR_DEL, '1');
-		msg += "\n marking all as deleted";
+		ret = 1;
+
+		SyncFsm.sharedFoldersUpdateSfOnDelHelper(zfc, zfi, ZinFeedItem.ATTR_FKEY);
+	}
+	else if (zfi.type() == ZinFeedItem.TYPE_FL && zfi.isPresent(ZinFeedItem.ATTR_DEL))
+	{
+		ret = 1;
+
+		SyncFsm.sharedFoldersUpdateSfOnDelHelper(zfc, zfi, ZinFeedItem.ATTR_LKEY);
 	}
 
-	msg += "\n after: " + "\n ln: " + zfiLink.toString() + "\n sf: " + zfiSharedFolder.toString() + "\n fl: " + zfiForeignFolder.toString();
+	return ret;
+}
 
-	gLogger.debug(msg);
+SyncFsm.sharedFoldersUpdateSfOnDelHelper = function(zfc, zfi, attribute)
+{
+	zfiSf = zfi.isPresent(ZinFeedItem.ATTR_SKEY) ? zfc.get(zfi.get(ZinFeedItem.ATTR_SKEY)) : null;
+
+	if (zfiSf)
+	{
+		zfiSf.set(ZinFeedItem.ATTR_DEL, '1');
+
+		zfi = (zfiSf.isPresent(attribute)) ? zfc.get(zfiSf.get(attribute)) : null;
+
+		if (zfi && zfi.isPresent(ZinFeedItem.ATTR_SKEY))
+			zfi.del(ZinFeedItem.ATTR_SKEY);
+	}
+}
+
+SyncFsm.sharedFoldersUpdateAttributes = function(zfc, luid_link)
+{
+	var zfiLn = zfc.get(luid_link);
+
+	zinAssertAndLog(zfiLn.isPresent(ZinFeedItem.ATTR_SKEY), "luid_link: " + luid_link + " zfiLn: " + zfiLn.toString());
+
+	var zfiSf = zfc.get(zfiLn.get(ZinFeedItem.ATTR_SKEY));
+
+	zinAssertAndLog(zfiSf.isPresent(ZinFeedItem.ATTR_FKEY), "zfiSf: " + zfiSf.toString());
+
+	var zfiFl = zfc.get(zfiSf.get(ZinFeedItem.ATTR_FKEY));
+
+	zfiSf.set( ZinFeedItem.ATTR_L,    zfiLn.get(ZinFeedItem.ATTR_L));
+	zfiSf.set( ZinFeedItem.ATTR_NAME, zfiLn.name());
+	zfiSf.set( ZinFeedItem.ATTR_MS,   ((zfiLn.get(ZinFeedItem.ATTR_MS) + 1) * (zfiFl.get(ZinFeedItem.ATTR_MS) + 1)));
+	zfiSf.set( ZinFeedItem.ATTR_PERM, zfiFl.get(ZinFeedItem.ATTR_PERM));
 }
 
 // Converge is slow when "verbose logging" is turned on so it is broken up into three states.  This means:
@@ -3432,7 +3497,7 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 	this.state.m_logger.debug("entryActionConverge1: blah: zfcTb:\n" + this.zfcTb().toString()); // TODO remove me
 	this.state.m_logger.debug("entryActionConverge1: blah: zfcZm:\n" + this.zfcZm().toString()); // TODO remove me
 
-	this.updateSharedFolders();
+	this.sharedFoldersUpdateZm();
 
 	this.state.stopwatch.mark("entryActionConverge1: 2");
 
@@ -3726,7 +3791,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				{
 					msg += "About to rename a thunderbird addressbook (folder), gid: " + gid + " and luid_winner: " + luid_winner;
 
-					zinAssert(zfiWinner.keyParent() == '1'); // luid of the parent folder in the winner == 1
+					zinAssertAndLog(zfiWinner.get(ZinFeedItem.ATTR_L) == '1', "zfiWinner: " + zfiWinner.toString());
 
 					var name_winner_public = this.getTbAddressbookNameFromLuid(sourceid_winner, luid_winner);
 					var name_winner_map    = this.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM, zfiWinner);
@@ -4202,7 +4267,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 				if (zfiTarget.type() == ZinFeedItem.TYPE_LN)
 				{
-					SyncFsm.updateSharedFolderItem(zfcTarget, key);
+					SyncFsm.sharedFoldersUpdateAttributes(zfcTarget, key);
 					zfiRelevantToGid = zfcTarget.get(zfiTarget.get(ZinFeedItem.ATTR_SKEY));
 				}
 				else

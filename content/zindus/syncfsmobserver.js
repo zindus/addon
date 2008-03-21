@@ -34,6 +34,8 @@ function SyncFsmObserver()
 
 	this.m_properties = new Object();
 
+	this.m_high_water_percentage_complete = 0;
+
 	this.set(SyncFsmObserver.OP,       "");
 	this.set(SyncFsmObserver.PROG_MAX, 0);
 	this.set(SyncFsmObserver.PROG_CNT, 0);
@@ -71,6 +73,8 @@ SyncFsmObserver.prototype.progressReportOn = function(stringid)
 
 SyncFsmObserver.prototype.progressReportOnSource = function()
 {
+	zinAssert((arguments.length == 2) || (typeof(arguments[2]) == 'number'));
+
 	this.set(SyncFsmObserver.OP, this.buildOp(arguments[0], arguments[1]));
 
 	this.set(SyncFsmObserver.PROG_MAX, (arguments.length == 3) ? arguments[2] : 0);
@@ -120,8 +124,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGalSync:        { count: c++ },
 		stGalCommit:      { },
 		stConverge1:      { count: c++ },
-		stConverge2:      { },
-		stConverge3:      { },
+		stConverge2:      { count: c++ },
+		stConverge3:      { count: c++ },
 		stGetContactsDel: { count: c++ },
 		stUpdateTb:       { count: c++ },
 		stUpdateZm:       { count: c++ },
@@ -230,9 +234,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 					this.m_logger.debug("4402: PROG_CNT: " + this.get(SyncFsmObserver.PROG_CNT));
 				}
 				else
-				{
-					this.progressReportOnSource(context.state.sourceid_zm, "PutOne", cTotal);
-				}
+					this.progressReportOnSource(context.state.sourceid_zm, "PutOne");
 				break;
 
 			case 'final':
@@ -304,15 +306,22 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				zinAssertAndLog(false, "missing case statement for: " + fsmstate.newstate);
 		}
 
-
 		var percentage_complete = a_states[fsmstate.newstate]['count'] / a_states['final']['count'];
 
 		if (this.get(SyncFsmObserver.PROG_MAX) > 0)
-			percentage_complete += (1 / a_states['final']['count']) * (this.get(SyncFsmObserver.PROG_CNT) / this.get(SyncFsmObserver.PROG_MAX));
+			percentage_complete += this.get(SyncFsmObserver.PROG_CNT) / (this.get(SyncFsmObserver.PROG_MAX) * a_states['final']['count']);
 
-		percentage_complete = percentage_complete * 100 + "%";
+		// With shared addressbooks, we jump from Sync back to GetAccountInfo
+		// The progress indicator jumping backwards isn't a good look - this holds it steady.
+		// It'd be better to show incremental progress but we don't know at the outset
+		// how many contacts there are going to be in each of the shared addressbooks so it'd be tricky.
+		//
+		if (percentage_complete < this.m_high_water_percentage_complete)
+			percentage_complete = this.m_high_water_percentage_complete;
+		else
+			this.m_high_water_percentage_complete = percentage_complete;
 
-		this.set(SyncFsmObserver.PERCENTAGE_COMPLETE, percentage_complete);
+		this.set(SyncFsmObserver.PERCENTAGE_COMPLETE, percentage_complete * 100 + "%");
 	}
 
 	return ret;
