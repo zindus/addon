@@ -70,13 +70,13 @@ RemoveDatastore.removeZfcsIfNecessary = function()
 {
 	var data_format_version = null;
 	var zfiStatus  = StatusPanel.getZfi();
-	var msg = "removeZfcsIfNecessary: ";
+	var msg = "";
 	var is_out_of_date = false;
 
 	if (zfiStatus)
 		data_format_version = zfiStatus.getOrNull('appversion');
 
-	msg += "incompatible with versions older than: " + APP_VERSION_DATA_CONSISTENT_WITH + " the version here is: " + data_format_version;
+	msg += "Software works with datastore version: " + APP_VERSION_DATA_CONSISTENT_WITH + " (or newer).  Here: " + data_format_version;
 
 	var is_status_file_exists = StatusPanel.getZfc().nsifile().exists();
 
@@ -94,7 +94,7 @@ RemoveDatastore.removeZfcsIfNecessary = function()
 	else
 		msg += " - ok";
 
-	gLogger.debug(msg);
+	newZinLogger("RemoveDatastore").debug(msg);
 
 	if (is_out_of_date)
 	{

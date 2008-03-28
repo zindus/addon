@@ -93,7 +93,7 @@ MozillaPreferences.prototype.setCharPref = function(branch, key, value)
 		branch.setCharPref(key, value);
 }
 
-MozillaPreferences.prototype.getCharPref = function(branch, key, value)
+MozillaPreferences.prototype.getCharPref = function(branch, key)
 {
 	var ret = null;
 

@@ -106,6 +106,21 @@ SyncFsmObserver.prototype.progressToString = function()
 
 SyncFsmObserver.prototype.update = function(fsmstate)
 {
+	var ret;
+
+	switch (fsmstate.context.state.id_fsm)
+	{
+		case ZinMaestro.FSM_ID_ZM_AUTHONLY:
+		case ZinMaestro.FSM_ID_GD_AUTHONLY: // TODO - is this right?
+		case ZinMaestro.FSM_ID_ZM_TWOWAY:   ret = this.updateZm(fsmstate); break;
+		default: zinAssertAndLog(false, "unmatched case: id_fsm: " + fsmstate.context.state.id_fsm);
+	};
+
+	return ret;
+}
+
+SyncFsmObserver.prototype.updateZm = function(fsmstate)
+{
 	var ret = false;
 	var c = 0;
 	var a_states = {
@@ -126,6 +141,10 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stConverge1:      { count: c++ },
 		stConverge2:      { count: c++ },
 		stConverge3:      { count: c++ },
+		stConverge5:      {            },
+		stConverge6:      { count: c++ },
+		stConverge7:      { count: c++ },
+		stConverge8:      { count: c++ },
 		stGetContactsDel: { count: c++ },
 		stUpdateTb:       { count: c++ },
 		stUpdateZm:       { count: c++ },
@@ -149,26 +168,30 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 		switch(fsmstate.newstate)
 		{
-			case 'stAuth':           this.progressReportOnSource(context.state.sourceid_zm, "RemoteAuth");  break;
+			case 'stAuth':           this.progressReportOnSource(context.state.sourceid_pr, "RemoteAuth");  break;
 			case 'stLoad':           this.progressReportOn("Load");                                         break;
-			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_zm, "AccountInfo"); break;
+			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "AccountInfo"); break;
 			case 'stGetInfo':          
 			case 'stCheckLicense':          
 			case 'stSync':          
-			case 'stSyncResult':     this.progressReportOnSource(context.state.sourceid_zm, "RemoteSync");  break;
+			case 'stSyncResult':     this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
 			case 'stGalSync':        
-			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_zm, "GetGAL");      break;
+			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "GetGAL");      break;
 			case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "Load");        break;
 			case 'stConverge1':     
 			case 'stConverge2':     
-			case 'stConverge3':      this.progressReportOn("Converge");                                     break;
+			case 'stConverge3':     
+			case 'stConverge5':     
+			case 'stConverge6':     
+			case 'stConverge7':     
+			case 'stConverge8':      this.progressReportOn("Converge");                                     break;
 			case 'stUpdateTb':       this.progressReportOnSource(context.state.sourceid_tb, "PutOne");      break;
 			case 'stUpdateCleanup':  this.progressReportOn("Saving");                                       break;
 
 			case 'stSelectSoapUrl':
 				if (context.state.suggestedSoapURL)
 				{
-					this.progressReportOnSource(context.state.sourceid_zm, "SelectSoapUrl");
+					this.progressReportOnSource(context.state.sourceid_pr, "SelectSoapUrl");
 					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP)
 					                                   + " " + context.state.suggestedSoapURL
 					                                   + "<br/>"
@@ -183,12 +206,12 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 			case 'stGetContactsDel':
 				if (context.state.aContact.length > 0)
 				{
-					var op = this.buildOp(context.state.sourceid_zm, "GetMany");
+					var op = this.buildOp(context.state.sourceid_pr, "GetMany");
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
 						// this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP));
-						this.progressReportOnSource(context.state.sourceid_zm, "GetMany", context.state.aContact.length);
+						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", context.state.aContact.length);
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 					}
 
@@ -234,7 +257,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 					this.m_logger.debug("4402: PROG_CNT: " + this.get(SyncFsmObserver.PROG_CNT));
 				}
 				else
-					this.progressReportOnSource(context.state.sourceid_zm, "PutOne");
+					this.progressReportOnSource(context.state.sourceid_pr, "PutOne");
 				break;
 
 			case 'final':
@@ -249,16 +272,16 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				{
 					es.m_exit_status = 1;
 
-					if (context.state.m_soap_state.isFailed())
+					if (context.state.m_http.isFailed())
 					{
-						es.failcode(context.state.m_soap_state.failCode());
+						es.failcode(context.state.m_http.failCode());
 
-						if (context.state.m_soap_state.m_faultstring)
-							es.m_fail_detail = context.state.m_soap_state.m_faultstring;
-						else if (context.state.m_soap_state.m_faultcode)
-							es.m_fail_detail = context.state.m_soap_state.m_faultcode;
+						if (context.state.m_http.m_faultstring)
+							es.m_fail_detail = context.state.m_http.m_faultstring;
+						else if (context.state.m_http.m_faultcode)
+							es.m_fail_detail = context.state.m_http.m_faultcode;
 
-						es.m_fail_soapmethod = context.state.m_soap_state.m_method;
+						es.m_fail_soapmethod = context.state.m_http.m_method;
 					}
 					else
 						es.failcode('FailOnCancel');
@@ -267,11 +290,9 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 				{
 					es.m_exit_status = 1;
 
-					if (fsmstate.oldstate == 'start')
+					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stLoad' ]))
 						es.failcode(context.state.stopFailCode);
-					else if (fsmstate.oldstate == 'stLoad')
-						es.failcode('FailOnIntegrityDataStoreIn');
-					else if (isInArray(fsmstate.oldstate, [ 'stLoadTb', 'stConverge1', 'stConverge3', 'stUpdateCleanup' ]))
+					else if (isInArray(fsmstate.oldstate, [ 'stLoadTb', 'stConverge1', 'stConverge6', 'stConverge8', 'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);
 						es.m_fail_detail = context.state.stopFailDetail;
@@ -279,9 +300,10 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 					else
 						es.failcode('FailOnUnknown');
 				}
-				else if (context.state.id_fsm == ZinMaestro.FSM_ID_AUTHONLY && context.state.authToken)
+				else if (context.state.authToken && (context.state.id_fsm == ZinMaestro.FSM_ID_ZM_AUTHONLY ||
+				                                     context.state.id_fsm == ZinMaestro.FSM_ID_GD_AUTHONLY))
 					es.m_exit_status = 0;
-				else if (context.state.id_fsm == ZinMaestro.FSM_ID_TWOWAY && fsmstate.event == 'evNext')
+				else if (context.state.id_fsm == ZinMaestro.FSM_ID_ZM_TWOWAY && fsmstate.event == 'evNext')
 					es.m_exit_status = 0;
 				else
 					zinAssert(false); // ensure that all cases are covered above

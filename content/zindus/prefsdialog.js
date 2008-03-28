@@ -66,6 +66,7 @@ Prefs.prototype.onLoad = function(target)
 		document.getElementById("zindus-prefs-general-button-test-harness").removeAttribute('hidden');
 		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('hidden');
 		document.getElementById("zindus-prefs-general-group-advanced-settings").removeAttribute('hidden');
+		document.getElementById("zindus-prefs-general-button-sync-gd").removeAttribute('hidden');
 	}
 
 	this.m_prefset_server.load(SOURCEID_ZM);
@@ -161,14 +162,13 @@ Prefs.prototype.onCommand = function(id_target)
 	switch(id_target)
 	{
 		case "zindus-prefs-general-button-sync-now":
-			var state = new TwoWayFsmState();
-			state.setCredentials(
-				document.getElementById("zindus-prefs-server-url").value,
-				document.getElementById("zindus-prefs-server-username").value,
-				document.getElementById("zindus-prefs-server-password").value );
-
 			var payload = new Payload();
-			payload.m_syncfsm = new TwoWayFsm(state);
+			payload.m_syncfsm = this.getSyncFsm(
+									(id_target == "zindus-prefs-general-button-sync-now" ? FORMAT_ZM : FORMAT_GD),
+									"twoway",
+									document.getElementById("zindus-prefs-server-url").value,
+									document.getElementById("zindus-prefs-server-username").value,
+									document.getElementById("zindus-prefs-server-password").value );
 
 			var win = window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
@@ -187,14 +187,14 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-server-button-authonly":
-			var state = new AuthOnlyFsmState();
-			state.setCredentials(
-				document.getElementById("zindus-prefs-server-url").value,
-				document.getElementById("zindus-prefs-server-username").value,
-				document.getElementById("zindus-prefs-server-password").value );
-
+		case "zindus-prefs-general-button-sync-gd": // TODO this really belongs above - only here for testing
 			var payload = new Payload();
-			payload.m_syncfsm = new AuthOnlyFsm(state);
+			payload.m_syncfsm = this.getSyncFsm(
+									(id_target == "zindus-prefs-server-button-authonly" ? FORMAT_ZM : FORMAT_GD),
+									"authonly",
+									document.getElementById("zindus-prefs-server-url").value,
+									document.getElementById("zindus-prefs-server-username").value,
+									document.getElementById("zindus-prefs-server-password").value );
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
@@ -229,6 +229,26 @@ Prefs.prototype.onCommand = function(id_target)
 			// do nothing
 			break;
 	}
+}
+
+Prefs.prototype.getSyncFsm = function(format, type, serverurl, username, password)
+{
+	var syncfsm;
+
+	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZmTwoWay();   }
+	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZmAuthOnly(); }
+	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGdTwoWay();   }
+	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGdAuthOnly(); }
+	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
+
+	syncfsm.initialise();
+
+	if (format == FORMAT_ZM)
+		syncfsm.setCredentials(serverurl, username, password);
+	else // format == FORMAT_GD
+		syncfsm.setCredentials(username, password);
+
+	return syncfsm;
 }
 
 Prefs.prototype.onTimerFire = function(context)

@@ -135,6 +135,8 @@
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTestHarness.label;" />
 						<button id="zindus-prefs-general-button-run-timer" hidden="true"
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTimer.label;" />
+						<button id="zindus-prefs-general-button-sync-gd" hidden="true"
+						        align="center" command="zindus-prefs-cmd-sync" label="sync gd" />
 						<button id="zindus-prefs-general-button-reset"
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonReset.label;"
 								accesskey="&ZinPrefsGeneralButtonReset.accesskey;" />

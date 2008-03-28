@@ -127,6 +127,8 @@ function stringBundleString(id_string, args)
 
 	if (stringbundle == null)
 	{
+		zinAssertAndLog(false, "document id: " + document.id); // TODO remove me
+
 		ret = "Unable to load string-bundle: " + string_bundle_id;
 
 		if (typeof(gLogger) == 'object' && typeof(gLogger.error) == 'function')
@@ -406,8 +408,18 @@ function isValidUrl(url)
 	return is_valid;
 }
 
-// see:
-// http://www.sitepoint.com/blogs/2006/01/17/javascript-inheritance/
+// This of setting up the prototype chain for derived classes is taken from:
+//   http://www.sitepoint.com/blogs/2006/01/17/javascript-inheritance/
+// Elsewhere we use the approach described at:
+//   http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Guide:The_Employee_Example
+// but a gotcha of the approach of:
+//  function A ();
+//  function B ();
+//  B.prototype = new A();
+// is that A's constructor is called when the file is loaded.
+// And of course the scope chain when the file is loaded is likely different from when B's constructor is called.
+// In particular, if the file is loaded from the .xul, then the document isn't fully loaded when document.blah is referenced.
+// To avoid this trickness, if A's constructor references 'document' or 'window' we use copyPrototype()
 //
 function copyPrototype(child, parent)
 { 

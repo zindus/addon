@@ -22,13 +22,12 @@
  * ***** END LICENSE BLOCK *****/
 
 // Bits of "exit status" reported to the outside world:
-// ZinMaestro.FSM_ID_TWOWAY:
 // - last sync success: (time, maybe other stuff like conflicts...)
 // - last sync:         (time, success/fail and optional failure reason)
 //
 // Other thoughts (not implemented)
-// - ZinMaestro.FSM_ID_TWOWAY:   next sync: when scheduled - currently you have to grep the logfile to find out
-// - ZinMaestro.FSM_ID_AUTHONLY: last auth: (time, success/fail and optional failure reason)
+// - TWOWAY:   next sync: when scheduled - currently you have to grep the logfile to find out
+// - AUTHONLY: last auth: (time, success/fail and optional failure reason)
 //
 
 function StatusPanel()

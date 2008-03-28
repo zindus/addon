@@ -58,9 +58,12 @@ ZinMaestro.logger = newZinLogger("ZinMaestro");
 
 // Each fsm has a unique FSM_ID_* so that functors can register to be notified of state change in specific fsm's
 //
-ZinMaestro.FSM_ID_TWOWAY   = "syncfsm-twoway";
-ZinMaestro.FSM_ID_AUTHONLY = "syncfsm-authonly";
-ZinMaestro.FSM_GROUP_SYNC  = newObject(ZinMaestro.FSM_ID_TWOWAY, 0, ZinMaestro.FSM_ID_AUTHONLY, 0);
+ZinMaestro.FSM_ID_ZM_TWOWAY   = "fsm-zm-twoway";
+ZinMaestro.FSM_ID_ZM_AUTHONLY = "fsm-zm-authonly";
+ZinMaestro.FSM_ID_GD_TWOWAY   = "fsm-gd-twoway";
+ZinMaestro.FSM_ID_GD_AUTHONLY = "fsm-gd-authonly";
+ZinMaestro.FSM_GROUP_SYNC     = newObject(ZinMaestro.FSM_ID_ZM_TWOWAY, 0, ZinMaestro.FSM_ID_ZM_AUTHONLY, 0, 
+                                          ZinMaestro.FSM_ID_GD_TWOWAY, 0, ZinMaestro.FSM_ID_GD_AUTHONLY, 0);
 
 // ID_FUNCTOR_* uniquely identifies each functor
 //
