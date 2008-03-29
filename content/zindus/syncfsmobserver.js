@@ -108,59 +108,81 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 {
 	var ret;
 
+	var a_states_zm = {
+		start:            { },
+		stAuth:           { count: 1 },
+		stLoad:           { count: 1 },
+		stLoadTb:         { count: 1 },
+		stGetAccountInfo: { count: 1 },
+		stSelectSoapUrl:  { count: 1 },
+		stGetInfo:        { count: 1 },
+		stCheckLicense:   { },
+		stSync:           { },
+		stSyncResult:     { },
+		stGetContact:     { count: 1 },
+		stGalConsider:    { },
+		stGalSync:        { count: 1 },
+		stGalCommit:      { },
+		stConverge1:      { count: 1 },
+		stConverge2:      { count: 1 },
+		stConverge3:      { count: 1 },
+		stConverge5:      {            },
+		stConverge6:      { count: 1 },
+		stConverge7:      { count: 1 },
+		stConverge8:      { count: 1 },
+		stGetContactsDel: { count: 1 },
+		stUpdateTb:       { count: 1 },
+		stUpdateZm:       { count: 1 },
+		stUpdateCleanup:  { count: 1 },
+		stSoapRequest:    { },
+		stSoapResponse:   { },
+		stCommit:         { },
+		final:            { count: 1 }
+	};
+
+	var a_states_gd = {
+		start:            { },
+		stAuth:           { count: 1 },
+		stLoad:           { count: 1 },
+		// stLoadTb:         { count: 1 },
+		stGetContacts:    { }, // gd
+		stSoapRequest:    { },
+		stSoapResponse:   { },
+		final:            { count: 1 }
+	};
+
 	switch (fsmstate.context.state.id_fsm)
 	{
 		case ZinMaestro.FSM_ID_ZM_AUTHONLY:
-		case ZinMaestro.FSM_ID_GD_AUTHONLY: // TODO - is this right?
-		case ZinMaestro.FSM_ID_ZM_TWOWAY:   ret = this.updateZm(fsmstate); break;
-		default: zinAssertAndLog(false, "unmatched case: id_fsm: " + fsmstate.context.state.id_fsm);
+		case ZinMaestro.FSM_ID_ZM_TWOWAY:
+			ret = this.updateState(fsmstate, a_states_zm);
+			break;
+		case ZinMaestro.FSM_ID_GD_AUTHONLY:
+		case ZinMaestro.FSM_ID_GD_TWOWAY:
+			ret = this.updateState(fsmstate, a_states_gd);
+			break;
+		default:
+			zinAssertAndLog(false, "unmatched case: id_fsm: " + fsmstate.context.state.id_fsm);
 	};
 
 	return ret;
 }
 
-SyncFsmObserver.prototype.updateZm = function(fsmstate)
+SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 {
 	var ret = false;
-	var c = 0;
-	var a_states = {
-		start:            { },
-		stAuth:           { count: c++ },
-		stLoad:           { count: c++ },
-		stLoadTb:         { count: c++ },
-		stGetAccountInfo: { count: c++ },
-		stSelectSoapUrl:  { count: c++ },
-		stGetInfo:        { count: c++ },
-		stCheckLicense:   { },
-		stSync:           { },
-		stSyncResult:     { },
-		stGetContact:     { count: c++ },
-		stGalConsider:    { },
-		stGalSync:        { count: c++ },
-		stGalCommit:      { },
-		stConverge1:      { count: c++ },
-		stConverge2:      { count: c++ },
-		stConverge3:      { count: c++ },
-		stConverge5:      {            },
-		stConverge6:      { count: c++ },
-		stConverge7:      { count: c++ },
-		stConverge8:      { count: c++ },
-		stGetContactsDel: { count: c++ },
-		stUpdateTb:       { count: c++ },
-		stUpdateZm:       { count: c++ },
-		stUpdateCleanup:  { count: c++ },
-		stSoapRequest:    { },
-		stSoapResponse:   { },
-		stCommit:         { },
-		final:            { count: c++ }
-	};
-
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	var context = fsmstate.context; // SyncFsm
 	this.state = context.state;
 
 	zinAssert(isMatchObjectKeys(a_states, context.fsm.m_transitions));
+
+	var c = 0;
+
+	for (var key in a_states)
+		if (isPropertyPresent(a_states[key], 'count'))
+			a_states[key]['count'] = c++;
 
 	if (fsmstate.newstate && isPropertyPresent(a_states[fsmstate.newstate], 'count')) // fsmstate.newstate == null when oldstate == 'final'
 	{
@@ -175,6 +197,7 @@ SyncFsmObserver.prototype.updateZm = function(fsmstate)
 			case 'stCheckLicense':          
 			case 'stSync':          
 			case 'stSyncResult':     this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
+			case 'stGetContacts':    this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break; // gd
 			case 'stGalSync':        
 			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "GetGAL");      break;
 			case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "Load");        break;
@@ -303,7 +326,8 @@ SyncFsmObserver.prototype.updateZm = function(fsmstate)
 				else if (context.state.authToken && (context.state.id_fsm == ZinMaestro.FSM_ID_ZM_AUTHONLY ||
 				                                     context.state.id_fsm == ZinMaestro.FSM_ID_GD_AUTHONLY))
 					es.m_exit_status = 0;
-				else if (context.state.id_fsm == ZinMaestro.FSM_ID_ZM_TWOWAY && fsmstate.event == 'evNext')
+				else if (fsmstate.event == 'evNext' && (context.state.id_fsm == ZinMaestro.FSM_ID_ZM_TWOWAY ||
+				                                        context.state.id_fsm == ZinMaestro.FSM_ID_GD_TWOWAY))
 					es.m_exit_status = 0;
 				else
 					zinAssert(false); // ensure that all cases are covered above

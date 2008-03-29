@@ -162,6 +162,7 @@ Prefs.prototype.onCommand = function(id_target)
 	switch(id_target)
 	{
 		case "zindus-prefs-general-button-sync-now":
+		case "zindus-prefs-general-button-sync-gd":
 			var payload = new Payload();
 			payload.m_syncfsm = this.getSyncFsm(
 									(id_target == "zindus-prefs-general-button-sync-now" ? FORMAT_ZM : FORMAT_GD),
@@ -187,7 +188,6 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-server-button-authonly":
-		case "zindus-prefs-general-button-sync-gd": // TODO this really belongs above - only here for testing
 			var payload = new Payload();
 			payload.m_syncfsm = this.getSyncFsm(
 									(id_target == "zindus-prefs-server-button-authonly" ? FORMAT_ZM : FORMAT_GD),

@@ -105,7 +105,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',                                         evLackIntegrity: 'final'     },
 
 		stSoapRequest:     { evCancel: 'final', evNext: 'stSoapResponse'                                                                 },
-		stSoapResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttpZm */                                },
+		stSoapResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
 
 		stCommit:          { evCancel: 'final', evNext: 'final'                                                                          },
 		final:             { }
@@ -166,10 +166,12 @@ SyncFsmGd.prototype.initialiseFsm = function()
 	var transitions = {
 		start:             { evCancel: 'final', evNext: 'stAuth',                                           evLackIntegrity: 'final'     },
 		stAuth:            { evCancel: 'final', evNext: 'stLoad',           evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
-		stLoad:            { evCancel: 'final', evNext: 'final',            evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
+		stLoad:            { evCancel: 'final', evNext: 'stGetContacts',    evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
+		// stLoadTb:          { evCancel: 'final', evNext: 'stGetContacts',                                    evLackIntegrity: 'final'     },
+		stGetContacts:     { evCancel: 'final', evNext: 'final',            evSoapRequest: 'stSoapRequest'                               },
 
 		stSoapRequest:     { evCancel: 'final', evNext: 'stSoapResponse'                                                                 },
-		stSoapResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttpZm */                                },
+		stSoapResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
 
 		final:             { }
 	};
@@ -178,6 +180,8 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		start:                  this.entryActionStart,
 		stAuth:                 this.entryActionAuth,
 		stLoad:                 this.entryActionLoad,
+		// stLoadTb:               this.entryActionLoadTb,
+		stGetContacts:          this.entryActionGetContacts,
 
 		stSoapRequest:          this.entryActionSoapRequest,
 		stSoapResponse:         this.entryActionSoapResponse,
@@ -187,6 +191,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 
 	var a_exit = {
 		stAuth:                 this.exitActionAuth,
+		stGetContacts:          this.exitActionGetContacts,
 		stSoapResponse:         this.exitActionSoapResponse  /* this gets tweaked by setupHttpZm */
 	};
 
@@ -352,18 +357,18 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	this.state.m_logger.debug("entryActionLoad: number of file load attempts: " + aToLength(a_zfc) +
 	                                          " number of file load actual: "   + cExist);
 
-	var sourceid_zm = this.state.sourceid_zm;
+	var sourceid_pr = this.state.sourceid_pr;
 
 	this.state.m_logger.debug("entryActionLoad: last sync soapURL: "  +
-	   ( this.state.zfcLastSync.isPresent(sourceid_zm) ? this.state.zfcLastSync.get(sourceid_zm).getOrNull('soapURL') : "not present"));
+	   ( this.state.zfcLastSync.isPresent(sourceid_pr) ? this.state.zfcLastSync.get(sourceid_pr).getOrNull('soapURL') : "not present"));
 	this.state.m_logger.debug("entryActionLoad: last sync username: "  +
-	   ( this.state.zfcLastSync.isPresent(sourceid_zm) ? this.state.zfcLastSync.get(sourceid_zm).getOrNull('username') : "not present"));
-	this.state.m_logger.debug("entryActionLoad: this sync soapURL:  " + this.state.sources[sourceid_zm]['soapURL']);
-	this.state.m_logger.debug("entryActionLoad: this sync username: " + this.state.sources[sourceid_zm]['username']);
+	   ( this.state.zfcLastSync.isPresent(sourceid_pr) ? this.state.zfcLastSync.get(sourceid_pr).getOrNull('username') : "not present"));
+	this.state.m_logger.debug("entryActionLoad: this sync soapURL:  " + this.state.sources[sourceid_pr]['soapURL']);
+	this.state.m_logger.debug("entryActionLoad: this sync username: " + this.state.sources[sourceid_pr]['username']);
 
 
-	if (cExist != 0 && (this.state.zfcLastSync.get(sourceid_zm).getOrNull('soapURL')  != this.state.sources[sourceid_zm]['soapURL'] ||
-	                    this.state.zfcLastSync.get(sourceid_zm).getOrNull('username') != this.state.sources[sourceid_zm]['username']))
+	if (cExist != 0 && (this.state.zfcLastSync.get(sourceid_pr).getOrNull('soapURL')  != this.state.sources[sourceid_pr]['soapURL'] ||
+	                    this.state.zfcLastSync.get(sourceid_pr).getOrNull('username') != this.state.sources[sourceid_pr]['username']))
 	{
 		this.state.m_logger.debug("entryActionLoad: server url or username changed since last sync - doing a reset to force slow sync");
 
@@ -381,7 +386,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		this.initialiseZfcLastSync();
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
 		this.initialiseZfcAutoIncrement(this.zfcTb());
-		this.initialiseZfcAutoIncrement(this.zfcZm());
+		this.initialiseZfcAutoIncrement(this.zfcPr());
 		this.initialiseTbAddressbook();
 
 		nextEvent = 'evNext';
@@ -408,10 +413,14 @@ SyncFsm.prototype.isConsistentDataStore = function()
 
 	ret = ret && this.isConsistentZfcAutoIncrement(this.state.zfcGid);
 	ret = ret && this.isConsistentZfcAutoIncrement(this.zfcTb());
-	ret = ret && this.isConsistentZfcAutoIncrement(this.zfcZm());
 	ret = ret && this.isConsistentGid();
 	ret = ret && this.isConsistentSources();
-	ret = ret && this.isConsistentSharedFolderReferences();
+
+	if (this.state.sources[this.state.sourceid_pr]['format'] == FORMAT_ZM)
+	{
+		ret = ret && this.isConsistentZfcAutoIncrement(this.zfcPr());
+		ret = ret && this.isConsistentSharedFolderReferences();
+	}
 
 	return ret;
 }
@@ -575,7 +584,7 @@ SyncFsm.prototype.initialiseZfcLastSync = function()
 	var zfcLastSync = this.state.zfcLastSync;
 
 	for (var sourceid in this.state.sources)
-		if (this.state.sources[sourceid]['format'] == FORMAT_ZM && !zfcLastSync.isPresent(sourceid))
+		if (this.state.sources[sourceid]['format'] != FORMAT_TB && !zfcLastSync.isPresent(sourceid))
 			zfcLastSync.set(new ZinFeedItem(null, ZinFeedItem.ATTR_KEY, sourceid));
 }
 
@@ -659,7 +668,7 @@ SyncFsm.prototype.getGidInReverse = function()
 		}
 	};
 
-	this.state.zfcGid.forEach(functor_foreach_gid, ZinFeedCollection.ITER_NON_RESERVED);
+	this.state.zfcGid.forEach(functor_foreach_gid);
 
 	this.state.m_logger.debug("getGidInReverse returns: " + aToString(reverse));
 
@@ -4678,7 +4687,8 @@ SyncFsm.prototype.suoOpcode = function(suo)
 }
 
 SyncFsm.prototype.zfcTb = function() { return this.state.sources[this.state.sourceid_tb]['zfcLuid']; }
-SyncFsm.prototype.zfcZm = function() { return this.state.sources[this.state.sourceid_zm]['zfcLuid']; }
+SyncFsm.prototype.zfcPr = function() { return this.state.sources[this.state.sourceid_pr]['zfcLuid']; }
+SyncFsm.prototype.zfcZm = function() { zinAssert(this.state.sourceid_zm>0); return this.state.sources[this.state.sourceid_zm]['zfcLuid']; }
 
 // if there's no ver in the gid, add it and reset the zfi ls
 // else if the zfi ls doesn't match either the zfi or the gid attributes, bump the gid's ver and reset the zfi's ls
@@ -5081,7 +5091,7 @@ HttpState.prototype.toString = function()
 	var ret = "\n xhr          = "        + (this.m_xhr ? this.m_xhr.readyState : "null") +
 	          "\n cancelled    = "        + this.is_cancelled +
 	          "\n http status code = "    + this.m_http_status_code +
-	          "\n response = "            + (this.m_response ? xmlDocumentToString(this.m_response) : "null");
+	          "\n response = "            + (this.m_response ? this.m_xhr.responseText : "null");
 
 	return ret;
 }
@@ -5123,7 +5133,7 @@ HttpStateZm.prototype.failCode = function()
 	else                                                    ret = 'FailOnUnknown';  // this really is unknown
 
 	if (ret == 'FailOnUnknown')
-		newZinLogger("HttpState").debug("failCode: " + ret + " and this: " + this.toString());
+		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
 
 	return ret;
 }
@@ -5166,7 +5176,7 @@ HttpStateZm.prototype.toStringFiltered = function()
 HttpStateZm.prototype.handleResponse = function()
 {
 	var nextEvent;
-	var msg = "";
+	var msg = "HttpStateZm:";
 
 	this.m_response = this.m_xhr.responseXML;
 
@@ -5270,10 +5280,27 @@ HttpState.prototype.httpBody = function()
 	return this.m_body;
 }
 
+HttpStateGd.prototype.failCode = function()
+{
+	var ret;
+
+	zinAssertAndLog(this.m_xhr && this.isFailed(), "HttpState: " + this.toString()); // don't come in here unless we've failed...
+
+	if (this.is_cancelled)                                  ret = 'FailOnCancel';
+	else if (this.m_http_status_code == 401)                ret = 'FailOnUnauthorized';
+	else if (this.m_http_status_code != HTTP_STATUS_200_OK) ret = 'FailOnService';
+	else                                                    ret = 'FailOnUnknown';  // this really is unknown
+
+	if (ret == 'FailOnUnknown')
+		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
+
+	return ret;
+}
+
 HttpStateGd.prototype.handleResponse = function()
 {
 	var nextEvent;
-	var msg = "";
+	var msg = "HttpStateGd:";
 
 	this.m_response = this.m_xhr.responseText;
 
@@ -5281,6 +5308,8 @@ HttpStateGd.prototype.handleResponse = function()
 		msg += " response: " + this.m_response;
 	else
 		msg += " response: " + "empty";
+
+	msg += " headers: " + this.m_xhr.getAllResponseHeaders();
 
 	if (this.is_cancelled)
 		nextEvent = 'evCancel';
@@ -5364,8 +5393,8 @@ SyncFsm.prototype.initialiseState = function(id_fsm)
 	state.m_folder_converter.localised_pab(state.m_addressbook.getPabName());
 
 	state.m_bimap_format = new BiMap(
-		[FORMAT_TB, FORMAT_ZM],
-		['tb',      'zm'     ]);
+		[FORMAT_TB, FORMAT_ZM, FORMAT_GD],
+		['tb',      'zm',      'gd']);
 
 	state.sources = new Object();
 
@@ -5519,14 +5548,45 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 
 	var response = this.state.m_http.m_response;
 
-	if (response)
-	{
-		var aMatch = response.match(/Auth=(.+?)(\s|$)/ ); // a[0] is the whole pattern, a[1] is the first capture, a[2] the second etc...
+	var aMatch = response.match(/Auth=(.+?)(\s|$)/ ); // a[0] is the whole pattern, a[1] is the first capture, a[2] the second etc...
 
-		if (aMatch && aMatch.length == 3)
-			this.state.authToken = aMatch[1];
-	}
+	if (aMatch && aMatch.length == 3)
+		this.state.authToken = aMatch[1];
 
 	this.state.m_logger.debug("authToken: " + this.state.authToken);
 }
 
+SyncFsmGd.prototype.entryActionGetContacts = function(state, event, continuation)
+{
+	var sourceid_pr = this.state.sourceid_pr;
+	var SyncToken = this.state.zfcLastSync.get(sourceid_pr).getOrNull('SyncToken');
+	var username  = this.state.sources[sourceid_pr]['username'];
+	var url       = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base?";
+
+	SyncToken = "2008-03-28T21:45:25.934Z";
+
+	if (SyncToken)
+		url += "updated-min=" + SyncToken + "&";
+
+	url += "showdeleted=true";
+
+	this.state.m_logger.debug("entryActionGetContacts: url: " + url);
+
+	this.setupHttpGd(state, 'evNext', "GET", url, null, null);
+
+	continuation('evSoapRequest');
+}
+
+SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
+{
+	if (!this.state.m_http.m_response || event == "evCancel")
+		return;
+
+	const XMLNS_ATOM = "http://www.w3.org/2005/Atom";
+
+	var response = this.state.m_http.m_response;
+
+	conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
+
+	this.state.m_logger.debug("exitActionGetContacts: response: " + response);
+}

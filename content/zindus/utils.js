@@ -162,7 +162,17 @@ function xmlDocumentToString(doc)
 	zinAssert(doc != null);
 
 	var serializer = new XMLSerializer();
-	var str = serializer.serializeToString(doc);
+
+	var str = null;
+	
+	try
+	{
+		str = serializer.serializeToString(doc);
+	}
+	catch (e)
+	{
+		zinAssert(false);
+	}
 
 	return str;
 }
@@ -534,4 +544,3 @@ function zmPermFromZfi(zfi)
 
 	return ret;
 }
-
