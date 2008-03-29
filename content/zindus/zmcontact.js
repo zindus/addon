@@ -21,19 +21,19 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function ZimbraContact()
+function ZmContact()
 {
 	this.attribute = new Object();
 	this.element   = new Object();
-	this.m_logger  = newZinLogger("ZimbraContact");
+	this.m_logger  = newZinLogger("ZmContact");
 }
 
-ZimbraContact.prototype.isMailList = function()
+ZmContact.prototype.isMailList = function()
 {
 	return ((typeof(this.element["type"]) == "string") && (this.element["type"] == "group"));
 }
 
-ZimbraContact.prototype.toString = function()
+ZmContact.prototype.toString = function()
 {
 	var key;
 	var msg = "";
@@ -47,7 +47,7 @@ ZimbraContact.prototype.toString = function()
 	return msg;
 }
 
-ZimbraContact.prototype.loadFromNode = function(doc, node, ns)
+ZmContact.prototype.loadFromNode = function(doc, node, ns)
 {
 	var key = null;
 	var value = null;
@@ -104,7 +104,7 @@ function FunctorArrayOfContactsFromNodes(ns)
 
 FunctorArrayOfContactsFromNodes.prototype.run = function(doc, node)
 {
-	var p = new ZimbraContact();
+	var p = new ZmContact();
 	p.loadFromNode(doc, node, this.ns);
 	this.mapId[p.attribute.id] = this.a.length;
 	this.a.push(p);

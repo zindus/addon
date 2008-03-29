@@ -22,9 +22,9 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/fsm.js");
-include("chrome://zindus/content/soapdocument.js");
+include("chrome://zindus/content/zmsoapdocument.js");
+include("chrome://zindus/content/zmcontact.js");
 include("chrome://zindus/content/xpath.js");
-include("chrome://zindus/content/contact.js");
 include("chrome://zindus/content/addressbook.js");
 include("chrome://zindus/content/contactconverter.js");
 include("chrome://zindus/content/folderconverter.js");
@@ -299,10 +299,10 @@ SyncFsmZm.prototype.exitActionAuth = function(state, event)
 
 	if (response)
 	{
-		conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
+		conditionalGetElementByTagNameNS(response, ZmSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
 
 		// ignore lifetime - in doing so we assume that no sync will take longer than the default lifetime of an hour.
-		// conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
+		// conditionalGetElementByTagNameNS(response, ZmSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
 	}
 }
 
@@ -1317,7 +1317,7 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 		return;
 
 	var xpath_query = "/soap:Envelope/soap:Body/zm:GetContactsResponse/zm:cn";
-	var functor     = new FunctorArrayOfContactsFromNodes(ZimbraSoapDocument.nsResolver("zm")); // see <cn> above
+	var functor     = new FunctorArrayOfContactsFromNodes(ZmSoapDocument.nsResolver("zm")); // see <cn> above
 	var response    = this.state.m_http.m_response;
 
 	ZinXpath.runFunctor(functor, xpath_query, response);
@@ -1444,7 +1444,7 @@ SyncFsm.prototype.exitActionGalSync = function(state, event)
 	//
 	if (this.state.SyncGalTokenInResponse != null && this.state.SyncGalTokenInRequest != this.state.SyncGalTokenInResponse)
 	{
-		var functor = new FunctorArrayOfContactsFromNodes(ZimbraSoapDocument.nsResolver("za")); // see SyncGalResponse below
+		var functor = new FunctorArrayOfContactsFromNodes(ZmSoapDocument.nsResolver("za")); // see SyncGalResponse below
 
 		ZinXpath.runFunctor(functor, "/soap:Envelope/soap:Body/za:SyncGalResponse/za:cn", this.state.m_http.m_response);
 
@@ -3732,7 +3732,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				luid_target = zfcTarget.get(ZinFeedItem.KEY_AUTO_INCREMENT).increment('next');
 
 				zinAssert(isPropertyPresent(this.state.aSyncContact, luid_winner));
-				zc = this.state.aSyncContact[luid_winner]; // the ZimbraContact object that arrived via GetContactResponse
+				zc = this.state.aSyncContact[luid_winner]; // the ZmContact object that arrived via GetContactResponse
 
 				msg += "About to add a contact to the thunderbird addressbook, gid: " + gid + " and luid_winner: " + luid_winner;
 
@@ -4192,7 +4192,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				if (zfcTarget.get(luid_target).isForeign())
 				{
 					zuio        = new Zuio(luid_target);
-					zc = this.state.aSyncContact[luid_target]; // the ZimbraContact object that arrived via GetContactResponse
+					zc = this.state.aSyncContact[luid_target]; // the ZmContact object that arrived via GetContactResponse
 					zinAssert(typeof(zc != 'undefined'));
 					properties = ZinContactConverter.instance().convert(FORMAT_ZM, FORMAT_ZM, zc.element);
 					soap.method = "ForeignContactDelete";
@@ -4544,7 +4544,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 	{
 		if (isPropertyPresent(this.state.aSyncContact, luid))
 		{
-			var zc = this.state.aSyncContact[luid]; // the ZimbraContact object that arrived via GetContactResponse
+			var zc = this.state.aSyncContact[luid]; // the ZmContact object that arrived via GetContactResponse
 			ret = ZinContactConverter.instance().convert(format_to, FORMAT_ZM, zc.element);
 		}
 		else
@@ -5108,7 +5108,7 @@ function HttpStateZm(url, logger)
 {
 	HttpState.call(this, "POST", url, null, logger);
 
-	this.m_zsd                   = new ZimbraSoapDocument();
+	this.m_zsd                   = new ZmSoapDocument();
 	this.m_method                = null;  // the prefix of the soap method, eg: "Auth" or "GetContacts"
 
 	this.m_faultcode             = null;  // These are derived from the soap fault element
@@ -5145,7 +5145,7 @@ HttpStateZm.prototype.faultLoadFromXml = function()
 
 	this.m_fault_element_xml = xmlDocumentToString(doc);
 
-	conditionalGetElementByTagNameNS(doc, ZimbraSoapDocument.NS_SOAP_ENVELOPE, "faultstring", this, 'm_faultstring');
+	conditionalGetElementByTagNameNS(doc, ZmSoapDocument.NS_SOAP_ENVELOPE, "faultstring", this, 'm_faultstring');
 	conditionalGetElementByTagNameNS(doc, "urn:zimbra",                        "Trace",       this, 'm_fault_detail');
 	conditionalGetElementByTagNameNS(doc, "urn:zimbra",                        "Code",        this, 'm_faultcode');
 }
@@ -5187,7 +5187,7 @@ HttpStateZm.prototype.handleResponse = function()
 
 	if (this.m_response)
 	{
-		var nodelist = this.m_response.getElementsByTagNameNS(ZimbraSoapDocument.NS_SOAP_ENVELOPE, "Fault");
+		var nodelist = this.m_response.getElementsByTagNameNS(ZmSoapDocument.NS_SOAP_ENVELOPE, "Fault");
 
 		if (nodelist.length > 0)
 			this.faultLoadFromXml();
@@ -5424,7 +5424,7 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm)
 	state.zimbraId            = null;         // the zimbraId for the Auth username - returned by GetAccountInfoRespose
 	state.aContact            = new Array();  // array of contact (zid, id) - push in SyncResponse, shift in GetContactResponse
 	state.isRedoSyncRequest   = false;        // we may need to do <SyncRequest> again - the second time without a token
-	state.aSyncContact        = new Object(); // each property is a ZimbraContact object returned in GetContactResponse
+	state.aSyncContact        = new Object(); // each property is a ZmContact object returned in GetContactResponse
 	state.zfcTbPreMerge       = null;         // the thunderbird map before iterating through the tb addressbook - used to test invariance
 	state.updateZmPackage     = null;         // maintains state between an zimbra server update request and the response
 	state.isUpdateZmFailed    = false;        // true iff a soap response couldn't be understood
@@ -5585,8 +5585,6 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 	const XMLNS_ATOM = "http://www.w3.org/2005/Atom";
 
 	var response = this.state.m_http.m_response;
-
-	conditionalGetElementByTagNameNS(response, ZimbraSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
 
 	this.state.m_logger.debug("exitActionGetContacts: response: " + response);
 }

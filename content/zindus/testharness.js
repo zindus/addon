@@ -324,7 +324,7 @@ ZinTestHarness.prototype.testLogging = function()
 ZinTestHarness.prototype.testXmlHttpRequest = function()
 {
 	var soapURL = "http://george.ho.moniker.net/service/soap/";
-	var zsd = new ZimbraSoapDocument();
+	var zsd = new ZmSoapDocument();
 
 	zsd.context(null, null);
 	zsd.Auth("leni@george.ho.moniker.net", "qwe123qwe123", null);

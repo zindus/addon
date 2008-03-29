@@ -46,7 +46,7 @@ ZinXpath.getSingleValue = function(xpath_query, doc, contextNode)
 	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
 
 	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_TYPE;
-	var xpathResult     = doc.evaluate(xpath_query, contextNode, ZimbraSoapDocument.nsResolver, xpathResultType, null);
+	var xpathResult     = doc.evaluate(xpath_query, contextNode, ZmSoapDocument.nsResolver, xpathResultType, null);
 
 	try {
 		if (xpathResult.resultType == XPathResult.ANY_UNORDERED_NODE_TYPE && xpathResult.singleNodeValue != null)
@@ -82,7 +82,7 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
 
 	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_ITERATOR_TYPE;
-	var xpathResult     = doc.evaluate(xpath_query, doc, ZimbraSoapDocument.nsResolver, xpathResultType, null);
+	var xpathResult     = doc.evaluate(xpath_query, doc, ZmSoapDocument.nsResolver, xpathResultType, null);
 
 	try {
 		var node = xpathResult.iterateNext();
@@ -103,6 +103,6 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 
 ZinXpath.queryFromMethod = function(method)
 {
-	return "/soap:Envelope/soap:Body/" + ZimbraSoapDocument.nsFromMethod(method) + ":" + method + "Response";
+	return "/soap:Envelope/soap:Body/" + ZmSoapDocument.nsFromMethod(method) + ":" + method + "Response";
 }
 
