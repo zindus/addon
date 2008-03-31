@@ -25,13 +25,41 @@ function ZinXpath()
 {
 }
 
+ZinXpath.NS_SOAP_ENVELOPE = "http://schemas.xmlsoap.org/soap/envelope/";
+ZinXpath.NS_ZIMBRA        = "urn:zimbra";
+ZinXpath.NS_ZACCOUNT      = "urn:zimbraAccount";
+ZinXpath.NS_ZMAIL         = "urn:zimbraMail";
+
+ZinXpath.NS_ATOM          = "http://www.w3.org/2005/Atom";
+ZinXpath.NS_OPENSEARCH    = "http://a9.com/-/spec/opensearchrss/1.0/";
+ZinXpath.NS_GCONTACT      = "http://schemas.google.com/contact/2008";
+ZinXpath.NS_GD            = "http://schemas.google.com/g/2005";
+
+ZinXpath.nsResolver = function(prefix)
+{
+	var map = {
+			soap:       ZinXpath.NS_SOAP_ENVELOPE,
+			z:          ZinXpath.NS_ZIMBRA,
+			za:         ZinXpath.NS_ZACCOUNT,
+			zm:         ZinXpath.NS_ZMAIL,
+			atom:       ZinXpath.NS_ATOM,
+			openSearch: ZinXpath.NS_OPENSEARCH,
+			gcontact:   ZinXpath.NS_GCONTACT,
+			gd:         ZinXpath.NS_GD
+	};
+
+	zinAssertAndLog(isPropertyPresent(map, prefix), "prefix: " + prefix);
+
+	return map[prefix];
+};
+
 ZinXpath.logger = newZinLogger("ZinXpath");
 
 ZinXpath.setConditional = function(object, property, xpath_query, doc, warning_msg)
 {
 	zinAssert(xpath_query.indexOf("attribute::") > 0); // this function is only intended for xpath queries that return a single attribute
 
-	var node = ZinXpath.getSingleValue(xpath_query, doc, doc);
+	var node = ZinXpath.getOneNode(xpath_query, doc, doc);
 
 	if (node && node.nodeValue)
 		object[property] = node.nodeValue;
@@ -39,27 +67,30 @@ ZinXpath.setConditional = function(object, property, xpath_query, doc, warning_m
 		ZinXpath.logger.warn(warning_msg);
 }
 
-ZinXpath.getSingleValue = function(xpath_query, doc, contextNode)
+ZinXpath.getOneNode = function(xpath_query, doc, contextNode)
 {
-	var ret = null;
+	return ZinXpath.getSingleNode(xpath_query, doc, contextNode, XPathResult.ANY_UNORDERED_NODE_TYPE);
+}
 
-	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
+ZinXpath.getFirstNode = function(xpath_query, doc, contextNode)
+{
+	return ZinXpath.getSingleNode(xpath_query, doc, contextNode, XPathResult.FIRST_ORDERED_NODE_TYPE);
+}
 
-	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_TYPE;
-	var xpathResult     = doc.evaluate(xpath_query, contextNode, ZmSoapDocument.nsResolver, xpathResultType, null);
+ZinXpath.getSingleNode = function(xpath_query, doc, contextNode, xpathResultType)
+{
+	var ret         = null;
+	var xpathResult = doc.evaluate(xpath_query, contextNode, ZinXpath.nsResolver, xpathResultType, null);
 
 	try {
-		if (xpathResult.resultType == XPathResult.ANY_UNORDERED_NODE_TYPE && xpathResult.singleNodeValue != null)
+		if (xpathResult.resultType == xpathResultType && xpathResult.singleNodeValue != null)
 		{
 			ret = xpathResult.singleNodeValue;
-
-			// ZinXpath.logger.debug("44991: ret.nodeName == " + ret.nodeName);
-			// ZinXpath.logger.debug("44991: ret.nodeValue == " + ret.nodeValue);
 		}
 	}
 	catch(e) {
 		ZinXpath.logger.error("============================= ERROR - exception ==========================");
-		ZinXpath.logger.error("ZinXpath.getSingleValue() reports document tree modified during iteration " + e);
+		ZinXpath.logger.error("ZinXpath.getSingleNode() reports document tree modified during iteration " + e);
 	}
 
 	return ret;
@@ -82,7 +113,7 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
 
 	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_ITERATOR_TYPE;
-	var xpathResult     = doc.evaluate(xpath_query, doc, ZmSoapDocument.nsResolver, xpathResultType, null);
+	var xpathResult     = doc.evaluate(xpath_query, doc, ZinXpath.nsResolver, xpathResultType, null);
 
 	try {
 		var node = xpathResult.iterateNext();
@@ -104,5 +135,16 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 ZinXpath.queryFromMethod = function(method)
 {
 	return "/soap:Envelope/soap:Body/" + ZmSoapDocument.nsFromMethod(method) + ":" + method + "Response";
+}
+
+function FunctorArrayOfTextNodeValue()
+{
+	this.a = new Array();
+}
+
+FunctorArrayOfTextNodeValue.prototype.run = function(doc, node)
+{
+	if (node.childNodes.length == 1 && node.childNodes.item(0).nodeType == Node.TEXT_NODE)
+		this.a.push(new String(node.childNodes.item(0).nodeValue));
 }
 

@@ -24,6 +24,7 @@
 include("chrome://zindus/content/fsm.js");
 include("chrome://zindus/content/zmsoapdocument.js");
 include("chrome://zindus/content/zmcontact.js");
+include("chrome://zindus/content/gdcontact.js");
 include("chrome://zindus/content/xpath.js");
 include("chrome://zindus/content/addressbook.js");
 include("chrome://zindus/content/contactconverter.js");
@@ -166,9 +167,16 @@ SyncFsmGd.prototype.initialiseFsm = function()
 	var transitions = {
 		start:             { evCancel: 'final', evNext: 'stAuth',                                           evLackIntegrity: 'final'     },
 		stAuth:            { evCancel: 'final', evNext: 'stLoad',           evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
-		stLoad:            { evCancel: 'final', evNext: 'stGetContacts',    evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
-		// stLoadTb:          { evCancel: 'final', evNext: 'stGetContacts',                                    evLackIntegrity: 'final'     },
-		stGetContacts:     { evCancel: 'final', evNext: 'final',            evSoapRequest: 'stSoapRequest'                               },
+		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
+		stLoadTb:          { evCancel: 'final', evNext: 'stGetContacts',                                    evLackIntegrity: 'final'     },
+		stGetContacts:     { evCancel: 'final', evNext: 'stConverge1',      evSoapRequest: 'stSoapRequest'                               },
+		stConverge1:       { evCancel: 'final', evNext: 'stConverge2',                                      evLackIntegrity: 'final'     },
+		stConverge2:       { evCancel: 'final', evNext: 'stConverge3',      evRepeat:      'stConverge2'                                 },
+		stConverge3:       { evCancel: 'final', evNext: 'stConverge5',                                                                   },
+		stConverge5:       { evCancel: 'final', evNext: 'stConverge6',                                                                   },
+		stConverge6:       { evCancel: 'final', evNext: 'stConverge7',                                      evLackIntegrity: 'final'     },
+		stConverge7:       { evCancel: 'final', evNext: 'stConverge8',                                                                   },
+		stConverge8:       { evCancel: 'final', evNext: 'final',                                 evLackIntegrity: 'final'     },
 
 		stSoapRequest:     { evCancel: 'final', evNext: 'stSoapResponse'                                                                 },
 		stSoapResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
@@ -180,8 +188,15 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		start:                  this.entryActionStart,
 		stAuth:                 this.entryActionAuth,
 		stLoad:                 this.entryActionLoad,
-		// stLoadTb:               this.entryActionLoadTb,
+		stLoadTb:               this.entryActionLoadTb,
 		stGetContacts:          this.entryActionGetContacts,
+		stConverge1:            this.entryActionConverge1,
+		stConverge2:            this.entryActionConverge2,
+		stConverge3:            this.entryActionConverge3,
+		stConverge5:            this.entryActionConverge5,
+		stConverge6:            this.entryActionConverge6,
+		stConverge7:            this.entryActionConverge7,
+		stConverge8:            this.entryActionConverge8,
 
 		stSoapRequest:          this.entryActionSoapRequest,
 		stSoapResponse:         this.entryActionSoapResponse,
@@ -299,10 +314,10 @@ SyncFsmZm.prototype.exitActionAuth = function(state, event)
 
 	if (response)
 	{
-		conditionalGetElementByTagNameNS(response, ZmSoapDocument.NS_ACCOUNT, "authToken", this.state, 'authToken');
+		conditionalGetElementByTagNameNS(response, ZinXpath.NS_ZACCOUNT, "authToken", this.state, 'authToken');
 
 		// ignore lifetime - in doing so we assume that no sync will take longer than the default lifetime of an hour.
-		// conditionalGetElementByTagNameNS(response, ZmSoapDocument.NS_ACCOUNT, "lifetime",  this.state, 'lifetime');
+		// conditionalGetElementByTagNameNS(response, ZinXpath.NS_ZACCOUNT, "lifetime",  this.state, 'lifetime');
 	}
 }
 
@@ -389,6 +404,9 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		this.initialiseZfcAutoIncrement(this.zfcPr());
 		this.initialiseTbAddressbook();
 
+		if (this.formatPr() == FORMAT_GD)
+			this.initialiseZfcGdFakeContactsFolder(this.zfcPr());
+
 		nextEvent = 'evNext';
 	}
 	else if (cExist == aToLength(a_zfc) && this.isConsistentDataStore())
@@ -416,7 +434,7 @@ SyncFsm.prototype.isConsistentDataStore = function()
 	ret = ret && this.isConsistentGid();
 	ret = ret && this.isConsistentSources();
 
-	if (this.state.sources[this.state.sourceid_pr]['format'] == FORMAT_ZM)
+	if (this.formatPr() == FORMAT_ZM)
 	{
 		ret = ret && this.isConsistentZfcAutoIncrement(this.zfcPr());
 		ret = ret && this.isConsistentSharedFolderReferences();
@@ -593,6 +611,16 @@ SyncFsm.prototype.initialiseZfcAutoIncrement = function(zfc)
 	zinAssert(zfc.length() == 0);
 
 	zfc.set( new ZinFeedItem(null, ZinFeedItem.ATTR_KEY, ZinFeedItem.KEY_AUTO_INCREMENT, 'next', AUTO_INCREMENT_STARTS_AT + 1));
+}
+
+SyncFsm.prototype.initialiseZfcGdFakeContactsFolder = function(zfc)
+{
+	key = zfc.get(ZinFeedItem.KEY_AUTO_INCREMENT).increment('next');
+
+	zfc.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_KEY, key,
+	                                             ZinFeedItem.ATTR_L, 1,
+	                                             ZinFeedItem.ATTR_NAME, GD_FOLDER_CONTACTS,
+	                                             ZinFeedItem.ATTR_MS, 1));
 }
 
 // remove any luid attributes in the addressbook
@@ -895,7 +923,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		ZinXpath.setConditional(change,       'token',    "/soap:Envelope/soap:Header/z:context/z:change/attribute::token", response, null);
 		ZinXpath.setConditional(change,       'acct',     "/soap:Envelope/soap:Header/z:context/z:change/attribute::acct",  response, null);
 
-		var node = ZinXpath.getSingleValue("/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder", response, response);
+		var node = ZinXpath.getOneNode("/soap:Envelope/soap:Body/zm:SyncResponse//zm:folder", response, response);
 
 		if (node && change.acct)
 			a_foreign_folder_present = new Object(); // turns on change detection for folders in foreign accounts
@@ -1317,7 +1345,7 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 		return;
 
 	var xpath_query = "/soap:Envelope/soap:Body/zm:GetContactsResponse/zm:cn";
-	var functor     = new FunctorArrayOfContactsFromNodes(ZmSoapDocument.nsResolver("zm")); // see <cn> above
+	var functor     = new ZmContactFunctorToMakeArrayFromNodes(ZinXpath.nsResolver("zm")); // see <cn> above
 	var response    = this.state.m_http.m_response;
 
 	ZinXpath.runFunctor(functor, xpath_query, response);
@@ -1444,7 +1472,7 @@ SyncFsm.prototype.exitActionGalSync = function(state, event)
 	//
 	if (this.state.SyncGalTokenInResponse != null && this.state.SyncGalTokenInRequest != this.state.SyncGalTokenInResponse)
 	{
-		var functor = new FunctorArrayOfContactsFromNodes(ZmSoapDocument.nsResolver("za")); // see SyncGalResponse below
+		var functor = new ZmContactFunctorToMakeArrayFromNodes(ZinXpath.nsResolver("za")); // see SyncGalResponse below
 
 		ZinXpath.runFunctor(functor, "/soap:Envelope/soap:Body/za:SyncGalResponse/za:cn", this.state.m_http.m_response);
 
@@ -1681,10 +1709,13 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.zfcTbPreMerge = this.zfcTb().clone();           // 1. remember the tb luid's before merge so that we can follow changes
 
-	this.loadTbLocaliseEmailedContacts();                      // 2. ensure that emailed contacts is in the current locale
+	if (this.formatPr() == FORMAT_ZM)
+	{
+		this.loadTbLocaliseEmailedContacts();                  // 2. ensure that emailed contacts is in the current locale
 
-	if (this.state.isSlowSync)
-		this.loadTbDeleteReadOnlySharedAddresbooks();          // 3. ensure that we don't try to update read-only addressbooks on the server
+		if (this.state.isSlowSync)
+			this.loadTbDeleteReadOnlySharedAddresbooks();      // 3. ensure that we don't try to update read-only addressbooks on the server
+	}
 
 	var aUri = this.loadTbMergeZfcWithAddressBook();           // 4. merge the current tb luid map with the current addressbook(s)
 
@@ -1694,7 +1725,10 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 3");
 
-	var passed = this.testForLegitimateFolderNames();          // 6. test for duplicate folder names, reserved names, illegal chars
+	var passed = true;
+
+	if (this.formatPr() == FORMAT_ZM) // note: if we wanted to sync gd against something other than PAB, we'd need something here
+		passed = passed && this.testForLegitimateFolderNames(); // 6. test for duplicate folder names, reserved names, illegal chars
 
 	this.state.stopwatch.mark(state + " 4: passed: " + passed);
 
@@ -2265,7 +2299,7 @@ SyncFsm.prototype.testForLegitimateFolderNames = function()
 		}
 	};
 
-	this.zfcTb().forEach(functor, ZinFeedCollection.ITER_NON_RESERVED);
+	this.zfcTb().forEach(functor);
 
 	if (aToLength(functor.a_folder_violation) > 0)
 	{
@@ -2305,8 +2339,8 @@ SyncFsm.prototype.twinInGid = function(sourceid, luid, sourceid_tb, luid_tb, rev
 	// set the VER attribute in the gid and the LS attributes in the luid maps
 	// so that the compare algorithm can decide that there's no change.
 	//
-	this.resetLsoVer(gid, this.zfcTb().get(luid_tb));             // set VER in gid and LS attribute in the tb luid map
-	SyncFsm.setLsoToGid(zfcGid.get(gid), this.zfcZm().get(luid)); // set                LS attribute in the zm luid map
+	this.resetLsoVer(gid, this.zfcTb().get(luid_tb));             // set VER in gid and LS attribute in the tb    luid map
+	SyncFsm.setLsoToGid(zfcGid.get(gid), this.zfcPr().get(luid)); // set                LS attribute in the other luid map
 
 	return gid;
 }
@@ -2316,13 +2350,13 @@ SyncFsm.prototype.twinInGid = function(sourceid, luid, sourceid_tb, luid_tb, rev
 // won't see any change.
 // Query: what happens on the server to cause these supposedly immutable folders to change?
 //
-SyncFsm.prototype.workaroundForImmutables = function()
+SyncFsm.prototype.workaroundForZmImmutables = function()
 {
-	this.workaroundForImmutable(ZM_ID_FOLDER_CONTACTS);
-	this.workaroundForImmutable(ZM_ID_FOLDER_AUTO_CONTACTS);
+	this.workaroundForZmImmutable(ZM_ID_FOLDER_CONTACTS);
+	this.workaroundForZmImmutable(ZM_ID_FOLDER_AUTO_CONTACTS);
 }
 
-SyncFsm.prototype.workaroundForImmutable = function(luid_zm)
+SyncFsm.prototype.workaroundForZmImmutable = function(luid_zm)
 {
 	var sourceid_tb = this.state.sourceid_tb;
 	var sourceid_zm = this.state.sourceid_zm;
@@ -2351,7 +2385,7 @@ SyncFsm.prototype.workaroundForImmutable = function(luid_zm)
 				this.resetLsoVer(gid, zfiZm);                                    // set VER in gid and LS attribute in the zm luid map
 				SyncFsm.setLsoToGid(zfcGid.get(gid), this.zfcTb().get(luid_tb)); // set                LS attribute in the tb luid map
 
-				this.state.m_logger.debug("workaroundForImmutable: Zimbra folder: " + zfiZm.name() + " changed!  sourceid: " +
+				this.state.m_logger.debug("workaroundForZmImmutable: Zimbra folder: " + zfiZm.name() + " changed!  sourceid: " +
 				                                  sourceid_zm + " and luid: " + luid_zm);
 			}
 		}
@@ -2498,7 +2532,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 				{
 					zinAssertAndLog((zfi.type() != ZinFeedItem.TYPE_FL) || !zfi.isForeign(), "foreign folder? zfi: " + zfi.toString());
 
-					var abName = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM, zfi);
+					var abName = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
 
 					if (isPropertyPresent(this.mapTbFolderNameToId, abName))
 					{
@@ -2519,7 +2553,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 					var checksum    = this.state.aChecksum[sourceid][luid];
 					var luid_parent = SyncFsm.keyParentRelevantToGid(zfc, zfi.key());
-					var name_parent = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, FORMAT_ZM, zfc.get(luid_parent));
+					var name_parent = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
 
 					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
 					// this.state.m_logger.debug("functor_foreach_luid_slow_sync: testing twin key: " + key);
@@ -2621,11 +2655,19 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 			this.state.m_logger.warn("getPropertiesAndParentNameFromSource: unable to retrieve properties for card: " +
 									 " sourceid: " + sourceid + " luid: " + luid + " uri: " + uri);
 	}
-	else
+	else if (format == FORMAT_ZM)
 	{
 		zinAssert(isPropertyPresent(this.state.aSyncContact, luid));
 		properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncContact[luid].element);
 	}
+	else if (format == FORMAT_GD)
+	{
+		zinAssert(isPropertyPresent(this.state.a_gd_contact, luid));
+		properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_GD, this.state.a_gd_contact.m_contact);
+	}
+	else
+		zinAssert(false, "unmatched case: " + format);
+
 
 	name_parent_map = this.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
 
@@ -3245,7 +3287,7 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 	var ret = this.state.stopFailCode == null;
 
 	if (!ret)
-		this.state.m_logger.debug("testForFolderNameDuplicate:" + " returns: " + ret +
+		this.state.m_logger.debug("testForFolderNameDuplicate:" + " returns: " + ret + " name: " + name +
 						          " aFolderName: " + aToString(aFolderName) + " stopFailCode: " + this.state.stopFailCode);
 
 	return ret;
@@ -3317,7 +3359,7 @@ SyncFsm.prototype.testForCreateSharedAddressbook = function()
 		},
 		countName: function(name)
 		{
-			// this.state.m_logger.debug("blah: countName: name: " + name);
+			this.state.m_logger.debug("testForCreateSharedAddressbook: countName: sourceid: " + sourceid + " name: " + name);
 			a_name[sourceid][name] = true;
 		}
 	};
@@ -3562,7 +3604,7 @@ SyncFsm.sharedFoldersUpdateAttributes = function(zfc, luid_link)
 	zfiSf.set( ZinFeedItem.ATTR_PERM, zfiFl.get(ZinFeedItem.ATTR_PERM));
 }
 
-// Converge is slow when "verbose logging" is turned on so it is broken up into three states.  This means:
+// Converge is slow when "verbose logging" is turned on so it is broken up into multiple states.  This means:
 // - mozilla's failsafe stop/continue javascript dialog is less likely to pop up
 // - the user gets to see a little bit of movement in the progress bar between each state
 //
@@ -3572,25 +3614,28 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 1");
 
-	this.state.m_logger.debug("entryActionConverge1: blah: zfcTb:\n" + this.zfcTb().toString()); // TODO remove me
-	this.state.m_logger.debug("entryActionConverge1: blah: zfcZm:\n" + this.zfcZm().toString()); // TODO remove me
+	this.state.m_logger.debug("entryActionConverge1: blah: 1: zfcTb:\n" + this.zfcTb().toString()); // TODO remove me
+	this.state.m_logger.debug("entryActionConverge1: blah: 1: zfcPr:\n" + this.zfcPr().toString()); // TODO remove me
 
-	this.sharedFoldersUpdateZm();
+	if (this.formatPr() == FORMAT_ZM)
+	{
+		this.sharedFoldersUpdateZm();
 
-	this.state.stopwatch.mark(state + " 2");
+		this.state.stopwatch.mark(state + " 2");
 
-	this.fakeDelOnUninterestingContacts();
+		this.fakeDelOnUninterestingContacts();
 
-	this.state.m_logger.debug("entryActionConverge1: zfcTb:\n" + this.zfcTb().toString());
-	this.state.m_logger.debug("entryActionConverge1: zfcZm:\n" + this.zfcZm().toString());
+		this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcTb:\n" + this.zfcTb().toString()); // TODO remove me
+		this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcPr:\n" + this.zfcPr().toString()); // TODO remove me
 
-	this.state.stopwatch.mark(state + " 3");
+		this.state.stopwatch.mark(state + " 3");
 
-	passed = passed && this.testForEmailedContactsMatch();
+		passed = passed && this.testForEmailedContactsMatch();
 
-	this.state.stopwatch.mark(state + " 4");
+		this.state.stopwatch.mark(state + " 4");
 
-	passed = passed && this.testForCreateSharedAddressbook();
+		passed = passed && this.testForCreateSharedAddressbook();
+	}
 
 	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
 
@@ -3628,7 +3673,8 @@ SyncFsm.prototype.entryActionConverge5 = function(state, event, continuation)
 {
 	this.state.stopwatch.mark(state + " 1");
 
-	this.workaroundForImmutables();
+	if (this.formatPr() == FORMAT_ZM)
+		this.workaroundForZmImmutables();
 
 	this.state.aGcs = this.buildGcs();                   // 2. reconcile the sources (via the gid) into a single truth
 	                                                     //    this is the sse output array - winners and conflicts are selected here
@@ -3639,7 +3685,7 @@ SyncFsm.prototype.entryActionConverge5 = function(state, event, continuation)
 
 SyncFsm.prototype.entryActionConverge6 = function(state, event, continuation)
 {
-	this.state.stopwatch.mark(state + " 1: ");
+	this.state.stopwatch.mark(state + " 1");
 
 	var passed = this.testForFolderNameDuplicate(this.state.aGcs); // 4. a bit of conflict detection
 
@@ -3677,7 +3723,8 @@ SyncFsm.prototype.entryActionConverge8 = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 4");
 
-	this.identifyForeignContactsToBeDeleted();
+	if (this.formatPr() == FORMAT_ZM)
+		this.identifyForeignContactsToBeDeleted();
 
 	this.state.stopwatch.mark(state + " 5");
 
@@ -3782,7 +3829,13 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					                       ZinFeedItem.ATTR_NAME, name_for_map, ZinFeedItem.ATTR_L, 1,
 					                       ZinFeedItem.ATTR_MS, 1, ZinFeedItem.ATTR_TPI, tpi));
 
-					msg += ".  Added: luid_target: " + luid_target + " name_for_map: " + name_for_map + " tpi: " + tpi;
+					msg += ".  Added: luid_target: " + luid_target + " name_for_map: " + name_for_map + " uri: " + uri + " tpi: " + tpi;
+
+					// TODO this is just for debugging a null tpi ...
+					if (!uri || uri.length < 1)
+						this.state.error("dodgy uri returned after creating an tb addressbook: msg: " + msg);
+					if (!tpi || tpi.length < 1)
+						this.state.error("dodgy tpi returned after creating an tb addressbook: msg: " + msg);
 
 					zfiGid.set(sourceid_target, luid_target);
 					this.state.aReverseGid[sourceid_target][luid_target] = gid;
@@ -3877,7 +3930,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				{
 					zinAssert(properties);
 					var checksum    = ZinContactConverter.instance().crc32(properties);
-					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, luid_target ,
+					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, luid_target,
 					                       ZinFeedItem.ATTR_CS, checksum, ZinFeedItem.ATTR_L, l_target));
 				}
 				else
@@ -4688,7 +4741,15 @@ SyncFsm.prototype.suoOpcode = function(suo)
 
 SyncFsm.prototype.zfcTb = function() { return this.state.sources[this.state.sourceid_tb]['zfcLuid']; }
 SyncFsm.prototype.zfcPr = function() { return this.state.sources[this.state.sourceid_pr]['zfcLuid']; }
-SyncFsm.prototype.zfcZm = function() { zinAssert(this.state.sourceid_zm>0); return this.state.sources[this.state.sourceid_zm]['zfcLuid']; }
+SyncFsm.prototype.formatPr = function() { return this.state.sources[this.state.sourceid_pr]['format']; }
+
+SyncFsm.prototype.zfcZm = function()
+{
+	zinAssertAndLog(this.state.sourceid_zm > 0, "a reference to zm should probably be replaced by a reference to pr");
+
+	return this.state.sources[this.state.sourceid_zm]['zfcLuid'];
+}
+
 
 // if there's no ver in the gid, add it and reset the zfi ls
 // else if the zfi ls doesn't match either the zfi or the gid attributes, bump the gid's ver and reset the zfi's ls
@@ -5145,7 +5206,7 @@ HttpStateZm.prototype.faultLoadFromXml = function()
 
 	this.m_fault_element_xml = xmlDocumentToString(doc);
 
-	conditionalGetElementByTagNameNS(doc, ZmSoapDocument.NS_SOAP_ENVELOPE, "faultstring", this, 'm_faultstring');
+	conditionalGetElementByTagNameNS(doc, ZinXpath.NS_SOAP_ENVELOPE, "faultstring", this, 'm_faultstring');
 	conditionalGetElementByTagNameNS(doc, "urn:zimbra",                        "Trace",       this, 'm_fault_detail');
 	conditionalGetElementByTagNameNS(doc, "urn:zimbra",                        "Code",        this, 'm_faultcode');
 }
@@ -5187,7 +5248,7 @@ HttpStateZm.prototype.handleResponse = function()
 
 	if (this.m_response)
 	{
-		var nodelist = this.m_response.getElementsByTagNameNS(ZmSoapDocument.NS_SOAP_ENVELOPE, "Fault");
+		var nodelist = this.m_response.getElementsByTagNameNS(ZinXpath.NS_SOAP_ENVELOPE, "Fault");
 
 		if (nodelist.length > 0)
 			this.faultLoadFromXml();
@@ -5207,7 +5268,7 @@ HttpStateZm.prototype.handleResponse = function()
 	else if (this.m_response && !this.m_fault_element_xml)
 	{
 		var method = (this.m_method == "ForeignContactDelete") ? "Batch" : this.m_method;
-		var node = ZinXpath.getSingleValue(ZinXpath.queryFromMethod(method), this.m_response, this.m_response);
+		var node = ZinXpath.getOneNode(ZinXpath.queryFromMethod(method), this.m_response, this.m_response);
 
 		if (node)
 			nextEvent = 'evNext'; // we found a BlahResponse element - all is well
@@ -5510,6 +5571,8 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state);
 
+	if (0) // TODO - this works ok
+	{
 	var sourceid_pr = this.state.sourceid_pr;
 
 	var username = this.state.sources[sourceid_pr]['username'];
@@ -5537,6 +5600,8 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 		this.state.stopFailCode = 'FailOnIntegrityBadCredentials';
 		nextEvent = 'evLackIntegrity';
 	}
+	}
+	else nextEvent = 'evNext';
 
 	continuation(nextEvent);
 }
@@ -5558,33 +5623,83 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 
 SyncFsmGd.prototype.entryActionGetContacts = function(state, event, continuation)
 {
+	if (0)
+	{
 	var sourceid_pr = this.state.sourceid_pr;
 	var SyncToken = this.state.zfcLastSync.get(sourceid_pr).getOrNull('SyncToken');
 	var username  = this.state.sources[sourceid_pr]['username'];
 	var url       = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base?";
 
-	SyncToken = "2008-03-28T21:45:25.934Z";
-
 	if (SyncToken)
 		url += "updated-min=" + SyncToken + "&";
 
 	url += "showdeleted=true";
+	url += "max-results=10000";
 
 	this.state.m_logger.debug("entryActionGetContacts: url: " + url);
 
 	this.setupHttpGd(state, 'evNext', "GET", url, null, null);
 
 	continuation('evSoapRequest');
+	}
+	else continuation('evNext');
 }
 
 SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 {
+	var msg = "exitActionGetContacts: \n";
+
+	if (0) // TODO
+	{
 	if (!this.state.m_http.m_response || event == "evCancel")
 		return;
 
-	const XMLNS_ATOM = "http://www.w3.org/2005/Atom";
-
 	var response = this.state.m_http.m_response;
+	}
 
-	this.state.m_logger.debug("exitActionGetContacts: response: " + response);
+	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><feed xmlns='http://www.w3.org/2005/Atom' xmlns:openSearch='http://a9.com/-/spec/opensearchrss/1.0/' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>a2ghbe@gmail.com</id><updated>2008-03-30T00:33:50.384Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>cvek a2ghbe's Contacts</title><link rel='alternate' type='text/html' href='http://www.google.com/'/><link rel='http://schemas.google.com/g/2005#feed' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base'/><link rel='http://schemas.google.com/g/2005#post' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base'/><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base?max-results=25&amp;showdeleted=true'/><author><name>cvek a2ghbe</name><email>a2ghbe@gmail.com</email></author><generator version='1.0' uri='http://www.google.com/m8/feeds'>Contacts</generator><openSearch:totalResults>6</openSearch:totalResults><openSearch:startIndex>1</openSearch:startIndex><openSearch:itemsPerPage>25</openSearch:itemsPerPage><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/0</id><updated>2008-03-29T20:36:25.343Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>John Smith</title><content type='text'>notes-line-1 notes-line-2</content><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/0'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/0/1206822985343000'/><gd:organization rel='http://schemas.google.com/g/2005#work'><gd:orgName>company-acme</gd:orgName><gd:orgTitle>title-directory</gd:orgTitle></gd:organization><gd:email rel='http://schemas.google.com/g/2005#other' address='john.smith.primary@example.com' primary='true'/><gd:email rel='http://schemas.google.com/g/2005#home' address='john.smith.home.1@example.com'/><gd:email rel='http://schemas.google.com/g/2005#home' address='john.smith.home.2@example.com'/><gd:email rel='http://schemas.google.com/g/2005#other' address='john.smith.other@example.com'/><gd:email rel='http://schemas.google.com/g/2005#work' address='john.smith.work@example.com'/><gd:im address='aim-im-1' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/><gd:im address='aim-im-2' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#home_fax'>4-home-fax</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#pager'>6-pager</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>2-home</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>3-home</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>1-mobile</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#work_fax'>5-work-fax</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#work'>3-work</gd:phoneNumber><gd:postalAddress rel='http://schemas.google.com/g/2005#home'>home-address-line-1 home address line 2</gd:postalAddress></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/1</id><updated>2008-03-25T21:10:58.283Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>Jane Smith</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/1'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/1/1206479458283001'/><gd:email rel='http://schemas.google.com/g/2005#other' address='jane.smith@example.com' primary='true'/><gd:im address='im-address' rel='http://schemas.google.com/g/2005#other'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>1-mobile</gd:phoneNumber><gd:postalAddress rel='http://schemas.google.com/g/2005#home'>home-address-line-1</gd:postalAddress></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/2</id><updated>2008-03-30T00:29:11.271Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'></title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/2'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/2/1206836951271000'/><gd:deleted/></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/3</id><updated>2008-03-25T21:14:10.496Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>Joe Smith</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/3'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/3/1206479650496002'/></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/4</id><updated>2008-03-25T21:14:33.495Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>1-1</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/4'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/4/1206479673495000'/><gd:email rel='http://schemas.google.com/g/2005#other' address='1@example.com' primary='true'/></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/5</id><updated>2008-03-29T21:33:31.780Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>cvek a2ghbe</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/5'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/5/1206826411780000'/><gd:email rel='http://schemas.google.com/g/2005#other' address='a2ghbe@gmail.com' primary='true'/></entry></feed>";
+
+	var domparser = new DOMParser();
+	var response = domparser.parseFromString(xmlString, "text/xml");
+
+	var xpath_query = "/atom:feed/atom:entry";
+	this.state.a_gd_contact = GdContact.arrayFromXpath(response, xpath_query);
+
+	var key_parent_folder = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_FOLDER_CONTACTS);
+
+	for (var id in this.state.a_gd_contact)
+	{
+		var rev        = this.state.a_gd_contact[id].m_meta['updated'];
+		var is_deleted = isPropertyPresent(this.state.a_gd_contact[id].m_meta, 'deleted');
+		var zfi = null;
+
+		this.state.m_logger.debug("exitActionGetContacts: id: " + id + " properties: " + this.state.a_gd_contact[id].toString());
+
+		if (this.zfcPr().isPresent(id))
+		{
+			zfi = this.zfcPr().get(id);
+
+			zfi.set(ZinFeedItem.ATTR_REV, rev);
+
+			if (is_deleted)
+				this.zfcPr().get(id).set(ZinFeedItem.ATTR_DEL, '1');
+
+			msg += " updated: " + zfi.toString();
+		}
+		else if (!is_deleted)
+		{
+			zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, id,
+						                               ZinFeedItem.ATTR_REV, rev,
+						                               ZinFeedItem.ATTR_MS, 1,
+													   ZinFeedItem.ATTR_L, key_parent_folder);
+			this.zfcPr().set(zfi); // add new
+			msg += " added:   " + zfi.toString();
+		}
+		else
+			msg += " ignored deleted contact id: " + id;
+
+		msg += "\n";
+	}
+
+	this.state.m_logger.debug(msg);
 }

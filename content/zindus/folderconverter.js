@@ -28,8 +28,8 @@ ZinFolderConverter.PREFIX_CLASS_SHARED   = 4;
 
 function ZinFolderConverter()
 {
-	this.m_bimap_pab = new BiMap(              [FORMAT_TB,               FORMAT_ZM                  ],
-	                                           [TB_PAB,                  ZM_FOLDER_CONTACTS         ]);
+	this.m_bimap_pab = new BiMap(              [FORMAT_TB,               FORMAT_ZM,          FORMAT_GD          ],
+	                                           [TB_PAB,                  ZM_FOLDER_CONTACTS, GD_FOLDER_CONTACTS ]);
 
 	this.m_bimap_emailed_contacts = new BiMap( [FORMAT_TB,               FORMAT_ZM                  ],
 	                                           [TB_EMAILED_CONTACTS,     ZM_FOLDER_EMAILED_CONTACTS ]);
@@ -102,7 +102,7 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zf
 	if (zfi.type() == ZinFeedItem.TYPE_FL && this.m_bimap_pab.lookup(format_from, null) == name)
 		ret = this.m_bimap_pab.lookup(format_to, null);
 	else if (zfi.type() == ZinFeedItem.TYPE_FL && this.m_bimap_emailed_contacts.lookup(format_from, null) == name)
-		ret = this.m_bimap_emailed_contacts.lookup(format_to, null);
+		ret = this.m_bimap_emailed_contacts.lookup(format_to, null);  // this will assert if FORMAT_GD ... as it should ...
 	else if (format_from == format_to)
 		ret = name;
 	else if (format_to == FORMAT_TB)

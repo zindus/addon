@@ -48,75 +48,75 @@ ZinContactConverter.instance = function()
 ZinContactConverter.prototype.setup = function()
 {
 	this.m_equivalents = new Array();
-	this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName"      ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "NickName",        FORMAT_ZM, null             ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "PrimaryEmail",    FORMAT_ZM, "email"          ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "SecondEmail",     FORMAT_ZM, "email2"         ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkPhone",       FORMAT_ZM, "workPhone"      ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomePhone",       FORMAT_ZM, "homePhone"      ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "FaxNumber",       FORMAT_ZM, "workFax"        ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "PagerNumber",     FORMAT_ZM, "pager"          ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "CellularNumber",  FORMAT_ZM, "mobilePhone"    ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress",     FORMAT_ZM, "homeStreet"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress2",    FORMAT_ZM, null             ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCity",        FORMAT_ZM, "homeCity"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeState",       FORMAT_ZM, "homeState"      ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeZipCode",     FORMAT_ZM, "homePostalCode" ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCountry",     FORMAT_ZM, "homeCountry"    ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress",     FORMAT_ZM, "workStreet"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress2",    FORMAT_ZM, null             ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCity",        FORMAT_ZM, "workCity"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkState",       FORMAT_ZM, "workState"      ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkZipCode",     FORMAT_ZM, "workPostalCode" ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCountry",     FORMAT_ZM, "workCountry"    ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "JobTitle",        FORMAT_ZM, "jobTitle"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Department",      FORMAT_ZM, "department"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Company",         FORMAT_ZM, "company"        ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL"        ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL"        ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Custom1",         FORMAT_ZM, null             ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Custom2",         FORMAT_ZM, null             ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Custom3",         FORMAT_ZM, null             ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Custom4",         FORMAT_ZM, null             ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Notes",           FORMAT_ZM, "notes"          ));
-	this.m_equivalents.push(newObject(FORMAT_TB, "ScreenName",      FORMAT_ZM, null             ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "middleName"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email3"         ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "workPhone2"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "assistantPhone" ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "companyPhone"   ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "callbackPhone"  ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "homePhone2"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "homeFax"        ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "carPhone"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherStreet"    ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherCity"      ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherState"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherPostalCode"));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherCountry"   ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherPhone"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherFax"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherURL"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "birthday"       ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "fileAs"         ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress1"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress2"     ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress3"     ));
+	this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "NickName",        FORMAT_ZM, null,                FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "PrimaryEmail",    FORMAT_ZM, "email",             FORMAT_GD, "PrimaryEmail"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "SecondEmail",     FORMAT_ZM, "email2",            FORMAT_GD, "SecondEmail"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkPhone",       FORMAT_ZM, "workPhone",         FORMAT_GD, "phoneNumber#work"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomePhone",       FORMAT_ZM, "homePhone",         FORMAT_GD, "phoneNumber#home"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "FaxNumber",       FORMAT_ZM, "workFax",           FORMAT_GD, "phoneNumber#work_fax"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "PagerNumber",     FORMAT_ZM, "pager",             FORMAT_GD, "phoneNumber#pager"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "CellularNumber",  FORMAT_ZM, "mobilePhone",       FORMAT_GD, "phoneNumber#mobile"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress",     FORMAT_ZM, "homeStreet",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress2",    FORMAT_ZM, null,                FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCity",        FORMAT_ZM, "homeCity",          FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeState",       FORMAT_ZM, "homeState",         FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeZipCode",     FORMAT_ZM, "homePostalCode",    FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCountry",     FORMAT_ZM, "homeCountry",       FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress",     FORMAT_ZM, "workStreet",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress2",    FORMAT_ZM, null,                FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCity",        FORMAT_ZM, "workCity",          FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkState",       FORMAT_ZM, "workState",         FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkZipCode",     FORMAT_ZM, "workPostalCode",    FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCountry",     FORMAT_ZM, "workCountry",       FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "JobTitle",        FORMAT_ZM, "jobTitle",          FORMAT_GD, "orgTitle"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Department",      FORMAT_ZM, "department",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Company",         FORMAT_ZM, "company",           FORMAT_GD, "orgName"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Custom1",         FORMAT_ZM, null,                FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Custom2",         FORMAT_ZM, null,                FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Custom3",         FORMAT_ZM, null,                FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Custom4",         FORMAT_ZM, null,                FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Notes",           FORMAT_ZM, "notes",             FORMAT_GD, "content"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "ScreenName",      FORMAT_ZM, null,                FORMAT_GD, "im#AIM"));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "middleName",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email3",            FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "workPhone2",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "assistantPhone",    FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "companyPhone",      FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "callbackPhone",     FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "homePhone2",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "homeFax",           FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "carPhone",          FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherStreet",       FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherCity",         FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherState",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherPostalCode",   FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherCountry",      FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherPhone",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherFax",          FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherURL",          FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "birthday",          FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "fileAs",            FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress1",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress2",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress3",        FORMAT_GD, null));
 
 	// these fields aren't in the zimbra web UI but are supported by the zimbra server
 	// these are just the ones found through experimenting with Outlook sync - there are certainly more...
 	// Must consider whether there is a better way, eg: query/determine the entire list...
 	//
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "namePrefix"        )); // eg "Mr."
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "nameSuffix"        ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "initials"          ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email4"            ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email5"            ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email6"            ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "office"            ));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "outlookUserField1" ));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "namePrefix",        FORMAT_GD, null)); // eg "Mr."
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "nameSuffix",        FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "initials",          FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email4",            FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email5",            FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email6",            FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "office",            FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "outlookUserField1", FORMAT_GD, null));
 
 	// Don't generate debug messages if unable to convert these attributes...
 	// eg. the <cn> elements returned by SyncGal include ldap attributes
@@ -131,24 +131,23 @@ ZinContactConverter.prototype.setup = function()
 	                                "zimbraCalResType",            0,
 	                                "modifyTimeStamp",             0);
 
-	var aIndex = [FORMAT_TB, FORMAT_ZM];
 	var i, j, k;
 	this.m_map = new Object();
 
 	// this.m_logger.debug("ZimbraAddressBook.setup() - m_equivalents: " + aToString(this.m_equivalents));
 
-	for (j = 0; j < aIndex.length;  j++)
-		this.m_map[aIndex[j]] = new Object();
+	for (j = 0; j < A_VALID_FORMATS.length;  j++)
+		this.m_map[A_VALID_FORMATS[j]] = new Object();
 
 	for (i = 0; i < this.m_equivalents.length; i++)
-		for (j = 0; j < aIndex.length; j++)
+		for (j = 0; j < A_VALID_FORMATS.length; j++)
 		{
-			k = this.m_equivalents[i][aIndex[j]];
+			k = this.m_equivalents[i][A_VALID_FORMATS[j]];
 
 			// gLogger.debug("ZinContactConverter.setup() - i: " + i + " j: " + j + " k: " + k);
 
 			if (k != null)
-				this.m_map[aIndex[j]][k] = i;
+				this.m_map[A_VALID_FORMATS[j]][k] = i;
 		}
 
 	// So (for example)...

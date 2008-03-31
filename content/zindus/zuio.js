@@ -49,7 +49,7 @@ Zuio.prototype.key = function()
 
 Zuio.key = function(id, zid)
 {
-	zinAssert(id);
+	zinAssertAndLog(id, "id: " + id);
 
 	var ret = id + "";
 	
@@ -61,7 +61,7 @@ Zuio.key = function(id, zid)
 
 Zuio.prototype.setFromPair = function(id, zid)
 {
-	zinAssert(id && id > 0);
+	zinAssert(id);
 
 	this.id  = id;
 	this.zid = zid;

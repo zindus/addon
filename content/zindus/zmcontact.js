@@ -25,7 +25,6 @@ function ZmContact()
 {
 	this.attribute = new Object();
 	this.element   = new Object();
-	this.m_logger  = newZinLogger("ZmContact");
 }
 
 ZmContact.prototype.isMailList = function()
@@ -52,7 +51,7 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 	var key = null;
 	var value = null;
 
-	// this.m_logger.debug("loadFromNode: node.nodeName == " + node.nodeName);
+	// gLogger.debug("loadFromNode: node.nodeName == " + node.nodeName);
 
 	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
@@ -68,7 +67,7 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 	//
 	var nodelist_of_a = node.getElementsByTagNameNS(ns, "a");
 
-	// this.m_logger.debug("nodelist_of_a.length == " + nodelist_of_a.length");
+	// gLogger.debug("nodelist_of_a.length == " + nodelist_of_a.length");
 
 	for (var i = 0; i < nodelist_of_a.length; i++)
 	{
@@ -85,13 +84,13 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 		if (key && value)
 			this.element[key] = value;
 		else
-			this.m_logger.warn("Unexpected response from server: key is " + key + " and value is " + value);
+			gLogger.warn("Unexpected response from server: key is " + key + " and value is " + value);
 
-		// if (key && value) this.m_logger.debug("77224: setting contact." + key + " to " + value);
+		// if (key && value) gLogger.debug("77224: setting contact." + key + " to " + value);
 	}
 }
 
-function FunctorArrayOfContactsFromNodes(ns)
+function ZmContactFunctorToMakeArrayFromNodes(ns)
 {
 	this.ns = ns;
 	this.a = new Array();
@@ -102,22 +101,10 @@ function FunctorArrayOfContactsFromNodes(ns)
 	this.mapId = new Object();
 }
 
-FunctorArrayOfContactsFromNodes.prototype.run = function(doc, node)
+ZmContactFunctorToMakeArrayFromNodes.prototype.run = function(doc, node)
 {
 	var p = new ZmContact();
 	p.loadFromNode(doc, node, this.ns);
 	this.mapId[p.attribute.id] = this.a.length;
 	this.a.push(p);
 }
-
-function FunctorArrayOfTextNodeValue()
-{
-	this.a = new Array();
-}
-
-FunctorArrayOfTextNodeValue.prototype.run = function(doc, node)
-{
-	if (node.childNodes.length == 1 && node.childNodes.item(0).nodeType == Node.TEXT_NODE)
-		this.a.push(new String(node.childNodes.item(0).nodeValue));
-}
-

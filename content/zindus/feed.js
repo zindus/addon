@@ -270,7 +270,7 @@ ZinFeedCollection.prototype.toString = function(eol_char_arg)
 		if (!isPropertyPresent(a_key[type], zuio.zid))
 			a_key[type][zuio.zid] = new Array();
 
-		a_key[type][zuio.zid].push(Number(zuio.id));
+		a_key[type][zuio.zid].push(isNaN(zuio.id) ? zuio.id : Number(zuio.id));
 	}
 
 	var numeric_compare_function = function(a, b)

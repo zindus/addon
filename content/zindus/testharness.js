@@ -45,7 +45,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
-	// ret = ret && this.testGoogleContacts();
+	ret = ret && this.testGoogleContacts();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -379,9 +379,7 @@ ZinTestHarness.prototype.testZuio = function()
 ZinTestHarness.prototype.testGoogleContacts = function()
 {
 	var urlAuth     = "https://www.google.com/accounts/ClientLogin";
-	var user        = "a2ghbe@gmail.com";
-	// var user        = "google-a2ghbe@moniker.net";
-	// var urlUser     = "http://www.google.com/m8/feeds/contacts/google-a2ghbe@moniker.net/base"; // @ == %40
+	var user        = "a2ghbe@gmail.com"; // "google-a2ghbe@moniker.net";
 	var urlUser     = "http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base"; // @ == %40
 	var content = "";
 	var authToken = null;
@@ -420,13 +418,6 @@ ZinTestHarness.prototype.testGoogleContacts = function()
 
 	var xhr;
 
-	// var preferences = new MozillaPreferences("network.http");
-	// var proxy_version = preferences.getCharPref(preferences.branch(), "proxy.version");
-	// var version = preferences.getCharPref(preferences.branch(), "version");
-
-	// preferences.setCharPref(preferences.branch(), "proxy.version", "1.0");
-	// preferences.setCharPref(preferences.branch(), "version", "1.0");
-
 	if (true)
 	{
 		m_logger.debug("1. authenticate: url: " + urlAuth);
@@ -441,14 +432,12 @@ ZinTestHarness.prototype.testGoogleContacts = function()
 		xhrCallbackAuth();
 	}
 
-	var curl2  = "DQAAAIIAAABmHgs5-EKXqlzYAnfks-WD5PU2K5m3AEwS50IY8AJ4xiZBINdP9-jKcjRLXvQkt78ksl5kcJjDp8sUPszjPj32V5wEmXlgfRXHWBEEFYWfuuaRCbep6mh-79aT_aITEDMZbGBlaGFeL7tMcpKNtk8TGSOrOQU-Icu500Y2GvOzsawl3Gbsey5IDkIkwggr_5A";
-	var js1 = "DQAAAIIAAAAfdpSw9Q5cG8o9i9ei3a_TynT3NTVBr83TMT23vBuKsmXpYTkX28jnz5jwAdg7jQGAdpqrERBqJUvCqE2_LZxbdSYDLShxZs-G9oavclLRbyFuNLHVOdtFH3WOY7grDkmuwrNQ5ZZv5eTtx31w7JDGzHAKJOgndTguLWOhNjG_h1U4iIpZA9RaV_KpRfx2rYA";
-	// authToken = js1;
-
 	m_logger.debug("authToken: " + authToken);
 
 	if (authToken)
 	{
+		urlUser += "?showdeleted=true";
+
 		m_logger.debug("2. get all contacts: url: " + urlUser);
 
 		xhr = new XMLHttpRequest();
@@ -459,10 +448,6 @@ ZinTestHarness.prototype.testGoogleContacts = function()
 
 		xhrCallbackAuth();
 	}
-
-	// preferences.setCharPref(preferences.branch(), "proxy.version", proxy_version);
-	// preferences.setCharPref(preferences.branch(), "version", version);
-
 
 	return true;
 }

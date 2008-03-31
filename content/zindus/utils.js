@@ -395,12 +395,12 @@ function hyphenate()
 
 function isValidSourceId(sourceid)
 {
-	return (sourceid == SOURCEID_ZM || sourceid == SOURCEID_TB);
+	return (sourceid == SOURCEID_TB || sourceid == SOURCEID_ZM || sourceid == SOURCEID_GD);
 }
 
 function isValidFormat(format)
 {
-	return (format == FORMAT_TB || format == FORMAT_ZM);
+	return isInArray(format, A_VALID_FORMATS);
 }
 
 function isValidUrl(url)

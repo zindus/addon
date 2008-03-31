@@ -144,8 +144,15 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		start:            { },
 		stAuth:           { count: 1 },
 		stLoad:           { count: 1 },
-		// stLoadTb:         { count: 1 },
+		stLoadTb:         { count: 1 },
 		stGetContacts:    { }, // gd
+		stConverge1:      { count: 1 },
+		stConverge2:      { count: 1 },
+		stConverge3:      { count: 1 },
+		stConverge5:      {            },
+		stConverge6:      { count: 1 },
+		stConverge7:      { count: 1 },
+		stConverge8:      { count: 1 },
 		stSoapRequest:    { },
 		stSoapResponse:   { },
 		final:            { count: 1 }
