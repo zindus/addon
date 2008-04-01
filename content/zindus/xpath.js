@@ -88,9 +88,8 @@ ZinXpath.getSingleNode = function(xpath_query, doc, contextNode, xpathResultType
 			ret = xpathResult.singleNodeValue;
 		}
 	}
-	catch(e) {
-		ZinXpath.logger.error("============================= ERROR - exception ==========================");
-		ZinXpath.logger.error("ZinXpath.getSingleNode() reports document tree modified during iteration " + e);
+	catch(ex) {
+		ZinXpath.reportException(ex);
 	}
 
 	return ret;
@@ -125,11 +124,16 @@ ZinXpath.runFunctor = function(functor, xpath_query, doc)
 			node = xpathResult.iterateNext();
 		}
 	}
-	catch(e) {
-		ZinXpath.logger.error("============================= ERROR - exception ==========================");
-		ZinXpath.logger.error("ZinXpath.runFunctor() reports document tree modified during iteration " + e);
+	catch(ex) {
+		ZinXpath.reportException(ex);
 	}
 
+}
+
+ZinXpath.reportException = function(ex)
+{
+	ZinXpath.logger.error("Exception: " + ex);
+	ZinXpath.logger.error("Stack: " + ex.stack);
 }
 
 ZinXpath.queryFromMethod = function(method)

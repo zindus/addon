@@ -45,7 +45,6 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
-	ret = ret && this.testGoogleContacts();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -374,89 +373,4 @@ ZinTestHarness.prototype.testZuio = function()
 	ret = ret && !zuio.zid;
 
 	return ret;
-}
-
-ZinTestHarness.prototype.testGoogleContacts = function()
-{
-	var urlAuth     = "https://www.google.com/accounts/ClientLogin";
-	var user        = "a2ghbe@gmail.com"; // "google-a2ghbe@moniker.net";
-	var urlUser     = "http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base"; // @ == %40
-	var content = "";
-	var authToken = null;
-	
-	// content += "accountType=HOSTED_OR_GOOGLE";
-	content += "accountType=GOOGLE";
-	content += "&Email=" + user;
-	content += "&Passwd=p92vCFNS65ZDHAqbHYSC";
-	content += "&service=cp"; // gbase cp
-	content += "&source=Toolware-Zindus-0.01";
-
-	m_logger = newZinLogger("testGoogleContacts");
-
-	var xhrCallbackAuth = function()
-	{
-		m_logger.debug("readyState: " + xhr.readyState);
-
-		if (xhr.readyState==4) {
-			m_logger.debug("status: " + xhr.status + " is 200: " + (xhr.status == "200" ? "true" : "false"));
-
-			m_logger.debug("responseHeaders: " + xhr.getAllResponseHeaders());
-
-			m_logger.debug("responseText: " + xhr.responseText);
-
-			if (xhr.status == "200")
-			{
-				var str = String(xhr.responseText);
-
-				var aMatch = str.match(/Auth=(.+?)(\s|$)/ ); // a[0] is the whole pattern, a[1] is the first capture, a[2] the second etc...
-
-				if (aMatch && aMatch.length == 3)
-					authToken = aMatch[1];
-			}
-		}
-	};
-
-	var xhr;
-
-	if (true)
-	{
-		m_logger.debug("1. authenticate: url: " + urlAuth);
-
-		xhr = new XMLHttpRequest();
-		xhr.open("POST", urlAuth, false); // true ==> async
-		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-		xhr.setRequestHeader("User-Agent", "blah");
-		this.testGoogleContactsSetXhr(xhr);
-		xhr.send(content);
-
-		xhrCallbackAuth();
-	}
-
-	m_logger.debug("authToken: " + authToken);
-
-	if (authToken)
-	{
-		urlUser += "?showdeleted=true";
-
-		m_logger.debug("2. get all contacts: url: " + urlUser);
-
-		xhr = new XMLHttpRequest();
-		xhr.open("GET", urlUser, false);
-		xhr.setRequestHeader("Authorization", "GoogleLogin auth=" + authToken);
-		this.testGoogleContactsSetXhr(xhr);
-		xhr.send("");
-
-		xhrCallbackAuth();
-	}
-
-	return true;
-}
-
-ZinTestHarness.prototype.testGoogleContactsSetXhr = function(xhr)
-{
-		xhr.setRequestHeader("Accept", null);
-		xhr.setRequestHeader("Accept-Language", null);
-		xhr.setRequestHeader("Accept-Encoding", null);
-		xhr.setRequestHeader("Accept-Charset",  null);
-		xhr.setRequestHeader("User-Agent",  null);
 }
