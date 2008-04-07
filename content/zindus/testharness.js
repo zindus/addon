@@ -37,9 +37,9 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
-	// ret = ret && this.testLso();
+	ret = ret && this.testLso();
 	// ret = ret && this.testContactConverter();
-	ret = ret && this.testAddressBook();
+	// ret = ret && this.testAddressBook();
 	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
@@ -238,32 +238,52 @@ ZinTestHarness.prototype.testLso = function()
 
 	// test a zimbra zfi against an lso generated from a zfi
 	//
-	ZinTestHarness.testLsoToString(lso, str);
-	ZinTestHarness.testLsoCompareZm(lso, zfi);
+	this.testLsoToString(lso, str);
+	this.testLsoCompareZm(lso, zfi);
 
 	// test a zimbra zfi against an lso generated from a string
 	//
 	lso = new Lso(str);
-	ZinTestHarness.testLsoToString(lso, str);
-	ZinTestHarness.testLsoCompareZm(lso, zfi);
+	this.testLsoToString(lso, str);
+	this.testLsoCompareZm(lso, zfi);
 
 	// test a thunderbird zfi against an lso generated from a zfi
 	//
 	zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, 334, ZinFeedItem.ATTR_CS, 1749681802);
 	lso = new Lso(zfi);
 	str = "#1749681802###";
-	ZinTestHarness.testLsoToString(lso, str);
-	ZinTestHarness.testLsoCompareTb(lso, zfi);
+	this.testLsoToString(lso, str);
+	this.testLsoCompareTb(lso, zfi);
+
+	this.testLsoCaseOne();
 
 	return true;
 }
 
-ZinTestHarness.testLsoToString = function(lso, str)
+ZinTestHarness.prototype.testLsoCaseOne = function(lso, str)
+{
+	// test this outcome which seemed odd :
+	// buildGcs: compare:  sourceid: 2 zfi: type=cn key=92114 id=92114 l=85098 ms=100170 rev=100170 ls=1##94649#94649#  gid: 523 gid's ver: 1 lso : 1##94649#94649# lso.compare == -1
+	// Turned out to be a bug - compare() was using string comparisons, so it failed when comparing a 3-digit with a four-digit ms or rev
+
+	var lso = new Lso("1##94649#94649#");
+	var zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, "92114",
+	                                               ZinFeedItem.ATTR_ID, "92114",
+	                                               ZinFeedItem.ATTR_L, "85098",
+	                                               ZinFeedItem.ATTR_MS, "100170",
+	                                               ZinFeedItem.ATTR_REV, "100170",
+	                                               ZinFeedItem.ATTR_LS, "1##94649#94649#" );
+	var ret = lso.compare(zfi);
+
+	zinAssert(ret == 1);
+}
+
+ZinTestHarness.prototype.testLsoToString = function(lso, str)
 {
 	zinAssert(lso.toString() == str);
 }
 
-ZinTestHarness.testLsoCompareZm = function(lso, zfiOrig)
+ZinTestHarness.prototype.testLsoCompareZm = function(lso, zfiOrig)
 {
 	var zfi;
 
@@ -293,7 +313,7 @@ ZinTestHarness.testLsoCompareZm = function(lso, zfiOrig)
 	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
 }
 
-ZinTestHarness.testLsoCompareTb = function(lso, zfiOrig)
+ZinTestHarness.prototype.testLsoCompareTb = function(lso, zfiOrig)
 {
 	var zfi;
 
@@ -385,3 +405,5 @@ ZinTestHarness.prototype.testAddressBook = function()
 
 	return true;
 }
+
+// include("chrome://zindus/content/testharnessgd.js");

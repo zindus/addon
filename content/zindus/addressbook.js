@@ -200,12 +200,12 @@ ZinAddressBook.prototype.addCard = function(uri, properties, attributes)
 	                      createInstance().QueryInterface(Components.interfaces.nsIAbCard);
 	var realCard = dir.addCard(abstractCard);
 
-	this.updateCard(realCard, uri, properties, attributes);
+	this.updateCard(realCard, uri, properties, attributes, FORMAT_TB);
 
 	return realCard;
 }
 
-ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attributes)
+ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var key;

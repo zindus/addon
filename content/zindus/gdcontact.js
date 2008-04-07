@@ -28,10 +28,17 @@ function GdContact()
 	this.m_meta     = null;
 	this.m_contact  = null;
 
-	this.m_phone_keys = { home: null,  work: null, work_fax: null, pager: null, mobile: null };
 	this.m_ns_gd_length = this.ns_gd("").length;
 
 	this.m_entry_children = null; // key ==> localName, value is the node - populated by runFunctor and fieldAdd() - saves searching
+
+	// m_phone_keys == { home: null, work: null, work_fax: null, ... }
+	//
+	this.m_phone_keys = new Object();
+
+	for (var key in ZinContactConverter.instance().m_common_to[FORMAT_GD][FORMAT_TB])
+		if (this.leftOfHash(key) == "phoneNumber")
+			this.m_phone_keys[this.rightOfHash(key)] = true;
 }
 
 GdContact.prototype.toString = function()
@@ -320,6 +327,29 @@ GdContact.prototype.updateFromContact = function(contact)
 		this.m_entry.removeChild(this.m_entry_children["organization"]);
 		delete this.m_entry_children["organization"];
 	}
+
+	this.ensureEntryHasXmlnsGd();
+}
+
+// This method adds an xmlns:gd namespace declaration to the <entry> element.  Otherwise, each child has a separate declaration,
+// which works fine, but increases the size of the payload for no good reason.
+//
+GdContact.prototype.ensureEntryHasXmlnsGd = function()
+{
+	var is_xmlns_gd_present = false;
+
+	if (this.m_entry.hasAttributes())
+	{
+		for (var i = 0; i < this.m_entry.attributes.length; i++)
+			if (this.m_entry.attributes.item(i).nodeName == "xmlns:gd")
+			{
+				is_xmlns_gd_present = true;
+				break;
+			}
+	}
+
+	if (!is_xmlns_gd_present)
+		this.m_entry.setAttributeNS(ZinXpath.NS_XMLNS, "xmlns:gd", ZinXpath.NS_GD);
 }
 
 GdContact.prototype.fieldAdd = function(key, a_field)

@@ -1645,7 +1645,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 						attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
 						properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
-						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes);
+						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, FORMAT_ZM);
 
 						this.state.aSyncGalContact[index].present = true;
 					}
@@ -1669,7 +1669,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 			properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
 			this.state.m_logger.debug("entryActionGalCommit: adding aSyncGalContact[" + aAdd[i] + "]: " +
-			                            this.shortLabelForContactProperties(FORMAT_TB, properties));
+			                            this.shortLabelForContactProperties(properties));
 
 			this.state.m_addressbook.addCard(uri, properties, attributes);
 		}
@@ -2869,7 +2869,7 @@ SyncFsm.prototype.buildGcs = function()
 				ret = new Gcs(lowest_sourceid, Gcs.CONFLICT);
 			}
 
-			msg = "  buildGcs: compare: " + gid + " returns: " + ret.toString() + msg;
+			msg = "  buildGcs: compare: gid: " + gid + " returns: " + ret.toString() + msg;
 
 			buildgcs_msg += "\n" + msg;
 
@@ -2882,7 +2882,7 @@ SyncFsm.prototype.buildGcs = function()
 	
 	var msg = "";
 	for (var gid in aGcs)
-		msg += "\n aGcs[" + gid + "]: " + aGcs[gid].toString();
+		msg += "\n aGcs: gid: " + gid + ": " + aGcs[gid].toString();
 
 	this.state.m_logger.debug("buildGcs: " + msg);
 
@@ -3238,7 +3238,10 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 		{
 			var properties = this.getContactFromLuid(sourceid, luid, format);
 		
-			ret += this.shortLabelForContactProperties(format, properties);
+			if (properties)
+				ret += this.shortLabelForContactProperties(properties);
+			else
+				ret += "contact sourceid: " + sourceid + " luid: " + luid;
 		}
 	}
 
@@ -3248,17 +3251,17 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	return ret;
 }
 
-SyncFsm.prototype.shortLabelForContactProperties = function(format, properties)
+SyncFsm.prototype.shortLabelForContactProperties = function(properties)
 {
 	var ret = "";
 	var key;
 
-	key = (format == FORMAT_TB) ? 'DisplayName' : 'fullName';
+	key = 'DisplayName';
 
 	if (isPropertyPresent(properties, key))
 		ret += "<" + properties[key] + "> ";
 
-	key = (format == FORMAT_TB) ? "PrimaryEmail" : "email";
+	key = 'PrimaryEmail';
 
 	if (isPropertyPresent(properties, key))
 		ret += properties[key];
@@ -3810,14 +3813,15 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 		type = this.feedItemTypeFromGid(gid, suo.sourceid_winner);
 		sourceid_winner = suo.sourceid_winner;
 		sourceid_target = suo.sourceid_target;
-		zfcWinner   = this.state.sources[sourceid_winner]['zfcLuid'];
-		zfcTarget   = this.state.sources[sourceid_target]['zfcLuid'];
-		zfcGid      = this.state.zfcGid;
-		luid_winner = zfcGid.get(gid).get(sourceid_winner);
-		zfiGid      = zfcGid.get(gid);
-		zfiWinner   = zfcWinner.get(luid_winner);
-		luid_target = null;  // if non-null at the bottom of loop, it means that a change was made
-		properties  = null;
+		format_winner   = this.state.sources[sourceid_winner]['format'];
+		zfcWinner       = this.state.sources[sourceid_winner]['zfcLuid'];
+		zfcTarget       = this.state.sources[sourceid_target]['zfcLuid'];
+		zfcGid          = this.state.zfcGid;
+		luid_winner     = zfcGid.get(gid).get(sourceid_winner);
+		zfiGid          = zfcGid.get(gid);
+		zfiWinner       = zfcWinner.get(luid_winner);
+		luid_target     = null;  // if non-null at the bottom of loop, it means that a change was made
+		properties      = null;
 		msg = "";
 
 		this.state.m_logger.debug("entryActionUpdateTb: acting on suo: - opcode: " + Suo.opcodeAsString(ORDER_SOURCE_UPDATE[i] & Suo.MASK)
@@ -3944,14 +3948,12 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					if (abCard)
 					{
-						zc = this.state.aSyncContact[luid_winner];
-
 						attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
-						properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+						properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB);
 
 						msg += " setting card to: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes);
+						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, format_winner);
 					}
 				}
 				else
@@ -3964,11 +3966,10 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					if (abCard)
 					{
-						if (isPropertyPresent(this.state.aSyncContact, luid_winner))
+						if (format_winner == FORMAT_ZM && isPropertyPresent(this.state.aSyncContact, luid_winner))
 						{
-							zc         = this.state.aSyncContact[luid_winner];
 							attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
-							properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
+							properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB);
 
 							msg += " - content changed";
 						}
@@ -4631,40 +4632,45 @@ SyncFsm.luidFromLuidTypeSf = function(zfcTarget, luid_target, item_type)
 
 SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 {
-	var zfc = this.state.sources[sourceid]['zfcLuid'];
-	var zfi = zfc.get(luid);
-	var ret = null;
+	var format_from = this.state.sources[sourceid]['format'];
+	var zfc         = this.state.sources[sourceid]['zfcLuid'];
+	var zfi         = zfc.get(luid);
+	var ret         = null;
 
-	zinAssert(zfi.type() == ZinFeedItem.TYPE_CN);
+	zinAssertAndLog(zfi.type() == ZinFeedItem.TYPE_CN, "sourceid: " + sourceid + " luid: " + luid);
+	zinAssert(isValidFormat(format_to));
 
-	if (this.state.sources[sourceid]['format'] == FORMAT_TB)
+	switch(format_from)
 	{
-		var l   = zfi.keyParent();
-		var uri = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
+		case FORMAT_TB:
+			var l      = zfi.keyParent();
+			var uri    = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid, l));
+			var abCard = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
 
-		// this.state.m_logger.debug("getContactFromLuid: sourceid: " + sourceid + " luid: " + luid + "uri: " + uri +
-		//                               "l: " + l + " abName: " + this.getTbAddressbookNameFromLuid(sourceid, l) );
+			if (abCard)
+			{
+				ret = this.state.m_addressbook.getCardProperties(abCard);
+				ret = ZinContactConverter.instance().convert(format_to, FORMAT_TB, ret);
+			}
+			else
+				this.state.m_logger.warn("can't find contact for to sourceid: " + sourceid + " and luid: " + luid +
+				                         " in thunderbird addressbook uri: " + uri + " - this shouldn't happen.");
+			break;
 
-		var abCard = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
+		case FORMAT_ZM:
+			if (isPropertyPresent(this.state.aSyncContact, luid))
+				ret = ZinContactConverter.instance().convert(format_to, FORMAT_ZM, this.state.aSyncContact[luid].element);
 
-		if (abCard)
-		{
-			ret = this.state.m_addressbook.getCardProperties(abCard);
-			ret = ZinContactConverter.instance().convert(format_to, FORMAT_TB, ret);
-		}
-		else
-			this.state.m_logger.warn("can't find contact for to sourceid: " + sourceid + " and luid: " + luid + " in thunderbird addressbook uri: " + uri + " - this shouldn't happen.");
-	}
-	else
-	{
-		if (isPropertyPresent(this.state.aSyncContact, luid))
-		{
-			var zc = this.state.aSyncContact[luid]; // the ZmContact object that arrived via GetContactResponse
-			ret = ZinContactConverter.instance().convert(format_to, FORMAT_ZM, zc.element);
-		}
-		else
-			ret = "contact sourceid: " + sourceid + " luid: " + luid;
-	}
+			break;
+
+		case FORMAT_GD:
+			if (isPropertyPresent(this.state.a_gd_contact, luid))
+				ret = ZinContactConverter.instance().convert(format_to, FORMAT_GD, this.state.a_gd_contact[luid].m_contact);
+			break;
+
+		default:
+			zinAssertAndLog(false, "unmatched case: format_from: " + format_from);
+	};
 
 	return ret;
 }
@@ -5562,6 +5568,8 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm)
 	SyncFsm.prototype.initialiseState.call(this, id_fsm);
 
 	var state = this.state;
+
+	state.a_gd_contact = null;
 
 	state.initialiseSource(SOURCEID_GD, FORMAT_GD, "sourceServer");
 

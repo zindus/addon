@@ -123,8 +123,8 @@ Lso.prototype.compare = function(zfi)
 				  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL]) ;
 		else
 			isGreaterThan =
-			            (Lso.normalise(zfi, MS)  > this.m_properties[MS])  ||
-		                (Lso.normalise(zfi, REV) > this.m_properties[REV]) ||
+			            (Number(Lso.normalise(zfi, MS))  > Number(this.m_properties[MS]))  ||
+		                (Number(Lso.normalise(zfi, REV)) > Number(this.m_properties[REV])) ||
 		                ( 
 							(Lso.normalise(zfi, MS) == this.m_properties[MS]) &&
 		                  	(Lso.normalise(zfi, REV) == this.m_properties[REV]) &&

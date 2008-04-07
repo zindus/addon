@@ -35,6 +35,8 @@ ZinXpath.NS_OPENSEARCH    = "http://a9.com/-/spec/opensearchrss/1.0/";
 ZinXpath.NS_GCONTACT      = "http://schemas.google.com/contact/2008";
 ZinXpath.NS_GD            = "http://schemas.google.com/g/2005";
 
+ZinXpath.NS_XMLNS         = "http://www.w3.org/2000/xmlns/"; // See the uri and also http://www.w3.org/TR/DOM-Level-2-Core/core.html
+
 ZinXpath.nsResolver = function(prefix)
 {
 	var map = {
