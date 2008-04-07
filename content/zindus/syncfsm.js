@@ -265,6 +265,12 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		this.state.stopFailCode = 'FailOnNoXpath';
 		nextEvent = 'evLackIntegrity';
 	}
+	else if (!this.state.m_addressbook.getPabName())
+	{
+		this.state.stopFailCode = 'FailOnNoPab';
+		nextEvent = 'evLackIntegrity';
+		this.state.m_logger.debug("entryActionStart: addressbooks: " + this.state.m_addressbook.addressbooksToString());
+	}
 	else
 		nextEvent = 'evNext';
 
@@ -1639,7 +1645,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 						attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
 						properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
-						this.state.m_addressbook.updateCard(abCard, uri, FORMAT_TB, properties, attributes);
+						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes);
 
 						this.state.aSyncGalContact[index].present = true;
 					}
@@ -1665,7 +1671,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 			this.state.m_logger.debug("entryActionGalCommit: adding aSyncGalContact[" + aAdd[i] + "]: " +
 			                            this.shortLabelForContactProperties(FORMAT_TB, properties));
 
-			this.state.m_addressbook.addCard(uri, FORMAT_TB, properties, attributes);
+			this.state.m_addressbook.addCard(uri, properties, attributes);
 		}
 	}
 
@@ -2602,7 +2608,15 @@ SyncFsm.prototype.updateGidFromSources = function()
 		else
 			zfc.forEach(functor_foreach_luid_slow_sync);
 
-		this.state.m_logger.debug(foreach_msg);
+		// This is a hack to avoid this function running too long and triggering mozilla's stop/continue dialog.
+		// Really this function have to be broken up into smaller chunks.
+		// The slowest piece of it appears to be the I/O, so here we disable it for > medium-sized addressbooks.
+		// Given that only one person has complained about the stop/continue dialog here, reckon this is ok as an interim measure...
+		//
+		if (zfc.length < 400)
+			this.state.m_logger.debug(foreach_msg);
+		else
+			this.state.m_logger.debug("slow_sync: and fast_sync: debugging suppressed because it's too large: sourceid: " + sourceid);
 	}
 
 	// sanity check - ensure that all gid's have been visited
@@ -3453,16 +3467,24 @@ SyncFsm.prototype.fakeDelOnUninterestingContacts = function()
 }
 
 // In zfcZm:
-// - pass 1: handle deletes - we need a separate pass for this in case a link to the a folder gets deleted then added in the same sync
-// - pass 2: create and update the TYPE_SF items
-// - pass 3: mark as deleted foreign folders which aren't pointed to by a <link>
+// - pass 1: Handle deletes - we need a separate pass for this in case a link to the a folder gets deleted then added in the same sync.
+//           Also look for multiple links to the same foreign folder - this isn't supported.
+//           The code assumes a 1:1:1 relationship between TYPE_SF:TYPE_FL:TYPE_LN.
+//           If we wanted to support this we've have to change that assumption. The cost would be more complexity and we'd lose the
+//           backlink from the TYPE_FL to the TYPE_SF.  And what purpose would it serve?  the user ends up with two
+//           thunderbird addressbooks (with different names) that both point to the same shared addressbook!
+//           So we detect this state of affairs and stop with an error.
+// - pass 2: Create and update the TYPE_SF items
+// - pass 3: Mark as deleted foreign folders which aren't pointed to by a <link>
 //
 SyncFsm.prototype.sharedFoldersUpdateZm = function()
 {
 	var zfcZm = this.zfcZm();
 	var msg = "sharedFoldersUpdateZm: ";
+	var passed = true;
 
 	var functor_pass_1 = {
+		a_key_fl: new Object(),
 		run: function(zfi)
 		{
 			if (zfi.type() == ZinFeedItem.TYPE_LN ||
@@ -3472,6 +3494,16 @@ SyncFsm.prototype.sharedFoldersUpdateZm = function()
 
 				if (is_deleted)
 					msg += "\n pass 1: TYPE_SF marked as deleted (and it's references removed) on the basis of: " + zfi.toString();
+			}
+
+			if (zfi.type() == ZinFeedItem.TYPE_LN)
+			{
+				var keyFl = Zuio.key(zfi.get(ZinFeedItem.ATTR_RID), zfi.get(ZinFeedItem.ATTR_ZID));
+
+				if (isPropertyPresent(this.a_key_fl, keyFl))
+					this.a_key_fl[keyFl].push(zfi.key())
+				else
+					this.a_key_fl[keyFl] = new Array(zfi.key());
 			}
 
 			return true;
@@ -3545,10 +3577,38 @@ SyncFsm.prototype.sharedFoldersUpdateZm = function()
 	};
 
 	zfcZm.forEach(functor_pass_1);
-	zfcZm.forEach(functor_pass_2);
-	zfcZm.forEach(functor_pass_3);
+
+	for (var key in functor_pass_1.a_key_fl)
+		if (functor_pass_1.a_key_fl[key].length > 1)
+		{
+			passed = false;
+
+			this.state.stopFailCode   = 'FailOnMultipleLn';
+			this.state.stopFailDetail = "";
+
+			for (var i = 0; i < functor_pass_1.a_key_fl[key].length; i++)
+			{
+				// if (i != 0)
+				// 	this.state.stopFailDetail += ", ";
+				this.state.stopFailDetail += "\n";
+
+				this.state.stopFailDetail += zfcZm.get(functor_pass_1.a_key_fl[key][i]).get(ZinFeedItem.ATTR_NAME);
+			}
+
+			msg += " about to fail: stopFailCode: " + this.state.stopFailCode + " stopFailDetail: " + this.state.stopFailDetail;
+
+			break;
+		}
+
+	if (passed)
+	{
+		zfcZm.forEach(functor_pass_2);
+		zfcZm.forEach(functor_pass_3);
+	}
 
 	this.state.m_logger.debug(msg);
+
+	return passed;
 }
 
 SyncFsm.sharedFoldersUpdateSfOnDel = function(zfc, zfi)
@@ -3619,11 +3679,12 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
-		this.sharedFoldersUpdateZm();
+		passed = passed && this.sharedFoldersUpdateZm();
 
 		this.state.stopwatch.mark(state + " 2");
 
-		this.fakeDelOnUninterestingContacts();
+		if (passed)
+			this.fakeDelOnUninterestingContacts();
 
 		this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcTb:\n" + this.zfcTb().toString()); // TODO remove me
 		this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcPr:\n" + this.zfcPr().toString()); // TODO remove me
@@ -3797,7 +3858,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				                                                                       // this.state.m_logger.debug("l_gid: " + l_gid);
 				l_target = zfcGid.get(l_gid).get(sourceid_target);                     // luid of the parent folder in the target
 				uri      = this.state.m_addressbook.getAddressBookUri(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-				abCard   = this.state.m_addressbook.addCard(uri, FORMAT_TB, properties, attributes);
+				abCard   = this.state.m_addressbook.addCard(uri, properties, attributes);
 
 				// msg += " l_winner: " + l_winner + " l_gid: " + l_gid + " l_target: " + l_target + " parent uri: " + uri;
 
@@ -3890,7 +3951,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 						msg += " setting card to: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-						this.state.m_addressbook.updateCard(abCard, uri, FORMAT_TB, properties, attributes);
+						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes);
 					}
 				}
 				else
@@ -3923,7 +3984,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 						msg += " - card deleted - card added: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-						this.state.m_addressbook.addCard(uri_to, FORMAT_TB, properties, attributes);
+						this.state.m_addressbook.addCard(uri_to, properties, attributes);
 					}
 				}
 
@@ -5454,9 +5515,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm)
 	state.m_addressbook       = new ZinAddressBook();
 	state.m_folder_converter.localised_pab(state.m_addressbook.getPabName());
 
-	state.m_bimap_format = new BiMap(
-		[FORMAT_TB, FORMAT_ZM, FORMAT_GD],
-		['tb',      'zm',      'gd']);
+	state.m_bimap_format = getBimapFormat();
 
 	state.sources = new Object();
 
@@ -5565,3 +5624,5 @@ SyncFsmGd.prototype.setCredentials = function()
 		this.state.sources[sourceid]['password'] = credentials[2];
 	}
 }
+
+// include("chrome://zindus/content/syncfsmgd.js");

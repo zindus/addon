@@ -113,10 +113,7 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zf
 		ret = name.substring(this.m_prefix_length)
 	}
 
-	// this.m_logger.debug("ZinFolderConverter.convert: name: " + name +
-	//                     " from: " + this.m_bimap_format.lookup(format_from, null) + 
-	//                     " to: " + this.m_bimap_format.lookup(format_to, null) + 
-	//                     " returns: " + ret);
+	// this.m_logger.debug("ZinFolderConverter.convert: name: " + name + " from: " + format_from +" to: " + format_to + " returns: " + ret);
 
 	return ret;
 }
@@ -128,7 +125,9 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zf
 
 ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from, zfi)
 {
-	zinAssert(arguments.length == 3 && this.m_localised_pab); // catch programming errors
+	// catch programming errors
+	zinAssertAndLog(arguments.length == 3 && this.m_localised_pab,
+	                " arguments.length: " + arguments.length + " m_localised_pab: " + this.m_localised_pab + " zfi: " + zfi.toString());
 
 	var ret = this.convertForMap(format_to, format_from, zfi);
 

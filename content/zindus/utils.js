@@ -204,23 +204,29 @@ function attributesFromNode(node)
 function aToString(obj)
 {
 	var ret = "";
+	var first = true;
 
 	for (var x in obj)
 	{
+		if (!first)
+			ret += ", ";
+		else
+			first = false;
+
 		ret += x + ": ";
 
 		var was_exception_thrown = false;
 
 		if (typeof(obj[x]) == 'object')
 			try {
-				ret += "{ " + aToString(obj[x]) + " }, ";
+				ret += "{ " + aToString(obj[x]) + " }";
 			} catch (e)
 			{
 				dump("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
 				gLogger.error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
 			}
 		else
-			ret += obj[x] + ", ";
+			ret += obj[x];
 
 		zinAssert(!was_exception_thrown);
 	}
@@ -401,6 +407,12 @@ function isValidSourceId(sourceid)
 function isValidFormat(format)
 {
 	return isInArray(format, A_VALID_FORMATS);
+}
+
+function getBimapFormat()
+{
+	return new BiMap( [ FORMAT_TB, FORMAT_ZM, FORMAT_GD ],
+	                  [ 'tb',      'zm',      'gd'      ]);
 }
 
 function isValidUrl(url)

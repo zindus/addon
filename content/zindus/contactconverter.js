@@ -25,8 +25,9 @@ include("chrome://zindus/content/crc32.js");
 
 function ZinContactConverter()
 {
-	this.m_equivalents = null; // an array of objects where each object is an n-tuplet of pairs of (format, contact property)
-	this.m_map         = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
+	this.m_equivalents  = null; // an array of objects where each object is an n-tuplet of pairs of (format, contact property)
+	this.m_map          = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
+	this.m_common_to    = null; // associative array of [format1][format2] is a hash - the keys are the format1 props that map to format2
 
 	this.m_logger = newZinLogger("ContactConverter");
 
@@ -71,9 +72,9 @@ ZinContactConverter.prototype.setup = function()
 	this.m_equivalents.push(newObject(FORMAT_TB, "WorkState",       FORMAT_ZM, "workState",         FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "WorkZipCode",     FORMAT_ZM, "workPostalCode",    FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCountry",     FORMAT_ZM, "workCountry",       FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "JobTitle",        FORMAT_ZM, "jobTitle",          FORMAT_GD, "orgTitle"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "JobTitle",        FORMAT_ZM, "jobTitle",          FORMAT_GD, "organization#orgTitle"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Department",      FORMAT_ZM, "department",        FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Company",         FORMAT_ZM, "company",           FORMAT_GD, "orgName"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Company",         FORMAT_ZM, "company",           FORMAT_GD, "organization#orgName"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom1",         FORMAT_ZM, null,                FORMAT_GD, null));
@@ -155,13 +156,25 @@ ZinContactConverter.prototype.setup = function()
 	// m_map[FORMAT_ZM][email] == 4
 	// m_equivalents[4][FORMAT_TB] = "PrimaryEmail";
 
-	this.m_bimap_format = new BiMap(
-		[FORMAT_TB,     FORMAT_ZM ],
-		['thunderbird', 'zimbra'  ]);
+	this.m_bimap_format = getBimapFormat();
 
 	this.m_address_line = new Object();
 	this.m_address_line[FORMAT_ZM] = { "homeStreet" :  0, "workStreet"   : 0 };
 	this.m_address_line[FORMAT_TB] = { "HomeAddress":  0, "HomeAddress2" : 0, "WorkAddress" : 0, "WorkAddress2" : 0 };
+	this.m_address_line[FORMAT_GD] = { };
+
+	this.m_common_to = new Object(); // a 2-D associative array where [FORMAT_TB][format] maps to an index in m_equivalents
+
+	for (j = 0; j < A_VALID_FORMATS.length;  j++)
+		if (A_VALID_FORMATS[j] != FORMAT_TB)
+			{
+				this.populate_common_to(FORMAT_TB, A_VALID_FORMATS[j]);
+				this.populate_common_to(A_VALID_FORMATS[j], FORMAT_TB);
+			}
+
+	for (i in this.m_common_to)
+		for (j in this.m_common_to[i])
+			this.m_logger.debug("m_common_to: [" + i + "][" + j + "]: " + aToString(this.m_common_to[i][j]));
 }
 
 ZinContactConverter.prototype.convert = function(format_to, format_from, properties_from)
@@ -392,9 +405,26 @@ ZinContactConverter.prototype.removeKeysNotCommonToBothFormats = function(format
 	var i;
 
 	for (i in properties)
-		if (!ZinContactConverter.instance().isKeyConverted(format_to, format_from, i))
+		if (!this.isKeyConverted(format_to, format_from, i))
 			keys_to_remove[i] = true;
 
 	for (i in keys_to_remove)
 		delete properties[i];
+}
+
+// So for example:
+//	this.m_common_to[FORMAT_TB][FORMAT_GD] = PrimaryEmail, SecondEmail, WorkPhone ...
+//	this.m_common_to[FORMAT_GD][FORMAT_TB] = PrimaryEmail, SecondEmail, phoneNumber#work ...
+//
+ZinContactConverter.prototype.populate_common_to = function(format_to, format_from)
+{
+	if (typeof this.m_common_to[format_to] != 'object')
+		this.m_common_to[format_to] = new Object();
+
+	if (typeof this.m_common_to[format_to][format_from] != 'object')
+		this.m_common_to[format_to][format_from] = new Object();
+
+	for (var key in this.m_map[format_from])
+		if (this.isKeyConverted(format_to, format_from, key))
+			this.m_common_to[format_to][format_from][this.m_equivalents[this.m_map[format_from][key]][format_to]] = true;
 }

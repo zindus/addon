@@ -159,7 +159,6 @@ GdContact.prototype.runFunctorOnEntry = function(functor)
 								this.m_entry_children[child.localName] = child;
 
 								var grandchildren = child.childNodes;
-								gLogger.debug("GdContact: runFunctorOnEntry: organization: grandchildren.length: " + grandchildren.length);
 								for (var j = 0; j < grandchildren.length; j++)
 									if (grandchildren[j].nodeType == Node.ELEMENT_NODE &&
 									    grandchildren[j].namespaceURI == ZinXpath.nsResolver("gd"))
@@ -168,11 +167,9 @@ GdContact.prototype.runFunctorOnEntry = function(functor)
 											case "orgName":
 											case "orgTitle":
 												key = "organization#" + grandchildren[j].localName;
-												gLogger.debug("GdContact: runFunctorOnEntry: organization: key: " + key);
 
 												if (!isPropertyPresent(a_visited, key))
 												{
-													gLogger.debug("GdContact: runFunctorOnEntry: organization: running functor on key: " + key);
 													this.set_visited(a_visited, key);
 													functor.run(grandchildren[j], key);
 												}
@@ -238,7 +235,7 @@ GdContact.prototype.runFunctorOnEntry = function(functor)
 
 GdContact.prototype.fieldModDel = function(node, attribute, a_field, key, a_field_used, a_to_be_deleted)
 {
-	gLogger.debug("GdContact: fieldModDel: key: " + key + " a_field[key]: " + a_field[key]);
+	// gLogger.debug("GdContact: fieldModDel: key: " + key + " a_field[key]: " + a_field[key]);
 
 	if (!isPropertyPresent(a_field, key) || a_field[key].length == 0)
 	{
@@ -271,7 +268,8 @@ GdContact.prototype.updateFromContact = function(contact)
 	var functor = {
 		run: function(node, key)
 		{
-			gLogger.debug("GdContact: updateFromContact: node: " + context.nodeAsString(node));
+			// gLogger.debug("GdContact: updateFromContact: node: " + context.nodeAsString(node));
+
 			switch(key)
 			{
 				case "title":
@@ -313,12 +311,12 @@ GdContact.prototype.updateFromContact = function(contact)
 
 	// now do ADDs...
 	for (key in a_field)
-		if (!isPropertyPresent(a_field_used, key))
+		if (!isPropertyPresent(a_field_used, key) && a_field[key].length > 0)
 			this.fieldAdd(key, a_field);
 
 	if (isPropertyPresent(this.m_entry_children, "organization") && this.m_entry_children["organization"].childNodes.length == 0)
 	{
-		gLogger.debug("GdContact: fieldModDel: removeChild: node: " + this.nodeAsString(this.m_entry_children["organization"]));
+		// gLogger.debug("GdContact: fieldModDel: removeChild: node: " + this.nodeAsString(this.m_entry_children["organization"]));
 		this.m_entry.removeChild(this.m_entry_children["organization"]);
 		delete this.m_entry_children["organization"];
 	}
@@ -328,6 +326,8 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 {
 	var element = null;
 	var parent = this.m_entry;
+
+	// gLogger.debug("GdContact: fieldAdd: key: " + key);
 
 	switch(key)
 	{
@@ -375,9 +375,9 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 		case "phoneNumber#work_fax":
 		case "phoneNumber#pager":
 		case "phoneNumber#mobile":
-			key = this.rightOfHash(key);
+			var fragment = this.rightOfHash(key);
 			element = this.m_document.createElementNS(ZinXpath.NS_GD, "phoneNumber");
-			element.setAttribute("rel", this.ns_gd(key))
+			element.setAttribute("rel", this.ns_gd(fragment))
 			element.textContent = a_field[key];
 			break;
 	}
@@ -422,6 +422,8 @@ GdContact.prototype.leftOfHash = function(str)
 	return str.substr(0, str.indexOf("#"));
 }
 
+// rfc3986 refers to the part to the right of the hash as "fragment"
+//
 GdContact.prototype.rightOfHash = function(str)
 {
 	return str.substr(str.indexOf("#") + 1);

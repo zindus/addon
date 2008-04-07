@@ -191,50 +191,44 @@ ZinAddressBook.prototype.deleteCards = function(uri, aCards)
 	this.m_logger.debug("deleteCards: done");
 }
 
-ZinAddressBook.prototype.addCard = function(uri, format, standard, extras)
+ZinAddressBook.prototype.addCard = function(uri, properties, attributes)
 {
-	zinAssert(uri != null && isPropertyPresent(ZinContactConverter.instance().m_map, format) && standard != null && extras != null);
+	zinAssert(uri != null && properties != null && attributes != null);
 
 	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	var abstractCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].
 	                      createInstance().QueryInterface(Components.interfaces.nsIAbCard);
 	var realCard = dir.addCard(abstractCard);
 
-	this.updateCard(realCard, uri, format, standard, extras);
+	this.updateCard(realCard, uri, properties, attributes);
 
 	return realCard;
 }
 
-ZinAddressBook.prototype.updateCard = function(abCard, uri, format, standard, extras)
+ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attributes)
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
-	var i, j, key;
+	var key;
 	var thunderbird_properties;
 
 	var lastModifiedDatePre = abCard.lastModifiedDate;
 
-	if (format != FORMAT_TB)
-		thunderbird_properties =  ZinContactConverter.instance().convert(FORMAT_TB, format, standard);
-	else
-		thunderbird_properties = standard;
-	
-	for (i in thunderbird_properties)
-	{
-		j   = ZinContactConverter.instance().m_map[FORMAT_TB][i];         zinAssert(typeof j != 'undefined');
-		key = ZinContactConverter.instance().m_equivalents[j][FORMAT_TB]; zinAssert(key != null);
+	this.m_logger.debug("updateCard: blah: " + " \n properties: " + aToString(properties) +
+	                                           "\n card properties: " + aToString(this.getCardProperties(abCard)));
 
-		abCard.setCardValue(i, thunderbird_properties[i]);
-	}
+	for (key in properties)
+		abCard.setCardValue(key, properties[key]);
 
-	for (i in extras)
-		mdbCard.setStringAttribute(i, extras[i]);
+	for (key in attributes)
+		mdbCard.setStringAttribute(key, attributes[key]);
 
 	mdbCard.editCardToDatabase(uri);
 
 	// confirm that callers can rely on the .lastModifiedDate property changing after an update
 	// ie that they don't have to do a lookup after an update
 	//
-	zinAssert(lastModifiedDatePre != abCard.lastModifiedDate);
+	// don't use lastModifiedDate any longer...
+	// zinAssert(lastModifiedDatePre != abCard.lastModifiedDate);
 
 	return abCard;
 }
@@ -347,7 +341,30 @@ ZinAddressBook.prototype.setupPab = function()
 		this.m_logger.debug("m_pab_uri selected by name: uri: " + this.m_pab_uri + " name: " + this.m_pab_name);
 	}
 	else
+	{
 		this.m_logger.error("Couldn't find Personal Address Book");
+		this.m_logger.debug("setupPab: addressbooks: " + this.addressbooksToString());
+	}
+}
+
+ZinAddressBook.prototype.addressbooksToString = function()
+{
+	var ret = "";
+
+	var functor_foreach_addressbook = {
+		run: function(elem) {
+			ret += "\n dirName: " + elem.dirName + " uri: "       + elem.directoryProperties.URI +
+			                                       " dirPrefId: " + elem.dirPrefId +
+												   " fileName: "  + elem.directoryProperties.fileName +
+												   " position: "  + elem.directoryProperties.position;
+			
+			return true;
+		}
+	};
+
+	this.forEachAddressBook(functor_foreach_addressbook);
+
+	return ret;
 }
 
 ZinAddressBook.prototype.isElemPab = function(elem)

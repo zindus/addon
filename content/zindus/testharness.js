@@ -39,6 +39,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
 	// ret = ret && this.testContactConverter();
+	ret = ret && this.testAddressBook();
 	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
@@ -96,12 +97,12 @@ ZinTestHarness.prototype.testContactConverter = function()
 {
 	var element = new Object();
 
-	element['email']     = "leni@barkly.zindus.com";
+	element['email']     = "leni@example.com";
 	element['firstName'] = "leni";
 
 	var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, element);
 
-	this.m_logger.debug("3233: testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
+	this.m_logger.debug("testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
 }
 
 ZinTestHarness.prototype.testFolderConverterPrefixClass = function()
@@ -373,4 +374,14 @@ ZinTestHarness.prototype.testZuio = function()
 	ret = ret && !zuio.zid;
 
 	return ret;
+}
+
+
+ZinTestHarness.prototype.testAddressBook = function()
+{
+	var addressbook = new ZinAddressBook();
+	this.m_logger.debug("testAddressBook: addressbooks: " + addressbook.addressbooksToString());
+	// var pabname = addressbook.getPabName();
+
+	return true;
 }

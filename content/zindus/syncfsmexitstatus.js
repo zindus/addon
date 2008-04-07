@@ -33,25 +33,27 @@ function SyncFsmExitStatus()
 	this.m_count_conflicts  = 0;
 
 	this.m_a_valid_code = {
-		FailOnService                 : { 'folder' : 0 }, // 1.  some sort of service failure
-		FailOnFault                   : { 'folder' : 0 }, // 2.  recieved a soap fault
-		FailOnMismatchedResponse      : { 'folder' : 0 }, // 3.  sent BlahRequest and received FooResponse (expected BlahResponse)
-		FailOnCancel                  : { 'folder' : 0 }, // 4.  user cancelled
-		FailOnIntegrityBadCredentials : { 'folder' : 0 }, // 5.  something dodgy about url, username or password - dont proceed
-		FailOnIntegrityDataStoreIn    : { 'folder' : 0 }, // 6.  something dodgy about the data store that just got loaded
-		FailOnIntegrityDataStoreOut   : { 'folder' : 0 }, // 7.  internal error - we've created a data store that's dodgy
-		FailOnUnknown                 : { 'folder' : 0 }, // 8.  this should never be!
-		FailOnFolderNameDuplicate     : { 'folder' : 1 }, // 9.
-		FailOnFolderNameReserved      : { 'folder' : 1 }, // 10.
-		FailOnFolderNameInvalid       : { 'folder' : 1 }, // 11.
-		FailOnFolderMustBePresent     : { 'folder' : 1 }, // 12.
-		FailOnFolderReservedChanged   : { 'folder' : 1 }, // 13.
-		FailOnFolderNameClash         : { 'folder' : 1 }, // 14. the same folder name entered the namespace from both tb and zm sides
-		FailOnFolderSourceUpdate      : { 'folder' : 1 }, // 15. the source update operations can't be applied with confidence
-		FailOnFolderCantCreateShared  : { 'folder' : 1 }, // 16. 
-		FailOnUnableToUpdateZm        : { 'folder' : 0 }, // 17. soap response in UpdateZm had an unexpected element - assume that it failed
-		FailOnNoXpath                 : { 'folder' : 0 }, // 18. 
-		FailOnUnauthorized            : { 'folder' : 0 }  // 19. server returned a 401 - perphaps a proxy removed the 'Authorized' header?
+		FailOnService                 : { 'hasdetail' : 0 }, // 1.  some sort of service failure
+		FailOnFault                   : { 'hasdetail' : 0 }, // 2.  recieved a soap fault
+		FailOnMismatchedResponse      : { 'hasdetail' : 0 }, // 3.  sent BlahRequest and received FooResponse (expected BlahResponse)
+		FailOnCancel                  : { 'hasdetail' : 0 }, // 4.  user cancelled
+		FailOnIntegrityBadCredentials : { 'hasdetail' : 0 }, // 5.  something dodgy about url, username or password - dont proceed
+		FailOnIntegrityDataStoreIn    : { 'hasdetail' : 0 }, // 6.  something dodgy about the data store that just got loaded
+		FailOnIntegrityDataStoreOut   : { 'hasdetail' : 0 }, // 7.  internal error - we've created a data store that's dodgy
+		FailOnUnknown                 : { 'hasdetail' : 0 }, // 8.  this should never be!
+		FailOnFolderNameDuplicate     : { 'hasdetail' : 1 }, // 9.
+		FailOnFolderNameReserved      : { 'hasdetail' : 1 }, // 10.
+		FailOnFolderNameInvalid       : { 'hasdetail' : 1 }, // 11.
+		FailOnFolderMustBePresent     : { 'hasdetail' : 1 }, // 12.
+		FailOnFolderReservedChanged   : { 'hasdetail' : 1 }, // 13.
+		FailOnFolderNameClash         : { 'hasdetail' : 1 }, // 14. the same folder name entered the namespace from both tb and zm sides
+		FailOnFolderSourceUpdate      : { 'hasdetail' : 1 }, // 15. the source update operations can't be applied with confidence
+		FailOnFolderCantCreateShared  : { 'hasdetail' : 1 }, // 16. 
+		FailOnUnableToUpdateZm        : { 'hasdetail' : 1 }, // 17. soap response in UpdateZm had an unexpected element - assume failure
+		FailOnNoXpath                 : { 'hasdetail' : 0 }, // 18. 
+		FailOnNoPab                   : { 'hasdetail' : 0 }, // 19. 
+		FailOnMultipleLn              : { 'hasdetail' : 1 }, // 20. 
+		FailOnUnauthorized            : { 'hasdetail' : 0 }  // 21. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
 	};
 }
 
@@ -93,9 +95,9 @@ SyncFsmExitStatus.prototype.failcode = function()
 	return this.m_fail_code;
 }
 
-SyncFsmExitStatus.prototype.isFolder = function()
+SyncFsmExitStatus.prototype.hasDetail = function()
 {
-	return this.m_a_valid_code[this.failcode()]['folder'] == 1;
+	return this.m_a_valid_code[this.failcode()]['hasdetail'] == 1;
 }
 
 SyncFsmExitStatus.asMessage = function(context, sbsSuccess, sbsFailure)
@@ -121,10 +123,8 @@ SyncFsmExitStatus.asMessage = function(context, sbsSuccess, sbsFailure)
 				msg += "\n" + stringBundleString("statusFailOnCancelDetail");
 			else if (context.failcode() == 'FailOnService')
 				msg += "\n" + stringBundleString("statusFailOnServiceDetail");
-			else if (context.failcode() == 'FailOnUnableToUpdateZm')
-				msg += "\n" + context.m_fail_detail;
-			else if (context.isFolder())
-				msg += ": " + context.m_fail_detail;  // add the name of the offending folder
+			else if (context.hasDetail())
+				msg += ": " + context.m_fail_detail;
 		}
 	} catch (ex) {
 		dump("asMessage: exception: " + ex.message + "\n");
