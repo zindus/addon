@@ -209,26 +209,27 @@ ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attribut
 {
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	var key;
-	var thunderbird_properties;
-
-	var lastModifiedDatePre = abCard.lastModifiedDate;
+	var a_field_used = new Object();
 
 	this.m_logger.debug("updateCard: blah: " + " \n properties: " + aToString(properties) +
 	                                           "\n card properties: " + aToString(this.getCardProperties(abCard)));
 
 	for (key in properties)
+	{
 		abCard.setCardValue(key, properties[key]);
+		a_field_used[key] = true;
+	}
+
+	// now do deletes...
+	//
+	for (key in ZinContactConverter.instance().m_common_to[FORMAT_TB][format])
+		if (!isPropertyPresent(a_field_used, key))
+			abCard.setCardValue(key, "");
 
 	for (key in attributes)
 		mdbCard.setStringAttribute(key, attributes[key]);
 
 	mdbCard.editCardToDatabase(uri);
-
-	// confirm that callers can rely on the .lastModifiedDate property changing after an update
-	// ie that they don't have to do a lookup after an update
-	//
-	// don't use lastModifiedDate any longer...
-	// zinAssert(lastModifiedDatePre != abCard.lastModifiedDate);
 
 	return abCard;
 }
