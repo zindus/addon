@@ -53,7 +53,8 @@ function SyncFsmExitStatus()
 		FailOnNoXpath                 : { 'hasdetail' : 0 }, // 18. 
 		FailOnNoPab                   : { 'hasdetail' : 0 }, // 19. 
 		FailOnMultipleLn              : { 'hasdetail' : 1 }, // 20. 
-		FailOnUnauthorized            : { 'hasdetail' : 0 }  // 21. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnConflict                : { 'hasdetail' : 1 }, // 21. 
+		FailOnUnauthorized            : { 'hasdetail' : 0 }  // 22. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
 	};
 }
 

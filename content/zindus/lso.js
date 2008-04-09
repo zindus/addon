@@ -52,30 +52,25 @@ function Lso(arg)
 	}
 }
 
-// MS and REV drive  change detection for zimbra
-// CS         drives change detection for thunderbird
-//
 Lso.aPartsZfi = [ ZinFeedItem.ATTR_CS, ZinFeedItem.ATTR_MS, ZinFeedItem.ATTR_REV, ZinFeedItem.ATTR_DEL ];
 Lso.aPartsAll = [ ZinFeedItem.ATTR_VER ].concat(Lso.aPartsZfi);
 
-Lso.normalise = function(zfi, attr)
+// MS and REV drive  change detection for zm
+// REV        drives change detection for gd
+// CS         drives change detection for tb
+//
+Lso.prototype.compareFormat = function()
 {
-	return zfi.isPresent(attr) ? zfi.get(attr) : "";
-}
+	var ret = null;
 
-Lso.prototype.toString = function()
-{
-	var ret = "";
-	var isFirst = true;
-
-	for (var i = 0; i < Lso.aPartsAll.length; i++)
-		if (isFirst)
-		{
-			ret += this.m_properties[Lso.aPartsAll[i]];
-			isFirst = false;
-		}
-		else
-			ret += "#" + this.m_properties[Lso.aPartsAll[i]];
+	if (this.m_properties[ZinFeedItem.ATTR_CS] != "")
+		ret = FORMAT_TB;
+	else if (this.m_properties[ZinFeedItem.ATTR_MS] != "")
+		ret = FORMAT_ZM;
+	else if (this.m_properties[ZinFeedItem.ATTR_REV] != "")
+		ret = FORMAT_GD;
+	else
+		zinAssertAndLog(false, "m_properties: " + aToString(this.m_properties));
 
 	return ret;
 }
@@ -118,18 +113,35 @@ Lso.prototype.compare = function(zfi)
 		if (this.m_properties[MS] != "") zinAssert(this.m_properties[CS] == "");
 		if (this.m_properties[CS] != "") zinAssert(this.m_properties[MS] == "");
 
-		if (this.m_properties[CS] != "")
-			isGreaterThan = (Lso.normalise(zfi, CS) != this.m_properties[CS]) ||
-				  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL]) ;
-		else
-			isGreaterThan =
-			            (Number(Lso.normalise(zfi, MS))  > Number(this.m_properties[MS]))  ||
-		                (Number(Lso.normalise(zfi, REV)) > Number(this.m_properties[REV])) ||
-		                ( 
-							(Lso.normalise(zfi, MS) == this.m_properties[MS]) &&
-		                  	(Lso.normalise(zfi, REV) == this.m_properties[REV]) &&
-				  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL])
-						);
+		var format = this.compareFormat();
+
+		switch (format)
+		{
+			case FORMAT_TB:
+				isGreaterThan = (Lso.normalise(zfi, CS) != this.m_properties[CS]) ||
+					  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL]) ;
+				break;
+			case FORMAT_ZM:
+				isGreaterThan =
+				            (Number(Lso.normalise(zfi, MS))  > Number(this.m_properties[MS]))  ||
+			                (Number(Lso.normalise(zfi, REV)) > Number(this.m_properties[REV])) ||
+			                ( 
+								(Lso.normalise(zfi, MS) == this.m_properties[MS]) &&
+			                  	(Lso.normalise(zfi, REV) == this.m_properties[REV]) &&
+					  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL])
+							);
+				break;
+			case FORMAT_GD:
+				isGreaterThan =
+			                (Lso.normalise(zfi, REV) > this.m_properties[REV]) ||
+			                ( 
+			                  	(Lso.normalise(zfi, REV) == this.m_properties[REV]) &&
+					  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL])
+							);
+				break;
+			default:
+				zinAssert(false, "unmatched case: " + format);
+		}
 	}
 
 	if (isExactMatch)
@@ -155,3 +167,26 @@ Lso.prototype.set = function(key, value)
 
 	this.m_properties[key] = value;
 }
+
+Lso.prototype.toString = function()
+{
+	var ret = "";
+	var isFirst = true;
+
+	for (var i = 0; i < Lso.aPartsAll.length; i++)
+		if (isFirst)
+		{
+			ret += this.m_properties[Lso.aPartsAll[i]];
+			isFirst = false;
+		}
+		else
+			ret += "#" + this.m_properties[Lso.aPartsAll[i]];
+
+	return ret;
+}
+
+Lso.normalise = function(zfi, attr)
+{
+	return zfi.isPresent(attr) ? zfi.get(attr) : "";
+}
+

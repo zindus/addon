@@ -5,7 +5,7 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state);
 
-	if (0) // TODO - this works ok
+	if (1) // TODO - this works ok
 	{
 	var sourceid_pr = this.state.sourceid_pr;
 
@@ -25,7 +25,7 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 		body += "&service=cp"; // gbase
 		body += "&source=Toolware-Zindus-0.01";
 
-		this.setupHttpGd(state, 'evNext', "POST", url, headers, body)
+		this.setupHttpGd(state, 'evNext', "POST", url, headers, body, false)
 
 		nextEvent = 'evSoapRequest';
 	}
@@ -42,27 +42,32 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 
 SyncFsmGd.prototype.exitActionAuth = function(state, event)
 {
-	if (!this.state.m_http || !this.state.m_http.m_response || event == "evCancel")
+	if (!this.state.m_http || !this.state.m_http.response('text') || event == "evCancel")
 		return;
 
-	var response = this.state.m_http.m_response;
+	var response = this.state.m_http.response('text');
 
 	var aMatch = response.match(/Auth=(.+?)(\s|$)/ ); // a[0] is the whole pattern, a[1] is the first capture, a[2] the second etc...
 
 	if (aMatch && aMatch.length == 3)
 		this.state.authToken = aMatch[1];
 
+	if (this.state.authToken)
+	{
+		var username  = this.state.sources[this.state.sourceid_pr]['username'];
+		this.state.base_url = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base";
+	}
+
 	this.state.m_logger.debug("authToken: " + this.state.authToken);
 }
 
 SyncFsmGd.prototype.entryActionGetContacts = function(state, event, continuation)
 {
-	if (0)
+	if (1)
 	{
 	var sourceid_pr = this.state.sourceid_pr;
 	var SyncToken = this.state.zfcLastSync.get(sourceid_pr).getOrNull('SyncToken');
-	var username  = this.state.sources[sourceid_pr]['username'];
-	var url       = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base?showdeleted=true";
+	var url       = this.state.base_url + "?showdeleted=true";
 
 	if (SyncToken)
 		url += "&updated-min=" + SyncToken + "&";
@@ -71,7 +76,7 @@ SyncFsmGd.prototype.entryActionGetContacts = function(state, event, continuation
 
 	this.state.m_logger.debug("entryActionGetContacts: url: " + url);
 
-	this.setupHttpGd(state, 'evNext', "GET", url, null, null);
+	this.setupHttpGd(state, 'evNext', "GET", url, null, null, false);
 
 	continuation('evSoapRequest');
 	}
@@ -83,12 +88,12 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 	var msg = "exitActionGetContacts: \n";
 	var response;
 
-	if (0) // TODO
+	if (1) // TODO
 	{
-	if (!this.state.m_http.m_response || event == "evCancel")
+	if (!this.state.m_http.response() || event == "evCancel")
 		return;
 
-	response = this.state.m_http.m_response;
+	response = this.state.m_http.response();
 	}
 	else 
 	{
@@ -98,6 +103,7 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 	response = domparser.parseFromString(xmlString, "text/xml");
 	}
 
+	this.state.m_logger.debug("exitActionGetContacts: typeof response.doc: " + typeof(response.doc));
 	var xpath_query = "/atom:feed/atom:entry";
 	this.state.a_gd_contact = GdContact.arrayFromXpath(response, xpath_query);
 
@@ -117,19 +123,38 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 
 			zfi.set(ZinFeedItem.ATTR_REV, rev);
 
-			if (is_deleted)
-				this.zfcPr().get(id).set(ZinFeedItem.ATTR_DEL, '1');
+			msg += " updated: ";
 
-			msg += " updated: " + zfi.toString();
+			if (is_deleted)
+			{
+				this.zfcPr().get(id).set(ZinFeedItem.ATTR_DEL, '1');
+				msg += " marked as deleted: ";
+			}
+			else if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
+			{
+				var checksum = ZinContactConverter.instance().crc32(this.state.a_gd_contact[id].m_contact);
+
+				if (checksum == zfi.get(ZinFeedItem.ATTR_CSGD))
+				{
+					var gid = this.state.aReverseGid[this.state.sourceid_pr][id];
+					SyncFsm.setLsoToGid(this.state.zfcGid.get(gid), zfi);
+					msg += " ATTR_CSGD matched, lso updated: ";
+				}
+				else
+					msg += " ATTR_CSGD didn't match: "; // so the contact changed since we updated it...
+
+				zfi.del(ZinFeedItem.ATTR_CSGD);
+			}
+
+			msg += " zfi: " + zfi.toString();
 		}
 		else if (!is_deleted)
 		{
 			zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, id,
 						                               ZinFeedItem.ATTR_REV, rev,
-						                               ZinFeedItem.ATTR_MS, 1,
 													   ZinFeedItem.ATTR_L, key_parent_folder);
 			this.zfcPr().set(zfi); // add new
-			msg += " added:   " + zfi.toString();
+			msg += " added: " + zfi.toString();
 		}
 		else
 			msg += " ignored deleted contact id: " + id;
@@ -140,3 +165,21 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 	this.state.m_logger.debug(msg);
 }
 
+SyncFsmGd.prototype.testForCsGd = function()
+{
+	var functor = {
+		state: this.state,
+		run: function(zfi)
+		{
+			if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
+			{
+				this.state.m_logger.warn("zfi retained a ATTR_CSGD attribute after GetContacts.  This shouldn't happen.  zfi: " + zfi.toString());
+				zfi.del(ZinFeedItem.ATTR_CSGD);
+			}
+
+			return true;
+		}
+	};
+
+	this.zfcPr().forEach(functor);
+}

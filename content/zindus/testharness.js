@@ -37,7 +37,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
-	ret = ret && this.testLso();
+	// ret = ret && this.testLso();
 	// ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook();
 	// ret = ret && this.testZinFeedCollection();
@@ -46,6 +46,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
+	ret = ret && this.testGoogleContacts();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -406,4 +407,4 @@ ZinTestHarness.prototype.testAddressBook = function()
 	return true;
 }
 
-// include("chrome://zindus/content/testharnessgd.js");
+include("chrome://zindus/content/testharnessgd.js");

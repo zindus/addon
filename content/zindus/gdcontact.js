@@ -21,15 +21,19 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function GdContact()
+function GdContact(doc)
 {
-	this.m_document = null;
-	this.m_entry    = null;
-	this.m_meta     = null;
-	this.m_contact  = null;
+	this.m_logger         = newZinLogger("GdContact");
 
-	this.m_ns_gd_length = this.ns_gd("").length;
-
+	if (arguments.length == 1)
+		this.m_document = doc;
+	else
+		this.m_document = document.implementation.createDocument("","",null);
+		
+	this.m_entry          = null;
+	this.m_meta           = null;
+	this.m_contact        = null;
+	this.m_ns_gd_length   = this.ns_gd("").length;
 	this.m_entry_children = null; // key ==> localName, value is the node - populated by runFunctor and fieldAdd() - saves searching
 
 	// m_phone_keys == { home: null, work: null, work_fax: null, ... }
@@ -39,6 +43,13 @@ function GdContact()
 	for (var key in ZinContactConverter.instance().m_common_to[FORMAT_GD][FORMAT_TB])
 		if (this.leftOfHash(key) == "phoneNumber")
 			this.m_phone_keys[this.rightOfHash(key)] = true;
+}
+
+GdContact.prototype.toStringXml = function()
+{
+	zinAssert(this.m_entry);
+
+	return xmlDocumentToString(this.m_entry);
 }
 
 GdContact.prototype.toString = function()
@@ -51,16 +62,18 @@ GdContact.prototype.toString = function()
 	for (key in this.m_contact)
 		msg += " contact: " + key + ": " + this.m_contact[key] + "\n";
 
-	msg += xmlDocumentToString(this.m_entry);
+	if (this.m_entry)
+		msg += xmlDocumentToString(this.m_entry);
+	else
+		msg += "m_entry: null";
 
 	return msg;
 }
 
-GdContact.prototype.updateFromEntry = function(doc, node)
+GdContact.prototype.updateFromEntry = function(node)
 {
 	var context = this;
 
-	this.m_document = doc;
 	this.m_entry    = node; // .cloneNode(true);
 	this.m_meta     = new Object();
 	this.m_contact  = new Object();
@@ -117,6 +130,8 @@ GdContact.prototype.runFunctorOnEntry = function(functor)
 {
 	var i, key, child;
 
+	zinAssert(this.m_entry);
+
 	var a_visited = new Object();
 
 	this.m_entry_children = new Object();
@@ -134,7 +149,7 @@ GdContact.prototype.runFunctorOnEntry = function(functor)
 				key = child.localName;
 				is_run_functor = false;
 
-				// gLogger.debug("GdContact: runFunctorOnEntry: i: " + i + ": " + this.nodeAsString(child));
+				// this.m_logger.debug("GdContact: runFunctorOnEntry: i: " + i + ": " + this.nodeAsString(child));
 
 				if (child.namespaceURI == ZinXpath.nsResolver("atom"))
 					switch(child.localName)
@@ -242,8 +257,6 @@ GdContact.prototype.runFunctorOnEntry = function(functor)
 
 GdContact.prototype.fieldModDel = function(node, attribute, a_field, key, a_field_used, a_to_be_deleted)
 {
-	// gLogger.debug("GdContact: fieldModDel: key: " + key + " a_field[key]: " + a_field[key]);
-
 	if (!isPropertyPresent(a_field, key) || a_field[key].length == 0)
 	{
 		var tmp = this.leftOfHash(key);
@@ -258,12 +271,6 @@ GdContact.prototype.fieldModDel = function(node, attribute, a_field, key, a_fiel
 		this.setNode(node, attribute, a_field, key, a_field_used);
 }
 
-GdContact.prototype.importIntoDocument = function(doc)
-{
-	this.m_document = doc;
-	this.m_entry = this.m_document.importNode(this.m_entry, true);
-}
-
 GdContact.prototype.updateFromContact = function(contact)
 {
 	var a_field         = zinCloneObject(contact);
@@ -272,10 +279,12 @@ GdContact.prototype.updateFromContact = function(contact)
 	var context = this;
 	var key;
 
+	this.m_logger.debug("updateFromContact: contact: " + aToString(contact));
+
 	var functor = {
 		run: function(node, key)
 		{
-			// gLogger.debug("GdContact: updateFromContact: node: " + context.nodeAsString(node));
+			// this.m_logger.debug("GdContact: updateFromContact: node: " + context.nodeAsString(node));
 
 			switch(key)
 			{
@@ -304,16 +313,34 @@ GdContact.prototype.updateFromContact = function(contact)
 		}
 	};
 
+	if (!this.m_entry)
+	{
+		this.m_entry = this.m_document.createElementNS(ZinXpath.NS_ATOM, "entry");
+		this.ensureEntryHasXmlnsGd();
+
+		var category = this.m_document.createElementNS(ZinXpath.NS_ATOM, "category");
+		category.setAttribute("scheme", "http://schemas.google.com/g/2005#kind");
+		category.setAttribute("term", "http://schemas.google.com/contact/2008#contact");
+
+		var title = this.m_document.createElementNS(ZinXpath.NS_ATOM, "title");
+		title.setAttribute("type", "text");
+		title.textContent = "";
+
+		this.m_entry.appendChild(category);
+		this.m_entry.appendChild(title);
+	}
+	else
+		this.ensureEntryHasXmlnsGd(); // <entry> elements that are children of <feed> need a xmlns:gd namespace declaration
+
 	this.runFunctorOnEntry(functor);
 
 	// now do DELs (don't do inside loop because deleting elements of an array while iterating over it produces unexpected results)
 	for (key in a_to_be_deleted)
 		try {
-			gLogger.debug("GdContact: fieldModDel: removeChild: key: " + key + " node: " + this.nodeAsString(a_to_be_deleted[key].child));
+			this.m_logger.debug("updateFromContact: removeChild: key: " + key);
 			a_to_be_deleted[key].parent.removeChild(a_to_be_deleted[key].child);
 		} catch (ex) {
-			gLogger.error("key: " + key);
-			zinAssertAndLog(false, "ex: " + ex + "ex.stack: " + ex.stack);
+			zinAssertAndLog(false, "key: " + key + "ex: " + ex + "ex.stack: " + ex.stack);
 		}
 
 	// now do ADDs...
@@ -323,12 +350,12 @@ GdContact.prototype.updateFromContact = function(contact)
 
 	if (isPropertyPresent(this.m_entry_children, "organization") && this.m_entry_children["organization"].childNodes.length == 0)
 	{
-		// gLogger.debug("GdContact: fieldModDel: removeChild: node: " + this.nodeAsString(this.m_entry_children["organization"]));
+		// this.m_logger.debug("GdContact: fieldModDel: removeChild: node: " + this.nodeAsString(this.m_entry_children["organization"]));
 		this.m_entry.removeChild(this.m_entry_children["organization"]);
 		delete this.m_entry_children["organization"];
 	}
 
-	this.ensureEntryHasXmlnsGd();
+	this.updateFromEntry(this.m_entry);
 }
 
 // This method adds an xmlns:gd namespace declaration to the <entry> element.  Otherwise, each child has a separate declaration,
@@ -337,6 +364,8 @@ GdContact.prototype.updateFromContact = function(contact)
 GdContact.prototype.ensureEntryHasXmlnsGd = function()
 {
 	var is_xmlns_gd_present = false;
+
+	zinAssert(this.m_entry);
 
 	if (this.m_entry.hasAttributes())
 	{
@@ -357,7 +386,7 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 	var element = null;
 	var parent = this.m_entry;
 
-	// gLogger.debug("GdContact: fieldAdd: key: " + key);
+	// this.m_logger.debug("GdContact: fieldAdd: key: " + key);
 
 	switch(key)
 	{
@@ -431,6 +460,22 @@ GdContact.prototype.setProperty = function(node, attribute, collection, key)
 		collection[key] = "";
 }
 
+// GdContact.prototype.setNode = function(node, attribute, collection, key, a_key_used)
+// {
+// 	if (attribute)
+// 	{
+// 		node.setAttribute(attribute, collection[key]);
+// 		a_key_used[key] = true;
+// 	}
+// 	else if (node.hasChildNodes())
+// 	{
+// 		node.firstChild.textContent = collection[key];
+// 		a_key_used[key] = true;
+// 	}
+// 	else
+// 		zinAssertAndLog(false, "attribute: " + attribute + " collection: " + aToString(collection) + " key: " + key);
+// }
+
 GdContact.prototype.setNode = function(node, attribute, collection, key, a_key_used)
 {
 	if (attribute)
@@ -438,13 +483,11 @@ GdContact.prototype.setNode = function(node, attribute, collection, key, a_key_u
 		node.setAttribute(attribute, collection[key]);
 		a_key_used[key] = true;
 	}
-	else if (node.hasChildNodes())
+	else
 	{
-		node.firstChild.textContent = collection[key];
+		node.textContent = collection[key];
 		a_key_used[key] = true;
 	}
-	else
-		zinAssertAndLog(false, "attribute: " + attribute + " collection: " + collection.toString() + " key: " + key);
 }
 
 GdContact.prototype.leftOfHash = function(str)
@@ -475,9 +518,9 @@ function GdContactFunctorToMakeHashFromNodes()
 
 GdContactFunctorToMakeHashFromNodes.prototype.run = function(doc, node)
 {
-	var contact = new GdContact();
+	var contact = new GdContact(doc);
 	
-	contact.updateFromEntry(doc, node);
+	contact.updateFromEntry(node);
 
 	this.m_collection[contact.m_meta.id] = contact;
 }

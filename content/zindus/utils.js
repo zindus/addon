@@ -330,7 +330,7 @@ function newObject()
 	return ret;
 }
 
-function propertyFromObject(obj)
+function firstKeyInObject(obj)
 {
 	var ret = null;
 

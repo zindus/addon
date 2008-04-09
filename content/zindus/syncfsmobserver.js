@@ -153,8 +153,12 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stConverge6:      { count: 1 },
 		stConverge7:      { count: 1 },
 		stConverge8:      { count: 1 },
+		stUpdateTb:       { count: 1 },
+		stUpdateGd:       { count: 1 },
+		stUpdateCleanup:  { count: 1 },
 		stSoapRequest:    { },
 		stSoapResponse:   { },
+		stCommit:         { },
 		final:            { count: 1 }
 	};
 
@@ -252,16 +256,16 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				break;
 
 			case 'stUpdateZm':
+			case 'stUpdateGd':
 				var sourceid = null;
 
-				bigloop: for (var x in context.state.sources)
-					if (context.state.sources[x]['format'] == FORMAT_ZM)
-						for (y in context.state.aSuo[x])
-								for (var z in context.state.aSuo[x][y])
-								{
-									sourceid = x;
-									break bigloop;
-								}
+				bigloop:
+					for (y in context.state.aSuo[this.state.sourceid_pr])
+						for (var z in context.state.aSuo[this.state.sourceid_pr][y])
+						{
+							sourceid = this.state.sourceid_pr;
+							break bigloop;
+						}
 
 				if (sourceid)
 				{
@@ -270,11 +274,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
 						var cTotal = 0; // aSuo definitely needs an iterator!
-						for (var x in context.state.sources)
-							if (context.state.sources[x]['format'] == FORMAT_ZM)
-								for (y in context.state.aSuo[x])
-										for (var z in context.state.aSuo[x][y])
-											cTotal++;
+						for (y in context.state.aSuo[sourceid])
+							for (var z in context.state.aSuo[sourceid][y])
+								cTotal++;
 
 						this.progressReportOnSource(sourceid, "PutMany", cTotal);
 						this.set(SyncFsmObserver.PROG_CNT, 0);
@@ -306,12 +308,15 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					{
 						es.failcode(context.state.m_http.failCode());
 
-						if (context.state.m_http.m_faultstring)
-							es.m_fail_detail = context.state.m_http.m_faultstring;
-						else if (context.state.m_http.m_faultcode)
-							es.m_fail_detail = context.state.m_http.m_faultcode;
+						if (context.state.m_http instanceof HttpStateZm)
+						{
+							if (context.state.m_http.m_faultstring)
+								es.m_fail_detail = context.state.m_http.m_faultstring;
+							else if (context.state.m_http.m_faultcode)
+								es.m_fail_detail = context.state.m_http.m_faultcode;
 
-						es.m_fail_soapmethod = context.state.m_http.m_method;
+							es.m_fail_soapmethod = context.state.m_http.m_method;
+						}
 					}
 					else
 						es.failcode('FailOnCancel');

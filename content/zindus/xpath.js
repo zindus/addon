@@ -111,7 +111,8 @@ ZinXpath.setConditionalFromSingleElement = function(object, property, xpath_quer
 
 ZinXpath.runFunctor = function(functor, xpath_query, doc)
 {
-	// ZinXpath.logger.debug("44990: xpath query is " + xpath_query + " and doc is " + xmlDocumentToString(doc));
+	zinAssert(arguments.length == 3);              // catch programming errors
+	zinAssert(typeof(doc.evaluate) == 'function');
 
 	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_ITERATOR_TYPE;
 	var xpathResult     = doc.evaluate(xpath_query, doc, ZinXpath.nsResolver, xpathResultType, null);

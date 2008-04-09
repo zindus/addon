@@ -49,6 +49,7 @@ ZinFeedItem.ATTR_FKEY = 'fkey'; // TYPE_SF elements have this attribute - it's t
 ZinFeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this attribute - it's the key of the TYPE_SF element
 ZinFeedItem.ATTR_PERM = 'perm'; // 
 ZinFeedItem.ATTR_CS   = 'cs';   // checksum
+ZinFeedItem.ATTR_CSGD = 'csgd'; // checksum for type == gd items - persisted but not used in compare()
 ZinFeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 
 ZinFeedItem.TYPE_CN   = 0x01; // contact
