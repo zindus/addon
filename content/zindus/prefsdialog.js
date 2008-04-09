@@ -52,8 +52,7 @@ function Prefs()
 	this.m_timeoutID           = null;
 	this.m_maestro             = null;
 	this.m_is_fsm_running      = false;
-	this.m_logger              = newZinLogger("Prefs");
-	this.m_logger.level(ZinLogger.NONE);
+	this.m_logger              = newZinLogger("Prefs"); this.m_logger.level(ZinLogger.NONE);
 
 	this.m_preferences         = new MozillaPreferences();
 	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
@@ -170,14 +169,15 @@ Prefs.prototype.onCommand = function(id_target)
 									document.getElementById("zindus-prefs-server-url").value,
 									document.getElementById("zindus-prefs-server-username").value,
 									document.getElementById("zindus-prefs-server-password").value );
+			payload.m_es = new SyncFsmExitStatus();
 
 			var win = window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
 			var exitStatus = payload.m_result;
 
-			if (exitStatus.m_exit_status != 0)
+			if (payload.m_es.m_exit_status != 0)
 			{
-				msg = SyncFsmExitStatus.asMessage(exitStatus, "statusSyncSucceeded", "statusSyncFailed");
+				msg = payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
 
 				if (msg == "")
 					msg = "sync failed - no detail available";
@@ -195,11 +195,11 @@ Prefs.prototype.onCommand = function(id_target)
 									document.getElementById("zindus-prefs-server-url").value,
 									document.getElementById("zindus-prefs-server-username").value,
 									document.getElementById("zindus-prefs-server-password").value );
+			payload.m_es = new SyncFsmExitStatus();
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
-			var exitStatus = payload.m_result;
-			msg = SyncFsmExitStatus.asMessage(exitStatus, "statusAuthSucceeded", "statusAuthFailed");
+			msg = payload.m_es.asMessage("statusAuthSucceeded", "statusAuthFailed");
 
 			if (msg != "")
 				alert(msg);

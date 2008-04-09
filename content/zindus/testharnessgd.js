@@ -122,11 +122,17 @@ ZinTestHarness.prototype.testGoogleContacts = function()
 	contact.updateFromContact(properties);
 	this.matchGoogleContact(contact, properties, {});
 
-	// 5. test modifying a few properties
+	// 5. test creating a contact without a title
 	//
 	properties = newObject("content", "1-content", "organization#orgName", "2-organization#orgName");
 	contact.updateFromContact(properties);
-	properties["title"] = "";
+	this.matchGoogleContact(contact, properties, {});
+
+	// 5. test creating a contact with an empty title
+	//
+	properties = newObject("title", "", "content", "1-content", "organization#orgName", "2-organization#orgName");
+	contact.updateFromContact(properties);
+	delete properties["title"];
 	this.matchGoogleContact(contact, properties, {});
 
 	return true;

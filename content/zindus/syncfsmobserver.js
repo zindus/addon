@@ -24,13 +24,13 @@
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
 //
-function SyncFsmObserver()
+function SyncFsmObserver(es)
 {
 	this.state = null; // SyncFsm.state, used on a read-only basis, set before any update
 
 	this.m_logger = newZinLogger("SyncFsmObserver");
 
-	this.m_exit_status = null;
+	this.m_es = es;
 
 	this.m_properties = new Object();
 
@@ -45,14 +45,6 @@ SyncFsmObserver.OP                  = 'op'; // eg: server put
 SyncFsmObserver.PROG_CNT            = 'pc'; // eg: 3 of
 SyncFsmObserver.PROG_MAX            = 'pm'; // eg: 6    (counts progress through an iteration of one or two states)
 SyncFsmObserver.PERCENTAGE_COMPLETE = 'pp'; // eg: 70%  (counts how far we are through all observed states)
-
-SyncFsmObserver.prototype.exitStatus = function()
-{
-	if (arguments.length > 0)
-		this.m_exit_status = arguments[0];
-
-	return this.m_exit_status;
-}
 
 SyncFsmObserver.prototype.set = function(key, value)
 {
@@ -298,7 +290,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				else
 					this.progressReportOn("Done");
 
-				var es = new SyncFsmExitStatus();
+				es = this.m_es;
 
 				if (fsmstate.event == 'evCancel')
 				{
@@ -355,8 +347,6 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				es.m_count_conflicts = context.state.aConflicts.length;
 
 				this.m_logger.debug("exit status: " + es.toString());
-
-				this.exitStatus(es);
 
 				break;
 

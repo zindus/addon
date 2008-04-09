@@ -1783,7 +1783,7 @@ SyncFsm.prototype.testForFolderPresentInZfcTb = function(name)
 	if (!key || this.zfcTb().get(key).isPresent(ZinFeedItem.ATTR_DEL))
 	{
 		this.state.stopFailCode   = 'FailOnFolderMustBePresent';
-		this.state.stopFailDetail = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(name));
+		this.state.stopFailDetail = ": " + this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(name));
 	}
 
 	ret = (this.state.stopFailCode == null);
@@ -1813,7 +1813,7 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 	if (!post_id || pre_prefid != post_prefid)    // no folder by this name or it changed since last sync
 	{
 		this.state.stopFailCode   = 'FailOnFolderReservedChanged';
-		this.state.stopFailDetail = name;
+		this.state.stopFailDetail = ": " + name;
 	}
 
 	ret = (this.state.stopFailCode == null);
@@ -2322,7 +2322,7 @@ SyncFsm.prototype.testForLegitimateFolderNames = function()
 	{
 		var name = firstKeyInObject(functor.a_folder_violation);
 		this.state.stopFailCode   = functor.a_folder_violation[name];
-		this.state.stopFailDetail = name;
+		this.state.stopFailDetail = ": " + name;
 	}
 
 	var ret = this.state.stopFailCode == null;
@@ -2573,7 +2573,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 					var name_parent = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
 
 					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
-					// this.state.m_logger.debug("functor_foreach_luid_slow_sync: testing twin key: " + key);
+					// this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: testing twin key: " + key);
 
 					if (isPropertyPresent(this.state.aHasChecksum, key) && aToLength(this.state.aHasChecksum[key]) > 0)
 						for (var luid_possible in this.state.aHasChecksum[key])
@@ -2624,7 +2624,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 		// The slowest piece of it appears to be the I/O, so here we disable it for > medium-sized addressbooks.
 		// Given that only one person has complained about the stop/continue dialog here, reckon this is ok as an interim measure...
 		//
-		if (zfc.length < 400)
+		if (zfc.length() < 400)
 			this.state.m_logger.debug(foreach_msg);
 		else
 			this.state.m_logger.debug("slow_sync: and fast_sync: debugging suppressed because it's too large: sourceid: " + sourceid);
@@ -2726,8 +2726,8 @@ SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b)
 
 	is_twin = length_a == count_match;
 
-	// this.state.m_logger.debug("isTwin: returns: " + is_twin + " sourceid/luid: " + sourceid_a + "/" + luid_a
-	//                                                         + " sourceid/luid: " + sourceid_b + "/" + luid_b);
+	// this.state.m_logger.debug("isTwin: blah: returns: " + is_twin + " sourceid/luid: " + sourceid_a + "/" + luid_a
+	//                                                               + " sourceid/luid: " + sourceid_b + "/" + luid_b);
 
 	return is_twin;
 }
@@ -3205,7 +3205,7 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 		if (aName[i] >= 2)
 		{
 			this.state.stopFailCode   = 'FailOnFolderSourceUpdate';
-			this.state.stopFailDetail = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(i));
+			this.state.stopFailDetail = ": " + this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(i));
 			break;
 		}
 
@@ -3307,7 +3307,7 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 			if (isPropertyPresent(aFolderName, name))
 			{
 				this.state.stopFailCode   = 'FailOnFolderNameClash';
-				this.state.stopFailDetail = name;
+				this.state.stopFailDetail = ": " + name;
 				break;
 			}
 			else
@@ -3413,7 +3413,7 @@ SyncFsm.prototype.testForCreateSharedAddressbook = function()
 		if (!isPropertyPresent(a_name[this.state.sourceid_zm], name))
 		{
 			this.state.stopFailCode   = 'FailOnFolderCantCreateShared';
-			this.state.stopFailDetail = name;
+			this.state.stopFailDetail = ": " + name;
 			break;
 		}
 
@@ -3601,12 +3601,10 @@ SyncFsm.prototype.sharedFoldersUpdateZm = function()
 			passed = false;
 
 			this.state.stopFailCode   = 'FailOnMultipleLn';
-			this.state.stopFailDetail = "";
+			this.state.stopFailDetail = ": ";
 
 			for (var i = 0; i < functor_pass_1.a_key_fl[key].length; i++)
 			{
-				// if (i != 0)
-				// 	this.state.stopFailDetail += ", ";
 				this.state.stopFailDetail += "\n";
 
 				this.state.stopFailDetail += zfcZm.get(functor_pass_1.a_key_fl[key][i]).get(ZinFeedItem.ATTR_NAME);
@@ -4612,7 +4610,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 		this.state.stopFailCode   = 'FailOnUnableToUpdateZm';
 
-		this.state.stopFailDetail = stringBundleString("statusFailOnUnableToUpdateZmDetail1");
+		this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateZmDetail1");
 		this.state.stopFailDetail += " " + remote_update_package.soap.method + " " + aToString(remote_update_package.soap.arg);
 
 		this.state.is_remote_update_problem = true;
@@ -4661,8 +4659,6 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 			case Suo.ADD | ZinFeedItem.TYPE_CN:
 				properties  = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
-				this.state.m_logger.debug("entryActionUpdateGd: blah: Suo.ADD | ZinFeedItem.TYPE_CN: properties: " + aToString(properties));
-
 				contact = new GdContact();
 				contact.updateFromContact(properties);
 
@@ -4671,6 +4667,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				remote.headers = newObject("Content-type", "application/atom+xml");
 				remote.body    = contact.toStringXml();
 				remote.contact = contact;  // if the server responds with a 409 conflict this helps to give a useful error message
+				this.state.m_logger.debug("blah 2: remote.contact: " + contact.toString());
 				bucket         = ORDER_SOURCE_UPDATE[i];
 				msg           += " about to add contact: ";
 				break;
@@ -4722,7 +4719,10 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 	{
 		this.state.remote_update_package = newObject('sourceid', sourceid, 'bucket', bucket, 'indexSuo', indexSuo, 'remote', remote);
 
-		this.state.m_logger.debug("entryActionUpdateGd: remote_update_package: " + aToString(this.state.remote_update_package));
+		this.state.m_logger.debug("entryActionUpdateGd: remote_update_package: " +
+		                          " sourceid: " + sourceid + " bucket: " + bucket + " indexSuo: " + indexSuo +
+								  " remote.method: " + remote.method + " remote.url: " + remote.url);
+
 
 		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, true);
 
@@ -4740,15 +4740,15 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
 		return;
 
-	var msg       = "exitActionUpdateGd: ";
+	var remote_update_package  = this.state.remote_update_package;
+	var is_response_understood = false;
 	var suo       = this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
 	var zfiGid    = this.state.zfcGid.get(suo.gid);
 	var zfcTarget = this.state.sources[suo.sourceid_target]['zfcLuid'];
-	var remote_update_package  = this.state.remote_update_package;
-	var is_response_understood = false;
+	var response  = this.state.m_http.response();
+	var msg       = "exitActionUpdateGd: ";
 
-	this.state.m_logger.debug("exitActionUpdateZm: " + aToString(remote_update_package));
-
+	this.state.m_logger.debug("exitActionUpdateGd: " + remote_update_package.remote.method + " " + remote_update_package.remote.url);
 
 	if (this.state.m_http.is_http_status_success())
 		switch(remote_update_package.bucket)
@@ -4835,14 +4835,17 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 
 		if (this.state.m_http.m_http_status_code == HTTP_STATUS_409_CONFLICT)
 		{
+			var PrimaryEmail = remote_update_package.remote.contact.m_contact['PrimaryEmail'];
+			if (!PrimaryEmail)
+				PrimaryEmail = "";
 			this.state.stopFailCode   = 'FailOnConflict';
-			this.state.stopFailDetail = stringBundleString("statusFailOnConflictDetail") +
-			                                 remote_update_package.contact.m_contact['PrimaryEmail'];
+			this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnConflictDetail") + PrimaryEmail +
+			                            "\n" + "See http://www.zindus.com/faq-thunderbird-google/#TODO";
 		}
 		else
 		{
 			this.state.stopFailCode   = 'FailOnUnableToUpdateZm';
-			this.state.stopFailDetail = stringBundleString("statusFailOnUnableToUpdateZmDetail1") +
+			this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateZmDetail1") +
 			                             " " + remote_update_package.remote.method +
 			                             " " + stringBundleString("statusFailOnUnableToUpdateZmDetail2") +
 			                             " " + this.state.m_http.m_http_status_code;
@@ -5423,7 +5426,7 @@ SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
 
 SyncFsm.prototype.exitActionSoapResponse = function(state, event)
 {
-	// this method's entry in the m_a_exit table may be overwritten by setupHttpZm
+	// this method's entry in the m_a_exit table may be overwritten by setupHttp
 	// otherwise, do nothing...
 }
 

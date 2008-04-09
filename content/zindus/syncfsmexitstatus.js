@@ -31,6 +31,7 @@ function SyncFsmExitStatus()
 	this.m_fail_soapmethod  = null;
 	this.m_fail_fsmoldstate = null;
 	this.m_count_conflicts  = 0;
+	this.m_logger           = newZinLogger("SyncFsmExitStatus");
 
 	this.m_a_valid_code = {
 		FailOnService                 : { 'hasdetail' : 0 }, // 1.  some sort of service failure
@@ -101,37 +102,41 @@ SyncFsmExitStatus.prototype.hasDetail = function()
 	return this.m_a_valid_code[this.failcode()]['hasdetail'] == 1;
 }
 
-SyncFsmExitStatus.asMessage = function(context, sbsSuccess, sbsFailure)
+SyncFsmExitStatus.prototype.asMessage = function(sbsSuccess, sbsFailure)
 {
 	var msg = "";
 
 	// if the dialog was cancelled while we were syncing, string bundles wont be available, so we try/catch...
 	//
 	try {
-		if (context.m_exit_status == 0)
+		if (this.m_exit_status == 0)
 			msg += stringBundleString(sbsSuccess);
 		else
 		{
 			msg += stringBundleString(sbsFailure);
-			msg += "\n" + stringBundleString(context.failCodeStringId());
+			msg += "\n" + stringBundleString(this.failCodeStringId());
 
-			if (context.failcode() == 'FailOnFault')
+			if (this.failcode() == 'FailOnFault')
 			{
-				msg += "\n" + context.m_fail_detail;
-				msg += "\n" + stringBundleString("statusFailSoapMethod") + " " + context.m_fail_soapmethod;
+				msg += "\n" + this.m_fail_detail;
+				msg += "\n" + stringBundleString("statusFailSoapMethod") + " " + this.m_fail_soapmethod;
 			}
-			else if (context.failcode() == 'FailOnCancel')
+			else if (this.failcode() == 'FailOnCancel')
 				msg += "\n" + stringBundleString("statusFailOnCancelDetail");
-			else if (context.failcode() == 'FailOnService')
+			else if (this.failcode() == 'FailOnService')
 				msg += "\n" + stringBundleString("statusFailOnServiceDetail");
-			else if (context.hasDetail())
-				msg += ": " + context.m_fail_detail;
+			else if (this.hasDetail())
+				msg += this.m_fail_detail;
 		}
 	} catch (ex) {
 		dump("asMessage: exception: " + ex.message + "\n");
-		newZinLogger("SyncFsmExitStatus").debug("asMessage: exception: " + ex.message);
+		this.m_logger.debug("asMessage: exception: " + ex.message);
 	}
 
 	return msg;
 }
 
+SyncFsmExitStatus.asMessage = function(context, sbsSuccess, sbsFailure)
+{
+	context.asMessage(sbsSuccess, sbsFailure);
+}

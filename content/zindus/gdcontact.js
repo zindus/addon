@@ -452,13 +452,28 @@ GdContact.prototype.ns_gd = function(str)
 
 GdContact.prototype.setProperty = function(node, attribute, collection, key)
 {
+	var value = "";
+
 	if (attribute)
-		collection[key] = node.getAttribute(attribute);
+		value = node.getAttribute(attribute);
 	else if (node.hasChildNodes())
-		collection[key] = node.firstChild.nodeValue;
-	else
-		collection[key] = "";
+		value = node.firstChild.nodeValue;
+
+	if (value.length > 0)
+		collection[key] = value;
+	else if (isPropertyPresent(collection, key))
+		delete collection[key];
 }
+
+// GdContact.prototype.setProperty = function(node, attribute, collection, key)
+// {
+// 	if (attribute)
+// 		collection[key] = node.getAttribute(attribute);
+// 	else if (node.hasChildNodes())
+// 		collection[key] = node.firstChild.nodeValue;
+// 	else
+// 		collection[key] = "";
+// }
 
 // GdContact.prototype.setNode = function(node, attribute, collection, key, a_key_used)
 // {

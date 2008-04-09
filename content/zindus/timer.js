@@ -30,7 +30,8 @@ function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_funct
 	zinAssert(arguments.length == 3);
 
 	this.m_logger                 = newZinLogger("ZinTimerFunctorSync");
-	this.m_sfo                    = new SyncFsmObserver();
+	this.m_es                     = new SyncFsmExitStatus();
+	this.m_sfo                    = new SyncFsmObserver(this.m_es);
 	this.m_zwc                    = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_id_fsm_functor         = id_fsm_functor;
 	this.m_syncfsm                = null;
@@ -122,8 +123,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (fsmstate.isFinal())
 		{
-			var es = this.m_sfo.exitStatus();
-			StatusPanel.save(es);
+			StatusPanel.save(this.m_es);
 
 			var functor_hide_progresspanel = {
 				run: function(win) {

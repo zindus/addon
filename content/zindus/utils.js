@@ -206,30 +206,36 @@ function aToString(obj)
 	var ret = "";
 	var first = true;
 
-	for (var x in obj)
-	{
-		if (!first)
-			ret += ", ";
-		else
-			first = false;
+	if (typeof(obj.QueryInterface) == 'function')
+		ret += "xpcom object";
+	else
+		for (var x in obj)
+		{
+			if (!first)
+				ret += ", ";
+			else
+				first = false;
 
-		ret += x + ": ";
+			ret += x + ": ";
 
-		var was_exception_thrown = false;
+			var was_exception_thrown = false;
 
-		if (typeof(obj[x]) == 'object')
-			try {
-				ret += "{ " + aToString(obj[x]) + " }";
-			} catch (e)
-			{
-				dump("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-				gLogger.error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-			}
-		else
-			ret += obj[x];
+			if (typeof(obj[x]) == 'object')
+				try {
+					ret += "{ " + aToString(obj[x]) + " }";
+				} catch (e)
+				{
+					dump("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
+					gLogger.error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
+					gLogger.error("ret: " + ret);
+				}
+			else if (typeof(obj[x]) == 'function')
+				ret += "Function";
+			else
+				ret += obj[x];
 
-		zinAssert(!was_exception_thrown);
-	}
+			zinAssert(!was_exception_thrown);
+		}
 
 	return ret;
 }

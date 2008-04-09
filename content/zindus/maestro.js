@@ -43,9 +43,7 @@ ZinMaestro.prototype.initialise = function()
 {
 	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
 	this.m_a_fsmstate = new Object();
-	this.m_logger     = newZinLogger("ZinMaestro");
-
-	this.m_logger.level(ZinLogger.NONE);
+	this.m_logger     = newZinLogger("ZinMaestro"); this.m_logger.level(ZinLogger.NONE);
 }
 
 ZinMaestro.TOPIC = "ZindusMaestroObserver";

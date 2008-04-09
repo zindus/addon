@@ -35,7 +35,6 @@ function SyncWindow()
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
-	this.m_sfo       = new SyncFsmObserver();
 	this.m_logger    = newZinLogger("SyncWindow"); this.m_logger.level(ZinLogger.NONE);
 
 	this.m_has_observer_been_called = false;
@@ -46,6 +45,7 @@ SyncWindow.prototype.onLoad = function()
 	this.m_logger.debug("onLoad: starts: " + getTime() + "\n");
 
 	this.m_payload = window.arguments[0];
+	this.m_sfo       = new SyncFsmObserver(this.m_payload.m_es);
 	this.m_syncfsm = this.m_payload.m_syncfsm;
 
 	var listen_to = zinCloneObject(ZinMaestro.FSM_GROUP_SYNC);
@@ -136,15 +136,12 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (fsmstate.isFinal())
 		{
-			var es = this.m_sfo.exitStatus();
-			this.m_payload.m_result = es;
-
 			functor.m_showlogo = true;
 			this.m_zwc.forEach(functor);
 
 			if (fsmstate.context.state.id_fsm == ZinMaestro.FSM_ID_ZM_TWOWAY)
 			{
-				StatusPanel.save(es);
+				StatusPanel.save(this.m_payload.m_es);
 				StatusPanel.update();
 			}
 
