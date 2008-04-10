@@ -299,6 +299,25 @@ function isMatchObjectKeys(obj1, obj2)
 	return ret;
 }
 
+// return true iff the both the keys and the values in both objects match
+// 
+function isMatchObjects(obj1, obj2)
+{
+	var is_match = true;
+
+	is_match = is_match &&isMatchObjectKeys(obj1, obj2);
+
+	if (is_match)
+		for (var i in obj1)
+			if (obj1[i] != obj2[i])
+			{
+				is_match = false;
+				break;
+			}
+
+	return is_match;
+}
+
 // return true iff each element in the array has a matching key in the object
 //
 function isMatchArrayElementInObject(a, obj)
@@ -309,7 +328,6 @@ function isMatchArrayElementInObject(a, obj)
 		if (!isPropertyPresent(obj, a[i]))
 		{
 			ret = false;
-			newZinLogger("Utils").debug("isMatchArrayElementInObject: mismatched key: " + a[i]);
 			break;
 		}
 

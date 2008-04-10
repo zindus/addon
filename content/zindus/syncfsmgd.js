@@ -126,6 +126,10 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 			if (is_deleted)
 			{
 				this.zfcPr().get(id).set(ZinFeedItem.ATTR_DEL, '1');
+
+				if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
+					zfi.del(ZinFeedItem.ATTR_CSGD);
+					
 				msg += " marked as deleted: ";
 			}
 			else if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
@@ -150,10 +154,7 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 		}
 		else if (!is_deleted)
 		{
-			zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY,  id,
-						                               ZinFeedItem.ATTR_REV,  rev,
-						                               ZinFeedItem.ATTR_EDIT, edit_url,
-													   ZinFeedItem.ATTR_L,    key_parent_folder);
+			zfi = this.newZfiCnGd(id, rev, edit_url, key_parent_folder);
 			this.zfcPr().set(zfi); // add new
 			msg += " added: " + zfi.toString();
 		}
@@ -164,6 +165,16 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 	}
 
 	this.state.m_logger.debug(msg);
+}
+
+SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, key_parent_folder)
+{
+	var zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY,  id,
+				                                   ZinFeedItem.ATTR_REV,  rev,
+				                                   ZinFeedItem.ATTR_EDIT, edit_url,
+											       ZinFeedItem.ATTR_L,    key_parent_folder);
+
+	return zfi;
 }
 
 SyncFsmGd.prototype.testForCsGd = function()
@@ -197,7 +208,8 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 			suo         = this.state.aSuo[sourceid_pr][Suo.MOD | ZinFeedItem.TYPE_CN][indexSuo];
 			luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 
-			this.state.a_gd_contact_to_get.push(luid_target);
+			if (!isPropertyPresent(this.state.a_gd_contact, luid_target))
+				this.state.a_gd_contact_to_get.push(luid_target);
 		}
 
 		this.state.is_done_get_contacts_pu = true;

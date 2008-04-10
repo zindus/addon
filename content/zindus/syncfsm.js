@@ -4698,7 +4698,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 	var bucket  = null;
 	var msg = "";
 	var indexSuo = null;
-	var sourceid, sourceid_winner, sourceid_target, suo, luid_winner, properties, contact;
+	var sourceid, sourceid_winner, sourceid_target, suo, luid_winner, properties, contact, zfcTarget, zfiTarget, zfiGid;
+	var nextEvent = 'evNext';
 
 	this.state.stopwatch.mark(state);
 
@@ -4718,12 +4719,15 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 		suo             = this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo];
 		sourceid_winner = suo.sourceid_winner;
 		sourceid_target = suo.sourceid_target;
-		luid_winner     = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
+		zfcTarget       = this.state.sources[suo.sourceid_target]['zfcLuid'];
+		zfiGid          = this.state.zfcGid.get(suo.gid);
+		luid_winner     = zfiGid.get(suo.sourceid_winner);
 
 		switch(ORDER_SOURCE_UPDATE[i])
 		{
 			case Suo.ADD | ZinFeedItem.TYPE_CN:
-				properties  = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
+				msg           += " about to add contact: ";
+				properties     = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
 				contact = new GdContact();
 				contact.updateFromContact(properties);
@@ -4734,38 +4738,48 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				remote.body    = contact.toStringXml();
 				remote.contact = contact;  // if the server responds with a 409 conflict this helps to give a useful error message
 				bucket         = ORDER_SOURCE_UPDATE[i];
-				msg           += " about to add contact: ";
 				break;
 
 			case Suo.MOD | ZinFeedItem.TYPE_CN:
-				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-				properties  = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
+				msg           += " about to modify contact: ";
+				luid_target    = zfiGid.get(sourceid_target);
+				properties     = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
 				zinAssertAndLog(isPropertyPresent(this.state.a_gd_contact, luid_target), "luid_target: " + luid_target);
 
 				contact = this.state.a_gd_contact[luid_target];
-				contact.updateFromContact(properties);
 
-				remote.method  = "POST";  // PUT
-				remote.url     = contact.m_meta['edit'];
-				remote.headers = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT");
-				remote.body    = contact.toStringXml();
-				remote.contact = contact;
-				bucket         = ORDER_SOURCE_UPDATE[i];
-				msg           += " about to modify contact: ";
+				if (isMatchObjects(properties, contact.m_contact))
+				{
+					zfiTarget  = zfcTarget.get(luid_target);
+					msg       += " the local mod doesn't affect the remote contact - skip remote update";
+					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
+					delete this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo];
+					nextEvent = 'evRepeat';
+				}
+				else
+				{
+					contact.updateFromContact(properties);
+
+					remote.method  = "POST";  // PUT
+					remote.url     = contact.m_meta['edit'];
+					remote.headers = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT");
+					remote.body    = contact.toStringXml();
+					remote.contact = contact;
+					bucket         = ORDER_SOURCE_UPDATE[i];
+				}
 				break;
 
 			case Suo.DEL | ZinFeedItem.TYPE_CN:
-				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-				var zfcTarget   = this.state.sources[suo.sourceid_target]['zfcLuid'];
-				var zfiTarget   = zfcTarget.get(luid_target);
+				msg           += " about to delete contact: ";
+				luid_target    = zfiGid.get(sourceid_target);
+				zfiTarget      = zfcTarget.get(luid_target);
 
 				remote.method  = "POST"; // DELETE
 				remote.url     = zfiTarget.get(ZinFeedItem.ATTR_EDIT);
 				remote.headers = newObject("X-HTTP-Method-Override", "DELETE");
 				remote.body    = null;
 				bucket         = ORDER_SOURCE_UPDATE[i];
-				msg           += " about to delete contact: ";
 				break;
 
 			default:
@@ -4792,18 +4806,19 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, true);
 
-		continuation('evSoapRequest');
+		nextEvent = 'evSoapRequest';
 	}
 	else
 	{
 		this.state.m_http = null;
-		continuation('evNext');
 	}
+
+	continuation(nextEvent);
 }
 
 SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 {
-	this.state.m_logger.debug("exitActionUpdateGd: blah: at top.");
+	this.state.m_logger.debug("exitActionUpdateGd: blah: top.");
 
 	if (!this.state.m_http || event == "evCancel")
 		return;
@@ -4835,9 +4850,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 						msg += "created: contact id: " + id;
 
 						var key_parent_folder = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_FOLDER_CONTACTS); // TODO - only need to work this out once - not per contact
-						var zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, id,
-						                                               ZinFeedItem.ATTR_REV, contact.m_meta['updated'],
-						                                               ZinFeedItem.ATTR_L,   key_parent_folder);
+						var zfi = this.newZfiCnGd(id, contact.m_meta['updated'], contact.m_meta['edit'], key_parent_folder);
 
 						SyncFsm.setLsoToGid(zfiGid, zfi);
 
@@ -4846,7 +4859,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 						zfiGid.set(suo.sourceid_target, id);
 						this.state.aReverseGid[suo.sourceid_target][id] = suo.gid;
 
-						msg += " - added luid and gid"; 
+						msg += "added luid and gid"; 
 
 						is_response_understood = true;
 					}
@@ -4867,14 +4880,11 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 					// update the local contact (unnecessarily).
 					// To avoid this, ATTR_CSGD gets added here and checked on the next sync.
 					// The updated contact should get returned on the next sync and when it does, if the checksum matches ATTR_CSGD
-					// we set REV and call setLsoToGid, so avoiding an update of the local contact.
+					// we call setLsoToGid, so avoiding an update of the local contact.
 					//
 					zfiTarget.set(ZinFeedItem.ATTR_CSGD, checksum);
 
-					// don't do this - see comment above...
-					// SyncFsm.setLsoToGid(this.state.zfcGid.get(suo.gid), zfiTarget);
-
-					msg += " - map updated: zfi: " + zfcTarget.get(luid_target);
+					msg += "map updated: zfi: " + zfcTarget.get(luid_target);
 
 					is_response_understood = true;
 				}
@@ -4902,7 +4912,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 		delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
 	else
 	{
-		msg += " - didn't understand response";
+		msg += "didn't understand response";
 
 		if (this.state.m_http.m_http_status_code == HTTP_STATUS_409_CONFLICT)
 		{
@@ -5000,6 +5010,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation)
 {
 	var nextEvent = 'evNext';
+	var msg;
 
 	this.state.stopwatch.mark(state);
 
@@ -5011,7 +5022,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		this.state.m_logger.debug("UpdateCleanup: zfcTb:\n" + this.zfcTb().toString());
 		this.state.m_logger.debug("UpdateCleanup: zfcPr:\n" + this.zfcPr().toString());
 
-		// this.state.m_logger.debug("UpdateCleanup: zfcGid: " + this.state.zfcGid.toString());
+		this.state.m_logger.debug("UpdateCleanup: zfcGid: " + this.state.zfcGid.toString());
 
 		//  delete the luid item if it has a DEL attribute or (zimbra: it's not of interest)
 		//  delete the mapping between a gid and an luid when the luid is not of interest
@@ -5029,16 +5040,33 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 				//
 				if (zfi.isPresent(ZinFeedItem.ATTR_DEL) || !SyncFsm.isOfInterest(zfc, luid))
 				{
+					msg = "UpdateCleanup: gid: " + gid;
+
 					zfc.del(luid);
-					this.state.m_logger.debug("UpdateCleanup: sourceid: " + sourceid + " - deleted luid: " + luid);
+					msg += " deleted item in sourceid/luid: " + sourceid + "/" + luid;
 
 					if (gid)
 					{
-						this.state.zfcGid.get(gid).del(sourceid);
-						delete this.state.aReverseGid[sourceid][luid];
+						var luid_in_gid = this.state.zfcGid.get(gid).get(sourceid);
 
-						this.state.m_logger.debug("UpdateCleanup: gid: " + gid + " - deleted reference to sourceid: " + sourceid);
+						if (luid_in_gid == luid)
+						{
+							msg += " delete gid's reference to sourceid";
+							this.state.zfcGid.get(gid).del(sourceid);
+						}
+						else
+						{
+							// This happens when there is a mod/del conflict
+							// The losing source has both a del and an add and when the add got processed it wrote a new luid
+							// into the gid.  So we don't want to remove it.
+							//
+							msg += " didn't delete gid reference to sourceid because it had changed to: " + luid_in_gid;
+						}
+
+						delete this.state.aReverseGid[sourceid][luid];
 					}
+
+					this.state.m_logger.debug(msg);
 				}
 
 				return true;
@@ -5787,12 +5815,12 @@ HttpStateGd.prototype.handleResponse = function()
 	var nextEvent;
 	var msg = "HttpStateGd:";
 
-	if (this.response())
+	if (this.response('text'))
 		msg += " response: " + this.response('text');
 	else
 		msg += " response: " + "empty";
 
-	msg += " headers: " + this.m_xhr.getAllResponseHeaders();
+	// msg += " headers: " + this.m_xhr.getAllResponseHeaders();
 
 	if (this.is_cancelled)
 		nextEvent = 'evCancel';

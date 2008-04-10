@@ -122,9 +122,9 @@ ZinTestHarness.prototype.testContactConverter = function()
 
 	// test converting FORMAT_TB to all formats
 	//
-	this.testContactConverterPropertyMatch(a_properties[FORMAT_TB], converter.convert(FORMAT_TB, FORMAT_TB, a_properties[FORMAT_TB]));
-	this.testContactConverterPropertyMatch(a_properties[FORMAT_ZM], converter.convert(FORMAT_ZM, FORMAT_TB, a_properties[FORMAT_TB]));
-	this.testContactConverterPropertyMatch(a_properties[FORMAT_GD], converter.convert(FORMAT_GD, FORMAT_TB, a_properties[FORMAT_TB]));
+	zinAssert(isMatchObjects(a_properties[FORMAT_TB], converter.convert(FORMAT_TB, FORMAT_TB, a_properties[FORMAT_TB])));
+	zinAssert(isMatchObjects(a_properties[FORMAT_ZM], converter.convert(FORMAT_ZM, FORMAT_TB, a_properties[FORMAT_TB])));
+	zinAssert(isMatchObjects(a_properties[FORMAT_GD], converter.convert(FORMAT_GD, FORMAT_TB, a_properties[FORMAT_TB])));
 
 	// test that crc's match
 	//
