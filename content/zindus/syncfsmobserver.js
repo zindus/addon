@@ -122,7 +122,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stConverge6:      { count: 1 },
 		stConverge7:      { count: 1 },
 		stConverge8:      { count: 1 },
-		stGetContactsDel: { count: 1 },
+		stGetContactPuZm: { count: 1 },
 		stUpdateTb:       { count: 1 },
 		stUpdateZm:       { count: 1 },
 		stUpdateCleanup:  { count: 1 },
@@ -137,14 +137,15 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stAuth:           { count: 1 },
 		stLoad:           { count: 1 },
 		stLoadTb:         { count: 1 },
-		stGetContacts:    { }, // gd
+		stGetContacts:    { count: 1 },
 		stConverge1:      { count: 1 },
 		stConverge2:      { count: 1 },
 		stConverge3:      { count: 1 },
-		stConverge5:      {            },
+		stConverge5:      { },
 		stConverge6:      { count: 1 },
 		stConverge7:      { count: 1 },
 		stConverge8:      { count: 1 },
+		stGetContactPuGd: {          }, // TODO - as per Zm but not to use aContact
 		stUpdateTb:       { count: 1 },
 		stUpdateGd:       { count: 1 },
 		stUpdateCleanup:  { count: 1 },
@@ -229,7 +230,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				break;
 
 			case 'stGetContact':
-			case 'stGetContactsDel':
+			case 'stGetContactPuZm':
 				if (context.state.aContact.length > 0)
 				{
 					var op = this.buildOp(context.state.sourceid_pr, "GetMany");

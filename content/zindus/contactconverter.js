@@ -291,7 +291,7 @@ ZinContactConverter.prototype.normaliseAddressLine = function(format_to, format_
 {
 	var i;
 
-	this.m_logger.debug("normaliseAddressLine: blah: format_to: " + format_to + " format_from: " + format_from + " key_from: " + key_from);
+	// this.m_logger.debug("normaliseAddressLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
 
 	switch(format_from)
 	{
@@ -321,7 +321,7 @@ ZinContactConverter.prototype.lineTwoFromCommaSeparated = function(properties_fr
 {
 	var a = properties_from[key_from].split(",");
 
-	this.m_logger.debug("lineTwoFromCommaSeparated: type: " + type + " a: " + a.toString());
+	// this.m_logger.debug("lineTwoFromCommaSeparated: type: " + type + " a: " + a.toString());
 
 	for (var i = 0; i < a.length; i++)
 		a_normalised_line[type][i + 1] = a[i];
@@ -348,8 +348,7 @@ ZinContactConverter.prototype.isKeyConverted = function(format_to, format_from, 
 
 	var index_to = this.m_map[format_from][key];
 
-	return typeof(index_to) != 'undefined' && (this.m_equivalents[index_to][format_to] != null ||
-	                                           isPropertyPresent(this.m_address_line[format_from], key));
+	return typeof(index_to) != 'undefined' && this.m_equivalents[index_to][format_to] != null;
 }
 
 // We have to normalise the order in which we iterate through the properties so that two hashes with the same
@@ -393,6 +392,8 @@ ZinContactConverter.prototype.crc32 = function(properties)
 
 	ret = crc32(str);
 
+	// this.m_logger.debug("crc32: returns: " + ret + " properties: " + aToString(properties));
+
 	return ret;
 }
 
@@ -403,11 +404,15 @@ ZinContactConverter.prototype.removeKeysNotCommonToAllFormats = function(format_
 
 	for (i in properties)
 	{
-		is_converted = false;
+		is_converted = true;
 
 		for (j = 0; j < A_VALID_FORMATS.length;  j++)
-			if (format_from != A_VALID_FORMATS[j] && this.isKeyConverted(A_VALID_FORMATS[j], format_from, i))
-				is_converted = true;
+			if (format_from != A_VALID_FORMATS[j])
+				if (!this.isKeyConverted(A_VALID_FORMATS[j], format_from, i))
+				{
+					is_converted = false;
+					break;
+				}
 
 		if (!is_converted)
 			keys_to_remove[i] = true;
@@ -415,6 +420,9 @@ ZinContactConverter.prototype.removeKeysNotCommonToAllFormats = function(format_
 
 	for (i in keys_to_remove)
 		delete properties[i];
+
+	// this.m_logger.debug("removeKeysNotCommonToAllFormats: blah: keys_to_remove: " + aToString(keys_to_remove) +
+	//                     " leaving keys: " + keysAsString(properties));
 }
 
 // So for example:

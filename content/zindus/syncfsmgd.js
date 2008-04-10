@@ -55,7 +55,7 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 	if (this.state.authToken)
 	{
 		var username  = this.state.sources[this.state.sourceid_pr]['username'];
-		this.state.base_url = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base";
+		this.state.gd_base_url = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base";
 	}
 
 	this.state.m_logger.debug("authToken: " + this.state.authToken);
@@ -67,7 +67,7 @@ SyncFsmGd.prototype.entryActionGetContacts = function(state, event, continuation
 	{
 	var sourceid_pr = this.state.sourceid_pr;
 	var SyncToken = this.state.zfcLastSync.get(sourceid_pr).getOrNull('SyncToken');
-	var url       = this.state.base_url + "?showdeleted=true";
+	var url       = this.state.gd_base_url + "?showdeleted=true";
 
 	if (SyncToken)
 		url += "&updated-min=" + SyncToken + "&";
@@ -85,33 +85,30 @@ SyncFsmGd.prototype.entryActionGetContacts = function(state, event, continuation
 
 SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 {
-	var msg = "exitActionGetContacts: \n";
-	var response;
-
-	if (1) // TODO
-	{
 	if (!this.state.m_http.response() || event == "evCancel")
 		return;
 
-	response = this.state.m_http.response();
-	}
-	else 
-	{
-	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><feed xmlns='http://www.w3.org/2005/Atom' xmlns:openSearch='http://a9.com/-/spec/opensearchrss/1.0/' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>a2ghbe@gmail.com</id><updated>2008-03-30T00:33:50.384Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>cvek a2ghbe's Contacts</title><link rel='alternate' type='text/html' href='http://www.google.com/'/><link rel='http://schemas.google.com/g/2005#feed' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base'/><link rel='http://schemas.google.com/g/2005#post' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base'/><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base?max-results=25&amp;showdeleted=true'/><author><name>cvek a2ghbe</name><email>a2ghbe@gmail.com</email></author><generator version='1.0' uri='http://www.google.com/m8/feeds'>Contacts</generator><openSearch:totalResults>6</openSearch:totalResults><openSearch:startIndex>1</openSearch:startIndex><openSearch:itemsPerPage>25</openSearch:itemsPerPage><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/0</id><updated>2008-03-29T20:36:25.343Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>John Smith</title><content type='text'>notes-line-1 notes-line-2</content><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/0'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/0/1206822985343000'/><gd:organization rel='http://schemas.google.com/g/2005#work'><gd:orgName>company-acme</gd:orgName><gd:orgTitle>title-directory</gd:orgTitle></gd:organization><gd:email rel='http://schemas.google.com/g/2005#other' address='john.smith.primary@example.com' primary='true'/><gd:email rel='http://schemas.google.com/g/2005#home' address='john.smith.home.1@example.com'/><gd:email rel='http://schemas.google.com/g/2005#home' address='john.smith.home.2@example.com'/><gd:email rel='http://schemas.google.com/g/2005#other' address='john.smith.other@example.com'/><gd:email rel='http://schemas.google.com/g/2005#work' address='john.smith.work@example.com'/><gd:im address='aim-im-1' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/><gd:im address='aim-im-2' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#home_fax'>4-home-fax</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#pager'>6-pager</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>2-home</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>3-home</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>1-mobile</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#work_fax'>5-work-fax</gd:phoneNumber><gd:phoneNumber rel='http://schemas.google.com/g/2005#work'>3-work</gd:phoneNumber><gd:postalAddress rel='http://schemas.google.com/g/2005#home'>home-address-line-1 home address line 2</gd:postalAddress></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/1</id><updated>2008-03-25T21:10:58.283Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>Jane Smith</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/1'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/1/1206479458283001'/><gd:email rel='http://schemas.google.com/g/2005#other' address='jane.smith@example.com' primary='true'/><gd:im address='im-address' rel='http://schemas.google.com/g/2005#other'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>1-mobile</gd:phoneNumber><gd:postalAddress rel='http://schemas.google.com/g/2005#home'>home-address-line-1</gd:postalAddress></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/2</id><updated>2008-03-30T00:29:11.271Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'></title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/2'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/2/1206836951271000'/><gd:deleted/></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/3</id><updated>2008-03-25T21:14:10.496Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>Joe Smith</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/3'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/3/1206479650496002'/></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/4</id><updated>2008-03-25T21:14:33.495Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>1-1</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/4'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/4/1206479673495000'/><gd:email rel='http://schemas.google.com/g/2005#other' address='1@example.com' primary='true'/></entry><entry><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/5</id><updated>2008-03-29T21:33:31.780Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>cvek a2ghbe</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/5'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/5/1206826411780000'/><gd:email rel='http://schemas.google.com/g/2005#other' address='a2ghbe@gmail.com' primary='true'/></entry></feed>";
+	var response = this.state.m_http.response();
 
-	var domparser = new DOMParser();
-	response = domparser.parseFromString(xmlString, "text/xml");
-	}
+	// set the sync token
+	//
+	var feed = new Object('updated', "");
+	var warn_msg = "<updated> element is missing from <feed>!";
+	ZinXpath.setConditionalFromSingleElement(feed, 'updated', "//atom:feed/atom:updated", response, warn_msg);
+	this.state.gd_sync_token = feed.updated;
+	this.state.m_logger.debug("exitActionGetContacts: gd_sync_token: " + this.state.gd_sync_token);
 
-	this.state.m_logger.debug("exitActionGetContacts: typeof response.doc: " + typeof(response.doc));
-	var xpath_query = "/atom:feed/atom:entry";
-	this.state.a_gd_contact = GdContact.arrayFromXpath(response, xpath_query);
-
+	// parse the <feed> response for <entry>'s and then process each contact
+	//
 	var key_parent_folder = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_FOLDER_CONTACTS);
+	var msg               = "exitActionGetContacts: \n";
+
+	this.state.a_gd_contact = GdContact.arrayFromXpath(response, "/atom:feed/atom:entry");
 
 	for (var id in this.state.a_gd_contact)
 	{
 		var rev        = this.state.a_gd_contact[id].m_meta['updated'];
+		var edit_url   = this.state.a_gd_contact[id].m_meta['edit'];
 		var is_deleted = isPropertyPresent(this.state.a_gd_contact[id].m_meta, 'deleted');
 		var zfi = null;
 
@@ -121,7 +118,8 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 		{
 			zfi = this.zfcPr().get(id);
 
-			zfi.set(ZinFeedItem.ATTR_REV, rev);
+			zfi.set(ZinFeedItem.ATTR_REV,  rev);
+			zfi.set(ZinFeedItem.ATTR_EDIT, edit_url);
 
 			msg += " updated: ";
 
@@ -132,7 +130,9 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 			}
 			else if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
 			{
-				var checksum = ZinContactConverter.instance().crc32(this.state.a_gd_contact[id].m_contact);
+				var converter   = ZinContactConverter.instance();
+				var properties  = converter.convert(FORMAT_TB, FORMAT_GD, this.state.a_gd_contact[id].m_contact);
+				var checksum    = converter.crc32(properties);
 
 				if (checksum == zfi.get(ZinFeedItem.ATTR_CSGD))
 				{
@@ -150,9 +150,10 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 		}
 		else if (!is_deleted)
 		{
-			zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, id,
-						                               ZinFeedItem.ATTR_REV, rev,
-													   ZinFeedItem.ATTR_L, key_parent_folder);
+			zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY,  id,
+						                               ZinFeedItem.ATTR_REV,  rev,
+						                               ZinFeedItem.ATTR_EDIT, edit_url,
+													   ZinFeedItem.ATTR_L,    key_parent_folder);
 			this.zfcPr().set(zfi); // add new
 			msg += " added: " + zfi.toString();
 		}
@@ -182,4 +183,61 @@ SyncFsmGd.prototype.testForCsGd = function()
 	};
 
 	this.zfcPr().forEach(functor);
+}
+
+SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuation)
+{
+	var sourceid_pr = this.state.sourceid_pr;
+	var nextEvent = null;
+
+	if (!this.state.is_done_get_contacts_pu)
+	{
+		for (indexSuo in this.state.aSuo[sourceid_pr][Suo.MOD | ZinFeedItem.TYPE_CN])
+		{
+			suo         = this.state.aSuo[sourceid_pr][Suo.MOD | ZinFeedItem.TYPE_CN][indexSuo];
+			luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+
+			this.state.a_gd_contact_to_get.push(luid_target);
+		}
+
+		this.state.is_done_get_contacts_pu = true;
+
+		this.state.m_logger.debug("entryActionGetContactPuGd: a_gd_contact_to_get: " + this.state.a_gd_contact_to_get.toString());
+	}
+
+	if (this.state.a_gd_contact_to_get.length > 0)
+	{
+		var id = this.state.a_gd_contact_to_get.pop();
+		var url = id;
+
+		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, false);
+		
+		nextEvent = 'evSoapRequest'
+	}
+	else
+	{
+		this.state.m_http = null;
+
+		nextEvent = 'evNext'
+	}
+
+	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.exitActionGetContactPuGd = function(state, event)
+{
+	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
+		return;
+
+	var response     = this.state.m_http.response();
+	var xpath_query  = "/atom:entry";
+	var a_gd_contact = GdContact.arrayFromXpath(response, xpath_query);
+
+	zinAssertAndLog(aToLength(a_gd_contact) ==  1, "length: " + aToLength(a_gd_contact));
+
+	var id = firstKeyInObject(a_gd_contact);
+
+	zinAssertAndLog(!isPropertyPresent(this.state.a_gd_contact, id), "id: " + id);
+
+	this.state.a_gd_contact[id] = a_gd_contact[id];
 }

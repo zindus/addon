@@ -38,7 +38,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	// ret = ret && this.testContactConverter();
+	ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook();
 	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testPermFromZfi();
@@ -46,7 +46,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
-	ret = ret && this.testGoogleContacts();
+	// ret = ret && this.testGoogleContacts();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -96,14 +96,83 @@ ZinTestHarness.prototype.testZinFeedCollection = function()
 
 ZinTestHarness.prototype.testContactConverter = function()
 {
+	var i, format, properties;
+	var a_data = new Array();
+	var converter = ZinContactConverter.instance();
+
+	a_data.push(newObject(FORMAT_TB, 'PrimaryEmail', FORMAT_ZM, 'email',      FORMAT_GD, 'PrimaryEmail', 'value', 'john@example.com'));
+	a_data.push(newObject(FORMAT_TB, 'FirstName',    FORMAT_ZM, 'firstName',  FORMAT_GD,  null         , 'value', 'john'            ));
+	a_data.push(newObject(FORMAT_TB, 'HomeAddress',  FORMAT_ZM, 'homeStreet', FORMAT_GD,  null         , 'value', '123 blah st'     ));
+
+	var a_properties = new Object();
+
+	for (i = 0; i < A_VALID_FORMATS.length; i++)
+		a_properties[A_VALID_FORMATS[i]] = new Object();
+	
+	for (i = 0; i < a_data.length; i++)
+		for (format in a_data[i])
+			if (isInArray(Number(format), A_VALID_FORMATS))
+				if (a_data[i][format] != null)
+					a_properties[format][a_data[i][format]] = a_data[i]['value'];
+
+	this.m_logger.debug("testContactConverter: a_properties: " + aToString(a_properties));
+
+	// test conversion of ...
+	zinAssert(converter.isKeyConverted(FORMAT_GD, FORMAT_TB, 'HomeAddress') == false);
+
+	// test converting FORMAT_TB to all formats
+	//
+	this.testContactConverterPropertyMatch(a_properties[FORMAT_TB], converter.convert(FORMAT_TB, FORMAT_TB, a_properties[FORMAT_TB]));
+	this.testContactConverterPropertyMatch(a_properties[FORMAT_ZM], converter.convert(FORMAT_ZM, FORMAT_TB, a_properties[FORMAT_TB]));
+	this.testContactConverterPropertyMatch(a_properties[FORMAT_GD], converter.convert(FORMAT_GD, FORMAT_TB, a_properties[FORMAT_TB]));
+
+	// test that crc's match
+	//
+	var a_crc = new Object();
+	for (i = 0; i < A_VALID_FORMATS.length; i++)
+	{
+		format = A_VALID_FORMATS[i];
+
+		// properties = zinCloneObject(converter.convert(FORMAT_TB, format, a_properties[format]));
+
+		properties = zinCloneObject(a_properties[format]);
+		converter.removeKeysNotCommonToAllFormats(format, properties);
+
+		this.m_logger.debug("testContactConverter: format: " + format + " common properties: " + aToString(properties));
+
+		properties = converter.convert(FORMAT_TB, format, properties);
+
+		this.m_logger.debug("testContactConverter: format: " + format + " normalised properties: " + aToString(properties));
+
+		a_crc[format] = converter.crc32(properties);
+	}
+	
+	this.m_logger.debug("testContactConverter: a_crc: " + aToString(a_crc));
+
+	for (i = 1; i < A_VALID_FORMATS.length; i++)
+		zinAssert(a_crc[A_VALID_FORMATS[0]] == a_crc[A_VALID_FORMATS[i]]);
+
+	return true;
+	
+
 	var element = new Object();
 
-	element['email']     = "leni@example.com";
-	element['firstName'] = "leni";
+	element['email']     = "xxx@example.com";
+	element['firstName'] = "xxx";
 
 	var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, element);
 
-	this.m_logger.debug("testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
+	// this.m_logger.debug("testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
+
+	return true;
+}
+
+ZinTestHarness.prototype.testContactConverterPropertyMatch = function(obj1, obj2)
+{
+	zinAssert(isMatchObjectKeys(obj1, obj2));
+
+	for (var i in obj1)
+		zinAssert(obj1[i] == obj2[i]);
 }
 
 ZinTestHarness.prototype.testFolderConverterPrefixClass = function()

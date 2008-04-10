@@ -55,7 +55,8 @@ function SyncFsmExitStatus()
 		FailOnNoPab                   : { 'hasdetail' : 0 }, // 19. 
 		FailOnMultipleLn              : { 'hasdetail' : 1 }, // 20. 
 		FailOnConflict                : { 'hasdetail' : 1 }, // 21. 
-		FailOnUnauthorized            : { 'hasdetail' : 0 }  // 22. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnDuplicatePrimaryEmail   : { 'hasdetail' : 1 }, // 22. 
+		FailOnUnauthorized            : { 'hasdetail' : 0 }  // 23. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
 	};
 }
 

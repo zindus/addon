@@ -206,7 +206,9 @@ function aToString(obj)
 	var ret = "";
 	var first = true;
 
-	if (typeof(obj.QueryInterface) == 'function')
+	if (obj == null)
+		ret = "Null";
+	else if (typeof(obj) == 'function' && typeof(obj.QueryInterface) == 'function')
 		ret += "xpcom object";
 	else
 		for (var x in obj)
@@ -220,7 +222,9 @@ function aToString(obj)
 
 			var was_exception_thrown = false;
 
-			if (typeof(obj[x]) == 'object')
+			if (obj[x] == null)
+				ret += "Null";
+			else if (typeof(obj[x]) == 'object')
 				try {
 					ret += "{ " + aToString(obj[x]) + " }";
 				} catch (e)
@@ -308,6 +312,24 @@ function isMatchArrayElementInObject(a, obj)
 			newZinLogger("Utils").debug("isMatchArrayElementInObject: mismatched key: " + a[i]);
 			break;
 		}
+
+	return ret;
+}
+
+function keysAsString(obj)
+{
+	ret = "";
+	var is_first = true;
+
+	for (var i in obj)
+	{
+		if (is_first)
+			is_first = false;
+		else
+			ret += " ";
+
+		ret += i;
+	}
 
 	return ret;
 }

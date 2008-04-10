@@ -62,10 +62,10 @@ GdContact.prototype.toString = function()
 	for (key in this.m_contact)
 		msg += " contact: " + key + ": " + this.m_contact[key] + "\n";
 
-	if (this.m_entry)
-		msg += xmlDocumentToString(this.m_entry);
-	else
-		msg += "m_entry: null";
+	// if (this.m_entry)
+	// 	msg += xmlDocumentToString(this.m_entry);
+	// else
+	// 	msg += "m_entry: null";
 
 	return msg;
 }
