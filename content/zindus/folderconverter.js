@@ -28,11 +28,11 @@ ZinFolderConverter.PREFIX_CLASS_SHARED   = 4;
 
 function ZinFolderConverter()
 {
-	this.m_bimap_pab = new BiMap(              [FORMAT_TB,               FORMAT_ZM,          FORMAT_GD          ],
-	                                           [TB_PAB,                  ZM_FOLDER_CONTACTS, GD_FOLDER_CONTACTS ]);
+	this.m_bimap_pab = new BiMap(              [FORMAT_TB,           FORMAT_ZM,          FORMAT_GD ],
+	                                           [TB_PAB,              ZM_FOLDER_CONTACTS, GD_PAB    ]);
 
-	this.m_bimap_emailed_contacts = new BiMap( [FORMAT_TB,               FORMAT_ZM                  ],
-	                                           [TB_EMAILED_CONTACTS,     ZM_FOLDER_EMAILED_CONTACTS ]);
+	this.m_bimap_emailed_contacts = new BiMap( [FORMAT_TB,           FORMAT_ZM                  ],
+	                                           [TB_EMAILED_CONTACTS, ZM_FOLDER_EMAILED_CONTACTS ]);
 
 	this.m_prefix_primary_account   = APP_NAME + "/";
 	this.m_prefix_foreign_readonly  = APP_NAME + "-";

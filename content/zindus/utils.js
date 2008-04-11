@@ -29,7 +29,7 @@ function zinAssert(expr)
 		{
 			throw new Error("Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
 				            APP_NAME + " version " + APP_VERSION_NUMBER + "\n" +
-				            "See http://www.zindus.com/faq-extension/#toc-reporting-bugs\n");
+				            "See http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs\n");
 		}
 		catch(ex)
 		{

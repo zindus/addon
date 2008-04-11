@@ -100,7 +100,6 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 
 	// parse the <feed> response for <entry>'s and then process each contact
 	//
-	var key_parent_folder = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_FOLDER_CONTACTS);
 	var msg               = "exitActionGetContacts: \n";
 
 	this.state.a_gd_contact = GdContact.arrayFromXpath(response, "/atom:feed/atom:entry");
@@ -154,7 +153,7 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 		}
 		else if (!is_deleted)
 		{
-			zfi = this.newZfiCnGd(id, rev, edit_url, key_parent_folder);
+			zfi = this.newZfiCnGd(id, rev, edit_url, this.state.gd_luid_pab);
 			this.zfcPr().set(zfi); // add new
 			msg += " added: " + zfi.toString();
 		}
@@ -167,12 +166,12 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 	this.state.m_logger.debug(msg);
 }
 
-SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, key_parent_folder)
+SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, gd_luid_pab)
 {
 	var zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY,  id,
 				                                   ZinFeedItem.ATTR_REV,  rev,
 				                                   ZinFeedItem.ATTR_EDIT, edit_url,
-											       ZinFeedItem.ATTR_L,    key_parent_folder);
+											       ZinFeedItem.ATTR_L,    gd_luid_pab);
 
 	return zfi;
 }

@@ -441,6 +441,9 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		this.state.stopFailCode = 'FailOnIntegrityDataStoreIn';
 	}
 
+	if (this.formatPr() == FORMAT_GD)
+		this.state.gd_luid_pab = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_PAB);
+
 	this.state.m_logger.debug("entryActionLoad: isSlowSync: " + this.state.isSlowSync);
 
 	continuation(nextEvent);
@@ -643,7 +646,7 @@ SyncFsm.prototype.initialiseZfcGdFakeContactsFolder = function(zfc)
 
 	zfc.set(new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_KEY, key,
 	                                             ZinFeedItem.ATTR_L, 1,
-	                                             ZinFeedItem.ATTR_NAME, GD_FOLDER_CONTACTS,
+	                                             ZinFeedItem.ATTR_NAME, GD_PAB,
 	                                             ZinFeedItem.ATTR_MS, 1));
 }
 
@@ -1820,6 +1823,8 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 		this.state.stopwatch.mark(state + " 7: passed: " + passed);
 	}
 
+	this.state.tb_luid_pab = SyncFsm.zfcFindFirstFolder(this.zfcTb(), TB_PAB);
+
 	var nextEvent = 'evNext';
 
 	if (!passed)
@@ -2414,7 +2419,7 @@ SyncFsm.prototype.testForDuplicatePrimaryEmail = function(aPrimaryEmail)
 	if (msg_duplicates.length > 0)
 	{
 		this.state.stopFailCode   = 'FailOnDuplicatePrimaryEmail';
-		this.state.stopFailDetail = "\n" + msg_duplicates + "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/#TODO";
+		this.state.stopFailDetail = "\n" + msg_duplicates + "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/";
 	}
 
 	return this.state.stopFailCode == null;
@@ -3003,6 +3008,35 @@ SyncFsm.prototype.buildGcs = function()
 	return aGcs;
 }
 
+SyncFsm.prototype.isGcsInScope = function(gid)
+{
+	var zfcGid = this.state.zfcGid;
+	var format = this.formatPr();
+	var ret = true;
+
+	switch(format)
+	{
+		case FORMAT_TB:
+		case FORMAT_ZM:
+			break;
+		case FORMAT_GD:
+			if (zfcGid.get(gid).isPresent(this.state.sourceid_tb))
+			{
+				var luid_tb = zfcGid.get(gid).get(this.state.sourceid_tb);
+				var zfi = this.zfcTb().get(luid_tb);
+				
+				if (zfi.get(ZinFeedItem.ATTR_L) != this.state.tb_luid_pab)
+					ret = false;
+			}
+			
+			break;
+		default:
+			zinAssertAndLog(false, "unmatched case: " + format);
+	}
+
+	return ret;
+}
+
 // This method builds the list of (MDU) operations required to update the meta-data for winners.
 // - if a winning item is new to the gid, generate an MDU operation (which will create the version)
 // - if a winning item was already in the gid and changed, generate an MDU operation (which will bump it's version)
@@ -3015,57 +3049,57 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 	var suo;
 
 	for (var gid in aGcs)
-	{
-		suo = null;
-
-		var msg = "suoBuildWinners: gid: " + gid + " winning sourceid: " + aGcs[gid].sourceid;
-
-		switch (aGcs[gid].state)
+		if (this.isGcsInScope(gid))
 		{
-			case Gcs.WIN:
-			case Gcs.CONFLICT:
-				var winner    = aGcs[gid].sourceid;
-				var sourceid  = winner;
-				var zfcWinner = this.state.sources[winner]['zfcLuid']; // this.getZfc(winner) 
-				var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(winner)); // this.getLuid(collection, sourceid)
+			suo = null;
 
-				if (!zfiWinner.isPresent(ZinFeedItem.ATTR_LS)) // winner is new to gid
-				{
-					zinAssert(!zfcGid.get(gid).isPresent(ZinFeedItem.ATTR_VER));
+			var msg = "suoBuildWinners: gid: " + gid + " winning sourceid: " + aGcs[gid].sourceid;
 
-					zinAssert(zfcGid.get(gid).length() == 2); // just the id property and the winning sourceid
+			switch (aGcs[gid].state)
+			{
+				case Gcs.WIN:
+				case Gcs.CONFLICT:
+					var sourceid_winner = aGcs[gid].sourceid;
+					var zfcWinner = this.state.sources[sourceid_winner]['zfcLuid'];
+					var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(sourceid_winner));
 
-					msg += " - winner is new to gid  - MDU";
-
-					suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.MDU);
-				}
-				else
-				{
-					var lso = new Lso(zfiWinner.get(ZinFeedItem.ATTR_LS));
-					var res = lso.compare(zfiWinner);
-
-					zinAssert(lso.get(ZinFeedItem.ATTR_VER) == zfcGid.get(gid).get(ZinFeedItem.ATTR_VER));
-					zinAssert(res >= 0); // winner either changed in an interesting way or stayed the same
-
-					if (res == 1)
+					if (!zfiWinner.isPresent(ZinFeedItem.ATTR_LS)) // winner is new to gid
 					{
-						msg += " - winner changed in an interesting way - MDU";
-						suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.MDU);
+						zinAssert(!zfcGid.get(gid).isPresent(ZinFeedItem.ATTR_VER));
+
+						zinAssert(zfcGid.get(gid).length() == 2); // just the id property and the winning sourceid
+
+						msg += " - winner is new to gid  - MDU";
+
+						suo = new Suo(gid, aGcs[gid].sourceid, sourceid_winner, Suo.MDU);
 					}
 					else
-						msg += " - winner didn't change - do nothing";
-				}
-				break;
+					{
+						var lso = new Lso(zfiWinner.get(ZinFeedItem.ATTR_LS));
+						var res = lso.compare(zfiWinner);
 
-			default:
-				zinAssert(false);
+						zinAssert(lso.get(ZinFeedItem.ATTR_VER) == zfcGid.get(gid).get(ZinFeedItem.ATTR_VER));
+						zinAssert(res >= 0); // winner either changed in an interesting way or stayed the same
+
+						if (res == 1)
+						{
+							msg += " - winner changed in an interesting way - MDU";
+							suo = new Suo(gid, aGcs[gid].sourceid, sourceid_winner, Suo.MDU);
+						}
+						else
+							msg += " - winner didn't change - do nothing";
+					}
+					break;
+
+				default:
+					zinAssert(false);
+			}
+
+			this.state.m_logger.debug(msg);
+
+			if (suo != null)
+				aSuoResult.push(suo);
 		}
-
-		this.state.m_logger.debug(msg);
-
-		if (suo != null)
-			aSuoResult.push(suo);
-	}
 
 	return aSuoResult;
 }
@@ -3089,6 +3123,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	for (var gid in aGcs)
 		for (sourceid in this.state.sources)
 			if (sourceid != aGcs[gid].sourceid) // only look at losers
+				if (this.isGcsInScope(gid))
 	{
 		suo = null;
 
@@ -4849,8 +4884,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 
 						msg += "created: contact id: " + id;
 
-						var key_parent_folder = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_FOLDER_CONTACTS); // TODO - only need to work this out once - not per contact
-						var zfi = this.newZfiCnGd(id, contact.m_meta['updated'], contact.m_meta['edit'], key_parent_folder);
+						var zfi = this.newZfiCnGd(id, contact.m_meta['updated'], contact.m_meta['edit'], this.state.gd_luid_pab);
 
 						SyncFsm.setLsoToGid(zfiGid, zfi);
 
@@ -4921,7 +4955,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 				PrimaryEmail = "";
 			this.state.stopFailCode   = 'FailOnConflict';
 			this.state.stopFailDetail = "\n\n" + stringBundleString("statusFailOnConflictDetail") + PrimaryEmail +
-			                            "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/#TODO";
+			                            "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/";
 		}
 		else
 		{
@@ -5892,6 +5926,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm)
 
 	state.isSlowSync          = false;        // true iff no data files
 	state.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
+	state.tb_luid_pab         = null;         // luid of the thunderbird PAB
 	state.aGcs                = null;         // array of Global Converged State - passed between the phases of Converge
 	state.itSource            = null;         // iterator across sourceids
 	state.aHasChecksum        = new Object(); // used in slow sync: aHasChecksum[key][luid]   = true;
@@ -5960,6 +5995,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm)
 	state.a_gd_contact_to_get = new Array();
 	state.gd_sync_token       = null;
 	state.gd_base_url         = null;
+	state.gd_luid_pab         = null;
 
 	state.initialiseSource(SOURCEID_GD, FORMAT_GD, "sourceServer");
 

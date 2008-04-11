@@ -38,7 +38,7 @@
 	oncommand="window.wd.onCommand(event.target.id);"
 	ondialogaccept="window.wd.onAccept();"
 	ondialogcancel="window.wd.onCancel();"
-	ondialogextra2="window.wd.onHelp('http://www.zindus.com/faq-extension/');"
+	ondialogextra2="window.wd.onHelp('http://www.zindus.com/faq-thunderbird/');"
 	>
 
 	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>

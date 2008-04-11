@@ -36,14 +36,14 @@ const ZM_ID_FOLDER_AUTO_CONTACTS = 13;
 const ZM_FOLDER_CONTACTS         = "Contacts";
 const ZM_FOLDER_EMAILED_CONTACTS = "Emailed Contacts";
 
-const GD_FOLDER_CONTACTS         = "zindus_pab_gd";
-
 const ZM_PERM_NONE     = 0x00;
 const ZM_PERM_READ     = 0x01;
 const ZM_PERM_WRITE    = 0x02;
 
 const TBCARD_ATTRIBUTE_LUID     = "zindus-id";    // user-defined attributes associated with thunderbird cards
 const TBCARD_ATTRIBUTE_CHECKSUM = "zindus-cs";
+
+const GD_PAB              = "zindus_pab_gd";
 
 const TB_PAB              = "zindus_pab";
 const TB_EMAILED_CONTACTS = "zindus_emailed_contacts";
@@ -58,9 +58,9 @@ const FORMAT_GD = 3;
 
 const A_VALID_FORMATS =  [ FORMAT_TB, FORMAT_ZM, FORMAT_GD ];
 
-const HTTP_STATUS_200_OK           = 200;
-const HTTP_STATUS_201_CREATED      = 201;
-const HTTP_STATUS_401_UNAUTHORIZED = 401;
-const HTTP_STATUS_409_CONFLICT     = 409;
+const HTTP_STATUS_200_OK             = 200;
+const HTTP_STATUS_201_CREATED        = 201;
+const HTTP_STATUS_401_UNAUTHORIZED   = 401;
+const HTTP_STATUS_409_CONFLICT       = 409;
 const HTTP_STATUS_ON_SERVICE_FAILURE = -12345;
 const HTTP_STATUS_ON_CANCEL          = -12346;
