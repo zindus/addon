@@ -180,6 +180,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	var context = fsmstate.context; // SyncFsm
 	this.state = context.state;
 
+	// this.m_logger.debug("updateState: blah: a_states: " +      aToString(a_states));
+	// this.m_logger.debug("updateState: blah: m_transitions: " + aToString(context.fsm.m_transitions));
+
 	zinAssert(isMatchObjectKeys(a_states, context.fsm.m_transitions));
 
 	var c = 0;
@@ -301,7 +304,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					{
 						es.failcode(context.state.m_http.failCode());
 
-						if (context.state.m_http instanceof HttpStateZm)
+						if (typeof(context.state.m_http.faultLoadFromXml) == 'function')  // for some reason instanceof doesn't work here
 						{
 							if (context.state.m_http.m_faultstring)
 								es.m_fail_detail = context.state.m_http.m_faultstring;
@@ -340,7 +343,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				if (es.m_exit_status != 0)
 					es.m_fail_fsmoldstate = fsmstate.oldstate;
 
-				zinAssert(es.failcode() != 'FailOnUnknown');
+				// zinAssert(es.failcode() != 'FailOnUnknown');
 
 				for (var i = 0; i < context.state.aConflicts.length; i++)
 					this.m_logger.info("conflict: " + context.state.aConflicts[i]);

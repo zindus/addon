@@ -393,18 +393,13 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	var sourceid_pr = this.state.sourceid_pr;
 	var zfcLastSync = this.state.zfcLastSync;
 
-	if (this.formatPr() == FORMAT_ZM)
-		this.state.m_logger.debug("entryActionLoad: last sync soapURL: "  +
+	this.state.m_logger.debug("entryActionLoad: last sync soapURL: "  +
 		                    ( zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr).getOrNull('soapURL') : "not present"));
-
 	this.state.m_logger.debug("entryActionLoad: last sync username: "  +
 	   ( zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr).getOrNull('username') : "not present"));
 
-	if (this.formatPr() == FORMAT_ZM)
-		this.state.m_logger.debug("entryActionLoad: this sync soapURL:  " + this.state.sources[sourceid_pr]['soapURL']);
-
+	this.state.m_logger.debug("entryActionLoad: this sync soapURL:  " + this.state.sources[sourceid_pr]['soapURL']);
 	this.state.m_logger.debug("entryActionLoad: this sync username: " + this.state.sources[sourceid_pr]['username']);
-
 
 	if (cExist != 0 && (zfcLastSync.get(sourceid_pr).getOrNull('soapURL')  != this.state.sources[sourceid_pr]['soapURL'] ||
 	                    zfcLastSync.get(sourceid_pr).getOrNull('username') != this.state.sources[sourceid_pr]['username']))
@@ -5160,10 +5155,6 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
-		this.state.m_logger.debug("entryActionCommit: soapURL: "  + this.state.sources[this.state.sourceid_pr]['soapURL']);
-
-		this.state.zfcLastSync.get(this.state.sourceid_pr).set('soapURL',   this.state.sources[this.state.sourceid_pr]['soapURL']);
-
 		for (zid in this.state.zidbag.m_properties)
 			this.state.zfcLastSync.get(this.state.sourceid_zm).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
 	}
@@ -5174,8 +5165,10 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 		this.state.zfcLastSync.get(this.state.sourceid_pr).set('SyncToken', this.state.gd_sync_token);
 	}
 	
+	this.state.m_logger.debug("entryActionCommit: soapURL: "  + this.state.sources[this.state.sourceid_pr]['soapURL']);
 	this.state.m_logger.debug("entryActionCommit: username: " + this.state.sources[this.state.sourceid_pr]['username']);
 
+	this.state.zfcLastSync.get(this.state.sourceid_pr).set('soapURL',   this.state.sources[this.state.sourceid_pr]['soapURL']);
 	this.state.zfcLastSync.get(this.state.sourceid_pr).set('username',  this.state.sources[this.state.sourceid_pr]['username']);
 
 	this.state.zfcLastSync.save();
@@ -5459,14 +5452,10 @@ SyncFsm.prototype.setupHttpZm = function(state, eventOnResponse, url, zid, metho
 
 	zinAssert(url != null);
 
-	var args = new Array();
-	for (var i = SyncFsm.prototype.setupHttpZm.length; i < arguments.length; i++)
-		args.push(arguments[i]);
-
 	this.state.m_http = new HttpStateZm(url, this.state.m_logger);
 	this.state.m_http.m_method = method;
 	this.state.m_http.m_zsd.context(this.state.authToken, zid, (method != "ForeignContactDelete"));
-	this.state.m_http.m_zsd[method].apply(this.state.m_http.m_zsd, args);
+	this.state.m_http.m_zsd[method].apply(this.state.m_http.m_zsd, arrayfromArguments(arguments, SyncFsm.prototype.setupHttpZm.length));
 
 	this.setupHttpCommon(state, eventOnResponse);
 }
@@ -5872,36 +5861,25 @@ HttpStateGd.prototype.handleResponse = function()
 	return nextEvent;
 }
 
-SyncFsm.prototype.initialise = function(id_fsm) { this.initialiseState(id_fsm); this.initialiseFsm(); }
-SyncFsmZm.prototype.initialise = function(id_fsm) { SyncFsm.prototype.initialise.call(this, id_fsm); }
-SyncFsmGd.prototype.initialise = function(id_fsm) { SyncFsm.prototype.initialise.call(this, id_fsm); }
-SyncFsmZmAuthOnly.prototype.initialise = function() { SyncFsmZm.prototype.initialise.call(this, ZinMaestro.FSM_ID_ZM_AUTHONLY); }
-SyncFsmGdAuthOnly.prototype.initialise = function() { SyncFsmZm.prototype.initialise.call(this, ZinMaestro.FSM_ID_GD_AUTHONLY); }
-SyncFsmZmTwoWay.prototype.initialise   = function() { SyncFsmGd.prototype.initialise.call(this, ZinMaestro.FSM_ID_ZM_TWOWAY); }
-SyncFsmGdTwoWay.prototype.initialise   = function() { SyncFsmGd.prototype.initialise.call(this, ZinMaestro.FSM_ID_GD_TWOWAY); }
-
-SyncFsmZmAuthOnly.prototype.initialiseFsm = function()
+SyncFsm.prototype.initialise = function(id_fsm)
 {
-	SyncFsmZm.prototype.initialiseFsm.call(this);
-	this.fsm.m_transitions['stAuth']['evNext'] = 'final';
+	this.initialiseState(id_fsm);
+	this.initialiseFsm();
+
+	if (id_fsm == ZinMaestro.FSM_ID_ZM_AUTHONLY || id_fsm == ZinMaestro.FSM_ID_GD_AUTHONLY)
+		this.fsm.m_transitions['stAuth']['evNext'] = 'final';
 }
 
-SyncFsmGdAuthOnly.prototype.initialiseFsm = function()
-{
-	SyncFsmZm.prototype.initialiseFsm.call(this);
-	this.fsm.m_transitions['stAuth']['evNext'] = 'final';
-}
-
-function FsmState(id_fsm)
+function FsmState()
 {
 }
 
 FsmState.prototype.initialiseSource = function(sourceid, format, string_id)
 {
-	this.sources[sourceid] = new Object();
-	this.sources[sourceid]['format'] = format;
-	this.sources[sourceid]['name']   = stringBundleString(string_id);
-	this.sources[sourceid]['zfcLuid'] = null;  // ZinFeedCollection - updated during sync and persisted at the end
+	this.sources[sourceid]            = new Object();
+	this.sources[sourceid]['format']  = format;
+	this.sources[sourceid]['name']    = stringBundleString(string_id); // used in the UI
+	this.sources[sourceid]['zfcLuid'] = null;                          // ZinFeedCollection - updated during sync and persisted on Commit
 
 	this.aChecksum[sourceid] = new Object();
 }
@@ -5978,10 +5956,10 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm)
 	state.aSyncContact         = new Object(); // each property is a ZmContact object returned in GetContactResponse
 	state.zfcTbPreMerge        = null;         // the thunderbird map before iterating through the tb addressbook - used to test invariance
 
-	state.initialiseSource(SOURCEID_ZM, FORMAT_ZM, "sourceServer");
+	state.initialiseSource(SOURCEID_AA, FORMAT_ZM, "sourceServer");
 
-	state.sourceid_zm = SOURCEID_ZM;
-	state.sourceid_pr = SOURCEID_ZM; // a better notion that hardcoding _zm is the idea of _pr (sync partner) - try it out, migrate later
+	state.sourceid_zm = SOURCEID_AA;
+	state.sourceid_pr = SOURCEID_AA; // a better notion that hardcoding _zm is the idea of _pr (sync partner) - try it out, migrate later
 }
 
 
@@ -5997,20 +5975,22 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm)
 	state.gd_base_url         = null;
 	state.gd_luid_pab         = null;
 
-	state.initialiseSource(SOURCEID_GD, FORMAT_GD, "sourceServer");
+	state.initialiseSource(SOURCEID_AA, FORMAT_GD, "sourceServer");
 
-	state.sourceid_pr = SOURCEID_GD;
+	state.sourceid_pr = SOURCEID_AA;
 }
 
-SyncFsmZm.prototype.setCredentials = function()
+SyncFsm.prototype.setCredentials = function()
 {
-	var sourceid = SOURCEID_ZM;
+	sourceid = arguments[0];
 
-	if (arguments.length == 3)
+	// this.state.m_logger.debug("setCredentials: sourceid: " + sourceid + " arguments.length: " + arguments.length);
+
+	if (arguments.length == 4)
 	{
-		this.state.sources[sourceid]['soapURL']  = arguments[0];
-		this.state.sources[sourceid]['username'] = arguments[1];
-		this.state.sources[sourceid]['password'] = arguments[2];
+		this.state.sources[sourceid]['soapURL']  = arguments[1];
+		this.state.sources[sourceid]['username'] = arguments[2];
+		this.state.sources[sourceid]['password'] = arguments[3];
 	}
 	else
 	{
@@ -6025,38 +6005,27 @@ SyncFsmZm.prototype.setCredentials = function()
 		this.state.sources[sourceid]['soapURL']  = credentials[1];
 		this.state.sources[sourceid]['password'] = credentials[2];
 	}
+}
+
+SyncFsmZm.prototype.setCredentials = function()
+{
+	var sourceid = SOURCEID_AA;
+
+	SyncFsm.prototype.setCredentials.apply(this, [].concat(sourceid, arrayfromArguments(arguments, 0)));
 
 	if (this.state.sources[sourceid]['soapURL'].charAt(this.state.sources[sourceid]['soapURL'].length - 1) != '/')
 		this.state.sources[sourceid]['soapURL'] += '/';
 
 	this.state.sources[sourceid]['soapURL'] += "service/soap/";
 
-	this.state.m_logger.debug("setCredentials: this.state.sources[zm][soapURL]: " + this.state.sources[sourceid]['soapURL']);
+	this.state.m_logger.debug("setCredentials: soapURL: " + this.state.sources[sourceid]['soapURL']);
 }
 
 SyncFsmGd.prototype.setCredentials = function()
 {
-	var sourceid = SOURCEID_GD;
+	var sourceid = SOURCEID_AA;
 
-	if (arguments.length == 2)
-	{
-		this.state.sources[sourceid]['username'] = arguments[0];
-		this.state.sources[sourceid]['password'] = arguments[1];
-	}
-	else
-	{
-		// TODO - prefsdialog has to hardcode a url, otherwise the password won't be able to be retrieved
-
-		// load credentials from preferences and the password manager
-		//
-		var prefset = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
-		prefset.load(sourceid);
-
-		var credentials = PrefSetHelper.getUserUrlPw(prefset, PrefSet.SERVER_USERNAME, PrefSet.SERVER_URL);
-
-		this.state.sources[sourceid]['username'] = credentials[0];
-		this.state.sources[sourceid]['password'] = credentials[2];
-	}
+	SyncFsm.prototype.setCredentials.apply(this, [].concat(sourceid, arrayfromArguments(arguments, 0)));
 }
 
 include("chrome://zindus/content/syncfsmgd.js");

@@ -82,8 +82,19 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 
-			this.m_syncfsm = new SyncFsmZmTwoWay();
-			this.m_syncfsm.initialise();
+			var prefs = new MozillaPreferences();
+			var server_type = prefs.getCharPrefOrNull(prefs.branch(), "server" + SOURCEID_AA + ".type");
+
+			if (server_type == "google")
+			{
+				this.m_syncfsm = new SyncFsmZm();
+				this.m_syncfsm.initialise(ZinMaestro.FSM_ID_ZM_TWOWAY);
+			}
+			else
+			{
+				this.m_syncfsm = new SyncFsmGd();
+				this.m_syncfsm.initialise(ZinMaestro.FSM_ID_GD_TWOWAY);
+			}
 			this.m_syncfsm.setCredentials();
 			this.m_syncfsm.start(window);
 			this.is_running = true;

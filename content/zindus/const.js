@@ -49,8 +49,7 @@ const TB_PAB              = "zindus_pab";
 const TB_EMAILED_CONTACTS = "zindus_emailed_contacts";
 
 const SOURCEID_TB = 1;
-const SOURCEID_ZM = 2;
-const SOURCEID_GD = 3;
+const SOURCEID_AA = 2;
 
 const FORMAT_TB = 1;
 const FORMAT_ZM = 2;

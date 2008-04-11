@@ -72,10 +72,18 @@
 						<column flex="1" />
 					</columns>
 					<rows>
-						<description xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
+						<vbox id="zindus-prefs-server-type-vbox" hidden="true">
+							<caption label="Select server type" />
+							<radiogroup id="zindus-prefs-server-type-radiogroup">
+								<radio id="zindus-prefs-server-type-google" label="Google" /> <!-- selected="true" -->
+								<radio id="zindus-prefs-server-type-zimbra" label="Zimbra"  selected="true" />
+							</radiogroup>
+						</vbox>
+						<description id="zindus-prefs-server-url-description"
+						             xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
 							&ZinPrefsServerUrlDescription.value;
 						</description>
-						<row>
+						<row id="zindus-prefs-server-url-row" >
 							<label value="&ZinPrefsServerUrl.label;" />
 							<textbox id="zindus-prefs-server-url" />
 						</row>
@@ -83,7 +91,6 @@
 						<row>
 							<label value="&ZinPrefsServerUsername.label;:" />
 							<textbox id="zindus-prefs-server-username" />
-							<label value="" />
 						</row>
 						<spacer style="&ZinPrefsSpacer.style;" />  <!-- flex="1"  -->
 						<row>
@@ -119,6 +126,7 @@
 					</vbox>
 				</groupbox>
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				<vbox id="zindus-prefs-general-gal">
 				<groupbox pack="center" >
 					<caption label="&ZinPrefsGeneralGal.label;" />
 					<radiogroup id="zindus-prefs-general-gal-enabled">
@@ -128,6 +136,7 @@
 					</radiogroup>
 				</groupbox>
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				</vbox>
 				<groupbox pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupActions.label;"/>
 					<hbox align="right" >
@@ -135,8 +144,6 @@
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTestHarness.label;" />
 						<button id="zindus-prefs-general-button-run-timer" hidden="true"
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonTimer.label;" />
-						<button id="zindus-prefs-general-button-sync-gd" hidden="true"
-						        align="center" command="zindus-prefs-cmd-sync" label="sync gd" />
 						<button id="zindus-prefs-general-button-reset"
 						        align="center" command="zindus-prefs-cmd-sync" label="&ZinPrefsGeneralButtonReset.label;"
 								accesskey="&ZinPrefsGeneralButtonReset.accesskey;" />

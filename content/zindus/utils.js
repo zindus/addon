@@ -447,7 +447,7 @@ function hyphenate()
 
 function isValidSourceId(sourceid)
 {
-	return (sourceid == SOURCEID_TB || sourceid == SOURCEID_ZM || sourceid == SOURCEID_GD);
+	return (sourceid == SOURCEID_TB || sourceid == SOURCEID_AA);
 }
 
 function isValidFormat(format)
@@ -599,6 +599,16 @@ function zmPermFromZfi(zfi)
 	}
 
 	// gLogger.debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
+
+	return ret;
+}
+
+function arrayfromArguments(args, start_at)
+{
+	var ret = new Array();
+
+	for (var i = start_at; i < args.length; i++)
+		ret.push(args[i]);
 
 	return ret;
 }

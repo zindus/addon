@@ -35,9 +35,10 @@ function PrefSet(prefprefix, a)
 PrefSet.DEFAULT_VALUE            = null;
 
 PrefSet.SERVER                   = "server";
+PrefSet.SERVER_TYPE              = "type";
 PrefSet.SERVER_URL               = "url";
 PrefSet.SERVER_USERNAME          = "username";
-PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME ];
+PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME, PrefSet.SERVER_TYPE ];
 
 PrefSet.GENERAL                  = "general";
 PrefSet.GENERAL_MANUAL_SYNC_ONLY = "manualsynconly";

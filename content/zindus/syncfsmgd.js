@@ -5,10 +5,9 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state);
 
-	if (1) // TODO - this works ok
-	{
 	var sourceid_pr = this.state.sourceid_pr;
 
+	var url      = this.state.sources[sourceid_pr]['soapURL'];
 	var username = this.state.sources[sourceid_pr]['username'];
 	var password = this.state.sources[sourceid_pr]['password'];
 
@@ -17,13 +16,12 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 	if (username.length > 0 && password.length > 0)
 	{
 		var headers = newObject("Content-type", "application/x-www-form-urlencoded");
-		var url = "https://www.google.com/accounts/ClientLogin";
 		var body = "";
-		body += "accountType=GOOGLE"; // TODO: HOSTED_OR_GOOGLE
+		body += "accountType=HOSTED_OR_GOOGLE"; // GOOGLE
 		body += "&Email=" + username;
 		body += "&Passwd=" + password;
 		body += "&service=cp"; // gbase
-		body += "&source=Toolware-Zindus-0.01";
+		body += "&source=Toolware" + "-" + APP_NAME + "-" + APP_VERSION_NUMBER;
 
 		this.setupHttpGd(state, 'evNext', "POST", url, headers, body, false)
 
@@ -34,8 +32,6 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 		this.state.stopFailCode = 'FailOnIntegrityBadCredentials';
 		nextEvent = 'evLackIntegrity';
 	}
-	}
-	else nextEvent = 'evNext';
 
 	continuation(nextEvent);
 }
