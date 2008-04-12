@@ -166,10 +166,11 @@ SyncFsmGd.prototype.initialiseFsm = function()
 {
 	var transitions = {
 		start:             { evCancel: 'final', evNext: 'stAuth',                                           evLackIntegrity: 'final'     },
-		stAuth:            { evCancel: 'final', evNext: 'stLoad',           evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
+		stAuth:            { evCancel: 'final', evNext: 'stAuthCheck',      evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
+		stAuthCheck:       { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
 		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
-		stLoadTb:          { evCancel: 'final', evNext: 'stGetContacts',                                    evLackIntegrity: 'final'     },
-		stGetContacts:     { evCancel: 'final', evNext: 'stConverge1',      evSoapRequest: 'stSoapRequest'                               },
+		stLoadTb:          { evCancel: 'final', evNext: 'stGetContactGd',                                   evLackIntegrity: 'final'     },
+		stGetContactGd:    { evCancel: 'final', evNext: 'stConverge1',      evSoapRequest: 'stSoapRequest'                               },
 		stConverge1:       { evCancel: 'final', evNext: 'stConverge2',                                      evLackIntegrity: 'final'     },
 		stConverge2:       { evCancel: 'final', evNext: 'stConverge3',      evRepeat:      'stConverge2'                                 },
 		stConverge3:       { evCancel: 'final', evNext: 'stConverge5',                                                                   },
@@ -192,9 +193,10 @@ SyncFsmGd.prototype.initialiseFsm = function()
 	var a_entry = {
 		start:                  this.entryActionStart,
 		stAuth:                 this.entryActionAuth,
+		stAuthCheck:            this.entryActionAuthCheck,
 		stLoad:                 this.entryActionLoad,
 		stLoadTb:               this.entryActionLoadTb,
-		stGetContacts:          this.entryActionGetContacts,
+		stGetContactGd:         this.entryActionGetContactGd,
 		stConverge1:            this.entryActionConverge1,
 		stConverge2:            this.entryActionConverge2,
 		stConverge3:            this.entryActionConverge3,
@@ -216,7 +218,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 
 	var a_exit = {
 		stAuth:                 this.exitActionAuth,
-		stGetContacts:          this.exitActionGetContacts,
+		stGetContactGd:          this.exitActionGetContactGd,
 		stGetContactPuGd:       this.exitActionGetContactPuGd,
 		stUpdateGd:             this.exitActionUpdateGd,
 		stSoapResponse:         this.exitActionSoapResponse  /* this gets tweaked by setupHttpZm */
@@ -5866,8 +5868,10 @@ SyncFsm.prototype.initialise = function(id_fsm)
 	this.initialiseState(id_fsm);
 	this.initialiseFsm();
 
-	if (id_fsm == ZinMaestro.FSM_ID_ZM_AUTHONLY || id_fsm == ZinMaestro.FSM_ID_GD_AUTHONLY)
+	if (id_fsm == ZinMaestro.FSM_ID_ZM_AUTHONLY)
 		this.fsm.m_transitions['stAuth']['evNext'] = 'final';
+	else if (id_fsm == ZinMaestro.FSM_ID_GD_AUTHONLY)
+		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
 }
 
 function FsmState()

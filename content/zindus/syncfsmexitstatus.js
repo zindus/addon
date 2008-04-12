@@ -56,7 +56,9 @@ function SyncFsmExitStatus()
 		FailOnMultipleLn              : { 'hasdetail' : 1 }, // 20. 
 		FailOnConflict                : { 'hasdetail' : 1 }, // 21. 
 		FailOnDuplicatePrimaryEmail   : { 'hasdetail' : 1 }, // 22. 
-		FailOnUnauthorized            : { 'hasdetail' : 0 }  // 23. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnUnauthorized            : { 'hasdetail' : 0 }, // 23. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnHttpStatusCode          : { 'hasdetail' : 1 }, // 24. TODO use this instead of FailOnUnknown ... 
+		FailOnAuthGd                  : { 'hasdetail' : 1 }  // 24. server returned a non 200 status code
 	};
 }
 

@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.6 2008-04-09 02:47:21 cvsuser Exp $
+// $Id: fsm.js,v 1.7 2008-04-12 02:10:35 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -75,8 +75,7 @@ function fsmTransitionDo(fsmstate)
 					// Even though Finite State Machines in UML are supposed to silently ignore events that they don't know about,
 					// here we assert failure - because it's probably a programming error.
 					//
-					fsm.m_logger.debug("TransititionDo: about to assert: newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.m_transitions: " + aToString(context.fsm.m_transitions));
-					zinAssert(false);
+					zinAssertAndLog(false, " newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.m_transitions: " + aToString(context.fsm.m_transitions));
 				}
 			}
 

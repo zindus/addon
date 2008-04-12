@@ -135,9 +135,10 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 	var a_states_gd = {
 		start:            { },
 		stAuth:           { count: 1 },
+		stAuthCheck:      {          },
 		stLoad:           { count: 1 },
 		stLoadTb:         { count: 1 },
-		stGetContacts:    { count: 1 },
+		stGetContactGd:    { count: 1 },
 		stConverge1:      { count: 1 },
 		stConverge2:      { count: 1 },
 		stConverge3:      { count: 1 },
@@ -204,7 +205,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stCheckLicense':          
 			case 'stSync':          
 			case 'stSyncResult':     this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
-			case 'stGetContacts':    this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break; // gd
+			case 'stGetContactGd':   this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
 			case 'stGalSync':        
 			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "GetGAL");      break;
 			case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "Load");        break;
@@ -323,7 +324,8 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stLoad' ]))
 						es.failcode(context.state.stopFailCode);
-					else if (isInArray(fsmstate.oldstate, [ 'stLoadTb', 'stConverge1', 'stConverge6', 'stConverge8', 'stUpdateCleanup' ]))
+					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheck', 'stLoadTb', 'stConverge1', 'stConverge6', 'stConverge8',
+					                                                       'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);
 						es.m_fail_detail = context.state.stopFailDetail;

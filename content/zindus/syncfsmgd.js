@@ -11,8 +11,6 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 	var username = this.state.sources[sourceid_pr]['username'];
 	var password = this.state.sources[sourceid_pr]['password'];
 
-	this.state.m_logger.debug("blah: username: " + username + " password: " + password);
-
 	if (username.length > 0 && password.length > 0)
 	{
 		var headers = newObject("Content-type", "application/x-www-form-urlencoded");
@@ -23,7 +21,7 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 		body += "&service=cp"; // gbase
 		body += "&source=Toolware" + "-" + APP_NAME + "-" + APP_VERSION_NUMBER;
 
-		this.setupHttpGd(state, 'evNext', "POST", url, headers, body, false)
+		this.setupHttpGd(state, 'evNext', "POST", url, headers, body, true)
 
 		nextEvent = 'evSoapRequest';
 	}
@@ -57,10 +55,23 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 	this.state.m_logger.debug("authToken: " + this.state.authToken);
 }
 
-SyncFsmGd.prototype.entryActionGetContacts = function(state, event, continuation)
+SyncFsmGd.prototype.entryActionAuthCheck = function(state, event, continuation)
 {
-	if (1)
+	nextEvent = 'evNext';
+
+	if (!this.state.authToken)
 	{
+		this.state.stopFailCode   = 'FailOnAuthGd';
+		this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnHttpStatusCode") + ": " + this.state.m_http.m_http_status_code;
+
+		nextEvent = 'evLackIntegrity';  // this isn't really a lack of integrity, but it's processed in the same way
+	}
+
+	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.entryActionGetContactGd = function(state, event, continuation)
+{
 	var sourceid_pr = this.state.sourceid_pr;
 	var SyncToken = this.state.zfcLastSync.get(sourceid_pr).getOrNull('SyncToken');
 	var url       = this.state.gd_base_url + "?showdeleted=true";
@@ -70,16 +81,14 @@ SyncFsmGd.prototype.entryActionGetContacts = function(state, event, continuation
 
 	url += "&max-results=10000";
 
-	this.state.m_logger.debug("entryActionGetContacts: url: " + url);
+	this.state.m_logger.debug("entryActionGetContactGd: url: " + url);
 
 	this.setupHttpGd(state, 'evNext', "GET", url, null, null, false);
 
 	continuation('evSoapRequest');
-	}
-	else continuation('evNext');
 }
 
-SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
+SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
 {
 	if (!this.state.m_http.response() || event == "evCancel")
 		return;
@@ -92,11 +101,11 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 	var warn_msg = "<updated> element is missing from <feed>!";
 	ZinXpath.setConditionalFromSingleElement(feed, 'updated', "//atom:feed/atom:updated", response, warn_msg);
 	this.state.gd_sync_token = feed.updated;
-	this.state.m_logger.debug("exitActionGetContacts: gd_sync_token: " + this.state.gd_sync_token);
+	this.state.m_logger.debug("exitActionGetContactGd: gd_sync_token: " + this.state.gd_sync_token);
 
 	// parse the <feed> response for <entry>'s and then process each contact
 	//
-	var msg               = "exitActionGetContacts: \n";
+	var msg               = "exitActionGetContactGd: \n";
 
 	this.state.a_gd_contact = GdContact.arrayFromXpath(response, "/atom:feed/atom:entry");
 
@@ -107,7 +116,7 @@ SyncFsmGd.prototype.exitActionGetContacts = function(state, event)
 		var is_deleted = isPropertyPresent(this.state.a_gd_contact[id].m_meta, 'deleted');
 		var zfi = null;
 
-		this.state.m_logger.debug("exitActionGetContacts: id: " + id + " properties: " + this.state.a_gd_contact[id].toString());
+		this.state.m_logger.debug("exitActionGetContactGd: id: " + id + " properties: " + this.state.a_gd_contact[id].toString());
 
 		if (this.zfcPr().isPresent(id))
 		{
@@ -180,7 +189,7 @@ SyncFsmGd.prototype.testForCsGd = function()
 		{
 			if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
 			{
-				this.state.m_logger.warn("zfi retained a ATTR_CSGD attribute after GetContacts.  This shouldn't happen.  zfi: " + zfi.toString());
+				this.state.m_logger.warn("zfi retained a ATTR_CSGD attribute after GetContactGd.  This shouldn't happen.  zfi: " + zfi.toString());
 				zfi.del(ZinFeedItem.ATTR_CSGD);
 			}
 

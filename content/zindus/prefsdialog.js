@@ -251,7 +251,7 @@ Prefs.prototype.getSyncFsm = function(format, type, serverurl, username, passwor
 	var syncfsm;
 	var id_fsm = null
 
-	this.m_logger.debug("getSyncFsm: serverurl: " + serverurl + " username: " + username + " password: " + password);
+	// this.m_logger.debug("getSyncFsm: serverurl: " + serverurl + " username: " + username + " password: " + password);
 
 	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = ZinMaestro.FSM_ID_ZM_TWOWAY;   }
 	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = ZinMaestro.FSM_ID_ZM_AUTHONLY; }
