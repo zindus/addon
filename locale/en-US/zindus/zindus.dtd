@@ -15,10 +15,10 @@
 <!ENTITY ZinPrefsServerGrid.style               "margin-left:10px; margin-right:20px; margin-top:10px ">
 <!ENTITY ZinPrefsServerDescription.style        "margin-top:5px; margin-bottom:10px; padding:5px ">
 <!ENTITY ZinPrefsServerLabel.style              "margin-left:20px">
-<!ENTITY ZinPrefsServerUrlDescription.value     "Type the url you use to log on to your Zimbra server.
+<!ENTITY ZinPrefsServerUrlDescription.value     "Type the url you use to log on to the server.
                                                  <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
 <!ENTITY ZinPrefsServerUrl.label                "Server Url:">
-<!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on to the Zimbra server.">
+<!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on.">
 <!ENTITY ZinPrefsServerUsername.label           "Email Address">
 <!ENTITY ZinPrefsServerPassword.label           "Password">
 <!ENTITY ZinPrefsServerTestConnection.label     "Test Connection to Server">
@@ -32,6 +32,9 @@
 <!ENTITY ZinPrefsGeneralGal.label               "Global Address List (GAL)">
 <!ENTITY ZinPrefsGeneralGalYes.label            "Yes">
 <!ENTITY ZinPrefsGeneralGalNo.label             "No">
+<!ENTITY ZinPrefsGeneralGdSyncWith.label        "Sync Google contacts with">
+<!ENTITY ZinPrefsGeneralGdSyncWithPab.label     "Personal Address Book">
+<!ENTITY ZinPrefsGeneralGdSyncWithZg.label      "Zindus/Google">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.label     "Sync Now">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey "S">
 <!ENTITY ZinPrefsGeneralButtonReset.label       "Reset">
