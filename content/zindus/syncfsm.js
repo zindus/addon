@@ -178,9 +178,9 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stConverge6:       { evCancel: 'final', evNext: 'stConverge7',                                      evLackIntegrity: 'final'     },
 		stConverge7:       { evCancel: 'final', evNext: 'stConverge8',                                                                   },
 		stConverge8:       { evCancel: 'final', evNext: 'stGetContactPuGd',                                 evLackIntegrity: 'final'     },
-		stGetContactPuGd:  { evCancel: 'final', evNext: 'stUpdateTb',       evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContactPuGd' },
-		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateGd'                                                                     },
-		stUpdateGd:        { evCancel: 'final', evNext: 'stUpdateCleanup',  evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateGd'       },
+		stGetContactPuGd:  { evCancel: 'final', evNext: 'stUpdateGd',       evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContactPuGd' },
+		stUpdateGd:        { evCancel: 'final', evNext: 'stUpdateTb',       evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateGd'       },
+		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateCleanup'                                                                },
 		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',                                         evLackIntegrity: 'final'     },
 
 		stSoapRequest:     { evCancel: 'final', evNext: 'stSoapResponse'                                                                 },
@@ -205,8 +205,8 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stConverge7:            this.entryActionConverge7,
 		stConverge8:            this.entryActionConverge8,
 		stGetContactPuGd:       this.entryActionGetContactPuGd,
-		stUpdateTb:             this.entryActionUpdateTb,
 		stUpdateGd:             this.entryActionUpdateGd,
+		stUpdateTb:             this.entryActionUpdateTb,
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
 		stCommit:               this.entryActionCommit,
 
@@ -437,9 +437,6 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		nextEvent = 'evLackIntegrity';
 		this.state.stopFailCode = 'FailOnIntegrityDataStoreIn';
 	}
-
-	if (this.formatPr() == FORMAT_GD)
-		this.state.gd_luid_pab = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_PAB);
 
 	this.state.m_logger.debug("entryActionLoad: isSlowSync: " + this.state.isSlowSync);
 
@@ -1461,7 +1458,8 @@ SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state);
 
-	this.state.SyncGalEnabled = this.state.m_preferences.getCharPrefOrNull(prefs.branch(), "general.SyncGalEnabled");
+	var prefs = this.state.m_preferences;
+	this.state.SyncGalEnabled = prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_SYNC_GAL_ENABLED);
 
 	if (!isInArray(this.state.SyncGalEnabled, [ "yes", "no", "if-fewer" ] ))
 	{
@@ -1477,7 +1475,7 @@ SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 		nextEvent = 'evSkip';
 	else
 	{
-		var SyncGalMdInterval = this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalMdInterval");
+		var SyncGalMdInterval = prefs.getIntPref(prefs.branch(), "system.SyncGalMdInterval");
 		var SyncMd = parseInt(zfcLastSync.get(sourceid_zm).getOrNull('SyncMd'));
 		var isSyncGalEnabledChanged = this.state.SyncGalEnabled != zfcLastSync.get(sourceid_zm).getOrNull('SyncGalEnabled')
 
@@ -1786,6 +1784,9 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 		if (this.state.isSlowSync)
 			this.loadTbDeleteReadOnlySharedAddresbooks();      // 3. ensure that we don't try to update read-only addressbooks on the server
 	}
+
+	if (this.formatPr() == FORMAT_GD)
+		this.state.gd_luid_parent_ab = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_PAB);
 
 	var aUri = this.loadTbMergeZfcWithAddressBook();           // 4. merge the current tb luid map with the current addressbook(s)
 
@@ -3919,9 +3920,10 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state);
 
-	for (var i = 0; i < ORDER_SOURCE_UPDATE.length; i++)
-		if (isPropertyPresent(this.state.aSuo[this.state.sourceid_tb], ORDER_SOURCE_UPDATE[i]))
-			for (var indexSuo in this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]])
+	if (!this.state.is_remote_update_problem)
+		for (var i = 0; i < ORDER_SOURCE_UPDATE.length; i++)
+			if (isPropertyPresent(this.state.aSuo[this.state.sourceid_tb], ORDER_SOURCE_UPDATE[i]))
+				for (var indexSuo in this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]])
 	{
 		suo = this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]][indexSuo];
 		gid  = suo.gid;
@@ -4881,7 +4883,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 
 						msg += "created: contact id: " + id;
 
-						var zfi = this.newZfiCnGd(id, contact.m_meta['updated'], contact.m_meta['edit'], this.state.gd_luid_pab);
+						var zfi = this.newZfiCnGd(id, contact.m_meta['updated'], contact.m_meta['edit'], this.state.gd_luid_parent_ab);
 
 						SyncFsm.setLsoToGid(zfiGid, zfi);
 
@@ -5977,7 +5979,8 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm)
 	state.a_gd_contact_to_get = new Array();
 	state.gd_sync_token       = null;
 	state.gd_base_url         = null;
-	state.gd_luid_pab         = null;
+	state.gd_luid_parent_ab   = null;
+	// notused state.gd_sync_with        = null;
 
 	state.initialiseSource(SOURCEID_AA, FORMAT_GD, "sourceServer");
 
@@ -6032,4 +6035,261 @@ SyncFsmGd.prototype.setCredentials = function()
 	SyncFsm.prototype.setCredentials.apply(this, [].concat(sourceid, arrayfromArguments(arguments, 0)));
 }
 
-include("chrome://zindus/content/syncfsmgd.js");
+SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
+{
+	var nextEvent = null;
+
+	this.state.stopwatch.mark(state);
+
+	var sourceid_pr = this.state.sourceid_pr;
+
+	var url      = this.state.sources[sourceid_pr]['soapURL'];
+	var username = this.state.sources[sourceid_pr]['username'];
+	var password = this.state.sources[sourceid_pr]['password'];
+
+	if (username.length > 0 && password.length > 0)
+	{
+		var headers = newObject("Content-type", "application/x-www-form-urlencoded");
+		var body = "";
+		body += "accountType=HOSTED_OR_GOOGLE"; // GOOGLE
+		body += "&Email=" + username;
+		body += "&Passwd=" + password;
+		body += "&service=cp"; // gbase
+		body += "&source=Toolware" + "-" + APP_NAME + "-" + APP_VERSION_NUMBER;
+
+		this.setupHttpGd(state, 'evNext', "POST", url, headers, body, true)
+
+		nextEvent = 'evSoapRequest';
+	}
+	else
+	{
+		this.state.stopFailCode = 'FailOnIntegrityBadCredentials';
+		nextEvent = 'evLackIntegrity';
+	}
+
+	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.exitActionAuth = function(state, event)
+{
+	if (!this.state.m_http || !this.state.m_http.response('text') || event == "evCancel")
+		return;
+
+	var response = this.state.m_http.response('text');
+
+	var aMatch = response.match(/Auth=(.+?)(\s|$)/ ); // a[0] is the whole pattern, a[1] is the first capture, a[2] the second etc...
+
+	if (aMatch && aMatch.length == 3)
+		this.state.authToken = aMatch[1];
+
+	if (this.state.authToken)
+	{
+		var username  = this.state.sources[this.state.sourceid_pr]['username'];
+		this.state.gd_base_url = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base";
+	}
+
+	this.state.m_logger.debug("authToken: " + this.state.authToken);
+}
+
+SyncFsmGd.prototype.entryActionAuthCheck = function(state, event, continuation)
+{
+	nextEvent = 'evNext';
+
+	if (!this.state.authToken)
+	{
+		this.state.stopFailCode   = 'FailOnAuthGd';
+		this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnHttpStatusCode") + ": " + this.state.m_http.m_http_status_code;
+
+		nextEvent = 'evLackIntegrity';  // this isn't really a lack of integrity, but it's processed in the same way
+	}
+
+	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.entryActionGetContactGd = function(state, event, continuation)
+{
+	var sourceid_pr = this.state.sourceid_pr;
+	var SyncToken = this.state.zfcLastSync.get(sourceid_pr).getOrNull('SyncToken');
+	var url       = this.state.gd_base_url + "?showdeleted=true";
+
+	if (SyncToken)
+		url += "&updated-min=" + SyncToken + "&";
+
+	url += "&max-results=10000";
+
+	this.state.m_logger.debug("entryActionGetContactGd: url: " + url);
+
+	this.setupHttpGd(state, 'evNext', "GET", url, null, null, false);
+
+	continuation('evSoapRequest');
+}
+
+SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
+{
+	if (!this.state.m_http.response() || event == "evCancel")
+		return;
+
+	var response = this.state.m_http.response();
+
+	// set the sync token
+	//
+	var feed = new Object('updated', "");
+	var warn_msg = "<updated> element is missing from <feed>!";
+	ZinXpath.setConditionalFromSingleElement(feed, 'updated', "//atom:feed/atom:updated", response, warn_msg);
+	this.state.gd_sync_token = feed.updated;
+	this.state.m_logger.debug("exitActionGetContactGd: gd_sync_token: " + this.state.gd_sync_token);
+
+	// parse the <feed> response for <entry>'s and then process each contact
+	//
+	var msg               = "exitActionGetContactGd: \n";
+
+	this.state.a_gd_contact = GdContact.arrayFromXpath(response, "/atom:feed/atom:entry");
+
+	for (var id in this.state.a_gd_contact)
+	{
+		var rev        = this.state.a_gd_contact[id].m_meta['updated'];
+		var edit_url   = this.state.a_gd_contact[id].m_meta['edit'];
+		var is_deleted = isPropertyPresent(this.state.a_gd_contact[id].m_meta, 'deleted');
+		var zfi = null;
+
+		this.state.m_logger.debug("exitActionGetContactGd: id: " + id + " properties: " + this.state.a_gd_contact[id].toString());
+
+		if (this.zfcPr().isPresent(id))
+		{
+			zfi = this.zfcPr().get(id);
+
+			zfi.set(ZinFeedItem.ATTR_REV,  rev);
+			zfi.set(ZinFeedItem.ATTR_EDIT, edit_url);
+
+			msg += " updated: ";
+
+			if (is_deleted)
+			{
+				this.zfcPr().get(id).set(ZinFeedItem.ATTR_DEL, '1');
+
+				if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
+					zfi.del(ZinFeedItem.ATTR_CSGD);
+					
+				msg += " marked as deleted: ";
+			}
+			else if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
+			{
+				var converter   = ZinContactConverter.instance();
+				var properties  = converter.convert(FORMAT_TB, FORMAT_GD, this.state.a_gd_contact[id].m_contact);
+				var checksum    = converter.crc32(properties);
+
+				if (checksum == zfi.get(ZinFeedItem.ATTR_CSGD))
+				{
+					var gid = this.state.aReverseGid[this.state.sourceid_pr][id];
+					SyncFsm.setLsoToGid(this.state.zfcGid.get(gid), zfi);
+					msg += " ATTR_CSGD matched, lso updated: ";
+				}
+				else
+					msg += " ATTR_CSGD didn't match: "; // so the contact changed since we updated it...
+
+				zfi.del(ZinFeedItem.ATTR_CSGD);
+			}
+
+			msg += " zfi: " + zfi.toString();
+		}
+		else if (!is_deleted)
+		{
+			zfi = this.newZfiCnGd(id, rev, edit_url, this.state.gd_luid_parent_ab);
+			this.zfcPr().set(zfi); // add new
+			msg += " added: " + zfi.toString();
+		}
+		else
+			msg += " ignored deleted contact id: " + id;
+
+		msg += "\n";
+	}
+
+	this.state.m_logger.debug(msg);
+}
+
+SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, gd_luid_parent_ab)
+{
+	var zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY,  id,
+				                                   ZinFeedItem.ATTR_REV,  rev,
+				                                   ZinFeedItem.ATTR_EDIT, edit_url,
+											       ZinFeedItem.ATTR_L,    gd_luid_parent_ab);
+
+	return zfi;
+}
+
+SyncFsmGd.prototype.testForCsGd = function()
+{
+	var functor = {
+		state: this.state,
+		run: function(zfi)
+		{
+			if (zfi.isPresent(ZinFeedItem.ATTR_CSGD))
+			{
+				this.state.m_logger.warn("zfi retained a ATTR_CSGD attribute after GetContactGd.  This shouldn't happen.  zfi: " + zfi.toString());
+				zfi.del(ZinFeedItem.ATTR_CSGD);
+			}
+
+			return true;
+		}
+	};
+
+	this.zfcPr().forEach(functor);
+}
+
+SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuation)
+{
+	var sourceid_pr = this.state.sourceid_pr;
+	var nextEvent = null;
+
+	if (!this.state.is_done_get_contacts_pu)
+	{
+		for (indexSuo in this.state.aSuo[sourceid_pr][Suo.MOD | ZinFeedItem.TYPE_CN])
+		{
+			suo         = this.state.aSuo[sourceid_pr][Suo.MOD | ZinFeedItem.TYPE_CN][indexSuo];
+			luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+
+			if (!isPropertyPresent(this.state.a_gd_contact, luid_target))
+				this.state.a_gd_contact_to_get.push(luid_target);
+		}
+
+		this.state.is_done_get_contacts_pu = true;
+
+		this.state.m_logger.debug("entryActionGetContactPuGd: a_gd_contact_to_get: " + this.state.a_gd_contact_to_get.toString());
+	}
+
+	if (this.state.a_gd_contact_to_get.length > 0)
+	{
+		var id = this.state.a_gd_contact_to_get.pop();
+		var url = id;
+
+		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, false);
+		
+		nextEvent = 'evSoapRequest'
+	}
+	else
+	{
+		this.state.m_http = null;
+
+		nextEvent = 'evNext'
+	}
+
+	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.exitActionGetContactPuGd = function(state, event)
+{
+	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
+		return;
+
+	var response     = this.state.m_http.response();
+	var xpath_query  = "/atom:entry";
+	var a_gd_contact = GdContact.arrayFromXpath(response, xpath_query);
+
+	zinAssertAndLog(aToLength(a_gd_contact) ==  1, "length: " + aToLength(a_gd_contact));
+
+	var id = firstKeyInObject(a_gd_contact);
+
+	zinAssertAndLog(!isPropertyPresent(this.state.a_gd_contact, id), "id: " + id);
+
+	this.state.a_gd_contact[id] = a_gd_contact[id];
+}
