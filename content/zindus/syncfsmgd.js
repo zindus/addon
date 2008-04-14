@@ -158,7 +158,7 @@ SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
 		}
 		else if (!is_deleted)
 		{
-			zfi = this.newZfiCnGd(id, rev, edit_url, this.state.gd_luid_pab);
+			zfi = this.newZfiCnGd(id, rev, edit_url, this.state.gd_luid_parent_ab);
 			this.zfcPr().set(zfi); // add new
 			msg += " added: " + zfi.toString();
 		}
@@ -171,12 +171,12 @@ SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
 	this.state.m_logger.debug(msg);
 }
 
-SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, gd_luid_pab)
+SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, gd_luid_parent_ab)
 {
 	var zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY,  id,
 				                                   ZinFeedItem.ATTR_REV,  rev,
 				                                   ZinFeedItem.ATTR_EDIT, edit_url,
-											       ZinFeedItem.ATTR_L,    gd_luid_pab);
+											       ZinFeedItem.ATTR_L,    gd_luid_parent_ab);
 
 	return zfi;
 }

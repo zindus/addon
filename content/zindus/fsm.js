@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.7 2008-04-12 02:10:35 cvsuser Exp $
+// $Id: fsm.js,v 1.8 2008-04-14 03:57:33 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -172,12 +172,13 @@ function Fsm(transitions, a_entry, a_exit)
 
 Fsm.prototype.sanityCheck = function()
 {
+	var states = new Object();
+	var state;
+
 	if (this.m_is_sanity_checked)
 		return;
 	
 	this.m_is_sanity_checked = true;
-
-	var states = new Object();
 
 	for (var stateFrom in this.m_transitions)
 	{
@@ -186,7 +187,7 @@ Fsm.prototype.sanityCheck = function()
 		// there has to be an entry action corresponding to the 'from' state in a transition
 		// otherwise the continuation wouldn't get called to execute the transition
 		//
-		// this.m_logger.debug("sanityCheck: stateFrom: " + stateFrom);
+		this.m_logger.debug("sanityCheck: stateFrom: " + stateFrom);
 
 		zinAssertAndLog(typeof this.m_a_entry[stateFrom] == 'function', "stateFrom: " + stateFrom);
 
@@ -196,14 +197,17 @@ Fsm.prototype.sanityCheck = function()
 
 			states[stateTo] = true;
 
-			// this.m_logger.debug("sanityCheck: stateTo: " + stateTo + " event: " + event);
+			this.m_logger.debug("sanityCheck: stateTo: " + stateTo + " event: " + event);
 		}
 	}
 
+	for (state in states)
+		zinAssertAndLog(typeof this.m_a_entry[state] != 'undefined', "state doesn't have an entry action: " + state);
+
 	for each (var table in [this.m_a_entry, this.m_a_exit])
-		for (var state in table)
+		for (state in table)
 		{
-			zinAssertAndLog(typeof states[state] != 'undefined', "state not in transitions table: " + state);
+			zinAssertAndLog(typeof states[state] != 'undefined', "state not referenced in transitions table: " + state);
 
 			zinAssertAndLog(typeof table[state] == 'function', "missing entry/exit action function for state: " + state);
 		}

@@ -44,7 +44,9 @@ PrefSet.GENERAL                  = "general";
 PrefSet.GENERAL_MANUAL_SYNC_ONLY = "manualsynconly";
 PrefSet.GENERAL_VERBOSE_LOGGING  = "verboselogging";
 PrefSet.GENERAL_SYNC_GAL_ENABLED = "SyncGalEnabled";
-PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING, PrefSet.GENERAL_SYNC_GAL_ENABLED ];
+PrefSet.GENERAL_GD_SYNC_WITH     = "gdsyncwith";
+PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING,
+                                     PrefSet.GENERAL_SYNC_GAL_ENABLED, PrefSet.GENERAL_GD_SYNC_WITH ];
 
 // Both id and branch are optional
 // id is option because there might only be a single subsection under prefprefix
