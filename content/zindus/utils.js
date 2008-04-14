@@ -14,7 +14,7 @@
  * 
  * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
- * Portions created by Initial Developer are Copyright (C) 2007
+ * Portions created by Initial Developer are Copyright (C) 2007-2008
  * the Initial Developer. All Rights Reserved.
  * 
  * Contributor(s): Leni Mayo

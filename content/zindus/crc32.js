@@ -10,7 +10,7 @@ Copyright (c) 2006 Andrea Ercolino
 http://www.opensource.org/licenses/mit-license.php 
 =============================================================================== 
 */ 
-// modifications (C) 2007 by Toolware Pty Ltd are subject to the MIT license referenced above
+// modifications (C) 2007-2008 by Toolware Pty Ltd are subject to the MIT license referenced above
 
 function crc32(str)
 {
