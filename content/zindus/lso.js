@@ -72,6 +72,8 @@ Lso.prototype.compareFormat = function()
 	else
 		zinAssertAndLog(false, "m_properties: " + aToString(this.m_properties));
 
+	// gLogger.debug("Lso.compareFormat: blah: returns: " + ret);
+
 	return ret;
 }
 

@@ -333,11 +333,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					else
 						es.failcode('FailOnUnknown');
 				}
-				else if (context.state.authToken && (context.state.id_fsm == ZinMaestro.FSM_ID_ZM_AUTHONLY ||
-				                                     context.state.id_fsm == ZinMaestro.FSM_ID_GD_AUTHONLY))
+				else if (context.state.authToken && isPropertyPresent(ZinMaestro.FSM_GROUP_AUTHONLY, context.state.id_fsm))
 					es.m_exit_status = 0;
-				else if (fsmstate.event == 'evNext' && (context.state.id_fsm == ZinMaestro.FSM_ID_ZM_TWOWAY ||
-				                                        context.state.id_fsm == ZinMaestro.FSM_ID_GD_TWOWAY))
+				else if (fsmstate.event == 'evNext' && isPropertyPresent(ZinMaestro.FSM_GROUP_TWOWAY, context.state.id_fsm))
 					es.m_exit_status = 0;
 				else
 					zinAssert(false); // ensure that all cases are covered above

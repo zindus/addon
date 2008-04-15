@@ -82,7 +82,7 @@ ZinContactConverter.prototype.setup = function()
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom3",         FORMAT_ZM, null,                FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom4",         FORMAT_ZM, null,                FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Notes",           FORMAT_ZM, "notes",             FORMAT_GD, "content"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "ScreenName",      FORMAT_ZM, null,                FORMAT_GD, "im#AIM"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "_AimScreenName",  FORMAT_ZM, null,                FORMAT_GD, "im#AIM"));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "middleName",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email3",            FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "workPhone2",        FORMAT_GD, null));
@@ -357,11 +357,19 @@ ZinContactConverter.prototype.isKeyConverted = function(format_to, format_from, 
 // We avoid a sort by relying on the fact that the keys are thunderbird contact properties.
 // The index into the Converter's table guarantees the ordering.
 //
-ZinContactConverter.prototype.crc32 = function(properties)
+ZinContactConverter.prototype.crc32 = function(properties) // TODO remove this: , ignore_properties_not_mapping_to_format)
 {
 	var ret = 0;
 	var str = "";
 	var aSorted = new Array();
+
+	// if (arguments.length == 1)
+	// 	ignore_properties_not_mapping_to_format = null;
+	// else if (arguments.length != 2)
+	// 	zinAssert(false);
+
+	// zinAssertAndLog(!ignore_properties_not_mapping_to_format || isValidFormat(ignore_properties_not_mapping_to_format),
+	//                       "ignore_properties_not_mapping_to_format: " + ignore_properties_not_mapping_to_format);
 
 	for (var i in properties)
 		if (properties[i].length > 0)
@@ -372,7 +380,7 @@ ZinContactConverter.prototype.crc32 = function(properties)
 			{
 				// ignore properties which don't have a bidirectional mapping
 				//
-				if (this.isKeyConverted(FORMAT_ZM, FORMAT_TB, i))
+				// if (!ignore_properties_not_mapping_to_format || this.isKeyConverted(ignore_properties_not_mapping_to_format, FORMAT_TB, i))
 					aSorted[index_to] = true;
 
 			}

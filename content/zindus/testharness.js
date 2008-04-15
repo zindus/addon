@@ -56,8 +56,8 @@ ZinTestHarness.prototype.testCrc32 = function()
 	var left  = newObject("FirstName", "01-first-3", "LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com");
 	var right = newObject("LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com" , "FirstName", "01-first-3");
 
-	var crcLeft  = ZinContactConverter.instance().crc32(left);
-	var crcRight = ZinContactConverter.instance().crc32(right);
+	var crcLeft  = ZinContactConverter.instance().crc32(left)
+	var crcRight = ZinContactConverter.instance().crc32(right)
 
 	zinAssert(crcLeft == crcLeft);
 }

@@ -211,8 +211,8 @@ ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attribut
 	var key;
 	var a_field_used = new Object();
 
-	this.m_logger.debug("updateCard: blah: " + " \n properties: " + aToString(properties) +
-	                                           "\n card properties: " + aToString(this.getCardProperties(abCard)));
+	// this.m_logger.debug("updateCard: blah: " + " \n properties: " + aToString(properties) +
+	//                                            "\n card properties: " + aToString(this.getCardProperties(abCard)));
 
 	for (key in properties)
 	{
@@ -243,6 +243,8 @@ ZinAddressBook.prototype.getCardProperties = function(abCard)
 	for (i in ZinContactConverter.instance().m_map[FORMAT_TB])
 	{
 		value = abCard.getCardValue(i);
+
+		// this.m_logger.debug("getCardProperties: i: " + i + " getCardValue(i): " + value);
 
 		if (value)
 			ret[i] = value;

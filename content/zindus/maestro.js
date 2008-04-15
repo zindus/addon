@@ -60,8 +60,10 @@ ZinMaestro.FSM_ID_ZM_TWOWAY   = "fsm-zm-twoway";
 ZinMaestro.FSM_ID_ZM_AUTHONLY = "fsm-zm-authonly";
 ZinMaestro.FSM_ID_GD_TWOWAY   = "fsm-gd-twoway";
 ZinMaestro.FSM_ID_GD_AUTHONLY = "fsm-gd-authonly";
-ZinMaestro.FSM_GROUP_SYNC     = newObject(ZinMaestro.FSM_ID_ZM_TWOWAY, 0, ZinMaestro.FSM_ID_ZM_AUTHONLY, 0, 
-                                          ZinMaestro.FSM_ID_GD_TWOWAY, 0, ZinMaestro.FSM_ID_GD_AUTHONLY, 0);
+ZinMaestro.FSM_GROUP_TWOWAY   = newObject(ZinMaestro.FSM_ID_ZM_TWOWAY,   0, ZinMaestro.FSM_ID_GD_TWOWAY,   0);
+ZinMaestro.FSM_GROUP_AUTHONLY = newObject(ZinMaestro.FSM_ID_ZM_AUTHONLY, 0, ZinMaestro.FSM_ID_GD_AUTHONLY, 0);
+ZinMaestro.FSM_GROUP_SYNC     = newObject(ZinMaestro.FSM_ID_ZM_TWOWAY,   0, ZinMaestro.FSM_ID_ZM_AUTHONLY, 0, 
+                                          ZinMaestro.FSM_ID_GD_TWOWAY,   0, ZinMaestro.FSM_ID_GD_AUTHONLY, 0);
 
 // ID_FUNCTOR_* uniquely identifies each functor
 //

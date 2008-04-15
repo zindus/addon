@@ -283,7 +283,7 @@ function isMatchObjectKeys(obj1, obj2)
 			if (!isPropertyPresent(obj2, i))
 			{
 				ret = false;
-				newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
+				// newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 
@@ -292,7 +292,7 @@ function isMatchObjectKeys(obj1, obj2)
 			if (!isPropertyPresent(obj1, i))
 			{
 				ret = false;
-				newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
+				// newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 

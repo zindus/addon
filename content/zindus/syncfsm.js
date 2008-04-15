@@ -1785,10 +1785,13 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 			this.loadTbDeleteReadOnlySharedAddresbooks();      // 3. ensure that we don't try to update read-only addressbooks on the server
 	}
 
-	if (this.formatPr() == FORMAT_GD)
-		this.state.gd_luid_parent_ab = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_PAB);
-
 	var aUri = this.loadTbMergeZfcWithAddressBook();           // 4. merge the current tb luid map with the current addressbook(s)
+
+	if (this.formatPr() == FORMAT_GD)
+	{
+		this.state.gd_luid_ab_in_gd = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_PAB);
+		this.state.gd_luid_ab_in_tb = SyncFsm.zfcFindFirstFolder(this.zfcTb(), TB_PAB);
+	}
 
 	this.state.stopwatch.mark(state + " 2");
 
@@ -1820,8 +1823,6 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 		this.state.stopwatch.mark(state + " 7: passed: " + passed);
 	}
-
-	this.state.tb_luid_pab = SyncFsm.zfcFindFirstFolder(this.zfcTb(), TB_PAB);
 
 	var nextEvent = 'evNext';
 
@@ -2227,6 +2228,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri,
 	// pass 3 - iterate through the cards in the zindus folders excluding mailing list uris and cards with keys in aCardKeysToExclude
 	//
 	functor_foreach_card = {
+		context: this,
 		state: this.state,
 
 		run: function(uri, item)
@@ -2294,17 +2296,19 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri,
 					}
 					else
 						msg += " found:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
-
 				}
 
 				zfcTb.get(id).set(ZinFeedItem.ATTR_PRES, '1');
 
-				// populate aPrimaryEmail
-				//
-				var ape_key = properties['PrimaryEmail'] ? properties['PrimaryEmail'] : "";
-				if (!isPropertyPresent(aPrimaryEmail, ape_key))
-					aPrimaryEmail[ape_key] = new Array();
-				aPrimaryEmail[ape_key].push(id);
+				if (this.context.formatPr() == FORMAT_GD && this.context.isInScopeTbLuid(id))
+				{
+					var ape_key = properties['PrimaryEmail'] ? properties['PrimaryEmail'] : "";
+
+					if (!isPropertyPresent(aPrimaryEmail, ape_key))
+						aPrimaryEmail[ape_key] = new Array();
+
+					aPrimaryEmail[ape_key].push(id);
+				}
 			}
 			else
 				msg += " - ignored";
@@ -2406,10 +2410,11 @@ SyncFsm.prototype.testForDuplicatePrimaryEmail = function(aPrimaryEmail)
 {
 	var msg_duplicates = "";
 
+	// this.state.m_logger.debug("testForDuplicatePrimaryEmail: aPrimaryEmail: blah: key: " + key + " value: " + aPrimaryEmail[key].toString());
+	this.state.m_logger.debug("testForDuplicatePrimaryEmail: blah: aPrimaryEmail: " + aToString(aPrimaryEmail));
+
 	for (var key in aPrimaryEmail)
 	{
-		this.state.m_logger.debug("testForDuplicatePrimaryEmail: aPrimaryEmail: blah: key: " + key + " value: " + aPrimaryEmail[key].toString());
-
 		if (key != "" && aPrimaryEmail[key].length > 1)
 			msg_duplicates += "\n" + key;
 	}
@@ -2671,7 +2676,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 					var name_parent = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
 
 					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
-					this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: testing twin key: " + key);
+					// this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: testing twin key: " + key);
 
 					if (isPropertyPresent(this.state.aHasChecksum, key) && aToLength(this.state.aHasChecksum[key]) > 0)
 						for (var luid_possible in this.state.aHasChecksum[key])
@@ -2799,8 +2804,8 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 
 	name_parent_map = this.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
 
-	this.state.m_logger.debug("getPropertiesAndParentNameFromSource: blah: sourceid: " + sourceid + " luid: " + luid +
-	                          " returns: name_parent_map: " + name_parent_map + " properties: " + aToString(properties));
+	// this.state.m_logger.debug("getPropertiesAndParentNameFromSource: blah: sourceid: " + sourceid + " luid: " + luid +
+	//                           " returns: name_parent_map: " + name_parent_map + " properties: " + aToString(properties));
 
 	return [ properties, name_parent_map ];
 }
@@ -2829,8 +2834,8 @@ SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b)
 
 	is_twin = length_a == count_match;
 
-	this.state.m_logger.debug("isTwin: blah: returns: " + is_twin + " sourceid/luid: " + sourceid_a + "/" + luid_a
-	                                                              + " sourceid/luid: " + sourceid_b + "/" + luid_b);
+	// this.state.m_logger.debug("isTwin: blah: returns: " + is_twin + " sourceid/luid: " + sourceid_a + "/" + luid_a
+	//                                                               + " sourceid/luid: " + sourceid_b + "/" + luid_b);
 
 	return is_twin;
 }
@@ -2938,6 +2943,8 @@ SyncFsm.prototype.buildGcs = function()
 									zinAssert(this.context.shortLabelForLuid(sourceid, luid, FORMAT_TB) != TB_PAB);
 							}
 						}
+						else
+							msg += " ls ver matched gid ver: " + lso.get(ZinFeedItem.ATTR_VER);
 
 						msg += " gid: " + gid + " gid's ver: " + zfcGid.get(gid).get(ZinFeedItem.ATTR_VER) +
 							                    " lso: " + lso.toString() + " lso.compare == " + lso.compare(zfi);
@@ -3006,7 +3013,7 @@ SyncFsm.prototype.buildGcs = function()
 	return aGcs;
 }
 
-SyncFsm.prototype.isGcsInScope = function(gid)
+SyncFsm.prototype.isInScopeGid = function(gid)
 {
 	var zfcGid = this.state.zfcGid;
 	var format = this.formatPr();
@@ -3019,18 +3026,27 @@ SyncFsm.prototype.isGcsInScope = function(gid)
 			break;
 		case FORMAT_GD:
 			if (zfcGid.get(gid).isPresent(this.state.sourceid_tb))
-			{
-				var luid_tb = zfcGid.get(gid).get(this.state.sourceid_tb);
-				var zfi = this.zfcTb().get(luid_tb);
-				
-				if (zfi.get(ZinFeedItem.ATTR_L) != this.state.tb_luid_pab)
-					ret = false;
-			}
+				ret = this.isInScopeTbLuid(zfcGid.get(gid).get(this.state.sourceid_tb));
 			
 			break;
 		default:
 			zinAssertAndLog(false, "unmatched case: " + format);
 	}
+
+	return ret;
+}
+
+SyncFsm.prototype.isInScopeTbLuid = function(luid_tb)
+{
+	var ret = true;
+
+	zinAssertAndLog(this.zfcTb().isPresent(luid_tb), "luid_tb: " + luid_tb);
+	zinAssert(this.state.gd_luid_ab_in_tb);
+
+	var zfi = this.zfcTb().get(luid_tb);
+	
+	if (zfi.get(ZinFeedItem.ATTR_L) != this.state.gd_luid_ab_in_tb)
+		ret = false;
 
 	return ret;
 }
@@ -3047,7 +3063,7 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 	var suo;
 
 	for (var gid in aGcs)
-		if (this.isGcsInScope(gid))
+		if (this.isInScopeGid(gid))
 		{
 			suo = null;
 
@@ -3121,7 +3137,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	for (var gid in aGcs)
 		for (sourceid in this.state.sources)
 			if (sourceid != aGcs[gid].sourceid) // only look at losers
-				if (this.isGcsInScope(gid))
+				if (this.isInScopeGid(gid))
 	{
 		suo = null;
 
@@ -4353,7 +4369,6 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				soap.zid    = zuio_target.zid;
 				soap.method = null;
 
-
 				if (this.state.sources[sourceid_winner]['format'] == FORMAT_TB) // always a content update 
 					soap.method = "ModifyContact";
 				else
@@ -4779,6 +4794,9 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				luid_target    = zfiGid.get(sourceid_target);
 				properties     = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
+				// this.state.m_logger.debug("entryActionUpdateGd: blah: MOD: FORMAT_GD: properties: " + aToString(properties));
+				// this.state.m_logger.debug("entryActionUpdateGd: blah: MOD: FORMAT_TB: properties: " + aToString(this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB)));
+
 				zinAssertAndLog(isPropertyPresent(this.state.a_gd_contact, luid_target), "luid_target: " + luid_target);
 
 				contact = this.state.a_gd_contact[luid_target];
@@ -4883,7 +4901,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 
 						msg += "created: contact id: " + id;
 
-						var zfi = this.newZfiCnGd(id, contact.m_meta['updated'], contact.m_meta['edit'], this.state.gd_luid_parent_ab);
+						var zfi = this.newZfiCnGd(id, contact.m_meta['updated'], contact.m_meta['edit'], this.state.gd_luid_ab_in_gd);
 
 						SyncFsm.setLsoToGid(zfiGid, zfi);
 
@@ -4916,6 +4934,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 					// we call setLsoToGid, so avoiding an update of the local contact.
 					//
 					zfiTarget.set(ZinFeedItem.ATTR_CSGD, checksum);
+					SyncFsm.setLsoToGid(this.state.zfcGid.get(suo.gid), zfiTarget);
 
 					msg += "map updated: zfi: " + zfcTarget.get(luid_target);
 
@@ -5164,9 +5183,7 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 	}
 	else if (this.formatPr() == FORMAT_GD)
 	{
-		this.state.gd_sync_token = String(this.state.gd_sync_token);
-		this.state.m_logger.debug("blah: gd_sync_token: " + this.state.gd_sync_token + " typeof: " + typeof(this.state.gd_sync_token));
-		this.state.zfcLastSync.get(this.state.sourceid_pr).set('SyncToken', this.state.gd_sync_token);
+		this.state.zfcLastSync.get(this.state.sourceid_pr).set('SyncToken', String(this.state.gd_sync_token));
 	}
 	
 	this.state.m_logger.debug("entryActionCommit: soapURL: "  + this.state.sources[this.state.sourceid_pr]['soapURL']);
@@ -5199,8 +5216,8 @@ SyncFsm.prototype.suoOpcode = function(suo)
 	return (type | suo.opcode);
 }
 
-SyncFsm.prototype.zfcTb = function() { return this.state.sources[this.state.sourceid_tb]['zfcLuid']; }
-SyncFsm.prototype.zfcPr = function() { return this.state.sources[this.state.sourceid_pr]['zfcLuid']; }
+SyncFsm.prototype.zfcTb = function()    { return this.state.sources[this.state.sourceid_tb]['zfcLuid']; }
+SyncFsm.prototype.zfcPr = function()    { return this.state.sources[this.state.sourceid_pr]['zfcLuid']; }
 SyncFsm.prototype.formatPr = function() { return this.state.sources[this.state.sourceid_pr]['format']; }
 
 SyncFsm.prototype.zfcZm = function()
@@ -5910,7 +5927,6 @@ SyncFsm.prototype.initialiseState = function(id_fsm)
 
 	state.isSlowSync          = false;        // true iff no data files
 	state.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
-	state.tb_luid_pab         = null;         // luid of the thunderbird PAB
 	state.aGcs                = null;         // array of Global Converged State - passed between the phases of Converge
 	state.itSource            = null;         // iterator across sourceids
 	state.aHasChecksum        = new Object(); // used in slow sync: aHasChecksum[key][luid]   = true;
@@ -5979,7 +5995,8 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm)
 	state.a_gd_contact_to_get = new Array();
 	state.gd_sync_token       = null;
 	state.gd_base_url         = null;
-	state.gd_luid_parent_ab   = null;
+	state.gd_luid_ab_in_gd    = null;         // luid of the parent addressbook in this.zfcPr()
+	state.gd_luid_ab_in_tb    = null;         // luid of the parent addressbook in this.zfcTb()
 	// notused state.gd_sync_with        = null;
 
 	state.initialiseSource(SOURCEID_AA, FORMAT_GD, "sourceServer");
@@ -6088,7 +6105,7 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 		this.state.gd_base_url = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base";
 	}
 
-	this.state.m_logger.debug("authToken: " + this.state.authToken);
+	this.state.m_logger.debug("authToken: size: " + (this.state.authToken ? this.state.authToken.length : "null") );
 }
 
 SyncFsmGd.prototype.entryActionAuthCheck = function(state, event, continuation)
@@ -6194,7 +6211,7 @@ SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
 		}
 		else if (!is_deleted)
 		{
-			zfi = this.newZfiCnGd(id, rev, edit_url, this.state.gd_luid_parent_ab);
+			zfi = this.newZfiCnGd(id, rev, edit_url, this.state.gd_luid_ab_in_gd);
 			this.zfcPr().set(zfi); // add new
 			msg += " added: " + zfi.toString();
 		}
@@ -6207,12 +6224,12 @@ SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
 	this.state.m_logger.debug(msg);
 }
 
-SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, gd_luid_parent_ab)
+SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, gd_luid_ab_in_gd)
 {
 	var zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY,  id,
 				                                   ZinFeedItem.ATTR_REV,  rev,
 				                                   ZinFeedItem.ATTR_EDIT, edit_url,
-											       ZinFeedItem.ATTR_L,    gd_luid_parent_ab);
+											       ZinFeedItem.ATTR_L,    gd_luid_ab_in_gd);
 
 	return zfi;
 }

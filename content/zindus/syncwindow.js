@@ -139,7 +139,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			functor.m_showlogo = true;
 			this.m_zwc.forEach(functor);
 
-			if (fsmstate.context.state.id_fsm == ZinMaestro.FSM_ID_ZM_TWOWAY)
+			if (isPropertyPresent(ZinMaestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
 			{
 				StatusPanel.save(this.m_payload.m_es);
 				StatusPanel.update();

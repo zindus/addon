@@ -111,9 +111,9 @@ StatusPanel.update = function(zwc)
 		tooltip = stringBundleString("statusLastSyncNever");
 	}
 
-	logger.debug("update: status: " + status + " tooltip: " + tooltip);
-
 	var obj = { alert : '!', error : 'X', insync : 'Y' };
+
+	logger.debug("update: status: " + obj[status] + " (" + status + ") tooltip: " + tooltip);
 
 	if (arguments.length == 0)
 	{

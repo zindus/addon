@@ -72,7 +72,7 @@
 						<column flex="1" />
 					</columns>
 					<rows>
-						<vbox id="zindus-prefs-server-type-vbox" hidden="true">
+						<vbox id="zindus-prefs-server-type-vbox" >
 							<caption label="Select server type" />
 							<radiogroup id="zindus-prefs-server-type-radiogroup">
 								<radio id="zindus-prefs-server-type-google" label="Google" /> <!-- selected="true" -->

@@ -65,6 +65,7 @@ function Prefs()
 	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
 
 	this.m_server_type_last    = null;
+	this.a_server_type_values  = new Object();
 }
 
 Prefs.prototype.onLoad = function(target)
@@ -73,8 +74,6 @@ Prefs.prototype.onLoad = function(target)
 	{
 		document.getElementById("zindus-prefs-general-button-test-harness").removeAttribute('hidden');
 		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('hidden');
-		document.getElementById("zindus-prefs-general-group-advanced-settings").removeAttribute('hidden');
-		document.getElementById("zindus-prefs-server-type-vbox").removeAttribute('hidden');
 	}
 
 	this.m_prefset_server.load(SOURCEID_AA);
@@ -299,7 +298,8 @@ Prefs.prototype.initialiseView = function()
 	this.setRadioFromPrefset("zindus-prefs-server-type-radiogroup", this.m_server_type_bimap, this.m_prefset_server,
 	                          PrefSet.SERVER_TYPE, "zindus-prefs-server-type-zimbra")
 
-	this.server_type_last = this.serverType();
+	this.m_server_type_last = this.serverType();
+	this.rememberLastServerType(this.m_server_type_last);
 
 	// general tab - checkbox elements
 	//
@@ -392,19 +392,30 @@ Prefs.prototype.updateView = function()
 		// document.getElementById("zindus-prefs-general-syncwith-vbox").style.visibility = "hidden";
 	}
 
-	if (this.server_type_last != server_type_current)
+	if (this.m_server_type_last != server_type_current)
 	{
-		this.m_logger.debug("updateView: blah: server_type changed: server_type_current: " + server_type_current);
+		this.m_logger.debug("updateView: server_type changed: server_type_current: " + server_type_current);
 
-		if (server_type_current == FORMAT_GD)
-			document.getElementById("zindus-prefs-server-url").value = GOOGLE_URL_CLIENT_LOGIN;
+		this.rememberLastServerType(this.m_server_type_last);
+
+		if (isPropertyPresent(this.a_server_type_values, server_type_current))
+		{
+			document.getElementById("zindus-prefs-server-username").value = this.a_server_type_values[server_type_current].username;
+			document.getElementById("zindus-prefs-server-url").value      = this.a_server_type_values[server_type_current].url;
+			document.getElementById("zindus-prefs-server-password").value = this.a_server_type_values[server_type_current].password;
+		}
 		else
-			document.getElementById("zindus-prefs-server-url").value = "";
+		{
+			if (server_type_current == FORMAT_GD)
+				document.getElementById("zindus-prefs-server-url").value = GOOGLE_URL_CLIENT_LOGIN;
+			else
+				document.getElementById("zindus-prefs-server-url").value = "";
 
-		document.getElementById("zindus-prefs-server-username").value = "";
-		document.getElementById("zindus-prefs-server-password").value = "";
+			document.getElementById("zindus-prefs-server-username").value = "";
+			document.getElementById("zindus-prefs-server-password").value = "";
+		}
 
-		this.server_type_last = server_type_current;
+		this.m_server_type_last = this.serverType();
 	}
 }
 
@@ -455,6 +466,18 @@ Prefs.prototype.serverType = function()
 	return ret;
 }
 
+Prefs.prototype.rememberLastServerType = function(server_type)
+{
+	this.m_logger.debug("rememberLastServerType: setting: m_server_type_last: " + this.m_server_type_last);
+
+	if (!isPropertyPresent(this.a_server_type_values, this.m_server_type_last))
+		this.a_server_type_values[this.m_server_type_last] = new Object();
+
+	this.a_server_type_values[this.m_server_type_last].username = document.getElementById("zindus-prefs-server-username").value;
+	this.a_server_type_values[this.m_server_type_last].url      = document.getElementById("zindus-prefs-server-url").value;
+	this.a_server_type_values[this.m_server_type_last].password = document.getElementById("zindus-prefs-server-password").value;
+}
+
 Prefs.prototype.setPrefsetFromRadio = function(radiogroup_id, bimap, prefset, property)
 {
 	var selected_id  = document.getElementById(radiogroup_id).selectedItem.id;
@@ -476,4 +499,3 @@ Prefs.prototype.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, pr
 
 	this.m_logger.debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
 }
-
