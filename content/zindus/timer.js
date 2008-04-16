@@ -83,7 +83,9 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 
 			var prefs = new MozillaPreferences();
-			var server_type = prefs.getCharPrefOrNull(prefs.branch(), "server" + SOURCEID_AA + ".type");
+			var server_type = prefs.getCharPrefOrNull(prefs.branch(), "server." + SOURCEID_AA + ".type");
+
+			this.m_logger.debug("onFsmStateChangeFunctor: server_type: " + server_type);
 
 			if (server_type == "google")
 			{
