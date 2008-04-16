@@ -76,7 +76,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 				var delay = 1000 * randomPlusOrMinus(delay_on_start, (1/2 * delay_on_start).toFixed(0));
 
-				this.m_logger.debug("onLoad: delay_on_start: " + delay_on_start + " actual delay: " + delay);
+				this.m_logger.debug("onLoad: delay_on_start: " + delay_on_start + " actual delay (ms): " + delay);
 
 				this.m_timeoutID = window.setTimeout(this.onTimerFire, delay, this);
 

@@ -124,6 +124,7 @@ function stringBundleString(id_string, args)
 	var is_exception = false;
 
 	zinAssert(arguments.length == 1 || arguments.length == 2);
+	zinAssertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
 
 	if (stringbundle == null)
 	{
@@ -134,8 +135,7 @@ function stringBundleString(id_string, args)
 		if (typeof(gLogger) == 'object' && typeof(gLogger.error) == 'function')
 			gLogger.error(ret);
 	}
-	else
-	try
+	else try
 	{
 		if (arguments.length == 1)
 			ret = stringbundle.getString(APP_NAME + "." + id_string);
@@ -152,7 +152,7 @@ function stringBundleString(id_string, args)
 		is_exception = true;
 	}
 
-	zinAssertAndLog(!is_exception, id_string);
+	zinAssertAndLog(!is_exception, "id_string: " + id_string);
 
 	return ret;
 }
