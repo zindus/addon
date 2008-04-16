@@ -74,13 +74,9 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 				this.m_last_sync_date = x['last_sync_date'];
 
-				var delay = x['next_sync_date'] - x['now'];
-				var min_delay = 1000 * randomPlusOrMinus(delay_on_start, (1/2 * delay_on_start).toFixed(0));
+				var delay = 1000 * randomPlusOrMinus(delay_on_start, (1/2 * delay_on_start).toFixed(0));
 
-				// this.m_logger.debug("onLoad: delay: " + delay + " min_delay: " + min_delay);
-
-				if (delay < min_delay)  // don't start any sooner than min_delay on startup - give the user a chance to get some work done
-					delay = min_delay;
+				this.m_logger.debug("onLoad: delay_on_start: " + delay_on_start + " actual delay: " + delay);
 
 				this.m_timeoutID = window.setTimeout(this.onTimerFire, delay, this);
 
@@ -227,10 +223,9 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 
 	var ret = newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", last_sync_date);
 
-	// this.m_logger.debug("statusSummary returns: " + "\n" +
-	//                      " now:            " + ret['now'] + "\n" +
-	// 					 " last_sync_date: " + last_sync_date + "\n" +
-	// 					 " next_sync_date: " + next_sync_date );
+	this.m_logger.debug("statusSummary returns: " + "\n" + " now:            " + ret['now'] + "\n" +
+	                                                       " last_sync_date: " + last_sync_date + "\n" +
+	                                                       " next_sync_date: " + next_sync_date );
 
 	return ret;
 }
