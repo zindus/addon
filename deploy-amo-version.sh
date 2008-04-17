@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-amo-version.sh,v 1.2 2008-04-17 20:53:09 cvsuser Exp $
+# $Id: deploy-amo-version.sh,v 1.3 2008-04-17 20:54:59 cvsuser Exp $
 
 export APP_VERSION_RELTYPE="prod-amo"
 

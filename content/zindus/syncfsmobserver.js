@@ -126,8 +126,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stUpdateTb:       { count: 1 },
 		stUpdateZm:       { count: 1 },
 		stUpdateCleanup:  { count: 1 },
-		stSoapRequest:    { },
-		stSoapResponse:   { },
+		stHttpRequest:    { },
+		stHttpResponse:   { },
 		stCommit:         { },
 		final:            { count: 1 }
 	};
@@ -150,8 +150,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stUpdateTb:       { count: 1 },
 		stUpdateGd:       { count: 1 },
 		stUpdateCleanup:  { count: 1 },
-		stSoapRequest:    { },
-		stSoapResponse:   { },
+		stHttpRequest:    { },
+		stHttpResponse:   { },
 		stCommit:         { },
 		final:            { count: 1 }
 	};

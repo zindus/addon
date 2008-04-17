@@ -80,18 +80,18 @@ SyncFsmZm.prototype.initialiseFsm = function()
 {
 	var transitions = {
 		start:             { evCancel: 'final', evNext: 'stAuth',                                           evLackIntegrity: 'final'     },
-		stAuth:            { evCancel: 'final', evNext: 'stLoad',           evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
-		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
+		stAuth:            { evCancel: 'final', evNext: 'stLoad',           evHttpRequest: 'stHttpRequest', evLackIntegrity: 'final'     },
+		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evHttpRequest: 'stHttpRequest', evLackIntegrity: 'final'     },
 		stLoadTb:          { evCancel: 'final', evNext: 'stGetAccountInfo',                                 evLackIntegrity: 'final'     },
-		stGetAccountInfo:  { evCancel: 'final', evNext: 'stSelectSoapUrl',  evSoapRequest: 'stSoapRequest'                               },
-		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stGetInfo',        evSoapRequest: 'stSoapRequest', evSkip: 'stSync'             },
-		stGetInfo:         { evCancel: 'final', evNext: 'stCheckLicense',   evSoapRequest: 'stSoapRequest'                               },
-		stCheckLicense:    { evCancel: 'final', evNext: 'stSync',           evSoapRequest: 'stSoapRequest'                               },
-		stSync:            { evCancel: 'final', evNext: 'stSyncResult',     evSoapRequest: 'stSoapRequest'                               },
+		stGetAccountInfo:  { evCancel: 'final', evNext: 'stSelectSoapUrl',  evHttpRequest: 'stHttpRequest'                               },
+		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stGetInfo',        evHttpRequest: 'stHttpRequest', evSkip: 'stSync'             },
+		stGetInfo:         { evCancel: 'final', evNext: 'stCheckLicense',   evHttpRequest: 'stHttpRequest'                               },
+		stCheckLicense:    { evCancel: 'final', evNext: 'stSync',           evHttpRequest: 'stHttpRequest'                               },
+		stSync:            { evCancel: 'final', evNext: 'stSyncResult',     evHttpRequest: 'stHttpRequest'                               },
 		stSyncResult:      { evCancel: 'final', evNext: 'stGetContact',     evRedo:        'stSync',        evDo: 'stGetAccountInfo'     },
-		stGetContact:      { evCancel: 'final', evNext: 'stGalConsider',    evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContact'     },
+		stGetContact:      { evCancel: 'final', evNext: 'stGalConsider',    evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContact'     },
 		stGalConsider:     { evCancel: 'final', evNext: 'stGalSync',        evSkip:        'stGalCommit'                                 },
-		stGalSync:         { evCancel: 'final', evNext: 'stGalCommit',      evSoapRequest: 'stSoapRequest'                               },
+		stGalSync:         { evCancel: 'final', evNext: 'stGalCommit',      evHttpRequest: 'stHttpRequest'                               },
 		stGalCommit:       { evCancel: 'final', evNext: 'stConverge1'                                                                    },
 		stConverge1:       { evCancel: 'final', evNext: 'stConverge2',                                      evLackIntegrity: 'final'     },
 		stConverge2:       { evCancel: 'final', evNext: 'stConverge3',      evRepeat:      'stConverge2'                                 },
@@ -100,13 +100,13 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stConverge6:       { evCancel: 'final', evNext: 'stConverge7',                                      evLackIntegrity: 'final'     },
 		stConverge7:       { evCancel: 'final', evNext: 'stConverge8',                                                                   },
 		stConverge8:       { evCancel: 'final', evNext: 'stGetContactPuZm',                                 evLackIntegrity: 'final'     },
-		stGetContactPuZm:  { evCancel: 'final', evNext: 'stUpdateTb',       evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContactPuZm' },
+		stGetContactPuZm:  { evCancel: 'final', evNext: 'stUpdateTb',       evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactPuZm' },
 		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateZm'                                                                     },
-		stUpdateZm:        { evCancel: 'final', evNext: 'stUpdateCleanup',  evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateZm'       },
+		stUpdateZm:        { evCancel: 'final', evNext: 'stUpdateCleanup',  evHttpRequest: 'stHttpRequest', evRepeat: 'stUpdateZm'       },
 		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',                                         evLackIntegrity: 'final'     },
 
-		stSoapRequest:     { evCancel: 'final', evNext: 'stSoapResponse'                                                                 },
-		stSoapResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
+		stHttpRequest:     { evCancel: 'final', evNext: 'stHttpResponse'                                                                 },
+		stHttpResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
 
 		stCommit:          { evCancel: 'final', evNext: 'final'                                                                          },
 		final:             { }
@@ -140,8 +140,8 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
 		stCommit:               this.entryActionCommit,
 
-		stSoapRequest:          this.entryActionSoapRequest,
-		stSoapResponse:         this.entryActionSoapResponse,
+		stHttpRequest:          this.entryActionHttpRequest,
+		stHttpResponse:         this.entryActionHttpResponse,
 
 		final:                  this.entryActionFinal
 	};
@@ -156,7 +156,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stGetContactPuZm:       this.exitActionGetContact,
 		stGalSync:              this.exitActionGalSync,
 		stUpdateZm:             this.exitActionUpdateZm,
-		stSoapResponse:         this.exitActionSoapResponse  /* this gets tweaked by setupHttpZm */
+		stHttpResponse:         this.exitActionHttpResponse  /* this gets tweaked by setupHttpZm */
 	};
 
 	this.fsm = new Fsm(transitions, a_entry, a_exit);
@@ -166,11 +166,11 @@ SyncFsmGd.prototype.initialiseFsm = function()
 {
 	var transitions = {
 		start:             { evCancel: 'final', evNext: 'stAuth',                                           evLackIntegrity: 'final'     },
-		stAuth:            { evCancel: 'final', evNext: 'stAuthCheck',      evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
+		stAuth:            { evCancel: 'final', evNext: 'stAuthCheck',      evHttpRequest: 'stHttpRequest', evLackIntegrity: 'final'     },
 		stAuthCheck:       { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
-		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evSoapRequest: 'stSoapRequest', evLackIntegrity: 'final'     },
+		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evHttpRequest: 'stHttpRequest', evLackIntegrity: 'final'     },
 		stLoadTb:          { evCancel: 'final', evNext: 'stGetContactGd',                                   evLackIntegrity: 'final'     },
-		stGetContactGd:    { evCancel: 'final', evNext: 'stConverge1',      evSoapRequest: 'stSoapRequest'                               },
+		stGetContactGd:    { evCancel: 'final', evNext: 'stConverge1',      evHttpRequest: 'stHttpRequest'                               },
 		stConverge1:       { evCancel: 'final', evNext: 'stConverge2',                                      evLackIntegrity: 'final'     },
 		stConverge2:       { evCancel: 'final', evNext: 'stConverge3',      evRepeat:      'stConverge2'                                 },
 		stConverge3:       { evCancel: 'final', evNext: 'stConverge5',                                                                   },
@@ -178,13 +178,13 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stConverge6:       { evCancel: 'final', evNext: 'stConverge7',                                      evLackIntegrity: 'final'     },
 		stConverge7:       { evCancel: 'final', evNext: 'stConverge8',                                                                   },
 		stConverge8:       { evCancel: 'final', evNext: 'stGetContactPuGd',                                 evLackIntegrity: 'final'     },
-		stGetContactPuGd:  { evCancel: 'final', evNext: 'stUpdateGd',       evSoapRequest: 'stSoapRequest', evRepeat: 'stGetContactPuGd' },
-		stUpdateGd:        { evCancel: 'final', evNext: 'stUpdateTb',       evSoapRequest: 'stSoapRequest', evRepeat: 'stUpdateGd'       },
+		stGetContactPuGd:  { evCancel: 'final', evNext: 'stUpdateGd',       evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactPuGd' },
+		stUpdateGd:        { evCancel: 'final', evNext: 'stUpdateTb',       evHttpRequest: 'stHttpRequest', evRepeat: 'stUpdateGd'       },
 		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateCleanup'                                                                },
 		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',                                         evLackIntegrity: 'final'     },
 
-		stSoapRequest:     { evCancel: 'final', evNext: 'stSoapResponse'                                                                 },
-		stSoapResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
+		stHttpRequest:     { evCancel: 'final', evNext: 'stHttpResponse'                                                                 },
+		stHttpResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
 
 		stCommit:          { evCancel: 'final', evNext: 'final'                                                                          },
 		final:             { }
@@ -210,18 +210,18 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
 		stCommit:               this.entryActionCommit,
 
-		stSoapRequest:          this.entryActionSoapRequest,
-		stSoapResponse:         this.entryActionSoapResponse,
+		stHttpRequest:          this.entryActionHttpRequest,
+		stHttpResponse:         this.entryActionHttpResponse,
 
 		final:                  this.entryActionFinal
 	};
 
 	var a_exit = {
 		stAuth:                 this.exitActionAuth,
-		stGetContactGd:          this.exitActionGetContactGd,
+		stGetContactGd:         this.exitActionGetContactGd,
 		stGetContactPuGd:       this.exitActionGetContactPuGd,
 		stUpdateGd:             this.exitActionUpdateGd,
-		stSoapResponse:         this.exitActionSoapResponse  /* this gets tweaked by setupHttpZm */
+		stHttpResponse:         this.exitActionHttpResponse  /* this gets tweaked by setupHttpZm */
 	};
 
 	this.fsm = new Fsm(transitions, a_entry, a_exit);
@@ -314,7 +314,7 @@ SyncFsmZm.prototype.entryActionAuth = function(state, event, continuation)
 	                          this.state.sources[this.state.sourceid_zm]['username'],
 	                          this.state.sources[this.state.sourceid_zm]['password']);
 
-		nextEvent = 'evSoapRequest';
+		nextEvent = 'evHttpRequest';
 	}
 	else
 	{
@@ -743,7 +743,7 @@ SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuatio
 
 	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(), this.state.zidbag.zimbraId(), "GetAccountInfo", by, value);
 
-	continuation('evSoapRequest');
+	continuation('evHttpRequest');
 }
 
 // if the url that the user entered in the server settings is returned by the server, use that
@@ -813,7 +813,7 @@ SyncFsm.prototype.entryActionSelectSoapUrl = function(state, event, continuation
 	if (this.state.suggestedSoapURL)
 	{
 		this.setupHttpZm(state, 'evNext', this.state.suggestedSoapURL, null, 'FakeHead');
-		nextEvent = 'evSoapRequest';
+		nextEvent = 'evHttpRequest';
 	}
 	else if (this.state.zidbag.isPrimaryUser())
 		nextEvent = 'evNext';
@@ -848,7 +848,7 @@ SyncFsm.prototype.entryActionGetInfo = function(state, event, continuation)
 
 	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(), null, "GetInfo");
 
-	continuation('evSoapRequest');
+	continuation('evHttpRequest');
 }
 
 SyncFsm.prototype.exitActionGetInfo = function(state, event)
@@ -874,7 +874,7 @@ SyncFsm.prototype.entryActionCheckLicense = function(state, event, continuation)
 
 	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(), null, "CheckLicense");
 
-	continuation('evSoapRequest');
+	continuation('evHttpRequest');
 }
 
 SyncFsm.prototype.exitActionCheckLicense = function(state, event)
@@ -921,7 +921,7 @@ SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 
 	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(), this.state.zidbag.zimbraId(), "Sync", this.state.SyncTokenInRequest);
 
-	continuation('evSoapRequest');
+	continuation('evHttpRequest');
 }
 
 SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
@@ -1398,7 +1398,7 @@ SyncFsm.prototype.entryActionGetContactSetup = function(state)
 
 		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(zuio.zid), zuio.zid, "GetContacts", zuio.id);
 
-		nextEvent = 'evSoapRequest';
+		nextEvent = 'evHttpRequest';
 	}
 
 	return nextEvent;
@@ -1517,7 +1517,7 @@ SyncFsm.prototype.entryActionGalSync = function(state, event, continuation)
 
 	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(0), null, "SyncGal", this.state.SyncGalTokenInRequest);
 
-	continuation('evSoapRequest');
+	continuation('evHttpRequest');
 }
 
 SyncFsm.prototype.exitActionGalSync = function(state, event)
@@ -4523,7 +4523,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(soap.zid), soap.zid, soap.method, soap.arg);
 
-		continuation('evSoapRequest');
+		continuation('evHttpRequest');
 	}
 	else
 	{
@@ -4908,7 +4908,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, true);
 
-		nextEvent = 'evSoapRequest';
+		nextEvent = 'evHttpRequest';
 	}
 	else
 	{
@@ -5549,11 +5549,11 @@ SyncFsm.prototype.setupHttpZm = function(state, eventOnResponse, url, zid, metho
 
 SyncFsm.prototype.setupHttpCommon = function(state, eventOnResponse)
 {
-	this.fsm.m_transitions['stSoapResponse']['evNext'] = this.fsm.m_transitions[state][eventOnResponse];
+	this.fsm.m_transitions['stHttpResponse']['evNext'] = this.fsm.m_transitions[state][eventOnResponse];
 
 	if (this.fsm.m_a_exit[state])
 	{
-		this.fsm.m_a_exit['stSoapResponse'] = this.fsm.m_a_exit[state];
+		this.fsm.m_a_exit['stHttpResponse'] = this.fsm.m_a_exit[state];
 
 		this.state.m_http.m_restore_exit_function = this.fsm.m_a_exit[state]
 		this.state.m_http.m_restore_exit_state  = state;
@@ -5561,33 +5561,33 @@ SyncFsm.prototype.setupHttpCommon = function(state, eventOnResponse)
 		this.fsm.m_a_exit[state] = null;
 	}
 	else
-		this.fsm.m_a_exit['stSoapResponse'] = this.exitActionSoapResponse;
+		this.fsm.m_a_exit['stHttpResponse'] = this.exitActionHttpResponse;
 }
 
-SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
+SyncFsm.prototype.entryActionHttpRequest = function(state, event, continuation)
 {
 	var context  = this;
-	var soapstate = this.state.m_http;
+	var http = this.state.m_http;
 	var httpBody;
 
-	zinAssert(!soapstate.is_cancelled);
-	zinAssert(soapstate.isPreResponse());
-	zinAssert(!soapstate.isPostResponse());
+	zinAssert(!http.is_cancelled);
+	zinAssert(http.isPreResponse());
+	zinAssert(!http.isPostResponse());
 
 	this.state.cCallsToHttp++;
 
-	this.state.m_logger.debug("http request: #" + this.state.cCallsToHttp + ": " + soapstate.toStringFiltered());
+	this.state.m_logger.debug("http request: #" + this.state.cCallsToHttp + ": " + http.toStringFiltered());
 
-	soapstate.m_xhr = new XMLHttpRequest();
-	soapstate.m_xhr.onreadystatechange = closureToHandleXmlHttpResponse(context, continuation);
+	http.m_xhr = new XMLHttpRequest();
+	http.m_xhr.onreadystatechange = closureToHandleXmlHttpResponse(context, continuation);
 
-	soapstate.m_xhr.open(soapstate.m_http_method, soapstate.m_url, true);
+	http.m_xhr.open(http.m_http_method, http.m_url, true);
 
-	if (soapstate.m_http_headers)
-		for (var key in soapstate.m_http_headers)
-			soapstate.m_xhr.setRequestHeader(key,  soapstate.m_http_headers[key]);
+	if (http.m_http_headers)
+		for (var key in http.m_http_headers)
+			http.m_xhr.setRequestHeader(key,  http.m_http_headers[key]);
 
-	soapstate.m_xhr.send(soapstate.httpBody());
+	http.m_xhr.send(http.httpBody());
 }
 
 function closureToHandleXmlHttpResponse(context, continuation)
@@ -5604,47 +5604,47 @@ function closureToHandleXmlHttpResponse(context, continuation)
 SyncFsm.prototype.handleXmlHttpResponse = function (continuation, context)
 {
 	var msg  = "handleXmlHttpResponse: ";
-	var httpstate = context.state.m_http;
+	var http = context.state.m_http;
 
-	if (httpstate.is_cancelled)
+	if (http.is_cancelled)
 	{
-		httpstate.m_http_status_code = HTTP_STATUS_ON_CANCEL;
-		msg += " cancelled - set m_http_status_code to: " + httpstate.m_http_status_code;
+		http.m_http_status_code = HTTP_STATUS_ON_CANCEL;
+		msg += " cancelled - set m_http_status_code to: " + http.m_http_status_code;
 	}
 	else
 	{
 		try {
-			httpstate.m_http_status_code = httpstate.m_xhr.status;
-			msg += " http status: " + httpstate.m_http_status_code;
+			http.m_http_status_code = http.m_xhr.status;
+			msg += " http status: " + http.m_http_status_code;
 		}
 		catch(e) {
-			httpstate.m_http_status_code = HTTP_STATUS_ON_SERVICE_FAILURE;
-			msg += " http status faked: " + httpstate.m_http_status_code + " after httpstate.m_xhr.status threw an exception: " + e;
+			http.m_http_status_code = HTTP_STATUS_ON_SERVICE_FAILURE;
+			msg += " http status faked: " + http.m_http_status_code + " after http.m_xhr.status threw an exception: " + e;
 		}
 	}
 
-	zinAssert(httpstate.m_http_status_code != null); // status should always be set to something when we leave here
+	zinAssert(http.m_http_status_code != null); // status should always be set to something when we leave here
 
 	context.state.m_logger.debug(msg);
 
 	continuation('evNext');
 }
 
-SyncFsm.prototype.entryActionSoapResponse = function(state, event, continuation)
+SyncFsm.prototype.entryActionHttpResponse = function(state, event, continuation)
 {
-	var httpstate = this.state.m_http;
+	var http = this.state.m_http;
 
-	zinAssertAndLog(httpstate.isPostResponse(), httpstate.toString());
+	zinAssertAndLog(http.isPostResponse(), http.toString());
 
-	if (httpstate.m_restore_exit_function) // if setupHttpZm zapped the exit method of the state that called it, restore it...
-		this.fsm.m_a_exit[httpstate.m_restore_exit_state] = httpstate.m_restore_exit_function;
+	if (http.m_restore_exit_function) // if setupHttpZm zapped the exit method of the state that called it, restore it...
+		this.fsm.m_a_exit[http.m_restore_exit_state] = http.m_restore_exit_function;
 
-	var nextEvent = httpstate.handleResponse();
+	var nextEvent = http.handleResponse();
 
 	continuation(nextEvent); // the state that this corresponds to in the transitions table was set by setupHttpCommon()
 }
 
-SyncFsm.prototype.exitActionSoapResponse = function(state, event)
+SyncFsm.prototype.exitActionHttpResponse = function(state, event)
 {
 	// this method's entry in the m_a_exit table may be overwritten by setupHttp
 	// otherwise, do nothing...
@@ -6140,7 +6140,7 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 
 		this.setupHttpGd(state, 'evNext', "POST", url, headers, body, true)
 
-		nextEvent = 'evSoapRequest';
+		nextEvent = 'evHttpRequest';
 	}
 	else
 	{
@@ -6202,7 +6202,7 @@ SyncFsmGd.prototype.entryActionGetContactGd = function(state, event, continuatio
 
 	this.setupHttpGd(state, 'evNext', "GET", url, null, null, false);
 
-	continuation('evSoapRequest');
+	continuation('evHttpRequest');
 }
 
 SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
@@ -6345,7 +6345,7 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 
 		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, false);
 		
-		nextEvent = 'evSoapRequest'
+		nextEvent = 'evHttpRequest'
 	}
 	else
 	{
