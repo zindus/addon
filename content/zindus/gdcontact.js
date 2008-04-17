@@ -271,6 +271,16 @@ GdContact.prototype.fieldModDel = function(node, attribute, a_field, key, a_fiel
 		this.setNode(node, attribute, a_field, key, a_field_used);
 }
 
+// Currently the only transformation is to trim leading and trailing whitespace.
+// Google would do this when it receives the properties regardless.
+// But we do it before sending to allow us to do simple common-case error detection locally and avoid network latency.
+//
+GdContact.transformProperties = function(properties)
+{
+	for (key in properties)
+		properties[key] = trim(properties[key]);
+}
+
 GdContact.prototype.updateFromContact = function(contact)
 {
 	var a_field         = zinCloneObject(contact);
@@ -280,6 +290,8 @@ GdContact.prototype.updateFromContact = function(contact)
 	var key;
 
 	this.m_logger.debug("updateFromContact: contact: " + aToString(contact));
+
+	GdContact.transformProperties(a_field);
 
 	var functor = {
 		run: function(node, key)
@@ -465,34 +477,11 @@ GdContact.prototype.setProperty = function(node, attribute, collection, key)
 		delete collection[key];
 }
 
-// GdContact.prototype.setProperty = function(node, attribute, collection, key)
-// {
-// 	if (attribute)
-// 		collection[key] = node.getAttribute(attribute);
-// 	else if (node.hasChildNodes())
-// 		collection[key] = node.firstChild.nodeValue;
-// 	else
-// 		collection[key] = "";
-// }
-
-// GdContact.prototype.setNode = function(node, attribute, collection, key, a_key_used)
-// {
-// 	if (attribute)
-// 	{
-// 		node.setAttribute(attribute, collection[key]);
-// 		a_key_used[key] = true;
-// 	}
-// 	else if (node.hasChildNodes())
-// 	{
-// 		node.firstChild.textContent = collection[key];
-// 		a_key_used[key] = true;
-// 	}
-// 	else
-// 		zinAssertAndLog(false, "attribute: " + attribute + " collection: " + aToString(collection) + " key: " + key);
-// }
-
 GdContact.prototype.setNode = function(node, attribute, collection, key, a_key_used)
 {
+	if (key == "organization#orgTitle") // TODO
+		this.m_logger.debug("setNode: blah: organization#orgTitle: value: '" + collection[key] + "'");
+
 	if (attribute)
 	{
 		node.setAttribute(attribute, collection[key]);

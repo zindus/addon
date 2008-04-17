@@ -75,6 +75,13 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 		key = null;
 		value = null;
 		
+		if (!elementA || !elementA.childNodes)
+		{
+			gLogger.warn("Unexpected response from server: <a> element didn't have attributes - skipping the rest of this contact.");
+			gLogger.warn("the xml received from the server is: " + xmlDocumentToString(node));
+			break;
+		}
+
 		if (elementA.childNodes.length == 1 && elementA.childNodes.item(0).nodeType == Node.TEXT_NODE)
 			value = elementA.childNodes.item(0).nodeValue;
 
@@ -84,7 +91,11 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 		if (key && value)
 			this.element[key] = value;
 		else
-			gLogger.warn("Unexpected response from server: key is " + key + " and value is " + value);
+		{
+			gLogger.warn("Unexpected response from server: skipping the rest of this contact: key is " + key + " and value is " + value);
+			gLogger.warn("server xml: " + xmlDocumentToString(node));
+			break;
+		}
 
 		// if (key && value) gLogger.debug("77224: setting contact." + key + " to " + value);
 	}

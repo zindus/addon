@@ -612,3 +612,14 @@ function arrayfromArguments(args, start_at)
 
 	return ret;
 }
+
+// Trim leading and trailing whitespace from a string.
+// http://javascript.crockford.com/remedial.html
+
+function trim (str)
+{
+	zinAssert(str);
+	zinAssert(typeof(str) == "string");
+
+	return str.replace(/^\s+|\s+$/g, "");
+}; 

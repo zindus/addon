@@ -1795,9 +1795,49 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 2");
 
-	var aPrimaryEmail = new Object();                          // populated by loadTbExclude*(), aPrimaryEmail[a@b.com] = [ luid1, luid2 ]
+	var foreach_card_functor_gd = null;
 
-	this.loadTbExcludeMailingListsAndDeletionDetection(aUri, aPrimaryEmail);  // 5. exclude mailing lists and their cards
+	if (this.formatPr() == FORMAT_GD)
+		foreach_card_functor_gd = {
+			context: this,
+			m_a_primary_email: new Object(),
+			m_a_empty_contacts: new Object(),
+			run: function(card, id, properties)
+			{
+				var key;
+
+				// remember all the primary email addresses
+				//
+				key = properties['PrimaryEmail'] ? properties['PrimaryEmail'] : "";
+
+				if (!isPropertyPresent(this.m_a_primary_email, key))
+					this.m_a_primary_email[key] = new Array();
+
+				this.m_a_primary_email[key].push(id);
+
+				// identify cards that map to Google contacts with no properties
+				//
+				var gd_properties = ZinContactConverter.instance().convert(FORMAT_GD, FORMAT_TB, properties);
+
+				GdContact.transformProperties(gd_properties);
+
+				this.context.state.m_logger.debug("foreach_card_functor_gd: blah: properties: " + aToString(properties));
+
+				var is_empty = true;
+
+				for (key in gd_properties)
+					if (gd_properties[key] && gd_properties[key].length > 0)
+					{
+						is_empty = false;
+						break;
+					}
+
+				if (is_empty)
+					this.m_a_empty_contacts[id] = aToString(properties);
+			}
+		};
+
+	this.loadTbExcludeMailingListsAndDeletionDetection(aUri, foreach_card_functor_gd);  // 5. exclude mailing lists and their cards
 
 	this.state.stopwatch.mark(state + " 3");
 
@@ -1808,8 +1848,8 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 4: passed: " + passed);
 
-	if (this.formatPr() == FORMAT_GD)
-		passed = passed && this.testForDuplicatePrimaryEmail(aPrimaryEmail);
+	if (foreach_card_functor_gd)
+		passed = passed && this.testForGdProblems(foreach_card_functor_gd);
 
 	this.state.stopwatch.mark(state + " 5: passed: " + passed);
 
@@ -2147,7 +2187,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	return aUri;
 }
 
-SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri, aPrimaryEmail)
+SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri, foreach_card_functor_gd)
 {
 	// when you iterate through cards in an addressbook, you also see cards that are members of mailing lists
 	// and the only way I know of identifying such cards is to iterate to them via a mailing list uri.
@@ -2300,15 +2340,8 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri,
 
 				zfcTb.get(id).set(ZinFeedItem.ATTR_PRES, '1');
 
-				if (this.context.formatPr() == FORMAT_GD && this.context.isInScopeTbLuid(id))
-				{
-					var ape_key = properties['PrimaryEmail'] ? properties['PrimaryEmail'] : "";
-
-					if (!isPropertyPresent(aPrimaryEmail, ape_key))
-						aPrimaryEmail[ape_key] = new Array();
-
-					aPrimaryEmail[ape_key].push(id);
-				}
+				if (foreach_card_functor_gd && this.context.isInScopeTbLuid(id))
+					foreach_card_functor_gd.run(abCard, id, properties);
 			}
 			else
 				msg += " - ignored";
@@ -2406,23 +2439,35 @@ SyncFsm.prototype.testForLegitimateFolderNames = function()
 	return ret;
 }
 
-SyncFsm.prototype.testForDuplicatePrimaryEmail = function(aPrimaryEmail)
+SyncFsm.prototype.testForGdProblems = function(foreach_card_functor_gd)
 {
+	var a_primary_email  = foreach_card_functor_gd.m_a_primary_email;
+	var a_empty_contacts = foreach_card_functor_gd.m_a_empty_contacts;
+
+	this.state.m_logger.debug("testForGdProblems: " + "\n a_primary_email:  " + aToString(a_primary_email) +
+	                                                  "\n a_empty_contacts: " + aToString(a_empty_contacts) );
+
 	var msg_duplicates = "";
 
-	// this.state.m_logger.debug("testForDuplicatePrimaryEmail: aPrimaryEmail: blah: key: " + key + " value: " + aPrimaryEmail[key].toString());
-	this.state.m_logger.debug("testForDuplicatePrimaryEmail: blah: aPrimaryEmail: " + aToString(aPrimaryEmail));
-
-	for (var key in aPrimaryEmail)
-	{
-		if (key != "" && aPrimaryEmail[key].length > 1)
+	for (var key in a_primary_email)
+		if (key != "" && a_primary_email[key].length > 1)
 			msg_duplicates += "\n" + key;
-	}
 
 	if (msg_duplicates.length > 0)
 	{
 		this.state.stopFailCode   = 'FailOnDuplicatePrimaryEmail';
 		this.state.stopFailDetail = "\n" + msg_duplicates + "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/";
+	}
+
+	var msg_empty = "";
+
+	for (var key in a_empty_contacts)
+		msg_empty += "\n" + a_empty_contacts[key];
+
+	if (msg_empty.length > 0)
+	{
+		this.state.stopFailCode   = 'FailOnEmptyContact';
+		this.state.stopFailDetail = "\n" + msg_empty + "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/";
 	}
 
 	return this.state.stopFailCode == null;
@@ -4015,12 +4060,12 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					uri = this.state.m_addressbook.newAddressBook(abName);
 
-					if (!uri || uri.length < 1) // TODO this is for debugging issue #38 - reported by BillM
+					if (!uri || uri.length < 1) // this is for debugging issue #38 - reported by BillM
 						this.state.m_logger.error("bad uri after creating a tb addressbook: msg: " + msg);
 
 					tpi = this.state.m_addressbook.getAddressBookPrefId(uri);
 
-					if (!tpi || tpi.length < 1) // TODO this is for debugging issue #38 - reported by BillM
+					if (!tpi || tpi.length < 1) // this is for debugging issue #38 - reported by BillM
 						this.state.m_logger.error("bad tpi returned after creating an tb addressbook: uri: " + uri + " msg: " + msg);
 
 					luid_target = zfcTarget.get(ZinFeedItem.KEY_AUTO_INCREMENT).increment('next');
@@ -4724,9 +4769,9 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 	{
 		msg += " - soap response didn't match xpath query: " + xpath_query;
 
-		this.state.stopFailCode   = 'FailOnUnableToUpdateZm';
+		this.state.stopFailCode   = 'FailOnUnableToUpdateServer';
 
-		this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateZmDetail1");
+		this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateServerDetail1");
 		this.state.stopFailDetail += " " + remote_update_package.soap.method + " " + aToString(remote_update_package.soap.arg);
 
 		this.state.is_remote_update_problem = true;
@@ -4801,7 +4846,14 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 				contact = this.state.a_gd_contact[luid_target];
 
-				if (isMatchObjects(properties, contact.m_contact))
+				var properties_pre_update = contact.m_contact;
+
+				// convert the properties to a gd contact so that any translations apply to the identity test
+				// eg. Google trims leading/trailing whitespace
+				//
+				contact.updateFromContact(properties);
+
+				if (isMatchObjects(properties_pre_update, contact.m_contact))
 				{
 					zfiTarget  = zfcTarget.get(luid_target);
 					msg       += " the local mod doesn't affect the remote contact - skip remote update";
@@ -4811,8 +4863,6 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				}
 				else
 				{
-					contact.updateFromContact(properties);
-
 					remote.method  = "POST";  // PUT
 					remote.url     = contact.m_meta['edit'];
 					remote.headers = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT");
@@ -4977,11 +5027,27 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 		}
 		else
 		{
-			this.state.stopFailCode   = 'FailOnUnableToUpdateZm';
-			this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateZmDetail1") +
-			                             " " + remote_update_package.remote.method +
-			                             " " + stringBundleString("statusFailOnUnableToUpdateZmDetail2") +
-			                             " " + this.state.m_http.m_http_status_code;
+			this.state.stopFailCode   = 'FailOnUnableToUpdateServer';
+			this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateServerDetail1") +
+			                            " "  + remote_update_package.remote.method +
+			                            " "  + stringBundleString("statusFailOnUnableToUpdateServerDetail2") +
+			                            " "  + this.state.m_http.m_http_status_code;
+
+			if (this.state.m_http.response('text') && this.state.m_http.response('text').length > 0)
+			{
+				this.state.stopFailDetail += "\n" + stringBundleString("statusFailOnUnableToUpdateServerDetail3") +
+				                             " " + this.state.m_http.response('text');
+			}
+
+			var zfiGid      = this.state.zfcGid.get(suo.gid);
+
+			if (zfiGid.isPresent(suo.sourceid_winner))
+			{
+				var luid_winner = zfiGid.get(suo.sourceid_winner);
+				var properties  = this.getContactFromLuid(suo.sourceid_winner, luid_winner, FORMAT_TB);
+				this.state.stopFailDetail += "\n" + stringBundleString("statusFailOnUnableToUpdateServerDetail4") +
+				                             "\n" + aToString(properties);
+			}
 		}
 
 		this.state.is_remote_update_problem = true;
@@ -5510,7 +5576,7 @@ SyncFsm.prototype.entryActionSoapRequest = function(state, event, continuation)
 
 	this.state.cCallsToHttp++;
 
-	this.state.m_logger.debug("soap request: #" + this.state.cCallsToHttp + ": " + soapstate.toStringFiltered());
+	this.state.m_logger.debug("http request: #" + this.state.cCallsToHttp + ": " + soapstate.toStringFiltered());
 
 	soapstate.m_xhr = new XMLHttpRequest();
 	soapstate.m_xhr.onreadystatechange = closureToHandleXmlHttpResponse(context, continuation);
@@ -5804,7 +5870,7 @@ function HttpStateGd(http_method, url, headers, authToken, body, is_evnext_on_er
 	                          'Accept-Language': null,
 							  'Accept-Encoding': null,
 							  'Accept-Charset':  null,
-							  'User-Agent':      null // TODO remove this line
+							  'User-Agent':      null
 							  };
 	var http_headers = new Object();
 	var key;
@@ -5857,7 +5923,7 @@ HttpStateGd.prototype.failCode = function()
 HttpStateGd.prototype.handleResponse = function()
 {
 	var nextEvent;
-	var msg = "HttpStateGd:";
+	var msg = "";
 
 	if (this.response('text'))
 		msg += " response: " + this.response('text');
@@ -5875,9 +5941,7 @@ HttpStateGd.prototype.handleResponse = function()
 	else
 		nextEvent = 'evCancel';
 
-	msg += " nextEvent: " + nextEvent;
-
-	this.m_logger.debug(msg);
+	this.m_logger.debug("HttpStateGd: nextEvent: " + nextEvent + msg);
 
 	return nextEvent;
 }

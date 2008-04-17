@@ -50,15 +50,16 @@ function SyncFsmExitStatus()
 		FailOnFolderNameClash         : { 'hasdetail' : 1 }, // 14. the same folder name entered the namespace from both tb and zm sides
 		FailOnFolderSourceUpdate      : { 'hasdetail' : 1 }, // 15. the source update operations can't be applied with confidence
 		FailOnFolderCantCreateShared  : { 'hasdetail' : 1 }, // 16. 
-		FailOnUnableToUpdateZm        : { 'hasdetail' : 1 }, // 17. soap response in UpdateZm had an unexpected element - assume failure
+		FailOnUnableToUpdateServer    : { 'hasdetail' : 1 }, // 17. couldn't make sense of the http/soap response
 		FailOnNoXpath                 : { 'hasdetail' : 0 }, // 18. 
 		FailOnNoPab                   : { 'hasdetail' : 0 }, // 19. 
 		FailOnMultipleLn              : { 'hasdetail' : 1 }, // 20. 
 		FailOnConflict                : { 'hasdetail' : 1 }, // 21. 
 		FailOnDuplicatePrimaryEmail   : { 'hasdetail' : 1 }, // 22. 
-		FailOnUnauthorized            : { 'hasdetail' : 0 }, // 23. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
-		FailOnHttpStatusCode          : { 'hasdetail' : 1 }, // 24. TODO use this instead of FailOnUnknown ... 
-		FailOnAuthGd                  : { 'hasdetail' : 1 }  // 24. server returned a non 200 status code
+		FailOnEmptyContact            : { 'hasdetail' : 1 }, // 23. 
+		FailOnUnauthorized            : { 'hasdetail' : 0 }, // 24. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnHttpStatusCode          : { 'hasdetail' : 1 }, // 25. TODO use this instead of FailOnUnknown ... 
+		FailOnAuthGd                  : { 'hasdetail' : 1 }  // 26. server returned a non 200 status code
 	};
 }
 
