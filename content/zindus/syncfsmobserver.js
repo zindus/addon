@@ -301,7 +301,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				{
 					es.m_exit_status = 1;
 
-					if (context.state.m_http.isFailed())
+					if (context.state.m_http && context.state.m_http.isFailed())
 					{
 						es.failcode(context.state.m_http.failCode());
 

@@ -226,6 +226,9 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
 	//                                  " properties_from: "       + aToString(properties_from) +
 	//                                  " returns properties_to: " + aToString(properties_to));
+
+	if (format_to == FORMAT_GD)
+		GdContact.transformProperties(properties_to);
 		
 	return properties_to;
 }

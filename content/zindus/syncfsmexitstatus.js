@@ -139,8 +139,3 @@ SyncFsmExitStatus.prototype.asMessage = function(sbsSuccess, sbsFailure)
 
 	return msg;
 }
-
-SyncFsmExitStatus.asMessage = function(context, sbsSuccess, sbsFailure)
-{
-	context.asMessage(sbsSuccess, sbsFailure);
-}

@@ -23,6 +23,7 @@
 
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/timer.js");
+include("chrome://zindus/content/removedatastore.js");
 
 window.addEventListener("load", onLoad, false);
 window.addEventListener("unload", onUnLoad, false);
@@ -159,8 +160,6 @@ ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 
 ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 {
-	context.m_logger.debug("entering scheduleTimer...");
-
 	zinAssert(arguments.length == 1 || arguments.length == 2);
 	zinAssert(context.m_timeoutID == null); // ensures that we never have > 1 oustanding timer
 
@@ -223,9 +222,9 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 
 	var ret = newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", last_sync_date);
 
-	this.m_logger.debug("statusSummary returns: " + "\n" + " now:            " + ret['now'] + "\n" +
-	                                                       " last_sync_date: " + last_sync_date + "\n" +
-	                                                       " next_sync_date: " + next_sync_date );
+	// this.m_logger.debug("statusSummary returns: " + "\n" + " now:            " + ret['now'] + "\n" +
+	//                                                        " last_sync_date: " + last_sync_date + "\n" +
+	//                                                        " next_sync_date: " + next_sync_date );
 
 	return ret;
 }

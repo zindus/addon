@@ -39,6 +39,7 @@
 	<script type="application/x-javascript" src="chrome://zindus/content/logger.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/windowcollection.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/statuspanel.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/removedatastore.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/syncfsm.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/mailwindowoverlay.js" />
 	<!--

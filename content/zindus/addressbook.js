@@ -30,10 +30,16 @@ function ZinAddressBook()
 	this.m_map_name_to_uri = null;
 
 	this.m_logger = newZinLogger("AddressBook");
+
+	// these used to be const but a user is reporting an error on this line:
+	// Error: redeclaration of const kPersonalAddressbookURI Source File: chrome://zindus/content/addressbook.js Line: 36 
+	// Perhaps a file is being included twice or perhaps the name has been defined by another extension the user has installed?
+	// either way, making them class members should fix it.
+	// See issue#51
+	this.kPABDirectory           = 2;                                   // == nsIAbDirectoryProperties.dirType ==> mork address book
+	this.kPersonalAddressbookURI = "moz-abmdbdirectory://abook.mab";    // see: resources/content/abCommon.js
 }
 
-const kPABDirectory           = 2;                                   // == nsIAbDirectoryProperties.dirType ==> mork address book
-const kPersonalAddressbookURI = "moz-abmdbdirectory://abook.mab";    // see: resources/content/abCommon.js
 
 ZinAddressBook.prototype.getAddressBookUri = function(name)
 {
@@ -82,7 +88,7 @@ ZinAddressBook.prototype.forEachAddressBook = function(functor)
 	{
 		var elem = nodes.getNext().QueryInterface(Components.interfaces.nsIAbDirectory);
 
-		if (elem.directoryProperties.dirType == kPABDirectory)
+		if (elem.directoryProperties.dirType == this.kPABDirectory)
 			fContinue = functor.run(elem);
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
@@ -128,7 +134,7 @@ ZinAddressBook.prototype.newAbDirectoryProperties = function(name)
 	                createInstance(Components.interfaces.nsIAbDirectoryProperties);
 
 	abProps.description = name;
-	abProps.dirType     = kPABDirectory;
+	abProps.dirType     = this.kPABDirectory;
 
 	return abProps;
 }
@@ -198,11 +204,11 @@ ZinAddressBook.prototype.addCard = function(uri, properties, attributes)
 	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	var abstractCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].
 	                      createInstance().QueryInterface(Components.interfaces.nsIAbCard);
-	var realCard = dir.addCard(abstractCard);
+	var abCard = dir.addCard(abstractCard);
 
-	this.updateCard(realCard, uri, properties, attributes, FORMAT_TB);
+	this.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
 
-	return realCard;
+	return abCard;
 }
 
 ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attributes, format)
@@ -311,7 +317,7 @@ ZinAddressBook.prototype.setupPab = function()
 	var functor_foreach_addressbook = {
 		run: function(elem) {
 
-			if (elem.directoryProperties.URI == kPersonalAddressbookURI)
+			if (elem.directoryProperties.URI == this.kPersonalAddressbookURI)
 			{
 				pabByUri      = new Object();
 				pabByUri.uri  = elem.directoryProperties.URI;

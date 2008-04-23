@@ -271,14 +271,20 @@ GdContact.prototype.fieldModDel = function(node, attribute, a_field, key, a_fiel
 		this.setNode(node, attribute, a_field, key, a_field_used);
 }
 
-// Currently the only transformation is to trim leading and trailing whitespace.
-// Google would do this when it receives the properties regardless.
-// But we do it before sending to allow us to do simple common-case error detection locally and avoid network latency.
+// Google applies transformations to a contact when they are created or updated at Google:
+// - trim leading and trailing whitespace.
+// - lowercase email addresses
+// We apply these transformation before sending to Google so that we can do common-case error detection locally and avoid network latency.
 //
 GdContact.transformProperties = function(properties)
 {
 	for (key in properties)
+	{
 		properties[key] = trim(properties[key]);
+	
+		if (key == "PrimaryEmail" || key == "SecondEmail")
+			properties[key] = properties[key].toLowerCase();
+	}
 }
 
 GdContact.prototype.updateFromContact = function(contact)
@@ -291,7 +297,7 @@ GdContact.prototype.updateFromContact = function(contact)
 
 	this.m_logger.debug("updateFromContact: contact: " + aToString(contact));
 
-	GdContact.transformProperties(a_field);
+	// GdContact.transformProperties(a_field);
 
 	var functor = {
 		run: function(node, key)

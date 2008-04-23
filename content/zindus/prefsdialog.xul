@@ -54,7 +54,7 @@
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<tabbox id="zindus-prefs-tabbox" orient="vertical" flex="1" > <!-- selectedIndex="1"  -->
+	<tabbox id="zindus-prefs-tabbox" orient="vertical" flex="1" > <!-- style="font-weight: bold; font-size: large;" selectedIndex="1" -->
 		<tabs>
 			<tab id="zindus-prefs-tab-server"  label="&ZinPrefsTabServer.label;"  />
 			<tab id="zindus-prefs-tab-general" label="&ZinPrefsTabGeneral.label;" />

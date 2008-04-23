@@ -35,14 +35,14 @@ function SyncWindow()
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
-	this.m_logger    = newZinLogger("SyncWindow"); this.m_logger.level(ZinLogger.NONE);
+	this.m_logger    = newZinLogger("SyncWindow"); // this.m_logger.level(ZinLogger.NONE); // enabled logging for issue #50
 
 	this.m_has_observer_been_called = false;
 }
 
 SyncWindow.prototype.onLoad = function()
 {
-	this.m_logger.debug("onLoad: starts: " + getTime() + "\n");
+	this.m_logger.debug("onLoad: enters");
 
 	this.m_payload = window.arguments[0];
 	this.m_sfo       = new SyncFsmObserver(this.m_payload.m_es);
@@ -51,30 +51,30 @@ SyncWindow.prototype.onLoad = function()
 	var listen_to = zinCloneObject(ZinMaestro.FSM_GROUP_SYNC);
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
 
-	this.m_logger.debug("onLoad: exiting");
+	this.m_logger.debug("onLoad: exits");
 }
 
 SyncWindow.prototype.onAccept = function()
 {
-	this.m_logger.debug("onAccept: before unregister...");
+	this.m_logger.debug("onAccept: enters");
 
 	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_SYNCWINDOW);
 
-	this.m_logger.debug("onAccept: after unregister...");
+	this.m_logger.debug("onAccept: exits");
 
 	return true;
 }
 
 SyncWindow.prototype.onCancel = function()
 {
-	this.m_logger.debug("onCancel: entered");
+	this.m_logger.debug("onCancel: enters");
 			
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
 	this.m_syncfsm.cancel(this.m_timeoutID);
 
-	this.m_logger.debug("onCancel: exited");
+	this.m_logger.debug("onCancel: exits");
 
 	return false;
 }

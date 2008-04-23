@@ -174,6 +174,7 @@ Prefs.prototype.onHelp = function(url)
 Prefs.prototype.onCommand = function(id_target)
 {
 	this.m_logger.debug("onCommand: target: " + id_target);
+	var msg = "";
 
 	switch(id_target)
 	{
@@ -187,19 +188,18 @@ Prefs.prototype.onCommand = function(id_target)
 									document.getElementById("zindus-prefs-server-password").value );
 			payload.m_es = new SyncFsmExitStatus();
 
-			var win = window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
+			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
 
-			var exitStatus = payload.m_result;
-
-			if (payload.m_es.m_exit_status != 0)
+			if (payload.m_es.m_exit_status == null)
 			{
-				msg = payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
-
-				if (msg == "")
-					msg = "sync failed - no detail available";
-
-				alert(msg);
+				gLogger.debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
+				msg = stringBundleString("statusSyncFailedUnexpectedly");
 			}
+			else if (payload.m_es.m_exit_status != 0)
+				msg = payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
+			
+			if (msg != "")
+				alert(msg);
 
 			break;
 
@@ -213,12 +213,19 @@ Prefs.prototype.onCommand = function(id_target)
 									document.getElementById("zindus-prefs-server-password").value );
 			payload.m_es = new SyncFsmExitStatus();
 
-			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
+			window.openDialog("chrome://zindus/content/syncwindow.xul", "_blank", "chrome", payload);
 
-			msg = payload.m_es.asMessage("statusAuthSucceeded", "statusAuthFailed");
+			gLogger.debug("Prefs.onCommand: after openDialog: payload.m_es: " + payload.m_es.toString());
 
-			if (msg != "")
-				alert(msg);
+			if (payload.m_es.m_exit_status == null)
+			{
+				gLogger.debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
+				msg = stringBundleString("statusSyncFailedUnexpectedly");
+			}
+			else
+				msg = payload.m_es.asMessage("statusAuthSucceeded", "statusAuthFailed");
+
+			alert(msg);
 
 			break;
 

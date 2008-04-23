@@ -1343,7 +1343,8 @@ SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
 
 SyncFsm.prototype.entryActionGetContactPuZm = function(state, event, continuation)
 {
-	var sourceid, indexSuo, msg;
+	var sourceid, indexSuo, bucket, msg;
+	var zfcGid = this.state.zfcGid;
 
 	if (!this.state.is_done_get_contacts_pu)
 	{
@@ -1355,14 +1356,20 @@ SyncFsm.prototype.entryActionGetContactPuZm = function(state, event, continuatio
 			var zfc    = this.state.sources[sourceid]['zfcLuid'];
 
 			if (format == FORMAT_ZM)
-				for (indexSuo in this.state.aSuo[sourceid][Suo.DEL | ZinFeedItem.TYPE_CN])
-				{
-					suo         = this.state.aSuo[sourceid][Suo.DEL | ZinFeedItem.TYPE_CN][indexSuo];
-					luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+				for (bucket in this.state.aSuo[sourceid])
+					for (indexSuo in this.state.aSuo[sourceid][bucket])
+					{
+						suo = this.state.aSuo[sourceid][bucket][indexSuo];
 
-					if (zfc.get(luid_target).isForeign())
-						this.state.aContact.push(new Zuio(zfc.get(luid_target).key()));
-				}
+						if (zfcGid.get(suo.gid).isPresent(suo.sourceid_target))
+						{
+							luid_target = zfcGid.get(suo.gid).get(suo.sourceid_target);
+
+							if (bucket == (Suo.MOD | ZinFeedItem.TYPE_CN) ||
+							   (bucket == (Suo.DEL | ZinFeedItem.TYPE_CN) && zfc.get(luid_target).isForeign()))
+								this.state.aContact.push(new Zuio(zfc.get(luid_target).key()));
+						}
+					}
 		}
 
 		this.state.is_done_get_contacts_pu = true;
@@ -1818,10 +1825,6 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 				// identify cards that map to Google contacts with no properties
 				//
 				var gd_properties = ZinContactConverter.instance().convert(FORMAT_GD, FORMAT_TB, properties);
-
-				GdContact.transformProperties(gd_properties);
-
-				this.context.state.m_logger.debug("foreach_card_functor_gd: blah: properties: " + aToString(properties));
 
 				var is_empty = true;
 
@@ -2326,7 +2329,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri,
 						if (keyParent != aUri[uri])
 							reason += " parent folder changed: l:" + keyParent + " aUri[uri]: " + aUri[uri];
 						if (zfi.get(ZinFeedItem.ATTR_CS) != checksum)
-							reason += " checksum changed: cs: " + zfi.get(ZinFeedItem.ATTR_CS) + " checksum: " + checksum;
+							reason += " checksum changed: ATTR_CS: " + zfi.get(ZinFeedItem.ATTR_CS) + " checksum: " + checksum;
 
 						zfi.set(ZinFeedItem.ATTR_CS, checksum);
 						zfi.set(ZinFeedItem.ATTR_L, aUri[uri]);
@@ -2486,7 +2489,7 @@ SyncFsm.addToGid = function(zfcGid, sourceid, luid, reverse)
 
 SyncFsm.prototype.twinInGid = function(sourceid, luid, sourceid_tb, luid_tb, reverse)
 {
-	var zfcGid  = this.state.zfcGid;
+	var zfcGid = this.state.zfcGid;
 
 	zinAssertAndLog(isPropertyPresent(reverse[sourceid_tb], luid_tb), "sourceid_tb: " + sourceid_tb + " luid_tb: " + luid_tb);
 
@@ -2577,6 +2580,9 @@ SyncFsm.prototype.updateGidDoChecksums = function()
 
 				if (properties) // a card with no properties will never be part of a twin so don't bother
 				{
+					if (this.context.formatPr() == FORMAT_GD)
+						GdContact.transformProperties(properties);
+						
 					checksum = ZinContactConverter.instance().crc32(properties);
 					var key = hyphenate('-', sourceid, name_parent, checksum);
 
@@ -2873,9 +2879,17 @@ SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b)
 	var is_twin = (length_a == length_b);
 
 	if (is_twin)
+	{
+		if (this.formatPr() == FORMAT_GD)
+		{
+			GdContact.transformProperties(properties_a);
+			GdContact.transformProperties(properties_b);
+		}
+
 		for (var i in properties_a)
 			if (isPropertyPresent(properties_b, i) && properties_a[i] == properties_b[i])
 				count_match++;
+	}
 
 	is_twin = length_a == count_match;
 
@@ -4127,7 +4141,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					{
 						msg += " setting card to: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, format_winner);
+						abCard = this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, format_winner);
 					}
 					else
 						msg += " couldn't find the card to modify by searching on luid.  It's possible that it was deleted between now and the start of sync but it may also indicate a problem.";
@@ -4162,16 +4176,26 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 						msg += " - card deleted - card added: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-						this.state.m_addressbook.addCard(uri_to, properties, attributes);
+						abCard = this.state.m_addressbook.addCard(uri_to, properties, attributes);
 					}
 				}
 
 				if (abCard)
 				{
-					zinAssert(properties);
-					var checksum    = ZinContactConverter.instance().crc32(properties);
+					// This doesn't work when the card got added above, through the card did get added correctly
+					// because the .lookupCard is unabled to find the card based on a search by TBCARD_ATTRIBUTE_LUID
+					// I'm almost certain this is yet another race condition in the Mork Addressbook code.
+					// because on the next sync, the TBCARD_ATTRIBUTE_LUID attribute is correnct.
+					// So instead, we remember abCard from above, rather than looking it up again.  More efficient too.
+					// leni - Wed Apr 23 18:14:09 AUSEST 2008
+					// properties   = this.getContactFromLuid(sourceid_target, luid_target, FORMAT_TB);
+					//
+					properties   = this.state.m_addressbook.getCardProperties(abCard);
+					var checksum = ZinContactConverter.instance().crc32(properties);
 					zfcTarget.set(new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, luid_target,
 					                       ZinFeedItem.ATTR_CS, checksum, ZinFeedItem.ATTR_L, l_target));
+
+					this.state.m_logger.debug("MOD: blah: issue #53: new checksum stored in map: " + checksum + " where properties: " + aToString(properties));
 				}
 				else
 				{
@@ -4863,7 +4887,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				}
 				else
 				{
-					remote.method  = "POST";  // PUT
+					remote.method  = "POST";  // POST // PUT
 					remote.url     = contact.m_meta['edit'];
 					remote.headers = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT");
 					remote.body    = contact.toStringXml();
@@ -4920,8 +4944,6 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 {
-	this.state.m_logger.debug("exitActionUpdateGd: blah: top.");
-
 	if (!this.state.m_http || event == "evCancel")
 		return;
 
@@ -4935,7 +4957,7 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 
 	this.state.m_logger.debug("exitActionUpdateGd: " + remote_update_package.remote.method + " " + remote_update_package.remote.url);
 
-	if (this.state.m_http.is_http_status_success())
+	if (this.state.m_http.is_http_status(HTTP_STATUS_2xx))
 		switch(remote_update_package.bucket)
 		{
 			case Suo.ADD | ZinFeedItem.TYPE_CN:
@@ -5671,7 +5693,7 @@ function HttpState(http_method, url, http_headers, logger)
 
 HttpState.prototype.isFailed = function()
 {
-	return this.isPostResponse() && (!this.is_http_status_success());
+	return this.isPostResponse() && (!this.is_http_status(HTTP_STATUS_2xx));
 }
 
 HttpState.prototype.isPostResponse = function()
@@ -5686,9 +5708,10 @@ HttpState.prototype.isPreResponse = function()
 	return (this.response() == null) && (this.m_http_status_code == null);
 }
 
-HttpState.prototype.is_http_status_success = function()
+HttpState.prototype.is_http_status = function(range)
 {
-	return (this.m_http_status_code >= HTTP_STATUS_200_OK && this.m_http_status_code <= 299);
+	zinAssert(range > 0);
+	return (this.m_http_status_code >= range && this.m_http_status_code <= range + 99);
 }
 
 HttpState.prototype.response = function(style)
@@ -5750,11 +5773,13 @@ HttpStateZm.prototype.failCode = function()
 
 	zinAssertAndLog(this.m_xhr && this.isFailed(), "HttpState: " + this.toString()); // don't come in here unless we've failed...
 
-	if (this.is_cancelled)                     ret = 'FailOnCancel';
-	else if (this.is_mismatched_response)      ret = 'FailOnMismatchedResponse';
-	else if (this.m_fault_element_xml != null) ret = 'FailOnFault';
-	else if (this.is_http_status_success())    ret = 'FailOnService';
-	else                                       ret = 'FailOnUnknown';  // this really is unknown
+	if (this.is_cancelled)                         ret = 'FailOnCancel';
+	else if (this.is_mismatched_response)          ret = 'FailOnMismatchedResponse';
+	else if (this.m_fault_element_xml != null)     ret = 'FailOnFault';
+	else if (this.is_http_status(HTTP_STATUS_5xx) ||
+	         (http.m_http_status_code == HTTP_STATUS_ON_SERVICE_FAILURE))
+	                                               ret = 'FailOnService';
+	else                                           ret = 'FailOnUnknown';  // this really is unknown
 
 	if (ret == 'FailOnUnknown')
 		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
@@ -5909,10 +5934,11 @@ HttpStateGd.prototype.failCode = function()
 
 	zinAssertAndLog(this.m_xhr && this.isFailed(), "HttpState: " + this.toString()); // don't come in here unless we've failed...
 
-	if (this.is_cancelled)                                            ret = 'FailOnCancel';
-	else if (this.m_http_status_code == HTTP_STATUS_401_UNAUTHORIZED) ret = 'FailOnUnauthorized';
-	else if (this.is_http_status_success())                           ret = 'FailOnService';
-	else                                                              ret = 'FailOnUnknown';  // this really is unknown
+	if (this.is_cancelled)                                                ret = 'FailOnCancel';
+	else if (this.m_http_status_code == HTTP_STATUS_401_UNAUTHORIZED)     ret = 'FailOnUnauthorized';
+	else if (this.is_http_status(HTTP_STATUS_5xx) ||
+	         (http.m_http_status_code == HTTP_STATUS_ON_SERVICE_FAILURE)) ret = 'FailOnService';
+	else                                                                  ret = 'FailOnUnknown';  // this really is unknown
 
 	if (ret == 'FailOnUnknown')
 		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
@@ -5934,7 +5960,7 @@ HttpStateGd.prototype.handleResponse = function()
 
 	if (this.is_cancelled)
 		nextEvent = 'evCancel';
-	else if (this.is_http_status_success())
+	else if (this.is_http_status(HTTP_STATUS_2xx))
 		nextEvent = 'evNext';
 	else if (this.is_evnext_on_error)
 		nextEvent = 'evNext';
