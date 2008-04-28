@@ -213,6 +213,8 @@ Prefs.prototype.onCommand = function(id_target)
 									document.getElementById("zindus-prefs-server-password").value );
 			payload.m_es = new SyncFsmExitStatus();
 
+			gLogger.debug("Prefs.onCommand: before openDialog: payload.m_es: " + payload.m_es.toString());
+
 			window.openDialog("chrome://zindus/content/syncwindow.xul", "_blank", "chrome", payload);
 
 			gLogger.debug("Prefs.onCommand: after openDialog: payload.m_es: " + payload.m_es.toString());

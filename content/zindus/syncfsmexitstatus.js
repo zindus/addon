@@ -54,12 +54,12 @@ function SyncFsmExitStatus()
 		FailOnNoXpath                 : { 'hasdetail' : 0 }, // 18. 
 		FailOnNoPab                   : { 'hasdetail' : 0 }, // 19. 
 		FailOnMultipleLn              : { 'hasdetail' : 1 }, // 20. 
-		FailOnConflict                : { 'hasdetail' : 1 }, // 21. 
-		FailOnDuplicatePrimaryEmail   : { 'hasdetail' : 1 }, // 22. 
-		FailOnEmptyContact            : { 'hasdetail' : 1 }, // 23. 
+		FailOnGdConflict1             : { 'hasdetail' : 1 }, // 21. 
+		FailOnGdConflict2             : { 'hasdetail' : 1 }, // 21. 
+		FailOnGdConflict3             : { 'hasdetail' : 1 }, // 22. 
+		FailOnGdEmptyContact          : { 'hasdetail' : 1 }, // 23. 
 		FailOnUnauthorized            : { 'hasdetail' : 0 }, // 24. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
-		FailOnHttpStatusCode          : { 'hasdetail' : 1 }, // 25. TODO use this instead of FailOnUnknown ... 
-		FailOnAuthGd                  : { 'hasdetail' : 1 }  // 26. server returned a non 200 status code
+		FailOnAuthGd                  : { 'hasdetail' : 1 }  // 25. server returned a non 200 status code
 	};
 }
 

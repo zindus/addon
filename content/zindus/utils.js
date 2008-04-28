@@ -132,8 +132,6 @@ function stringBundleString(id_string, args)
 
 	if (stringbundle == null)
 	{
-		zinAssertAndLog(false, "document id: " + document.id); // TODO remove me
-
 		ret = "Unable to load string-bundle: " + string_bundle_id;
 
 		if (typeof(gLogger) == 'object' && typeof(gLogger.error) == 'function')
@@ -620,10 +618,25 @@ function arrayfromArguments(args, start_at)
 // Trim leading and trailing whitespace from a string.
 // http://javascript.crockford.com/remedial.html
 
-function trim (str)
+function zinTrim (str)
 {
 	zinAssert(str);
 	zinAssert(typeof(str) == "string");
 
 	return str.replace(/^\s+|\s+$/g, "");
 }; 
+
+// Javascript doesn't have a native sleep
+// this is a workaround
+// Handy during testing...
+//
+function zinSleep(milliseconds)
+{
+	var start = new Date();
+	var current = null;
+
+	do {
+		current = new Date();
+	}
+	while (current - start < milliseconds);
+} 

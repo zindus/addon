@@ -35,9 +35,11 @@ function SyncWindow()
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
-	this.m_logger    = newZinLogger("SyncWindow"); // this.m_logger.level(ZinLogger.NONE); // enabled logging for issue #50
+	this.m_logger    = newZinLogger("SyncWindow"); // this.m_logger.level(ZinLogger.NONE); // logging enabled for issue #50
 
 	this.m_has_observer_been_called = false;
+
+	this.m_logger.debug("constructed");
 }
 
 SyncWindow.prototype.onLoad = function()
@@ -45,7 +47,7 @@ SyncWindow.prototype.onLoad = function()
 	this.m_logger.debug("onLoad: enters");
 
 	this.m_payload = window.arguments[0];
-	this.m_sfo       = new SyncFsmObserver(this.m_payload.m_es);
+	this.m_sfo     = new SyncFsmObserver(this.m_payload.m_es);
 	this.m_syncfsm = this.m_payload.m_syncfsm;
 
 	var listen_to = zinCloneObject(ZinMaestro.FSM_GROUP_SYNC);
@@ -92,15 +94,27 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		}
 	};
 
-	if (!this.m_has_observer_been_called)
+	// Strictly speaking, fsmstate should be null on first call to observer because the 'sync now' button is disabled when the fsm
+	// is running.  But there is a race condition because the timer can fire and start in between 'sync now' and here.
+	// especially because the addressbooks gets iterated through in the SyncFsmState constructor (which takes a bunch of time).
+	// Fixing the race condition would require reworking the notification mechanism via the fsm+maestro
+	// So here, if the timer got in first, we just abort the 'Sync Now'.
+	// Do we want to create a specific error condition for this?  Perhaps it'd be better to fix the condition
+	// eg by altering the notification framework so that PrefsDialog can forestall the Timer immediately (while processing the click).
+	//
+	if (!this.m_has_observer_been_called && fsmstate != null)
 	{
-		// fsmstate should be null on first call to observer because the 'sync now' button should be disabled if the fsm is running
-		//
-		zinAssert(fsmstate == null);
+		this.m_logger.debug("functor: timer got in between 'Sync Now' and this window - aborting");
+
+		document.getElementById('zindus-syncwindow').acceptDialog();
+	}
+	else if (!this.m_has_observer_been_called)
+	{
+		// zinAssert(fsmstate == null);
 
 		this.m_has_observer_been_called = true;
 
-		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm + "\n");
+		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm);
 
 		this.m_zwc.populate();
 

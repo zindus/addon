@@ -38,7 +38,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	ret = ret && this.testContactConverter();
+	// ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook();
 	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testPermFromZfi();
@@ -47,6 +47,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testGoogleContacts();
+	// ret = ret && this.testGoogleContacts2();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -474,6 +475,16 @@ ZinTestHarness.prototype.testAddressBook = function()
 	// var pabname = addressbook.getPabName();
 
 	return true;
+}
+
+ZinTestHarness.prototype.testGoogleContacts2 = function()
+{
+	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/username%40@gmail.com/base/7ae485588d2b6b50</id><updated>2008-04-26T01:58:35.904Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>77</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50/1209175115904000'/><gd:email rel='http://schemas.google.com/g/2005#other' address='77@example.com' primary='true'/></entry>"
+	var domparser = new DOMParser();
+	var response = domparser.parseFromString(xmlString, "text/xml");
+	var a_gd_contact = GdContact.arrayFromXpath(response, "/atom:entry");
+	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + aToLength(a_gd_contact));
+	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
 }
 
 ZinTestHarness.prototype.testGoogleContacts = function()

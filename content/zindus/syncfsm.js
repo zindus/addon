@@ -270,7 +270,19 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 {
 	var nextEvent = null;
 
-	this.state.stopwatch.mark(state);
+	this.state.stopwatch.mark(state + " 1");
+
+	// The first call to .getPabName() iterates through the thunderbird addressbooks, and the first load of the Mork addressbooks
+	// can take *ages* (easily 5-6 seconds).
+	// The addon currently has a race condition around the start of the timer vs start of 'Sync Now'. (see the comment in syncwindow.js).
+	// The condition gets detected and an error reported. 
+	// Putting .getPabName() here rather than the SyncFsmState constructor shrinks the size of the window of time in which this
+	// race condition can emerge.
+	// 
+
+	this.state.m_folder_converter.localised_pab(this.state.m_addressbook.getPabName());
+
+	this.state.stopwatch.mark(state + " 2");
 
 	if (event == 'evCancel')
 		nextEvent = 'evCancel';
@@ -380,7 +392,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	// 2. all the files exist and have integrity          ==> continue   and nextEvent == evNext
 	// 3. some files don't exist or don't have integrity  ==> continue   and nextEvent == evLackIntegrity (user is notified)
 	//
-	this.state.stopwatch.mark("entryActionAuth");
+	this.state.stopwatch.mark(state);
 
 	var nextEvent = null;
 	var cExist;
@@ -1637,8 +1649,6 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 		var element;
 
-		// TODO pretty sure the use of checksum here below is redundant since the change to GAL handling - remove it
-		//
 		for (var i in this.state.aSyncGalContact)
 		{
 			// First, we remove Zimbra <cn> properties that don't map to a thunderbird property because...
@@ -1653,18 +1663,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 			ZinContactConverter.instance().removeKeysNotCommonToAllFormats(FORMAT_ZM, this.state.aSyncGalContact[i].element);
 
 			var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncGalContact[i].element);
-
-			this.state.aSyncGalContact[i].checksum = ZinContactConverter.instance().crc32(properties);
 		}
-
-		// Here, the logic is:
-		// 1. if SyncGalTokenInRequest was null, then we 
-		//    - flush cards out of the GAL address book that don't match cards in the contacts received from zimbra and
-		//      if there's a match, mark the corresponding zimbra contact so that it doesn't get added again below
-		//      ... by "match", we mean the id and the checksum are the same
-		//    else (SyncGalTokenInRequest != null)
-		//    - any cards in Tb with the same id as cards in the SyncGalResponse are overwritten
-		// 2. any new cards in the response that aren't in Tb are added
 
 		if (this.state.SyncGalTokenInRequest == null)
 		{
@@ -1678,11 +1677,11 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 			// 3. populate aAdd with the remainder
 			// But ... for reasons I don't understand (see issue #31), every now and again, the deleteCards() method
 			// would simply hang - ie fail to return.  Several users reported this and it happened
-			// to me once too.  I could never reproduce it.  This approach avoids using deleteCards() entirely.
-			// deleteCards() also gets called by UpdateTb but it never seems to hang when called from there, perhaps
+			// to me once too.  I could never reproduce it.  The GAL code now avoids using deleteCards() entirely.
+			// deleteCards() gets called by UpdateTb but it never seems to hang when called from there, perhaps
 			// because the array only ever contains a single element when called from there - but this is only speculation.
-			// I notice that the interface to deleteCards() has changed in Tbv3 - perhaps some bugs have been cleaned up
-			// or perhaps it was a mork garbage-collection issue - it's impossible to tell.
+			// The Mork addressbook code contains all sorts of race conditions - the previous GAL code by processing a bunch of cards
+			// one after another may have triggered something, whereas the updateTb code has an fsm state change between each operation.
 			// leni - Wed Feb 27 11:30:36 AUSEDT 2008
 
 			this.state.m_addressbook.deleteAddressBook(uri);
@@ -1711,7 +1710,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 					{
 						zc = this.state.aSyncGalContact[index];
 
-						attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
+						attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id);
 						properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
 						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, FORMAT_ZM);
@@ -1734,7 +1733,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 		{
 			zc = this.state.aSyncGalContact[aAdd[i]];
 
-			attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id, TBCARD_ATTRIBUTE_CHECKSUM, zc.checksum);
+			attributes = newObject(TBCARD_ATTRIBUTE_LUID, zc.attribute.id);
 			properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_ZM, zc.element);
 
 			this.state.m_logger.debug("entryActionGalCommit: adding aSyncGalContact[" + aAdd[i] + "]: " +
@@ -1802,30 +1801,40 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 2");
 
-	var foreach_card_functor_gd = null;
-
 	if (this.formatPr() == FORMAT_GD)
-		foreach_card_functor_gd = {
+		this.state.gd_foreach_tb_card_functor = {
 			context: this,
-			m_a_primary_email: new Object(),
+			m_a_email_luid:  new Object(),
 			m_a_empty_contacts: new Object(),
+			add_email: function(properties, key, id)
+			{
+				var email;
+
+				if (isPropertyPresent(properties, key))
+				{
+					email = properties[key];
+
+					if (!isPropertyPresent(this.m_a_email_luid, email))
+						this.m_a_email_luid[email] = Array();
+
+					this.m_a_email_luid[email].push(id);
+				}
+
+			},
 			run: function(card, id, properties)
 			{
 				var key;
+				var gd_properties = ZinContactConverter.instance().convert(FORMAT_GD, FORMAT_TB, properties);
 
-				// remember all the primary email addresses
+				GdContact.transformProperties(gd_properties);
+
+				// remember the luid(s) for each (primary and secondary) email addresses
 				//
-				key = properties['PrimaryEmail'] ? properties['PrimaryEmail'] : "";
-
-				if (!isPropertyPresent(this.m_a_primary_email, key))
-					this.m_a_primary_email[key] = new Array();
-
-				this.m_a_primary_email[key].push(id);
+				this.add_email(gd_properties, 'PrimaryEmail', id);
+				this.add_email(gd_properties, 'SecondEmail',  id);
 
 				// identify cards that map to Google contacts with no properties
 				//
-				var gd_properties = ZinContactConverter.instance().convert(FORMAT_GD, FORMAT_TB, properties);
-
 				var is_empty = true;
 
 				for (key in gd_properties)
@@ -1840,7 +1849,7 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 			}
 		};
 
-	this.loadTbExcludeMailingListsAndDeletionDetection(aUri, foreach_card_functor_gd);  // 5. exclude mailing lists and their cards
+	this.loadTbExcludeMailingListsAndDeletionDetection(aUri);  // 5. exclude mailing lists and their cards
 
 	this.state.stopwatch.mark(state + " 3");
 
@@ -1851,8 +1860,8 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 4: passed: " + passed);
 
-	if (foreach_card_functor_gd)
-		passed = passed && this.testForGdProblems(foreach_card_functor_gd);
+	if (this.state.gd_foreach_tb_card_functor)
+		passed = passed && this.testForGdProblems();
 
 	this.state.stopwatch.mark(state + " 5: passed: " + passed);
 
@@ -2190,7 +2199,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	return aUri;
 }
 
-SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri, foreach_card_functor_gd)
+SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 {
 	// when you iterate through cards in an addressbook, you also see cards that are members of mailing lists
 	// and the only way I know of identifying such cards is to iterate to them via a mailing list uri.
@@ -2343,8 +2352,8 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri,
 
 				zfcTb.get(id).set(ZinFeedItem.ATTR_PRES, '1');
 
-				if (foreach_card_functor_gd && this.context.isInScopeTbLuid(id))
-					foreach_card_functor_gd.run(abCard, id, properties);
+				if (this.state.gd_foreach_tb_card_functor && this.context.isInScopeTbLuid(id))
+					this.state.gd_foreach_tb_card_functor.run(abCard, id, properties);
 			}
 			else
 				msg += " - ignored";
@@ -2442,24 +2451,34 @@ SyncFsm.prototype.testForLegitimateFolderNames = function()
 	return ret;
 }
 
-SyncFsm.prototype.testForGdProblems = function(foreach_card_functor_gd)
+SyncFsm.prototype.testForGdProblems = function()
 {
-	var a_primary_email  = foreach_card_functor_gd.m_a_primary_email;
-	var a_empty_contacts = foreach_card_functor_gd.m_a_empty_contacts;
+	var a_email_luid     = this.state.gd_foreach_tb_card_functor.m_a_email_luid;
+	var a_empty_contacts = this.state.gd_foreach_tb_card_functor.m_a_empty_contacts;
 
-	this.state.m_logger.debug("testForGdProblems: " + "\n a_primary_email:  " + aToString(a_primary_email) +
+	this.state.m_logger.debug("testForGdProblems: " + "\n a_email_luid:     " + aToString(a_email_luid) +
 	                                                  "\n a_empty_contacts: " + aToString(a_empty_contacts) );
 
 	var msg_duplicates = "";
 
-	for (var key in a_primary_email)
-		if (key != "" && a_primary_email[key].length > 1)
-			msg_duplicates += "\n" + key;
+	var count = 0;
+
+	for (var email in a_email_luid)
+		if (email != "" && a_email_luid[email].length > 1)
+		{
+			if (count++ > 5)
+				break;
+
+			msg_duplicates += this.testForGdEmailAppearsIn(email,
+			             'Thunderbird', this.getContactPrimaryEmailFromLuid(this.state.sourceid_tb, a_email_luid[email][0]),
+			             'Thunderbird', this.getContactPrimaryEmailFromLuid(this.state.sourceid_tb, a_email_luid[email][1]));
+		}
 
 	if (msg_duplicates.length > 0)
 	{
-		this.state.stopFailCode   = 'FailOnDuplicatePrimaryEmail';
-		this.state.stopFailDetail = "\n" + msg_duplicates + "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/";
+		this.state.stopFailCode   = 'FailOnGdConflict1';
+		this.state.stopFailDetail = "\n" + msg_duplicates;
+		this.state.stopFailDetail += "\n\n" + stringBundleString("statusFailOnGdSeeFaq");
 	}
 
 	var msg_empty = "";
@@ -2469,11 +2488,95 @@ SyncFsm.prototype.testForGdProblems = function(foreach_card_functor_gd)
 
 	if (msg_empty.length > 0)
 	{
-		this.state.stopFailCode   = 'FailOnEmptyContact';
-		this.state.stopFailDetail = "\n" + msg_empty + "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/";
+		this.state.stopFailCode   = 'FailOnGdEmptyContact';
+		this.state.stopFailDetail = "\n" + msg_empty;
+		this.state.stopFailDetail += "\n\n" + stringBundleString("statusFailOnGdSeeFaq");
 	}
 
 	return this.state.stopFailCode == null;
+}
+
+SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
+{
+	zinAssert(this.state.isSlowSync);
+
+	var zfcGid = this.state.zfcGid;
+	var a_gd_email = new Object();
+	var a_tb_email = new Object();
+	var a_conflict = new Object();
+	var email;
+
+	var functor = {
+		state: this.state,
+
+		add_email: function(key, luid, gid)
+		{
+			if (isPropertyPresent(this.state.a_gd_contact[luid].m_contact, key))
+				a_gd_email[this.state.a_gd_contact[luid].m_contact[key]] = gid;
+		},
+		run: function(zfi)
+		{
+			var luid = zfi.key();
+
+			if (zfi.type() == ZinFeedItem.TYPE_CN)
+			{
+				var gid = this.state.aReverseGid[this.state.sourceid_pr][luid];
+
+				var zfiGid = zfcGid.get(gid);
+
+				this.add_email('PrimaryEmail', luid, gid);
+				this.add_email('SecondEmail',  luid, gid);
+			}
+
+			return true;
+		}
+	};
+
+	this.zfcPr().forEach(functor);
+
+	var a_email_luid = this.state.gd_foreach_tb_card_functor.m_a_email_luid;
+
+	for (email in a_email_luid)
+		a_tb_email[email] = this.state.aReverseGid[this.state.sourceid_tb][a_email_luid[email][0]];
+	
+	for (email in a_gd_email)
+		if (isPropertyPresent(a_tb_email, email) && a_gd_email[email] != a_tb_email[email])
+			a_conflict[email] = true;
+
+	this.state.m_logger.debug("testForGdRemoteConflictOnSlowSync: a_conflict: " + aToString(a_conflict));
+	this.state.m_logger.debug("testForGdRemoteConflictOnSlowSync: a_gd_email: " + aToString(a_gd_email));
+	this.state.m_logger.debug("testForGdRemoteConflictOnSlowSync: a_tb_email: " + aToString(a_tb_email));
+
+	if (aToLength(a_conflict) > 0)
+	{
+		this.state.stopFailCode   = 'FailOnGdConflict2';
+		this.state.stopFailDetail = "\n\n" + stringBundleString("statusFailOnGdConflictDetail");
+		
+		var count = 0;
+		for (email in a_conflict)
+		{
+			if (count++ > 5)
+				break;
+
+			var luid_gd = zfcGid.get(a_gd_email[email]).get(this.state.sourceid_pr);
+			this.state.stopFailDetail += this.testForGdEmailAppearsIn(email,
+			             'Thunderbird', this.getContactPrimaryEmailFromLuid(this.state.sourceid_tb, a_email_luid[email][0]),
+			             'Google',      this.getContactPrimaryEmailFromLuid(this.state.sourceid_pr, luid_gd));
+		}
+		
+		this.state.stopFailDetail += "\n\n" + stringBundleString("statusFailOnGdSeeFaq");
+	}
+
+	return this.state.stopFailCode == null;
+}
+
+SyncFsm.prototype.testForGdEmailAppearsIn = function(email, source1, email_primary1, source2, email_primary2)
+{
+	var ret = "\n\n";
+	ret += "         " + email + " " + stringBundleString("statusFailMsgGdConflictAppearsIn") + "\n";
+	ret += "                               " + source1 + ": " + email_primary1 + "\n";
+	ret += "                               " + source2 + ": " + email_primary2;
+	return ret;
 }
 
 SyncFsm.addToGid = function(zfcGid, sourceid, luid, reverse)
@@ -2731,7 +2834,8 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 					if (isPropertyPresent(this.state.aHasChecksum, key) && aToLength(this.state.aHasChecksum[key]) > 0)
 						for (var luid_possible in this.state.aHasChecksum[key])
-							if (this.state.aHasChecksum[key][luid_possible] && this.context.isTwin(this.state.sourceid_tb, sourceid, luid_possible, luid))
+							if (this.state.aHasChecksum[key][luid_possible] &&
+							    this.context.isTwin(this.state.sourceid_tb, sourceid, luid_possible, luid))
 							{
 								luid_tb = luid_possible;
 								break;
@@ -2761,7 +2865,6 @@ SyncFsm.prototype.updateGidFromSources = function()
 		}
 	};
 
-
 	for (sourceid in this.state.sources)
 	{
 		zfc    = this.state.sources[sourceid]['zfcLuid'];
@@ -2775,7 +2878,7 @@ SyncFsm.prototype.updateGidFromSources = function()
 			zfc.forEach(functor_foreach_luid_slow_sync);
 
 		// This is a hack to avoid this function running too long and triggering mozilla's stop/continue dialog.
-		// Really this function have to be broken up into smaller chunks.
+		// This function really should be broken up into smaller chunks.
 		// The slowest piece of it appears to be the I/O, so here we disable it for > medium-sized addressbooks.
 		// Given that only one person has complained about the stop/continue dialog here, reckon this is ok as an interim measure...
 		//
@@ -3869,8 +3972,8 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 1");
 
-	this.state.m_logger.debug("entryActionConverge1: blah: 1: zfcTb:\n" + this.zfcTb().toString()); // TODO remove me
-	this.state.m_logger.debug("entryActionConverge1: blah: 1: zfcPr:\n" + this.zfcPr().toString()); // TODO remove me
+	this.state.m_logger.debug("entryActionConverge1: zfcTb:\n" + this.zfcTb().toString());
+	this.state.m_logger.debug("entryActionConverge1: zfcPr:\n" + this.zfcPr().toString());
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
@@ -3881,8 +3984,8 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 		if (passed)
 			this.fakeDelOnUninterestingContacts();
 
-		this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcTb:\n" + this.zfcTb().toString()); // TODO remove me
-		this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcPr:\n" + this.zfcPr().toString()); // TODO remove me
+		// this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcTb:\n" + this.zfcTb().toString());
+		// this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcPr:\n" + this.zfcPr().toString());
 
 		this.state.stopwatch.mark(state + " 3");
 
@@ -3937,7 +4040,7 @@ SyncFsm.prototype.entryActionConverge5 = function(state, event, continuation)
 		this.workaroundForZmImmutables();
 
 	this.state.aGcs = this.buildGcs();                   // 2. reconcile the sources (via the gid) into a single truth
-	                                                     //    this is the sse output array - winners and conflicts are selected here
+	                                                     //    winners and conflicts are identified here
 	this.buildPreUpdateWinners(this.state.aGcs);         // 3. save winner state before winner update to distinguish ms vs md update
 
 	continuation('evNext');
@@ -3947,7 +4050,12 @@ SyncFsm.prototype.entryActionConverge6 = function(state, event, continuation)
 {
 	this.state.stopwatch.mark(state + " 1");
 
-	var passed = this.testForFolderNameDuplicate(this.state.aGcs); // 4. a bit of conflict detection
+	var passed = true;
+	
+	passed = passed && this.testForFolderNameDuplicate(this.state.aGcs); // 4. a bit of conflict detection
+
+	if (this.formatPr() == FORMAT_GD && this.state.isSlowSync)
+		passed = this.testForGdRemoteConflictOnSlowSync();
 
 	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
 
@@ -4573,7 +4681,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 	ZinXpath.setConditional(change, 'token', "/soap:Envelope/soap:Header/z:context/z:change/attribute::token", response, null);
 	ZinXpath.setConditional(change, 'acct',  "/soap:Envelope/soap:Header/z:context/z:change/attribute::acct",  response, null);
 
-	// TODO check that change.acct matches the zid in remote_update_package
+	// for safety's sake, we could check that change.acct matches the zid in remote_update_package - don't bother at the mo...
 
 	if (!isPropertyPresent(change, 'token'))
 	{
@@ -4854,7 +4962,9 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				remote.url     = this.state.gd_base_url;
 				remote.headers = newObject("Content-type", "application/atom+xml");
 				remote.body    = contact.toStringXml();
-				remote.contact = contact;  // if the server responds with a 409 conflict this helps to give a useful error message
+				remote.contact = contact;
+				remote.sourceid_winner = sourceid_winner;
+				remote.luid_winner     = luid_winner;
 				bucket         = ORDER_SOURCE_UPDATE[i];
 				break;
 
@@ -4863,17 +4973,13 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				luid_target    = zfiGid.get(sourceid_target);
 				properties     = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
-				// this.state.m_logger.debug("entryActionUpdateGd: blah: MOD: FORMAT_GD: properties: " + aToString(properties));
-				// this.state.m_logger.debug("entryActionUpdateGd: blah: MOD: FORMAT_TB: properties: " + aToString(this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB)));
-
 				zinAssertAndLog(isPropertyPresent(this.state.a_gd_contact, luid_target), "luid_target: " + luid_target);
 
 				contact = this.state.a_gd_contact[luid_target];
 
 				var properties_pre_update = contact.m_contact;
 
-				// convert the properties to a gd contact so that any translations apply to the identity test
-				// eg. Google trims leading/trailing whitespace
+				// convert the properties to a gd contact so that transformation apply before the identity test
 				//
 				contact.updateFromContact(properties);
 
@@ -4892,6 +4998,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					remote.headers = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT");
 					remote.body    = contact.toStringXml();
 					remote.contact = contact;
+					remote.sourceid_winner = sourceid_winner;
+					remote.luid_winner     = luid_winner;
 					bucket         = ORDER_SOURCE_UPDATE[i];
 				}
 				break;
@@ -5040,12 +5148,31 @@ SyncFsm.prototype.exitActionUpdateGd = function(state, event)
 
 		if (this.state.m_http.m_http_status_code == HTTP_STATUS_409_CONFLICT)
 		{
-			var PrimaryEmail = remote_update_package.remote.contact.m_contact['PrimaryEmail'];
-			if (!PrimaryEmail)
-				PrimaryEmail = "";
-			this.state.stopFailCode   = 'FailOnConflict';
-			this.state.stopFailDetail = "\n\n" + stringBundleString("statusFailOnConflictDetail") + PrimaryEmail +
-			                            "\n\n" + "See http://www.zindus.com/faq-thunderbird-google/";
+			var properties = remote_update_package.remote.contact.m_contact;
+			
+			this.state.stopFailCode   = 'FailOnGdConflict2';
+
+			this.state.stopFailDetail = "\n\n" + stringBundleString("statusFailOnGdConflictDetail");
+
+			this.state.stopFailDetail += "\n\n";
+			this.state.stopFailDetail += 'Thunderbird' + ": " +
+			                             this.getContactPrimaryEmailFromLuid(remote_update_package.remote.sourceid_winner,
+										                                     remote_update_package.remote.luid_winner) + "\n\n";
+
+			if (this.state.m_http.response('text').match(/\<\/entry\>/))
+			{
+				var a_gd_contact = GdContact.arrayFromXpath(this.state.m_http.response(), "/atom:entry");
+
+				if (aToLength(a_gd_contact) > 0)
+				{
+					var properties = ZinContactConverter.instance().convert(FORMAT_TB, FORMAT_GD,
+					                                                         a_gd_contact[firstKeyInObject(a_gd_contact)].m_contact);
+					this.state.stopFailDetail += stringBundleString("statusFailMsgGdConflictWith") + "\n\n";
+					this.state.stopFailDetail += 'Google' + ": " + this.shortLabelForContactProperties(properties) + "\n";
+				}
+			}
+
+			this.state.stopFailDetail += "\n\n" + stringBundleString("statusFailOnGdSeeFaq");
 		}
 		else
 		{
@@ -5100,6 +5227,19 @@ SyncFsm.luidFromLuidTypeSf = function(zfcTarget, luid_target, item_type)
 		zinAssertAndLog(!zfcTarget.get(luid_target).isForeign(), "luid_target: " + luid_target);
 
 	return luid_target;
+}
+
+SyncFsm.prototype.getContactPrimaryEmailFromLuid = function(sourceid, luid)
+{
+	var properties = this.getContactFromLuid(sourceid, luid, FORMAT_TB);
+	
+	// return properties['PrimaryEmail'] ? properties['PrimaryEmail'] :  stringBundleString("statusFailMsgGdBlank");
+	var ret = this.shortLabelForContactProperties(properties);
+
+	if (ret == "")
+		ret = stringBundleString("statusFailOnGdBlank");
+
+	return ret;
 }
 
 SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
@@ -5918,6 +6058,8 @@ function HttpStateGd(http_method, url, headers, authToken, body, is_evnext_on_er
 
 HttpStateGd.prototype = new HttpState();
 
+HttpStateGd.AUTH_REGEXP_PATTERN = /Auth=(.+?)(\s|$)/;
+
 HttpStateGd.prototype.toStringFiltered = function()
 {
 	return this.m_http_method + " " + this.m_url;
@@ -5952,7 +6094,7 @@ HttpStateGd.prototype.handleResponse = function()
 	var msg = "";
 
 	if (this.response('text'))
-		msg += " response: " + this.response('text');
+		msg += " response: " + this.filterSensitive(this.response('text'));
 	else
 		msg += " response: " + "empty";
 
@@ -5970,6 +6112,13 @@ HttpStateGd.prototype.handleResponse = function()
 	this.m_logger.debug("HttpStateGd: nextEvent: " + nextEvent + msg);
 
 	return nextEvent;
+}
+
+HttpStateGd.prototype.filterSensitive = function(str1)
+{
+	var str2 = str1.replace(HttpStateGd.AUTH_REGEXP_PATTERN, "Auth=suppressed");
+
+	return str2;
 }
 
 SyncFsm.prototype.initialise = function(id_fsm)
@@ -6031,9 +6180,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm)
 	state.stopFailDetail      = null;
 	state.m_preferences       = new MozillaPreferences();
 	state.m_folder_converter  = new ZinFolderConverter();
-
 	state.m_addressbook       = new ZinAddressBook();
-	state.m_folder_converter.localised_pab(state.m_addressbook.getPabName());
 
 	state.m_bimap_format = getBimapFormat();
 
@@ -6087,6 +6234,8 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm)
 	state.gd_base_url         = null;
 	state.gd_luid_ab_in_gd    = null;         // luid of the parent addressbook in this.zfcPr()
 	state.gd_luid_ab_in_tb    = null;         // luid of the parent addressbook in this.zfcTb()
+	state.gd_foreach_tb_card_functor = null;
+
 	// notused state.gd_sync_with        = null;
 
 	state.initialiseSource(SOURCEID_AA, FORMAT_GD, "sourceServer");
@@ -6159,8 +6308,8 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 		var headers = newObject("Content-type", "application/x-www-form-urlencoded");
 		var body = "";
 		body += "accountType=HOSTED_OR_GOOGLE"; // GOOGLE
-		body += "&Email=" + username;
-		body += "&Passwd=" + password;
+		body += "&Email=" + encodeURIComponent(username);
+		body += "&Passwd=" + encodeURIComponent(password);
 		body += "&service=cp"; // gbase
 		body += "&source=Toolware" + "-" + APP_NAME + "-" + APP_VERSION_NUMBER;
 
@@ -6184,7 +6333,7 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 
 	var response = this.state.m_http.response('text');
 
-	var aMatch = response.match(/Auth=(.+?)(\s|$)/ ); // a[0] is the whole pattern, a[1] is the first capture, a[2] the second etc...
+	var aMatch = response.match(HttpStateGd.AUTH_REGEXP_PATTERN); // a[0] is the whole pattern, a[1] is the first capture, a[2] the second
 
 	if (aMatch && aMatch.length == 3)
 		this.state.authToken = aMatch[1];
@@ -6192,10 +6341,10 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 	if (this.state.authToken)
 	{
 		var username  = this.state.sources[this.state.sourceid_pr]['username'];
-		this.state.gd_base_url = "http://www.google.com/m8/feeds/contacts/" + escape(username) + "/base";
+		this.state.gd_base_url = "http://www.google.com/m8/feeds/contacts/" + encodeURIComponent(username) + "/base";
 	}
 
-	this.state.m_logger.debug("authToken: size: " + (this.state.authToken ? this.state.authToken.length : "null") );
+	this.state.m_logger.debug("authToken.length: " + (this.state.authToken ? this.state.authToken.length : "null") );
 }
 
 SyncFsmGd.prototype.entryActionAuthCheck = function(state, event, continuation)
@@ -6205,7 +6354,7 @@ SyncFsmGd.prototype.entryActionAuthCheck = function(state, event, continuation)
 	if (!this.state.authToken)
 	{
 		this.state.stopFailCode   = 'FailOnAuthGd';
-		this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnHttpStatusCode") + ": " + this.state.m_http.m_http_status_code;
+		this.state.stopFailDetail = "\n" + stringBundleString("statusFailMsgHttpStatusCode") + ": " + this.state.m_http.m_http_status_code;
 
 		nextEvent = 'evLackIntegrity';  // this isn't really a lack of integrity, but it's processed in the same way
 	}

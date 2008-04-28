@@ -280,7 +280,7 @@ GdContact.transformProperties = function(properties)
 {
 	for (key in properties)
 	{
-		properties[key] = trim(properties[key]);
+		properties[key] = zinTrim(properties[key]);
 	
 		if (key == "PrimaryEmail" || key == "SecondEmail")
 			properties[key] = properties[key].toLowerCase();
@@ -485,9 +485,6 @@ GdContact.prototype.setProperty = function(node, attribute, collection, key)
 
 GdContact.prototype.setNode = function(node, attribute, collection, key, a_key_used)
 {
-	if (key == "organization#orgTitle") // TODO
-		this.m_logger.debug("setNode: blah: organization#orgTitle: value: '" + collection[key] + "'");
-
 	if (attribute)
 	{
 		node.setAttribute(attribute, collection[key]);

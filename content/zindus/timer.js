@@ -64,6 +64,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		if (fsmstate)
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running - backing off");
+			this.finish(true);
 		}
 		else
 		{
@@ -155,19 +156,33 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			
 			StatusPanel.update(this.m_zwc);
 
-			this.finish();
+			this.finish(false);
 		}
 	}
 }
 
-ZinTimerFunctorSync.prototype.finish = function()
+ZinTimerFunctorSync.prototype.finish = function(is_back_off)
 {
-	newZinLogger().info("sync finish: " + getFriendlyTimeString());
+	if (is_back_off)
+		newZinLogger().info("sync backing off: " + getFriendlyTimeString());
+	else
+		newZinLogger().info("sync finish: " + getFriendlyTimeString());
 
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 
 	this.is_running = false;
 
 	if (this.m_on_finish_function)
-		this.m_on_finish_function(this.m_on_finish_function_arg);
+	{
+		if (is_back_off)
+		{
+			var now            = new Date();
+			var next_sync_date = new Date();
+			next_sync_date.setUTCMilliseconds(now.getUTCMilliseconds() + 1000 * 3600); // reschedule for an hour ahead - ie, back off...
+			var x = newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", null);
+			this.m_on_finish_function(this.m_on_finish_function_arg, x);
+		}
+		else
+			this.m_on_finish_function(this.m_on_finish_function_arg);
+	}
 }

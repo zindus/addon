@@ -360,19 +360,11 @@ ZinContactConverter.prototype.isKeyConverted = function(format_to, format_from, 
 // We avoid a sort by relying on the fact that the keys are thunderbird contact properties.
 // The index into the Converter's table guarantees the ordering.
 //
-ZinContactConverter.prototype.crc32 = function(properties) // TODO remove this: , ignore_properties_not_mapping_to_format)
+ZinContactConverter.prototype.crc32 = function(properties)
 {
 	var ret = 0;
 	var str = "";
 	var aSorted = new Array();
-
-	// if (arguments.length == 1)
-	// 	ignore_properties_not_mapping_to_format = null;
-	// else if (arguments.length != 2)
-	// 	zinAssert(false);
-
-	// zinAssertAndLog(!ignore_properties_not_mapping_to_format || isValidFormat(ignore_properties_not_mapping_to_format),
-	//                       "ignore_properties_not_mapping_to_format: " + ignore_properties_not_mapping_to_format);
 
 	for (var i in properties)
 		if (properties[i].length > 0)
@@ -380,13 +372,7 @@ ZinContactConverter.prototype.crc32 = function(properties) // TODO remove this: 
 			index_to = ZinContactConverter.instance().m_map[FORMAT_TB][i];
 
 			if (typeof(index_to) != 'undefined')
-			{
-				// ignore properties which don't have a bidirectional mapping
-				//
-				// if (!ignore_properties_not_mapping_to_format || this.isKeyConverted(ignore_properties_not_mapping_to_format, FORMAT_TB, i))
-					aSorted[index_to] = true;
-
-			}
+				aSorted[index_to] = true;
 			else
 				zinAssertAndLog(false, "properties: " + aToString(properties) + " i: " + i);
 

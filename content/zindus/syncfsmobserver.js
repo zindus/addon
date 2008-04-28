@@ -138,7 +138,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stAuthCheck:      {          },
 		stLoad:           { count: 1 },
 		stLoadTb:         { count: 1 },
-		stGetContactGd:    { count: 1 },
+		stGetContactGd:   { count: 1 },
 		stConverge1:      { count: 1 },
 		stConverge2:      { count: 1 },
 		stConverge3:      { count: 1 },
@@ -146,7 +146,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stConverge6:      { count: 1 },
 		stConverge7:      { count: 1 },
 		stConverge8:      { count: 1 },
-		stGetContactPuGd: {          }, // TODO - as per Zm but not to use aContact
+		stGetContactPuGd: { count: 1 },
 		stUpdateTb:       { count: 1 },
 		stUpdateGd:       { count: 1 },
 		stUpdateCleanup:  { count: 1 },
@@ -252,6 +252,23 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					ret = false; // no need to update the UI
 				break;
 
+			case 'stGetContactPuGd':
+				if (context.state.a_gd_contact_to_get.length > 0)
+				{
+					var op = this.buildOp(context.state.sourceid_pr, "GetMany");
+
+					if (this.get(SyncFsmObserver.OP) != op)
+					{
+						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", context.state.a_gd_contact_to_get.length);
+						this.set(SyncFsmObserver.PROG_CNT, 0);
+					}
+
+					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
+				}
+				else
+					ret = false; // no need to update the UI
+				break;
+
 			case 'stUpdateZm':
 			case 'stUpdateGd':
 				var sourceid = null;
@@ -277,13 +294,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 						this.progressReportOnSource(sourceid, "PutMany", cTotal);
 						this.set(SyncFsmObserver.PROG_CNT, 0);
-
-						// this.m_logger.debug("update: stUpdateZm: this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP)
-						//                                                                          + " cTotal: " + cTotal);
 					}
 
 					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
-					this.m_logger.debug("4402: PROG_CNT: " + this.get(SyncFsmObserver.PROG_CNT));
 				}
 				else
 					this.progressReportOnSource(context.state.sourceid_pr, "PutOne");
