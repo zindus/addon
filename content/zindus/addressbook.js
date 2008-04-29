@@ -315,9 +315,10 @@ ZinAddressBook.prototype.setupPab = function()
 	var msg;
 
 	var functor_foreach_addressbook = {
+		context: this,
 		run: function(elem) {
 
-			if (elem.directoryProperties.URI == this.kPersonalAddressbookURI)
+			if (elem.directoryProperties.URI == this.context.kPersonalAddressbookURI)
 			{
 				pabByUri      = new Object();
 				pabByUri.uri  = elem.directoryProperties.URI;
@@ -352,7 +353,7 @@ ZinAddressBook.prototype.setupPab = function()
 	else
 	{
 		this.m_logger.error("Couldn't find Personal Address Book");
-		this.m_logger.debug("setupPab: addressbooks: " + this.addressbooksToString());
+		this.m_logger.debug("m_pab_uri couldn't be identified! addressbooks: " + this.addressbooksToString());
 	}
 }
 
@@ -361,11 +362,15 @@ ZinAddressBook.prototype.addressbooksToString = function()
 	var ret = "";
 
 	var functor_foreach_addressbook = {
+		context: this,
 		run: function(elem) {
-			ret += "\n dirName: " + elem.dirName + " uri: "       + elem.directoryProperties.URI +
-			                                       " dirPrefId: " + elem.dirPrefId +
-												   " fileName: "  + elem.directoryProperties.fileName +
-												   " position: "  + elem.directoryProperties.position;
+			ret += "\n " +
+			       " dirName: " + elem.dirName +
+			       " uri: "       + elem.directoryProperties.URI +
+			       " dirPrefId: " + elem.dirPrefId +
+			       " fileName: "  + elem.directoryProperties.fileName +
+			       " position: "  + elem.directoryProperties.position +
+			       " matches kPersonalAddressbookURI: " + (elem.directoryProperties.URI == this.context.kPersonalAddressbookURI);
 			
 			return true;
 		}
