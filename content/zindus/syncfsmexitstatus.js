@@ -34,32 +34,33 @@ function SyncFsmExitStatus()
 	this.m_logger           = newZinLogger("SyncFsmExitStatus");
 
 	this.m_a_valid_code = {
-		FailOnService                 : { 'hasdetail' : 0 }, // 1.  some sort of service failure
-		FailOnFault                   : { 'hasdetail' : 0 }, // 2.  recieved a soap fault
-		FailOnMismatchedResponse      : { 'hasdetail' : 0 }, // 3.  sent BlahRequest and received FooResponse (expected BlahResponse)
-		FailOnCancel                  : { 'hasdetail' : 0 }, // 4.  user cancelled
-		FailOnIntegrityBadCredentials : { 'hasdetail' : 0 }, // 5.  something dodgy about url, username or password - dont proceed
-		FailOnIntegrityDataStoreIn    : { 'hasdetail' : 0 }, // 6.  something dodgy about the data store that just got loaded
-		FailOnIntegrityDataStoreOut   : { 'hasdetail' : 0 }, // 7.  internal error - we've created a data store that's dodgy
-		FailOnUnknown                 : { 'hasdetail' : 0 }, // 8.  this should never be!
-		FailOnFolderNameDuplicate     : { 'hasdetail' : 1 }, // 9.
-		FailOnFolderNameReserved      : { 'hasdetail' : 1 }, // 10.
-		FailOnFolderNameInvalid       : { 'hasdetail' : 1 }, // 11.
-		FailOnFolderMustBePresent     : { 'hasdetail' : 1 }, // 12.
-		FailOnFolderReservedChanged   : { 'hasdetail' : 1 }, // 13.
-		FailOnFolderNameClash         : { 'hasdetail' : 1 }, // 14. the same folder name entered the namespace from both tb and zm sides
-		FailOnFolderSourceUpdate      : { 'hasdetail' : 1 }, // 15. the source update operations can't be applied with confidence
-		FailOnFolderCantCreateShared  : { 'hasdetail' : 1 }, // 16. 
-		FailOnUnableToUpdateServer    : { 'hasdetail' : 1 }, // 17. couldn't make sense of the http/soap response
-		FailOnNoXpath                 : { 'hasdetail' : 0 }, // 18. 
-		FailOnNoPab                   : { 'hasdetail' : 0 }, // 19. 
-		FailOnMultipleLn              : { 'hasdetail' : 1 }, // 20. 
-		FailOnGdConflict1             : { 'hasdetail' : 1 }, // 21. 
-		FailOnGdConflict2             : { 'hasdetail' : 1 }, // 21. 
-		FailOnGdConflict3             : { 'hasdetail' : 1 }, // 22. 
-		FailOnGdEmptyContact          : { 'hasdetail' : 1 }, // 23. 
-		FailOnUnauthorized            : { 'hasdetail' : 0 }, // 24. server returned a 401 - perhaps a proxy removed the 'Authorized' header?
-		FailOnAuthGd                  : { 'hasdetail' : 1 }  // 25. server returned a non 200 status code
+		FailOnService                   : { 'hasdetail' : 0 }, // 1.  some sort of service failure
+		FailOnFault                     : { 'hasdetail' : 0 }, // 2.  recieved a soap fault
+		FailOnMismatchedResponse        : { 'hasdetail' : 0 }, // 3.  sent BlahRequest and received FooResponse (expected BlahResponse)
+		FailOnCancel                    : { 'hasdetail' : 0 }, // 4.  user cancelled
+		FailOnIntegrityBadCredentialsZm : { 'hasdetail' : 0 }, // 5.  something dodgy about url, username or password - dont proceed
+		FailOnIntegrityBadCredentialsGd : { 'hasdetail' : 0 }, // 6.  something dodgy about email address or password - dont proceed
+		FailOnIntegrityDataStoreIn      : { 'hasdetail' : 0 }, // 7.  something dodgy about the data store that just got loaded
+		FailOnIntegrityDataStoreOut     : { 'hasdetail' : 0 }, // 8.  internal error - we've created a data store that's dodgy
+		FailOnUnknown                   : { 'hasdetail' : 0 }, // 9.  this should never be!
+		FailOnFolderNameDuplicate       : { 'hasdetail' : 1 }, // 10
+		FailOnFolderNameReserved        : { 'hasdetail' : 1 }, // 11.
+		FailOnFolderNameInvalid         : { 'hasdetail' : 1 }, // 12.
+		FailOnFolderMustBePresent       : { 'hasdetail' : 1 }, // 13.
+		FailOnFolderReservedChanged     : { 'hasdetail' : 1 }, // 14.
+		FailOnFolderNameClash           : { 'hasdetail' : 1 }, // 15. the same folder name entered the namespace from both tb and zm sides
+		FailOnFolderSourceUpdate        : { 'hasdetail' : 1 }, // 16. the source update operations can't be applied with confidence
+		FailOnFolderCantCreateShared    : { 'hasdetail' : 1 }, // 17. 
+		FailOnUnableToUpdateServer      : { 'hasdetail' : 1 }, // 18. couldn't make sense of the http/soap response
+		FailOnNoXpath                   : { 'hasdetail' : 0 }, // 19. 
+		FailOnNoPab                     : { 'hasdetail' : 0 }, // 20. 
+		FailOnMultipleLn                : { 'hasdetail' : 1 }, // 21. 
+		FailOnGdConflict1               : { 'hasdetail' : 1 }, // 22. 
+		FailOnGdConflict2               : { 'hasdetail' : 1 }, // 23. 
+		FailOnGdConflict3               : { 'hasdetail' : 1 }, // 24. 
+		FailOnGdEmptyContact            : { 'hasdetail' : 1 }, // 25. 
+		FailOnUnauthorized              : { 'hasdetail' : 0 }, // 26. server returned 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnAuthGd                    : { 'hasdetail' : 1 }  // 27. server returned a non 200 status code
 	};
 }
 

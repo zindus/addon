@@ -620,10 +620,18 @@ function arrayfromArguments(args, start_at)
 
 function zinTrim (str)
 {
-	zinAssert(str);
-	zinAssert(typeof(str) == "string");
+	var ret;
 
-	return str.replace(/^\s+|\s+$/g, "");
+	if (str)
+	{
+		zinAssert(typeof(str) == "string");
+
+		ret = str.replace(/^\s+|\s+$/g, "");
+	}
+	else
+		ret = str;
+
+	return ret;
 }; 
 
 // Javascript doesn't have a native sleep

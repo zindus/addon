@@ -323,14 +323,14 @@ SyncFsmZm.prototype.entryActionAuth = function(state, event, continuation)
 		this.state.zidbag.set(null, 'soapURL', this.state.sources[sourceid_zm]['soapURL']);
 
 		this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(0), null, "Auth", 
-	                          this.state.sources[this.state.sourceid_zm]['username'],
-	                          this.state.sources[this.state.sourceid_zm]['password']);
+		                                      this.state.sources[this.state.sourceid_zm]['username'],
+		                                      this.state.sources[this.state.sourceid_zm]['password']);
 
 		nextEvent = 'evHttpRequest';
 	}
 	else
 	{
-		this.state.stopFailCode = 'FailOnIntegrityBadCredentials';
+		this.state.stopFailCode = 'FailOnIntegrityBadCredentialsZm';
 		nextEvent = 'evLackIntegrity';
 	}
 
@@ -6303,7 +6303,9 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 	var username = this.state.sources[sourceid_pr]['username'];
 	var password = this.state.sources[sourceid_pr]['password'];
 
-	if (username.length > 0 && password.length > 0)
+	var re = /^([A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]+)$/i;
+
+	if (username.length > 0 && password.length > 0 && re.test(username))
 	{
 		var headers = newObject("Content-type", "application/x-www-form-urlencoded");
 		var body = "";
@@ -6319,7 +6321,7 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 	}
 	else
 	{
-		this.state.stopFailCode = 'FailOnIntegrityBadCredentials';
+		this.state.stopFailCode = 'FailOnIntegrityBadCredentialsGd';
 		nextEvent = 'evLackIntegrity';
 	}
 

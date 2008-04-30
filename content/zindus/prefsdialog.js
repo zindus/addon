@@ -126,7 +126,7 @@ Prefs.prototype.onAccept = function()
 	// server tab - url, username and password
 	//
 	var url      = document.getElementById("zindus-prefs-server-url").value;
-	var username = document.getElementById("zindus-prefs-server-username").value;
+	var username = zinTrim(document.getElementById("zindus-prefs-server-username").value);
 	var password = document.getElementById("zindus-prefs-server-password").value;
 
 	var prev_url      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
@@ -368,6 +368,7 @@ Prefs.prototype.updateView = function()
 	else if (!this.isServerSettingsComplete())
 	{
 		this.m_logger.debug("updateView: server settings incomplete");
+		document.getElementById("zindus-prefs-cmd-sync").removeAttribute('disabled');
 		document.getElementById("zindus-prefs-general-button-run-timer").setAttribute('disabled', true);
 		document.getElementById("zindus-prefs-general-button-sync-now").setAttribute('disabled', true);
 	}
