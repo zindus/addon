@@ -25,7 +25,6 @@ function ObserverService()
 {
 }
 
-
 ObserverService.service = function()
 {
 	return Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService);
@@ -50,8 +49,6 @@ ObserverService.isRegistered = function(topic)
 			alert("exception while enumerating: e: " + e);
 		}
 	}
-
-	// dump("ObserverService.isRegistered: blah: returns: " + (count > 0) + "\n");
 
 	return count > 0;
 }

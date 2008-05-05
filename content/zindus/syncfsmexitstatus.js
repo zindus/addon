@@ -58,9 +58,10 @@ function SyncFsmExitStatus()
 		FailOnGdConflict1               : { 'hasdetail' : 1 }, // 22. 
 		FailOnGdConflict2               : { 'hasdetail' : 1 }, // 23. 
 		FailOnGdConflict3               : { 'hasdetail' : 1 }, // 24. 
-		FailOnGdEmptyContact            : { 'hasdetail' : 1 }, // 25. 
-		FailOnUnauthorized              : { 'hasdetail' : 0 }, // 26. server returned 401 - perhaps a proxy removed the 'Authorized' header?
-		FailOnAuthGd                    : { 'hasdetail' : 1 }  // 27. server returned a non 200 status code
+		FailOnZmEmptyContact            : { 'hasdetail' : 1 }, // 25. 
+		FailOnGdEmptyContact            : { 'hasdetail' : 1 }, // 26. 
+		FailOnUnauthorized              : { 'hasdetail' : 0 }, // 27. server returned 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnAuthGd                    : { 'hasdetail' : 1 }  // 28. server returned a non 200 status code
 	};
 }
 

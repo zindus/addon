@@ -39,7 +39,8 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
 	// ret = ret && this.testContactConverter();
-	// ret = ret && this.testAddressBook();
+	// ret = ret && this.testAddressBook1();
+	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
@@ -48,6 +49,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testGoogleContacts();
 	// ret = ret && this.testGoogleContacts2();
+	ret = ret && this.testGoogleContacts3();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -467,14 +469,71 @@ ZinTestHarness.prototype.testZuio = function()
 	return ret;
 }
 
-
-ZinTestHarness.prototype.testAddressBook = function()
+ZinTestHarness.prototype.testAddressBook1 = function()
 {
-	var addressbook = new ZinAddressBook();
-	this.m_logger.debug("testAddressBook: addressbooks: " + addressbook.addressbooksToString());
-	// var pabname = addressbook.getPabName();
+	var addressbook;
+
+	if (ZinAddressBook.TbVersion() == ZinAddressBook.TB2)
+		addressbook = new ZinAddressBookTb2();
+	else
+		addressbook = new ZinAddressBookTb3();
+
+	// this.m_logger.debug("testAddressBook: addressbooks: " + addressbook.addressbooksToString());
+
+	var uri = "moz-abmdbdirectory://abook.mab";
+	var prefix = "zindus-test-";
+	var properties = { "FirstName": null, "LastName": null, "DisplayName": null, "SecondEmail": null };
+	var luid = "12346684";
+
+	for (var i in properties)
+		properties[i] = prefix + i;
+
+	var attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid);
+
+	zinAssert(!addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid)); // test card shouldn't exist before the test starts
+
+	var abCardIn = addressbook.addCard(uri, properties, attributes);
+
+	var abCardOut = addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
+
+	this.m_logger.debug("abCardIn: "  + addressbook.nsIAbCardToPrintableVerbose(abCardIn));
+	this.m_logger.debug("abCardOut: " + addressbook.nsIAbCardToPrintableVerbose(abCardOut));
+
+	zinAssert(isMatchObjects(properties, addressbook.getCardProperties(abCardIn)));
+	zinAssert(isMatchObjects(properties, addressbook.getCardProperties(abCardOut)));
+	zinAssert(isMatchObjects(attributes, addressbook.getCardAttributes(abCardIn)));
+	zinAssert(isMatchObjects(attributes, addressbook.getCardAttributes(abCardOut)));
+
+	addressbook.deleteCards(uri, [ abCardIn ]);
+
+	zinAssert(!addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid)); // test card shouldn't exist after the test is finished
 
 	return true;
+}
+
+ZinTestHarness.prototype.testAddressBook2 = function()
+{
+	zinAssert(ZinAddressBook.TbVersion() == ZinAddressBook.TB3);
+
+	var uri = "moz-abmdbdirectory://abook.mab";
+	var properties = { "DisplayName": "BlahDisplayName",
+					   "PrimaryEmail": "BlahPrimarEmail@example.com" };
+
+	var dir = Components.classes["@mozilla.org/abmanager;1"].getService(Components.interfaces.nsIAbManager).getDirectory(uri);
+
+	var abCard;
+	abCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].
+	                    createInstance(Components.interfaces.nsIAbCard);
+
+	for (key in properties)
+		abCard.setCardValue(key, properties[key]);
+
+	abCard = dir.addCard(abCard);
+
+	abCard = dir.modifyCard(abCard);
+
+	var addressbook = new ZinAddressBookTb3();
+	this.m_logger.debug("abCard created: "  + addressbook.nsIAbCardToPrintableVerbose(abCard));
 }
 
 ZinTestHarness.prototype.testGoogleContacts2 = function()
@@ -645,4 +704,14 @@ ZinTestHarness.prototype.matchGoogleContact = function(contact, properties, meta
 			zinAssertAndLog(contact.m_meta[key] == meta[key], "key: " + key);
 
 	
+}
+
+ZinTestHarness.prototype.testGoogleContacts3 = function()
+{
+	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96</id><updated>2008-05-05T21:13:38.158Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>rr rr</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96/1210022018158000'/><gd:email rel='http://schemas.google.com/g/2005#home' address='rr.rr.rr.rr@example.com' primary='true'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>111111</gd:phoneNumber></entry>";
+	var domparser = new DOMParser();
+	var response = domparser.parseFromString(xmlString, "text/xml");
+	var a_gd_contact = GdContact.arrayFromXpath(response, "/atom:entry");
+	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + aToLength(a_gd_contact));
+	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
 }

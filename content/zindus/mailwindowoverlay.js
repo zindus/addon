@@ -103,13 +103,23 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 
 		if (messengerWindow)
 		{
+			var msg = "";
+			var is_observerserver_registered = ObserverService.isRegistered(ZinMaestro.TOPIC);
+
+			msg += "ObserverService: " + (is_observerserver_registered ? "registered" : "isn't registered");
+			msg += " m_maestro: " + (this.m_maestro != null);
+
 			if (ObserverService.isRegistered(ZinMaestro.TOPIC) && this.m_maestro)
 			{
-				this.m_logger.debug("unregistering observer");
 				ObserverService.unregister(this.m_maestro, ZinMaestro.TOPIC);
+				msg += " ... deregistered";
 			}
 			else
-				this.m_logger.debug("ObserverService isn't registered so don't unregister.");
+			{
+				msg += " ... do nothing";
+			}
+
+			this.m_logger.debug(msg);
 
 			if (this.m_timeoutID)
 			{
