@@ -4287,15 +4287,23 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				msg += "About to modify a contact in the addressbook, gid: " + gid + " luid_target: " + luid_target;
 				msg += " l_winner: " + l_winner + " l_gid: " + l_gid + " l_target: " + l_target + " l_current: " + l_current;
 
-				if (l_target == l_current)
+				properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB);
+
+				if (l_target == l_current && !properties)
+				{
+					// parent folder didn't change and we didn't get the contact from the server so it must
+					// have been a meta-data change that's irrelevant to Thunderbird (eg tag added)
+					//
+					msg += " - uninteresting meta-data change on server - no local change"; 
+				}
+				else if (l_target == l_current)
 				{
 					// if the parent folder hasn't changed, there must have been a content change on the server
 					// in which case rev was bumped and we issued a GetContactRequest
 					// Now, overwrite the card...
 					//
-					msg += " - parent folder hasn't changed";
+					msg += " - parent folder hasn't changed - must have been a content change";
 
-					properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB);
 					zinAssertAndLog(properties, "luid_winner: " + luid_winner);
 					attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
 
@@ -5528,6 +5536,10 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 
 SyncFsm.prototype.entryActionFinal = function(state, event, continuation)
 {
+	// Note that you don't get in here on an 'evCancel' event.  This breaks our nice assumptions about how fsm's work
+	// but it has to be this way because if the calling window closes (eg MailWindow or PrefsDialog timers) anything you
+	// want to do has to be done before releasing control.  So we can't do a state transition (which does release control).
+	//
 	this.state.stopwatch.mark(state);
 
 	this.state.m_logappender.close();
@@ -5852,6 +5864,8 @@ function closureToHandleXmlHttpResponse(context, continuation)
 {
 	var ret = function()
 	{
+		// zinSleep(1000); // helpful when testing that cancel works when an http request is pending
+
 		if (context.state.m_http.m_xhr.readyState == 4)
 			context.handleXmlHttpResponse(continuation, context);
 	}
@@ -5863,11 +5877,15 @@ SyncFsm.prototype.handleXmlHttpResponse = function (continuation, context)
 {
 	var msg  = "handleXmlHttpResponse: ";
 	var http = context.state.m_http;
+	var nextEvent = null;
 
 	if (http.is_cancelled)
 	{
 		http.m_http_status_code = HTTP_STATUS_ON_CANCEL;
+
 		msg += " cancelled - set m_http_status_code to: " + http.m_http_status_code;
+
+		nextEvent = 'evCancel';
 	}
 	else
 	{
@@ -5879,13 +5897,15 @@ SyncFsm.prototype.handleXmlHttpResponse = function (continuation, context)
 			http.m_http_status_code = HTTP_STATUS_ON_SERVICE_FAILURE;
 			msg += " http status faked: " + http.m_http_status_code + " after http.m_xhr.status threw an exception: " + e;
 		}
+
+		nextEvent = 'evNext';
 	}
 
 	zinAssert(http.m_http_status_code != null); // status should always be set to something when we leave here
 
 	context.state.m_logger.debug(msg);
 
-	continuation('evNext');
+	continuation(nextEvent);
 }
 
 SyncFsm.prototype.entryActionHttpResponse = function(state, event, continuation)
@@ -6566,7 +6586,7 @@ SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
 	}
 
 	this.state.m_logger.debug(msg);
-	zinSleep(10000); // TODO
+	// zinSleep(10000);
 }
 
 SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, gd_luid_ab_in_gd)

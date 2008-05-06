@@ -56,7 +56,8 @@ function Prefs()
 	this.m_server_type_bimap   = new BiMap( [ "google",                           "zimbra"                          ], 
 	                                        [ "zindus-prefs-server-type-google",  "zindus-prefs-server-type-zimbra" ] );
 
-	this.m_timeoutID           = null;
+	this.m_timer_timeoutID     = null;
+	this.m_timer_functor       = null;
 	this.m_maestro             = null;
 	this.m_is_fsm_running      = false;
 	this.m_logger              = newZinLogger("Prefs"); this.m_logger.level(ZinLogger.NONE);
@@ -107,21 +108,26 @@ Prefs.prototype.maestroUnregister = function()
 		ObserverService.unregister(this.m_maestro, ZinMaestro.TOPIC);
 }
 
+Prefs.prototype.stop_timer_fsm_and_deregister = function()
+{
+	if (this.m_is_fsm_running && this.m_timer_functor)
+		this.m_timer_functor.cancel();
+
+	this.maestroUnregister();
+}
+
 Prefs.prototype.onCancel = function()
 {
 	this.m_logger.debug("onCancel:");
 
-	this.maestroUnregister();
-
-	if (this.m_timeoutID)
-		window.clearTimeout(this.m_timeoutID);
+	this.stop_timer_fsm_and_deregister();
 }
 
 Prefs.prototype.onAccept = function()
 {
 	var selected_id, radio_button;
 
-	this.m_logger.debug("onAccept:");
+	this.m_logger.debug("onAccept: ");
 
 	// server tab - url, username and password
 	//
@@ -163,7 +169,9 @@ Prefs.prototype.onAccept = function()
 	this.m_prefset_server.save();
 	this.m_prefset_general.save();
 
-	this.maestroUnregister();
+	this.stop_timer_fsm_and_deregister();
+
+	this.m_logger.debug("onAccept: exits");
 }
 
 Prefs.prototype.onHelp = function(url)
@@ -237,7 +245,8 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-run-timer":
-			this.m_timeoutID = window.setTimeout(this.onTimerFire, 0, this);
+			this.m_timer_timeoutID = window.setTimeout(this.onTimerFire, 0, this);
+			this.m_is_fsm_running = true;
 			break;
 
 		case "zindus-prefs-general-button-reset":
@@ -284,10 +293,9 @@ Prefs.prototype.onTimerFire = function(context)
 	// The timer functor isn't doesn't support 'cancel' the way SyncWindow does.
 	// It should only be visible in the UI with debugging turned on anyways...
 	//
-	context.m_logger.debug("onTimerFire: in here");
-	context.m_timeoutID = null;
-	var functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_PREFSDIALOG_TIMER, null, null);
-	functor.run();
+	context.m_logger.debug("onTimerFire: ");
+	context.m_timer_functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_PREFSDIALOG_TIMER, null, null);
+	context.m_timer_functor.run();
 }
 
 Prefs.prototype.initialiseView = function()

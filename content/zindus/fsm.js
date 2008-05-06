@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.9 2008-04-14 03:59:36 cvsuser Exp $
+// $Id: fsm.js,v 1.10 2008-05-06 19:13:01 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -146,7 +146,8 @@ FsmState.prototype.toString = function()
 
 FsmState.prototype.isFinal = function()
 {
-	return typeof(this["oldstate"]) == 'string' && this.oldstate == "final";
+	return typeof(this["oldstate"]) == 'string' &&
+	       (this.oldstate == "final" || (this.event == "evCancel" && this.newstate == "final"));
 }
 
 FsmState.prototype.isStart = function()

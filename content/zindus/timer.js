@@ -163,6 +163,8 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 ZinTimerFunctorSync.prototype.finish = function(is_back_off)
 {
+	this.m_logger.debug("finish: is_back_off: " + is_back_off);
+
 	if (is_back_off)
 		newZinLogger().info("sync backing off: " + getFriendlyTimeString());
 	else
