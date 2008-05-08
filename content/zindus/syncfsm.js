@@ -86,8 +86,8 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stGetAccountInfo:  { evCancel: 'final', evNext: 'stSelectSoapUrl',  evHttpRequest: 'stHttpRequest'                               },
 		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stSync',           evHttpRequest: 'stHttpRequest', evSkip: 'stSync'             },
 		stSync:            { evCancel: 'final', evNext: 'stSyncResult',     evHttpRequest: 'stHttpRequest'                               },
-		stSyncResult:      { evCancel: 'final', evNext: 'stGetContact',     evRedo:        'stSync',        evDo: 'stGetAccountInfo'     },
-		stGetContact:      { evCancel: 'final', evNext: 'stGalConsider',    evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContact'     },
+		stSyncResult:      { evCancel: 'final', evNext: 'stGetContactZm',   evRedo:        'stSync',        evDo: 'stGetAccountInfo'     },
+		stGetContactZm:    { evCancel: 'final', evNext: 'stGalConsider',    evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactZm'   },
 		stGalConsider:     { evCancel: 'final', evNext: 'stGalSync',        evSkip:        'stGalCommit'                                 },
 		stGalSync:         { evCancel: 'final', evNext: 'stGalCommit',      evHttpRequest: 'stHttpRequest'                               },
 		stGalCommit:       { evCancel: 'final', evNext: 'stConverge1'                                                                    },
@@ -119,7 +119,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stSelectSoapUrl:        this.entryActionSelectSoapUrl,
 		stSync:                 this.entryActionSync,
 		stSyncResult:           this.entryActionSyncResult,
-		stGetContact:           this.entryActionGetContact,
+		stGetContactZm:         this.entryActionGetContactZm,
 		stGetContactPuZm:       this.entryActionGetContactPuZm,
 		stGalConsider:          this.entryActionGalConsider,
 		stGalSync:              this.entryActionGalSync,
@@ -146,8 +146,8 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stAuth:                 this.exitActionAuth,
 		stGetAccountInfo:       this.exitActionGetAccountInfo,
 		stSelectSoapUrl:        this.exitActionSelectSoapUrl,
-		stGetContact:           this.exitActionGetContact,
-		stGetContactPuZm:       this.exitActionGetContact,
+		stGetContactZm:         this.exitActionGetContactZm,
+		stGetContactPuZm:       this.exitActionGetContactZm,
 		stGalSync:              this.exitActionGalSync,
 		stUpdateZm:             this.exitActionUpdateZm,
 		stHttpResponse:         this.exitActionHttpResponse  /* this gets tweaked by setupHttpZm */
@@ -1283,9 +1283,9 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
-SyncFsm.prototype.entryActionGetContact = function(state, event, continuation)
+SyncFsm.prototype.entryActionGetContactZm = function(state, event, continuation)
 {
-	var nextEvent = this.entryActionGetContactSetup(state);
+	var nextEvent = this.entryActionGetContactZmSetup(state);
 
 	continuation(nextEvent);
 }
@@ -1328,12 +1328,12 @@ SyncFsm.prototype.entryActionGetContactPuZm = function(state, event, continuatio
 		this.state.m_logger.debug("entryActionGetContactPuZm: " + msg);
 	}
 
-	var nextEvent = this.entryActionGetContactSetup(state);
+	var nextEvent = this.entryActionGetContactZmSetup(state);
 
 	continuation(nextEvent);
 }
 
-SyncFsm.prototype.entryActionGetContactSetup = function(state)
+SyncFsm.prototype.entryActionGetContactZmSetup = function(state)
 {
 	var nextEvent = null;
 
@@ -1347,11 +1347,15 @@ SyncFsm.prototype.entryActionGetContactSetup = function(state)
 	}
 	else
 	{
+		var max_contacts_in_one_request = 50;
 		var zuio = this.state.aContact[0];
 
-		this.state.m_logger.debug("entryActionGetContact: calling GetContactsRequest " + zuio.toString() );
+		var aGetContactRequest = SyncFsm.GetContactZmNextBatch(this.state.aContact);
 
-		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(zuio.zid), zuio.zid, "GetContacts", zuio.id);
+		this.state.m_logger.debug("entryActionGetContactZm: calling GetContactsRequest: zid: " + zuio.zid +
+		                          " ids:" + aGetContactRequest.toString());
+
+		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(zuio.zid), zuio.zid, "GetContacts", aGetContactRequest);
 
 		nextEvent = 'evHttpRequest';
 	}
@@ -1359,7 +1363,28 @@ SyncFsm.prototype.entryActionGetContactSetup = function(state)
 	return nextEvent;
 }
 
-SyncFsm.prototype.exitActionGetContact = function(state, event)
+SyncFsm.GetContactZmNextBatch = function(aContact)
+{
+	var max_contacts_in_one_request = 50;
+	var zuio = null;
+	var a_ret = new Array();
+
+	// all contacts in the request have to be using the same zid
+	//
+	for (var i = 0; i < max_contacts_in_one_request && i < aContact.length; i++)
+	{
+		if (!zuio || zuio.zid == aContact[i].zid)
+			zuio = aContact[i];
+		else
+			break;
+		
+		a_ret.push(zuio.id);
+	}
+
+	return a_ret;
+}
+
+SyncFsm.prototype.exitActionGetContactZm = function(state, event)
 {
 	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
 		return;
@@ -1373,34 +1398,39 @@ SyncFsm.prototype.exitActionGetContact = function(state, event)
 	var change = newObject('acct', null);
 	ZinXpath.setConditional(change, 'acct', "/soap:Envelope/soap:Header/z:context/z:change/attribute::acct",  response, null);
 
-	if (functor.a.length != 1)
-		this.state.m_logger.warn("GetContactsResponse recieved without exactly one <cn> element - unable to process");
+	if (functor.a.length < 1)
+		this.state.m_logger.warn("GetContactsResponse recieved without a <cn> element");
 	else
 	{
-		var key = Zuio.key(functor.a[0].attribute['id'], change.acct);
-
-		if (this.state.aContact[0].key() == key)
+		for (var i = 0; i < functor.a.length; i++)
 		{
-			if (functor.a[0].isMailList())
-				this.state.m_logger.debug("exitActionGetContact: ignore mailing lists for the moment");
-			else
+			var key = Zuio.key(functor.a[i].attribute['id'], change.acct);
+
+			if (this.state.aContact[i].key() == key)
 			{
-				this.state.aSyncContact[key] = functor.a[0];
-
-				functor.a[0].attribute[ZinFeedItem.ATTR_KEY] = key;
-
-				if (this.zfcZm().isPresent(key))
-					this.zfcZm().get(key).set(functor.a[0].attribute);                               // update existing item
+				if (functor.a[i].isMailList())
+					this.state.m_logger.debug("exitActionGetContactZm: ignore mailing lists for the moment");
 				else
-					this.zfcZm().set(new ZinFeedItem(ZinFeedItem.TYPE_CN, functor.a[0].attribute));  // add new item
+				{
+					this.state.aSyncContact[key] = functor.a[i];
 
-				// this.state.m_logger.debug("exitActionGetContact: blah: added aSyncContact[" + key +"]: " + this.state.aSyncContact[key]);
+					functor.a[i].attribute[ZinFeedItem.ATTR_KEY] = key;
+
+					if (this.zfcZm().isPresent(key))
+						this.zfcZm().get(key).set(functor.a[i].attribute);                               // update existing item
+					else
+						this.zfcZm().set(new ZinFeedItem(ZinFeedItem.TYPE_CN, functor.a[i].attribute));  // add new item
+
+					// this.state.m_logger.debug("exitActionGetContactZm: blah: added aSyncContact[" + key +"]: " + this.state.aSyncContact[key]);
+				}
 			}
-
-			this.state.aContact.shift();
+			else
+				this.state.m_logger.warn("GetContactsResponse recieved an unexpected contact ignored: requested: " + key +
+				                          " got: " + this.state.aContact[i].key());
 		}
-		else
-			this.state.m_logger.warn("GetContactsResponse recieved a contact that wasn't one we requested!  Ignored.");
+
+		for (var i = 0; i < functor.a.length; i++)
+			this.state.aContact.shift();
 	}
 }
 
@@ -1910,7 +1940,7 @@ SyncFsm.zfcFindFirstFolder = function(zfc, name)
 
 	var ret = zfc.findFirst(f, name);
 
-	gLogger.debug("zfcFindFirstFolder: blah: name: " + name + " returns: " + ret);
+	// gLogger.debug("zfcFindFirstFolder: blah: name: " + name + " returns: " + ret);
 
 	return ret;
 }
@@ -1923,7 +1953,7 @@ SyncFsm.zfcFindFirstSharedFolder = function(zfc, key)
 
 	var ret = zfc.findFirst(f, key);
 
-	gLogger.debug("zfcFindFirstSharedFolder: blah: key: " + key + " returns: " + ret);
+	// gLogger.debug("zfcFindFirstSharedFolder: blah: key: " + key + " returns: " + ret);
 
 	return ret;
 }
@@ -1939,7 +1969,7 @@ SyncFsm.zfcFindFirstLink = function(zfc, key)
 
 	var ret = zfc.findFirst(f);
 
-	gLogger.debug("lookupInZfc: blah: zfcFindFirstLink: key: " + key + " returns: " + ret);
+	// gLogger.debug("lookupInZfc: blah: zfcFindFirstLink: key: " + key + " returns: " + ret);
 
 	return ret;
 }
@@ -2146,9 +2176,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			else
 				msg = "ignored: " + msg;
 
-			// TODO remove elapsed here after comparing Tb2 and Tb3 perf
-			//
-			this.context.state.m_logger.debug("loadTbMergeZfcWithAddressBook: stopwatch: " + stopwatch.elapsedToString() + ": " + msg);
+			this.context.state.m_logger.debug("loadTbMergeZfcWithAddressBook: " + msg);
 		
 			return true;
 		}
@@ -4263,9 +4291,6 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 						this.state.m_logger.debug("blah 77: updateCard: " + this.state.m_addressbook.updateCard);
 
 						abCard = this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, format_winner);
-
-						this.state.m_logger.debug("entryActionUpdateTb: blah: 2: abCard: " +
-						                              this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 					}
 					else
 						msg += " couldn't find the card to modify by searching on luid.  It's possible that it was deleted between now and the start of sync but it may also indicate a problem.";

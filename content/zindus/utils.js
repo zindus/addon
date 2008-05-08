@@ -420,9 +420,9 @@ function hyphenate()
 
 	zinAssert(arguments.length >= 2);
 
-	if (typeof arguments[1] == 'array')
+	if (arguments[1] instanceof Array)
 	{
-		args = arguments[i];
+		args = arguments[1];
 		startAt = 0;
 	}
 	else

@@ -190,16 +190,17 @@ ZmSoapDocument.prototype.SyncGal = function(token)
 	this.setElementAsBody(elRequest);
 }
 
-ZmSoapDocument.prototype.GetContacts = function(id)
+ZmSoapDocument.prototype.GetContacts = function(a_id)
 {
 	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "GetContactsRequest");
 	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "cn");
 
-	zinAssert(id != null);
+	zinAssert(a_id != null && a_id.length > 0);
 
 	elRequest.setAttribute("sync", "1");
 
-	elCn.setAttribute("id", id);
+	elCn.setAttribute("id", hyphenate(",", a_id));
+
 	elRequest.appendChild(elCn);
 
 	this.setElementAsBody(elRequest);

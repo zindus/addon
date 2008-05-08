@@ -228,8 +228,6 @@ ZinAddressBookTb3.prototype.newAddressBook = function(name)
 	var prefs = new MozillaPreferences("");
 	var uri = this.kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
 
-	this.m_logger.debug("newAddressBook: blah: returns uri: " + uri);
-
 	this.m_map_name_to_uri = null;
 
 	return uri;
@@ -320,8 +318,8 @@ ZinAddressBook.prototype.addCard = function(uri, properties, attributes)
 {
 	zinAssert(uri != null && properties != null && attributes != null);
 
-	this.m_logger.debug("addCard: blah: about to add a card: uri: " + uri + " properties: " + aToString(properties) +
-	                                                       " attributes: " + aToString(attributes));
+	// this.m_logger.debug("addCard: blah: about to add a card: uri: " + uri + " properties: " + aToString(properties) +
+	//                                                       " attributes: " + aToString(attributes));
 
 	var dir = this.nsIAbDirectory(uri);
 	var abstractCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].
@@ -329,12 +327,6 @@ ZinAddressBook.prototype.addCard = function(uri, properties, attributes)
 	var abCard = dir.addCard(abstractCard);
 
 	this.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
-
-	this.m_logger.debug("addCard: blah: returns: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
-
-	blahCard = this.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, attributes[TBCARD_ATTRIBUTE_LUID]);
-
-	this.m_logger.debug("addCard: blah: looked-up: abCard: " + this.nsIAbCardToPrintableVerbose(blahCard));
 
 	return abCard;
 }
@@ -363,23 +355,15 @@ ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attribut
 	for (key in attributes)
 		mdbCard.setStringAttribute(key, attributes[key]);
 
-	this.m_logger.debug("ZinAddressBook::updateCard: blah: returns: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
-
 	return abCard;
 }
 
 ZinAddressBookTb2.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
-	this.m_logger.debug("ZinAddressBookTb2::updateCard: blah: before call: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
-
 	ZinAddressBook.prototype.updateCard.call(this, abCard, uri, properties, attributes, format);
-
-	this.m_logger.debug("ZinAddressBookTb2::updateCard: blah: before call: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
 
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	mdbCard.editCardToDatabase(uri);
-
-	this.m_logger.debug("ZinAddressBookTb2::updateCard: blah: after mdbCard: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
 
 	return abCard;
 }

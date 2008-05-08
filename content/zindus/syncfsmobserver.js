@@ -109,7 +109,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stSelectSoapUrl:  { count: 1 },
 		stSync:           { },
 		stSyncResult:     { },
-		stGetContact:     { count: 1 },
+		stGetContactZm:   { count: 1 },
 		stGalConsider:    { },
 		stGalSync:        { count: 1 },
 		stGalCommit:      { },
@@ -229,7 +229,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					ret = false; // no need to update the UI
 				break;
 
-			case 'stGetContact':
+			case 'stGetContactZm':
 			case 'stGetContactPuZm':
 				if (context.state.aContact.length > 0)
 				{
@@ -237,12 +237,21 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
-						// this.m_logger.debug("4401: op: " + op + " this.get(SyncFsmObserver.OP): " + this.get(SyncFsmObserver.OP));
 						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", context.state.aContact.length);
-						this.set(SyncFsmObserver.PROG_CNT, 0);
+						this.count_get_contact_zm = 1;
 					}
 
-					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
+					var aGetContactRequest = SyncFsm.GetContactZmNextBatch(context.state.aContact);
+
+					var lo = this.count_get_contact_zm;
+					var hi = this.count_get_contact_zm + aGetContactRequest.length - 1;
+
+					if (lo == hi)
+						this.set(SyncFsmObserver.PROG_CNT, lo);
+					else
+						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
+
+					this.count_get_contact_zm += aGetContactRequest.length;
 				}
 				else
 					ret = false; // no need to update the UI
