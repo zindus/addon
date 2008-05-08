@@ -27,6 +27,14 @@ include("chrome://zindus/content/lso.js");
 function ZinTestHarness()
 {
 	this.m_logger = newZinLogger("ZinTestHarness");
+	this.m_bugzilla_432145_count = 100;
+
+	this.m_bugzilla_432145_uri = new Array();
+	this.m_bugzilla_432145_uri[0] = "moz-abmdbdirectory://abook-3.mab";
+	this.m_bugzilla_432145_uri[1] = "moz-abmdbdirectory://abook-12.mab";
+	this.m_bugzilla_432145_uri[2] = "moz-abmdbdirectory://abook-20.mab";
+	this.m_bugzilla_432145_uri[3] = "moz-abmdbdirectory://abook-21.mab";
+	this.m_bugzilla_432145_uri[4] = "moz-abmdbdirectory://abook-22.mab";
 }
 
 ZinTestHarness.prototype.run = function()
@@ -41,6 +49,9 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
+	// ret = ret && this.testAddressBookBugzilla432145Create();
+	// ret = ret && this.testAddressBookBugzilla432145Compare();
+	ret = ret && this.testAddressBookBugzilla432145Delete();
 	// ret = ret && this.testZinFeedCollection();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
@@ -49,7 +60,7 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testGoogleContacts();
 	// ret = ret && this.testGoogleContacts2();
-	ret = ret && this.testGoogleContacts3();
+	// ret = ret && this.testGoogleContacts3();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -536,6 +547,110 @@ ZinTestHarness.prototype.testAddressBook2 = function()
 	this.m_logger.debug("abCard created: "  + addressbook.nsIAbCardToPrintableVerbose(abCard));
 }
 
+ZinTestHarness.prototype.testAddressBookBugzilla432145Uri = function(count)
+{
+	var index = parseInt( (count * this.m_bugzilla_432145_uri.length) / this.m_bugzilla_432145_count );
+
+	zinAssertAndLog(isPropertyPresent(this.m_bugzilla_432145_uri, index), "index: " + index);
+
+	return this.m_bugzilla_432145_uri[index];
+}
+
+ZinTestHarness.prototype.testAddressBookBugzilla432145Create = function()
+{
+	var addressbook = this.testAddressBookBugzilla432145Addressbook();
+
+	// this.m_logger.debug("testAddressBook: addressbooks: " + addressbook.addressbooksToString());
+
+	var properties = new Object();
+	var attributes = new Object();
+	var luid = "1";
+	var count, abCardIn, abCardOut;
+
+	for (count = 0; count < this.m_bugzilla_432145_count; count++)
+	{
+		this.testAddressBookBugzilla432145Populate(properties, attributes, luid);
+
+		abCardIn = addressbook.addCard(this.testAddressBookBugzilla432145Uri(count), properties, attributes);
+
+		luid++;
+	}
+
+	return true;
+}
+
+ZinTestHarness.prototype.testAddressBookBugzilla432145Delete = function()
+{
+	var addressbook = this.testAddressBookBugzilla432145Addressbook();
+
+	var luid = "1";
+	var attributes, count, abCard;
+	var a_cards_to_delete = new Array();
+
+	for (count = 0; count < this.m_bugzilla_432145_count; count++)
+	{
+		abCard = addressbook.lookupCard(this.testAddressBookBugzilla432145Uri(count), TBCARD_ATTRIBUTE_LUID, luid);
+
+		addressbook.deleteCards(this.testAddressBookBugzilla432145Uri(count), [ abCard ] );
+
+		luid++;
+	}
+
+	return true;
+}
+
+ZinTestHarness.prototype.testAddressBookBugzilla432145Compare = function()
+{
+	var addressbook = this.testAddressBookBugzilla432145Addressbook();
+
+	var luid = "1";
+	var attributes, count, abCard;
+	var a_cards_to_delete = new Array();
+	var properties = new Object();
+	var attributes = new Object();
+
+	for (count = 0; count < this.m_bugzilla_432145_count; count++)
+	{
+		this.testAddressBookBugzilla432145Populate(properties, attributes, luid);
+
+		abCard = addressbook.lookupCard(this.testAddressBookBugzilla432145Uri(count), TBCARD_ATTRIBUTE_LUID, luid);
+
+		zinAssertAndLog(isMatchObjects(properties, addressbook.getCardProperties(abCard)), count);
+		zinAssertAndLog(isMatchObjects(attributes, addressbook.getCardAttributes(abCard)), count);
+
+		luid++;
+	}
+
+	return true;
+}
+
+ZinTestHarness.prototype.testAddressBookBugzilla432145Populate = function(properties, attributes, luid)
+{
+	var prefix = "zindus-test-";
+
+	properties["FirstName"]   = null;
+	properties["LastName"]    = null;
+	properties["DisplayName"] = null;
+	properties["SecondEmail"] = null;
+
+	for (var i in properties)
+		properties[i] = prefix + i + "-" + luid;
+
+	attributes[TBCARD_ATTRIBUTE_LUID] = luid;
+}
+
+ZinTestHarness.prototype.testAddressBookBugzilla432145Addressbook = function()
+{
+	var ret;
+
+	if (ZinAddressBook.TbVersion() == ZinAddressBook.TB2)
+		ret = new ZinAddressBookTb2();
+	else
+		ret = new ZinAddressBookTb3();
+
+	return ret;
+}
+
 ZinTestHarness.prototype.testGoogleContacts2 = function()
 {
 	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/username%40@gmail.com/base/7ae485588d2b6b50</id><updated>2008-04-26T01:58:35.904Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>77</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50/1209175115904000'/><gd:email rel='http://schemas.google.com/g/2005#other' address='77@example.com' primary='true'/></entry>"
@@ -613,7 +728,7 @@ ZinTestHarness.prototype.testGoogleContacts = function()
 
 	// 3. test that updating with all properties works
 	//
-	contact.updateFromContact(properties);
+	contact.updateFromProperties(properties);
 
 	this.matchGoogleContact(contact, properties, meta);
 
@@ -631,7 +746,7 @@ ZinTestHarness.prototype.testGoogleContacts = function()
 	delete properties["SecondEmail"];
 	delete properties["im#AIM"];
 
-	contact.updateFromContact(properties);
+	contact.updateFromProperties(properties);
 
 	properties["SecondEmail"]      = "john.smith.home.2@example.com"; // take the next in line...
 	properties["phoneNumber#home"] = "3-home";
@@ -643,19 +758,19 @@ ZinTestHarness.prototype.testGoogleContacts = function()
 	//
 	properties = this.sampleGoogleContactProperties();
 	contact = new GdContact();
-	contact.updateFromContact(properties);
+	contact.updateFromProperties(properties);
 	this.matchGoogleContact(contact, properties, {});
 
 	// 5. test creating a contact without a title
 	//
 	properties = newObject("content", "1-content", "organization#orgName", "2-organization#orgName");
-	contact.updateFromContact(properties);
+	contact.updateFromProperties(properties);
 	this.matchGoogleContact(contact, properties, {});
 
 	// 5. test creating a contact with an empty title
 	//
 	properties = newObject("title", "", "content", "1-content", "organization#orgName", "2-organization#orgName");
-	contact.updateFromContact(properties);
+	contact.updateFromProperties(properties);
 	delete properties["title"];
 	this.matchGoogleContact(contact, properties, {});
 
@@ -685,19 +800,19 @@ ZinTestHarness.prototype.sampleGoogleContactProperties = function()
 ZinTestHarness.prototype.matchGoogleContact = function(contact, properties, meta)
 {
 	var key;
-	zinAssert(contact && contact.m_contact);
+	zinAssert(contact && contact.m_properties);
 
 	// this.m_logger.debug("matchGoogleContact: blah: \n properties: " + aToString(properties) + " \nmeta: " + aToString(meta) + " \ncontact: " + contact.toString());
 
 	for (key in properties)
-		zinAssertAndLog(contact.m_contact[key] == properties[key], "key: " + key);
+		zinAssertAndLog(contact.m_properties[key] == properties[key], "key: " + key);
 
 	for (key in meta)
 		zinAssertAndLog(contact.m_meta[key] == meta[key], "key: " + key);
 
-	if (contact.m_contact)
-		for (key in contact.m_contact)
-			zinAssertAndLog(contact.m_contact[key] == properties[key], "key: " + key);
+	if (contact.m_properties)
+		for (key in contact.m_properties)
+			zinAssertAndLog(contact.m_properties[key] == properties[key], "key: " + key);
 
 	if (contact.m_meta)
 		for (key in contact.m_meta)

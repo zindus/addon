@@ -419,7 +419,7 @@ ZinContactConverter.prototype.removeKeysNotCommonToAllFormats = function(format_
 		delete properties[i];
 
 	// this.m_logger.debug("removeKeysNotCommonToAllFormats: blah: keys_to_remove: " + aToString(keys_to_remove) +
-	//                     " leaving keys: " + keysAsString(properties));
+	//                     " leaving keys: " + keysToString(properties));
 }
 
 // So for example:

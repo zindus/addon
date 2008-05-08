@@ -33,5 +33,10 @@ function ZinStopWatch(prefix)
 
 ZinStopWatch.prototype.mark = function(marker)
 {
-	this.m_logger.debug(this.m_prefix + ": " + marker + ": " + (new Date(Date.now()) - this.m_start));
+	this.m_logger.debug(this.m_prefix + ": " + marker + ": " + this.elapsedToString());
+}
+
+ZinStopWatch.prototype.elapsedToString = function()
+{
+	return (new Date(Date.now()) - this.m_start);
 }

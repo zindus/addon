@@ -107,8 +107,6 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stLoadTb:         { count: 1 },
 		stGetAccountInfo: { count: 1 },
 		stSelectSoapUrl:  { count: 1 },
-		stGetInfo:        { count: 1 },
-		stCheckLicense:   { },
 		stSync:           { },
 		stSyncResult:     { },
 		stGetContact:     { count: 1 },
@@ -201,8 +199,6 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stAuth':           this.progressReportOnSource(context.state.sourceid_pr, "RemoteAuth");  break;
 			case 'stLoad':           this.progressReportOn("Load");                                         break;
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "AccountInfo"); break;
-			case 'stGetInfo':          
-			case 'stCheckLicense':          
 			case 'stSync':          
 			case 'stSyncResult':     this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
 			case 'stGetContactGd':   this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;

@@ -82,20 +82,18 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 			break;
 		}
 
-		if (elementA.childNodes.length == 1 && elementA.childNodes.item(0).nodeType == Node.TEXT_NODE)
+		if (elementA.hasChildNodes() && elementA.childNodes.length == 1 && elementA.childNodes.item(0).nodeType == Node.TEXT_NODE)
 			value = elementA.childNodes.item(0).nodeValue;
 
-		if (elementA.hasAttributes() && elementA.attributes.item(0).nodeName == "n")
+		if (elementA.hasAttributes() && elementA.attributes.length == 1 && elementA.attributes.item(0).nodeName == "n")
 			key = elementA.attributes.item(0).nodeValue;
 
 		if (key && value)
 			this.element[key] = value;
+		else if (elementA.hasAttribute("ct"))
+			; // if it has a ct (content-type) attribute, Tb2: ignore it Tb3: look for n="image" and get+store the image(s)
 		else
-		{
-			gLogger.warn("Unexpected response from server: skipping the rest of this contact: key is " + key + " and value is " + value);
-			gLogger.warn("server xml: " + xmlDocumentToString(node));
-			break;
-		}
+			gLogger.warn("This contact contains something that we don't understand: " + xmlDocumentToString(node));
 
 		// if (key && value) gLogger.debug("77224: setting contact." + key + " to " + value);
 	}

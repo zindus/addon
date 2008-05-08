@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.13 2007-12-13 03:25:59 cvsuser Exp $
+# $Id: build.sh,v 1.14 2008-05-08 05:11:35 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -163,6 +163,8 @@ fi
 # generate the XPI file
 echo "Generating $XPI_FILE_NAME..."
 zip -r ../$XPI_FILE_NAME *
+
+/cygdrive/c/leni/bin/mccoy/mccoy/mccoy.exe -sign file:///c:/cygwin/home/L/wrk/consile/xpi/thunderbird/update.rdf -key zindus-xpi-updatekey  -addOnFileName file:///c:/cygwin/home/L/wrk/consile/xpi/thunderbird/$XPI_FILE_NAME
 
 cd "$ROOT_DIR"
 

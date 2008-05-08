@@ -246,6 +246,24 @@ function aToString(obj)
 	return ret;
 }
 
+function keysToString(obj)
+{
+	ret = "";
+	var is_first = true;
+
+	for (var i in obj)
+	{
+		if (is_first)
+			is_first = false;
+		else
+			ret += " ";
+
+		ret += i;
+	}
+
+	return ret;
+}
+
 function aToLength(obj)
 {
 	var count = 0;
@@ -332,24 +350,6 @@ function isMatchArrayElementInObject(a, obj)
 			ret = false;
 			break;
 		}
-
-	return ret;
-}
-
-function keysAsString(obj)
-{
-	ret = "";
-	var is_first = true;
-
-	for (var i in obj)
-	{
-		if (is_first)
-			is_first = false;
-		else
-			ret += " ";
-
-		ret += i;
-	}
 
 	return ret;
 }

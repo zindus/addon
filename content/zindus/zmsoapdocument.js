@@ -298,18 +298,18 @@ ZmSoapDocument.prototype.ModifyContact = function(args)
 	          isPropertyPresent(args, 'l') &&
 			  isPropertyPresent(args, 'id') && aToLength(args.properties) > 0);
 
-
-	elRequest.setAttribute("replace", "1");
-	elRequest.setAttribute("force", "1");
-
 	elCn.setAttribute("id", args.id);
 	elCn.setAttribute("l", args.l);
 
 	for (i in args.properties)
 	{
 		elA = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "a");
+
 		elA.setAttribute("n", i);
-		elA.textContent = args.properties[i];
+
+		if (args.properties[i])
+			elA.textContent = args.properties[i];
+
 		elCn.appendChild(elA);
 	}
 

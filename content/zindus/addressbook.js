@@ -257,14 +257,13 @@ ZinAddressBookTb3.prototype.deleteAddressBook = function(uri)
 	this.nsIAbManager().deleteAddressBook(uri);
 }
 
-ZinAddressBookTb2.renameAddressBook = function(uri, name)
+ZinAddressBookTb2.prototype.renameAddressBook = function(uri, name)
 {
-	var rdf  = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
-	var dir  = rdf.GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-	var root = rdf.GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
-	var ds   = rdf.GetDataSource("rdf:addressdirectory");
+	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
+	var ds   = this.nsIRDFService().GetDataSource("rdf:addressdirectory");
 
-	ZinAddressBook.instanceAbook().modifyAddressBook(ds, root, dir, ZinAddressBook.newAbDirectoryProperties(name));
+	this.nsIAddressBook().modifyAddressBook(ds, root, dir, this.newAbDirectoryProperties(name));
 
 	this.m_map_name_to_uri = null;
 }
@@ -364,15 +363,23 @@ ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attribut
 	for (key in attributes)
 		mdbCard.setStringAttribute(key, attributes[key]);
 
+	this.m_logger.debug("ZinAddressBook::updateCard: blah: returns: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
+
 	return abCard;
 }
 
 ZinAddressBookTb2.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
+	this.m_logger.debug("ZinAddressBookTb2::updateCard: blah: before call: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
+
 	ZinAddressBook.prototype.updateCard.call(this, abCard, uri, properties, attributes, format);
+
+	this.m_logger.debug("ZinAddressBookTb2::updateCard: blah: before call: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
 
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	mdbCard.editCardToDatabase(uri);
+
+	this.m_logger.debug("ZinAddressBookTb2::updateCard: blah: after mdbCard: abCard: " + this.nsIAbCardToPrintableVerbose(abCard));
 
 	return abCard;
 }
@@ -389,6 +396,8 @@ ZinAddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attri
 	database.editCard(mdbCard, false);
 	var dir = this.nsIAbDirectory(uri);
 	dir.modifyCard(abCard);
+
+	return abCard;
 }
 
 ZinAddressBook.prototype.getCardProperties = function(abCard)
@@ -445,6 +454,9 @@ ZinAddressBookTb3.prototype.setCardAttribute = function(mdbCard, uri, key, value
 	mdbCard.setStringAttribute(key, value);
 
 	database.editCard(mdbCard, false);
+
+	var dir = this.nsIAbDirectory(uri);
+	dir.modifyCard(mdbCard);
 }
 
 ZinAddressBookTb2.prototype.lookupCard = function(uri, key, value)
@@ -468,8 +480,8 @@ ZinAddressBookTb3.prototype.lookupCard = function(uri, key, value)
 	var dir    = this.nsIAbDirectory(uri);
 	var abCard = dir.database.getCardFromAttribute(dir, key, value, false);
 
-	this.m_logger.debug("lookupCard: blah: uri: " + uri + " key: " + key + " value: " + value +
-	                     " returns: " + this.nsIAbCardToPrintableVerbose(abCard));
+	// this.m_logger.debug("lookupCard: blah: uri: " + uri + " key: " + key + " value: " + value +
+	//                     " returns: " + this.nsIAbCardToPrintableVerbose(abCard));
 
 	return abCard; // an nsIABCard
 }
@@ -512,7 +524,7 @@ ZinAddressBook.prototype.setupPab = function()
 			if (elem.dirName == "Personal Address Book")
 			{
 				pabByName      = new Object();
-				pabByUri.uri   = this.context.directoryProperty(elem, "URI");
+				pabByName.uri  = this.context.directoryProperty(elem, "URI");
 				pabByName.name = elem.dirName;
 			}
 
