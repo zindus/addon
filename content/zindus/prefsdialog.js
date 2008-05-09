@@ -34,6 +34,7 @@ include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/timer.js");
+var is_gdsyncwith = false;
 
 const GOOGLE_URL_CLIENT_LOGIN = "https://www.google.com/accounts/ClientLogin";
 
@@ -51,8 +52,10 @@ function Prefs()
 	this.m_gal_radio_ids       = [ "zindus-prefs-general-gal-yes", "zindus-prefs-general-gal-if-fewer", "zindus-prefs-general-gal-no" ];
 	this.m_gal_radio_bimap     = new BiMap(this.m_gal_radio_values, this.m_gal_radio_ids);
 
-	// this.m_gd_sync_with_bimap  = new BiMap( [ "zg",                                 "pab"                                 ], 
-	//                                         [ "zindus-prefs-general-gdsyncwith-zg", "zindus-prefs-general-gdsyncwith-pab" ] );
+	if (is_gdsyncwith)
+	this.m_gd_sync_with_bimap  = new BiMap( [ "zg",                                 "pab"                                 ], 
+	                                        [ "zindus-prefs-general-gdsyncwith-zg", "zindus-prefs-general-gdsyncwith-pab" ] );
+
 	this.m_server_type_bimap   = new BiMap( [ "google",                           "zimbra"                          ], 
 	                                        [ "zindus-prefs-server-type-google",  "zindus-prefs-server-type-zimbra" ] );
 
@@ -60,7 +63,7 @@ function Prefs()
 	this.m_timer_functor       = null;
 	this.m_maestro             = null;
 	this.m_is_fsm_running      = false;
-	this.m_logger              = newZinLogger("Prefs"); this.m_logger.level(ZinLogger.NONE);
+	this.m_logger              = newZinLogger("Prefs"); // this.m_logger.level(ZinLogger.NONE); // TODO
 
 	this.m_preferences         = new MozillaPreferences();
 	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
@@ -161,8 +164,9 @@ Prefs.prototype.onAccept = function()
 
 	// general tab - radio elements: GAL and Google Sync With
 	//
-	// this.setPrefsetFromRadio("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap,
-	//                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_WITH);
+	if (is_gdsyncwith)
+	this.setPrefsetFromRadio("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap,
+	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_WITH);
 	this.setPrefsetFromRadio("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap,
 	                          this.m_prefset_general, PrefSet.GENERAL_SYNC_GAL_ENABLED);
 
@@ -326,8 +330,11 @@ Prefs.prototype.initialiseView = function()
 
 	// general tab - Google Sync With
 	//
-	// this.setRadioFromPrefset("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap, this.m_prefset_general,
-	//                          PrefSet.GENERAL_GD_SYNC_WITH, "zindus-prefs-general-gdsyncwith-pab")
+	if (is_gdsyncwith)
+	this.setRadioFromPrefset("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap, this.m_prefset_general,
+	                         PrefSet.GENERAL_GD_SYNC_WITH, "zindus-prefs-general-gdsyncwith-pab")
+	if (is_gdsyncwith)
+	this.setSyncWithGdSuffix();
 
 	// general tab - Gal radiogroup
 	//
@@ -353,6 +360,7 @@ Prefs.prototype.initialiseView = function()
 Prefs.prototype.isServerSettingsComplete = function()
 {
 	ret = true;
+
 	ret = ret && (document.getElementById("zindus-prefs-server-url").value.length      > 0);
 	ret = ret && (document.getElementById("zindus-prefs-server-username").value.length > 0);
 	ret = ret && (document.getElementById("zindus-prefs-server-password").value.length > 0);
@@ -390,24 +398,24 @@ Prefs.prototype.updateView = function()
 
 	var server_type_current = this.serverType();
 
-	// document.getElementById("zindus-prefs-general-syncwith-vbox").style.position = "relative";
-	// document.getElementById("zindus-prefs-general-gal").style.position = "relative";
-	// document.getElementById("zindus-prefs-general-syncwith-vbox").style.zindex = "1";
-	// document.getElementById("zindus-prefs-general-gal").style.zindex = "2";
-
 	if (server_type_current == FORMAT_GD)
 	{
 		document.getElementById("zindus-prefs-server-url-description").style.visibility = "hidden";
 		document.getElementById("zindus-prefs-server-url-row").style.visibility = "hidden";
 		document.getElementById("zindus-prefs-general-gal").style.visibility = "hidden";
-		// document.getElementById("zindus-prefs-general-syncwith-vbox").style.visibility = "visible";
+	if (is_gdsyncwith)
+		document.getElementById("zindus-prefs-general-syncwith-vbox").style.visibility = "visible";
+
+	if (is_gdsyncwith)
+		this.setSyncWithGdSuffix();
 	}
 	else
 	{
 		document.getElementById("zindus-prefs-server-url-description").style.visibility = "visible";
 		document.getElementById("zindus-prefs-server-url-row").style.visibility = "visible";
 		document.getElementById("zindus-prefs-general-gal").style.visibility = "visible";
-		// document.getElementById("zindus-prefs-general-syncwith-vbox").style.visibility = "hidden";
+	if (is_gdsyncwith)
+		document.getElementById("zindus-prefs-general-syncwith-vbox").style.visibility = "hidden";
 	}
 
 	if (this.m_server_type_last != server_type_current)
@@ -516,4 +524,18 @@ Prefs.prototype.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, pr
 	document.getElementById(radiogroup_id).selectedItem = document.getElementById(selected_id);
 
 	this.m_logger.debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
+}
+
+Prefs.prototype.setSyncWithGdSuffix = function()
+{
+	var zg_addressbook;
+
+	zg_addressbook = stringBundleString("prefsGeneralGdSyncWithZgPrefix") +
+	                       (this.isServerSettingsComplete() ?
+	                       document.getElementById("zindus-prefs-server-username").value :
+	                       stringBundleString("prefsGeneralGdSyncWithZgSuffix"));
+
+	// zg_addressbook = stringBundleString("prefsGeneralGdSyncWithZgPrefix") + stringBundleString("prefsGeneralGdSyncWithZgSuffix");
+
+	document.getElementById("zindus-prefs-general-gdsyncwith-zg").label = zg_addressbook;
 }

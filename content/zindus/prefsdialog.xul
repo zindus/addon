@@ -126,29 +126,33 @@
 					</vbox>
 				</groupbox>
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+
+				<stack >
 				<!--
-				<vbox id="zindus-prefs-general-syncwith-vbox" >
-					<groupbox pack="center" >
-						<caption label="&ZinPrefsGeneralGdSyncWith.label;" />
-						<radiogroup id="zindus-prefs-general-gdsyncwith-radiogroup">
-							<radio id="zindus-prefs-general-gdsyncwith-pab" label="&ZinPrefsGeneralGdSyncWithPab.label;" />
-							<radio id="zindus-prefs-general-gdsyncwith-zg"  label="&ZinPrefsGeneralGdSyncWithZg.label;"  />
-						</radiogroup>
-					</groupbox>
-					<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
-				</vbox>
+					<vbox id="zindus-prefs-general-syncwith-vbox" >
+						<groupbox pack="center" >
+							<caption label="&ZinPrefsGeneralGdSyncWith.label;" />
+							<radiogroup id="zindus-prefs-general-gdsyncwith-radiogroup" >
+								<radio id="zindus-prefs-general-gdsyncwith-pab" label="&ZinPrefsGeneralGdSyncWithPab.label;" />
+								<radio id="zindus-prefs-general-gdsyncwith-zg"  tooltiptext="&ZinPrefsGeneralGdSyncWithGd.tooltip;" />
+							</radiogroup>
+						</groupbox>
+						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+					</vbox>
 				-->
-				<vbox id="zindus-prefs-general-gal" >
-					<groupbox pack="center" >
-						<caption label="&ZinPrefsGeneralGal.label;" />
-						<radiogroup id="zindus-prefs-general-gal-enabled">
-							<radio id="zindus-prefs-general-gal-yes"      label="&ZinPrefsGeneralGalYes.label;" />
-							<radio id="zindus-prefs-general-gal-if-fewer" label="" /> <!-- selected="true" -->
-							<radio id="zindus-prefs-general-gal-no"       label="&ZinPrefsGeneralGalNo.label;" />
-						</radiogroup>
-					</groupbox>
-					<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
-				</vbox>
+					<vbox id="zindus-prefs-general-gal" >
+						<groupbox pack="center" >
+							<caption label="&ZinPrefsGeneralGal.label;" />
+							<radiogroup id="zindus-prefs-general-gal-enabled">
+								<radio id="zindus-prefs-general-gal-yes"      label="&ZinPrefsGeneralGalYes.label;" />
+								<radio id="zindus-prefs-general-gal-if-fewer" label="" /> <!-- selected="true" -->
+								<radio id="zindus-prefs-general-gal-no"       label="&ZinPrefsGeneralGalNo.label;" />
+							</radiogroup>
+						</groupbox>
+						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+					</vbox>
+				</stack>
+
 				<groupbox pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupActions.label;"/>
 					<hbox align="right" >

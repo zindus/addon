@@ -1,45 +1,45 @@
 <!-- See http://books.mozdev.org/html/mozilla-chp-11-sect-4.html for the naming scheme -->
 
-<!ENTITY ZinToolsMenuItem.label                 "Zindus">
-<!ENTITY ZinToolsMenuItem.accesskey             "z">
-<!ENTITY ZinToolBarButton.tooltip               "Zindus Preferences">
+<!ENTITY ZinToolsMenuItem.label                  "Zindus">
+<!ENTITY ZinToolsMenuItem.accesskey              "z">
+<!ENTITY ZinToolBarButton.tooltip                "Zindus Preferences">
 
-<!ENTITY ZinProgressPanelPrefix.label           "Zindus:">
+<!ENTITY ZinProgressPanelPrefix.label            "Zindus:">
 
-<!ENTITY ZinPrefs.title                         "Zindus Configuration Settings">
-<!ENTITY ZinPrefs.buttonlabelextra2             "Help">
-<!ENTITY ZinPrefsTabServer.label                "Server Settings">
-<!ENTITY ZinPrefsTabGeneral.label               "Preferences">
-<!ENTITY ZinPrefsSpacer.style                   "height:15px">
+<!ENTITY ZinPrefs.title                          "Zindus Configuration Settings">
+<!ENTITY ZinPrefs.buttonlabelextra2              "Help">
+<!ENTITY ZinPrefsTabServer.label                 "Server Settings">
+<!ENTITY ZinPrefsTabGeneral.label                "Preferences">
+<!ENTITY ZinPrefsSpacer.style                    "height:15px">
 
-<!ENTITY ZinPrefsServerGrid.style               "margin-left:10px; margin-right:20px; margin-top:10px ">
-<!ENTITY ZinPrefsServerDescription.style        "margin-top:5px; margin-bottom:10px; padding:5px ">
-<!ENTITY ZinPrefsServerLabel.style              "margin-left:20px">
-<!ENTITY ZinPrefsServerUrlDescription.value     "Type the url you use to log on to the server.
-                                                 <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
-<!ENTITY ZinPrefsServerUrl.label                "Server Url:">
+<!ENTITY ZinPrefsServerGrid.style                "margin-left:10px; margin-right:20px; margin-top:10px ">
+<!ENTITY ZinPrefsServerDescription.style         "margin-top:5px; margin-bottom:10px; padding:5px ">
+<!ENTITY ZinPrefsServerLabel.style               "margin-left:20px">
+<!ENTITY ZinPrefsServerUrlDescription.value      "Type the url you use to log on to the server.
+                                                  <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
+<!ENTITY ZinPrefsServerUrl.label                 "Server Url:">
 <!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on.">
-<!ENTITY ZinPrefsServerUsername.label           "Email Address">
-<!ENTITY ZinPrefsServerPassword.label           "Password">
-<!ENTITY ZinPrefsServerTestConnection.label     "Test Connection to Server">
-<!ENTITY ZinPrefsServerTestConnection.accesskey "T">
+<!ENTITY ZinPrefsServerUsername.label            "Email Address">
+<!ENTITY ZinPrefsServerPassword.label            "Password">
+<!ENTITY ZinPrefsServerTestConnection.label      "Test Connection to Server">
+<!ENTITY ZinPrefsServerTestConnection.accesskey  "T">
 
-<!ENTITY ZinPrefsGeneralIntroduction.value      "Restart Thunderbird after changing settings to be sure they are in effect.">
-<!ENTITY ZinPrefsGeneralGroupAdvanced.label     "Settings">
-<!ENTITY ZinPrefsGeneralGroupActions.label      "Actions">
-<!ENTITY ZinPrefsGeneralManualSyncOnly.label    "Manual sync (stops auto sync)">
-<!ENTITY ZinPrefsGeneralVerboseLogging.label    "Verbose logging">
-<!ENTITY ZinPrefsGeneralGal.label               "Global Address List (GAL)">
-<!ENTITY ZinPrefsGeneralGalYes.label            "Yes">
-<!ENTITY ZinPrefsGeneralGalNo.label             "No">
-<!ENTITY ZinPrefsGeneralGdSyncWith.label        "Sync Google contacts with">
-<!ENTITY ZinPrefsGeneralGdSyncWithPab.label     "Personal Address Book">
-<!ENTITY ZinPrefsGeneralGdSyncWithZg.label      "Zindus/Google">
-<!ENTITY ZinPrefsGeneralButtonSyncNow.label     "Sync Now">
-<!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey "S">
-<!ENTITY ZinPrefsGeneralButtonReset.label       "Reset">
-<!ENTITY ZinPrefsGeneralButtonReset.accesskey   "R">
-<!ENTITY ZinPrefsGeneralButtonTimer.label       "Run Timer">
-<!ENTITY ZinPrefsGeneralButtonTestHarness.label "Test Harness">
+<!ENTITY ZinPrefsGeneralIntroduction.value       "Restart Thunderbird after changing settings to be sure they are in effect.">
+<!ENTITY ZinPrefsGeneralGroupAdvanced.label      "Settings">
+<!ENTITY ZinPrefsGeneralGroupActions.label       "Actions">
+<!ENTITY ZinPrefsGeneralManualSyncOnly.label     "Manual sync (stops auto sync)">
+<!ENTITY ZinPrefsGeneralVerboseLogging.label     "Verbose logging">
+<!ENTITY ZinPrefsGeneralGal.label                "Global Address List (GAL)">
+<!ENTITY ZinPrefsGeneralGalYes.label             "Yes">
+<!ENTITY ZinPrefsGeneralGalNo.label              "No">
+<!ENTITY ZinPrefsGeneralGdSyncWith.label         "Sync Google contacts with">
+<!ENTITY ZinPrefsGeneralGdSyncWithPab.label      "Personal Address Book">
+<!ENTITY ZinPrefsGeneralGdSyncWithGd.tooltip     "This addressbook is created and syncs with Google.  Contacts in Personal Address Book aren't synced with Google">
+<!ENTITY ZinPrefsGeneralButtonSyncNow.label      "Sync Now">
+<!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey  "S">
+<!ENTITY ZinPrefsGeneralButtonReset.label        "Reset">
+<!ENTITY ZinPrefsGeneralButtonReset.accesskey    "R">
+<!ENTITY ZinPrefsGeneralButtonTimer.label        "Run Timer">
+<!ENTITY ZinPrefsGeneralButtonTestHarness.label  "Test Harness">
 
-<!ENTITY ZinSyncWindowProgressDescription.style "width:35em">
+<!ENTITY ZinSyncWindowProgressDescription.style  "width:35em">
