@@ -34,7 +34,6 @@ include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/syncfsm.js");
 include("chrome://zindus/content/testharness.js");
 include("chrome://zindus/content/timer.js");
-var is_gdsyncwith = false;
 
 const GOOGLE_URL_CLIENT_LOGIN = "https://www.google.com/accounts/ClientLogin";
 
@@ -52,7 +51,6 @@ function Prefs()
 	this.m_gal_radio_ids       = [ "zindus-prefs-general-gal-yes", "zindus-prefs-general-gal-if-fewer", "zindus-prefs-general-gal-no" ];
 	this.m_gal_radio_bimap     = new BiMap(this.m_gal_radio_values, this.m_gal_radio_ids);
 
-	if (is_gdsyncwith)
 	this.m_gd_sync_with_bimap  = new BiMap( [ "zg",                                 "pab"                                 ], 
 	                                        [ "zindus-prefs-general-gdsyncwith-zg", "zindus-prefs-general-gdsyncwith-pab" ] );
 
@@ -63,7 +61,7 @@ function Prefs()
 	this.m_timer_functor       = null;
 	this.m_maestro             = null;
 	this.m_is_fsm_running      = false;
-	this.m_logger              = newZinLogger("Prefs"); // this.m_logger.level(ZinLogger.NONE); // TODO
+	this.m_logger              = newZinLogger("Prefs"); this.m_logger.level(ZinLogger.NONE);
 
 	this.m_preferences         = new MozillaPreferences();
 	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
@@ -83,8 +81,8 @@ Prefs.prototype.onLoad = function(target)
 	this.m_prefset_server.load(SOURCEID_AA);
 	this.m_prefset_general.load();
 
-	// this.m_logger.debug("onLoad: - m_prefset_server == "  + this.m_prefset_server.toString());
-	// this.m_logger.debug("onLoad: - m_prefset_general == " + this.m_prefset_general.toString());
+	// this.m_logger.debug("onLoad: m_prefset_server == "  + this.m_prefset_server.toString());
+	// this.m_logger.debug("onLoad: m_prefset_general == " + this.m_prefset_general.toString());
 
 	this.maestroRegister()
 	this.initialiseView();
@@ -164,11 +162,10 @@ Prefs.prototype.onAccept = function()
 
 	// general tab - radio elements: GAL and Google Sync With
 	//
-	if (is_gdsyncwith)
 	this.setPrefsetFromRadio("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap,
 	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_WITH);
 	this.setPrefsetFromRadio("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap,
-	                          this.m_prefset_general, PrefSet.GENERAL_SYNC_GAL_ENABLED);
+	                          this.m_prefset_general, PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED);
 
 	this.m_prefset_server.save();
 	this.m_prefset_general.save();
@@ -192,12 +189,7 @@ Prefs.prototype.onCommand = function(id_target)
 	{
 		case "zindus-prefs-general-button-sync-now":
 			var payload = new Payload();
-			payload.m_syncfsm = this.getSyncFsm(
-									this.serverType(),
-									"twoway",
-									document.getElementById("zindus-prefs-server-url").value,
-									document.getElementById("zindus-prefs-server-username").value,
-									document.getElementById("zindus-prefs-server-password").value );
+			payload.m_syncfsm = this.getSyncFsm(this.serverType(), "twoway");
 			payload.m_es = new SyncFsmExitStatus();
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
@@ -217,12 +209,7 @@ Prefs.prototype.onCommand = function(id_target)
 
 		case "zindus-prefs-server-button-authonly":
 			var payload = new Payload();
-			payload.m_syncfsm = this.getSyncFsm(
-									this.serverType(),
-									"authonly",
-									document.getElementById("zindus-prefs-server-url").value,
-									document.getElementById("zindus-prefs-server-username").value,
-									document.getElementById("zindus-prefs-server-password").value );
+			payload.m_syncfsm = this.getSyncFsm( this.serverType(), "authonly");
 			payload.m_es = new SyncFsmExitStatus();
 
 			gLogger.debug("Prefs.onCommand: before openDialog: payload.m_es: " + payload.m_es.toString());
@@ -271,21 +258,26 @@ Prefs.prototype.onCommand = function(id_target)
 	}
 }
 
-Prefs.prototype.getSyncFsm = function(format, type, serverurl, username, password)
+Prefs.prototype.getSyncFsm = function(format, type)
 {
 	var syncfsm;
 	var id_fsm = null
 
-	// this.m_logger.debug("getSyncFsm: serverurl: " + serverurl + " username: " + username + " password: " + password);
-
 	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = ZinMaestro.FSM_ID_ZM_TWOWAY;   }
-	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = ZinMaestro.FSM_ID_ZM_AUTHONLY; }
 	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = ZinMaestro.FSM_ID_GD_TWOWAY;   }
+	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = ZinMaestro.FSM_ID_ZM_AUTHONLY; }
 	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = ZinMaestro.FSM_ID_GD_AUTHONLY; }
 	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
 
 	syncfsm.initialise(id_fsm);
-	syncfsm.setCredentials(serverurl, username, password);
+	syncfsm.setCredentials( document.getElementById("zindus-prefs-server-url").value,
+							document.getElementById("zindus-prefs-server-username").value,
+							document.getElementById("zindus-prefs-server-password").value );
+
+	if (format == FORMAT_GD)
+		syncfsm.setState(this.getValueFromRadio("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap));
+	else if (format == FORMAT_ZM)
+		syncfsm.setState(this.getValueFromRadio("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap));
 
 	return syncfsm;
 }
@@ -330,11 +322,9 @@ Prefs.prototype.initialiseView = function()
 
 	// general tab - Google Sync With
 	//
-	if (is_gdsyncwith)
 	this.setRadioFromPrefset("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap, this.m_prefset_general,
 	                         PrefSet.GENERAL_GD_SYNC_WITH, "zindus-prefs-general-gdsyncwith-pab")
-	if (is_gdsyncwith)
-	this.setSyncWithGdSuffix();
+	this.setGdSyncWithLabel();
 
 	// general tab - Gal radiogroup
 	//
@@ -345,7 +335,7 @@ Prefs.prototype.initialiseView = function()
 	document.getElementById("zindus-prefs-general-gal-if-fewer").label = msg;
 
 	this.setRadioFromPrefset("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap, this.m_prefset_general,
-	                          PrefSet.GENERAL_SYNC_GAL_ENABLED, "zindus-prefs-general-gal-if-fewer")
+	                          PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, "zindus-prefs-general-gal-if-fewer")
 	
 	// work out which tab appears on top
 	//
@@ -403,19 +393,16 @@ Prefs.prototype.updateView = function()
 		document.getElementById("zindus-prefs-server-url-description").style.visibility = "hidden";
 		document.getElementById("zindus-prefs-server-url-row").style.visibility = "hidden";
 		document.getElementById("zindus-prefs-general-gal").style.visibility = "hidden";
-	if (is_gdsyncwith)
-		document.getElementById("zindus-prefs-general-syncwith-vbox").style.visibility = "visible";
+		document.getElementById("zindus-prefs-general-gdsyncwith-vbox").style.visibility = "visible";
 
-	if (is_gdsyncwith)
-		this.setSyncWithGdSuffix();
+		this.setGdSyncWithLabel();
 	}
 	else
 	{
 		document.getElementById("zindus-prefs-server-url-description").style.visibility = "visible";
 		document.getElementById("zindus-prefs-server-url-row").style.visibility = "visible";
 		document.getElementById("zindus-prefs-general-gal").style.visibility = "visible";
-	if (is_gdsyncwith)
-		document.getElementById("zindus-prefs-general-syncwith-vbox").style.visibility = "hidden";
+		document.getElementById("zindus-prefs-general-gdsyncwith-vbox").style.visibility = "hidden";
 	}
 
 	if (this.m_server_type_last != server_type_current)
@@ -504,10 +491,15 @@ Prefs.prototype.rememberLastServerType = function(server_type)
 	this.a_server_type_values[this.m_server_type_last].password = document.getElementById("zindus-prefs-server-password").value;
 }
 
-Prefs.prototype.setPrefsetFromRadio = function(radiogroup_id, bimap, prefset, property)
+Prefs.prototype.getValueFromRadio = function(radiogroup_id, bimap)
 {
 	var selected_id  = document.getElementById(radiogroup_id).selectedItem.id;
-	radio_button = bimap.lookup(null, selected_id);
+	return bimap.lookup(null, selected_id);
+}
+
+Prefs.prototype.setPrefsetFromRadio = function(radiogroup_id, bimap, prefset, property)
+{
+	var radio_button = this.getValueFromRadio(radiogroup_id, bimap);
 	prefset.setProperty(property, radio_button);
 }
 
@@ -526,7 +518,7 @@ Prefs.prototype.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, pr
 	this.m_logger.debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
 }
 
-Prefs.prototype.setSyncWithGdSuffix = function()
+Prefs.prototype.setGdSyncWithLabel = function()
 {
 	var zg_addressbook;
 

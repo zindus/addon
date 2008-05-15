@@ -194,7 +194,8 @@ if (typeof(loggingLevel) != 'object' || !loggingLevel)
 {
 	var prefs = new MozillaPreferences();
 
-	loggingLevel = (prefs.getCharPrefOrNull(prefs.branch(), "general.verboselogging") == "true") ? ZinLogger.DEBUG : ZinLogger.INFO;
+	loggingLevel = (prefs.getCharPrefOrNull(prefs.branch(), "general.verbose_logging") == "true") ?
+	                           ZinLogger.DEBUG : ZinLogger.INFO;
 	gLogger      = newZinLogger("global");
 }
 

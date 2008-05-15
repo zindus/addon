@@ -100,6 +100,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			}
 
 			this.m_syncfsm.setCredentials();
+			this.m_syncfsm.setState();
 			this.m_syncfsm.start(window);
 			this.is_running = true;
 		}

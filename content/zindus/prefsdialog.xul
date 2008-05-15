@@ -128,18 +128,17 @@
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
 
 				<stack >
-				<!--
-					<vbox id="zindus-prefs-general-syncwith-vbox" >
+					<vbox id="zindus-prefs-general-gdsyncwith-vbox" >
 						<groupbox pack="center" >
 							<caption label="&ZinPrefsGeneralGdSyncWith.label;" />
 							<radiogroup id="zindus-prefs-general-gdsyncwith-radiogroup" >
 								<radio id="zindus-prefs-general-gdsyncwith-pab" label="&ZinPrefsGeneralGdSyncWithPab.label;" />
-								<radio id="zindus-prefs-general-gdsyncwith-zg"  tooltiptext="&ZinPrefsGeneralGdSyncWithGd.tooltip;" />
+								<radio id="zindus-prefs-general-gdsyncwith-zg" />
+								<!-- tooltiptext="&ZinPrefsGeneralGdSyncWithGd.tooltip;"  -->
 							</radiogroup>
 						</groupbox>
 						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
 					</vbox>
-				-->
 					<vbox id="zindus-prefs-general-gal" >
 						<groupbox pack="center" >
 							<caption label="&ZinPrefsGeneralGal.label;" />

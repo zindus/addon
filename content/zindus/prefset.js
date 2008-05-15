@@ -40,13 +40,13 @@ PrefSet.SERVER_URL               = "url";
 PrefSet.SERVER_USERNAME          = "username";
 PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME, PrefSet.SERVER_TYPE ];
 
-PrefSet.GENERAL                  = "general";
-PrefSet.GENERAL_MANUAL_SYNC_ONLY = "manualsynconly";
-PrefSet.GENERAL_VERBOSE_LOGGING  = "verboselogging";
-PrefSet.GENERAL_SYNC_GAL_ENABLED = "SyncGalEnabled";
-PrefSet.GENERAL_GD_SYNC_WITH     = "gdsyncwith";
-PrefSet.GENERAL_PROPERTIES       = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING,
-                                     PrefSet.GENERAL_SYNC_GAL_ENABLED, PrefSet.GENERAL_GD_SYNC_WITH ];
+PrefSet.GENERAL                     = "general";
+PrefSet.GENERAL_MANUAL_SYNC_ONLY    = "manual_sync_only";
+PrefSet.GENERAL_VERBOSE_LOGGING     = "verbose_logging";
+PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED = "zm_sync_gal_enabled";
+PrefSet.GENERAL_GD_SYNC_WITH        = "gd_sync_with";
+PrefSet.GENERAL_PROPERTIES          = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY,    PrefSet.GENERAL_VERBOSE_LOGGING,
+                                        PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, PrefSet.GENERAL_GD_SYNC_WITH ];
 
 // Both id and branch are optional
 // id is option because there might only be a single subsection under prefprefix

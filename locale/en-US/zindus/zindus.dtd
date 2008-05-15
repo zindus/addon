@@ -34,7 +34,7 @@
 <!ENTITY ZinPrefsGeneralGalNo.label              "No">
 <!ENTITY ZinPrefsGeneralGdSyncWith.label         "Sync Google contacts with">
 <!ENTITY ZinPrefsGeneralGdSyncWithPab.label      "Personal Address Book">
-<!ENTITY ZinPrefsGeneralGdSyncWithGd.tooltip     "This addressbook is created and syncs with Google.  Contacts in Personal Address Book aren't synced with Google">
+<!ENTITY ZinPrefsGeneralGdSyncWithGd.tooltip     "This addressbook may be created and is synced with Google instead of Personal Address Book.">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.label      "Sync Now">
 <!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey  "S">
 <!ENTITY ZinPrefsGeneralButtonReset.label        "Reset">

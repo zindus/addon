@@ -131,7 +131,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 	};
 
 	var a_states_gd = {
-		start:            { },
+		start:            { count: 1 },
 		stAuth:           { count: 1 },
 		stAuthCheck:      {          },
 		stLoad:           { count: 1 },
@@ -196,6 +196,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 		switch(fsmstate.newstate)
 		{
+			case 'start':            this.progressReportOn("LoadAddressbooks");                             break;
 			case 'stAuth':           this.progressReportOnSource(context.state.sourceid_pr, "RemoteAuth");  break;
 			case 'stLoad':           this.progressReportOn("Load");                                         break;
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "AccountInfo"); break;

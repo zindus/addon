@@ -60,13 +60,15 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 		{
 			this.m_logger_no_prefix.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
 
+			this.migratePrefs();
+
 			Filesystem.createDirectoriesIfRequired();
 
 			RemoveDatastore.removeZfcsIfNecessary();
 
 			var prefs = new MozillaPreferences();
 
-			if (prefs.getCharPrefOrNull(prefs.branch(), "general.manualsynconly") != "true")
+			if (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_MANUAL_SYNC_ONLY) != "true")
 			{
 				var delay_on_start     = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnStart"));
 				this.m_delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnRepeat"));
@@ -238,6 +240,41 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 
 	return ret;
 }
+
+// migrate the zindus.blah preferences to the mozilla convention extensions.zindus.blah
+// delete once confident all users are on version >= 0.6.13
+//
+ZinMailWindowOverlay.prototype.migratePrefs = function()
+{
+	var mpOld = new MozillaPreferences();
+	mpOld.m_prefix = "extensions." + APP_NAME + ".";
+
+	var mpNew = new MozillaPreferences();
+
+	var a_map = {
+		"general.manualsynconly": "general." + PrefSet.GENERAL_MANUAL_SYNC_ONLY,
+		"general.verboselogging": "general." + PrefSet.GENERAL_VERBOSE_LOGGING,
+		"general.gdsyncwith":     "general." + PrefSet.GENERAL_GD_SYNC_WITH,
+		"general.SyncGalEnabled": "general." + PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED
+		};
+
+	this.m_logger.debug("migrate old prefs... ");
+
+	for (var old in a_map)
+	{
+		var value = mpOld.getCharPrefOrNull(mpOld.branch(), old);
+
+		if (value != null)
+		{
+			mpNew.branch().setCharPref(a_map[old], value);
+			mpOld.branch().deleteBranch(old);
+
+			this.m_logger.debug("migrated pref: " + old + " to " + a_map[old] + " value: " + value);
+		}
+	}
+
+}
+
 
 function zindusPrefsDialog()
 {
