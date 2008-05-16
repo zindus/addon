@@ -121,8 +121,8 @@
 				<groupbox id="zindus-prefs-general-group-advanced-settings" pack="center" >
 					<caption label="&ZinPrefsGeneralGroupAdvanced.label;"/>
 					<vbox align="left" >
-					<checkbox id="zindus-prefs-general-manual-sync-only" label="&ZinPrefsGeneralManualSyncOnly.label;" checked="false" />
-					<checkbox id="zindus-prefs-general-verbose-logging"  label="&ZinPrefsGeneralVerboseLogging.label;" checked="true" />
+						<checkbox id="zindus-prefs-general-auto-sync"       label="&ZinPrefsGeneralAutoSync.label;"       />
+						<checkbox id="zindus-prefs-general-verbose-logging" label="&ZinPrefsGeneralVerboseLogging.label;" />
 					</vbox>
 				</groupbox>
 				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 

@@ -21,6 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
+include("chrome://zindus/content/prefset.js");
+
 // simple logging api, no appenders
 
 ZinLogger.NONE  = 6;
@@ -71,7 +73,7 @@ function ZinLogAppenderOpenClose()
 {
 	var prefs = new MozillaPreferences();
 
-	this.m_logfile_size_max = prefs.getIntPref(prefs.branch(), "system.logfileSizeMax");
+	this.m_logfile_size_max = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_LOGFILE_MAX_SIZE );
 	this.m_logfile          = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
 
 	this.m_logfile.append(Filesystem.FILENAME_LOGFILE);
@@ -194,7 +196,7 @@ if (typeof(loggingLevel) != 'object' || !loggingLevel)
 {
 	var prefs = new MozillaPreferences();
 
-	loggingLevel = (prefs.getCharPrefOrNull(prefs.branch(), "general.verbose_logging") == "true") ?
+	loggingLevel = (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_VERBOSE_LOGGING ) == "true") ?
 	                           ZinLogger.DEBUG : ZinLogger.INFO;
 	gLogger      = newZinLogger("global");
 }

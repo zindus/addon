@@ -68,10 +68,10 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 			var prefs = new MozillaPreferences();
 
-			if (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_MANUAL_SYNC_ONLY) != "true")
+			if (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_AUTO_SYNC) != "false")
 			{
-				var delay_on_start     = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnStart"));
-				this.m_delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), "system.timerDelayOnRepeat"));
+				var delay_on_start     = parseInt(prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_START ));
+				this.m_delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT ));
 
 				var x = this.statusSummary();
 
@@ -246,33 +246,64 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 //
 ZinMailWindowOverlay.prototype.migratePrefs = function()
 {
-	var mpOld = new MozillaPreferences();
-	mpOld.m_prefix = "extensions." + APP_NAME + ".";
-
-	var mpNew = new MozillaPreferences();
+	var old, value;
+	var prefs = new MozillaPreferences();
 
 	var a_map = {
-		"general.manualsynconly": "general." + PrefSet.GENERAL_MANUAL_SYNC_ONLY,
-		"general.verboselogging": "general." + PrefSet.GENERAL_VERBOSE_LOGGING,
-		"general.gdsyncwith":     "general." + PrefSet.GENERAL_GD_SYNC_WITH,
-		"general.SyncGalEnabled": "general." + PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED
+		"general.verboselogging":        { type: 'char', new: "general." + PrefSet.GENERAL_VERBOSE_LOGGING             }, 
+		"general.verbose_logging":       { type: 'char', new: "general." + PrefSet.GENERAL_VERBOSE_LOGGING             },
+		"general.gdsyncwith":            { type: 'char', new: "general." + PrefSet.GENERAL_GD_SYNC_WITH                },
+		"general.SyncGalEnabled":        { type: 'char', new: "general." + PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED         },
+		"system.logfileSizeMax":         { type: 'int',  new: MozillaPreferences.AS_LOGFILE_MAX_SIZE      },
+		"system.timerDelayOnStart":      { type: 'int',  new: MozillaPreferences.AS_TIMER_DELAY_ON_START  },
+		"system.timerDelayOnRepeat":     { type: 'int',  new: MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT },
+		"system.SyncGalMdInterval":      { type: 'int',  new: MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  },
+		"system.SyncGalEnabledRecheck":  { type: 'int',  new: MozillaPreferences.ZM_SYNC_GAL_RECHECK      },
+		"system.SyncGalEnabledIfFewer":  { type: 'char', new: MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     },
+		"system.preferSchemeForSoapUrl": { type: 'char', new: MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME }
 		};
 
 	this.m_logger.debug("migrate old prefs... ");
 
-	for (var old in a_map)
+	for (old in a_map)
 	{
-		var value = mpOld.getCharPrefOrNull(mpOld.branch(), old);
+		if (a_map[old].type == 'char')
+			value = prefs.getCharPrefOrNull(prefs.branch(), old);
+		else
+			value = prefs.getIntPrefOrNull(prefs.branch(), old);
 
 		if (value != null)
 		{
-			mpNew.branch().setCharPref(a_map[old], value);
-			mpOld.branch().deleteBranch(old);
+			if (a_map[old].type == 'char')
+				prefs.branch().setCharPref(a_map[old].new, value);
+			else
+				prefs.branch().setIntPref(a_map[old].new, value);
 
-			this.m_logger.debug("migrated pref: " + old + " to " + a_map[old] + " value: " + value);
+			prefs.branch().deleteBranch(old);
+
+			this.m_logger.debug("migrated pref: " + old + " to " + a_map[old].new + " value: " + value);
 		}
 	}
 
+	// replace MANUAL_SYNC_ONLY with AUTO_SYNC
+	//
+	var bimap = new BiMap( [ "true", "false" ], [ "false", "true" ] );
+
+	var new_key = "general." + PrefSet.GENERAL_AUTO_SYNC;
+
+	for (old in { "general.manualsynconly": 0, "general.manual_sync_only": 0 }) 
+	{
+		value = prefs.getCharPrefOrNull(prefs.branch(), old);
+
+		if (value != null)
+		{
+			prefs.branch().setCharPref(new_key, bimap.lookup(value, null) );
+
+			prefs.branch().deleteBranch(old);
+
+			this.m_logger.debug("migrated pref: " + old + " " + value + " to " + new_key + " " + bimap.lookup(value, null));
+		}
+	}
 }
 
 

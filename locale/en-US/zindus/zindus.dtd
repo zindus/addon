@@ -27,7 +27,7 @@
 <!ENTITY ZinPrefsGeneralIntroduction.value       "Restart Thunderbird after changing settings to be sure they are in effect.">
 <!ENTITY ZinPrefsGeneralGroupAdvanced.label      "Settings">
 <!ENTITY ZinPrefsGeneralGroupActions.label       "Actions">
-<!ENTITY ZinPrefsGeneralManualSyncOnly.label     "Manual sync (stops auto sync)">
+<!ENTITY ZinPrefsGeneralAutoSync.label           "Auto Sync">
 <!ENTITY ZinPrefsGeneralVerboseLogging.label     "Verbose logging">
 <!ENTITY ZinPrefsGeneralGal.label                "Global Address List (GAL)">
 <!ENTITY ZinPrefsGeneralGalYes.label             "Yes">

@@ -31,15 +31,18 @@ include("chrome://zindus/content/statuspanel.js");
 
 function SyncWindow()
 {
+	this.m_logger    = newZinLogger("SyncWindow"); // this.m_logger.level(ZinLogger.NONE); // logging enabled for issue #50
+
+	this.m_logger.debug("SyncWindow constructor starts");
+
 	this.m_syncfsm   = null;
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
-	this.m_logger    = newZinLogger("SyncWindow"); // this.m_logger.level(ZinLogger.NONE); // logging enabled for issue #50
 
 	this.m_has_observer_been_called = false;
 
-	this.m_logger.debug("constructed");
+	this.m_logger.debug("SyncWindow constructor ends");
 }
 
 SyncWindow.prototype.onLoad = function()

@@ -42,8 +42,8 @@ function Prefs()
 	this.m_prefset_server      = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
 	this.m_prefset_general     = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
-	this.m_checkbox_properties = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY, PrefSet.GENERAL_VERBOSE_LOGGING ];
-	this.m_checkbox_ids        = [ "zindus-prefs-general-manual-sync-only",
+	this.m_checkbox_properties = [ PrefSet.GENERAL_AUTO_SYNC, PrefSet.GENERAL_VERBOSE_LOGGING ];
+	this.m_checkbox_ids        = [ "zindus-prefs-general-auto-sync",
 								   "zindus-prefs-general-verbose-logging"  ];
 	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
@@ -328,7 +328,7 @@ Prefs.prototype.initialiseView = function()
 
 	// general tab - Gal radiogroup
 	//
-	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), "system.SyncGalEnabledIfFewer");
+	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
 
 	var msg = stringBundleString("prefsGalIfFewerPartOne") + " " + if_fewer + " " + stringBundleString("prefsGalIfFewerPartTwo");
 

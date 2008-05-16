@@ -783,7 +783,7 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 	//
 	if (functor.a.length > 1)
 	{
-		var scheme = this.state.m_preferences.getCharPref(this.state.m_preferences.branch(), "system.preferSchemeForSoapUrl");
+		var scheme = this.state.m_preferences.getCharPref(this.state.m_preferences.branch(), MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME );
 		var scheme_length = scheme.length;
 		var is_current_url = false;
 
@@ -1464,7 +1464,7 @@ SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 		nextEvent = 'evSkip';
 	else
 	{
-		var SyncGalMdInterval = prefs.getIntPref(prefs.branch(), "system.SyncGalMdInterval");
+		var SyncGalMdInterval = prefs.getIntPref(prefs.branch(), MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL );
 		var SyncMd = parseInt(zfcLastSync.get(sourceid_zm).getOrNull('SyncMd'));
 		var isSyncGalEnabledChanged = this.state.SyncGalEnabled != zfcLastSync.get(sourceid_zm).getOrNull('SyncGalEnabled')
 
@@ -1579,7 +1579,8 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 		{
 			// reconsider...
 			//
-			var if_fewer = this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalEnabledIfFewer");
+			var if_fewer = this.state.m_preferences.getIntPref(this.state.m_preferences.branch(),
+			                                                    MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
 
 			this.state.m_logger.debug("entryActionGalCommit: if_fewer: " + if_fewer + " this.state.aSyncGalContact.length: " +
 			                          (this.state.aSyncGalContact != null ? this.state.aSyncGalContact.length : "null"));
@@ -1726,7 +1727,8 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 		if (!zfcLastSync.get(sourceid_zm).isPresent('SyncGalEnabledRecheck'))
 		{
 			zfcLastSync.get(sourceid_zm).set('SyncGalEnabledRecheck',
-			                 this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), "system.SyncGalEnabledRecheck"));
+			                 this.state.m_preferences.getIntPref(this.state.m_preferences.branch(),
+							                                            MozillaPreferences.ZM_SYNC_GAL_RECHECK ));
 		}
 		else
 		{

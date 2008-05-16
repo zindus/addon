@@ -24,6 +24,14 @@
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
 
+MozillaPreferences.AS_LOGFILE_MAX_SIZE      = "system.as_logfile_max_size";
+MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT = "system.as_timer_delay_on_repeat";
+MozillaPreferences.AS_TIMER_DELAY_ON_START  = "system.as_timer_delay_on_start";
+MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
+MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
+MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
+MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME = "system.zm_prefer_soapurl_scheme";
+
 function MozillaPreferences()
 {
 	if (arguments.length == 0)
@@ -93,7 +101,7 @@ MozillaPreferences.prototype.setCharPref = function(branch, key, value)
 		branch.setCharPref(key, value);
 }
 
-MozillaPreferences.prototype.getCharPref = function(branch, key)
+MozillaPreferences.prototype.getCharPrefReal = function(branch, key, mustbepresent)
 {
 	var ret = null;
 
@@ -105,37 +113,29 @@ MozillaPreferences.prototype.getCharPref = function(branch, key)
 		}
 		catch(ex)
 		{
-			this.reportCatch(ex, key);
+			if (mustbepresent)
+			{
+				this.reportCatch(ex, key);
 
-			throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+			}
 		}
 	}
 
-	// dump("33443366: getCharPref gets preference " + key + " == " + ret + "\n");
-
 	return ret;
+}
+
+MozillaPreferences.prototype.getCharPref = function(branch, key)
+{
+	return this.getCharPrefReal(branch, key, true);
 }
 
 MozillaPreferences.prototype.getCharPrefOrNull = function(branch, key)
 {
-	var ret = null;
-
-	if (branch)
-		try
-		{
-			ret = branch.getCharPref(key);
-		}
-		catch(ex)
-		{
-			// do nothing
-		}
-
-	// dump("MozillaPreferences.getCharPrefOrNull: of key " + key + " returns: " + ret + "\n");
-
-	return ret;
+	return this.getCharPrefReal(branch, key, false);
 }
 
-MozillaPreferences.prototype.getIntPref = function(branch, key, value)
+MozillaPreferences.prototype.getIntPrefReal = function(branch, key, value, mustbepresent)
 {
 	var ret = null;
 
@@ -152,15 +152,26 @@ MozillaPreferences.prototype.getIntPref = function(branch, key, value)
 		}
 		catch(ex)
 		{
-			this.reportCatch(ex, key);
+			if (mustbepresent)
+			{
+				this.reportCatch(ex, key);
 
-			throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+			}
 		}
 	}
 
-	// dump("33443366: getIntPref gets preference " + key + " == " + ret + "\n");
-
 	return ret;
+}
+
+MozillaPreferences.prototype.getIntPref = function(branch, key, value)
+{
+	return this.getIntPrefReal(branch, key, value, true);
+}
+
+MozillaPreferences.prototype.getIntPrefOrNull = function(branch, key, value)
+{
+	return this.getIntPrefReal(branch, key, value, false);
 }
 
 MozillaPreferences.prototype.reportCatch = function(ex, key)

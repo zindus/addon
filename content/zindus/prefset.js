@@ -41,11 +41,11 @@ PrefSet.SERVER_USERNAME          = "username";
 PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME, PrefSet.SERVER_TYPE ];
 
 PrefSet.GENERAL                     = "general";
-PrefSet.GENERAL_MANUAL_SYNC_ONLY    = "manual_sync_only";
-PrefSet.GENERAL_VERBOSE_LOGGING     = "verbose_logging";
-PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED = "zm_sync_gal_enabled";
+PrefSet.GENERAL_AUTO_SYNC           = "as_auto_sync";
+PrefSet.GENERAL_VERBOSE_LOGGING     = "as_verbose_logging";
 PrefSet.GENERAL_GD_SYNC_WITH        = "gd_sync_with";
-PrefSet.GENERAL_PROPERTIES          = [ PrefSet.GENERAL_MANUAL_SYNC_ONLY,    PrefSet.GENERAL_VERBOSE_LOGGING,
+PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED = "zm_sync_gal_enabled";
+PrefSet.GENERAL_PROPERTIES          = [ PrefSet.GENERAL_AUTO_SYNC,           PrefSet.GENERAL_VERBOSE_LOGGING,
                                         PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, PrefSet.GENERAL_GD_SYNC_WITH ];
 
 // Both id and branch are optional
