@@ -389,7 +389,7 @@ ZinContactConverter.prototype.crc32 = function(properties)
 
 	ret = crc32(str);
 
-	// this.m_logger.debug("crc32: returns: " + ret + " properties: " + aToString(properties));
+	// this.m_logger.debug("crc32: blah: returns: " + ret + " properties: " + aToString(properties));
 
 	return ret;
 }

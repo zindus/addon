@@ -808,6 +808,8 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 // OTOH, enterprises/Universities really want clients to respect GetAccountInfo's soapURL because their accounts are partitioned
 // across multiple servers.  HTTP HEAD would be the most lightweight way of testing the soapURL returned in GetAccountInfoResponse.
 // But as at Zimbra 5.0.1_GA_1902, the server doesn't support HTTP HEAD, so a SOAP document is sent that should be unknown to the server.
+// Note: 2008-05-19: instead of testing the recommended soapURL before use, a better approach would be to revert back to the original
+// soapURL if the first use of the recommended soapURL fails.
 
 SyncFsm.prototype.entryActionSelectSoapUrl = function(state, event, continuation)
 {
@@ -871,7 +873,6 @@ SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 
 	this.state.m_logger.debug("entryActionSync: " + msg + " zimbraId: " + this.state.zidbag.zimbraId() +
 	                                                      " SyncTokenInRequest: " + this.state.SyncTokenInRequest);
-	// this.state.m_logger.debug("entryActionSync: blah: zidbag: " + this.state.zidbag.toString());
 
 	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(), this.state.zidbag.zimbraId(), "Sync", this.state.SyncTokenInRequest);
 
@@ -905,7 +906,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 		this.state.m_logger.debug("foreign folder change detection: " + (a_foreign_folder_present ? "on" : "off"));
 
-		// Hm ... what if the sync token went backwards (eg if the server had to restore from backups) ??
+		// Note: ... what if the sync token went backwards (eg if the server restored from a backup) ??
 
 		// Things we're expecting:
 		// <folder view="contact" ms="2713" md="1169690090" l="1" name="address-book-3" id="563"><acl/></folder>
@@ -1533,18 +1534,6 @@ SyncFsm.prototype.exitActionGalSync = function(state, event)
 
 		this.state.aSyncGalContact     = functor.a;
 		this.state.mapIdSyncGalContact = functor.mapId;
-
-		if (0)
-		{
-			this.state.m_logger.debug("exitActionGalSync: SyncGalTokenInRequest: "  + this.state.SyncGalTokenInRequest +
-		                          	                    " SyncGalTokenInResponse: " + this.state.SyncGalTokenInResponse );
-
-			for (var i in this.state.aSyncGalContact)
-				this.state.m_logger.debug("11443378: aSyncGalContact[" + i + "] == \n" + this.state.aSyncGalContact[i].toString());
-
-			for (var id in this.state.mapIdSyncGalContact)
-				this.state.m_logger.debug("11443378: mapIdSyncGalContact." + id + " == " + this.state.mapIdSyncGalContact[id]);
-		}
 	}
 	else
 		this.state.m_logger.debug("exitActionGalSync: SyncGalResponse: token is unchanged - ignoring any <cn> elements in the response");
@@ -1577,10 +1566,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 		if (this.state.SyncGalTokenInRequest == null && this.state.SyncGalTokenInResponse != null)
 		{
-			// reconsider...
-			//
-			var if_fewer = this.state.m_preferences.getIntPref(this.state.m_preferences.branch(),
-			                                                    MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
+			var if_fewer = this.state.m_preferences.getIntPref(this.state.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER);
 
 			this.state.m_logger.debug("entryActionGalCommit: if_fewer: " + if_fewer + " this.state.aSyncGalContact.length: " +
 			                          (this.state.aSyncGalContact != null ? this.state.aSyncGalContact.length : "null"));
@@ -1717,7 +1703,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	if (this.state.SyncGalTokenInResponse) // remember that this state is run even though SyncGalRequest wasn't called...
 	{
 		zfcLastSync.get(sourceid_zm).set('SyncGalToken', this.state.SyncGalTokenInResponse);
-		zfcLastSync.get(sourceid_zm).set('SyncMd',         this.state.SyncMd);
+		zfcLastSync.get(sourceid_zm).set('SyncMd',       this.state.SyncMd);
 	}
 
 	zfcLastSync.get(sourceid_zm).set('SyncGalEnabled', this.state.SyncGalEnabled);
@@ -1726,8 +1712,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	{
 		if (!zfcLastSync.get(sourceid_zm).isPresent('SyncGalEnabledRecheck'))
 		{
-			zfcLastSync.get(sourceid_zm).set('SyncGalEnabledRecheck',
-			                 this.state.m_preferences.getIntPref(this.state.m_preferences.branch(),
+			zfcLastSync.get(sourceid_zm).set('SyncGalEnabledRecheck', this.state.m_preferences.getIntPref(this.state.m_preferences.branch(),
 							                                            MozillaPreferences.ZM_SYNC_GAL_RECHECK ));
 		}
 		else
@@ -2717,7 +2702,7 @@ SyncFsm.prototype.twinInGid = function(sourceid, luid, sourceid_tb, luid_tb, rev
 // Some items on the server are supposed to be immutable (eg "Contacts" folder) but in fact the ms and md attributes may change.
 // This method detects that and resets the gid's and the LS attributes in the sources to the new values so that buildGcs
 // won't see any change.
-// Query: what happens on the server to cause these supposedly immutable folders to change?
+// What is happening here is that the meta-data of these "immutable" folders is changing - eg colour.
 //
 SyncFsm.prototype.workaroundForZmImmutables = function()
 {
@@ -2896,16 +2881,6 @@ SyncFsm.prototype.updateGidFromSources = function()
 		state: this.state,
 		context: this,
 
-		// tb_folder_name: function(zfi)
-		// {
-			// var ret;
-// 
-			// if (this.context.formatPr() == FORMAT_ZM)
-				// ret = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
-			// else if (this.context.formatPr() == FORMAT_GD)
-			// 	
-			// return ret;
-		// },
 		run: function(zfi)
 		{
 			var luid = zfi.key();
@@ -2921,27 +2896,10 @@ SyncFsm.prototype.updateGidFromSources = function()
 				{
 					zinAssertAndLog((zfi.type() != ZinFeedItem.TYPE_FL) || !zfi.isForeign(), "foreign folder? zfi: " + zfi.toString());
 
-					// TODO - am here - this is wrong - might be better to restore this to the way it was
-					// and twiddle the bimap in folder converter to do the mapping
-					// it also has to work below for contacts...
-					//
 					var abName = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
 
 					if (isPropertyPresent(this.mapTbFolderNameToId, abName))
 						luid_tb = this.mapTbFolderNameToId[abName];
-
-					if (0)
-					{
-					if (this.context.formatPr() == FORMAT_ZM)
-					{
-						var abName = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
-
-						if (isPropertyPresent(this.mapTbFolderNameToId, abName))
-							luid_tb = this.mapTbFolderNameToId[abName];
-					}
-					else if (this.context.formatPr() == FORMAT_GD)
-						luid_tb = this.state.gd_luid_ab_in_tb;
-					}
 
 					if (luid_tb)
 					{
@@ -6425,29 +6383,28 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm)
 
 	var state = this.state;
 
-	state.zidbag               = new ZidBag();
-	state.suggestedSoapURL     = null;         // a <soapURL> response returned in GetAccountInfo
-	state.isSlowSync           = false;        // true iff no data files
-	state.aSyncGalContact      = null;         // SyncGal
-	state.mapIdSyncGalContact  = null;      
-	state.SyncGalEnabled       = null;         // From the preference of the same name.  Possible values: yes, no, if-fewer
+	state.zidbag                 = new ZidBag();
+	state.suggestedSoapURL       = null;         // a <soapURL> response returned in GetAccountInfo
+	state.isSlowSync             = false;        // true iff no data files
+	state.aSyncGalContact        = null;         // SyncGal
+	state.mapIdSyncGalContact    = null;      
+	state.SyncGalEnabled         = null;         // From the preference of the same name.  Possible values: yes, no, if-fewer
 	state.SyncGalTokenInRequest  = null;
 	state.SyncGalTokenInResponse = null;
-	state.SyncMd               = null;         // this gives us the time on the server
-	state.SyncTokenInRequest   = null;         // the 'token' given to    <SyncRequest>
-	state.isAnyChangeToFolders = false;
-	state.zimbraId             = null;         // the zimbraId for the Auth username - returned by GetAccountInfoRespose
-	state.aContact             = new Array();  // array of contact (zid, id) - push in SyncResponse, shift in GetContactResponse
-	state.isRedoSyncRequest    = false;        // we may need to do <SyncRequest> again - the second time without a token
-	state.aSyncContact         = new Object(); // each property is a ZmContact object returned in GetContactResponse
-	state.zfcTbPreMerge        = null;         // the thunderbird map before iterating through the tb addressbook - used to test invariance
+	state.SyncMd                 = null;         // this gives us the time on the server
+	state.SyncTokenInRequest     = null;         // the 'token' given to    <SyncRequest>
+	state.isAnyChangeToFolders   = false;
+	state.zimbraId               = null;         // the zimbraId for the Auth username - returned by GetAccountInfoRespose
+	state.aContact               = new Array();  // array of contact (zid, id) - push in SyncResponse, shift in GetContactResponse
+	state.isRedoSyncRequest      = false;        // we may need to do <SyncRequest> again - the second time without a token
+	state.aSyncContact           = new Object(); // each property is a ZmContact object returned in GetContactResponse
+	state.zfcTbPreMerge          = null;         // the thunderbird map before merging tb addressbook - used to test invariance
 
 	state.initialiseSource(SOURCEID_AA, FORMAT_ZM, "sourceServer");
 
 	state.sourceid_zm = SOURCEID_AA;
 	state.sourceid_pr = SOURCEID_AA; // a better notion that hardcoding _zm is the idea of _pr (sync partner) - try it out, migrate later
 }
-
 
 SyncFsmGd.prototype.initialiseState = function(id_fsm)
 {
@@ -6653,7 +6610,7 @@ SyncFsmGd.prototype.exitActionGetContactGd = function(state, event)
 
 	// parse the <feed> response for <entry>'s and then process each contact
 	//
-	var msg               = "exitActionGetContactGd: \n";
+	var msg = "exitActionGetContactGd: \n";
 
 	this.state.a_gd_contact = GdContact.arrayFromXpath(response, "/atom:feed/atom:entry");
 
