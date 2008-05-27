@@ -146,26 +146,7 @@ Prefs.prototype.onAccept = function()
 
 	pm.set(url, username, password);
 
-	this.m_prefset_server.setProperty(PrefSet.SERVER_URL,      url );
-	this.m_prefset_server.setProperty(PrefSet.SERVER_USERNAME, username );
-
-	// server tab - server type
-	//
-	this.setPrefsetFromRadio("zindus-prefs-server-type-radiogroup", this.m_server_type_bimap,
-	                          this.m_prefset_server, PrefSet.SERVER_TYPE);
-
-	// general tab - checkbox elements
-	//
-	for (var i = 0; i < this.m_checkbox_properties.length; i++)
-		this.m_prefset_general.setProperty(this.m_checkbox_properties[i],
-			document.getElementById(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked ? "true" : "false" );
-
-	// general tab - radio elements: GAL and Google Sync With
-	//
-	this.setPrefsetFromRadio("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap,
-	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_WITH);
-	this.setPrefsetFromRadio("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap,
-	                          this.m_prefset_general, PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED);
+	this.updatePrefsetsFromDocument();
 
 	this.m_prefset_server.save();
 	this.m_prefset_general.save();
@@ -269,15 +250,10 @@ Prefs.prototype.getSyncFsm = function(format, type)
 	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = ZinMaestro.FSM_ID_GD_AUTHONLY; }
 	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
 
-	syncfsm.initialise(id_fsm);
-	syncfsm.setCredentials( document.getElementById("zindus-prefs-server-url").value,
-							document.getElementById("zindus-prefs-server-username").value,
-							document.getElementById("zindus-prefs-server-password").value );
+	this.updatePrefsetsFromDocument();
 
-	if (format == FORMAT_GD)
-		syncfsm.setState(this.getValueFromRadio("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap));
-	else if (format == FORMAT_ZM)
-		syncfsm.setState(this.getValueFromRadio("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap));
+	var password = document.getElementById("zindus-prefs-server-password").value;
+	syncfsm.initialise(id_fsm, SOURCEID_AA, this.m_prefset_general, this.m_prefset_server, password);
 
 	return syncfsm;
 }
@@ -300,11 +276,9 @@ Prefs.prototype.initialiseView = function()
 
 	// server tab - url, username and password
 	//
-	var a = PrefSetHelper.getUserUrlPw(this.m_prefset_server, PrefSet.SERVER_USERNAME, PrefSet.SERVER_URL);
-
-	document.getElementById("zindus-prefs-server-username").value = a[0];
-	document.getElementById("zindus-prefs-server-url").value      = a[1]; 
-	document.getElementById("zindus-prefs-server-password").value = a[2];
+	document.getElementById("zindus-prefs-server-username").value = this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME);
+	document.getElementById("zindus-prefs-server-url").value      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
+	document.getElementById("zindus-prefs-server-password").value = PrefSet.getPassword(this.m_prefset_server);
 
 	// server tab - server type
 	//
@@ -530,4 +504,35 @@ Prefs.prototype.setGdSyncWithLabel = function()
 	// zg_addressbook = stringBundleString("prefsGeneralGdSyncWithZgPrefix") + stringBundleString("prefsGeneralGdSyncWithZgSuffix");
 
 	document.getElementById("zindus-prefs-general-gdsyncwith-zg").label = zg_addressbook;
+}
+
+Prefs.prototype.updatePrefsetsFromDocument = function()
+{
+	var selected_id, radio_button;
+
+	// server tab - url, username and password
+	//
+	var url      = document.getElementById("zindus-prefs-server-url").value;
+	var username = zinTrim(document.getElementById("zindus-prefs-server-username").value);
+
+	this.m_prefset_server.setProperty(PrefSet.SERVER_URL,      url );
+	this.m_prefset_server.setProperty(PrefSet.SERVER_USERNAME, username );
+
+	// server tab - server type
+	//
+	this.setPrefsetFromRadio("zindus-prefs-server-type-radiogroup", this.m_server_type_bimap,
+	                          this.m_prefset_server, PrefSet.SERVER_TYPE);
+
+	// general tab - checkbox elements
+	//
+	for (var i = 0; i < this.m_checkbox_properties.length; i++)
+		this.m_prefset_general.setProperty(this.m_checkbox_properties[i],
+			document.getElementById(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked ? "true" : "false" );
+
+	// general tab - radio elements: GAL and Google Sync With
+	//
+	this.setPrefsetFromRadio("zindus-prefs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap,
+	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_WITH);
+	this.setPrefsetFromRadio("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap,
+	                          this.m_prefset_general, PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED);
 }

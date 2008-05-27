@@ -46,7 +46,7 @@ function ZinLogger(level, prefix, appender)
 ZinLogger.prototype.level = function()
 {
 	if (arguments.length == 1)
-		this.m_level = arguments[1];
+		this.m_level = arguments[0];
 
 	return this.m_level;
 }

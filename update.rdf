@@ -6,17 +6,17 @@
     <RDF:li RDF:resource="rdf:#$JEjs8"/>
   </RDF:Seq>
   <RDF:Description RDF:about="rdf:#$JEjs8"
-                   em:version="0.7.6">
+                   em:version="0.7.7.20080527.062605">
     <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
   </RDF:Description>
   <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBACzr8CBzB+k8KiVT9DeyxO0DkPKo07k0YokDCFY8WzphHsZxz53eQy1WKTJ/hczOR3xLiaoH1B235COYsSksPu8bpr9sir7Wy+KMcfSxL3hgm9MSAV3PC9RZgjmYTClnJPOoHVQbSEFNAHIivz7RFPIQXq6gRl1QW1I6DzLzmYva">
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBABQtYeZXHm1RSwgsayjyP5YDy1pz38QQgV5VduIn8cw0w0Trh3U6AYozCAnsh+kqesDlFkLrbTxTZwwAPug0tzSssZVzBlBNTRxtqIl8n2MmawksLQ52WGNMWH1aHbS0AKfHtkp2fNhvxbkkWAk4edkAyn0nco5/hlxSfaQF3cgL">
     <em:updates RDF:resource="rdf:#$IEjs8"/>
   </RDF:Description>
   <RDF:Description RDF:about="rdf:#$MEjs8"
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:minVersion="2.0b2"
                    em:maxVersion="3.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.6-tb.xpi"
-                   em:updateHash="sha256:1002e9068fc7daacd526e5f47362293a318f7ec8b3b7a355d6edf1d0172edb91" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.7.20080527.062605-tb.xpi"
+                   em:updateHash="sha256:38836748e9cd432c3c8940a479f852f70a3b9732c3e3e345a127e9c9c5f02d07" />
 </RDF:RDF>

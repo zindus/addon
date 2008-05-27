@@ -1,10 +1,10 @@
 #!/bin/bash
-# $Id: build-config.sh,v 1.34 2008-05-19 23:01:58 cvsuser Exp $
+# $Id: build-config.sh,v 1.35 2008-05-27 22:00:36 cvsuser Exp $
 
 # Build config for the build script, build.sh. Look there for more info.
 
 APP_NAME=zindus
-APP_VERSION_NUMBER=0.7.6
+APP_VERSION_NUMBER=0.7.7
 CHROME_PROVIDERS="content locale skin"
 CLEAN_UP=1
 ROOT_FILES="README"
@@ -14,7 +14,7 @@ BEFORE_JAR=
 AFTER_BUILD=./build-after.sh
 
 if [ -z "$APP_VERSION_RELTYPE" ]; then
-	APP_VERSION_RELTYPE="testing" # must be one of "testing", "prod-zindus" or "prod-amo"
+	APP_VERSION_RELTYPE="dev" # must be one of "dev", "testing", "prod-zindus" or "prod-amo"
 
 	echo build-config.sh: APP_VERSION_RELTYPE was undefined, setting to $APP_VERSION_RELTYPE
 else

@@ -111,7 +111,7 @@ ZinFeedCollection.prototype.length = function()
 
 ZinFeedCollection.prototype.get = function(key)
 {
-	zinAssert(typeof(key) != 'undefined' && typeof(key) != 'object');
+	zinAssertAndLog(typeof(key) != 'undefined' && typeof(key) != 'object', "key: " + key);
 	return (this.isPresent(key) ? this.m_collection[key] : null);
 }
 

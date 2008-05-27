@@ -29,6 +29,7 @@ ZinAddressBookTb3.prototype = new ZinAddressBook();
 
 function ZinAddressBook()
 {
+	this.m_contact_converter = null;
 	this.m_pab_name = null;
 	this.m_pab_uri  = null;
 
@@ -64,6 +65,18 @@ ZinAddressBook.TbVersion = function()
 	return ret;
 }
 
+ZinAddressBook.prototype.contact_converter = function()
+{
+	if (arguments.length == 1)
+		this.m_contact_converter = arguments[0];
+
+	zinAssert(this.m_contact_converter);
+
+	return this.m_contact_converter;
+}
+
+ZinLogger.prototype.debug = function(msg) { var l = ZinLogger.DEBUG; if (this.level() <= l) this.log(l, msg); }
+ZinLogger.prototype.info  = function(msg) { var l = ZinLogger.INFO;  if (this.level() <= l) this.log(l, msg); }
 ZinAddressBook.prototype.populateNameToUriMap = function()
 {
 	var ret = null;
@@ -397,7 +410,7 @@ ZinAddressBook.prototype.updateCard = function(abCard, uri, properties, attribut
 
 	// now do deletes...
 	//
-	for (key in ZinContactConverter.instance().m_common_to[FORMAT_TB][format])
+	for (key in this.contact_converter().m_common_to[FORMAT_TB][format])
 		if (!isPropertyPresent(a_field_used, key))
 			abCard.setCardValue(key, "");
 
@@ -439,7 +452,7 @@ ZinAddressBook.prototype.getCardProperties = function(abCard)
 	var i, j, key, value;
 	var ret = new Object();
 
-	for (i in ZinContactConverter.instance().m_map[FORMAT_TB])
+	for (i in this.m_contact_converter.m_map[FORMAT_TB])
 	{
 		value = abCard.getCardValue(i);
 

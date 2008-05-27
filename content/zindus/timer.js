@@ -91,16 +91,14 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			if (server_type == "google")
 			{
 				this.m_syncfsm = new SyncFsmGd();
-				this.m_syncfsm.initialise(ZinMaestro.FSM_ID_GD_TWOWAY);
+				this.m_syncfsm.initialise(ZinMaestro.FSM_ID_GD_TWOWAY, SOURCEID_AA);
 			}
 			else
 			{
 				this.m_syncfsm = new SyncFsmZm();
-				this.m_syncfsm.initialise(ZinMaestro.FSM_ID_ZM_TWOWAY);
+				this.m_syncfsm.initialise(ZinMaestro.FSM_ID_ZM_TWOWAY, SOURCEID_AA);
 			}
 
-			this.m_syncfsm.setCredentials();
-			this.m_syncfsm.setState();
 			this.m_syncfsm.start(window);
 			this.is_running = true;
 		}

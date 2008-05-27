@@ -648,3 +648,25 @@ function zinSleep(milliseconds)
 	}
 	while (current - start < milliseconds);
 } 
+
+function zinLeftOfChar(str, c)
+{
+	if (arguments.length == 1)
+		c = '#';
+
+	zinAssert(str && c && c.length == 1);
+
+	return str.substr(0, str.indexOf(c));
+}
+
+// rfc3986 refers to the part to the right of the hash as "fragment"
+//
+function zinRightOfChar(str, c)
+{
+	if (arguments.length == 1)
+		c = '#';
+
+	zinAssert(str && c && c.length == 1);
+
+	return str.substr(str.indexOf(c) + 1);
+}

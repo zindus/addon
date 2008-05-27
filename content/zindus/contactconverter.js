@@ -22,32 +22,36 @@
  * ***** END LICENSE BLOCK *****/
 
 include("chrome://zindus/content/crc32.js");
+include("chrome://zindus/content/gdaddressconverter.js");
+
+// For the Thunderbird properties, see: mozilla/mailnews/addrbook/resources/content/abCardOverlay.js
+// which is a subset of the constants defined in mozilla/mailnews/addrbook/public/nsIAddrDatabase.idl
+// - the .idl also includes: LastModifiedDate, ListName, ListDescription, ListTotalAddresses
+//
+ZinContactConverter.VARY_NONE                      = 0x01;
+ZinContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS = 0x02;
 
 function ZinContactConverter()
 {
 	this.m_equivalents  = null; // an array of objects where each object is an n-tuplet of pairs of (format, contact property)
 	this.m_map          = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
 	this.m_common_to    = null; // associative array of [format1][format2] is a hash - the keys are the format1 props that map to format2
-
-	this.m_logger = newZinLogger("ContactConverter");
-
-	this.setup();
+	this.m_logger       = newZinLogger("ContactConverter");
+	this.m_gac          = new GdAddressConverter();
+	this.m_gd_certain_keys_converted = null;
 }
 
-ZinContactConverter.instance = function()
+ZinContactConverter.prototype.setup = function(vary)
 {
-	if (typeof (ZinContactConverter.m_instance) == "undefined")
-		ZinContactConverter.m_instance = new ZinContactConverter();
+	zinAssert(arguments.length == 0 || (arguments.length == 1 && (typeof(arguments[0]) == 'number') && arguments[0] > 0));
 
-	return ZinContactConverter.m_instance;
-}
+	if (arguments.length == 0)
+		vary = ZinContactConverter.VARY_NONE;
 
-// see: mozilla/mailnews/addrbook/resources/content/abCardOverlay.js
-// which is a subset of the constants defined in mozilla/mailnews/addrbook/public/nsIAddrDatabase.idl
-// - the .idl also includes: LastModifiedDate, ListName, ListDescription, ListTotalAddresses
-//
-ZinContactConverter.prototype.setup = function()
-{
+	var gd = function(key) { return ((vary & ZinContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS) ? key : null); }
+
+	this.m_vary = vary; // TODO - debugging only;
+
 	this.m_equivalents = new Array();
 	this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
@@ -60,18 +64,18 @@ ZinContactConverter.prototype.setup = function()
 	this.m_equivalents.push(newObject(FORMAT_TB, "FaxNumber",       FORMAT_ZM, "workFax",           FORMAT_GD, "phoneNumber#work_fax"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "PagerNumber",     FORMAT_ZM, "pager",             FORMAT_GD, "phoneNumber#pager"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "CellularNumber",  FORMAT_ZM, "mobilePhone",       FORMAT_GD, "phoneNumber#mobile"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress",     FORMAT_ZM, "homeStreet",        FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress2",    FORMAT_ZM, "homeStreet",        FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCity",        FORMAT_ZM, "homeCity",          FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeState",       FORMAT_ZM, "homeState",         FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeZipCode",     FORMAT_ZM, "homePostalCode",    FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCountry",     FORMAT_ZM, "homeCountry",       FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress",     FORMAT_ZM, "workStreet",        FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress2",    FORMAT_ZM, "workStreet",        FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCity",        FORMAT_ZM, "workCity",          FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkState",       FORMAT_ZM, "workState",         FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkZipCode",     FORMAT_ZM, "workPostalCode",    FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCountry",     FORMAT_ZM, "workCountry",       FORMAT_GD, null));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress",     FORMAT_ZM, "homeStreet",        FORMAT_GD, gd("postalAddress#home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress2",    FORMAT_ZM, "homeStreet",        FORMAT_GD, gd("postalAddress#home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCity",        FORMAT_ZM, "homeCity",          FORMAT_GD, gd("postalAddress#home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeState",       FORMAT_ZM, "homeState",         FORMAT_GD, gd("postalAddress#home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeZipCode",     FORMAT_ZM, "homePostalCode",    FORMAT_GD, gd("postalAddress#home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCountry",     FORMAT_ZM, "homeCountry",       FORMAT_GD, gd("postalAddress#home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress",     FORMAT_ZM, "workStreet",        FORMAT_GD, gd("postalAddress#work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress2",    FORMAT_ZM, "workStreet",        FORMAT_GD, gd("postalAddress#work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCity",        FORMAT_ZM, "workCity",          FORMAT_GD, gd("postalAddress#work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkState",       FORMAT_ZM, "workState",         FORMAT_GD, gd("postalAddress#work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkZipCode",     FORMAT_ZM, "workPostalCode",    FORMAT_GD, gd("postalAddress#work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCountry",     FORMAT_ZM, "workCountry",       FORMAT_GD, gd("postalAddress#work")));
 	this.m_equivalents.push(newObject(FORMAT_TB, "JobTitle",        FORMAT_ZM, "jobTitle",          FORMAT_GD, "organization#orgTitle"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Department",      FORMAT_ZM, "department",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Company",         FORMAT_ZM, "company",           FORMAT_GD, "organization#orgName"));
@@ -125,17 +129,37 @@ ZinContactConverter.prototype.setup = function()
 	// The trouble is that the response from the zimbra server lumps together all the attributes of a contact and provides
 	// no way of distinguishing contact content from metadata so we can't be sure we're converting all attributes relevent to content.
 	//
-	this.m_dont_convert = newObject("zimbraId",                    0,
-	                                "objectClass",                 0,
-	                                "createTimeStamp",             0,
-	                                "zimbraMailForwardingAddress", 0,
-	                                "zimbraCalResType",            0,
-	                                "modifyTimeStamp",             0);
+	this.m_dont_convert = new Object();
+	this.m_dont_convert[FORMAT_TB] = { };
+	this.m_dont_convert[FORMAT_GD] = { };
+	this.m_dont_convert[FORMAT_ZM] = newObject("zimbraId",                    0,
+	                                           "objectClass",                 0,
+	                                           "createTimeStamp",             0,
+	                                           "zimbraMailForwardingAddress", 0,
+	                                           "zimbraCalResType",            0,
+	                                           "modifyTimeStamp",             0);
+
+	this.m_bimap_format = getBimapFormat();
+
+	this.m_zm_street_field = new Object();
+	this.m_zm_street_field[FORMAT_TB] = { "HomeAddress":  0, "HomeAddress2" : 0, "WorkAddress" : 0, "WorkAddress2" : 0 };
+	this.m_zm_street_field[FORMAT_GD] = { };
+	this.m_zm_street_field[FORMAT_ZM] = { "homeStreet" :  0, "workStreet"   : 0 };
+
+	this.m_gd_address_field = new Object();
+	this.m_gd_address_field[FORMAT_TB] = { "HomeAddress"  : 0, "WorkAddress"  : 0,
+	                                       "HomeAddress2" : 0, "WorkAddress2" : 0,
+	                                       "HomeCity"     : 0, "WorkCity"     : 0,
+										   "HomeState"    : 0, "WorkState"    : 0,
+										   "HomeZipCode"  : 0, "WorkZipCode"  : 0,
+										   "HomeCountry"  : 0, "WorkCountry"  : 0 };
+	this.m_gd_address_field[FORMAT_GD] = { "postalAddress#home" :  0, "postalAddress#work" : 0 };
+	this.m_gd_address_field[FORMAT_ZM] = { };
 
 	var i, j, k;
 	this.m_map = new Object();
 
-	// this.m_logger.debug("ZimbraAddressBook.setup() - m_equivalents: " + aToString(this.m_equivalents));
+	// this.m_logger.debug("m_equivalents: " + aToString(this.m_equivalents));
 
 	for (j = 0; j < A_VALID_FORMATS.length;  j++)
 		this.m_map[A_VALID_FORMATS[j]] = new Object();
@@ -144,8 +168,6 @@ ZinContactConverter.prototype.setup = function()
 		for (j = 0; j < A_VALID_FORMATS.length; j++)
 		{
 			k = this.m_equivalents[i][A_VALID_FORMATS[j]];
-
-			// gLogger.debug("ZinContactConverter.setup() - i: " + i + " j: " + j + " k: " + k);
 
 			if (k != null)
 				this.m_map[A_VALID_FORMATS[j]][k] = i;
@@ -156,31 +178,27 @@ ZinContactConverter.prototype.setup = function()
 	// m_map[FORMAT_ZM][email] == 4
 	// m_equivalents[4][FORMAT_TB] = "PrimaryEmail";
 
-	this.m_bimap_format = getBimapFormat();
-
-	this.m_address_line = new Object();
-	this.m_address_line[FORMAT_ZM] = { "homeStreet" :  0, "workStreet"   : 0 };
-	this.m_address_line[FORMAT_TB] = { "HomeAddress":  0, "HomeAddress2" : 0, "WorkAddress" : 0, "WorkAddress2" : 0 };
-	this.m_address_line[FORMAT_GD] = { };
-
 	this.m_common_to = new Object();
 
 	for (j = 0; j < A_VALID_FORMATS.length;  j++)
 		if (A_VALID_FORMATS[j] != FORMAT_TB)
 			{
-				this.populate_common_to(FORMAT_TB, A_VALID_FORMATS[j]);
-				this.populate_common_to(A_VALID_FORMATS[j], FORMAT_TB);
+				this.initialise_common_to(FORMAT_TB, A_VALID_FORMATS[j]);
+				this.initialise_common_to(A_VALID_FORMATS[j], FORMAT_TB);
 			}
 
-	// for (i in this.m_common_to)
-	//	for (j in this.m_common_to[i])
-	//		this.m_logger.debug("m_common_to: [" + i + "][" + j + "]: " + aToString(this.m_common_to[i][j]));
+	if (false)
+	for (i in this.m_common_to)
+		for (j in this.m_common_to[i])
+			this.m_logger.debug("m_common_to: [" + this.m_bimap_format.lookup(i, null) +
+			                                "][" + this.m_bimap_format.lookup(j, null) + "]: " + aToString(this.m_common_to[i][j]));
 }
 
 ZinContactConverter.prototype.convert = function(format_to, format_from, properties_from)
 {
 	var key_from, index_to, key_to;
-	var a_normalised_line = newObject("home", new Array(), "work", new Array());
+	var a_zm_normalised_street = newObject("home", new Array(),  "work", new Array());
+	var a_gd_address_fields    = newObject("home", new Object(), "work", new Object());
 
 	zinAssert(isValidFormat(format_to) && isValidFormat(format_from));
 
@@ -188,7 +206,7 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 
 	for (key_from in properties_from)
 	{
-		if (isPropertyPresent(this.m_dont_convert, key_from))
+		if (isPropertyPresent(this.m_dont_convert[format_from], key_from))
 			; // do nothing
 		else if (format_to == format_from)
 			properties_to[key_from] = properties_from[key_from];
@@ -200,36 +218,45 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 			{
 				key_to = this.m_equivalents[index_to][format_to];
 
+				// this.m_logger.debug("vary: " + this.m_vary + " format_from: " + format_from + " format_to: " + format_to + " key_from: " + key_from + " key_to: " + key_to);
+
 				if (key_to != null)
 				{
-					if (isPropertyPresent(this.m_address_line[format_from], key_from))
-						this.normaliseAddressLine(format_to, format_from, properties_from, key_from, a_normalised_line);
+					if (isPropertyPresent(this.m_zm_street_field[format_from], key_from) &&
+					    isPropertyPresent(this.m_zm_street_field[format_to],   key_to))
+						this.normaliseStreetLine(format_to, format_from, properties_from, key_from, a_zm_normalised_street);
+					else if (isPropertyPresent(this.m_gd_address_field[format_from], key_from) &&
+					         isPropertyPresent(this.m_gd_address_field[format_to],   key_to))
+						this.gdAddressInput(format_to, format_from, properties_from, key_from, a_gd_address_fields);
 					else
 						properties_to[key_to] = properties_from[key_from];
 				}
 			}
-			else
+			else if (!(format_from == FORMAT_GD && isPropertyPresent(this.m_gd_address_field[format_from], key_from)))
 				this.m_logger.warn("Ignoring contact field that we don't have a mapping for: " +
 				                       "from: " + this.m_bimap_format.lookup(format_from, null) + " " +
 				                       "field: "  + key_from);
 		}
 	}
 
-	// this.m_logger.debug("convert: a_normalised_line[home].length: " + a_normalised_line["home"].length);
-	// this.m_logger.debug("convert: a_normalised_line[home]: " + a_normalised_line["home"].toString());
-	// this.m_logger.debug("convert: a_normalised_line[work].length: " + a_normalised_line["work"].length);
-	// this.m_logger.debug("convert: a_normalised_line[work]: " + a_normalised_line["work"].toString());
+	if (a_zm_normalised_street["home"].length > 0 || a_zm_normalised_street["work"].length > 0)
+		this.outputNormalisedStreetLine(format_to, properties_to, a_zm_normalised_street);
 
-	if (a_normalised_line["home"].length > 0 || a_normalised_line["work"].length > 0)
-		this.outputNormalisedAddressLine(format_to, properties_to, a_normalised_line);
-
-	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
-	//                                  " properties_from: "       + aToString(properties_from) +
-	//                                  " returns properties_to: " + aToString(properties_to));
+	for (var key in { "Home" : 0, "Work" : 0 })
+		if (aToLength(a_gd_address_fields[key.toLowerCase()]) > 0)
+			if (format_to == FORMAT_TB)
+				this.addSuffix(key, properties_to, a_gd_address_fields[key.toLowerCase()])
+			else if (format_to == FORMAT_GD)
+				this.m_gac.convert(properties_to, "postalAddress#" + key.toLowerCase(), a_gd_address_fields[key.toLowerCase()],
+				                     GdAddressConverter.ADDR_TO_XML );
 
 	if (format_to == FORMAT_GD)
 		GdContact.transformProperties(properties_to);
 		
+	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
+	//                                  " properties_from: "       + aToString(properties_from) +
+	//                                  " returns properties_to: " + aToString(properties_to));
+
 	return properties_to;
 }
 
@@ -244,30 +271,30 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 //                                                     VIC
 //                                                     3000
 
-ZinContactConverter.prototype.outputNormalisedAddressLine = function(format_to, properties_to, a_normalised_line)
+ZinContactConverter.prototype.outputNormalisedStreetLine = function(format_to, properties_to, a_normalised_street)
 {
 	switch(format_to)
 	{
 		case FORMAT_TB:
-			if (a_normalised_line["home"].length > 0)
-				properties_to["HomeAddress"]  = a_normalised_line["home"][0];
+			if (a_normalised_street["home"].length > 0)
+				properties_to["HomeAddress"]  = a_normalised_street["home"][0];
 
-			if (a_normalised_line["home"].length > 1)
-				properties_to["HomeAddress2"] = this.arrayToSeparatedString(a_normalised_line["home"], ",", 1);
+			if (a_normalised_street["home"].length > 1)
+				properties_to["HomeAddress2"] = this.arrayToSeparatedString(a_normalised_street["home"], ",", 1);
 
-			if (a_normalised_line["work"].length > 0)
-				properties_to["WorkAddress"]  = a_normalised_line["work"][0];
+			if (a_normalised_street["work"].length > 0)
+				properties_to["WorkAddress"]  = a_normalised_street["work"][0];
 
-			if (a_normalised_line["work"].length > 1)
-				properties_to["WorkAddress2"] = this.arrayToSeparatedString(a_normalised_line["work"], ",", 1);
+			if (a_normalised_street["work"].length > 1)
+				properties_to["WorkAddress2"] = this.arrayToSeparatedString(a_normalised_street["work"], ",", 1);
 			break;
 
 		case FORMAT_ZM:
-			if (a_normalised_line["home"].length > 0)
-				properties_to["homeStreet"] = this.arrayToSeparatedString(a_normalised_line["home"], "\n", 0);
+			if (a_normalised_street["home"].length > 0)
+				properties_to["homeStreet"] = this.arrayToSeparatedString(a_normalised_street["home"], "\n", 0);
 
-			if (a_normalised_line["work"].length > 0)
-				properties_to["workStreet"] = this.arrayToSeparatedString(a_normalised_line["work"], "\n", 0);
+			if (a_normalised_street["work"].length > 0)
+				properties_to["workStreet"] = this.arrayToSeparatedString(a_normalised_street["work"], "\n", 0);
 			break;
 		default: zinAssert(false);
 	}
@@ -290,47 +317,47 @@ ZinContactConverter.prototype.arrayToSeparatedString = function(a, separator, st
 	return ret;
 }
 
-ZinContactConverter.prototype.normaliseAddressLine = function(format_to, format_from, properties_from, key_from, a_normalised_line)
+ZinContactConverter.prototype.normaliseStreetLine = function(format_to, format_from, properties_from, key_from, a_normalised_street)
 {
 	var i;
 
-	// this.m_logger.debug("normaliseAddressLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
+	// this.m_logger.debug("normaliseStreetLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
 
 	switch(format_from)
 	{
 		case FORMAT_TB: switch(key_from) {
-				case "HomeAddress":  a_normalised_line["home"][0] = properties_from[key_from];                             break;
-				case "WorkAddress":  a_normalised_line["work"][0] = properties_from[key_from];                             break;
-				case "HomeAddress2": this.lineTwoFromCommaSeparated(properties_from, key_from, a_normalised_line, "home"); break;
-				case "WorkAddress2": this.lineTwoFromCommaSeparated(properties_from, key_from, a_normalised_line, "work"); break;
+				case "HomeAddress":  a_normalised_street["home"][0] = properties_from[key_from];                             break;
+				case "WorkAddress":  a_normalised_street["work"][0] = properties_from[key_from];                             break;
+				case "HomeAddress2": this.lineTwoFromCommaSeparated(properties_from, key_from, a_normalised_street, "home"); break;
+				case "WorkAddress2": this.lineTwoFromCommaSeparated(properties_from, key_from, a_normalised_street, "work"); break;
 				default: zinAssert(false);
 			}
 			break;
 
 		case FORMAT_ZM: switch(key_from) {
-				case "homeStreet": this.lineFromNewlineSeparated(properties_from, key_from, a_normalised_line, "home"); break;
-				case "workStreet": this.lineFromNewlineSeparated(properties_from, key_from, a_normalised_line, "work"); break;
+				case "homeStreet": this.lineFromNewlineSeparated(properties_from, key_from, a_normalised_street, "home"); break;
+				case "workStreet": this.lineFromNewlineSeparated(properties_from, key_from, a_normalised_street, "work"); break;
 				default: zinAssert(false);
 			}
 			break;
 		default: zinAssert(false);
 	}
 
-	// this.m_logger.debug("normaliseAddressLine: a_normalised_line[home]: " + a_normalised_line["home"].toString());
-	// this.m_logger.debug("normaliseAddressLine: a_normalised_line[work]: " + a_normalised_line["work"].toString());
+	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[home]: " + a_normalised_street["home"].toString());
+	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[work]: " + a_normalised_street["work"].toString());
 }
 
-ZinContactConverter.prototype.lineTwoFromCommaSeparated = function(properties_from, key_from, a_normalised_line, type)
+ZinContactConverter.prototype.lineTwoFromCommaSeparated = function(properties_from, key_from, a_line, type)
 {
 	var a = properties_from[key_from].split(",");
 
 	// this.m_logger.debug("lineTwoFromCommaSeparated: type: " + type + " a: " + a.toString());
 
 	for (var i = 0; i < a.length; i++)
-		a_normalised_line[type][i + 1] = a[i];
+		a_line[type][i + 1] = a[i];
 }
 
-ZinContactConverter.prototype.lineFromNewlineSeparated = function(properties_from, key_from, a_normalised_line, type)
+ZinContactConverter.prototype.lineFromNewlineSeparated = function(properties_from, key_from, a_line, type)
 {
 	var a = properties_from[key_from].split("\n");
 
@@ -339,9 +366,9 @@ ZinContactConverter.prototype.lineFromNewlineSeparated = function(properties_fro
 	for (var i = 0; i < a.length; i++)
 	{
 		if (i == 0)
-			a_normalised_line[type][i] = a[i];
+			a_line[type][i] = a[i];
 		else
-			a_normalised_line[type][i] = a[i].replace(/,/, " "); // can't allow commas in line 2 and onwards
+			a_line[type][i] = a[i].replace(/,/, " "); // can't allow commas in line 2 and onwards
 	}
 }
 
@@ -369,7 +396,7 @@ ZinContactConverter.prototype.crc32 = function(properties)
 	for (var i in properties)
 		if (properties[i].length > 0)
 		{
-			index_to = ZinContactConverter.instance().m_map[FORMAT_TB][i];
+			index_to = this.m_map[FORMAT_TB][i];
 
 			if (typeof(index_to) != 'undefined')
 				aSorted[index_to] = true;
@@ -378,8 +405,10 @@ ZinContactConverter.prototype.crc32 = function(properties)
 
 		}
 
+	var context = this;
+
 	function callback_concat_str(element, index, array) {
-		var key = ZinContactConverter.instance().m_equivalents[index][FORMAT_TB];
+		var key = context.m_equivalents[index][FORMAT_TB];
 		str += key + ":" + properties[key];
 	}
 
@@ -423,10 +452,10 @@ ZinContactConverter.prototype.removeKeysNotCommonToAllFormats = function(format_
 }
 
 // So for example:
-//	this.m_common_to[FORMAT_TB][FORMAT_GD] = PrimaryEmail, SecondEmail, WorkPhone ...
-//	this.m_common_to[FORMAT_GD][FORMAT_TB] = PrimaryEmail, SecondEmail, phoneNumber#work ...
+//	this.m_common_to[FORMAT_TB][FORMAT_GD] = PrimaryEmail : true, SecondEmail : true, WorkPhone : true, ...
+//	this.m_common_to[FORMAT_GD][FORMAT_TB] = PrimaryEmail : true, SecondEmail : true, phoneNumber#work : true, ...
 //
-ZinContactConverter.prototype.populate_common_to = function(format_to, format_from)
+ZinContactConverter.prototype.initialise_common_to = function(format_to, format_from)
 {
 	if (typeof this.m_common_to[format_to] != 'object')
 		this.m_common_to[format_to] = new Object();
@@ -434,7 +463,101 @@ ZinContactConverter.prototype.populate_common_to = function(format_to, format_fr
 	if (typeof this.m_common_to[format_to][format_from] != 'object')
 		this.m_common_to[format_to][format_from] = new Object();
 
-	for (var key in this.m_map[format_from])
-		if (this.isKeyConverted(format_to, format_from, key))
-			this.m_common_to[format_to][format_from][this.m_equivalents[this.m_map[format_from][key]][format_to]] = true;
+	for (i = 0; i < this.m_equivalents.length; i++)
+		if (this.m_equivalents[i][format_from] != null && this.m_equivalents[i][format_to] != null)
+			this.m_common_to[format_to][format_from][this.m_equivalents[i][format_to]] = true;
+}
+
+ZinContactConverter.prototype.normaliseStreetLine = function(format_to, format_from, properties_from, key_from, a_normalised_street)
+{
+	// this.m_logger.debug("normaliseStreetLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
+
+	switch(format_from)
+	{
+		case FORMAT_TB: switch(key_from) {
+				case "HomeAddress":  a_normalised_street["home"][0] = properties_from[key_from];                             break;
+				case "WorkAddress":  a_normalised_street["work"][0] = properties_from[key_from];                             break;
+				case "HomeAddress2": this.lineTwoFromCommaSeparated(properties_from, key_from, a_normalised_street, "home"); break;
+				case "WorkAddress2": this.lineTwoFromCommaSeparated(properties_from, key_from, a_normalised_street, "work"); break;
+				default: zinAssert(false);
+			}
+			break;
+
+		case FORMAT_ZM: switch(key_from) {
+				case "homeStreet": this.lineFromNewlineSeparated(properties_from, key_from, a_normalised_street, "home"); break;
+				case "workStreet": this.lineFromNewlineSeparated(properties_from, key_from, a_normalised_street, "work"); break;
+				default: zinAssert(false);
+			}
+			break;
+		default: zinAssert(false);
+	}
+
+	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[home]: " + a_normalised_street["home"].toString());
+	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[work]: " + a_normalised_street["work"].toString());
+}
+
+ZinContactConverter.prototype.gdAddressInput = function(format_to, format_from, properties_from, key_from, a_gd_address_fields)
+{
+	var left, right;
+
+	// this.m_logger.debug("gdAddressInput: blah: format_to: " + format_to + " format_from: " + format_from + " key_from: " + key_from);
+
+	switch(format_from)
+	{
+		case FORMAT_TB:
+			// 4 is the length of Home and Work, so left == "Home" or "Work" and right == "Address" or "City" etc
+			// if/when the set of thunderbird fields expands, we'll have to use some regexp matching here, meantime this is adequate
+			//
+			left  = key_from.substring(0, 4).toLowerCase();
+			right = key_from.substring(4);
+
+			a_gd_address_fields[left][right] = properties_from[key_from];
+			break;
+
+		case FORMAT_GD:
+			left = zinRightOfChar(key_from); // "home" or "work"
+			this.m_gac.convert(properties_from, key_from, a_gd_address_fields[left], GdAddressConverter.ADDR_TO_PROPERTIES );
+			break;
+		default: zinAssert(false);
+	}
+}
+
+ZinContactConverter.prototype.addSuffix = function(prefix, properties_to, properties_from)
+{
+	for (var i in properties_from)
+		if (isPropertyPresent(this.m_common_to[FORMAT_TB][FORMAT_GD], prefix + i))
+			properties_to[prefix + i] = properties_from[i];
+		else
+			; // do nothing instead of properties_to[i] = properties_from[i]; // this is for <otheraddr>
+}
+
+ZinContactConverter.prototype.keysCommonToThatMatch = function(regexp, replace_with, format_from, format_to)
+{
+	var ret = new Object();
+	zinAssert(arguments.length == 4);
+
+	for (key in this.m_common_to[format_from][format_to])
+		if (key.match(regexp))
+			ret[key.replace(regexp, replace_with)] = true;
+
+	if (false)
+	this.m_logger.debug("keysCommonToThatMatch: " + regexp + " : " + replace_with + 
+	                    " from: " + this.m_bimap_format.lookup(format_from, null) +
+	                    " to: "   + this.m_bimap_format.lookup(format_to, null) +
+						" returns: " + keysToString(ret));
+	return ret;
+}
+
+// This is a saved search of the conversions table...
+// m_converted["phoneNumber"]   == { home: null, work: null, work_fax: null, ... }
+// m_converted["postalAddress"] == { home: null, ... }
+//
+ZinContactConverter.prototype.gd_certain_keys_converted = function()
+{
+	if (!this.m_gd_certain_keys_converted)
+		this.m_gd_certain_keys_converted = newObject(
+			"phoneNumber"  , this.keysCommonToThatMatch(/^phoneNumber#(.*)/,    "$1", FORMAT_GD, FORMAT_TB),
+			"postalAddress", this.keysCommonToThatMatch(/^(postalAddress#.*$)/, "$1", FORMAT_GD, FORMAT_TB));
+
+	return this.m_gd_certain_keys_converted;
 }

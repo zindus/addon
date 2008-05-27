@@ -14,3 +14,5 @@ pref("extensions.zindus.system.zm_prefer_soapurl_scheme", "https");    // which 
 pref("extensions.zindus.general.as_verbose_logging",      "true");     // 
 pref("extensions.zindus.general.as_auto_sync",            "true");     // 
 pref("extensions.zindus.general.zm_sync_gal_enabled",     "if-fewer"); // values: yes, no, if-fewer
+pref("extensions.zindus.general.gd_sync_with",            "pab");      // values: pab, zg
+pref("extensions.zindus.general.gd_sync_postal_address",  "false");    // 

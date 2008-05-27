@@ -25,17 +25,19 @@ function ZinXpath()
 {
 }
 
-ZinXpath.NS_SOAP_ENVELOPE = "http://schemas.xmlsoap.org/soap/envelope/";
-ZinXpath.NS_ZIMBRA        = "urn:zimbra";
-ZinXpath.NS_ZACCOUNT      = "urn:zimbraAccount";
-ZinXpath.NS_ZMAIL         = "urn:zimbraMail";
+ZinXpath.NS_SOAP_ENVELOPE  = "http://schemas.xmlsoap.org/soap/envelope/";
+ZinXpath.NS_ZIMBRA         = "urn:zimbra";
+ZinXpath.NS_ZACCOUNT       = "urn:zimbraAccount";
+ZinXpath.NS_ZMAIL          = "urn:zimbraMail";
 
-ZinXpath.NS_ATOM          = "http://www.w3.org/2005/Atom";
-ZinXpath.NS_OPENSEARCH    = "http://a9.com/-/spec/opensearchrss/1.0/";
-ZinXpath.NS_GCONTACT      = "http://schemas.google.com/contact/2008";
-ZinXpath.NS_GD            = "http://schemas.google.com/g/2005";
+ZinXpath.NS_ATOM           = "http://www.w3.org/2005/Atom";
+ZinXpath.NS_OPENSEARCH     = "http://a9.com/-/spec/opensearchrss/1.0/";
+ZinXpath.NS_GCONTACT       = "http://schemas.google.com/contact/2008";
+ZinXpath.NS_GD             = "http://schemas.google.com/g/2005";
 
-ZinXpath.NS_XMLNS         = "http://www.w3.org/2000/xmlns/"; // See the uri and also http://www.w3.org/TR/DOM-Level-2-Core/core.html
+ZinXpath.NS_XMLNS          = "http://www.w3.org/2000/xmlns/"; // See the uri and also http://www.w3.org/TR/DOM-Level-2-Core/core.html
+
+ZinXpath.NS_ZINDUS_ADDRESS = "http://schemas.zindus.com/sync/2008";
 
 ZinXpath.nsResolver = function(prefix)
 {
@@ -47,7 +49,8 @@ ZinXpath.nsResolver = function(prefix)
 			atom:       ZinXpath.NS_ATOM,
 			openSearch: ZinXpath.NS_OPENSEARCH,
 			gcontact:   ZinXpath.NS_GCONTACT,
-			gd:         ZinXpath.NS_GD
+			gd:         ZinXpath.NS_GD,
+			zindusaddr: ZinXpath.NS_ZINDUS_ADDRESS
 	};
 
 	zinAssertAndLog(isPropertyPresent(map, prefix), "prefix: " + prefix);
@@ -109,20 +112,21 @@ ZinXpath.setConditionalFromSingleElement = function(object, property, xpath_quer
 		ZinXpath.logger.warn(warning_msg);
 }
 
-ZinXpath.runFunctor = function(functor, xpath_query, doc)
+ZinXpath.runFunctor = function(functor, xpath_query, doc, xpathResultType)
 {
-	zinAssert(arguments.length == 3);              // catch programming errors
+	zinAssert(arguments.length == 3 || arguments.length == 4); // catch programming errors
 	zinAssert(typeof(doc.evaluate) == 'function');
 
-	var xpathResultType = XPathResult.ANY_UNORDERED_NODE_ITERATOR_TYPE;
-	var xpathResult     = doc.evaluate(xpath_query, doc, ZinXpath.nsResolver, xpathResultType, null);
+	if (arguments.length == 3)
+		xpathResultType = XPathResult.UNORDERED_NODE_ITERATOR_TYPE; // this used to be ANY_UNORDERED_NODE_ITERATOR_TYPE - why did that work?
+
+	var xpathResult = doc.evaluate(xpath_query, doc, ZinXpath.nsResolver, xpathResultType, null);
 
 	try {
 		var node = xpathResult.iterateNext();
 
 		while (node)
 		{
-			// ZinXpath.logger.debug("44991: arrayOfContactsFromXpath - node.nodeType == " + node.nodeType);
 			functor.run(doc, node);
 			node = xpathResult.iterateNext();
 		}

@@ -40,13 +40,15 @@ PrefSet.SERVER_URL               = "url";
 PrefSet.SERVER_USERNAME          = "username";
 PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME, PrefSet.SERVER_TYPE ];
 
-PrefSet.GENERAL                     = "general";
-PrefSet.GENERAL_AUTO_SYNC           = "as_auto_sync";
-PrefSet.GENERAL_VERBOSE_LOGGING     = "as_verbose_logging";
-PrefSet.GENERAL_GD_SYNC_WITH        = "gd_sync_with";
-PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED = "zm_sync_gal_enabled";
-PrefSet.GENERAL_PROPERTIES          = [ PrefSet.GENERAL_AUTO_SYNC,           PrefSet.GENERAL_VERBOSE_LOGGING,
-                                        PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, PrefSet.GENERAL_GD_SYNC_WITH ];
+PrefSet.GENERAL                        = "general";
+PrefSet.GENERAL_AUTO_SYNC              = "as_auto_sync";
+PrefSet.GENERAL_VERBOSE_LOGGING        = "as_verbose_logging";
+PrefSet.GENERAL_GD_SYNC_WITH           = "gd_sync_with";
+PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS = "gd_sync_postal_address";
+PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED    = "zm_sync_gal_enabled";
+PrefSet.GENERAL_PROPERTIES             = [ PrefSet.GENERAL_AUTO_SYNC,             PrefSet.GENERAL_VERBOSE_LOGGING,
+                                           PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED,   PrefSet.GENERAL_GD_SYNC_WITH,
+										   PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS ];
 
 // Both id and branch are optional
 // id is option because there might only be a single subsection under prefprefix
@@ -165,7 +167,7 @@ PrefSet.prototype.toString = function()
 	return ret;
 }
 
-PrefSet.prototype.isaProperty = function(property)
+PrefSet.prototype.isPropertyPresent = function(property)
 {
 	return (typeof(this.m_properties[property]) != "undefined");
 }
@@ -211,32 +213,22 @@ PrefSet.prototype.makePrefKey = function(id, property)
 	return ret;
 }
 
-function PrefSetHelper()
+PrefSet.keyFrom = function(parent, child)
 {
+	return parent + "." + child;
 }
 
-// return credentials from preferences and the password manager
-//
-PrefSetHelper.getUserUrlPw = function(prefset, pref_user, pref_url)
+PrefSet.getPassword = function(prefset)
 {
-	var url, username, pw, pm;
-
-	username = prefset.getProperty(pref_user);
-	url      = prefset.getProperty(pref_url);
+	var username = prefset.getProperty(PrefSet.SERVER_USERNAME);
+	var url      = prefset.getProperty(PrefSet.SERVER_URL);
+	var ret      = null;
 
 	if (username != null && url != null)
 	{
-		pm = new PasswordManager();
-		pw = pm.get(url, username);
+		var pm = new PasswordManager();
+		ret = String(pm.get(url, username));
 	}
-	else
-		pw = "";
 
-	if (username == null) username = "";
-	if (url == null)      url = "";
-
-	// we return String(x) because we want their typeof() to be 'string' instead of 'object'
-	// see: http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:String#Description
-	//
-	return [ String(username), String(url), String(pw) ];
+	return ret;
 }

@@ -116,7 +116,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stConverge1:      { count: 1 },
 		stConverge2:      { count: 1 },
 		stConverge3:      { count: 1 },
-		stConverge5:      {            },
+		stConverge5:      {          },
 		stConverge6:      { count: 1 },
 		stConverge7:      { count: 1 },
 		stConverge8:      { count: 1 },
@@ -137,9 +137,11 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stLoad:           { count: 1 },
 		stLoadTb:         { count: 1 },
 		stGetContactGd:   { count: 1 },
+		stDeXmlifyAddrGd: { count: 1 },
 		stConverge1:      { count: 1 },
 		stConverge2:      { count: 1 },
 		stConverge3:      { count: 1 },
+		stConverge4:      { count: 1 },
 		stConverge5:      { },
 		stConverge6:      { count: 1 },
 		stConverge7:      { count: 1 },
@@ -201,14 +203,16 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stLoad':           this.progressReportOn("Load");                                         break;
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "AccountInfo"); break;
 			case 'stSync':          
-			case 'stSyncResult':     this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
-			case 'stGetContactGd':   this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
+			case 'stSyncResult':
+			case 'stGetContactGd':
+			case 'stDeXmlifyAddrGd': this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
 			case 'stGalSync':        
 			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "GetGAL");      break;
 			case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "Load");        break;
 			case 'stConverge1':     
 			case 'stConverge2':     
 			case 'stConverge3':     
+			case 'stConverge4':     
 			case 'stConverge5':     
 			case 'stConverge6':     
 			case 'stConverge7':     
