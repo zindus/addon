@@ -12,11 +12,15 @@
 <!ENTITY ZinPrefsTabGeneral.label                "Preferences">
 <!ENTITY ZinPrefsSpacer.style                    "height:15px">
 
+<!ENTITY ZinPrefsAdvanced.title                  "Zindus Advanced Configuration Settings">
+
 <!ENTITY ZinPrefsServerGrid.style                "margin-left:10px; margin-right:20px; margin-top:10px ">
 <!ENTITY ZinPrefsServerDescription.style         "margin-top:5px; margin-bottom:10px; padding:5px ">
 <!ENTITY ZinPrefsServerLabel.style               "margin-left:20px">
 <!ENTITY ZinPrefsServerUrlDescription.value      "Type the url you use to log on to the server.
                                                   <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
+<!ENTITY ZinPrefsServerTypeCaption.label          "Select server type">
+
 <!ENTITY ZinPrefsServerUrl.label                 "Server Url:">
 <!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on.">
 <!ENTITY ZinPrefsServerUsername.label            "Email Address">
@@ -41,5 +45,30 @@
 <!ENTITY ZinPrefsGeneralButtonReset.accesskey    "R">
 <!ENTITY ZinPrefsGeneralButtonTimer.label        "Run Timer">
 <!ENTITY ZinPrefsGeneralButtonTestHarness.label  "Test Harness">
+
+<!ENTITY ZinPrefsGeneralButtonAdvanced.label     "Advanced...">
+<!ENTITY ZinPrefsGeneralButtonAdvanced.accesskey "A">
+
+<!ENTITY ZinPrefsAdvancedGdPostal.label          "Postal Address Fields">
+<!ENTITY ZinPrefsAdvancedGdFalse.label           "Not synced">
+<!ENTITY ZinPrefsAdvancedGdTrue.label            "Thunderbird fields are represented as xml in the Google address field">
+<!ENTITY ZinPrefsAdvancedGdExample1.value        "An example...">
+<!ENTITY ZinPrefsAdvancedGdExample2.value        "
+                                                  <html:strong>Thunderbird Address Fields</html:strong>
+                                                  <html:br/>
+                                                  <html:br/> 1 Flinders st
+                                                  <html:br/> Melbourne
+                                                  <html:br/> 3000 
+                                                  <html:br/> Australia
+                                                  ">
+<!ENTITY ZinPrefsAdvancedGdExample3.value "
+                                                  <html:strong>Google Address Field</html:strong>
+                                                  <html:br/> &lt;address&gt;
+                                                  <html:br/> &lt;street&gt; 1 Flinders st &lt;/street&gt;
+                                                  <html:br/> &lt;city&gt; Melbourne &lt;/city&gt;
+                                                  <html:br/> &lt;postcode&gt; Melbourne &lt;/postcode&gt;
+                                                  <html:br/> &lt;country&gt; Australia &lt;/country&gt;
+                                                  <html:br/> &lt;/address&gt;
+                                                  ">
 
 <!ENTITY ZinSyncWindowProgressDescription.style  "width:35em">

@@ -70,7 +70,7 @@ GdContact.prototype.updateFromContainer = function(node)
 	var functor = {
 		run: function(node, key)
 		{
-			context.m_logger.debug("updateFromContainer: functor: key: " + key);
+			// context.m_logger.debug("updateFromContainer: functor: key: " + key);
 
 			switch (key)
 			{

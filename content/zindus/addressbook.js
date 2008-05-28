@@ -75,8 +75,6 @@ ZinAddressBook.prototype.contact_converter = function()
 	return this.m_contact_converter;
 }
 
-ZinLogger.prototype.debug = function(msg) { var l = ZinLogger.DEBUG; if (this.level() <= l) this.log(l, msg); }
-ZinLogger.prototype.info  = function(msg) { var l = ZinLogger.INFO;  if (this.level() <= l) this.log(l, msg); }
 ZinAddressBook.prototype.populateNameToUriMap = function()
 {
 	var ret = null;

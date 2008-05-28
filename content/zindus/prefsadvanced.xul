@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<!-- ***** BEGIN LICENSE BLOCK *****
+  
+  "The contents of this file are subject to the Mozilla Public License
+  Version 1.1 (the "License"); you may not use this file except in
+  compliance with the License. You may obtain a copy of the License at
+  http://www.mozilla.org/MPL/
+  
+  Software distributed under the License is distributed on an "AS IS"
+  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+  License for the specific language governing rights and limitations
+  under the License.
+  
+  The Original Code is Zindus Sync.
+  
+  The Initial Developer of the Original Code is Toolware Pty Ltd.
+ 
+  Portions created by Initial Developer are Copyright (C) 2008
+  the Initial Developer. All Rights Reserved.
+ 
+  Contributor(s): Leni Mayo
+  
+  ***** END LICENSE BLOCK ***** -->
+
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
+
+<dialog
+	id="zindus-prefs-advanced-dialog"
+	title="&ZinPrefsAdvanced.title;"
+	buttons="accept,cancel"
+	flex="1"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	onload="window.wd = new PrefsAdvanced; window.wd.onLoad(event.target);"
+	oncommand="window.wd.onCommand(event.target.id);"
+	ondialogaccept="window.wd.onAccept();"
+	ondialogcancel="window.wd.onCancel();"
+	>
+
+	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/utils.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/prefsdialog.js"/>
+
+	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
+
+	<groupbox pack="center" >
+		<caption label="&ZinPrefsAdvancedGdPostal.label;" />
+		<radiogroup id="zindus-prefs-general-gd-sync-postal-radiogroup">
+			<radio id="zindus-prefs-general-gd-sync-postal-false" label="&ZinPrefsAdvancedGdFalse.label;" />
+			<radio id="zindus-prefs-general-gd-sync-postal-true"  label="&ZinPrefsAdvancedGdTrue.label;"  />
+		</radiogroup>
+
+		<vbox id="zindus-prefs-gd-sync-postal-example" xmlns:html="http://www.w3.org/1999/xhtml" style="margin-left:20px" >
+			<description style="margin-left:10px;"> &ZinPrefsAdvancedGdExample1.value; </description>
+		<hbox style="margin-left:10px; margin-right:10px">
+			<description> &ZinPrefsAdvancedGdExample2.value; </description>
+			<description> &ZinPrefsAdvancedGdExample3.value; </description>
+		</hbox>
+		</vbox>
+	</groupbox>
+</dialog>
