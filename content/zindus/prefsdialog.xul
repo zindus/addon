@@ -73,9 +73,9 @@
 					</columns>
 					<rows>
 						<vbox id="zindus-prefs-server-type-vbox" >
-							<caption label="Select server type" />
+							<caption label="&ZinPrefsServerTypeCaption.label;" />
 							<radiogroup id="zindus-prefs-server-type-radiogroup">
-								<radio id="zindus-prefs-server-type-google" label="Google" /> <!-- selected="true" -->
+								<radio id="zindus-prefs-server-type-google" label="Google" />
 								<radio id="zindus-prefs-server-type-zimbra" label="Zimbra"  selected="true" />
 							</radiogroup>
 						</vbox>
@@ -134,7 +134,6 @@
 							<radiogroup id="zindus-prefs-general-gdsyncwith-radiogroup" >
 								<radio id="zindus-prefs-general-gdsyncwith-pab" label="&ZinPrefsGeneralGdSyncWithPab.label;" />
 								<radio id="zindus-prefs-general-gdsyncwith-zg" />
-								<!-- tooltiptext="&ZinPrefsGeneralGdSyncWithGd.tooltip;"  -->
 							</radiogroup>
 						</groupbox>
 						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
@@ -151,6 +150,11 @@
 						<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
 					</vbox>
 				</stack>
+
+				<hbox id="zindus-prefs-general-advanced-hbox" align="right" >
+					<button id="zindus-prefs-general-advanced-button" command="zindus-prefs-cmd-sync"
+					         accesskey="&ZinPrefsGeneralButtonAdvanced.accesskey;" label="&ZinPrefsGeneralButtonAdvanced.label;" />
+				</hbox>
 
 				<groupbox pack="center" >
 				    <caption label="&ZinPrefsGeneralGroupActions.label;"/>
