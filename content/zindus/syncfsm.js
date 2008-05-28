@@ -168,7 +168,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stDeXmlifyAddrGd:  { evCancel: 'final', evNext: 'stConverge1',      evHttpRequest: 'stHttpRequest', evRepeat: 'stDeXmlifyAddrGd' },
 		stConverge1:       { evCancel: 'final', evNext: 'stConverge2',                                      evLackIntegrity: 'final'     },
 		stConverge2:       { evCancel: 'final', evNext: 'stConverge3',      evRepeat:      'stConverge2'                                 },
-		stConverge3:       { evCancel: 'final', evNext: 'stConverge4',      evSkip:        'stConverge5'                                 },
+		stConverge3:       { evCancel: 'final', evNext: 'stConverge5',      evPostal:      'stConverge4'                                 },
 		stConverge4:       { evCancel: 'final', evNext: 'stConverge5',                                                                   },
 		stConverge5:       { evCancel: 'final', evNext: 'stConverge6',                                                                   },
 		stConverge6:       { evCancel: 'final', evNext: 'stConverge7',                                      evLackIntegrity: 'final'     },
@@ -4237,7 +4237,7 @@ SyncFsm.prototype.entryActionConverge3 = function(state, event, continuation)
 
 	this.updateGidFromSources();                         // 1. map all luids into a single namespace (the gid)
 
-	continuation( (this.formatPr() == FORMAT_GD && this.state.gd_is_sync_postal_address && this.state.isSlowSync) ? 'evNext' : 'evSkip');
+	continuation( (this.formatPr() == FORMAT_GD && this.state.gd_is_sync_postal_address && this.state.isSlowSync) ? 'evPostal' : 'evNext');
 }
 
 SyncFsmGd.prototype.entryActionConverge4 = function(state, event, continuation)
@@ -6470,13 +6470,15 @@ SyncFsm.prototype.initialise = function(id_fsm, sourceid, prefset_general, prefs
 
 	if (arguments.length == 2)
 	{
+		prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
+		prefset_server  = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
 		prefset_general.load();
 		prefset_server.load(sourceid);
 		password = PrefSet.getPassword(prefset_server);
 	}
 
-	this.state.sources[sourceid]['soapURL']  = prefset_server.getProperty(PrefSet.SERVER_URL);
-	this.state.sources[sourceid]['username'] = prefset_server.getProperty(PrefSet.SERVER_USERNAME);
+	this.state.sources[sourceid]['soapURL']  = String(prefset_server.getProperty(PrefSet.SERVER_URL));
+	this.state.sources[sourceid]['username'] = String(prefset_server.getProperty(PrefSet.SERVER_USERNAME));
 	this.state.sources[sourceid]['password'] = password;
 
 	if (this.formatPr() == FORMAT_ZM)
