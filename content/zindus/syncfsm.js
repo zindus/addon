@@ -1874,10 +1874,10 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 SyncFsm.prototype.get_foreach_card_functor = function()
 {
 	var functor = null;
+	var context = this;
 
 	if (this.formatPr() == FORMAT_GD)
 		functor = {
-			context: this,
 			m_a_email_luid:  new Object(),
 			m_a_empty_contacts: new Object(),
 			add_email: function(properties, key, id)
@@ -1898,7 +1898,7 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 			run: function(card, id, properties)
 			{
 				var key;
-				var gd_properties = this.context.contact_converter().convert(FORMAT_GD, FORMAT_TB, properties);
+				var gd_properties = context.contact_converter().convert(FORMAT_GD, FORMAT_TB, properties);
 
 				GdContact.transformProperties(gd_properties);
 
@@ -1924,12 +1924,11 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 		};
 	else if (this.formatPr() == FORMAT_ZM)
 		functor = {
-			context: this,
 			m_a_empty_contacts: new Object(),
 			run: function(card, id, properties)
 			{
 				var key;
-				var properties = this.context.contact_converter().convert(FORMAT_ZM, FORMAT_TB, properties);
+				var properties = context.contact_converter().convert(FORMAT_ZM, FORMAT_TB, properties);
 
 				// identify cards with no properties
 				//
@@ -2146,10 +2145,10 @@ SyncFsm.prototype.loadTbDeleteReadOnlySharedAddresbooks = function()
 
 SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 {
-	var functor_foreach_card, functor_foreach_addressbook;
-	var uri;
 	var sourceid = this.state.sourceid_tb;
-	var zfcTb = this.state.sources[sourceid]['zfcLuid'];
+	var zfcTb    = this.state.sources[sourceid]['zfcLuid'];
+	var context  = this;
+	var uri, functor_foreach_card, functor_foreach_addressbook;
 
 	var stopwatch = new ZinStopWatch("loadTbMergeZfcWithAddressBook");
 
@@ -2166,7 +2165,6 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 	//
 	functor_foreach_addressbook =
 	{
-		context: this,
 		m_folder_converter: this.state.m_folder_converter,
 		m_addressbook: this.state.m_addressbook,
 
@@ -2184,7 +2182,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			// look for zindus/<folder-name> but don't permit '/'es in <folder-name> because:
 			// - we only support addressbook folders that are immediate children of the root folder - note the l='1' below.
 
-			// this.context.state.m_logger.debug("TbAddressBook: blah: dirName: " + elem.dirName);
+			// context.state.m_logger.debug("TbAddressBook: blah: dirName: " + elem.dirName);
 
 			if ((this.m_folder_converter.prefixClass(elem.dirName) != ZinFolderConverter.PREFIX_CLASS_NONE &&
 			        elem.dirName.indexOf("/", this.m_folder_converter.m_prefix_length) == -1) ||
@@ -2192,7 +2190,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			{
 				var key;
 
-				var name = this.context.getAbNameNormalised(elem);
+				var name = context.getAbNameNormalised(elem);
 
 				msg = "addressbook of interest to zindus: " + msg;
 
@@ -2236,7 +2234,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			else
 				msg = "ignored: " + msg;
 
-			this.context.state.m_logger.debug("loadTbMergeZfcWithAddressBook: " + msg);
+			context.state.m_logger.debug("loadTbMergeZfcWithAddressBook: " + msg);
 		
 			return true;
 		}
@@ -2271,8 +2269,8 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	// pass 1 - iterate through the cards in the zindus folders building an associative array of mailing list uris
 	//
 	var aMailListUri = new Object();
+	var zfcTb        = this.zfcTb();
 	var functor_foreach_card;
-	var zfcTb = this.zfcTb();
 
 	functor_foreach_card = {
 		state: this.state,
@@ -2332,10 +2330,11 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 	this.state.m_logger.debug("loadTbExclude pass 2 - aCardKeysToExclude == " + aToString(aCardKeysToExclude));
 
+	var context = this;
+
 	// pass 3 - iterate through the cards in the zindus folders excluding mailing list uris and cards with keys in aCardKeysToExclude
 	//
 	functor_foreach_card = {
-		context: this,
 		state: this.state,
 
 		run: function(uri, item)
@@ -2363,7 +2362,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			{
 				var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 				var properties  = this.state.m_addressbook.getCardProperties(abCard);
-				var checksum    = this.context.contact_converter().crc32(properties);
+				var checksum    = context.contact_converter().crc32(properties);
 
 				// this.state.m_logger.debug("Popularity Index: for card: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + "  is: " + abCard.popularityIndex);
 
@@ -2408,7 +2407,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 				zfcTb.get(id).set(ZinFeedItem.ATTR_PRES, '1');
 
-				if (this.state.foreach_tb_card_functor && this.context.isInScopeTbLuid(id))
+				if (this.state.foreach_tb_card_functor && context.isInScopeTbLuid(id))
 					this.state.foreach_tb_card_functor.run(abCard, id, properties);
 			}
 			else
@@ -2774,6 +2773,7 @@ SyncFsm.prototype.workaroundForZmImmutable = function(luid_zm)
 
 SyncFsm.prototype.updateGidDoChecksums = function()
 {
+	var context = this;
 	var pair;
 
 	var functor_foreach_luid_do_checksum = {
@@ -2793,14 +2793,14 @@ SyncFsm.prototype.updateGidDoChecksums = function()
 				foreach_msg += " luid: " + luid + " - not relevant to gid\n";
 			else if (zfi.type() == ZinFeedItem.TYPE_CN)
 			{
-				var a = this.context.getPropertiesAndParentNameFromSource(sourceid, luid, this.state.m_contact_converter_vary_none);
+				var a = context.getPropertiesAndParentNameFromSource(sourceid, luid, this.state.m_contact_converter_vary_none);
 
 				if (a.properties) // a card with no properties will never be part of a twin so don't bother
 				{
-					if (this.context.formatPr() == FORMAT_GD)
+					if (context.formatPr() == FORMAT_GD)
 						GdContact.transformProperties(a.properties);
 						
-					checksum = this.context.contact_converter().crc32(a.properties);
+					checksum = context.contact_converter().crc32(a.properties);
 					var key = hyphenate('-', sourceid, a.parent, checksum);
 
 					if (!isPropertyPresent(this.state.aHasChecksum, key))
@@ -2869,8 +2869,8 @@ SyncFsm.prototype.updateGidFromSources = function()
 {
 	var zfcGid  = this.state.zfcGid;
 	var reverse = this.state.aReverseGid; // bring it into the local namespace
-	var zfc, format;
-	var foreach_msg;
+	var context = this;
+	var zfc, format, foreach_msg;
 
 	var functor_foreach_luid_fast_sync = {
 		state: this.state,
@@ -2903,13 +2903,13 @@ SyncFsm.prototype.updateGidFromSources = function()
 	var functor_foreach_luid_slow_sync = {
 		mapTbFolderNameToId: SyncFsm.getTopLevelFolderHash(this.zfcTb(), ZinFeedItem.ATTR_NAME, ZinFeedItem.ATTR_KEY),
 		state: this.state,
-		context: this,
 
 		run: function(zfi)
 		{
-			var luid = zfi.key();
-			var msg  = "slow_sync: sourceid: " + sourceid + " and luid: " + strPadTo(luid, 5);
-			var luid_tb = null;
+			var luid        = zfi.key();
+			var msg         = "slow_sync: sourceid: " + sourceid + " and luid: " + strPadTo(luid, 5);
+			var sourceid_tb = this.state.sourceid_tb;
+			var luid_tb     = null;
 			var gid;
 
 			zinAssert(!isPropertyPresent(reverse[sourceid], luid));
@@ -2920,14 +2920,14 @@ SyncFsm.prototype.updateGidFromSources = function()
 				{
 					zinAssertAndLog((zfi.type() != ZinFeedItem.TYPE_FL) || !zfi.isForeign(), "foreign folder? zfi: " + zfi.toString());
 
-					var abName = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
+					var abName = context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
 
 					if (isPropertyPresent(this.mapTbFolderNameToId, abName))
 						luid_tb = this.mapTbFolderNameToId[abName];
 
 					if (luid_tb)
 					{
-						gid = this.context.twinInGid(sourceid, luid, this.state.sourceid_tb, luid_tb, reverse)
+						gid = context.twinInGid(sourceid, luid, sourceid_tb, luid_tb, reverse)
 						msg += " twin: folder with tb luid: " + luid_tb + " at gid: " + gid;
 					}
 					else
@@ -2943,16 +2943,15 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 					var checksum    = this.state.aChecksum[sourceid][luid];
 					var luid_parent = SyncFsm.keyParentRelevantToGid(zfc, zfi.key());
-					var name_parent = this.context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
+					var name_parent = context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
 
-					var key = hyphenate('-', this.state.sourceid_tb, name_parent, checksum);
+					var key = hyphenate('-', sourceid_tb, name_parent, checksum);
 					// this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: testing twin key: " + key);
 
 					if (isPropertyPresent(this.state.aHasChecksum, key) && aToLength(this.state.aHasChecksum[key]) > 0)
 						for (var luid_possible in this.state.aHasChecksum[key])
 							if (this.state.aHasChecksum[key][luid_possible] &&
-							    this.context.isTwin(this.state.sourceid_tb, sourceid, luid_possible, luid,
-								                        this.context.state.m_contact_converter_vary_none))
+							    context.isTwin(sourceid_tb, sourceid, luid_possible, luid, context.state.m_contact_converter_vary_none))
 							{
 								luid_tb = luid_possible;
 								break;
@@ -2960,9 +2959,9 @@ SyncFsm.prototype.updateGidFromSources = function()
 
 					if (luid_tb)
 					{
-						gid = this.context.twinInGid(sourceid, luid, this.state.sourceid_tb, luid_tb, reverse);
+						gid = context.twinInGid(sourceid, luid, sourceid_tb, luid_tb, reverse);
 						msg += " twin: contact with tb luid: " + luid_tb + " at gid: " + gid + " tb contact: " + 
-									this.context.shortLabelForLuid(this.state.sourceid_tb, luid_tb, FORMAT_TB);
+									context.shortLabelForLuid(sourceid_tb, luid_tb, FORMAT_TB);
 
 						delete this.state.aHasChecksum[key][luid_tb];
 					}
@@ -3215,6 +3214,7 @@ SyncFsm.prototype.buildGcs = function()
 	var sourceid_tb   = this.state.sourceid_tb;
 	var zfcGid        = this.state.zfcGid;
 	var reverse       = this.state.aReverseGid; // bring it into the local namespace
+	var context       = this;
 
 	this.debug("xxxx: zfcGid: " + zfcGid.toString()); // TODO
 
@@ -3235,7 +3235,6 @@ SyncFsm.prototype.buildGcs = function()
 
 	var buildgcs_msg;
 	var functor_foreach_candidate = {
-		context: this,
 		state:   this.state,
 
 		run: function(zfi)
@@ -3258,7 +3257,7 @@ SyncFsm.prototype.buildGcs = function()
 			else
 				buildgcs_msg += " - not of interest or not relevant - compare skipped: zfi: " + zfi.toString();
 
-			this.context.debug(buildgcs_msg);
+			context.debug(buildgcs_msg);
 
 			return true;
 		},
@@ -3272,7 +3271,6 @@ SyncFsm.prototype.buildGcs = function()
 			var msg = "";
 
 			var functor_each_luid_in_gid = {
-				context: this.context,
 				state:   this.state,
 
 				run: function(sourceid, luid)
@@ -3310,7 +3308,7 @@ SyncFsm.prototype.buildGcs = function()
 								// sanity check that the Contact folder hasn't changed - it's supposed to be immutable (isn't it?)
 								//
 								if (this.state.sources[sourceid]['zfcLuid'].get(luid).type() == ZinFeedItem.TYPE_FL)
-									zinAssert(this.context.shortLabelForLuid(sourceid, luid, FORMAT_TB) != TB_PAB);
+									zinAssert(context.shortLabelForLuid(sourceid, luid, FORMAT_TB) != TB_PAB);
 							}
 						}
 						else
@@ -4196,9 +4194,6 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 
 		if (passed)
 			this.fakeDelOnUninterestingContacts();
-
-		// this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcTb:\n" + this.zfcTb().toString());
-		// this.state.m_logger.debug("entryActionConverge1: blah: 2: zfcPr:\n" + this.zfcPr().toString());
 
 		this.state.stopwatch.mark(state + " 3");
 
@@ -6934,7 +6929,7 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 				this.state.a_gd_contact_dexmlify_ids.push(id);
 			}
 
-			this.state.m_logger.debug(msg);
+			this.debug(msg);
 		}
 
 		this.state.m_logger.debug("entryActionDeXmlifyAddrGd: a_gd_contact_dexmlify_ids: "+this.state.a_gd_contact_dexmlify_ids.toString());
