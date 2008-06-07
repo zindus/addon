@@ -28,7 +28,7 @@ function ZinStopWatch(prefix)
 {
 	this.m_prefix = prefix;
 	this.m_start  = new Date(Date.now());
-	this.m_logger = newZinLogger("stopwatch");
+	this.m_logger = ZinLoggerFactory.instance().newZinLogger("stopwatch");
 }
 
 ZinStopWatch.prototype.mark = function(marker)

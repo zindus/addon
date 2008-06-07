@@ -73,7 +73,7 @@ StatusPanel.getZfi = function()
 
 StatusPanel.update = function(zwc)
 {
-	var logger    = newZinLogger("StatusPanel");
+	var logger    = ZinLoggerFactory.instance().newZinLogger("StatusPanel");
 	var zfiStatus = StatusPanel.getZfi();
 
 	if (zfiStatus)

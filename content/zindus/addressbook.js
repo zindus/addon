@@ -36,7 +36,7 @@ function ZinAddressBook()
 	this.m_nsIRDFService = null;
 	this.m_map_name_to_uri = null;
 
-	this.m_logger = newZinLogger("AddressBook");
+	this.m_logger = ZinLoggerFactory.instance().newZinLogger("AddressBook");
 
 	// these used to be const but a user is reporting an error on this line:
 	// Error: redeclaration of const kPersonalAddressbookURI Source File: chrome://zindus/content/addressbook.js Line: 36 

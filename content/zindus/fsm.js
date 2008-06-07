@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.10 2008-05-06 19:13:01 cvsuser Exp $
+// $Id: fsm.js,v 1.11 2008-06-07 06:22:07 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -165,7 +165,7 @@ function Fsm(transitions, a_entry, a_exit)
 
 	zinAssert(typeof(this.m_transitions) == 'object' && typeof(this.m_a_entry) == 'object' && typeof(this.m_a_exit) == 'object');
 
-	this.m_logger            = newZinLogger("fsm");  this.m_logger.level(ZinLogger.NONE);
+	this.m_logger            = ZinLoggerFactory.instance().newZinLogger("fsm");  this.m_logger.level(ZinLogger.NONE);
 	this.m_continuation      = null;
 	this.m_is_sanity_checked = false;
 	this.m_window            = null;

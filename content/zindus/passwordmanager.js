@@ -64,7 +64,7 @@ PasswordManager.prototype.del = function(server, login)
 	}
 	catch (ex) {
 		// do nothing - if (server, login) doesn't exist the component throws an exception
-		newZinLogger("PasswordManager").debug("PasswordManager.del: server: " + server + " login: " + login);
+		ZinLoggerFactory.instance().newZinLogger("PasswordManager").debug("PasswordManager.del: server: " + server + " login: " + login);
 	}
 }
 
@@ -80,7 +80,7 @@ PasswordManager.prototype.set = function(server, login, password)
 	}
 	catch (ex)
 	{
-		newZinLogger("PasswordManager").debug("PasswordManager.set: server: " + server + " login: " + login);
+		ZinLoggerFactory.instance().newZinLogger("PasswordManager").debug("PasswordManager.set: server: " + server + " login: " + login);
 	}
 
 	this.m_pm.addUser(server, login, password);

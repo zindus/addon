@@ -25,7 +25,7 @@ function PrefsAdvanced()
 {
 	this.m_payload         = null;
 	this.m_prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
-	// this.m_logger          = newZinLogger("PrefsAdvanced");
+	// this.m_logger          = ZinLoggerFactory.instance().newZinLogger("PrefsAdvanced");
 
 	this.m_gd_sync_postal_address_bimap = new BiMap(
 	                                      [ "true",                                     "false"                                     ], 

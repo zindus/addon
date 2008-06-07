@@ -41,7 +41,7 @@
 
 	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/utils.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/util.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/prefsdialog.js"/>

@@ -29,7 +29,7 @@ function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_funct
 {
 	zinAssert(arguments.length == 3);
 
-	this.m_logger                 = newZinLogger("ZinTimerFunctorSync");
+	this.m_logger                 = ZinLoggerFactory.instance().newZinLogger("ZinTimerFunctorSync");
 	this.m_es                     = new SyncFsmExitStatus();
 	this.m_sfo                    = new SyncFsmObserver(this.m_es);
 	this.m_zwc                    = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
@@ -81,7 +81,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			this.m_zwc.forEach(functor_unhide_progresspanel);
 
-			newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
+			ZinLoggerFactory.instance().newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 
 			var prefs = new MozillaPreferences();
 			var server_type = prefs.getCharPrefOrNull(prefs.branch(), "server." + SOURCEID_AA + ".type");
@@ -165,9 +165,9 @@ ZinTimerFunctorSync.prototype.finish = function(is_back_off)
 	this.m_logger.debug("finish: is_back_off: " + is_back_off);
 
 	if (is_back_off)
-		newZinLogger().info("sync backing off: " + getFriendlyTimeString());
+		ZinLoggerFactory.instance().newZinLogger().info("sync backing off: " + getFriendlyTimeString());
 	else
-		newZinLogger().info("sync finish: " + getFriendlyTimeString());
+		ZinLoggerFactory.instance().newZinLogger().info("sync finish: " + getFriendlyTimeString());
 
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 

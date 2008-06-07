@@ -31,9 +31,11 @@ include("chrome://zindus/content/statuspanel.js");
 
 function SyncWindow()
 {
-	this.m_logger    = newZinLogger("SyncWindow"); // this.m_logger.level(ZinLogger.NONE); // logging enabled for issue #50
+	// logging enabled for issue #50
+	//
+	this.m_logger    = ZinLoggerFactory.instance().newZinLogger("SyncWindow"); // this.m_logger.level(ZinLogger.NONE);
 
-	this.m_logger.debug("SyncWindow constructor starts");
+	this.m_logger.debug("constructor starts");
 
 	this.m_syncfsm   = null;
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
@@ -42,7 +44,7 @@ function SyncWindow()
 
 	this.m_has_observer_been_called = false;
 
-	this.m_logger.debug("SyncWindow constructor ends");
+	this.m_logger.debug("constructor ends");
 }
 
 SyncWindow.prototype.onLoad = function()
@@ -50,11 +52,19 @@ SyncWindow.prototype.onLoad = function()
 	this.m_logger.debug("onLoad: enters");
 
 	this.m_payload = window.arguments[0];
-	this.m_sfo     = new SyncFsmObserver(this.m_payload.m_es);
-	this.m_syncfsm = this.m_payload.m_syncfsm;
 
-	var listen_to = zinCloneObject(ZinMaestro.FSM_GROUP_SYNC);
-	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
+	this.m_logger.debug("is_cancelled " + this.m_payload.m_is_cancelled);
+
+	if (this.m_payload.m_is_cancelled)
+		window.close();
+	else
+	{
+		this.m_sfo     = new SyncFsmObserver(this.m_payload.m_es);
+		this.m_syncfsm = this.m_payload.m_syncfsm;
+
+		var listen_to = ZinUtil.cloneObject(ZinMaestro.FSM_GROUP_SYNC);
+		ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
+	}
 
 	this.m_logger.debug("onLoad: exits");
 }
@@ -63,7 +73,8 @@ SyncWindow.prototype.onAccept = function()
 {
 	this.m_logger.debug("onAccept: enters");
 
-	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_SYNCWINDOW);
+	if (!this.m_payload.m_is_cancelled)
+		ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_SYNCWINDOW);
 
 	this.m_logger.debug("onAccept: exits");
 
@@ -79,7 +90,8 @@ SyncWindow.prototype.onCancel = function()
 	//
 	this.m_syncfsm.cancel(this.m_timeoutID);
 
-	this.m_logger.debug("onCancel: exits");
+	// don't reference logger because logger.js is out of scope after the fsm has cancelled...
+	// this.m_logger.debug("onCancel: exits");
 
 	return false;
 }
@@ -121,7 +133,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_zwc.populate();
 
-		newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
+		ZinLoggerFactory.instance().newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 		this.m_syncfsm.start(window);
 	}
 	else 
@@ -162,7 +174,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				StatusPanel.update();
 			}
 
-			newZinLogger().info("sync finish: " + getFriendlyTimeString());
+			ZinLoggerFactory.instance().newZinLogger().info("sync finish: " + getFriendlyTimeString());
 
 			document.getElementById('zindus-syncwindow').acceptDialog();
 		}

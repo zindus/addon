@@ -21,8 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/utils.js");
-
 function SyncFsmExitStatus()
 {
 	this.m_exit_status      = null;
@@ -31,7 +29,7 @@ function SyncFsmExitStatus()
 	this.m_fail_soapmethod  = null;
 	this.m_fail_fsmoldstate = null;
 	this.m_count_conflicts  = 0;
-	this.m_logger           = newZinLogger("SyncFsmExitStatus");
+	this.m_logger           = ZinLoggerFactory.instance().newZinLogger("SyncFsmExitStatus");
 
 	this.m_a_valid_code = {
 		FailOnService                   : { 'hasdetail' : 0 }, // 1.  some sort of service failure
@@ -43,26 +41,27 @@ function SyncFsmExitStatus()
 		FailOnIntegrityDataStoreIn      : { 'hasdetail' : 0 }, // 7.  something dodgy about the data store that just got loaded
 		FailOnIntegrityDataStoreOut     : { 'hasdetail' : 0 }, // 8.  internal error - we've created a data store that's dodgy
 		FailOnUnknown                   : { 'hasdetail' : 0 }, // 9.  this should never be!
-		FailOnFolderNameDuplicate       : { 'hasdetail' : 1 }, // 10
-		FailOnFolderNameReserved        : { 'hasdetail' : 1 }, // 11.
-		FailOnFolderNameInvalid         : { 'hasdetail' : 1 }, // 12.
-		FailOnFolderMustBePresent       : { 'hasdetail' : 1 }, // 13.
-		FailOnFolderReservedChanged     : { 'hasdetail' : 1 }, // 14.
-		FailOnFolderNameClash           : { 'hasdetail' : 1 }, // 15. the same folder name entered the namespace from both tb and zm sides
-		FailOnFolderSourceUpdate        : { 'hasdetail' : 1 }, // 16. the source update operations can't be applied with confidence
-		FailOnFolderCantCreateShared    : { 'hasdetail' : 1 }, // 17. 
-		FailOnUnableToUpdateServer      : { 'hasdetail' : 1 }, // 18. couldn't make sense of the http/soap response
-		FailOnNoXpath                   : { 'hasdetail' : 0 }, // 19. 
-		FailOnNoPab                     : { 'hasdetail' : 0 }, // 20. 
-		FailOnMultipleLn                : { 'hasdetail' : 1 }, // 21. 
-		FailOnGdConflict1               : { 'hasdetail' : 1 }, // 22. 
-		FailOnGdConflict2               : { 'hasdetail' : 1 }, // 23. 
-		FailOnGdConflict3               : { 'hasdetail' : 1 }, // 24. 
-		FailOnZmEmptyContact            : { 'hasdetail' : 1 }, // 25. 
-		FailOnGdEmptyContact            : { 'hasdetail' : 1 }, // 26. 
-		FailOnNoGdSyncWithZg            : { 'hasdetail' : 0 }, // 27. 
-		FailOnUnauthorized              : { 'hasdetail' : 0 }, // 28. server returned 401 - perhaps a proxy removed the 'Authorized' header?
-		FailOnAuthGd                    : { 'hasdetail' : 1 }  // 29. server returned a non 200 status code
+		FailOnFolderNameEmpty           : { 'hasdetail' : 1 }, // 10
+		FailOnFolderNameDuplicate       : { 'hasdetail' : 1 }, // 11
+		FailOnFolderNameReserved        : { 'hasdetail' : 1 }, // 12.
+		FailOnFolderNameInvalid         : { 'hasdetail' : 1 }, // 13.
+		FailOnFolderMustBePresent       : { 'hasdetail' : 1 }, // 14.
+		FailOnFolderReservedChanged     : { 'hasdetail' : 1 }, // 15.
+		FailOnFolderNameClash           : { 'hasdetail' : 1 }, // 16. the same folder name entered the namespace from both tb and zm sides
+		FailOnFolderSourceUpdate        : { 'hasdetail' : 1 }, // 17. the source update operations can't be applied with confidence
+		FailOnFolderCantCreateShared    : { 'hasdetail' : 1 }, // 18. 
+		FailOnUnableToUpdateServer      : { 'hasdetail' : 1 }, // 19. couldn't make sense of the http/soap response
+		FailOnNoXpath                   : { 'hasdetail' : 0 }, // 20. 
+		FailOnNoPab                     : { 'hasdetail' : 0 }, // 21. 
+		FailOnMultipleLn                : { 'hasdetail' : 1 }, // 22. 
+		FailOnGdConflict1               : { 'hasdetail' : 1 }, // 23. 
+		FailOnGdConflict2               : { 'hasdetail' : 1 }, // 24. 
+		FailOnGdConflict3               : { 'hasdetail' : 1 }, // 25. 
+		FailOnZmEmptyContact            : { 'hasdetail' : 1 }, // 26. 
+		FailOnGdEmptyContact            : { 'hasdetail' : 1 }, // 27. 
+		FailOnNoGdSyncWithZg            : { 'hasdetail' : 0 }, // 28. 
+		FailOnUnauthorized              : { 'hasdetail' : 0 }, // 29. server returned 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnAuthGd                    : { 'hasdetail' : 1 }  // 30. server returned a non 200 status code
 	};
 }
 

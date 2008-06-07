@@ -43,7 +43,7 @@ ZinMaestro.prototype.initialise = function()
 {
 	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
 	this.m_a_fsmstate = new Object();
-	this.m_logger     = newZinLogger("ZinMaestro"); this.m_logger.level(ZinLogger.NONE);
+	this.m_logger     = ZinLoggerFactory.instance().newZinLogger("ZinMaestro"); this.m_logger.level(ZinLogger.NONE);
 }
 
 ZinMaestro.TOPIC = "ZindusMaestroObserver";
@@ -51,8 +51,6 @@ ZinMaestro.TOPIC = "ZindusMaestroObserver";
 ZinMaestro.DO_FUNCTOR_REGISTER   = "do_register";
 ZinMaestro.DO_FUNCTOR_UNREGISTER = "do_unregister";
 ZinMaestro.DO_FSM_STATE_UPDATE   = "do_state_update";
-
-ZinMaestro.logger = newZinLogger("ZinMaestro");
 
 // Each fsm has a unique FSM_ID_* so that functors can register to be notified of state change in specific fsm's
 //
@@ -118,7 +116,7 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 
 				zinAssert(!isPropertyPresent(this.m_a_functor, id_functor));
 
-				this.m_a_functor[id_functor] = newObject('a_id_fsm', zinCloneObject(subject['a_id_fsm']),
+				this.m_a_functor[id_functor] = newObject('a_id_fsm', ZinUtil.cloneObject(subject['a_id_fsm']),
 				                                         'functor',  subject['functor'],
 				                                         'context',  subject['context']);
 

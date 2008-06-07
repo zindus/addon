@@ -41,8 +41,8 @@ function onUnLoad()
 
 function ZinMailWindowOverlay()
 {
-	this.m_logger           = newZinLogger("MailWindowOverlay");
-	this.m_logger_no_prefix = newZinLogger("");
+	this.m_logger           = ZinLoggerFactory.instance().newZinLogger("MailWindowOverlay");
+	this.m_logger_no_prefix = ZinLoggerFactory.instance().newZinLogger("");
 	this.m_delay_on_repeat  = null;
 	this.m_last_sync_date   = null;
 	this.m_timeoutID        = null;

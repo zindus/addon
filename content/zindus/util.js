@@ -21,6 +21,10 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
+function ZinUtil()
+{
+}
+
 function zinAssert(expr)
 {
 	if (!expr || arguments.length != 1)
@@ -33,10 +37,12 @@ function zinAssert(expr)
 		}
 		catch(ex)
 		{
-			if (typeof newZinLogger == 'function')
+			if (typeof(ZinLoggerFactory) == 'function' &&
+			    typeof(ZinLoggerFactory.instance()) == 'object' &&
+				typeof(ZinLoggerFactory.instance().logger()) == 'object' &&
+				typeof(ZinLoggerFactory.instance().logger().error) == 'function')
 			{
-				var logger = newZinLogger("Utils");
-				
+				var logger = ZinLoggerFactory.instance().newZinLogger("Utils").error(msg)
 				logger.fatal(ex.message);
 				logger.fatal(ex.stack);
 			}
@@ -65,12 +71,12 @@ function zinAssertAndLog(expr, msg)
 {
 	if (!expr)
 	{
-		newZinLogger("Utils").error(msg)
+		ZinLoggerFactory.instance().newZinLogger("Utils").error(msg)
 		zinAssert(expr);
 	}
 }
 
-function zinCloneObject(obj)
+ZinUtil.cloneObject = function(obj)
 {
 	var ret;
 
@@ -79,7 +85,7 @@ function zinCloneObject(obj)
 		ret = new Object();
 
 		for (var i in obj)
-			ret[i] = zinCloneObject(obj[i]);
+			ret[i] = ZinUtil.cloneObject(obj[i]);
 	}
 	else
 	{
@@ -134,8 +140,11 @@ function stringBundleString(id_string, args)
 	{
 		ret = "Unable to load string-bundle: " + string_bundle_id;
 
-		if (typeof(gLogger) == 'object' && typeof(gLogger.error) == 'function')
-			gLogger.error(ret);
+		if (typeof(ZinLoggerFactory) == 'function' &&
+		    typeof(ZinLoggerFactory.instance()) == 'object' &&
+			typeof(ZinLoggerFactory.instance().logger()) == 'object' &&
+			typeof(ZinLoggerFactory.instance().logger().error) == 'function')
+			ZinLoggerFactory.instance().logger().error(ret);
 	}
 	else try
 	{
@@ -146,10 +155,13 @@ function stringBundleString(id_string, args)
 	}
 	catch (e)
 	{
-		if (typeof(gLogger) == 'object' && typeof(gLogger.error) == 'function')
-			gLogger.error("stringBundleString: id_string: " + id_string + " exception: " + e);
+		if (typeof(ZinLoggerFactory) == 'function' &&
+		    typeof(ZinLoggerFactory.instance()) == 'object' &&
+			typeof(ZinLoggerFactory.instance().logger()) == 'object' &&
+			typeof(ZinLoggerFactory.instance().logger().error) == 'function')
+			ZinLoggerFactory.instance().logger().error("stringBundleString: id_string: " + id_string + " exception: " + e);
 		else
-			dump("stringBundleString: gLogger undefined: id_string: " + id_string + " exception: " + e);
+			dump("stringBundleString: ZinLoggerFactory.instance().logger() undefined: id_string: " + id_string + " exception: " + e);
 
 		is_exception = true;
 	}
@@ -232,8 +244,8 @@ function aToString(obj)
 				} catch (e)
 				{
 					dump("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-					gLogger.error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-					gLogger.error("ret: " + ret);
+					ZinLoggerFactory.instance().logger().error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
+					ZinLoggerFactory.instance().logger().error("ret: " + ret);
 				}
 			else if (typeof(obj[x]) == 'function')
 				ret += "Function";
@@ -303,7 +315,7 @@ function isMatchObjectKeys(obj1, obj2)
 			if (!isPropertyPresent(obj2, i))
 			{
 				ret = false;
-				// newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
+				// ZinLoggerFactory.instance().newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 
@@ -312,7 +324,7 @@ function isMatchObjectKeys(obj1, obj2)
 			if (!isPropertyPresent(obj1, i))
 			{
 				ret = false;
-				// newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
+				// ZinLoggerFactory.instance().newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 
@@ -517,7 +529,7 @@ function randomPlusOrMinus(central, varies_by)
 {
 	var ret = central - varies_by + Math.floor(Math.random() * (2 * varies_by + 1));
 
-	// newZinLogger("Utils").debug("randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
+	// ZinLoggerFactory.instance().newZinLogger("Utils").debug("randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
 
 	return ret;
 }
@@ -559,7 +571,7 @@ function compareToolkitVersionStrings(string_a, string_b)
 			ret = -1;
 	}
 
-	newZinLogger("").debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
+	ZinLoggerFactory.instance().logger().debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
 
 	return ret;
 }
@@ -600,7 +612,7 @@ function zmPermFromZfi(zfi)
 			ret |= ZM_PERM_WRITE;
 	}
 
-	// gLogger.debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
+	// ZinLoggerFactory.instance().logger().debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
 
 	return ret;
 }
@@ -661,7 +673,7 @@ function zinLeftOfChar(str, c)
 
 // rfc3986 refers to the part to the right of the hash as "fragment"
 //
-function zinRightOfChar(str, c)
+ZinUtil.rightOfChar = function(str, c)
 {
 	if (arguments.length == 1)
 		c = '#';

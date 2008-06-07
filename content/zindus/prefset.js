@@ -23,10 +23,10 @@
 
 function PrefSet(prefprefix, a)
 {
-	this.m_id            = -1;
-	this.m_prefprefix    = prefprefix;
-	this.m_properties    = new Object();
-	// this.m_logger        = newZinLogger("Prefset");
+	this.m_id         = -1;
+	this.m_prefprefix = prefprefix;
+	this.m_properties = new Object();
+	// this.m_logger        = ZinLoggerFactory.instance().newZinLogger("Prefset");
 
 	for (var i in a)
 		this.m_properties[a[i]] = PrefSet.DEFAULT_VALUE;
@@ -79,7 +79,7 @@ PrefSet.prototype.load = function(id, branch)
 	{
 		try
 		{
-			this.m_properties[i] = new String(prefs.getCharPref(this.makePrefKey(id, i)));
+			this.m_properties[i] = prefs.getCharPref(this.makePrefKey(id, i));
 		}
 		catch (ex)
 		{

@@ -109,7 +109,7 @@ MozillaPreferences.prototype.getCharPrefReal = function(branch, key, mustbeprese
 	{
 		try
 		{
-			ret = branch.getCharPref(key);
+			ret = String(branch.getCharPref(key));
 		}
 		catch(ex)
 		{

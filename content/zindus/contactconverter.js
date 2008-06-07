@@ -36,7 +36,7 @@ function ZinContactConverter()
 	this.m_equivalents  = null; // an array of objects where each object is an n-tuplet of pairs of (format, contact property)
 	this.m_map          = null; // a two-dimensonal associative array where [format][property] maps to index in m_equivalents
 	this.m_common_to    = null; // associative array of [format1][format2] is a hash - the keys are the format1 props that map to format2
-	this.m_logger       = newZinLogger("ContactConverter");
+	this.m_logger       = ZinLoggerFactory.instance().newZinLogger("ContactConverter");
 	this.m_gac          = new GdAddressConverter();
 	this.m_gd_certain_keys_converted = null;
 }
@@ -49,8 +49,6 @@ ZinContactConverter.prototype.setup = function(vary)
 		vary = ZinContactConverter.VARY_NONE;
 
 	var gd = function(key) { return ((vary & ZinContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS) ? key : null); }
-
-	this.m_vary = vary; // TODO - debugging only;
 
 	this.m_equivalents = new Array();
 	this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
@@ -218,7 +216,7 @@ ZinContactConverter.prototype.convert = function(format_to, format_from, propert
 			{
 				key_to = this.m_equivalents[index_to][format_to];
 
-				// this.m_logger.debug("vary: " + this.m_vary + " format_from: " + format_from + " format_to: " + format_to + " key_from: " + key_from + " key_to: " + key_to);
+				// this.m_logger.debug(" format_from: " + format_from + " format_to: " + format_to + " key_from: " + key_from + " key_to: " + key_to);
 
 				if (key_to != null)
 				{
@@ -515,7 +513,7 @@ ZinContactConverter.prototype.gdAddressInput = function(format_to, format_from, 
 			break;
 
 		case FORMAT_GD:
-			left = zinRightOfChar(key_from); // "home" or "work"
+			left = ZinUtil.rightOfChar(key_from); // "home" or "work"
 			this.m_gac.convert(properties_from, key_from, a_gd_address_fields[left], GdAddressConverter.ADDR_TO_PROPERTIES );
 			break;
 		default: zinAssert(false);

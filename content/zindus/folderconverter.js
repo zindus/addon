@@ -77,7 +77,7 @@ function ZinFolderConverter()
 	for (var i in this.m_locale_map)
 		this.m_locale_names_to_migrate[this.m_locale_map[i]] = true;
 
-	this.m_logger = newZinLogger("ZinFolderConverter");
+	this.m_logger = ZinLoggerFactory.instance().newZinLogger("ZinFolderConverter");
 }
 
 // This method converts to/from ATTR_NAME attributes in Tb and Zm maps.

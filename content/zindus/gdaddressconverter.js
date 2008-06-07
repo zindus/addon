@@ -23,7 +23,7 @@
 
 function GdAddressConverter()
 {
-	this.m_logger = newZinLogger("GdAddressConverter");
+	this.m_logger = ZinLoggerFactory.instance().newZinLogger("GdAddressConverter");
 
 	this.a_char   = [ '&',     '<',    '>',    '"'      ]; // ampersand must come first, otherwise &lt; becomes &amp;lt;
 	this.a_entity = [ '&amp;', '&lt;', '&gt;', '&quot;' ];
@@ -56,7 +56,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 	zinAssert(dirn && !(dirn & (GdAddressConverter.CER_TO_CHAR | dirn & GdAddressConverter.CER_TO_ENTITY))
 	               && typeof(a_xml) == 'object');
 
-	var address;
+	var address, value;
 	var msg = "";
 	var ret = true;
 
@@ -79,17 +79,15 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 			var ns = Namespace(ZinXpath.NS_ZINDUS_ADDRESS);
 
 			for (var i = 0; i < this.a_element_unique.length; i++)
-				if (address.ns::[this.a_element_unique[i]].length() > 0)
-					a_fields[this.m_suffix_element_bimap.lookup(null, this.a_element_unique[i])] = address.ns::[this.a_element_unique[i]];
+				this.setIfNotBlankOrEmpty(a_fields,
+				                          this.m_suffix_element_bimap.lookup(null, this.a_element_unique[i]),
+										  address.ns::[this.a_element_unique[i]]);
 
 			if (address.ns::street.length() > 0)
-				a_fields["Address"] = address.ns::street[0];
+				this.setIfNotBlankOrEmpty(a_fields, "Address", address.ns::street[0]);
 
 			if (address.ns::street.length() > 1)
-				a_fields["Address2"] = address.ns::street[1];
-
-			for (var x in a_fields)
-				a_fields[x] = zinTrim(String(a_fields[x]));
+				this.setIfNotBlankOrEmpty(a_fields, "Address2", address.ns::street[1]);
 
 			msg += " a_fields: " + aToString(a_fields);
 		}
@@ -131,7 +129,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 		msg += " xml: " + a_xml[key]
 	}
 
-	this.m_logger.debug("convert: blah:" + msg + " returns: " + ret); // TODO
+	// this.m_logger.debug("convert: blah:" + msg + " returns: " + ret); // TODO
 
 	return ret;
 }
@@ -154,4 +152,12 @@ GdAddressConverter.prototype.convertCER = function(xml_cdata_string, dirn)
 			ret = ret.replace(this.a_regexp[this.a_char[i]], this.a_entity[i]);
 
 	return ret;
+}
+
+GdAddressConverter.prototype.setIfNotBlankOrEmpty = function(properties, key, value)
+{
+	value = zinTrim(String(value));
+
+	if (value.length > 0)
+		properties[key] = value;
 }

@@ -68,18 +68,18 @@ function ZinFeedCollection()
 {
 	this.m_collection = new Object();
 	this.m_filename   = null; // this is a string containing the filename (like "fred.txt"), not an nsIFile
-	this.m_logger     = newZinLogger("ZinFeedCollection"); this.m_logger.level(ZinLogger.NONE);
+	this.m_logger     = ZinLoggerFactory.instance().newZinLogger("ZinFeedCollection"); this.m_logger.level(ZinLogger.NONE);
 }
 
 ZinFeedCollection.prototype.clone = function()
 {
-	// we can't run zinCloneObject() on 'this' because it contains a logger
+	// we can't run cloneObject() on 'this' because it contains a logger
 	// which contains a reference to an appender which doesn't clone.
 	//
 	var ret = new ZinFeedCollection();
 
-	ret.m_collection = zinCloneObject(this.m_collection);
-	ret.m_filename = zinCloneObject(this.m_filename);
+	ret.m_collection = ZinUtil.cloneObject(this.m_collection);
+	ret.m_filename = ZinUtil.cloneObject(this.m_filename);
 
 	return ret;
 }

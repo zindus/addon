@@ -34,9 +34,9 @@ Gcs.bimap_state = new BiMap(
 
 function Gcs(sourceid, state)
 {
-	// gLogger.debug("Gcs: sourceid: " + sourceid); // blah
-	// gLogger.debug("Gcs: state:    " + state);
-	// gLogger.debug("Gcs: Gcs.bimap_state.isPresent(state): " + Gcs.bimap_state.isPresent(state));
+	// ZinLoggerFactory.instance().logger().debug("Gcs: sourceid: " + sourceid); // blah
+	// ZinLoggerFactory.instance().logger().debug("Gcs: state:    " + state);
+	// ZinLoggerFactory.instance().logger().debug("Gcs: Gcs.bimap_state.isPresent(state): " + Gcs.bimap_state.isPresent(state));
 
 	zinAssert(isValidSourceId(sourceid) && Gcs.bimap_state.isPresent(state));
 

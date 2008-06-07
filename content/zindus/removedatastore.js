@@ -29,7 +29,7 @@ function RemoveDatastore()
 
 RemoveDatastore.removeZfcs = function()
 {
-	gLogger.debug("reset: ");
+	ZinLoggerFactory.instance().logger().debug("reset: ");
 
 	var file;
 	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
@@ -94,11 +94,11 @@ RemoveDatastore.removeZfcsIfNecessary = function()
 	else
 		msg += " - ok";
 
-	newZinLogger("RemoveDatastore").debug(msg);
+	ZinLoggerFactory.instance().logger().debug(msg);
 
 	if (is_out_of_date)
 	{
-		gLogger.info("data format was out of date - removing data files and forcing slow sync");
+		ZinLoggerFactory.instance().logger().info("data format was out of date - removing data files and forcing slow sync");
 
 		RemoveDatastore.removeZfcs();
 	}

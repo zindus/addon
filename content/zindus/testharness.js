@@ -27,7 +27,7 @@ include("chrome://zindus/content/gdaddressconverter.js");
 
 function ZinTestHarness()
 {
-	this.m_logger = newZinLogger("ZinTestHarness");
+	this.m_logger = ZinLoggerFactory.instance().newZinLogger("ZinTestHarness");
 	this.m_bugzilla_432145_count = 100;
 
 	this.m_bugzilla_432145_uri = new Array();
@@ -222,7 +222,7 @@ ZinTestHarness.prototype.testContactConverter1 = function()
 	{
 		format = A_VALID_FORMATS[i];
 
-		properties = zinCloneObject(a_properties[format]);
+		properties = ZinUtil.cloneObject(a_properties[format]);
 		contact_converter.removeKeysNotCommonToAllFormats(format, properties);
 
 		// this.m_logger.debug("testContactConverter: format: " + format + " common properties: " + aToString(properties));
@@ -488,27 +488,27 @@ ZinTestHarness.prototype.testLsoCompareZm = function(lso, zfiOrig)
 {
 	var zfi;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zinAssert(lso.compare(zfi) == 0);  // test compare() == 0;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1235);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_REV, 1236);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_DEL, 1);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1233);
 	zfi.set(ZinFeedItem.ATTR_REV, 1235);
 	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1234);
 	zfi.set(ZinFeedItem.ATTR_REV, 1232);
 	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
@@ -518,14 +518,14 @@ ZinTestHarness.prototype.testLsoCompareTb = function(lso, zfiOrig)
 {
 	var zfi;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zinAssert(lso.compare(zfi) == 0);  // test compare() == 0;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_DEL, 1);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 
-	zfi = zinCloneObject(zfiOrig)
+	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_CS, 1111111111111);
 	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
 }
@@ -533,7 +533,7 @@ ZinTestHarness.prototype.testLsoCompareTb = function(lso, zfiOrig)
 ZinTestHarness.prototype.testLogging = function()
 {
 	// var logger = new Log(Log.DEBUG, Log.dumpAndFileLogger, "ZinTestHarness.testLogging");
-	var logger = newZinLogger("testLogging");
+	var logger = ZinLoggerFactory.instance().newZinLogger("testLogging");
 
 	logger.debug("hello, this is a debug");
 	logger.info("hello, this is a info");

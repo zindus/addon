@@ -62,14 +62,14 @@ ObserverService.notify = function(topic, subject, data)
 
 ObserverService.register = function(obj, topic)
 {
-	newZinLogger("ObserverService").debug("ObserverService.register: topic: " + topic);
+	ZinLoggerFactory.instance().logger().debug("ObserverService.register: " + topic);
 
 	ObserverService.service().addObserver(obj, topic, false);
 }
 
 ObserverService.unregister = function(obj, topic)
 {
-	newZinLogger("ObserverService").debug("ObserverService.unregister: topic: " + topic);
+	ZinLoggerFactory.instance().logger().debug("ObserverService.unregister: " + topic);
 
 	ObserverService.service().removeObserver(obj, topic);
 }

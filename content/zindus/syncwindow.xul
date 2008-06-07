@@ -39,7 +39,7 @@
 
 	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/utils.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/util.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/bimap.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
@@ -53,7 +53,7 @@
 	<vbox align="center" style="margin:20px" >
 		<progressmeter id="zindus-syncwindow-progress-meter" value="0%" style="&ZinSyncWindowProgressDescription.style;" />
 		<spacer style="&ZinPrefsSpacer.style;" flex="1" /> 
-		<description  id="zindus-syncwindow-progress-description" style="width:30em; height:4em;" /> <!-- height:6em;   -->
+		<description  id="zindus-syncwindow-progress-description" style="width:30em; height:4em;" />
 		<spacer style="&ZinPrefsSpacer.style;" flex="1" /> 
 		<button dlgtype="cancel" align="center" />
 	</vbox>

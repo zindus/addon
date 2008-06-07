@@ -28,7 +28,7 @@ include("chrome://zindus/content/logger.js");
 include("chrome://zindus/content/removedatastore.js");
 include("chrome://zindus/content/passwordmanager.js");
 include("chrome://zindus/content/mozillapreferences.js");
-include("chrome://zindus/content/utils.js");
+include("chrome://zindus/content/util.js");
 include("chrome://zindus/content/maestro.js");
 include("chrome://zindus/content/syncfsmexitstatus.js");
 include("chrome://zindus/content/syncfsm.js");
@@ -62,13 +62,16 @@ function Prefs()
 	this.m_timer_functor       = null;
 	this.m_maestro             = null;
 	this.m_is_fsm_running      = false;
-	this.m_logger              = newZinLogger("Prefs"); // this.m_logger.level(ZinLogger.NONE);
+	this.m_logger              = ZinLoggerFactory.instance().newZinLogger("Prefs"); // this.m_logger.level(ZinLogger.NONE); // TODO for debugging
 
 	this.m_preferences         = new MozillaPreferences();
 	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
 
 	this.m_server_type_last    = null;
 	this.a_server_type_values  = new Object();
+
+	this.m_console_listener    = ZinLogger.nsIConsoleListener();
+	this.m_payload             = null;
 }
 
 Prefs.prototype.onLoad = function(target)
@@ -100,10 +103,12 @@ Prefs.prototype.maestroRegister = function()
 	}
 
 	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_PREFSDIALOG, ZinMaestro.FSM_GROUP_SYNC);
+	ZinLogger.nsIConsoleService().registerListener(this.m_console_listener);
 }
 
 Prefs.prototype.maestroUnregister = function()
 {
+	ZinLogger.nsIConsoleService().unregisterListener(this.m_console_listener);
 	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_PREFSDIALOG);
 
 	if (this.m_maestro && ObserverService.isRegistered(ZinMaestro.TOPIC))
@@ -120,6 +125,14 @@ Prefs.prototype.stop_timer_fsm_and_deregister = function()
 
 Prefs.prototype.onCancel = function()
 {
+	if (this.m_payload) // TODO
+	{
+		this.m_logger.debug("cancelling syncwindow by setting a flag in payload");
+		this.m_payload.m_is_cancelled = true;
+	}
+	else
+		this.m_logger.debug("no syncwindow active");
+
 	this.m_logger.debug("onCancel:");
 
 	this.stop_timer_fsm_and_deregister();
@@ -170,45 +183,61 @@ Prefs.prototype.onCommand = function(id_target)
 	switch(id_target)
 	{
 		case "zindus-prefs-general-button-sync-now":
-			var payload = new Payload();
-			payload.m_syncfsm = this.getSyncFsm(this.serverType(), "twoway");
-			payload.m_es = new SyncFsmExitStatus();
+			this.m_payload = new Payload();
+			this.m_payload.m_syncfsm = this.getSyncFsm(this.serverType(), "twoway");
+			this.m_payload.m_es = new SyncFsmExitStatus();
+			this.m_payload.m_is_cancelled = false;
 
-			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "chrome", payload);
+			ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
 
-			if (payload.m_es.m_exit_status == null)
+			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "dependent=yes,chrome=yes,modal=yes", this.m_payload);
+
+
+			if (!window.closed)
 			{
-				gLogger.debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
-				msg = stringBundleString("statusSyncFailedUnexpectedly");
+				ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: after openDialog: m_is_cancelled: " +
+				                                              this.m_payload.m_is_cancelled + " m_es: " + this.m_payload.m_es.toString());
+				if (this.m_payload.m_es.m_exit_status == null)
+				{
+					ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
+					msg = stringBundleString("statusSyncFailedUnexpectedly");
+				}
+				else if (this.m_payload.m_es.m_exit_status != 0)
+					msg = this.m_payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
+
+				if (msg != "")
+					alert(msg);
 			}
-			else if (payload.m_es.m_exit_status != 0)
-				msg = payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
-			
-			if (msg != "")
-				alert(msg);
+
+			this.m_payload = null;
 
 			break;
 
 		case "zindus-prefs-server-button-authonly":
-			var payload = new Payload();
-			payload.m_syncfsm = this.getSyncFsm( this.serverType(), "authonly");
-			payload.m_es = new SyncFsmExitStatus();
+			this.m_payload = new Payload();
+			this.m_payload.m_syncfsm = this.getSyncFsm( this.serverType(), "authonly");
+			this.m_payload.m_es = new SyncFsmExitStatus();
 
-			gLogger.debug("Prefs.onCommand: before openDialog: payload.m_es: " + payload.m_es.toString());
+			ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
 
-			window.openDialog("chrome://zindus/content/syncwindow.xul", "_blank", "chrome", payload);
+			window.openDialog("chrome://zindus/content/syncwindow.xul", "_blank", "chrome,modal", this.m_payload);
 
-			gLogger.debug("Prefs.onCommand: after openDialog: payload.m_es: " + payload.m_es.toString());
-
-			if (payload.m_es.m_exit_status == null)
+			if (!window.closed)
 			{
-				gLogger.debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
-				msg = stringBundleString("statusSyncFailedUnexpectedly");
-			}
-			else
-				msg = payload.m_es.asMessage("statusAuthSucceeded", "statusAuthFailed");
+				ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: after openDialog: m_es: " + this.m_payload.m_es.toString());
 
-			alert(msg);
+				if (this.m_payload.m_es.m_exit_status == null)
+				{
+					ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
+					msg = stringBundleString("statusSyncFailedUnexpectedly");
+				}
+				else
+					msg = this.m_payload.m_es.asMessage("statusAuthSucceeded", "statusAuthFailed");
+
+				alert(msg);
+			}
+
+			this.m_payload = null;
 
 			break;
 
@@ -499,7 +528,7 @@ Prefs.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, property, de
 		
 	document.getElementById(radiogroup_id).selectedItem = document.getElementById(selected_id);
 
-	// gLogger.debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
+	// ZinLoggerFactory.instance().logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
 }
 
 Prefs.prototype.setGdSyncWithLabel = function()

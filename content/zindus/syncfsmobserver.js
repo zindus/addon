@@ -28,7 +28,7 @@ function SyncFsmObserver(es)
 {
 	this.state = null; // SyncFsm.state, used on a read-only basis, set before any update
 
-	this.m_logger = newZinLogger("SyncFsmObserver");
+	this.m_logger = ZinLoggerFactory.instance().newZinLogger("SyncFsmObserver");
 
 	this.m_es = es;
 
@@ -101,10 +101,6 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 	var ret;
 
 	var a_states_zm = {
-		start:            { },
-		stAuth:           { count: 1 },
-		stLoad:           { count: 1 },
-		stLoadTb:         { count: 1 },
 		stGetAccountInfo: { count: 1 },
 		stSelectSoapUrl:  { count: 1 },
 		stSync:           { },
@@ -113,16 +109,33 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGalConsider:    { },
 		stGalSync:        { count: 1 },
 		stGalCommit:      { },
+		stGetContactPuZm: { count: 1 },
+		stUpdateZm:       { count: 1 },
+	};
+
+	var a_states_gd = {
+		stAuthCheckGd:    {          },
+		stGetContactGd1:  { count: 1 },
+		stGetContactGd2:  { count: 1 },
+		stDeXmlifyAddrGd: { count: 1 },
+		stGdConverge4:    { count: 1 },
+		stGetContactPuGd: { count: 1 },
+		stUpdateGd:       { count: 1 },
+	};
+
+	var a_states_common = {
+		start:            { count: 1 },
+		stAuth:           { count: 1 },
+		stLoad:           { count: 1 },
+		stLoadTb:         { count: 1 },
 		stConverge1:      { count: 1 },
 		stConverge2:      { count: 1 },
 		stConverge3:      { count: 1 },
-		stConverge5:      {          },
+		stConverge5:      { },
 		stConverge6:      { count: 1 },
 		stConverge7:      { count: 1 },
 		stConverge8:      { count: 1 },
-		stGetContactPuZm: { count: 1 },
 		stUpdateTb:       { count: 1 },
-		stUpdateZm:       { count: 1 },
 		stUpdateCleanup:  { count: 1 },
 		stHttpRequest:    { },
 		stHttpResponse:   { },
@@ -130,31 +143,13 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		final:            { count: 1 }
 	};
 
-	var a_states_gd = {
-		start:            { count: 1 },
-		stAuth:           { count: 1 },
-		stAuthCheck:      {          },
-		stLoad:           { count: 1 },
-		stLoadTb:         { count: 1 },
-		stGetContactGd:   { count: 1 },
-		stDeXmlifyAddrGd: { count: 1 },
-		stConverge1:      { count: 1 },
-		stConverge2:      { count: 1 },
-		stConverge3:      { count: 1 },
-		stConverge4:      { count: 1 },
-		stConverge5:      { },
-		stConverge6:      { count: 1 },
-		stConverge7:      { count: 1 },
-		stConverge8:      { count: 1 },
-		stGetContactPuGd: { count: 1 },
-		stUpdateTb:       { count: 1 },
-		stUpdateGd:       { count: 1 },
-		stUpdateCleanup:  { count: 1 },
-		stHttpRequest:    { },
-		stHttpResponse:   { },
-		stCommit:         { },
-		final:            { count: 1 }
-	};
+	for (var state in a_states_common)
+	{
+		zinAssertAndLog(!isPropertyPresent(a_states_zm, state), "state: " + state);
+		zinAssertAndLog(!isPropertyPresent(a_states_gd, state), "state: " + state);
+		a_states_zm[state] = a_states_common[state];
+		a_states_gd[state] = a_states_common[state];
+	}
 
 	switch (fsmstate.context.state.id_fsm)
 	{
@@ -204,7 +199,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "AccountInfo"); break;
 			case 'stSync':          
 			case 'stSyncResult':
-			case 'stGetContactGd':
+			case 'stGetContactGd1':
 			case 'stDeXmlifyAddrGd': this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
 			case 'stGalSync':        
 			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "GetGAL");      break;
@@ -212,7 +207,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stConverge1':     
 			case 'stConverge2':     
 			case 'stConverge3':     
-			case 'stConverge4':     
+			case 'stGdConverge4':     
 			case 'stConverge5':     
 			case 'stConverge6':     
 			case 'stConverge7':     
@@ -224,11 +219,8 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				if (context.state.suggestedSoapURL)
 				{
 					this.progressReportOnSource(context.state.sourceid_pr, "SelectSoapUrl");
-					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP)
-					                                   + " " + context.state.suggestedSoapURL
-					                                   + "<br/>"
-					                                   + stringBundleString(this.tweakStringId("SelectSoapUrl2"))
-														);
+					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP) + " " + context.state.suggestedSoapURL + "<br/>"
+					                                                          + stringBundleString(this.tweakStringId("SelectSoapUrl2")));
 				}
 				else
 					ret = false; // no need to update the UI
@@ -257,6 +249,27 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
 
 					this.count_get_contact_zm += aGetContactRequest.length;
+				}
+				else
+					ret = false; // no need to update the UI
+				break;
+
+			case 'stGetContactGd2':
+				if (aToLength(context.state.a_gd_contact) > 0)
+				{
+					var op = this.buildOp(context.state.sourceid_pr, "GetMany");
+
+					if (this.get(SyncFsmObserver.OP) != op)
+						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", aToLength(context.state.a_gd_contact));
+
+					var lo = context.state.a_gd_contact_iterator.m_zindus_contact_count;
+					var hi = this.state.a_gd_contact_iterator.m_zindus_contact_count +
+					         this.state.a_gd_contact_iterator.m_zindus_contact_chunk - 1; 
+
+					if (lo == hi)
+						this.set(SyncFsmObserver.PROG_CNT, lo);
+					else
+						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
 				}
 				else
 					ret = false; // no need to update the UI
@@ -347,7 +360,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stLoad' ]))
 						es.failcode(context.state.stopFailCode);
-					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheck', 'stLoadTb', 'stConverge1', 'stConverge6', 'stConverge8',
+					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheckGd', 'stLoadTb', 'stConverge1', 'stConverge6', 'stConverge8',
 					                                                       'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);

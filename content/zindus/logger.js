@@ -51,7 +51,22 @@ ZinLogger.prototype.level = function()
 	return this.m_level;
 }
 
-ZinLogger.prototype.debug = function(msg) { var l = ZinLogger.DEBUG; if (this.level() <= l) this.log(l, msg); }
+zinAssert(typeof(ZinLogger) == 'function');
+zinAssert(typeof(ZinLogger.DEBUG) == 'number');
+
+ZinLogger.prototype.debug = function(msg)
+{
+	// this try/catch is helpful when working out what part of the code is calling logger when it shouldn't be
+	// eg SyncWindow.onCancel() after the fsm has finished and called onAccept() and this file scope has disappeared.
+	// try {
+
+	var l = ZinLogger.DEBUG;
+
+	// } catch(ex) {
+	//				dump(ex.message + " stack: \n" + ex.stack);
+	//}
+	if (this.level() <= l) this.log(l, msg);
+}
 ZinLogger.prototype.info  = function(msg) { var l = ZinLogger.INFO;  if (this.level() <= l) this.log(l, msg); }
 ZinLogger.prototype.warn  = function(msg) { var l = ZinLogger.WARN;  if (this.level() <= l) this.log(l, msg); }
 ZinLogger.prototype.error = function(msg) { var l = ZinLogger.ERROR; if (this.level() <= l) this.log(l, msg); }
@@ -64,7 +79,7 @@ ZinLogger.prototype.log = function(l, msg)
 
 // Only one appender is implemented, and it's implemented as a singleton.
 // In an earlier implementation, the appender object was a member of ZinLogger, but
-// I discovered that zinCloneObject() just hangs when trying to clone an appender.
+// I discovered that cloneObject() just hangs when trying to clone an appender.
 // Rather than looking into why clone() doesn't work on one of the xpcom objects,
 // I just made the appender a singleton, which is better for speed too.
 // If there was an abstract base class, ZinLogAppenderOpenClose would have just one public method, namely log().
@@ -192,18 +207,38 @@ ZinLogAppenderOpenClose.prototype.fileClose = function(os)
 	}
 }
 
-if (typeof(loggingLevel) != 'object' || !loggingLevel)
+function ZinLoggerFactory()
 {
+	this.m_logger = null;
+
 	var prefs = new MozillaPreferences();
 
-	loggingLevel = (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_VERBOSE_LOGGING ) == "true") ?
+	this.m_level  = (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_VERBOSE_LOGGING ) == "true") ?
 	                           ZinLogger.DEBUG : ZinLogger.INFO;
-	gLogger      = newZinLogger("global");
+	this.m_logger  = this.newZinLogger("global");
 }
 
-function newZinLogger(prefix)
+ZinLoggerFactory.instance = function()
 {
-	return new ZinLogger(loggingLevel, prefix);
+	if (typeof (ZinLoggerFactory.m_instance) == "undefined")
+		ZinLoggerFactory.m_instance = new ZinLoggerFactory();
+
+	return ZinLoggerFactory.m_instance;
+}
+
+ZinLoggerFactory.prototype.newZinLogger = function(prefix)
+{
+	return new ZinLogger(this.level(), prefix);
+}
+
+ZinLoggerFactory.prototype.level = function()
+{
+	return this.m_level;
+}
+
+ZinLoggerFactory.prototype.logger = function()
+{
+	return this.m_logger;
 }
 
 function ZinLogAppenderHoldOpen(state)
@@ -225,3 +260,29 @@ ZinLogAppenderHoldOpen.prototype.close = function(message)
 	this.fileClose(this.m_os);
 }
 
+ZinLogger.nsIConsoleListener = function()
+{
+	// see: http://developer.mozilla.org/en/docs/Console_service
+	//
+	var logger = ZinLoggerFactory.instance().logger();
+
+	var listener = {
+		observe:function( aMessage )
+		{
+			logger.debug("console: " + aMessage.message);
+		},
+		QueryInterface: function (iid) {
+			if (!iid.equals(Components.interfaces.nsIConsoleListener) && !iid.equals(Components.interfaces.nsISupports)) {
+				throw Components.results.NS_ERROR_NO_INTERFACE;
+			}
+			return this;
+		}
+	};
+
+	return listener;
+}
+
+ZinLogger.nsIConsoleService = function()
+{
+	return Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
+}

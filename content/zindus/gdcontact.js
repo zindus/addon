@@ -30,7 +30,7 @@ function GdContact(contact_converter, doc)
 	else
 		this.m_document = document.implementation.createDocument("","",null);
 		
-	this.m_logger             = newZinLogger("GdContact");
+	this.m_logger             = ZinLoggerFactory.instance().newZinLogger("GdContact");
 	this.m_contact_converter  = contact_converter;
 	this.m_container          = null;
 	this.m_properties         = null;
@@ -52,9 +52,9 @@ GdContact.prototype.toString = function()
 	var msg = "\n";
 
 	for (key in this.m_meta)
-		msg += " meta:    " + key + ": " + this.m_meta[key] + "\n";
+		msg += " meta:     " + key + ": " + this.m_meta[key] + "\n";
 	for (key in this.m_properties)
-		msg += " contact: " + key + ": " + this.m_properties[key] + "\n";
+		msg += " property: " + key + ": " + this.m_properties[key] + "\n";
 
 	return msg;
 }
@@ -118,7 +118,7 @@ GdContact.prototype.set_visited = function(a_visited, key)
 	if (!isPropertyPresent(a_visited, key))
 		a_visited[key] = true;
 	else
-		gLogger.error("GdContact: visited this node twice - this shouldn't happen: key: " + key +
+		ZinLoggerFactory.instance().logger().error("GdContact: visited this node twice - this shouldn't happen: key: " + key +
 		                                                                   " a_visited: " + aToString(a_visited)); 
 }
 
@@ -286,7 +286,7 @@ GdContact.transformProperties = function(properties)
 
 GdContact.prototype.updateFromProperties = function(properties)
 {
-	var a_field         = zinCloneObject(properties);
+	var a_field         = ZinUtil.cloneObject(properties);
 	var a_field_used    = new Object();
 	var a_to_be_deleted = new Object();
 	var context = this;
@@ -438,7 +438,7 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 	switch(key)
 	{
 		case "title":
-			gLogger.error("fieldAdd: shouldn't be here: key: " + key);
+			ZinLoggerFactory.instance().logger().error("fieldAdd: shouldn't be here: key: " + key);
 			break;
 		case "content":
 			element = this.m_document.createElementNS(ZinXpath.NS_ATOM, "content");
@@ -455,7 +455,7 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 			if (!isPropertyPresent(this.m_container_children, "organization"))
 				this.fieldAdd("organization");
 
-			element = this.m_document.createElementNS(ZinXpath.NS_GD, zinRightOfChar(key));
+			element = this.m_document.createElementNS(ZinXpath.NS_GD, ZinUtil.rightOfChar(key));
 			element.textContent = a_field[key];
 
 			parent = this.m_container_children["organization"];
@@ -483,7 +483,7 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 		case "phoneNumber#work_fax":
 		case "postalAddress#home":
 		case "postalAddress#work":
-			var fragment = zinRightOfChar(key);
+			var fragment = ZinUtil.rightOfChar(key);
 			element = this.m_document.createElementNS(ZinXpath.NS_GD, zinLeftOfChar(key));
 			element.setAttribute("rel", this.ns_gd(fragment))
 			element.textContent = a_field[key];
@@ -559,14 +559,12 @@ GdContact.prototype.postalAddressOtherAddr = function(key)
 	else                                            // it was xml but didn't have an <otheraddr> element
 		ret = "";
 
-	this.m_logger.debug("postalAddressOtherAddr: blah: key: " + key + " returns: " + ret); // TODO
-
 	return ret;
 }
 
 GdContact.prototype.addWhitespaceToPostalProperties = function(properties_in)
 {
-	var properties_out = zinCloneObject(properties_in);
+	var properties_out = ZinUtil.cloneObject(properties_in);
 	var is_modified_postal = false;
 	var is_sane, a_gac_properties;
 
