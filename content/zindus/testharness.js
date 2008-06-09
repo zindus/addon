@@ -1118,11 +1118,6 @@ ZinTestHarness.prototype.testScope = function()
 	{
 	dump(typeof scopeRegistry.getScope("fred").PrefSet + "\n");
 	dump(APP_NAME + "\n");
-	scopeRegistry.loadScriptByScope("chrome://zindus/content/blah.js", "fred");
-	scopeRegistry.loadScriptByScope("chrome://zindus/content/blah2.js", "fred");
-
-	var b = new Blah2();
-	dump(b.blah().x() + "\n");
 
 	function F() { }
 	}
