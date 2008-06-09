@@ -25,7 +25,7 @@ function ZinUtil()
 {
 }
 
-function zinAssert(expr)
+ZinUtil.assert = function(expr)
 {
 	if (!expr || arguments.length != 1)
 	{
@@ -42,7 +42,7 @@ function zinAssert(expr)
 				typeof(ZinLoggerFactory.instance().logger()) == 'object' &&
 				typeof(ZinLoggerFactory.instance().logger().error) == 'function')
 			{
-				var logger = ZinLoggerFactory.instance().newZinLogger("Utils").error(msg)
+				var logger = ZinLoggerFactory.instance().newZinLogger("Utils");
 				logger.fatal(ex.message);
 				logger.fatal(ex.stack);
 			}
@@ -66,13 +66,12 @@ function zinAssert(expr)
 	}
 }
 
-
-function zinAssertAndLog(expr, msg)
+ZinUtil.assertAndLog = function(expr, msg)
 {
 	if (!expr)
 	{
 		ZinLoggerFactory.instance().newZinLogger("Utils").error(msg)
-		zinAssert(expr);
+		ZinUtil.assert(expr);
 	}
 }
 
@@ -95,37 +94,7 @@ ZinUtil.cloneObject = function(obj)
 	return ret;
 }
 
-// determine whether there are any duplicates in the collection
-// two prefsets are duplicates if they have the same value for each property in "properties"
-//
-function FunctorAnyDuplicatesInPrefsetCollection(properties)
-{
-	this.m_properties = properties;
-	this.m_duplicate  = false;
-	this.m_sofar      = new Object;
-}
-
-// The match is case-insensitive.
-//
-FunctorAnyDuplicatesInPrefsetCollection.prototype.run = function(prefset)
-{
-	var key = "";
-
-	if (!this.m_duplicate) // once we've found a duplicate, stop looking
-	{
-		for (var i in this.m_properties)
-		{
-			key += "###" + prefset.getProperty(this.m_properties[i]).toUpperCase();
-		}
-
-		if (this.m_sofar[key] == null)
-			this.m_sofar[key] = true;
-		else
-			this.m_duplicate = true;
-	}
-}
-
-function stringBundleString(id_string, args)
+ZinUtil.stringBundleString = function(id_string, args)
 {
 	var string_bundle_id = "zindus-stringbundle";
 
@@ -133,8 +102,8 @@ function stringBundleString(id_string, args)
 	var ret = "";
 	var is_exception = false;
 
-	zinAssert(arguments.length == 1 || arguments.length == 2);
-	zinAssertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
+	ZinUtil.assert(arguments.length == 1 || arguments.length == 2);
+	ZinUtil.assertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
 
 	if (stringbundle == null)
 	{
@@ -166,14 +135,14 @@ function stringBundleString(id_string, args)
 		is_exception = true;
 	}
 
-	zinAssertAndLog(!is_exception, "id_string: " + id_string);
+	ZinUtil.assertAndLog(!is_exception, "id_string: " + id_string);
 
 	return ret;
 }
 
-function xmlDocumentToString(doc)
+ZinUtil.xmlDocumentToString = function(doc)
 {
-	zinAssert(doc != null);
+	ZinUtil.assert(doc != null);
 
 	var serializer = new XMLSerializer();
 
@@ -185,13 +154,13 @@ function xmlDocumentToString(doc)
 	}
 	catch (e)
 	{
-		zinAssert(false);
+		ZinUtil.assert(false);
 	}
 
 	return str;
 }
 
-function conditionalGetElementByTagNameNS(doc, ns, tag, object, property)
+ZinUtil.conditionalGetElementByTagNameNS = function(doc, ns, tag, object, property)
 {
 	var nodelist = doc.getElementsByTagNameNS(ns, tag);
 
@@ -199,9 +168,9 @@ function conditionalGetElementByTagNameNS(doc, ns, tag, object, property)
 		object[property] = nodelist.item(0).firstChild.nodeValue;
 }
 
-function attributesFromNode(node)
+ZinUtil.attributesFromNode = function(node)
 {
-	zinAssert(node.nodeType == Node.ELEMENT_NODE);
+	ZinUtil.assert(node.nodeType == Node.ELEMENT_NODE);
 
 	var ret = new Object();
 	
@@ -212,10 +181,9 @@ function attributesFromNode(node)
 	return ret;
 }
 
-
 // return a printable string for an associatve array
 //
-function aToString(obj)
+ZinUtil.aToString = function(obj)
 {
 	var ret = "";
 	var first = true;
@@ -240,7 +208,7 @@ function aToString(obj)
 				ret += "Null";
 			else if (typeof(obj[x]) == 'object')
 				try {
-					ret += "{ " + aToString(obj[x]) + " }";
+					ret += "{ " + ZinUtil.aToString(obj[x]) + " }";
 				} catch (e)
 				{
 					dump("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
@@ -252,13 +220,13 @@ function aToString(obj)
 			else
 				ret += obj[x];
 
-			zinAssert(!was_exception_thrown);
+			ZinUtil.assert(!was_exception_thrown);
 		}
 
 	return ret;
 }
 
-function keysToString(obj)
+ZinUtil.keysToString = function(obj)
 {
 	ret = "";
 	var is_first = true;
@@ -276,7 +244,7 @@ function keysToString(obj)
 	return ret;
 }
 
-function aToLength(obj)
+ZinUtil.aToLength = function(obj)
 {
 	var count = 0;
 
@@ -286,45 +254,45 @@ function aToLength(obj)
 	return count;
 }
 
-function isInArray(item, a)
+ZinUtil.isInArray = function(item, a)
 {
-	zinAssert(typeof a == 'object' && typeof a.indexOf == 'function');
+	ZinUtil.assert(typeof a == 'object' && typeof a.indexOf == 'function');
 
 	return a.indexOf(item) != -1;
 }
 
 // isIn(id_fsm, [ blah1, blah2 ] )
 
-function isPropertyPresent(obj, property)
+ZinUtil.isPropertyPresent = function(obj, property)
 {
-	zinAssertAndLog(typeof(obj) == 'object', "argument[0] of this function should be a hash!"); // catch programming errors
-	zinAssertAndLog(arguments.length == 2,   "this function takes two arguments!");
+	ZinUtil.assertAndLog(typeof(obj) == 'object', "argument[0] of this function should be a hash!"); // catch programming errors
+	ZinUtil.assertAndLog(arguments.length == 2,   "this function takes two arguments!");
 
 	return (typeof(obj[property]) != 'undefined');
 }
 
 // return true iff the keys in both objects match
 //
-function isMatchObjectKeys(obj1, obj2)
+ZinUtil.isMatchObjectKeys = function(obj1, obj2)
 {
 	var i;
 	var ret = true;
 
 	if (ret)
 		for (i in obj1)
-			if (!isPropertyPresent(obj2, i))
+			if (!ZinUtil.isPropertyPresent(obj2, i))
 			{
 				ret = false;
-				// ZinLoggerFactory.instance().newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
+				// ZinLoggerFactory.instance().newZinLogger("Utils").debug("ZinUtil.isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 
 	if (ret)
 		for (i in obj2)
-			if (!isPropertyPresent(obj1, i))
+			if (!ZinUtil.isPropertyPresent(obj1, i))
 			{
 				ret = false;
-				// ZinLoggerFactory.instance().newZinLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
+				// ZinLoggerFactory.instance().newZinLogger("Utils").debug("ZinUtil.isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 
@@ -333,11 +301,11 @@ function isMatchObjectKeys(obj1, obj2)
 
 // return true iff the both the keys and the values in both objects match
 // 
-function isMatchObjects(obj1, obj2)
+ZinUtil.isMatchObjects = function(obj1, obj2)
 {
 	var is_match = true;
 
-	is_match = is_match &&isMatchObjectKeys(obj1, obj2);
+	is_match = is_match &&ZinUtil.isMatchObjectKeys(obj1, obj2);
 
 	if (is_match)
 		for (var i in obj1)
@@ -352,12 +320,12 @@ function isMatchObjects(obj1, obj2)
 
 // return true iff each element in the array has a matching key in the object
 //
-function isMatchArrayElementInObject(a, obj)
+ZinUtil.isMatchArrayElementInObject = function(a, obj)
 {
 	var ret = true;
 
 	for (var i = 0; i < a.length; i++)
-		if (!isPropertyPresent(obj, a[i]))
+		if (!ZinUtil.isPropertyPresent(obj, a[i]))
 		{
 			ret = false;
 			break;
@@ -370,14 +338,14 @@ function isMatchArrayElementInObject(a, obj)
 // one argument - an array with an even number of elements
 // an even number of arguments
 //
-function newObject()
+ZinUtil.newObject = function()
 {
 	var ret = new Object();
 	var args;
 
 	if (arguments.length == 1)
 	{
-		zinAssert(typeof(arguments[0]) == 'object');
+		ZinUtil.assert(typeof(arguments[0]) == 'object');
 
 		args = arguments[0];
 	}
@@ -390,7 +358,7 @@ function newObject()
 	return ret;
 }
 
-function firstKeyInObject(obj)
+ZinUtil.firstKeyInObject = function(obj)
 {
 	var ret = null;
 
@@ -400,19 +368,19 @@ function firstKeyInObject(obj)
 		break;
 	}
 
-	zinAssert(ret != null);
+	ZinUtil.assert(ret != null);
 
 	return ret;
 }
 
-function getTime()
+ZinUtil.getTime = function()
 {
 	var now = new Date();
 
 	return now.getTime();
 }
 
-function getFriendlyTimeString(increment)
+ZinUtil.getFriendlyTimeString = function(increment)
 {
 	var date = new Date();
 
@@ -422,7 +390,7 @@ function getFriendlyTimeString(increment)
 	return date.toLocaleString();
 }
 
-function hyphenate()
+ZinUtil.hyphenate = function()
 {
 	var ret = "";
 	var isFirst = true;
@@ -430,7 +398,7 @@ function hyphenate()
 	var args;
 	var startAt;
 
-	zinAssert(arguments.length >= 2);
+	ZinUtil.assert(arguments.length >= 2);
 
 	if (arguments[1] instanceof Array)
 	{
@@ -445,7 +413,8 @@ function hyphenate()
 
 	for (var i = startAt; i < args.length; i++)
 	{
-		zinAssertAndLog(typeof(args[i]) == 'string' || typeof(args[i]) == 'number', args[i] + " is not a string or number, typeof: " + typeof(args[i]));
+		ZinUtil.assertAndLog(typeof(args[i]) == 'string' ||
+		                     typeof(args[i]) == 'number', args[i] + " is not a string or number, typeof: " + typeof(args[i]));
 
 		if (isFirst)
 		{
@@ -459,23 +428,23 @@ function hyphenate()
 	return ret;
 }
 
-function isValidSourceId(sourceid)
+ZinUtil.isValidSourceId = function(sourceid)
 {
 	return (sourceid == SOURCEID_TB || sourceid == SOURCEID_AA);
 }
 
-function isValidFormat(format)
+ZinUtil.isValidFormat = function(format)
 {
-	return isInArray(format, A_VALID_FORMATS);
+	return ZinUtil.isInArray(format, A_VALID_FORMATS);
 }
 
-function getBimapFormat()
+ZinUtil.getBimapFormat = function()
 {
 	return new BiMap( [ FORMAT_TB, FORMAT_ZM, FORMAT_GD ],
 	                  [ 'tb',      'zm',      'gd'      ]);
 }
 
-function isValidUrl(url)
+ZinUtil.isValidUrl = function(url)
 {
 	var is_valid = true;
 	var xhr      = new XMLHttpRequest();
@@ -501,9 +470,9 @@ function isValidUrl(url)
 // is that A's constructor is called when the file is loaded.
 // And of course the scope chain when the file is loaded is likely different from when B's constructor is called.
 // In particular, if the file is loaded from the .xul, then the document isn't fully loaded when document.blah is referenced.
-// To avoid this trickness, if A's constructor references 'document' or 'window' we use copyPrototype()
+// To avoid this trickness, if A's constructor references 'document' or 'window' we use ZinUtil.copyPrototype()
 //
-function copyPrototype(child, parent)
+ZinUtil.copyPrototype = function(child, parent)
 { 
 	var sConstructor = parent.toString(); 
 	var aMatch       = sConstructor.match( /\s*function (.*)\(/ ); 
@@ -515,21 +484,21 @@ function copyPrototype(child, parent)
 		child.prototype[i] = parent.prototype[i]; 
 }
 
-function dateSuffixForFolder()
+ZinUtil.dateSuffixForFolder = function()
 {
 	var d = new Date();
 
-	return " " + hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
-	       "-" + hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+	return " " + ZinUtil.hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
+	       "-" + ZinUtil.hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 }
 
 // eg 24 +/- 4 is a number between 16 and 28...
 //
-function randomPlusOrMinus(central, varies_by)
+ZinUtil.randomPlusOrMinus = function(central, varies_by)
 {
 	var ret = central - varies_by + Math.floor(Math.random() * (2 * varies_by + 1));
 
-	// ZinLoggerFactory.instance().newZinLogger("Utils").debug("randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
+	// ZinLoggerFactory.instance().newZinLogger("Utils").debug("ZinUtil.randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
 
 	return ret;
 }
@@ -547,7 +516,7 @@ function randomPlusOrMinus(central, varies_by)
 // whereas our        "version part" is simply                         <number>
 // And in the spec, version parts are compared bytewise whereas here we compare two numbers.
 //
-function compareToolkitVersionStrings(string_a, string_b)
+ZinUtil.compareToolkitVersionStrings = function(string_a, string_b)
 {
 	var a_a = string_a.split(".");
 	var a_b = string_b.split(".");
@@ -562,8 +531,8 @@ function compareToolkitVersionStrings(string_a, string_b)
 		var part_int_a = parseInt(part_string_a, 10);
 		var part_int_b = parseInt(part_string_b, 10);
 
-		zinAssert(part_int_a.toString() == part_string_a); // assert that the parts really are only numbers
-		zinAssert(part_int_b.toString() == part_string_b); // otherwise, our simplified comparison here is no good
+		ZinUtil.assert(part_int_a.toString() == part_string_a); // assert that the parts really are only numbers
+		ZinUtil.assert(part_int_b.toString() == part_string_b); // otherwise, our simplified comparison here is no good
 
 		if (part_int_a > part_int_b)
 			ret = 1;
@@ -571,14 +540,14 @@ function compareToolkitVersionStrings(string_a, string_b)
 			ret = -1;
 	}
 
-	ZinLoggerFactory.instance().logger().debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
+	ZinLoggerFactory.instance().logger().debug("ZinUtil.compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
 
 	return ret;
 }
 
 // turn obj into a string and pad it out to a given length with spaces - helpul in lining up output in the absence of s/printf
 //
-function strPadTo(obj, length)
+ZinUtil.strPadTo = function(obj, length)
 {
 	var ret = "";
 	var str = new String(obj);
@@ -598,7 +567,7 @@ function strPadTo(obj, length)
 	return ret;
 }
 
-function zmPermFromZfi(zfi)
+ZinUtil.zmPermFromZfi = function(zfi)
 {
 	var perm = zfi.getOrNull(ZinFeedItem.ATTR_PERM);
 	var ret  = ZM_PERM_NONE;
@@ -612,12 +581,12 @@ function zmPermFromZfi(zfi)
 			ret |= ZM_PERM_WRITE;
 	}
 
-	// ZinLoggerFactory.instance().logger().debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
+	// ZinLoggerFactory.instance().logger().debug("ZinUtil.zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
 
 	return ret;
 }
 
-function arrayfromArguments(args, start_at)
+ZinUtil.arrayfromArguments = function(args, start_at)
 {
 	var ret = new Array();
 
@@ -630,13 +599,13 @@ function arrayfromArguments(args, start_at)
 // Trim leading and trailing whitespace from a string.
 // http://javascript.crockford.com/remedial.html
 
-function zinTrim (str)
+ZinUtil.zinTrim = function(str)
 {
 	var ret;
 
 	if (str)
 	{
-		zinAssert(typeof(str) == "string");
+		ZinUtil.assert(typeof(str) == "string");
 
 		ret = str.replace(/^\s+|\s+$/g, "");
 	}
@@ -650,7 +619,7 @@ function zinTrim (str)
 // this is a workaround
 // Handy during testing...
 //
-function zinSleep(milliseconds)
+ZinUtil.sleep = function(milliseconds)
 {
 	var start = new Date();
 	var current = null;
@@ -661,12 +630,12 @@ function zinSleep(milliseconds)
 	while (current - start < milliseconds);
 } 
 
-function zinLeftOfChar(str, c)
+ZinUtil.leftOfChar = function(str, c)
 {
 	if (arguments.length == 1)
 		c = '#';
 
-	zinAssert(str && c && c.length == 1);
+	ZinUtil.assert(str && c && c.length == 1);
 
 	return str.substr(0, str.indexOf(c));
 }
@@ -678,7 +647,7 @@ ZinUtil.rightOfChar = function(str, c)
 	if (arguments.length == 1)
 		c = '#';
 
-	zinAssert(str && c && c.length == 1);
+	ZinUtil.assert(str && c && c.length == 1);
 
 	return str.substr(str.indexOf(c) + 1);
 }

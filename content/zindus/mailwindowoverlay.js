@@ -58,7 +58,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 		if (messengerWindow)
 		{
-			this.m_logger_no_prefix.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
+			this.m_logger_no_prefix.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + ZinUtil.getFriendlyTimeString());
 
 			this.migratePrefs();
 
@@ -77,13 +77,13 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 				this.m_last_sync_date = x['last_sync_date'];
 
-				var delay = 1000 * randomPlusOrMinus(delay_on_start, (1/2 * delay_on_start).toFixed(0));
+				var delay = 1000 * ZinUtil.randomPlusOrMinus(delay_on_start, (1/2 * delay_on_start).toFixed(0));
 
 				this.m_logger.debug("onLoad: delay_on_start: " + delay_on_start + " actual delay (ms): " + delay);
 
 				this.m_timeoutID = window.setTimeout(this.onTimerFire, delay, this);
 
-				this.m_logger_no_prefix.info("sync next:   " + getFriendlyTimeString(delay));
+				this.m_logger_no_prefix.info("sync next:   " + ZinUtil.getFriendlyTimeString(delay));
 			}
 			else
 				this.m_logger.debug("manual sync only - not starting timer.");
@@ -132,7 +132,7 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 			if (this.m_timer_functor)
 				this.m_timer_functor.cancel();
 
-			this.m_logger_no_prefix.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
+			this.m_logger_no_prefix.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + ZinUtil.getFriendlyTimeString());
 		}
 	}
 	catch (ex)
@@ -160,7 +160,7 @@ ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 		else
 			context.m_logger.debug("ObserverService is already registered so don't reregister.");
 
-		var timer_id = hyphenate('-', ZinMaestro.ID_FUNCTOR_MAILWINDOW_TIMER, Date.now());
+		var timer_id = ZinUtil.hyphenate('-', ZinMaestro.ID_FUNCTOR_MAILWINDOW_TIMER, Date.now());
 
 		context.m_timer_functor = new ZinTimerFunctorSync(timer_id, context.scheduleTimer, context);
 
@@ -172,8 +172,8 @@ ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 
 ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 {
-	zinAssert(arguments.length == 1 || arguments.length == 2);
-	zinAssert(context.m_timeoutID == null); // ensures that we never have > 1 oustanding timer
+	ZinUtil.assert(arguments.length == 1 || arguments.length == 2);
+	ZinUtil.assert(context.m_timeoutID == null); // ensures that we never have > 1 oustanding timer
 
 	if (arguments.length == 1)
 		x = context.statusSummary();
@@ -184,7 +184,7 @@ ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 
 	context.m_timeoutID = window.setTimeout(context.onTimerFire, delay, context);
 
-	context.m_logger_no_prefix.info("sync next:   " + getFriendlyTimeString(delay));
+	context.m_logger_no_prefix.info("sync next:   " + ZinUtil.getFriendlyTimeString(delay));
 }
 
 ZinMailWindowOverlay.prototype.statusSummary = function()
@@ -215,7 +215,7 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 		{
 			next_sync_date = new Date();
 			next_sync_date.setUTCMilliseconds(last_sync_date.getUTCMilliseconds() + 
-			                   1000 * randomPlusOrMinus(this.m_delay_on_repeat, (1/6 * this.m_delay_on_repeat).toFixed(0)));
+			                   1000 * ZinUtil.randomPlusOrMinus(this.m_delay_on_repeat, (1/6 * this.m_delay_on_repeat).toFixed(0)));
 
 			if ((now - next_sync_date) > 0)
 			{
@@ -232,7 +232,7 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 		this.m_logger.debug("last sync date unavailable, next sync is now: " + next_sync_date);
 	}
 
-	var ret = newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", last_sync_date);
+	var ret = ZinUtil.newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", last_sync_date);
 
 	// this.m_logger.debug("statusSummary returns: " + "\n" + " now:            " + ret['now'] + "\n" +
 	//                                                        " last_sync_date: " + last_sync_date + "\n" +

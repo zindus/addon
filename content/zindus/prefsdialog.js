@@ -147,7 +147,7 @@ Prefs.prototype.onAccept = function()
 	// server tab - url, username and password
 	//
 	var url      = document.getElementById("zindus-prefs-server-url").value;
-	var username = zinTrim(document.getElementById("zindus-prefs-server-username").value);
+	var username = ZinUtil.zinTrim(document.getElementById("zindus-prefs-server-username").value);
 	var password = document.getElementById("zindus-prefs-server-password").value;
 
 	var prev_url      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
@@ -200,7 +200,7 @@ Prefs.prototype.onCommand = function(id_target)
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
 					ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
-					msg = stringBundleString("statusSyncFailedUnexpectedly");
+					msg = ZinUtil.stringBundleString("statusSyncFailedUnexpectedly");
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
 					msg = this.m_payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
@@ -229,7 +229,7 @@ Prefs.prototype.onCommand = function(id_target)
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
 					ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
-					msg = stringBundleString("statusSyncFailedUnexpectedly");
+					msg = ZinUtil.stringBundleString("statusSyncFailedUnexpectedly");
 				}
 				else
 					msg = this.m_payload.m_es.asMessage("statusAuthSucceeded", "statusAuthFailed");
@@ -285,7 +285,7 @@ Prefs.prototype.getSyncFsm = function(format, type)
 	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = ZinMaestro.FSM_ID_GD_TWOWAY;   }
 	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = ZinMaestro.FSM_ID_ZM_AUTHONLY; }
 	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = ZinMaestro.FSM_ID_GD_AUTHONLY; }
-	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
+	else ZinUtil.assertAndLog(false, "mismatched case: format: " + format + " type: " + type);
 
 	this.updatePrefsetsFromDocument();
 
@@ -341,7 +341,8 @@ Prefs.prototype.initialiseView = function()
 	//
 	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
 
-	var msg = stringBundleString("prefsGalIfFewerPartOne") + " " + if_fewer + " " + stringBundleString("prefsGalIfFewerPartTwo");
+	var msg = ZinUtil.stringBundleString("prefsGalIfFewerPartOne") + " " + if_fewer + " " +
+	          ZinUtil.stringBundleString("prefsGalIfFewerPartTwo");
 
 	document.getElementById("zindus-prefs-general-gal-if-fewer").label = msg;
 
@@ -424,7 +425,7 @@ Prefs.prototype.updateView = function()
 
 		this.rememberLastServerType(this.m_server_type_last);
 
-		if (isPropertyPresent(this.a_server_type_values, server_type_current))
+		if (ZinUtil.isPropertyPresent(this.a_server_type_values, server_type_current))
 		{
 			document.getElementById("zindus-prefs-server-username").value = this.a_server_type_values[server_type_current].username;
 			document.getElementById("zindus-prefs-server-url").value      = this.a_server_type_values[server_type_current].url;
@@ -487,7 +488,7 @@ Prefs.prototype.serverType = function()
 	         document.getElementById("zindus-prefs-server-type-zimbra"))
 		ret = FORMAT_ZM;
 	else
-		zinAssertAndLog(false, "mismatched case: ");
+		ZinUtil.assertAndLog(false, "mismatched case: ");
 
 	return ret;
 }
@@ -496,7 +497,7 @@ Prefs.prototype.rememberLastServerType = function(server_type)
 {
 	this.m_logger.debug("rememberLastServerType: setting: m_server_type_last: " + this.m_server_type_last);
 
-	if (!isPropertyPresent(this.a_server_type_values, this.m_server_type_last))
+	if (!ZinUtil.isPropertyPresent(this.a_server_type_values, this.m_server_type_last))
 		this.a_server_type_values[this.m_server_type_last] = new Object();
 
 	this.a_server_type_values[this.m_server_type_last].username = document.getElementById("zindus-prefs-server-username").value;
@@ -535,12 +536,10 @@ Prefs.prototype.setGdSyncWithLabel = function()
 {
 	var zg_addressbook;
 
-	zg_addressbook = stringBundleString("prefsGeneralGdSyncWithZgPrefix") +
+	zg_addressbook = ZinUtil.stringBundleString("prefsGeneralGdSyncWithZgPrefix") +
 	                       (this.isServerSettingsComplete() ?
 	                       document.getElementById("zindus-prefs-server-username").value :
-	                       stringBundleString("prefsGeneralGdSyncWithZgSuffix"));
-
-	// zg_addressbook = stringBundleString("prefsGeneralGdSyncWithZgPrefix") + stringBundleString("prefsGeneralGdSyncWithZgSuffix");
+	                       ZinUtil.stringBundleString("prefsGeneralGdSyncWithZgSuffix"));
 
 	document.getElementById("zindus-prefs-general-gdsyncwith-zg").label = zg_addressbook;
 }
@@ -552,7 +551,7 @@ Prefs.prototype.updatePrefsetsFromDocument = function()
 	// server tab - url, username and password
 	//
 	var url      = document.getElementById("zindus-prefs-server-url").value;
-	var username = zinTrim(document.getElementById("zindus-prefs-server-username").value);
+	var username = ZinUtil.zinTrim(document.getElementById("zindus-prefs-server-username").value);
 
 	this.m_prefset_server.setProperty(PrefSet.SERVER_URL,      url );
 	this.m_prefset_server.setProperty(PrefSet.SERVER_USERNAME, username );

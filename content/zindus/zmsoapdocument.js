@@ -49,7 +49,7 @@ ZmSoapDocument.nsFromMethod = function(method)
 		last_notused:   null
 	};
 
-	zinAssertAndLog(isPropertyPresent(aMethod, method), "method missing from namespace table: " + method);
+	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(aMethod, method), "method missing from namespace table: " + method);
 
 	return aMethod[method];
 }
@@ -64,7 +64,7 @@ ZmSoapDocument.prototype.setElementAsBody = function(element)
 
 ZmSoapDocument.prototype.toString = function()
 {
-	return xmlDocumentToString(this.doc);
+	return ZinUtil.xmlDocumentToString(this.doc);
 }
 
 ZmSoapDocument.prototype.toStringFiltered = function()
@@ -196,11 +196,11 @@ ZmSoapDocument.prototype.GetContacts = function(a_id)
 	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "GetContactsRequest");
 	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "cn");
 
-	zinAssert(a_id != null && a_id.length > 0);
+	ZinUtil.assert(a_id != null && a_id.length > 0);
 
 	elRequest.setAttribute("sync", "1");
 
-	elCn.setAttribute("id", hyphenate(",", a_id));
+	elCn.setAttribute("id", ZinUtil.hyphenate(",", a_id));
 
 	elRequest.appendChild(elCn);
 
@@ -224,7 +224,7 @@ ZmSoapDocument.prototype.CreateFolder = function(folder)
 
 	elFolder = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "folder");
 
-	zinAssert(isPropertyPresent(folder, 'name') && isPropertyPresent(folder, 'l') && folder.name.length > 0)
+	ZinUtil.assert(ZinUtil.isPropertyPresent(folder, 'name') && ZinUtil.isPropertyPresent(folder, 'l') && folder.name.length > 0)
 
 	elFolder.setAttribute("name", folder.name);
 	elFolder.setAttribute("l",    folder.l);
@@ -242,8 +242,8 @@ ZmSoapDocument.prototype.CreateContact = function(args)
 	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "cn");
 	var i, elA;
 
-	zinAssertAndLog(isPropertyPresent(args, 'properties') && isPropertyPresent(args, 'l') && aToLength(args.properties) > 0, 
-	                    "properties: " + aToString(args));
+	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(args, 'properties') && ZinUtil.isPropertyPresent(args, 'l') && ZinUtil.aToLength(args.properties) > 0, 
+	                    "properties: " + ZinUtil.aToString(args));
 
 	elCn.setAttribute("l", args.l);
 
@@ -296,9 +296,9 @@ ZmSoapDocument.prototype.ModifyContact = function(args)
 	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "cn");
 	var i, elA;
 
-	zinAssert(isPropertyPresent(args, 'properties') &&
-	          isPropertyPresent(args, 'l') &&
-			  isPropertyPresent(args, 'id') && aToLength(args.properties) > 0);
+	ZinUtil.assert(ZinUtil.isPropertyPresent(args, 'properties') &&
+	          ZinUtil.isPropertyPresent(args, 'l') &&
+			  ZinUtil.isPropertyPresent(args, 'id') && ZinUtil.aToLength(args.properties) > 0);
 
 	elCn.setAttribute("id", args.id);
 	elCn.setAttribute("l", args.l);
@@ -327,9 +327,9 @@ ZmSoapDocument.prototype.ForeignContactDelete = function(args)
 	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL,  "cn");
 	var i, elA;
 
-	zinAssert(isPropertyPresent(args, 'properties') && aToLength(args.properties) > 0 &&
-	          isPropertyPresent(args, 'zid') &&
-	          isPropertyPresent(args, 'id') );
+	ZinUtil.assert(ZinUtil.isPropertyPresent(args, 'properties') && ZinUtil.aToLength(args.properties) > 0 &&
+	          ZinUtil.isPropertyPresent(args, 'zid') &&
+	          ZinUtil.isPropertyPresent(args, 'id') );
 
 	elRequest.setAttribute("onerror", "stop");
 
@@ -346,7 +346,7 @@ ZmSoapDocument.prototype.ForeignContactDelete = function(args)
 	elCn.appendChild(elA);
 	elCreate.appendChild(elCn);
 
-	var delete_args = newObject("id", args.zid + ":" + args.id, "op", "delete");
+	var delete_args = ZinUtil.newObject("id", args.zid + ":" + args.id, "op", "delete");
 	elDeleteForeign = this.ActionRequest("ContactActionRequest", delete_args);
 
 	elRequest.appendChild(elCreate);

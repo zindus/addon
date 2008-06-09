@@ -40,13 +40,13 @@ ZidBag.prototype.toString = function()
 	var i, j, zid;
 	var ret = "m_index: " + this.m_index + " a_zid: ";
 
-	zinAssert(this.a_zid.length == aToLength(this.m_properties));
+	ZinUtil.assert(this.a_zid.length == ZinUtil.aToLength(this.m_properties));
 
 	for (i = 0; i < this.a_zid.length; i++)
 	{
 		zid = this.a_zid[i];
 
-		ret += "\n " + i + ": " + strPadTo(zid, 36);
+		ret += "\n " + i + ": " + ZinUtil.strPadTo(zid, 36);
 
 		for (j in this.m_properties[zid])
 			ret += " " + j + ": " + this.get(zid, j);
@@ -57,7 +57,7 @@ ZidBag.prototype.toString = function()
 
 ZidBag.prototype.push = function(zid)
 {
-	zinAssertAndLog(!isPropertyPresent(this.m_properties, zid), "zid: " + zid);
+	ZinUtil.assertAndLog(!ZinUtil.isPropertyPresent(this.m_properties, zid), "zid: " + zid);
 
 	this.a_zid.push(zid);
 
@@ -73,7 +73,7 @@ ZidBag.prototype.set = function(zid, key, value)
 
 ZidBag.prototype.get = function(zid, key)
 {
-	zinAssertAndLog(isPropertyPresent(this.m_properties[zid], key), "zid: " + zid + " key: " + key);
+	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(this.m_properties[zid], key), "zid: " + zid + " key: " + key);
 	this.assert(zid, key);
 
 	return this.m_properties[zid][key];
@@ -81,13 +81,13 @@ ZidBag.prototype.get = function(zid, key)
 
 ZidBag.prototype.isPresent = function(zid)
 {
-	return isPropertyPresent(this.m_properties,  zid);
+	return ZinUtil.isPropertyPresent(this.m_properties,  zid);
 }
 
 ZidBag.prototype.assert = function(zid, key)
 {
-	zinAssertAndLog(isPropertyPresent(this.m_properties, zid), "zid: " + zid);
-	zinAssertAndLog(isPropertyPresent(this.a_valid_properties, key), "zid: " + zid + " key: " + key);
+	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(this.m_properties, zid), "zid: " + zid);
+	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(this.a_valid_properties, key), "zid: " + zid + " key: " + key);
 }
 
 // This method can be called three ways:
@@ -106,7 +106,7 @@ ZidBag.prototype.soapUrl = function(arg)
 	else if (typeof(arg) == 'string' || arg == null)
 		ret = this.get(arg, 'soapURL');
 	else
-		zinAssertAndLog(false, "invalid argument: " + arg);
+		ZinUtil.assertAndLog(false, "invalid argument: " + arg);
 
 	return ret;
 }
@@ -120,7 +120,7 @@ ZidBag.prototype.zimbraId = function(arg)
 	else if (typeof(arg) == 'number')
 		ret = this.a_zid[arg];
 	else
-		zinAssert(false);
+		ZinUtil.assert(false);
 
 	return ret;
 }

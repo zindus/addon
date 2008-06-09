@@ -58,14 +58,14 @@ SyncFsmObserver.prototype.get = function(key, value)
 
 SyncFsmObserver.prototype.progressReportOn = function(stringid)
 {
-	this.set(SyncFsmObserver.OP, stringBundleString(this.tweakStringId(stringid)) );
+	this.set(SyncFsmObserver.OP, ZinUtil.stringBundleString(this.tweakStringId(stringid)) );
 
 	this.set(SyncFsmObserver.PROG_MAX, 0);
 }
 
 SyncFsmObserver.prototype.progressReportOnSource = function()
 {
-	zinAssert((arguments.length == 2) || (typeof(arguments[2]) == 'number'));
+	ZinUtil.assert((arguments.length == 2) || (typeof(arguments[2]) == 'number'));
 
 	this.set(SyncFsmObserver.OP, this.buildOp(arguments[0], arguments[1]));
 
@@ -74,7 +74,7 @@ SyncFsmObserver.prototype.progressReportOnSource = function()
 
 SyncFsmObserver.prototype.buildOp = function(sourceid, stringid)
 {
-	return this.state.sources[sourceid]['name'] + " " + stringBundleString(this.tweakStringId(stringid));
+	return this.state.sources[sourceid]['name'] + " " + ZinUtil.stringBundleString(this.tweakStringId(stringid));
 }
 
 SyncFsmObserver.prototype.tweakStringId = function(stringid)
@@ -90,7 +90,7 @@ SyncFsmObserver.prototype.progressToString = function()
 
 	if (this.get(SyncFsmObserver.PROG_MAX) > 0)
 		ret += " " + this.get(SyncFsmObserver.PROG_CNT) +
-		       " " + stringBundleString(this.tweakStringId("Of")) +
+		       " " + ZinUtil.stringBundleString(this.tweakStringId("Of")) +
 		       " " + this.get(SyncFsmObserver.PROG_MAX);
 
 	return ret;
@@ -145,8 +145,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 	for (var state in a_states_common)
 	{
-		zinAssertAndLog(!isPropertyPresent(a_states_zm, state), "state: " + state);
-		zinAssertAndLog(!isPropertyPresent(a_states_gd, state), "state: " + state);
+		ZinUtil.assertAndLog(!ZinUtil.isPropertyPresent(a_states_zm, state), "state: " + state);
+		ZinUtil.assertAndLog(!ZinUtil.isPropertyPresent(a_states_gd, state), "state: " + state);
 		a_states_zm[state] = a_states_common[state];
 		a_states_gd[state] = a_states_common[state];
 	}
@@ -162,7 +162,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 			ret = this.updateState(fsmstate, a_states_gd);
 			break;
 		default:
-			zinAssertAndLog(false, "unmatched case: id_fsm: " + fsmstate.context.state.id_fsm);
+			ZinUtil.assertAndLog(false, "unmatched case: id_fsm: " + fsmstate.context.state.id_fsm);
 	};
 
 	return ret;
@@ -176,18 +176,18 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	var context = fsmstate.context; // SyncFsm
 	this.state = context.state;
 
-	// this.m_logger.debug("updateState: blah: a_states: " +      aToString(a_states));
-	// this.m_logger.debug("updateState: blah: m_transitions: " + aToString(context.fsm.m_transitions));
+	// this.m_logger.debug("updateState: blah: a_states: " +      ZinUtil.aToString(a_states));
+	// this.m_logger.debug("updateState: blah: m_transitions: " + ZinUtil.aToString(context.fsm.m_transitions));
 
-	zinAssert(isMatchObjectKeys(a_states, context.fsm.m_transitions));
+	ZinUtil.assert(ZinUtil.isMatchObjectKeys(a_states, context.fsm.m_transitions));
 
 	var c = 0;
 
 	for (var key in a_states)
-		if (isPropertyPresent(a_states[key], 'count'))
+		if (ZinUtil.isPropertyPresent(a_states[key], 'count'))
 			a_states[key]['count'] = c++;
 
-	if (fsmstate.newstate && isPropertyPresent(a_states[fsmstate.newstate], 'count')) // fsmstate.newstate == null when oldstate == 'final'
+	if (fsmstate.newstate && ZinUtil.isPropertyPresent(a_states[fsmstate.newstate], 'count')) // fsmstate.newstate == null when oldstate == 'final'
 	{
 		ret = true;
 
@@ -220,7 +220,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				{
 					this.progressReportOnSource(context.state.sourceid_pr, "SelectSoapUrl");
 					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP) + " " + context.state.suggestedSoapURL + "<br/>"
-					                                                          + stringBundleString(this.tweakStringId("SelectSoapUrl2")));
+					                                      + ZinUtil.stringBundleString(this.tweakStringId("SelectSoapUrl2")));
 				}
 				else
 					ret = false; // no need to update the UI
@@ -246,7 +246,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					if (lo == hi)
 						this.set(SyncFsmObserver.PROG_CNT, lo);
 					else
-						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
+						this.set(SyncFsmObserver.PROG_CNT, ZinUtil.hyphenate('-', lo, hi));
 
 					this.count_get_contact_zm += aGetContactRequest.length;
 				}
@@ -255,12 +255,12 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				break;
 
 			case 'stGetContactGd2':
-				if (aToLength(context.state.a_gd_contact) > 0)
+				if (ZinUtil.aToLength(context.state.a_gd_contact) > 0)
 				{
 					var op = this.buildOp(context.state.sourceid_pr, "GetMany");
 
 					if (this.get(SyncFsmObserver.OP) != op)
-						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", aToLength(context.state.a_gd_contact));
+						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", ZinUtil.aToLength(context.state.a_gd_contact));
 
 					var lo = context.state.a_gd_contact_iterator.m_zindus_contact_count;
 					var hi = this.state.a_gd_contact_iterator.m_zindus_contact_count +
@@ -269,7 +269,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					if (lo == hi)
 						this.set(SyncFsmObserver.PROG_CNT, lo);
 					else
-						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
+						this.set(SyncFsmObserver.PROG_CNT, ZinUtil.hyphenate('-', lo, hi));
 				}
 				else
 					ret = false; // no need to update the UI
@@ -358,9 +358,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				{
 					es.m_exit_status = 1;
 
-					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stLoad' ]))
+					if (ZinUtil.isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stLoad' ]))
 						es.failcode(context.state.stopFailCode);
-					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheckGd', 'stLoadTb', 'stConverge1', 'stConverge6', 'stConverge8',
+					else if (ZinUtil.isInArray(fsmstate.oldstate, [ 'stAuthCheckGd', 'stLoadTb', 'stConverge1', 'stConverge6', 'stConverge8',
 					                                                       'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);
@@ -369,17 +369,17 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					else
 						es.failcode('FailOnUnknown');
 				}
-				else if (context.state.authToken && isPropertyPresent(ZinMaestro.FSM_GROUP_AUTHONLY, context.state.id_fsm))
+				else if (context.state.authToken && ZinUtil.isPropertyPresent(ZinMaestro.FSM_GROUP_AUTHONLY, context.state.id_fsm))
 					es.m_exit_status = 0;
-				else if (fsmstate.event == 'evNext' && isPropertyPresent(ZinMaestro.FSM_GROUP_TWOWAY, context.state.id_fsm))
+				else if (fsmstate.event == 'evNext' && ZinUtil.isPropertyPresent(ZinMaestro.FSM_GROUP_TWOWAY, context.state.id_fsm))
 					es.m_exit_status = 0;
 				else
-					zinAssert(false); // ensure that all cases are covered above
+					ZinUtil.assert(false); // ensure that all cases are covered above
 
 				if (es.m_exit_status != 0)
 					es.m_fail_fsmoldstate = fsmstate.oldstate;
 
-				// zinAssert(es.failcode() != 'FailOnUnknown');
+				// ZinUtil.assert(es.failcode() != 'FailOnUnknown');
 
 				for (var i = 0; i < context.state.aConflicts.length; i++)
 					this.m_logger.info("conflict: " + context.state.aConflicts[i]);
@@ -391,7 +391,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				break;
 
 			default:
-				zinAssertAndLog(false, "missing case statement for: " + fsmstate.newstate);
+				ZinUtil.assertAndLog(false, "missing case statement for: " + fsmstate.newstate);
 		}
 
 		var percentage_complete = a_states[fsmstate.newstate]['count'] / a_states['final']['count'];

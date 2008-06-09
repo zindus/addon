@@ -91,10 +91,10 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zf
 {
 	var ret;
 
-	zinAssert(arguments.length == 3); // catch programming errors
-	zinAssertAndLog(typeof(zfi) == 'object', " zfi ain't an ZinFeedItem object: " + zfi);
+	ZinUtil.assert(arguments.length == 3); // catch programming errors
+	ZinUtil.assertAndLog(typeof(zfi) == 'object', " zfi ain't an ZinFeedItem object: " + zfi);
 
-	zinAssertAndLog((zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == ZinFeedItem.TYPE_SF,
+	ZinUtil.assertAndLog((zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == ZinFeedItem.TYPE_SF,
 	                  "can't convertForMap zfi: " + zfi.toString());
 
 	var name = zfi.get(ZinFeedItem.ATTR_NAME);
@@ -109,7 +109,7 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zf
 		ret = this.selectPrefix(zfi) + name;
 	else // format_to == FORMAT_ZM
 	{
-		zinAssertAndLog(this.prefixClass(name) != ZinFolderConverter.PREFIX_CLASS_NONE, name);
+		ZinUtil.assertAndLog(this.prefixClass(name) != ZinFolderConverter.PREFIX_CLASS_NONE, name);
 		ret = name.substring(this.m_prefix_length)
 	}
 
@@ -126,7 +126,7 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zf
 ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from, zfi)
 {
 	// catch programming errors
-	zinAssertAndLog(arguments.length == 3 && this.m_localised_pab,
+	ZinUtil.assertAndLog(arguments.length == 3 && this.m_localised_pab,
 	                " arguments.length: " + arguments.length + " m_localised_pab: " + this.m_localised_pab + " zfi: " + zfi.toString());
 
 	var ret = this.convertForMap(format_to, format_from, zfi);
@@ -140,7 +140,7 @@ ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from,
 			              (this.m_localised_emailed_contacts ? this.m_localised_emailed_contacts : ZM_FOLDER_EMAILED_CONTACTS);
 	}
 
-	zinAssert(ret);
+	ZinUtil.assert(ret);
 
 	return ret;
 }
@@ -211,13 +211,13 @@ ZinFolderConverter.prototype.emailed_contacts_per_locale = function(key)
 {
 	var ret = null;
 
-	if (isPropertyPresent(this.m_locale_map, key))
+	if (ZinUtil.isPropertyPresent(this.m_locale_map, key))
 		ret = this.m_locale_map[key];
 	else
 	{
 		key = key.substr(0, 2);
 
-		if (isPropertyPresent(this.m_locale_map, key))
+		if (ZinUtil.isPropertyPresent(this.m_locale_map, key))
 			ret = this.m_locale_map[key];
 	}
 
@@ -228,21 +228,21 @@ ZinFolderConverter.prototype.selectPrefix = function(zfi)
 {
 	var ret;
 
-	zinAssertAndLog((zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == ZinFeedItem.TYPE_SF,
+	ZinUtil.assertAndLog((zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == ZinFeedItem.TYPE_SF,
 	                  "can't selectPrefix zfi: " + zfi.toString());
 	
 	if (zfi.type() == ZinFeedItem.TYPE_FL)
 		ret = this.m_prefix_primary_account;
 	else
 	{
-		var perm = zmPermFromZfi(zfi);
+		var perm = ZinUtil.zmPermFromZfi(zfi);
 
 		if (perm & ZM_PERM_WRITE)
 			ret = this.m_prefix_foreign_readwrite;
 		else if (perm & ZM_PERM_READ)
 			ret = this.m_prefix_foreign_readonly;
 		else
-			zinAssertAndLog(false, "unable to selectPrefix zfi: " + zfi.toString());
+			ZinUtil.assertAndLog(false, "unable to selectPrefix zfi: " + zfi.toString());
 	}
 
 	return ret;

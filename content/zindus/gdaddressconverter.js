@@ -53,7 +53,7 @@ GdAddressConverter.ADDR_TO_PROPERTIES = 0x20;
 //
 GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 {
-	zinAssert(dirn && !(dirn & (GdAddressConverter.CER_TO_CHAR | dirn & GdAddressConverter.CER_TO_ENTITY))
+	ZinUtil.assert(dirn && !(dirn & (GdAddressConverter.CER_TO_CHAR | dirn & GdAddressConverter.CER_TO_ENTITY))
 	               && typeof(a_xml) == 'object');
 
 	var address, value;
@@ -89,7 +89,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 			if (address.ns::street.length() > 1)
 				this.setIfNotBlankOrEmpty(a_fields, "Address2", address.ns::street[1]);
 
-			msg += " a_fields: " + aToString(a_fields);
+			msg += " a_fields: " + ZinUtil.aToString(a_fields);
 		}
 		else
 			msg += " failed to parse an <address> element out of: " + xml_as_char;
@@ -99,7 +99,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 		address = "<address xmlns='" + ZinXpath.NS_ZINDUS_ADDRESS + "'>";
 		var tag;
 
-		if (!isPropertyPresent(a_fields, "Address") && isPropertyPresent(a_fields, "Address2"))
+		if (!ZinUtil.isPropertyPresent(a_fields, "Address") && ZinUtil.isPropertyPresent(a_fields, "Address2"))
 			a_fields["Address"] = "";
 
 		var pretty_char = (dirn & GdAddressConverter.PRETTY_XML) ? " " : "";
@@ -107,7 +107,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 		this.m_logger.debug("blah: tt: dirn: " + dirn + " pretty_char: '" + pretty_char + "'");
 
 		for (var i = 0; i < this.a_suffix_all.length; i++)
-			if (isPropertyPresent(a_fields, this.a_suffix_all[i]))
+			if (ZinUtil.isPropertyPresent(a_fields, this.a_suffix_all[i]))
 			{
 				tag = null
 
@@ -119,7 +119,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 				}
 
 				if (tag)
-					address += "\n<" + tag + ">" + pretty_char + zinTrim(a_fields[this.a_suffix_all[i]]) + pretty_char + "</"+tag+">";
+					address += "\n<" + tag + ">" + pretty_char + ZinUtil.zinTrim(a_fields[this.a_suffix_all[i]]) + pretty_char + "</"+tag+">";
 			}
 
 		address += "\n</address>";
@@ -141,7 +141,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 //
 GdAddressConverter.prototype.convertCER = function(xml_cdata_string, dirn)
 {
-	zinAssert(xml_cdata_string && dirn > 0);
+	ZinUtil.assert(xml_cdata_string && dirn > 0);
 
 	var ret = xml_cdata_string;
 
@@ -156,7 +156,7 @@ GdAddressConverter.prototype.convertCER = function(xml_cdata_string, dirn)
 
 GdAddressConverter.prototype.setIfNotBlankOrEmpty = function(properties, key, value)
 {
-	value = zinTrim(String(value));
+	value = ZinUtil.zinTrim(String(value));
 
 	if (value.length > 0)
 		properties[key] = value;

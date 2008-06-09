@@ -70,7 +70,7 @@ Suo.opcodeAsStringPastTense = function(opcode)
 
 Suo.opcodeAsStringForUI = function(opcode)
 {
-	return stringBundleString(Suo.bimap_opcode_UI.lookup(opcode));
+	return ZinUtil.stringBundleString(Suo.bimap_opcode_UI.lookup(opcode));
 }
 
 function SuoCollection()
@@ -80,14 +80,14 @@ function SuoCollection()
 
 SuoCollection.prototype.assertValidKey = function(key)
 {
-	zinAssert(isPropertyPresent(key, "sourceid") && isPropertyPresent(key, "bucket") && isPropertyPresent(key, "id"));
+	ZinUtil.assert(ZinUtil.isPropertyPresent(key, "sourceid") && ZinUtil.isPropertyPresent(key, "bucket") && ZinUtil.isPropertyPresent(key, "id"));
 }
 
 SuoCollection.prototype.get = function(key)
 {
-	zinAssert(isPropertyPresent(this.m_collection, key.sourceid) &&
-	          isPropertyPresent(this.m_collection[key.sourceid], key.bucket) &&
-	          isPropertyPresent(this.m_collection[key.sourceid][key.bucket][key.id]));
+	ZinUtil.assert(ZinUtil.isPropertyPresent(this.m_collection, key.sourceid) &&
+	          ZinUtil.isPropertyPresent(this.m_collection[key.sourceid], key.bucket) &&
+	          ZinUtil.isPropertyPresent(this.m_collection[key.sourceid][key.bucket][key.id]));
 
 	return this.m_collection[key.sourceid][key.bucket][key.id];
 }
@@ -96,10 +96,10 @@ SuoCollection.prototype.set = function(key, suo)
 {
 	this.assertValidKey(key);
 
-	if (!isPropertyPresent(this.m_collection, key.sourceid))
+	if (!ZinUtil.isPropertyPresent(this.m_collection, key.sourceid))
 		this.m_collection[key.sourceid] = new Object();
 
-	if (!isPropertyPresent(this.m_collection[key.sourceid], key.bucket))
+	if (!ZinUtil.isPropertyPresent(this.m_collection[key.sourceid], key.bucket))
 		this.m_collection[key.sourceid][key.bucket] = new Object();
 
 	this.m_collection[key.sourceid][key.bucket][key.id] = suo;

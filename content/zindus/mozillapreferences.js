@@ -31,6 +31,7 @@ MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
 MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
 MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME = "system.zm_prefer_soapurl_scheme";
+MozillaPreferences.GD_SCHEME_DATA_TRANSFER  = "system.gd_data_transfer_scheme";
 
 function MozillaPreferences()
 {
@@ -87,7 +88,7 @@ MozillaPreferences.prototype.setIntPref = function(branch, key, value)
 {
 	var intValue = parseInt(value);
 
-	zinAssert(!isNaN(intValue));
+	ZinUtil.assert(!isNaN(intValue));
 
 	// dump("33443366: setIntPref sets preference " + key + ", and " + typeof(intValue) + " " + intValue + "\n");
 

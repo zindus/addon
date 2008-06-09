@@ -34,7 +34,7 @@ function Zuio()
 	else if (arguments.length == 2)
 		this.setFromPair(arguments[0], arguments[1]);
 	else
-		zinAssert(false);
+		ZinUtil.assert(false);
 }
 
 Zuio.prototype.toString = function()
@@ -49,7 +49,7 @@ Zuio.prototype.key = function()
 
 Zuio.key = function(id, zid)
 {
-	zinAssertAndLog(id, "id: " + id);
+	ZinUtil.assertAndLog(id, "id: " + id);
 
 	var ret = id + "";
 	
@@ -61,7 +61,7 @@ Zuio.key = function(id, zid)
 
 Zuio.prototype.setFromPair = function(id, zid)
 {
-	zinAssert(id);
+	ZinUtil.assert(id);
 
 	this.id  = id;
 	this.zid = zid;
@@ -71,7 +71,7 @@ Zuio.prototype.setFromKey = function(key)
 {
 	var key_as_string = String(key);
 
-	zinAssertAndLog(key && key_as_string.length > 0, "key: " + key);
+	ZinUtil.assertAndLog(key && key_as_string.length > 0, "key: " + key);
 
 	var a = key_as_string.split("#");
 
@@ -80,5 +80,5 @@ Zuio.prototype.setFromKey = function(key)
 	else if (a.length == 2)
 		this.setFromPair(a[0], a[1]);
 	else 
-		zinAssert(false);
+		ZinUtil.assert(false);
 }

@@ -35,7 +35,8 @@ ZinXpath.NS_OPENSEARCH     = "http://a9.com/-/spec/opensearchrss/1.0/";
 ZinXpath.NS_GCONTACT       = "http://schemas.google.com/contact/2008";
 ZinXpath.NS_GD             = "http://schemas.google.com/g/2005";
 
-ZinXpath.NS_XMLNS          = "http://www.w3.org/2000/xmlns/"; // See the uri and also http://www.w3.org/TR/DOM-Level-2-Core/core.html
+ZinXpath.NS_XHTML          = "http://www.w3.org/1999/xhtml";
+ZinXpath.NS_XMLNS          = "http://www.w3.org/2000/xmlns/"; // See the uri and http://www.w3.org/TR/DOM-Level-2-Core/core.html
 
 ZinXpath.NS_ZINDUS_ADDRESS = "http://schemas.zindus.com/sync/2008";
 
@@ -53,7 +54,7 @@ ZinXpath.nsResolver = function(prefix)
 			zindusaddr: ZinXpath.NS_ZINDUS_ADDRESS
 	};
 
-	zinAssertAndLog(isPropertyPresent(map, prefix), "prefix: " + prefix);
+	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(map, prefix), "prefix: " + prefix);
 
 	return map[prefix];
 };
@@ -62,7 +63,7 @@ ZinXpath.logger = ZinLoggerFactory.instance().newZinLogger("ZinXpath");
 
 ZinXpath.setConditional = function(object, property, xpath_query, doc, warning_msg)
 {
-	zinAssert(xpath_query.indexOf("attribute::") > 0); // this function is only intended for xpath queries that return a single attribute
+	ZinUtil.assert(xpath_query.indexOf("attribute::") > 0); // this function is only intended for xpath queries that return a single attribute
 
 	var node = ZinXpath.getOneNode(xpath_query, doc, doc);
 
@@ -114,8 +115,8 @@ ZinXpath.setConditionalFromSingleElement = function(object, property, xpath_quer
 
 ZinXpath.runFunctor = function(functor, xpath_query, doc, xpathResultType)
 {
-	zinAssert(arguments.length == 3 || arguments.length == 4); // catch programming errors
-	zinAssert(typeof(doc.evaluate) == 'function');
+	ZinUtil.assert(arguments.length == 3 || arguments.length == 4); // catch programming errors
+	ZinUtil.assert(typeof(doc.evaluate) == 'function');
 
 	if (arguments.length == 3)
 		xpathResultType = XPathResult.UNORDERED_NODE_ITERATOR_TYPE; // this used to be ANY_UNORDERED_NODE_ITERATOR_TYPE - why did that work?

@@ -31,16 +31,16 @@ function BiMap(array_a, array_b)
 
 BiMap.prototype.add = function(array_a, array_b)
 {
-	zinAssert(typeof(array_a) == 'object' && typeof(array_b) == 'object');
+	ZinUtil.assert(typeof(array_a) == 'object' && typeof(array_b) == 'object');
 
-	zinAssert(array_a.length == array_b.length);
+	ZinUtil.assert(array_a.length == array_b.length);
 
 	for (var i = 0; i < array_a.length; i++)
 	{
-		zinAssert(typeof(array_a[i]) == 'string' || typeof(array_a[i]) == 'number');
-		zinAssert(typeof(array_b[i]) == 'string' || typeof(array_b[i]) == 'number');
-		zinAssert(!isPropertyPresent(this.m_a, array_a[i]));  // no duplicates allowed in either array
-		zinAssert(!isPropertyPresent(this.m_b, array_b[i]));
+		ZinUtil.assert(typeof(array_a[i]) == 'string' || typeof(array_a[i]) == 'number');
+		ZinUtil.assert(typeof(array_b[i]) == 'string' || typeof(array_b[i]) == 'number');
+		ZinUtil.assert(!ZinUtil.isPropertyPresent(this.m_a, array_a[i]));  // no duplicates allowed in either array
+		ZinUtil.assert(!ZinUtil.isPropertyPresent(this.m_b, array_b[i]));
 
 		this.m_a[array_a[i]] = array_b[i];
 		this.m_b[array_b[i]] = array_a[i];
@@ -70,7 +70,7 @@ BiMap.prototype.assertKeysValid = function(key_a, key_b)
 	var c = 0;
 	c += (key_a == null) ? 0 : 1;
 	c += (key_b == null) ? 0 : 1;
-	zinAssertAndLog(c == 1, "key_a: " + key_a + " key_b: " + key_b + " " + this.toString()); // exactly one of the keys must be non-null
+	ZinUtil.assertAndLog(c == 1, "key_a: " + key_a + " key_b: " + key_b + " " + this.toString()); // exactly one of the keys must be non-null
 }
 
 BiMap.prototype.getObjAndKey = function(key_a, key_b)
@@ -94,14 +94,14 @@ BiMap.prototype.getObjAndKey = function(key_a, key_b)
 	// Some linux javascript interpreters (JavaScript-C 1.6 pre-release 1 2006-04-04) report an error with this sort of assigment:
 	// [ a, b ] = blah();
 	//
-	return newObject('obj', obj, 'key', key);
+	return ZinUtil.newObject('obj', obj, 'key', key);
 }
 
 BiMap.prototype.lookup = function(key_a, key_b)
 {
 	var tmp = this.getObjAndKey(key_a, key_b);
 
-	zinAssert(isPropertyPresent(tmp.obj, tmp.key));
+	ZinUtil.assert(ZinUtil.isPropertyPresent(tmp.obj, tmp.key));
 
 	return tmp.obj[tmp.key];
 }
@@ -110,7 +110,7 @@ BiMap.prototype.isPresent = function(key_a, key_b)
 {
 	var tmp = this.getObjAndKey(key_a, key_b);
 
-	return isPropertyPresent(tmp.obj, tmp.key);
+	return ZinUtil.isPropertyPresent(tmp.obj, tmp.key);
 }
 
 BiMap.prototype.toString = function()

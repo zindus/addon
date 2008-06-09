@@ -125,7 +125,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 	else if (!this.m_has_observer_been_called)
 	{
-		// zinAssert(fsmstate == null);
+		// ZinUtil.assert(fsmstate == null);
 
 		this.m_has_observer_been_called = true;
 
@@ -133,7 +133,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_zwc.populate();
 
-		ZinLoggerFactory.instance().newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
+		ZinLoggerFactory.instance().newZinLogger().info("sync start:  " + ZinUtil.getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 		this.m_syncfsm.start(window);
 	}
 	else 
@@ -148,9 +148,9 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 
 			var elDescription = document.getElementById('zindus-syncwindow-progress-description');
-			var elHtml        = document.createElementNS("http://www.w3.org/1999/xhtml", "p");
+			var elHtml        = document.createElementNS(ZinXpath.NS_XHTML, "p");
 
-			elHtml.innerHTML = stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString();
+			elHtml.innerHTML = ZinUtil.stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString();
 
 			if (!elDescription.hasChildNodes())
 				elDescription.appendChild(elHtml);
@@ -168,13 +168,13 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			functor.m_showlogo = true;
 			this.m_zwc.forEach(functor);
 
-			if (isPropertyPresent(ZinMaestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
+			if (ZinUtil.isPropertyPresent(ZinMaestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
 			{
 				StatusPanel.save(this.m_payload.m_es);
 				StatusPanel.update();
 			}
 
-			ZinLoggerFactory.instance().newZinLogger().info("sync finish: " + getFriendlyTimeString());
+			ZinLoggerFactory.instance().newZinLogger().info("sync finish: " + ZinUtil.getFriendlyTimeString());
 
 			document.getElementById('zindus-syncwindow').acceptDialog();
 		}

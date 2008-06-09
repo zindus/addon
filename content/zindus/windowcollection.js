@@ -32,7 +32,7 @@ function ZinWindowCollection(a_id)
 
 ZinWindowCollection.prototype.forEach = function(functor)
 {
-	zinAssert(typeof(functor.run) == "function");
+	ZinUtil.assert(typeof(functor.run) == "function");
 
 	for (var id in this.m_h_a)
 		for (var i = 0; i < this.m_h_a[id].length; i++)

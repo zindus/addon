@@ -23,7 +23,7 @@
 
 function GdContact(contact_converter, doc)
 {
-	zinAssert(arguments.length == 1 || arguments.length == 2);
+	ZinUtil.assert(arguments.length == 1 || arguments.length == 2);
 
 	if (arguments.length == 2)
 		this.m_document = doc;
@@ -41,9 +41,9 @@ function GdContact(contact_converter, doc)
 
 GdContact.prototype.toStringXml = function()
 {
-	zinAssert(this.m_container);
+	ZinUtil.assert(this.m_container);
 
-	return xmlDocumentToString(this.m_container);
+	return ZinUtil.xmlDocumentToString(this.m_container);
 }
 
 GdContact.prototype.toString = function()
@@ -115,18 +115,18 @@ GdContact.prototype.updateFromContainer = function(node)
 
 GdContact.prototype.set_visited = function(a_visited, key)
 {
-	if (!isPropertyPresent(a_visited, key))
+	if (!ZinUtil.isPropertyPresent(a_visited, key))
 		a_visited[key] = true;
 	else
 		ZinLoggerFactory.instance().logger().error("GdContact: visited this node twice - this shouldn't happen: key: " + key +
-		                                                                   " a_visited: " + aToString(a_visited)); 
+		                                                                   " a_visited: " + ZinUtil.aToString(a_visited)); 
 }
 
 GdContact.prototype.runFunctorOnContainer = function(functor)
 {
 	var i, key, child;
 
-	zinAssert(this.m_container && this.m_container.nodeType == Node.ELEMENT_NODE);
+	ZinUtil.assert(this.m_container && this.m_container.nodeType == Node.ELEMENT_NODE);
 
 	var a_visited = new Object();
 
@@ -169,7 +169,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 					switch(child.localName)
 					{
 						case "organization":
-							if (!isPropertyPresent(a_visited, key) && child.getAttribute("rel") == this.ns_gd("work")
+							if (!ZinUtil.isPropertyPresent(a_visited, key) && child.getAttribute("rel") == this.ns_gd("work")
 							                                                       && child.hasChildNodes() )
 							{
 								this.m_container_children[child.localName] = child;
@@ -184,7 +184,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 											case "orgTitle":
 												key = "organization#" + grandchildren[j].localName;
 
-												if (!isPropertyPresent(a_visited, key))
+												if (!ZinUtil.isPropertyPresent(a_visited, key))
 												{
 													this.set_visited(a_visited, key);
 													functor.run(grandchildren[j], key);
@@ -203,7 +203,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 							else 
 								key = "SecondEmail";
 
-							if (!isPropertyPresent(a_visited, key))
+							if (!ZinUtil.isPropertyPresent(a_visited, key))
 							{
 								this.set_visited(a_visited, key);
 								functor.run(child, key);
@@ -216,11 +216,11 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 
 							var key_for_certain = (child.localName == "postalAddress") ? ("postalAddress#" + key) : key;
 
-							if (isPropertyPresent(this.m_contact_converter.gd_certain_keys_converted()[child.localName], key_for_certain))
+							if (ZinUtil.isPropertyPresent(this.m_contact_converter.gd_certain_keys_converted()[child.localName], key_for_certain))
 							{
 								key = child.localName + "#" + key;
 
-								if (!isPropertyPresent(a_visited, key))
+								if (!ZinUtil.isPropertyPresent(a_visited, key))
 								{
 									this.set_visited(a_visited, key);
 									functor.run(child, key);
@@ -235,7 +235,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 							{
 								key = "im#" + key;
 
-								if (!isPropertyPresent(a_visited, key))
+								if (!ZinUtil.isPropertyPresent(a_visited, key))
 								{
 									this.set_visited(a_visited, key);
 									functor.run(child, key);
@@ -254,14 +254,14 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 
 GdContact.prototype.nodeModifyOrMarkForDeletion = function(node, attribute, a_field, key, a_field_used, a_to_be_deleted)
 {
-	if (!isPropertyPresent(a_field, key) || a_field[key].length == 0)
+	if (!ZinUtil.isPropertyPresent(a_field, key) || a_field[key].length == 0)
 	{
-		var tmp = zinLeftOfChar(key);
-		if (isPropertyPresent(this.m_container_children, tmp))
+		var tmp = ZinUtil.leftOfChar(key);
+		if (ZinUtil.isPropertyPresent(this.m_container_children, tmp))
 			parent = this.m_container_children[tmp];
 		else
 			parent = this.m_container;
-		a_to_be_deleted[key] = newObject("parent", parent, "child", node);
+		a_to_be_deleted[key] = ZinUtil.newObject("parent", parent, "child", node);
 		a_field_used[key] = true;
 	}
 	else
@@ -277,7 +277,7 @@ GdContact.transformProperties = function(properties)
 {
 	for (key in properties)
 	{
-		properties[key] = zinTrim(properties[key]);
+		properties[key] = ZinUtil.zinTrim(properties[key]);
 	
 		if (key == "PrimaryEmail" || key == "SecondEmail")
 			properties[key] = properties[key].toLowerCase();
@@ -292,7 +292,7 @@ GdContact.prototype.updateFromProperties = function(properties)
 	var context = this;
 	var key;
 
-	this.m_logger.debug("updateFromProperties: properties: " + aToString(properties));
+	this.m_logger.debug("updateFromProperties: properties: " + ZinUtil.aToString(properties));
 
 	var functor = {
 		run: function(node, key)
@@ -302,7 +302,7 @@ GdContact.prototype.updateFromProperties = function(properties)
 			switch (key)
 			{
 				case "title":
-					if (!isPropertyPresent(a_field, key))
+					if (!ZinUtil.isPropertyPresent(a_field, key))
 						a_field[key] = "";
 					context.setNode(node, null, a_field, key, a_field_used)
 					break;
@@ -325,12 +325,12 @@ GdContact.prototype.updateFromProperties = function(properties)
 					var a_gac_properties = { };
 					var contact_converter = context.m_contact_converter;
 
-					if (isPropertyPresent(a_field, key))
+					if (ZinUtil.isPropertyPresent(a_field, key))
 						is_parsed = contact_converter.m_gac.convert(a_field, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
 
 					if (is_parsed)
 					{
-						a_new_field = newObject(key, null);
+						a_new_field = ZinUtil.newObject(key, null);
 
 						var otheraddr = context.postalAddressOtherAddr(key);
 
@@ -387,15 +387,15 @@ GdContact.prototype.updateFromProperties = function(properties)
 			this.m_logger.debug("updateFromProperties: removeChild: key: " + key);
 			a_to_be_deleted[key].parent.removeChild(a_to_be_deleted[key].child);
 		} catch (ex) {
-			zinAssertAndLog(false, "key: " + key + "ex: " + ex + "ex.stack: " + ex.stack);
+			ZinUtil.assertAndLog(false, "key: " + key + "ex: " + ex + "ex.stack: " + ex.stack);
 		}
 
 	// now do ADDs...
 	for (key in a_field)
-		if (!isPropertyPresent(a_field_used, key) && a_field[key].length > 0)
+		if (!ZinUtil.isPropertyPresent(a_field_used, key) && a_field[key].length > 0)
 			this.fieldAdd(key, a_field);
 
-	if (isPropertyPresent(this.m_container_children, "organization") && this.m_container_children["organization"].childNodes.length == 0)
+	if (ZinUtil.isPropertyPresent(this.m_container_children, "organization") && this.m_container_children["organization"].childNodes.length == 0)
 	{
 		// this.m_logger.debug("GdContact: removeChild: node: " + this.nodeAsString(this.m_container_children["organization"]));
 		this.m_container.removeChild(this.m_container_children["organization"]);
@@ -412,7 +412,7 @@ GdContact.prototype.ensureContainerHasXmlns = function()
 {
 	var is_xmlns_gd_present = false;
 
-	zinAssert(this.m_container);
+	ZinUtil.assert(this.m_container);
 
 	if (this.m_container.hasAttributes())
 	{
@@ -452,7 +452,7 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 			break;
 		case "organization#orgName":
 		case "organization#orgTitle":
-			if (!isPropertyPresent(this.m_container_children, "organization"))
+			if (!ZinUtil.isPropertyPresent(this.m_container_children, "organization"))
 				this.fieldAdd("organization");
 
 			element = this.m_document.createElementNS(ZinXpath.NS_GD, ZinUtil.rightOfChar(key));
@@ -484,7 +484,7 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 		case "postalAddress#home":
 		case "postalAddress#work":
 			var fragment = ZinUtil.rightOfChar(key);
-			element = this.m_document.createElementNS(ZinXpath.NS_GD, zinLeftOfChar(key));
+			element = this.m_document.createElementNS(ZinXpath.NS_GD, ZinUtil.leftOfChar(key));
 			element.setAttribute("rel", this.ns_gd(fragment))
 			element.textContent = a_field[key];
 			break;
@@ -515,7 +515,7 @@ GdContact.prototype.setProperty = function(node, attribute, collection, key, fil
 
 	if (value.length > 0)
 		collection[key] = value;
-	else if (isPropertyPresent(collection, key))
+	else if (ZinUtil.isPropertyPresent(collection, key))
 		delete collection[key];
 }
 
@@ -546,15 +546,15 @@ GdContact.prototype.postalAddressOtherAddr = function(key)
 {
 	var str = this.m_properties[key];
 	var ret = "";
-	var a_in  = newObject('x', str);
+	var a_in  = ZinUtil.newObject('x', str);
 	var a_out = new Object();
 	
-	var is_parsed = isPropertyPresent(this.m_properties, key) &&
+	var is_parsed = ZinUtil.isPropertyPresent(this.m_properties, key) &&
 	                this.m_contact_converter.m_gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
 
 	if (!is_parsed)                                 // it wasn't xml
 		ret = null;
-	else if (isPropertyPresent(a_out, "otheraddr")) // it was xml and there was an <otheraddr> element
+	else if (ZinUtil.isPropertyPresent(a_out, "otheraddr")) // it was xml and there was an <otheraddr> element
 		ret = a_out["otheraddr"];
 	else                                            // it was xml but didn't have an <otheraddr> element
 		ret = "";
@@ -569,13 +569,13 @@ GdContact.prototype.addWhitespaceToPostalProperties = function(properties_in)
 	var is_sane, a_gac_properties;
 
 	for (var key in this.m_contact_converter.gd_certain_keys_converted()["postalAddress"])
-		if (isPropertyPresent(properties_out, key))
+		if (ZinUtil.isPropertyPresent(properties_out, key))
 		{
 			is_modified_postal = true;
 			a_gac_properties   = new Object();
 			is_sane = this.m_contact_converter.m_gac.convert(properties_out, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
 
-			zinAssert(is_sane);
+			ZinUtil.assert(is_sane);
 
 			for (var i in a_gac_properties)
 				a_gac_properties[i] = " " + a_gac_properties[i] + " ";
@@ -621,7 +621,7 @@ GdContactFunctorToMakeHashFromNodes.prototype.run = function(doc, node)
 
 GdContact.arrayFromXpath = function(contact_converter, doc, xpath_query)
 {
-	zinAssert(arguments.length == 3 && contact_converter);
+	ZinUtil.assert(arguments.length == 3 && contact_converter);
 
 	var functor = new GdContactFunctorToMakeHashFromNodes(contact_converter);
 

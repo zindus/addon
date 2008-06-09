@@ -29,7 +29,7 @@ ZinFeedItem.ITER_GID_ITEM           = 4;   // don't call functor when key == Zin
 
 ZinFeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the one with the 'next' attribute
 ZinFeedItem.KEY_STATUSPANEL         = "2#zindus-housekeeping"; // this key is used in the StatusPanel's ZinFeedCollection
-ZinFeedItem.KEYS_RESERVED           = newObject(ZinFeedItem.KEY_AUTO_INCREMENT, null, ZinFeedItem.KEY_STATUSPANEL, null);
+ZinFeedItem.KEYS_RESERVED           = ZinUtil.newObject(ZinFeedItem.KEY_AUTO_INCREMENT, null, ZinFeedItem.KEY_STATUSPANEL, null);
 
 ZinFeedItem.ATTR_KEY  = 'key';
 ZinFeedItem.ATTR_MS   = 'ms';
@@ -95,7 +95,7 @@ ZinFeedCollection.prototype.filename = function()
 
 ZinFeedCollection.prototype.nsifile = function()
 {
-	zinAssert(this.m_filename);
+	ZinUtil.assert(this.m_filename);
 
 	var ret = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
 
@@ -106,23 +106,23 @@ ZinFeedCollection.prototype.nsifile = function()
 
 ZinFeedCollection.prototype.length = function()
 {
-	return aToLength(this.m_collection);
+	return ZinUtil.aToLength(this.m_collection);
 }
 
 ZinFeedCollection.prototype.get = function(key)
 {
-	zinAssertAndLog(typeof(key) != 'undefined' && typeof(key) != 'object', "key: " + key);
+	ZinUtil.assertAndLog(typeof(key) != 'undefined' && typeof(key) != 'object', "key: " + key);
 	return (this.isPresent(key) ? this.m_collection[key] : null);
 }
 
 ZinFeedCollection.prototype.set = function(zfi)
 {
-	zinAssert(zfi != null && typeof(zfi) == 'object');
+	ZinUtil.assert(zfi != null && typeof(zfi) == 'object');
 
 	// migration-note: remove ATTR_ID when xpi update indicates that no clients are on versions earlier than 0.6.19.20080320.111511
 	// ATTR_ID is only in the assertion below to allow status.txt versions pre 0.6.19.20080320.111511 to load - they had an id= but no key=
 	//
-	zinAssertAndLog(zfi.isPresent(ZinFeedItem.ATTR_KEY) ||
+	ZinUtil.assertAndLog(zfi.isPresent(ZinFeedItem.ATTR_KEY) ||
 	                zfi.isPresent(ZinFeedItem.ATTR_ID),
 					"zfi: " + zfi.toString());
 
@@ -131,7 +131,7 @@ ZinFeedCollection.prototype.set = function(zfi)
 
 ZinFeedCollection.prototype.del = function(key)
 {
-	zinAssert(this.isPresent(key));
+	ZinUtil.assert(this.isPresent(key));
 	delete this.m_collection[key];
 }
 
@@ -147,18 +147,18 @@ ZinFeedCollection.prototype.forEach = function(functor, flavour)
 	if (arguments.length == 1)
 		flavour = ZinFeedCollection.ITER_NON_RESERVED;
 	else if (arguments.length == 2)
-		zinAssert(flavour == ZinFeedCollection.ITER_ALL || flavour == ZinFeedCollection.ITER_NON_RESERVED);
+		ZinUtil.assert(flavour == ZinFeedCollection.ITER_ALL || flavour == ZinFeedCollection.ITER_NON_RESERVED);
 
 	for (var key in this.m_collection)
 	{
-		zinAssert(this.isPresent(key));
+		ZinUtil.assert(this.isPresent(key));
 
-		if (flavour == ZinFeedCollection.ITER_NON_RESERVED && (isPropertyPresent(ZinFeedItem.KEYS_RESERVED, key)))
+		if (flavour == ZinFeedCollection.ITER_NON_RESERVED && (ZinUtil.isPropertyPresent(ZinFeedItem.KEYS_RESERVED, key)))
 			fContinue = true;
 		else
 			fContinue = functor.run(this.m_collection[key]);
 
-		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		ZinUtil.assert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		if (!fContinue)
 			break;
@@ -270,7 +270,7 @@ ZinFeedCollection.prototype.toString = function(eol_char_arg)
 
 		zuio = new Zuio(zfi.get(ZinFeedItem.ATTR_KEY));
 
-		if (!isPropertyPresent(a_key[type], zuio.zid))
+		if (!ZinUtil.isPropertyPresent(a_key[type], zuio.zid))
 			a_key[type][zuio.zid] = new Array();
 
 		a_key[type][zuio.zid].push(isNaN(zuio.id) ? zuio.id : Number(zuio.id));
@@ -311,25 +311,25 @@ function ZinFeedItem()
 
 	if (arguments.length == 2)
 	{
-		zinAssert(arguments[0] && typeof(arguments[1]) == 'object' && isPropertyPresent(arguments[1], ZinFeedItem.ATTR_KEY));
+		ZinUtil.assert(arguments[0] && typeof(arguments[1]) == 'object' && ZinUtil.isPropertyPresent(arguments[1], ZinFeedItem.ATTR_KEY));
 
 		this.set(ZinFeedItem.ATTR_TYPE, ZinFeedItem.typeAsString(arguments[0]));
 		this.set(arguments[1]);
 	}
 	else if (arguments.length > 0)
 	{
-		zinAssert(arguments.length % 2 == 1);
+		ZinUtil.assert(arguments.length % 2 == 1);
 
 		for (var i = 1; i < arguments.length; i+=2)
 		{
-			zinAssertAndLog(typeof(arguments[i]) != 'undefined',   " undefined key for: " + arguments[0]);
-			zinAssertAndLog(typeof(arguments[i+1]) != 'undefined', " undefined value for attribute: " + arguments[i]);
+			ZinUtil.assertAndLog(typeof(arguments[i]) != 'undefined',   " undefined key for: " + arguments[0]);
+			ZinUtil.assertAndLog(typeof(arguments[i+1]) != 'undefined', " undefined value for attribute: " + arguments[i]);
 			this.m_properties[arguments[i]] = arguments[i+1];
 		}
 
-		zinAssert(!isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_TYPE));
-		zinAssertAndLog(isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_KEY),
-		                   " ATTR_KEY missing from: " + aToString(this.m_properties));
+		ZinUtil.assert(!ZinUtil.isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_TYPE));
+		ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_KEY),
+		                   " ATTR_KEY missing from: " + ZinUtil.aToString(this.m_properties));
 
 		if (arguments[0] != null)
 			this.m_properties[ZinFeedItem.ATTR_TYPE] = ZinFeedItem.typeAsString(arguments[0]);
@@ -338,8 +338,8 @@ function ZinFeedItem()
 
 ZinFeedItem.prototype.get = function(key)
 {
-	zinAssertAndLog(this.isPresent(key), " key not present: " + key +
-	                                     " key: " + (isPropertyPresent(this.m_properties, 'key') ? this.m_properties['key'] : "undefined"));
+	ZinUtil.assertAndLog(this.isPresent(key), " key not present: " + key +
+	                                     " key: " + (ZinUtil.isPropertyPresent(this.m_properties, 'key') ? this.m_properties['key'] : "undefined"));
 
 	return this.m_properties[key];
 }
@@ -351,7 +351,7 @@ ZinFeedItem.prototype.getOrNull = function(key)
 
 ZinFeedItem.prototype.del = function(key)
 {
-	zinAssert(this.isPresent(key));
+	ZinUtil.assert(this.isPresent(key));
 	delete this.m_properties[key];
 }
 
@@ -362,7 +362,7 @@ ZinFeedItem.prototype.set = function(arg1, arg2)
 {
 	if (arguments.length == 2)
 	{
-		zinAssert(typeof(arg2) != 'object' && arg2 != null);
+		ZinUtil.assert(typeof(arg2) != 'object' && arg2 != null);
 
 		this.m_properties[arg1] = arg2;
 	}
@@ -370,15 +370,15 @@ ZinFeedItem.prototype.set = function(arg1, arg2)
 	{
 		// this is handy for creating/updating an existing ZinFeedItem based on a response from a zimbra server
 		//
-		zinAssert(this.isPresent(ZinFeedItem.ATTR_TYPE) &&
-		          isPropertyPresent(arg1, ZinFeedItem.ATTR_KEY) &&
-				  !isPropertyPresent(arg1, ZinFeedItem.ATTR_TYPE));
+		ZinUtil.assert(this.isPresent(ZinFeedItem.ATTR_TYPE) &&
+		          ZinUtil.isPropertyPresent(arg1, ZinFeedItem.ATTR_KEY) &&
+				  !ZinUtil.isPropertyPresent(arg1, ZinFeedItem.ATTR_TYPE));
 
 		for each (var j in ZinFeedItem.attributesForType(this.type()))
 			this.setWhenValueDefined(j, arg1[j]);
 	}
 	else
-		zinAssert(false);
+		ZinUtil.assert(false);
 }
 
 ZinFeedItem.prototype.isPresent = function(key)
@@ -388,7 +388,7 @@ ZinFeedItem.prototype.isPresent = function(key)
 
 ZinFeedItem.prototype.length = function()
 {
-	return aToLength(this.m_properties);
+	return ZinUtil.aToLength(this.m_properties);
 }
 
 ZinFeedItem.prototype.id = function()
@@ -434,7 +434,7 @@ ZinFeedItem.prototype.setWhenValueDefined = function(arg1, arg2)
 ZinFeedItem.prototype.forEach = function(functor, flavour)
 {
 	var fContinue;
-	zinAssert(arguments.length == 2 && (flavour == ZinFeedItem.ITER_ALL || flavour == ZinFeedItem.ITER_GID_ITEM));
+	ZinUtil.assert(arguments.length == 2 && (flavour == ZinFeedItem.ITER_ALL || flavour == ZinFeedItem.ITER_GID_ITEM));
 
 	for (var i in this.m_properties)
 	{
@@ -443,7 +443,7 @@ ZinFeedItem.prototype.forEach = function(functor, flavour)
 		else
 			fContinue = functor.run(i, this.m_properties[i]);
 
-		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		ZinUtil.assert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		if (!fContinue)
 			break;
@@ -457,11 +457,11 @@ ZinFeedItem.prototype.toString = function(eol_char_arg)
 	var name;
 
 	for (name in do_first)
-		if (isPropertyPresent(this.m_properties, name))
+		if (ZinUtil.isPropertyPresent(this.m_properties, name))
 			ret += name + "=" + this.m_properties[name] + ((arguments.length == 0 || typeof(eol_char_arg) != 'string') ? " " :eol_char_arg);
 
 	for (name in this.m_properties)
-		if (!isPropertyPresent(do_first, name))
+		if (!ZinUtil.isPropertyPresent(do_first, name))
 			ret += name + "=" + this.m_properties[name] + ((arguments.length == 0 || typeof(eol_char_arg) != 'string') ? " " :eol_char_arg);
 
 	return ret;
@@ -469,11 +469,11 @@ ZinFeedItem.prototype.toString = function(eol_char_arg)
 
 ZinFeedItem.prototype.increment = function(key)
 {
-	zinAssert(this.isPresent(key));
+	ZinUtil.assert(this.isPresent(key));
 
 	var value = this.get(key);
 
-	zinAssert(!isNaN(value));
+	ZinUtil.assert(!isNaN(value));
 
 	var ret = parseInt(value);
 
@@ -484,11 +484,11 @@ ZinFeedItem.prototype.increment = function(key)
 
 ZinFeedItem.prototype.decrement = function(key)
 {
-	zinAssert(this.isPresent(key));
+	ZinUtil.assert(this.isPresent(key));
 
 	var value = this.get(key);
 
-	zinAssert(!isNaN(value));
+	ZinUtil.assert(!isNaN(value));
 
 	var ret = parseInt(value);
 
@@ -510,7 +510,7 @@ ZinFeedItem.attributesForType = function(type)
 		case ZinFeedItem.TYPE_CN: ret = ret.concat(ZinFeedItem.ATTR_REV);                         break;
 		case ZinFeedItem.TYPE_FL: ret = ret.concat(ZinFeedItem.ATTR_NAME, ZinFeedItem.ATTR_PERM); break;
 		case ZinFeedItem.TYPE_LN: ret = ret.concat(ZinFeedItem.ATTR_NAME, ZinFeedItem.ATTR_ZID, ZinFeedItem.ATTR_RID); break;
-		default: zinAssertAndLog(false, "unmatched case: " + type);
+		default: ZinUtil.assertAndLog(false, "unmatched case: " + type);
 	}
 
 	return ret;

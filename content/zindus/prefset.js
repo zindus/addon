@@ -60,7 +60,7 @@ PrefSet.prototype.load = function(id, branch)
 {
 	var i, mp, prefs;
 
-	zinAssert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
+	ZinUtil.assert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
 
 	if (arguments.length == 0)
 		id = null;
@@ -101,7 +101,7 @@ PrefSet.prototype.save = function()
 	var i;
 	var retval = false;
 
-	zinAssert(this.m_id >= 0);
+	ZinUtil.assert(this.m_id >= 0);
 
 	// this.m_logger.debug("save: ");
 
@@ -130,7 +130,7 @@ PrefSet.prototype.remove = function()
 	var prefs = mp.branch();
 	var retval = false;
 
-	zinAssert(this.m_id >= 0);
+	ZinUtil.assert(this.m_id >= 0);
 
 	// this.m_logger.debug("remove: ");
 
@@ -174,7 +174,7 @@ PrefSet.prototype.isPropertyPresent = function(property)
 
 PrefSet.prototype.getProperty = function(property)
 {
-	zinAssert(arguments.length == 1);
+	ZinUtil.assert(arguments.length == 1);
 	return this.m_properties[property];
 }
 

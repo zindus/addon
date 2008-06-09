@@ -27,7 +27,7 @@ include("chrome://zindus/content/statuspanel.js");
 
 function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {
-	zinAssert(arguments.length == 3);
+	ZinUtil.assert(arguments.length == 3);
 
 	this.m_logger                 = ZinLoggerFactory.instance().newZinLogger("ZinTimerFunctorSync");
 	this.m_es                     = new SyncFsmExitStatus();
@@ -81,7 +81,7 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			this.m_zwc.forEach(functor_unhide_progresspanel);
 
-			ZinLoggerFactory.instance().newZinLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
+			ZinLoggerFactory.instance().newZinLogger().info("sync start:  " + ZinUtil.getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 
 			var prefs = new MozillaPreferences();
 			var server_type = prefs.getCharPrefOrNull(prefs.branch(), "server." + SOURCEID_AA + ".type");
@@ -165,9 +165,9 @@ ZinTimerFunctorSync.prototype.finish = function(is_back_off)
 	this.m_logger.debug("finish: is_back_off: " + is_back_off);
 
 	if (is_back_off)
-		ZinLoggerFactory.instance().newZinLogger().info("sync backing off: " + getFriendlyTimeString());
+		ZinLoggerFactory.instance().newZinLogger().info("sync backing off: " + ZinUtil.getFriendlyTimeString());
 	else
-		ZinLoggerFactory.instance().newZinLogger().info("sync finish: " + getFriendlyTimeString());
+		ZinLoggerFactory.instance().newZinLogger().info("sync finish: " + ZinUtil.getFriendlyTimeString());
 
 	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 
@@ -180,7 +180,7 @@ ZinTimerFunctorSync.prototype.finish = function(is_back_off)
 			var now            = new Date();
 			var next_sync_date = new Date();
 			next_sync_date.setUTCMilliseconds(now.getUTCMilliseconds() + 1000 * 3600); // reschedule for an hour ahead - ie, back off...
-			var x = newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", null);
+			var x = ZinUtil.newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", null);
 			this.m_on_finish_function(this.m_on_finish_function_arg, x);
 		}
 		else

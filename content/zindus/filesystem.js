@@ -54,7 +54,7 @@ Filesystem.getDirectory = function(code)
 {
 	var nsifile;
 
-	if (!isPropertyPresent(Filesystem.aDirectory, code))
+	if (!ZinUtil.isPropertyPresent(Filesystem.aDirectory, code))
 		switch(code)
 		{
 			case Filesystem.DIRECTORY_PROFILE:
@@ -81,7 +81,7 @@ Filesystem.getDirectory = function(code)
 				break;
 
 		default:
-			zinAssert(false);
+			ZinUtil.assert(false);
 			break;
 	}
 
@@ -99,8 +99,8 @@ Filesystem.createDirectoryIfRequired = function(code)
 			nsifile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRWXU);
 		}
 		catch (e) {
-			var msg1 = stringBundleString("errorFilesystemCreateDirectoryFailed");
-			var msg2 = stringBundleString("errorFilesystemCreateDirectoryFailedSuggest");
+			var msg1 = ZinUtil.stringBundleString("errorFilesystemCreateDirectoryFailed");
+			var msg2 = ZinUtil.stringBundleString("errorFilesystemCreateDirectoryFailedSuggest");
 			alert(msg1 + "\n" + nsifile.path + "\n" + msg2 + "\n" + e);
 			// alert("Unable to create directory:\n  " + nsifile.path + "\nSuggest checking file/directory permissions.\nException: " + e);
 		}
@@ -165,7 +165,7 @@ Filesystem.fileReadByLine = function(path, functor)
 			line.value = null;
 		} 
 
-		zinAssert(!line.value); // just to confirm my understanding of the way the loop works
+		ZinUtil.assert(!line.value); // just to confirm my understanding of the way the loop works
 
 		istream.close();
 	} 

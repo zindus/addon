@@ -41,7 +41,7 @@ ObserverService.isRegistered = function(topic)
 		try {
 			var o = enumerator.getNext().QueryInterface(Components.interfaces.nsIObserver);
 
-			// dump("observerServiceIsRegistered: blah: o: " + aToString(o) + "\n");
+			// dump("observerServiceIsRegistered: blah: o: " + ZinUtil.aToString(o) + "\n");
 
 			count++;
 		}

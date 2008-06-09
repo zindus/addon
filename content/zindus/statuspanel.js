@@ -90,17 +90,18 @@ StatusPanel.update = function(zwc)
 		if (exitstatus != 0)
 		{
 			status = "error"
-			tooltip_prefix = stringBundleString("statusLastSyncFailed");
+			tooltip_prefix = ZinUtil.stringBundleString("statusLastSyncFailed");
 		}
 		else if (conflicts > 0)
 		{
 			status = "alert";
-			tooltip_prefix = stringBundleString("statusLastSync") + ": " + conflicts + " " + stringBundleString("statusLastSyncConflicts");
+			tooltip_prefix = ZinUtil.stringBundleString("statusLastSync") + ": " + conflicts + " " +
+			                 ZinUtil.stringBundleString("statusLastSyncConflicts");
 		}
 		else
 		{
 			status = "insync";
-			tooltip_prefix = stringBundleString("statusLastSync");
+			tooltip_prefix = ZinUtil.stringBundleString("statusLastSync");
 		}
 
 		tooltip = tooltip_prefix + ": " + tooltip;
@@ -108,7 +109,7 @@ StatusPanel.update = function(zwc)
 	else
 	{
 		status = "alert";
-		tooltip = stringBundleString("statusLastSyncNever");
+		tooltip = ZinUtil.stringBundleString("statusLastSyncNever");
 	}
 
 	var obj = { alert : '!', error : 'X', insync : 'Y' };

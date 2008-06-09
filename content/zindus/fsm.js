@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.11 2008-06-07 06:22:07 cvsuser Exp $
+// $Id: fsm.js,v 1.12 2008-06-09 00:04:36 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -54,13 +54,13 @@ function fsmTransitionDo(fsmstate)
 				// and as arguments to higher-order functions
 				//
 				// fsm.m_logger.debug("blah1: newstate: " + newstate + " nextEvent: " + nextEvent);
-				// fsm.m_logger.debug("blah2: context.fsm.m_transitions: " + aToString(context.fsm.m_transitions));
-				zinAssert(nextEvent);
+				// fsm.m_logger.debug("blah2: context.fsm.m_transitions: " + ZinUtil.aToString(context.fsm.m_transitions));
+				ZinUtil.assert(nextEvent);
 
 				if (fsm.m_a_exit[newstate])
 					fsm.m_a_exit[newstate].call(context, newstate, nextEvent);
             
-				zinAssert(isPropertyPresent(context.fsm.m_transitions, newstate));
+				ZinUtil.assert(ZinUtil.isPropertyPresent(context.fsm.m_transitions, newstate));
 
 				var nextState = context.fsm.m_transitions[newstate][nextEvent];
 
@@ -75,7 +75,7 @@ function fsmTransitionDo(fsmstate)
 					// Even though Finite State Machines in UML are supposed to silently ignore events that they don't know about,
 					// here we assert failure - because it's probably a programming error.
 					//
-					zinAssertAndLog(false, " newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.m_transitions: " + aToString(context.fsm.m_transitions));
+					ZinUtil.assertAndLog(false, " newstate: " + newstate + " nextEvent: " + nextEvent + " context.fsm.m_transitions: " + ZinUtil.aToString(context.fsm.m_transitions));
 				}
 			}
 
@@ -129,7 +129,7 @@ function fsmTransitionSchedule(id_fsm, oldstate, newstate, event, context)
 
 function FsmState()
 {
-	zinAssert(arguments.length % 2 == 0);
+	ZinUtil.assert(arguments.length % 2 == 0);
 
 	for (var i = 0; i < arguments.length; i+=2)
 		this[arguments[i]] = arguments[i+1];
@@ -157,13 +157,13 @@ FsmState.prototype.isStart = function()
 
 function Fsm(transitions, a_entry, a_exit)
 {
-	zinAssert(arguments.length == 3);
+	ZinUtil.assert(arguments.length == 3);
 
 	this.m_transitions = transitions;
 	this.m_a_entry     = a_entry;
 	this.m_a_exit      = a_exit;
 
-	zinAssert(typeof(this.m_transitions) == 'object' && typeof(this.m_a_entry) == 'object' && typeof(this.m_a_exit) == 'object');
+	ZinUtil.assert(typeof(this.m_transitions) == 'object' && typeof(this.m_a_entry) == 'object' && typeof(this.m_a_exit) == 'object');
 
 	this.m_logger            = ZinLoggerFactory.instance().newZinLogger("fsm");  this.m_logger.level(ZinLogger.NONE);
 	this.m_continuation      = null;
@@ -190,7 +190,7 @@ Fsm.prototype.sanityCheck = function()
 		//
 		this.m_logger.debug("sanityCheck: stateFrom: " + stateFrom);
 
-		zinAssertAndLog(typeof this.m_a_entry[stateFrom] == 'function', "stateFrom: " + stateFrom);
+		ZinUtil.assertAndLog(typeof this.m_a_entry[stateFrom] == 'function', "stateFrom: " + stateFrom);
 
 		for (var event in this.m_transitions[stateFrom])
 		{
@@ -203,14 +203,14 @@ Fsm.prototype.sanityCheck = function()
 	}
 
 	for (state in states)
-		zinAssertAndLog(typeof this.m_a_entry[state] != 'undefined', "state doesn't have an entry action: " + state);
+		ZinUtil.assertAndLog(typeof this.m_a_entry[state] != 'undefined', "state doesn't have an entry action: " + state);
 
 	for each (var table in [this.m_a_entry, this.m_a_exit])
 		for (state in table)
 		{
-			zinAssertAndLog(typeof states[state] != 'undefined', "state not referenced in transitions table: " + state);
+			ZinUtil.assertAndLog(typeof states[state] != 'undefined', "state not referenced in transitions table: " + state);
 
-			zinAssertAndLog(typeof table[state] == 'function', "missing entry/exit action function for state: " + state);
+			ZinUtil.assertAndLog(typeof table[state] == 'function', "missing entry/exit action function for state: " + state);
 		}
 }
 

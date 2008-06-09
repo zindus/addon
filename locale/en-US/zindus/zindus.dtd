@@ -49,14 +49,14 @@
 <!ENTITY ZinPrefsGeneralButtonAdvanced.label     "Advanced...">
 <!ENTITY ZinPrefsGeneralButtonAdvanced.accesskey "A">
 
-<!ENTITY ZinPrefsAdvancedGdPostal.label          "Postal Address Fields">
+<!ENTITY ZinPrefsAdvancedGdPostal.label          "Postal Address Fields (experimental)">
 <!ENTITY ZinPrefsAdvancedGdFalse.label           "Not synced">
 <!ENTITY ZinPrefsAdvancedGdTrue.label            "Thunderbird fields are represented as xml in the Google address field">
 <!ENTITY ZinPrefsAdvancedGdExample1.value        "An example...">
 <!ENTITY ZinPrefsAdvancedGdExample2.value        "
                                                   <html:strong>Thunderbird Address Fields</html:strong>
                                                   <html:br/>
-                                                  <html:br/> 1 Flinders st
+                                                  <html:br/> 1 Example st
                                                   <html:br/> Melbourne
                                                   <html:br/> 3000 
                                                   <html:br/> Australia
@@ -64,9 +64,9 @@
 <!ENTITY ZinPrefsAdvancedGdExample3.value "
                                                   <html:strong>Google Address Field</html:strong>
                                                   <html:br/> &lt;address&gt;
-                                                  <html:br/> &lt;street&gt; 1 Flinders st &lt;/street&gt;
+                                                  <html:br/> &lt;street&gt; 1 Example st &lt;/street&gt;
                                                   <html:br/> &lt;city&gt; Melbourne &lt;/city&gt;
-                                                  <html:br/> &lt;postcode&gt; Melbourne &lt;/postcode&gt;
+                                                  <html:br/> &lt;postcode&gt; 3000 &lt;/postcode&gt;
                                                   <html:br/> &lt;country&gt; Australia &lt;/country&gt;
                                                   <html:br/> &lt;/address&gt;
                                                   ">

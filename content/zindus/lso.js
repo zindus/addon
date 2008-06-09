@@ -42,13 +42,13 @@ function Lso(arg)
 			break;
 		case 'string': // populate properties from a ZinFeedItem.ATTR_LS string
 			var a = arg.split("#");
-			zinAssert(a.length == Lso.aPartsAll.length);
+			ZinUtil.assert(a.length == Lso.aPartsAll.length);
 			for (i = 0; i < Lso.aPartsAll.length; i++)
 				if (a[i].length > 0)
 					this.m_properties[Lso.aPartsAll[i]] = a[i];
 			break;
 		default:
-			zinAssert(false);
+			ZinUtil.assert(false);
 	}
 }
 
@@ -70,7 +70,7 @@ Lso.prototype.compareFormat = function()
 	else if (this.m_properties[ZinFeedItem.ATTR_REV] != "")
 		ret = FORMAT_GD;
 	else
-		zinAssertAndLog(false, "m_properties: " + aToString(this.m_properties));
+		ZinUtil.assertAndLog(false, "m_properties: " + ZinUtil.aToString(this.m_properties));
 
 	// ZinLoggerFactory.instance().logger().debug("Lso.compareFormat: blah: returns: " + ret);
 
@@ -112,8 +112,8 @@ Lso.prototype.compare = function(zfi)
 		var REV = ZinFeedItem.ATTR_REV;
 		var DEL = ZinFeedItem.ATTR_DEL;
 
-		if (this.m_properties[MS] != "") zinAssert(this.m_properties[CS] == "");
-		if (this.m_properties[CS] != "") zinAssert(this.m_properties[MS] == "");
+		if (this.m_properties[MS] != "") ZinUtil.assert(this.m_properties[CS] == "");
+		if (this.m_properties[CS] != "") ZinUtil.assert(this.m_properties[MS] == "");
 
 		var format = this.compareFormat();
 
@@ -142,7 +142,7 @@ Lso.prototype.compare = function(zfi)
 							);
 				break;
 			default:
-				zinAssert(false, "unmatched case: " + format);
+				ZinUtil.assert(false, "unmatched case: " + format);
 		}
 	}
 
@@ -158,14 +158,14 @@ Lso.prototype.compare = function(zfi)
 
 Lso.prototype.get = function(key)
 {
-	zinAssert(isPropertyPresent(this.m_properties, key) && this.m_properties[key] != null);
+	ZinUtil.assert(ZinUtil.isPropertyPresent(this.m_properties, key) && this.m_properties[key] != null);
 
 	return this.m_properties[key];
 }
 
 Lso.prototype.set = function(key, value)
 {
-	zinAssert(isPropertyPresent(this.m_properties, key));
+	ZinUtil.assert(ZinUtil.isPropertyPresent(this.m_properties, key));
 
 	this.m_properties[key] = value;
 }

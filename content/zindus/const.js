@@ -43,7 +43,7 @@ const ZM_PERM_WRITE    = 0x02;
 const TBCARD_ATTRIBUTE_LUID     = "zindus-id";    // user-defined attributes associated with thunderbird cards
 const TBCARD_ATTRIBUTE_CHECKSUM = "zindus-cs";
 
-const GD_URL_CONTACTS     = "http://www.google.com/m8/feeds/contacts/";
+const GD_URL_CONTACTS     = "https://www.google.com/m8/feeds/contacts/";
 const GD_PAB              = "zindus_pab_gd";
 
 const TB_PAB              = "zindus_pab";

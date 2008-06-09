@@ -51,8 +51,8 @@ ZinLogger.prototype.level = function()
 	return this.m_level;
 }
 
-zinAssert(typeof(ZinLogger) == 'function');
-zinAssert(typeof(ZinLogger.DEBUG) == 'number');
+ZinUtil.assert(typeof(ZinLogger) == 'function');
+ZinUtil.assert(typeof(ZinLogger.DEBUG) == 'number');
 
 ZinLogger.prototype.debug = function(msg)
 {
@@ -142,7 +142,7 @@ ZinLogAppenderOpenClose.prototype.logToConsoleService = function(level, message)
 			case ZinLogger.WARN:  flags = scriptError.warningFlag; break;
 			case ZinLogger.ERROR: flags = scriptError.errorFlag;   break;
 			case ZinLogger.FATAL: flags = scriptError.errorFlag;   break;
-			default: zinAssert(false);
+			default: ZinUtil.assert(false);
 		}
 
 		scriptError.init(message, null, null, null, null, flags, category);
@@ -247,7 +247,7 @@ function ZinLogAppenderHoldOpen(state)
 	this.m_os = this.fileOpen();
 }
 
-copyPrototype(ZinLogAppenderHoldOpen, ZinLogAppenderOpenClose);
+ZinUtil.copyPrototype(ZinLogAppenderHoldOpen, ZinLogAppenderOpenClose);
 
 ZinLogAppenderHoldOpen.prototype.logToFile = function(message)
 {

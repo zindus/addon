@@ -70,14 +70,14 @@ ZinTestHarness.prototype.run = function()
 
 ZinTestHarness.prototype.testCrc32 = function()
 {
-	var left  = newObject("FirstName", "01-first-3", "LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com");
-	var right = newObject("LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com" , "FirstName", "01-first-3");
+	var left  = ZinUtil.newObject("FirstName", "01-first-3", "LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com");
+	var right = ZinUtil.newObject("LastName", "02-last", "PrimaryEmail", "08-email-1@zindus.com" , "FirstName", "01-first-3");
 
 	var contact_converter = this.newZinContactConverter();
 	var crcLeft  = contact_converter.crc32(left)
 	var crcRight = contact_converter.crc32(right)
 
-	zinAssert(crcLeft == crcLeft);
+	ZinUtil.assert(crcLeft == crcLeft);
 }
 
 ZinTestHarness.prototype.newZinContactConverter = function(arg)
@@ -143,33 +143,33 @@ ZinTestHarness.prototype.testContactConverterGdPostalAddress = function()
 	var xml_as_char = this.m_address_as_xml;
 
 	contact_converter = this.newZinContactConverter();
-	zinAssert(!contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, "HomeAddress"));
+	ZinUtil.assert(!contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, "HomeAddress"));
 
 	// With PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS == "false", address shouldn't be converted to Thunderbird fields
 	//
 	contact    = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", "line 1\n\n\nline 4" ));
 	properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
-	zinAssert(!isPropertyPresent(properties, "HomeAddress"));
+	ZinUtil.assert(!ZinUtil.isPropertyPresent(properties, "HomeAddress"));
 
 	contact    = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", xml_as_char ));
 	properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
-	zinAssert(!isPropertyPresent(properties, "HomeAddress"));
+	ZinUtil.assert(!ZinUtil.isPropertyPresent(properties, "HomeAddress"));
 
 	// With PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", address should convert to/from Thunderbird fields
 	// but the <otheraddr> element from Google doesn't become a Thunderbird property
 	//
 	contact_converter = this.newZinContactConverter(ZinContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
-	zinAssert(contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, "HomeAddress"));
+	ZinUtil.assert(contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, "HomeAddress"));
 
 	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", xml_as_char ));
 
 	properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
 
-	// this.m_logger.debug("properties: " + aToString(properties));
+	// this.m_logger.debug("properties: " + ZinUtil.aToString(properties));
 
-	zinAssert(isPropertyPresent(properties, "HomeAddress")  && properties["HomeAddress"]  == this.m_street1);
-	zinAssert(isPropertyPresent(properties, "HomeAddress2") && properties["HomeAddress2"] == this.m_street2);
-	zinAssert(!isPropertyPresent(properties, "otheraddr"));
+	ZinUtil.assert(ZinUtil.isPropertyPresent(properties, "HomeAddress")  && properties["HomeAddress"]  == this.m_street1);
+	ZinUtil.assert(ZinUtil.isPropertyPresent(properties, "HomeAddress2") && properties["HomeAddress2"] == this.m_street2);
+	ZinUtil.assert(!ZinUtil.isPropertyPresent(properties, "otheraddr"));
 
 	var gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, properties);
 	xml_as_char = gd_properties["postalAddress#home"];
@@ -177,8 +177,8 @@ ZinTestHarness.prototype.testContactConverterGdPostalAddress = function()
 	var gd_address = new XML(xml_as_char);
 	var ns = Namespace(ZinXpath.NS_ZINDUS_ADDRESS);
 
-	zinAssert(gd_address.ns::street.length() == 2 && zinTrim(String(gd_address.ns::street[0])) == this.m_street1
-	                                              && zinTrim(String(gd_address.ns::street[1])) == this.m_street2);;
+	ZinUtil.assert(gd_address.ns::street.length() == 2 && ZinUtil.zinTrim(String(gd_address.ns::street[0])) == this.m_street1
+	                                              && ZinUtil.zinTrim(String(gd_address.ns::street[1])) == this.m_street2);;
 
 	return true;
 }
@@ -189,9 +189,9 @@ ZinTestHarness.prototype.testContactConverter1 = function()
 	var a_data = new Array();
 	var contact_converter = this.newZinContactConverter();
 
-	a_data.push(newObject(FORMAT_TB, 'PrimaryEmail', FORMAT_ZM, 'email',      FORMAT_GD, 'PrimaryEmail', 'value', 'john@example.com'));
-	a_data.push(newObject(FORMAT_TB, 'FirstName',    FORMAT_ZM, 'firstName',  FORMAT_GD,  null         , 'value', 'john'            ));
-	a_data.push(newObject(FORMAT_TB, 'HomeAddress',  FORMAT_ZM, 'homeStreet', FORMAT_GD,  null         , 'value', '123 blah st'     ));
+	a_data.push(ZinUtil.newObject(FORMAT_TB, 'PrimaryEmail', FORMAT_ZM, 'email',      FORMAT_GD, 'PrimaryEmail', 'value', 'john@example.com'));
+	a_data.push(ZinUtil.newObject(FORMAT_TB, 'FirstName',    FORMAT_ZM, 'firstName',  FORMAT_GD,  null         , 'value', 'john'            ));
+	a_data.push(ZinUtil.newObject(FORMAT_TB, 'HomeAddress',  FORMAT_ZM, 'homeStreet', FORMAT_GD,  null         , 'value', '123 blah st'     ));
 
 	var a_properties = new Object();
 
@@ -200,20 +200,20 @@ ZinTestHarness.prototype.testContactConverter1 = function()
 	
 	for (i = 0; i < a_data.length; i++)
 		for (format in a_data[i])
-			if (isInArray(Number(format), A_VALID_FORMATS))
+			if (ZinUtil.isInArray(Number(format), A_VALID_FORMATS))
 				if (a_data[i][format] != null)
 					a_properties[format][a_data[i][format]] = a_data[i]['value'];
 
-	// this.m_logger.debug("testContactConverter: a_properties: " + aToString(a_properties));
+	// this.m_logger.debug("testContactConverter: a_properties: " + ZinUtil.aToString(a_properties));
 
 	// test conversion of ...
-	zinAssert(contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, 'HomeAddress') == false);
+	ZinUtil.assert(contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, 'HomeAddress') == false);
 
 	// test converting FORMAT_TB to all formats
 	//
-	zinAssert(isMatchObjects(a_properties[FORMAT_TB], contact_converter.convert(FORMAT_TB, FORMAT_TB, a_properties[FORMAT_TB])));
-	zinAssert(isMatchObjects(a_properties[FORMAT_ZM], contact_converter.convert(FORMAT_ZM, FORMAT_TB, a_properties[FORMAT_TB])));
-	zinAssert(isMatchObjects(a_properties[FORMAT_GD], contact_converter.convert(FORMAT_GD, FORMAT_TB, a_properties[FORMAT_TB])));
+	ZinUtil.assert(ZinUtil.isMatchObjects(a_properties[FORMAT_TB], contact_converter.convert(FORMAT_TB, FORMAT_TB, a_properties[FORMAT_TB])));
+	ZinUtil.assert(ZinUtil.isMatchObjects(a_properties[FORMAT_ZM], contact_converter.convert(FORMAT_ZM, FORMAT_TB, a_properties[FORMAT_TB])));
+	ZinUtil.assert(ZinUtil.isMatchObjects(a_properties[FORMAT_GD], contact_converter.convert(FORMAT_GD, FORMAT_TB, a_properties[FORMAT_TB])));
 
 	// test that crc's match
 	//
@@ -225,19 +225,19 @@ ZinTestHarness.prototype.testContactConverter1 = function()
 		properties = ZinUtil.cloneObject(a_properties[format]);
 		contact_converter.removeKeysNotCommonToAllFormats(format, properties);
 
-		// this.m_logger.debug("testContactConverter: format: " + format + " common properties: " + aToString(properties));
+		// this.m_logger.debug("testContactConverter: format: " + format + " common properties: " + ZinUtil.aToString(properties));
 
 		properties = contact_converter.convert(FORMAT_TB, format, properties);
 
-		// this.m_logger.debug("testContactConverter: format: " + format + " normalised properties: " + aToString(properties));
+		// this.m_logger.debug("testContactConverter: format: " + format + " normalised properties: " + ZinUtil.aToString(properties));
 
 		a_crc[format] = contact_converter.crc32(properties);
 	}
 	
-	// this.m_logger.debug("testContactConverter: a_crc: " + aToString(a_crc));
+	// this.m_logger.debug("testContactConverter: a_crc: " + ZinUtil.aToString(a_crc));
 
 	for (i = 1; i < A_VALID_FORMATS.length; i++)
-		zinAssert(a_crc[A_VALID_FORMATS[0]] == a_crc[A_VALID_FORMATS[i]]);
+		ZinUtil.assert(a_crc[A_VALID_FORMATS[0]] == a_crc[A_VALID_FORMATS[i]]);
 
 	var element = new Object();
 
@@ -246,17 +246,17 @@ ZinTestHarness.prototype.testContactConverter1 = function()
 
 	var properties = contact_converter.convert(FORMAT_TB, FORMAT_ZM, element);
 
-	// this.m_logger.debug("testContactConverter: converts:\nzimbra: " + aToString(element) + "\nto thunderbird: " + aToString(properties));
+	// this.m_logger.debug("testContactConverter: converts:\nzimbra: " + ZinUtil.aToString(element) + "\nto thunderbird: " + ZinUtil.aToString(properties));
 
 	// test the contact_converter.keysCommonToThatMatch()
 	//
 	contact_converter = this.newZinContactConverter(ZinContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
-	this.m_logger.debug("blah77: m_common_to: " + aToString(contact_converter.m_common_to));
+	this.m_logger.debug("blah77: m_common_to: " + ZinUtil.aToString(contact_converter.m_common_to));
 	this.m_logger.debug("blah77: m_common_to[format_from][format_to].length: "+ contact_converter.m_common_to[FORMAT_GD][FORMAT_TB].length);
 
 	var a_postalAddress = contact_converter.keysCommonToThatMatch(/^postalAddress#(.*)$/, "$1", FORMAT_GD, FORMAT_TB);
-	this.m_logger.debug("a_postalAddress: " + aToString(a_postalAddress));
-	zinAssert(isPropertyPresent(a_postalAddress, "home") && isPropertyPresent(a_postalAddress, "work"));
+	this.m_logger.debug("a_postalAddress: " + ZinUtil.aToString(a_postalAddress));
+	ZinUtil.assert(ZinUtil.isPropertyPresent(a_postalAddress, "home") && ZinUtil.isPropertyPresent(a_postalAddress, "work"));
 
 	return true;
 }
@@ -265,12 +265,12 @@ ZinTestHarness.prototype.gdContactFromXmlString = function(contact_converter, st
 {
 	var domparser = new DOMParser();
 	var doc = domparser.parseFromString(str, "text/xml");
-	// this.m_logger.debug("gdContactFromXmlString: entry: " + xmlDocumentToString(doc));
+	// this.m_logger.debug("gdContactFromXmlString: entry: " + ZinUtil.xmlDocumentToString(doc));
 	a_gd_contact = GdContact.arrayFromXpath(contact_converter, doc, "/atom:entry");
 
-	zinAssertAndLog(aToLength(a_gd_contact) == 1, "length: " + aToLength(a_gd_contact));
+	ZinUtil.assertAndLog(ZinUtil.aToLength(a_gd_contact) == 1, "length: " + ZinUtil.aToLength(a_gd_contact));
 
-	var contact = a_gd_contact[firstKeyInObject(a_gd_contact)];
+	var contact = a_gd_contact[ZinUtil.firstKeyInObject(a_gd_contact)];
 	// this.m_logger.debug("gdContactFromXmlString: contact: " + contact.toString());
 
 	return contact;
@@ -278,10 +278,10 @@ ZinTestHarness.prototype.gdContactFromXmlString = function(contact_converter, st
 
 ZinTestHarness.prototype.testContactConverterPropertyMatch = function(obj1, obj2)
 {
-	zinAssert(isMatchObjectKeys(obj1, obj2));
+	ZinUtil.assert(ZinUtil.isMatchObjectKeys(obj1, obj2));
 
 	for (var i in obj1)
-		zinAssert(obj1[i] == obj2[i]);
+		ZinUtil.assert(obj1[i] == obj2[i]);
 }
 
 ZinTestHarness.prototype.testFolderConverterPrefixClass = function()
@@ -289,11 +289,11 @@ ZinTestHarness.prototype.testFolderConverterPrefixClass = function()
 	this.m_logger.debug("testFolderConverter: start");
 	var converter = new ZinFolderConverter();
 
-	zinAssert(converter.prefixClass(converter.m_prefix_primary_account)   == ZinFolderConverter.PREFIX_CLASS_PRIMARY);
-	zinAssert(converter.prefixClass(converter.m_prefix_foreign_readonly)  == ZinFolderConverter.PREFIX_CLASS_SHARED);
-	zinAssert(converter.prefixClass(converter.m_prefix_foreign_readwrite) == ZinFolderConverter.PREFIX_CLASS_SHARED);
-	zinAssert(converter.prefixClass(converter.m_prefix_internal)          == ZinFolderConverter.PREFIX_CLASS_INTERNAL);
-	zinAssert(converter.prefixClass("fred")                               == ZinFolderConverter.PREFIX_CLASS_NONE);
+	ZinUtil.assert(converter.prefixClass(converter.m_prefix_primary_account)   == ZinFolderConverter.PREFIX_CLASS_PRIMARY);
+	ZinUtil.assert(converter.prefixClass(converter.m_prefix_foreign_readonly)  == ZinFolderConverter.PREFIX_CLASS_SHARED);
+	ZinUtil.assert(converter.prefixClass(converter.m_prefix_foreign_readwrite) == ZinFolderConverter.PREFIX_CLASS_SHARED);
+	ZinUtil.assert(converter.prefixClass(converter.m_prefix_internal)          == ZinFolderConverter.PREFIX_CLASS_INTERNAL);
+	ZinUtil.assert(converter.prefixClass("fred")                               == ZinFolderConverter.PREFIX_CLASS_NONE);
 
 	return true;
 }
@@ -311,8 +311,8 @@ ZinTestHarness.prototype.testFolderConverter = function()
 
 	this.testFolderConverterSuiteOne(converter, "convertForPublic");
 
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == pabname);
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == pabname);
+	ZinUtil.assert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == pabname);
+	ZinUtil.assert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == pabname);
 
 	var localised_emailed_contacts;
 
@@ -344,26 +344,26 @@ ZinTestHarness.prototype.testFolderConverterSuiteOne = function(converter, metho
 {
 	// test convertForMap
 	//
-	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(""))                 == converter.m_prefix_primary_account);
+	ZinUtil.assert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(""))                 == converter.m_prefix_primary_account);
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName("fred"))             == "fred");
-	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName("x"))                == converter.m_prefix_primary_account + "x");
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "fred");
-	zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "zindus/fred");
+	ZinUtil.assert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName("fred"))             == "fred");
+	ZinUtil.assert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName("x"))                == converter.m_prefix_primary_account + "x");
+	ZinUtil.assert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "fred");
+	ZinUtil.assert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "zindus/fred");
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == ZM_FOLDER_CONTACTS);
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == ZM_FOLDER_CONTACTS);
+	ZinUtil.assert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == ZM_FOLDER_CONTACTS);
+	ZinUtil.assert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == ZM_FOLDER_CONTACTS);
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == ZM_FOLDER_EMAILED_CONTACTS);
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == ZM_FOLDER_EMAILED_CONTACTS);
+	ZinUtil.assert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == ZM_FOLDER_EMAILED_CONTACTS);
+	ZinUtil.assert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == ZM_FOLDER_EMAILED_CONTACTS);
 
 	if (method != "convertForPublic") // these are tested separately
 	{
-		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == TB_PAB);
-		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == TB_PAB);
+		ZinUtil.assert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == TB_PAB);
+		ZinUtil.assert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == TB_PAB);
 
-		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == TB_EMAILED_CONTACTS);
-		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == TB_EMAILED_CONTACTS);
+		ZinUtil.assert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == TB_EMAILED_CONTACTS);
+		ZinUtil.assert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == TB_EMAILED_CONTACTS);
 	}
 
 	return true;
@@ -373,8 +373,8 @@ ZinTestHarness.prototype.testFolderConverterSuiteTwo = function(converter, local
 {
 	var prefix = converter.m_prefix_primary_account;
 
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == prefix + localised_emailed_contacts);
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == prefix + localised_emailed_contacts);
+	ZinUtil.assert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == prefix + localised_emailed_contacts);
+	ZinUtil.assert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == prefix + localised_emailed_contacts);
 }
 
 ZinTestHarness.prototype.testPropertyDelete = function()
@@ -387,7 +387,7 @@ ZinTestHarness.prototype.testPropertyDelete = function()
 	x[4] = 4;
 	x[5] = 5;
 
-	this.m_logger.debug("3233: x: " + aToString(x));
+	this.m_logger.debug("3233: x: " + ZinUtil.aToString(x));
 
 	for (i in x)
 	{
@@ -397,7 +397,7 @@ ZinTestHarness.prototype.testPropertyDelete = function()
 			delete x[i];
 	}
 
-	this.m_logger.debug("3233: x: " + aToString(x));
+	this.m_logger.debug("3233: x: " + ZinUtil.aToString(x));
 }
 
 ZinTestHarness.prototype.testLso = function()
@@ -407,9 +407,9 @@ ZinTestHarness.prototype.testLso = function()
 	//
 	var d = new Date();
 	var s = Date.UTC();
-	var t = hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
+	var t = ZinUtil.hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
 	        " " +
-			hyphenate(":", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+			ZinUtil.hyphenate(":", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 
 	zfi = new ZinFeedItem(ZinFeedItem.TYPE_CN, ZinFeedItem.ATTR_KEY, 334, ZinFeedItem.ATTR_MS, 1234, ZinFeedItem.ATTR_REV, 1235);
 	lso = new Lso(zfi);
@@ -455,7 +455,7 @@ ZinTestHarness.prototype.testLsoCaseOne = function(lso, str)
 	                                               ZinFeedItem.ATTR_LS, "1##94649#94649#" );
 	var ret = lso.compare(zfi);
 
-	zinAssert(ret == 1);
+	ZinUtil.assert(ret == 1);
 }
 
 ZinTestHarness.prototype.testLsoCaseTwo = function()
@@ -470,18 +470,18 @@ ZinTestHarness.prototype.testLsoCaseTwo = function()
 	                                               ZinFeedItem.ATTR_LS, "1###2008-05-05T00:51:12.105Z#" );
 
 	var lso = new Lso(zfi.get(ZinFeedItem.ATTR_LS));
-	zinAssert(lso.compare(zfi) == 0);
+	ZinUtil.assert(lso.compare(zfi) == 0);
 
 	var rev = lso.get(ZinFeedItem.ATTR_REV);
 	var new_rev = "1" + rev.substr(1);
 	zfi.set(ZinFeedItem.ATTR_REV, new_rev);
 
-	zinAssert(lso.compare(zfi) == -1);
+	ZinUtil.assert(lso.compare(zfi) == -1);
 }
 
 ZinTestHarness.prototype.testLsoToString = function(lso, str)
 {
-	zinAssert(lso.toString() == str);
+	ZinUtil.assert(lso.toString() == str);
 }
 
 ZinTestHarness.prototype.testLsoCompareZm = function(lso, zfiOrig)
@@ -489,29 +489,29 @@ ZinTestHarness.prototype.testLsoCompareZm = function(lso, zfiOrig)
 	var zfi;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
-	zinAssert(lso.compare(zfi) == 0);  // test compare() == 0;
+	ZinUtil.assert(lso.compare(zfi) == 0);  // test compare() == 0;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1235);
-	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+	ZinUtil.assert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_REV, 1236);
-	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+	ZinUtil.assert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_DEL, 1);
-	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+	ZinUtil.assert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1233);
 	zfi.set(ZinFeedItem.ATTR_REV, 1235);
-	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
+	ZinUtil.assert(lso.compare(zfi) == -1);  // test compare() == -1;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_MS, 1234);
 	zfi.set(ZinFeedItem.ATTR_REV, 1232);
-	zinAssert(lso.compare(zfi) == -1);  // test compare() == -1;
+	ZinUtil.assert(lso.compare(zfi) == -1);  // test compare() == -1;
 }
 
 ZinTestHarness.prototype.testLsoCompareTb = function(lso, zfiOrig)
@@ -519,15 +519,15 @@ ZinTestHarness.prototype.testLsoCompareTb = function(lso, zfiOrig)
 	var zfi;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
-	zinAssert(lso.compare(zfi) == 0);  // test compare() == 0;
+	ZinUtil.assert(lso.compare(zfi) == 0);  // test compare() == 0;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_DEL, 1);
-	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+	ZinUtil.assert(lso.compare(zfi) == 1);  // test compare() == 1;
 
 	zfi = ZinUtil.cloneObject(zfiOrig)
 	zfi.set(ZinFeedItem.ATTR_CS, 1111111111111);
-	zinAssert(lso.compare(zfi) == 1);  // test compare() == 1;
+	ZinUtil.assert(lso.compare(zfi) == 1);  // test compare() == 1;
 }
 
 ZinTestHarness.prototype.testLogging = function()
@@ -569,15 +569,15 @@ ZinTestHarness.prototype.testPermFromZfi = function()
 	var ret = true;
 	var zfi = new ZinFeedItem(ZinFeedItem.TYPE_RL, ZinFeedItem.ATTR_KEY, 334, ZinFeedItem.ATTR_PERM, "rwidxc");
 
-	ret = ret && SyncFsm.zmPermFromZfi(zfi) == ZM_PERM_READ | ZM_PERM_WRITE;
+	ret = ret && ZinUtil.zmPermFromZfi(zfi) == ZM_PERM_READ | ZM_PERM_WRITE;
 
 	zfi.set(ZinFeedItem.ATTR_PERM, "r");
 
-	ret = ret && SyncFsm.zmPermFromZfi(zfi) == ZM_PERM_READ;
+	ret = ret && ZinUtil.zmPermFromZfi(zfi) == ZM_PERM_READ;
 
 	zfi.set(ZinFeedItem.ATTR_PERM, "");
 
-	ret = ret && SyncFsm.zmPermFromZfi(zfi) == ZM_PERM_NONE;
+	ret = ret && ZinUtil.zmPermFromZfi(zfi) == ZM_PERM_NONE;
 
 	return ret;
 }
@@ -616,9 +616,9 @@ ZinTestHarness.prototype.testAddressBook1 = function()
 	for (var i in properties)
 		properties[i] = prefix + i;
 
-	var attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid);
+	var attributes = ZinUtil.newObject(TBCARD_ATTRIBUTE_LUID, luid);
 
-	zinAssert(!addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid)); // test card shouldn't exist before the test starts
+	ZinUtil.assert(!addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid)); // test card shouldn't exist before the test starts
 
 	var abCardIn = addressbook.addCard(uri, properties, attributes);
 
@@ -627,21 +627,21 @@ ZinTestHarness.prototype.testAddressBook1 = function()
 	this.m_logger.debug("abCardIn: "  + addressbook.nsIAbCardToPrintableVerbose(abCardIn));
 	this.m_logger.debug("abCardOut: " + addressbook.nsIAbCardToPrintableVerbose(abCardOut));
 
-	zinAssert(isMatchObjects(properties, addressbook.getCardProperties(abCardIn)));
-	zinAssert(isMatchObjects(properties, addressbook.getCardProperties(abCardOut)));
-	zinAssert(isMatchObjects(attributes, addressbook.getCardAttributes(abCardIn)));
-	zinAssert(isMatchObjects(attributes, addressbook.getCardAttributes(abCardOut)));
+	ZinUtil.assert(ZinUtil.isMatchObjects(properties, addressbook.getCardProperties(abCardIn)));
+	ZinUtil.assert(ZinUtil.isMatchObjects(properties, addressbook.getCardProperties(abCardOut)));
+	ZinUtil.assert(ZinUtil.isMatchObjects(attributes, addressbook.getCardAttributes(abCardIn)));
+	ZinUtil.assert(ZinUtil.isMatchObjects(attributes, addressbook.getCardAttributes(abCardOut)));
 
 	addressbook.deleteCards(uri, [ abCardIn ]);
 
-	zinAssert(!addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid)); // test card shouldn't exist after the test is finished
+	ZinUtil.assert(!addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid)); // test card shouldn't exist after the test is finished
 
 	return true;
 }
 
 ZinTestHarness.prototype.testAddressBook2 = function()
 {
-	zinAssert(ZinAddressBook.TbVersion() == ZinAddressBook.TB3);
+	ZinUtil.assert(ZinAddressBook.TbVersion() == ZinAddressBook.TB3);
 
 	var uri = "moz-abmdbdirectory://abook.mab";
 	var properties = { "DisplayName": "BlahDisplayName",
@@ -668,7 +668,7 @@ ZinTestHarness.prototype.testAddressBookBugzilla432145Uri = function(count)
 {
 	var index = parseInt( (count * this.m_bugzilla_432145_uri.length) / this.m_bugzilla_432145_count );
 
-	zinAssertAndLog(isPropertyPresent(this.m_bugzilla_432145_uri, index), "index: " + index);
+	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(this.m_bugzilla_432145_uri, index), "index: " + index);
 
 	return this.m_bugzilla_432145_uri[index];
 }
@@ -732,8 +732,8 @@ ZinTestHarness.prototype.testAddressBookBugzilla432145Compare = function()
 
 		abCard = addressbook.lookupCard(this.testAddressBookBugzilla432145Uri(count), TBCARD_ATTRIBUTE_LUID, luid);
 
-		zinAssertAndLog(isMatchObjects(properties, addressbook.getCardProperties(abCard)), count);
-		zinAssertAndLog(isMatchObjects(attributes, addressbook.getCardAttributes(abCard)), count);
+		ZinUtil.assertAndLog(ZinUtil.isMatchObjects(properties, addressbook.getCardProperties(abCard)), count);
+		ZinUtil.assertAndLog(ZinUtil.isMatchObjects(attributes, addressbook.getCardAttributes(abCard)), count);
 
 		luid++;
 	}
@@ -774,7 +774,7 @@ ZinTestHarness.prototype.testGoogleContacts1 = function()
 
 	properties = this.sampleGoogleContactProperties();
 
-	meta = newObject("id", "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0",
+	meta = ZinUtil.newObject("id", "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0",
 	                  "updated", "2008-03-29T20:36:25.343Z",
 					  "edit", "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0/12068229blah"
 					  );
@@ -825,9 +825,9 @@ ZinTestHarness.prototype.testGoogleContacts1 = function()
 
 	// 1. test that a contact can get parsed out of xml 
 	// this.m_logger.debug("testGoogleContacts1: 1. id: " + id + " contact: " + contact.toString());
-	zinAssertAndLog(aToLength(a_gd_contact) == 1, "length: " + aToLength(a_gd_contact));
+	ZinUtil.assertAndLog(ZinUtil.aToLength(a_gd_contact) == 1, "length: " + ZinUtil.aToLength(a_gd_contact));
 
-	var id = firstKeyInObject(a_gd_contact);
+	var id = ZinUtil.firstKeyInObject(a_gd_contact);
 	var contact = a_gd_contact[id];
 
 	// 2. test that everything was parsed out of the xml correctly
@@ -871,13 +871,13 @@ ZinTestHarness.prototype.testGoogleContacts1 = function()
 
 	// 5. test creating a contact without a title
 	//
-	properties = newObject("content", "1-content", "organization#orgName", "2-organization#orgName");
+	properties = ZinUtil.newObject("content", "1-content", "organization#orgName", "2-organization#orgName");
 	contact.updateFromProperties(properties);
 	this.matchGoogleContact(contact, properties, {});
 
 	// 5. test creating a contact with an empty title
 	//
-	properties = newObject("title", "", "content", "1-content", "organization#orgName", "2-organization#orgName");
+	properties = ZinUtil.newObject("title", "", "content", "1-content", "organization#orgName", "2-organization#orgName");
 	contact.updateFromProperties(properties);
 	delete properties["title"];
 	this.matchGoogleContact(contact, properties, {});
@@ -892,8 +892,8 @@ ZinTestHarness.prototype.testGoogleContacts2 = function()
 	var response = domparser.parseFromString(xmlString, "text/xml");
 	var contact_converter = this.newZinContactConverter();
 	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
-	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + aToLength(a_gd_contact));
-	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
+	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + ZinUtil.aToLength(a_gd_contact));
+	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[ZinUtil.firstKeyInObject(a_gd_contact)].toString());
 }
 
 ZinTestHarness.prototype.sampleGoogleContactProperties = function()
@@ -919,23 +919,23 @@ ZinTestHarness.prototype.sampleGoogleContactProperties = function()
 ZinTestHarness.prototype.matchGoogleContact = function(contact, properties, meta)
 {
 	var key;
-	zinAssert(contact && contact.m_properties);
+	ZinUtil.assert(contact && contact.m_properties);
 
-	// this.m_logger.debug("matchGoogleContact: blah: \n properties: " + aToString(properties) + " \nmeta: " + aToString(meta) + " \ncontact: " + contact.toString());
+	// this.m_logger.debug("matchGoogleContact: blah: \n properties: " + ZinUtil.aToString(properties) + " \nmeta: " + ZinUtil.aToString(meta) + " \ncontact: " + contact.toString());
 
 	for (key in properties)
-		zinAssertAndLog(contact.m_properties[key] == properties[key], "key: " + key);
+		ZinUtil.assertAndLog(contact.m_properties[key] == properties[key], "key: " + key);
 
 	for (key in meta)
-		zinAssertAndLog(contact.m_meta[key] == meta[key], "key: " + key);
+		ZinUtil.assertAndLog(contact.m_meta[key] == meta[key], "key: " + key);
 
 	if (contact.m_properties)
 		for (key in contact.m_properties)
-			zinAssertAndLog(contact.m_properties[key] == properties[key], "key: " + key);
+			ZinUtil.assertAndLog(contact.m_properties[key] == properties[key], "key: " + key);
 
 	if (contact.m_meta)
 		for (key in contact.m_meta)
-			zinAssertAndLog(contact.m_meta[key] == meta[key], "key: " + key);
+			ZinUtil.assertAndLog(contact.m_meta[key] == meta[key], "key: " + key);
 
 	
 }
@@ -947,8 +947,8 @@ ZinTestHarness.prototype.testGoogleContacts3 = function()
 	var response = domparser.parseFromString(xmlString, "text/xml");
 	var contact_converter = this.newZinContactConverter();
 	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
-	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + aToLength(a_gd_contact));
-	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
+	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + ZinUtil.aToLength(a_gd_contact));
+	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[ZinUtil.firstKeyInObject(a_gd_contact)].toString());
 }
 
 ZinTestHarness.prototype.testGdAddressConverter = function()
@@ -973,7 +973,7 @@ ZinTestHarness.prototype.testGdAddressConverter = function()
 	this.m_logger.debug("testGdAddressConverter: xml_as_char2: " + xml_as_char2);
 	this.m_logger.debug("testGdAddressConverter: xml_as_entity: " + xml_as_entity);
 
-	zinAssert(xml_as_char == xml_as_char2);
+	ZinUtil.assert(xml_as_char == xml_as_char2);
 
 	// Test convert with ADDR_TO_PROPERTIES
 	//
@@ -984,40 +984,40 @@ ZinTestHarness.prototype.testGdAddressConverter = function()
 
 	gac.convert(out, 'x', a_fields, GdAddressConverter.ADDR_TO_PROPERTIES);
 
-	// this.m_logger.debug("testGdAddressConverter: a_fields: " + aToString(a_fields));
+	// this.m_logger.debug("testGdAddressConverter: a_fields: " + ZinUtil.aToString(a_fields));
 
-	zinAssertAndLog(isMatchObjectKeys(a_fields, a_fields_orig), "a_fields keys: " + keysToString(a_fields) + " orig keys: " + keysToString(a_fields_orig));
+	ZinUtil.assertAndLog(ZinUtil.isMatchObjectKeys(a_fields, a_fields_orig), "a_fields keys: " + ZinUtil.keysToString(a_fields) + " orig keys: " + ZinUtil.keysToString(a_fields_orig));
 
 	for (var key in a_fields)
-		zinAssertAndLog(zinTrim(a_fields[key]) == zinTrim(a_fields_orig[key]), "mismatch for key: " + key);
+		ZinUtil.assertAndLog(ZinUtil.zinTrim(a_fields[key]) == ZinUtil.zinTrim(a_fields_orig[key]), "mismatch for key: " + key);
 
 	// Test that given non-xml, gac.convert() returns false
 	//
 	out['x'] = "some text";
 	a_fields = { };
 	var retval = gac.convert(out, 'x', a_fields, GdAddressConverter.ADDR_TO_PROPERTIES);
-	zinAssert(!retval && aToLength(a_fields) == 0);
+	ZinUtil.assert(!retval && ZinUtil.aToLength(a_fields) == 0);
 
 	// Test that given empty <address>, gac.convert() returns true and a_fields is empty
 	//
 	out['x'] = "<address xmlns='" + ZinXpath.NS_ZINDUS_ADDRESS + "'/>";
 	a_fields = { };
 	var retval = gac.convert(out, 'x', a_fields, GdAddressConverter.ADDR_TO_PROPERTIES);
-	zinAssertAndLog(retval && aToLength(a_fields) == 0, "retval: " + retval + " a_fields: " + aToString(a_fields));
+	ZinUtil.assertAndLog(retval && ZinUtil.aToLength(a_fields) == 0, "retval: " + retval + " a_fields: " + ZinUtil.aToString(a_fields));
 
 	// Test that given empty <address>, gac.convert() returns true and a_fields is empty
 	//
 	out['x'] = "<address xmlns='" + ZinXpath.NS_ZINDUS_ADDRESS + "'> " + " <otheraddr> </otheraddr> </address>";
 	a_fields = { };
 	var retval = gac.convert(out, 'x', a_fields, GdAddressConverter.ADDR_TO_PROPERTIES);
-	zinAssert(retval && isPropertyPresent(a_fields, "otheraddr") && a_fields["otheraddr"] == "");
+	ZinUtil.assertAndLog(retval && ZinUtil.aToLength(a_fields) == 0, "retval: " + retval + " a_fields: " + ZinUtil.aToString(a_fields));
 
 	// Test that given empty <somexml>, gac.convert() returns false and a_fields is empty
 	//
 	out['x'] = "<somexml> <otheraddr> </otheraddr> </somexml>";
 	a_fields = { };
 	var retval = gac.convert(out, 'x', a_fields, GdAddressConverter.ADDR_TO_PROPERTIES);
-	zinAssert(!retval && aToLength(a_fields) == 0);
+	ZinUtil.assert(!retval && ZinUtil.aToLength(a_fields) == 0);
 
 	return true;
 }
@@ -1057,21 +1057,21 @@ ZinTestHarness.prototype.testGdContact = function()
 	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@",
 	                                       contact_converter.m_gac.convertCER(this.m_address_as_xml, GdAddressConverter.CER_TO_ENTITY)));
 
-	zinAssert(contact.isAnyPostalAddressInXml());
+	ZinUtil.assert(contact.isAnyPostalAddressInXml());
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
 
 	tb_properties["HomeAddress2"] = HomeAddress2;
 
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
-	this.m_logger.debug("blahaa: gd_properties: " + aToString(gd_properties));
+	this.m_logger.debug("blahaa: gd_properties: " + ZinUtil.aToString(gd_properties));
 
 	contact.updateFromProperties(gd_properties);
 	// this.m_logger.debug("contact after update: " + contact.toString());
-	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
+	ZinUtil.assert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
-	zinAssert(tb_properties["HomeAddress2"] == HomeAddress2);
+	ZinUtil.assert(tb_properties["HomeAddress2"] == HomeAddress2);
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should xmlify the Google contact
 	// 
@@ -1079,14 +1079,14 @@ ZinTestHarness.prototype.testGdContact = function()
 
 	contact = this.gdContactFromXmlString(contact_converter,
 	                                      this.m_entry_as_xml_char.replace("@@postal@@", this.m_otheraddr));
-	zinAssert(!contact.isAnyPostalAddressInXml());
+	ZinUtil.assert(!contact.isAnyPostalAddressInXml());
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
 	tb_properties["HomeAddress2"] = HomeAddress2;
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 	contact.updateFromProperties(gd_properties);
 	this.m_logger.debug("contact after update: " + contact.toString());
-	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
+	ZinUtil.assert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
 
 	return true;
 }
