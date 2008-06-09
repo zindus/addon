@@ -40,20 +40,20 @@ function Lso(arg)
 				if (zfi.isPresent(Lso.aPartsZfi[i]))	
 					this.m_properties[Lso.aPartsZfi[i]] = zfi.get(Lso.aPartsZfi[i]);
 			break;
-		case 'string': // populate properties from a ZinFeedItem.ATTR_LS string
+		case 'string': // populate properties from a FeedItem.ATTR_LS string
 			var a = arg.split("#");
-			ZinUtil.assert(a.length == Lso.aPartsAll.length);
+			zinAssert(a.length == Lso.aPartsAll.length);
 			for (i = 0; i < Lso.aPartsAll.length; i++)
 				if (a[i].length > 0)
 					this.m_properties[Lso.aPartsAll[i]] = a[i];
 			break;
 		default:
-			ZinUtil.assert(false);
+			zinAssert(false);
 	}
 }
 
-Lso.aPartsZfi = [ ZinFeedItem.ATTR_CS, ZinFeedItem.ATTR_MS, ZinFeedItem.ATTR_REV, ZinFeedItem.ATTR_DEL ];
-Lso.aPartsAll = [ ZinFeedItem.ATTR_VER ].concat(Lso.aPartsZfi);
+Lso.aPartsZfi = [ FeedItem.ATTR_CS, FeedItem.ATTR_MS, FeedItem.ATTR_REV, FeedItem.ATTR_DEL ];
+Lso.aPartsAll = [ FeedItem.ATTR_VER ].concat(Lso.aPartsZfi);
 
 // MS and REV drive  change detection for zm
 // REV        drives change detection for gd
@@ -63,16 +63,16 @@ Lso.prototype.compareFormat = function()
 {
 	var ret = null;
 
-	if (this.m_properties[ZinFeedItem.ATTR_CS] != "")
+	if (this.m_properties[FeedItem.ATTR_CS] != "")
 		ret = FORMAT_TB;
-	else if (this.m_properties[ZinFeedItem.ATTR_MS] != "")
+	else if (this.m_properties[FeedItem.ATTR_MS] != "")
 		ret = FORMAT_ZM;
-	else if (this.m_properties[ZinFeedItem.ATTR_REV] != "")
+	else if (this.m_properties[FeedItem.ATTR_REV] != "")
 		ret = FORMAT_GD;
 	else
-		ZinUtil.assertAndLog(false, "m_properties: " + ZinUtil.aToString(this.m_properties));
+		zinAssertAndLog(false, "m_properties: " + aToString(this.m_properties));
 
-	// ZinLoggerFactory.instance().logger().debug("Lso.compareFormat: blah: returns: " + ret);
+	// Singleton.instance().logger().debug("Lso.compareFormat: blah: returns: " + ret);
 
 	return ret;
 }
@@ -107,13 +107,13 @@ Lso.prototype.compare = function(zfi)
 
 	if (!isExactMatch)
 	{
-		var MS  = ZinFeedItem.ATTR_MS;
-		var CS  = ZinFeedItem.ATTR_CS;
-		var REV = ZinFeedItem.ATTR_REV;
-		var DEL = ZinFeedItem.ATTR_DEL;
+		var MS  = FeedItem.ATTR_MS;
+		var CS  = FeedItem.ATTR_CS;
+		var REV = FeedItem.ATTR_REV;
+		var DEL = FeedItem.ATTR_DEL;
 
-		if (this.m_properties[MS] != "") ZinUtil.assert(this.m_properties[CS] == "");
-		if (this.m_properties[CS] != "") ZinUtil.assert(this.m_properties[MS] == "");
+		if (this.m_properties[MS] != "") zinAssert(this.m_properties[CS] == "");
+		if (this.m_properties[CS] != "") zinAssert(this.m_properties[MS] == "");
 
 		var format = this.compareFormat();
 
@@ -142,7 +142,7 @@ Lso.prototype.compare = function(zfi)
 							);
 				break;
 			default:
-				ZinUtil.assert(false, "unmatched case: " + format);
+				zinAssert(false, "unmatched case: " + format);
 		}
 	}
 
@@ -158,14 +158,14 @@ Lso.prototype.compare = function(zfi)
 
 Lso.prototype.get = function(key)
 {
-	ZinUtil.assert(ZinUtil.isPropertyPresent(this.m_properties, key) && this.m_properties[key] != null);
+	zinAssert(isPropertyPresent(this.m_properties, key) && this.m_properties[key] != null);
 
 	return this.m_properties[key];
 }
 
 Lso.prototype.set = function(key, value)
 {
-	ZinUtil.assert(ZinUtil.isPropertyPresent(this.m_properties, key));
+	zinAssert(isPropertyPresent(this.m_properties, key));
 
 	this.m_properties[key] = value;
 }

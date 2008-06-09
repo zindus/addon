@@ -23,53 +23,53 @@
 
 // A few places in this class there are properties and methods that are both static and per-object.
 // The static ones are a nicer idiom for users of the notify* methods.
-// Instead of creating a ZinMaestro object, the call is just ZinMaestro.notifyFunctorRegister().
+// Instead of creating a Maestro object, the call is just Maestro.notifyFunctorRegister().
 // But, when "this" is called back by the observer service, the file of source code is no longer loaded into javascript scope,
 // so the static methods are gone.  So anything that's required by .observe() must be a per-object method.  Hence the duplication.
 //
 
-function ZinMaestro()
+function Maestro()
 {
 	this.initialise();
 
-	this.TOPIC                 = ZinMaestro.TOPIC;
-	this.DO_FUNCTOR_REGISTER   = ZinMaestro.DO_FUNCTOR_REGISTER;
-	this.DO_FUNCTOR_UNREGISTER = ZinMaestro.DO_FUNCTOR_UNREGISTER;
-	this.DO_FSM_STATE_UPDATE   = ZinMaestro.DO_FSM_STATE_UPDATE;
+	this.TOPIC                 = Maestro.TOPIC;
+	this.DO_FUNCTOR_REGISTER   = Maestro.DO_FUNCTOR_REGISTER;
+	this.DO_FUNCTOR_UNREGISTER = Maestro.DO_FUNCTOR_UNREGISTER;
+	this.DO_FSM_STATE_UPDATE   = Maestro.DO_FSM_STATE_UPDATE;
 }
 
-ZinMaestro.prototype.initialise = function()
+Maestro.prototype.initialise = function()
 {
 	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
 	this.m_a_fsmstate = new Object();
-	this.m_logger     = ZinLoggerFactory.instance().newZinLogger("ZinMaestro"); this.m_logger.level(ZinLogger.NONE);
+	this.m_logger     = newLogger("Maestro"); this.m_logger.level(Logger.NONE);
 }
 
-ZinMaestro.TOPIC = "ZindusMaestroObserver";
+Maestro.TOPIC = "ZindusMaestroObserver";
 
-ZinMaestro.DO_FUNCTOR_REGISTER   = "do_register";
-ZinMaestro.DO_FUNCTOR_UNREGISTER = "do_unregister";
-ZinMaestro.DO_FSM_STATE_UPDATE   = "do_state_update";
+Maestro.DO_FUNCTOR_REGISTER   = "do_register";
+Maestro.DO_FUNCTOR_UNREGISTER = "do_unregister";
+Maestro.DO_FSM_STATE_UPDATE   = "do_state_update";
 
 // Each fsm has a unique FSM_ID_* so that functors can register to be notified of state change in specific fsm's
 //
-ZinMaestro.FSM_ID_ZM_TWOWAY   = "fsm-zm-twoway";
-ZinMaestro.FSM_ID_ZM_AUTHONLY = "fsm-zm-authonly";
-ZinMaestro.FSM_ID_GD_TWOWAY   = "fsm-gd-twoway";
-ZinMaestro.FSM_ID_GD_AUTHONLY = "fsm-gd-authonly";
-ZinMaestro.FSM_GROUP_TWOWAY   = ZinUtil.newObject(ZinMaestro.FSM_ID_ZM_TWOWAY,   0, ZinMaestro.FSM_ID_GD_TWOWAY,   0);
-ZinMaestro.FSM_GROUP_AUTHONLY = ZinUtil.newObject(ZinMaestro.FSM_ID_ZM_AUTHONLY, 0, ZinMaestro.FSM_ID_GD_AUTHONLY, 0);
-ZinMaestro.FSM_GROUP_SYNC     = ZinUtil.newObject(ZinMaestro.FSM_ID_ZM_TWOWAY,   0, ZinMaestro.FSM_ID_ZM_AUTHONLY, 0, 
-                                          ZinMaestro.FSM_ID_GD_TWOWAY,   0, ZinMaestro.FSM_ID_GD_AUTHONLY, 0);
+Maestro.FSM_ID_ZM_TWOWAY   = "fsm-zm-twoway";
+Maestro.FSM_ID_ZM_AUTHONLY = "fsm-zm-authonly";
+Maestro.FSM_ID_GD_TWOWAY   = "fsm-gd-twoway";
+Maestro.FSM_ID_GD_AUTHONLY = "fsm-gd-authonly";
+Maestro.FSM_GROUP_TWOWAY   = newObject(Maestro.FSM_ID_ZM_TWOWAY,   0, Maestro.FSM_ID_GD_TWOWAY,   0);
+Maestro.FSM_GROUP_AUTHONLY = newObject(Maestro.FSM_ID_ZM_AUTHONLY, 0, Maestro.FSM_ID_GD_AUTHONLY, 0);
+Maestro.FSM_GROUP_SYNC     = newObject(Maestro.FSM_ID_ZM_TWOWAY,   0, Maestro.FSM_ID_ZM_AUTHONLY, 0, 
+                                          Maestro.FSM_ID_GD_TWOWAY,   0, Maestro.FSM_ID_GD_AUTHONLY, 0);
 
 // ID_FUNCTOR_* uniquely identifies each functor
 //
-ZinMaestro.ID_FUNCTOR_SYNCWINDOW         = "syncwindow";
-ZinMaestro.ID_FUNCTOR_PREFSDIALOG        = "prefsdialog";
-ZinMaestro.ID_FUNCTOR_PREFSDIALOG_TIMER  = "prefsdialog-timer";
-ZinMaestro.ID_FUNCTOR_MAILWINDOW_TIMER   = "mailwindow-timer";
+Maestro.ID_FUNCTOR_SYNCWINDOW         = "syncwindow";
+Maestro.ID_FUNCTOR_PREFSDIALOG        = "prefsdialog";
+Maestro.ID_FUNCTOR_PREFSDIALOG_TIMER  = "prefsdialog-timer";
+Maestro.ID_FUNCTOR_MAILWINDOW_TIMER   = "mailwindow-timer";
 
-ZinMaestro.prototype.toString = function()
+Maestro.prototype.toString = function()
 {
 	var msg = "";
 	var fsmstate = "";
@@ -93,7 +93,7 @@ ZinMaestro.prototype.toString = function()
 
 // the nsIObserverService calls this method after a notification
 //
-ZinMaestro.prototype.observe = function(nsSubject, topic, data)
+Maestro.prototype.observe = function(nsSubject, topic, data)
 {
 	var subject = nsSubject.wrappedJSObject;
 
@@ -104,18 +104,18 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 		switch (data)
 		{
 			case this.DO_FUNCTOR_REGISTER:
-				ZinUtil.assert(ZinUtil.isPropertyPresent(subject, 'id_functor'));
-				ZinUtil.assert(ZinUtil.isPropertyPresent(subject, 'a_id_fsm'));
-				ZinUtil.assert(ZinUtil.isPropertyPresent(subject, 'functor'));
-				ZinUtil.assert(ZinUtil.isPropertyPresent(subject, 'context'));
+				zinAssert(isPropertyPresent(subject, 'id_functor'));
+				zinAssert(isPropertyPresent(subject, 'a_id_fsm'));
+				zinAssert(isPropertyPresent(subject, 'functor'));
+				zinAssert(isPropertyPresent(subject, 'context'));
 
 				var id_functor = subject['id_functor'];
 
 				this.m_logger.debug("observe: register: " + id_functor);
 
-				ZinUtil.assert(!ZinUtil.isPropertyPresent(this.m_a_functor, id_functor));
+				zinAssert(!isPropertyPresent(this.m_a_functor, id_functor));
 
-				this.m_a_functor[id_functor] = ZinUtil.newObject('a_id_fsm', ZinUtil.cloneObject(subject['a_id_fsm']),
+				this.m_a_functor[id_functor] = newObject('a_id_fsm', cloneObject(subject['a_id_fsm']),
 				                                         'functor',  subject['functor'],
 				                                         'context',  subject['context']);
 
@@ -123,17 +123,17 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 				break;
 
 			case this.DO_FUNCTOR_UNREGISTER:
-				ZinUtil.assert(ZinUtil.isPropertyPresent(subject, 'id_functor'));
+				zinAssert(isPropertyPresent(subject, 'id_functor'));
 				var id_functor = subject['id_functor'];
 				delete this.m_a_functor[id_functor]; // clients register and unregister functors with unique ids
 				this.m_logger.debug("observe: after unregister: " + id_functor + " maestro: " + this.toString() );
 				break;
 
 			case this.DO_FSM_STATE_UPDATE:
-				ZinUtil.assert(ZinUtil.isPropertyPresent(subject, 'fsmstate'));
+				zinAssert(isPropertyPresent(subject, 'fsmstate'));
 				var id_fsm = subject.fsmstate.id_fsm;
 
-				if (!ZinUtil.isPropertyPresent(this.m_a_fsmstate, id_fsm) && !subject.fsmstate.isFinal())
+				if (!isPropertyPresent(this.m_a_fsmstate, id_fsm) && !subject.fsmstate.isFinal())
 					this.m_logger.debug("observe: adding to m_a_fsmstate: " + id_fsm);
 					
 				this.m_a_fsmstate[id_fsm] = subject.fsmstate;
@@ -152,12 +152,12 @@ ZinMaestro.prototype.observe = function(nsSubject, topic, data)
 				break;
 
 			default:
-				ZinUtil.assert(false);
+				zinAssert(false);
 		}
 	}
 }
 
-ZinMaestro.prototype.functorNotifyAll = function(id_fsm)
+Maestro.prototype.functorNotifyAll = function(id_fsm)
 {
 	var functor;
 
@@ -167,13 +167,13 @@ ZinMaestro.prototype.functorNotifyAll = function(id_fsm)
 	{
 		var a_id_fsm = this.m_a_functor[id_functor]['a_id_fsm'];
 
-		// var msg = "functorNotifyAll: " + " id_functor: " + id_functor + " a_id_fsm: " + ZinUtil.aToString(a_id_fsm);
+		// var msg = "functorNotifyAll: " + " id_functor: " + id_functor + " a_id_fsm: " + aToString(a_id_fsm);
 
-		if (ZinUtil.isPropertyPresent(a_id_fsm, id_fsm))
+		if (isPropertyPresent(a_id_fsm, id_fsm))
 		{
 			var functor = this.m_a_functor[id_functor]['functor'];
 			var context = this.m_a_functor[id_functor]['context'];
-			var args    = ZinUtil.isPropertyPresent(this.m_a_fsmstate, id_fsm) ? this.m_a_fsmstate[id_fsm] : null;
+			var args    = isPropertyPresent(this.m_a_fsmstate, id_fsm) ? this.m_a_fsmstate[id_fsm] : null;
 
 			this.m_logger.debug("functorNotifyAll: status of: " + id_fsm + " has changed - about to notify: " + id_functor + " passing arg: " + (args ? "fsmstate" : "null"));
 
@@ -188,7 +188,7 @@ ZinMaestro.prototype.functorNotifyAll = function(id_fsm)
 // - null if non of the fsm's that the functor is interested in is running
 // - fsmstate of the running fsm if there is one that the functor is interested in
 //
-ZinMaestro.prototype.functorNotifyOnRegister = function(id_functor)
+Maestro.prototype.functorNotifyOnRegister = function(id_functor)
 {
 	var a_id_fsm = this.m_a_functor[id_functor]['a_id_fsm'];
 	var id_fsm_match = null;
@@ -206,26 +206,26 @@ ZinMaestro.prototype.functorNotifyOnRegister = function(id_functor)
 	functor.call(context, id_fsm_match ? this.m_a_fsmstate[id_fsm_match] : null);
 }
 
-ZinMaestro.wrapForJS = function(obj)
+Maestro.wrapForJS = function(obj)
 {
 	obj.wrappedJSObject = obj;
 
 	return obj;
 }
 
-ZinMaestro.notifyFunctorRegister = function(context, functor, id_functor, a_id_fsm)
+Maestro.notifyFunctorRegister = function(context, functor, id_functor, a_id_fsm)
 {
-	ObserverService.notify(ZinMaestro.TOPIC,
-	            ZinMaestro.wrapForJS(ZinUtil.newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)),
-	            ZinMaestro.DO_FUNCTOR_REGISTER);
+	ObserverService.notify(Maestro.TOPIC,
+	            Maestro.wrapForJS(newObject('id_functor', id_functor, 'a_id_fsm', a_id_fsm, 'functor', functor, 'context', context)),
+	            Maestro.DO_FUNCTOR_REGISTER);
 }
 
-ZinMaestro.notifyFunctorUnregister = function(id_functor)
+Maestro.notifyFunctorUnregister = function(id_functor)
 {
-	ObserverService.notify(ZinMaestro.TOPIC, ZinMaestro.wrapForJS(ZinUtil.newObject('id_functor', id_functor)), this.DO_FUNCTOR_UNREGISTER);
+	ObserverService.notify(Maestro.TOPIC, Maestro.wrapForJS(newObject('id_functor', id_functor)), this.DO_FUNCTOR_UNREGISTER);
 }
 
-ZinMaestro.notifyFsmState = function(fsmstate)
+Maestro.notifyFsmState = function(fsmstate)
 {
-	ObserverService.notify(ZinMaestro.TOPIC, ZinMaestro.wrapForJS(ZinUtil.newObject('fsmstate', fsmstate)), this.DO_FSM_STATE_UPDATE);
+	ObserverService.notify(Maestro.TOPIC, Maestro.wrapForJS(newObject('fsmstate', fsmstate)), this.DO_FSM_STATE_UPDATE);
 }

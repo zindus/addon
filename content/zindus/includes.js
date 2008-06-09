@@ -31,6 +31,7 @@ with (ZindusScopeRegistry.getScope("fred"))
 	ZindusScopeRegistry.includejs("passwordmanager.js");
 	ZindusScopeRegistry.includejs("prefset.js");
 	ZindusScopeRegistry.includejs("logger.js");
+	ZindusScopeRegistry.includejs("singleton.js");
 	ZindusScopeRegistry.includejs("windowcollection.js");
 	ZindusScopeRegistry.includejs("statuspanel.js");
 	ZindusScopeRegistry.includejs("syncfsm.js");

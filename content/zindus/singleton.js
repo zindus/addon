@@ -21,22 +21,26 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-// suo == Source Update Operation
+// Handy place to keep stuff that we only ever need one of
 //
-
-function StopWatch(prefix)
+function Singleton()
 {
-	this.m_prefix = prefix;
-	this.m_start  = new Date(Date.now());
-	this.m_logger = newLogger("stopwatch");
+	this.m_preferences = new MozillaPreferences();
+
+	this.m_loglevel  = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(),
+	                        "general." + PrefSet.GENERAL_VERBOSE_LOGGING ) == "true") ? Logger.DEBUG : Logger.INFO;
+
+	this.m_logger  = new Logger(this.loglevel(), "global");
 }
 
-StopWatch.prototype.mark = function(marker)
+Singleton.instance = function()
 {
-	this.m_logger.debug(this.m_prefix + ": " + marker + ": " + this.elapsedToString());
+	if (typeof (Singleton.m_instance) == "undefined")
+		Singleton.m_instance = new Singleton();
+
+	return Singleton.m_instance;
 }
 
-StopWatch.prototype.elapsedToString = function()
-{
-	return (new Date(Date.now()) - this.m_start);
-}
+Singleton.prototype.loglevel    = function() { return this.m_loglevel;    }
+Singleton.prototype.logger      = function() { return this.m_logger;      }
+Singleton.prototype.preferences = function() { return this.m_preferences; }

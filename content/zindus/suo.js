@@ -24,7 +24,7 @@
 // suo == Source Update Operation
 //
 
-Suo.ADD  = 0x10; // these are OR-ed with ZinFeedItem.TYPE_*
+Suo.ADD  = 0x10; // these are OR-ed with FeedItem.TYPE_*
 Suo.MOD  = 0x20;
 Suo.DEL  = 0x40;
 Suo.MDU  = 0x80; // this is a fake operation - it only applies to winners and it bumps the gid VER and luid LS attributes
@@ -70,7 +70,7 @@ Suo.opcodeAsStringPastTense = function(opcode)
 
 Suo.opcodeAsStringForUI = function(opcode)
 {
-	return ZinUtil.stringBundleString(Suo.bimap_opcode_UI.lookup(opcode));
+	return stringBundleString(Suo.bimap_opcode_UI.lookup(opcode));
 }
 
 function SuoCollection()
@@ -80,14 +80,14 @@ function SuoCollection()
 
 SuoCollection.prototype.assertValidKey = function(key)
 {
-	ZinUtil.assert(ZinUtil.isPropertyPresent(key, "sourceid") && ZinUtil.isPropertyPresent(key, "bucket") && ZinUtil.isPropertyPresent(key, "id"));
+	zinAssert(isPropertyPresent(key, "sourceid") && isPropertyPresent(key, "bucket") && isPropertyPresent(key, "id"));
 }
 
 SuoCollection.prototype.get = function(key)
 {
-	ZinUtil.assert(ZinUtil.isPropertyPresent(this.m_collection, key.sourceid) &&
-	          ZinUtil.isPropertyPresent(this.m_collection[key.sourceid], key.bucket) &&
-	          ZinUtil.isPropertyPresent(this.m_collection[key.sourceid][key.bucket][key.id]));
+	zinAssert(isPropertyPresent(this.m_collection, key.sourceid) &&
+	          isPropertyPresent(this.m_collection[key.sourceid], key.bucket) &&
+	          isPropertyPresent(this.m_collection[key.sourceid][key.bucket][key.id]));
 
 	return this.m_collection[key.sourceid][key.bucket][key.id];
 }
@@ -96,10 +96,10 @@ SuoCollection.prototype.set = function(key, suo)
 {
 	this.assertValidKey(key);
 
-	if (!ZinUtil.isPropertyPresent(this.m_collection, key.sourceid))
+	if (!isPropertyPresent(this.m_collection, key.sourceid))
 		this.m_collection[key.sourceid] = new Object();
 
-	if (!ZinUtil.isPropertyPresent(this.m_collection[key.sourceid], key.bucket))
+	if (!isPropertyPresent(this.m_collection[key.sourceid], key.bucket))
 		this.m_collection[key.sourceid][key.bucket] = new Object();
 
 	this.m_collection[key.sourceid][key.bucket][key.id] = suo;

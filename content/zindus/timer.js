@@ -21,14 +21,14 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_function_arg)
+function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {
-	ZinUtil.assert(arguments.length == 3);
+	zinAssert(arguments.length == 3);
 
-	this.m_logger                 = ZinLoggerFactory.instance().newZinLogger("ZinTimerFunctorSync");
+	this.m_logger                 = newLogger("TimerFunctor");
 	this.m_es                     = new SyncFsmExitStatus();
 	this.m_sfo                    = new SyncFsmObserver(this.m_es);
-	this.m_zwc                    = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
+	this.m_zwc                    = new WindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_id_fsm_functor         = id_fsm_functor;
 	this.m_syncfsm                = null;
 	this.m_timeoutID              = null;
@@ -38,20 +38,20 @@ function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_funct
 	this.m_is_fsm_functor_first_entry = true;
 }
 
-ZinTimerFunctorSync.prototype.cancel = function()
+TimerFunctor.prototype.cancel = function()
 {
 	if (this.is_running)
 		this.m_syncfsm.cancel(this.m_timeoutID);
 }
 
-ZinTimerFunctorSync.prototype.run = function()
+TimerFunctor.prototype.run = function()
 {
 	this.m_logger.debug("run: m_id_fsm_functor: " + this.m_id_fsm_functor);
 
-	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, this.m_id_fsm_functor, ZinMaestro.FSM_GROUP_SYNC);
+	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, this.m_id_fsm_functor, Maestro.FSM_GROUP_SYNC);
 }
 
-ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
+TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	this.m_logger.debug("onFsmStateChangeFunctor: entering: m_id_fsm_functor: " + this.m_id_fsm_functor + " fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
@@ -77,9 +77,9 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			this.m_zwc.forEach(functor_unhide_progresspanel);
 
-			ZinLoggerFactory.instance().newZinLogger().info("sync start:  " + ZinUtil.getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
+			newLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 
-			var prefs = new MozillaPreferences();
+			var prefs       = Singleton.instance().preferences();
 			var server_type = prefs.getCharPrefOrNull(prefs.branch(), "server." + SOURCEID_AA + ".type");
 
 			this.m_logger.debug("onFsmStateChangeFunctor: server_type: " + server_type);
@@ -87,12 +87,12 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			if (server_type == "google")
 			{
 				this.m_syncfsm = new SyncFsmGd();
-				this.m_syncfsm.initialise(ZinMaestro.FSM_ID_GD_TWOWAY, SOURCEID_AA);
+				this.m_syncfsm.initialise(Maestro.FSM_ID_GD_TWOWAY, SOURCEID_AA);
 			}
 			else
 			{
 				this.m_syncfsm = new SyncFsmZm();
-				this.m_syncfsm.initialise(ZinMaestro.FSM_ID_ZM_TWOWAY, SOURCEID_AA);
+				this.m_syncfsm.initialise(Maestro.FSM_ID_ZM_TWOWAY, SOURCEID_AA);
 			}
 
 			this.m_syncfsm.start(window);
@@ -156,16 +156,16 @@ ZinTimerFunctorSync.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 }
 
-ZinTimerFunctorSync.prototype.finish = function(is_back_off)
+TimerFunctor.prototype.finish = function(is_back_off)
 {
 	this.m_logger.debug("finish: is_back_off: " + is_back_off);
 
 	if (is_back_off)
-		ZinLoggerFactory.instance().newZinLogger().info("sync backing off: " + ZinUtil.getFriendlyTimeString());
+		newLogger().info("sync backing off: " + getFriendlyTimeString());
 	else
-		ZinLoggerFactory.instance().newZinLogger().info("sync finish: " + ZinUtil.getFriendlyTimeString());
+		newLogger().info("sync finish: " + getFriendlyTimeString());
 
-	ZinMaestro.notifyFunctorUnregister(this.m_id_fsm_functor);
+	Maestro.notifyFunctorUnregister(this.m_id_fsm_functor);
 
 	this.is_running = false;
 
@@ -176,7 +176,7 @@ ZinTimerFunctorSync.prototype.finish = function(is_back_off)
 			var now            = new Date();
 			var next_sync_date = new Date();
 			next_sync_date.setUTCMilliseconds(now.getUTCMilliseconds() + 1000 * 3600); // reschedule for an hour ahead - ie, back off...
-			var x = ZinUtil.newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", null);
+			var x = newObject("now", now, "next_sync_date", next_sync_date, "last_sync_date", null);
 			this.m_on_finish_function(this.m_on_finish_function_arg, x);
 		}
 		else

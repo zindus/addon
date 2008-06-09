@@ -61,7 +61,7 @@
 		</tabs>
 		<tabpanels flex="1">
 
-			<command id="zindus-prefs-cmd-sync"    oncommand=" window.wd.onCommand(event.explicitOriginalTarget.id);" />
+			<command id="zindus-prefs-cmd-sync" oncommand=" window.wd.onCommand(event.explicitOriginalTarget.id);" />
 
 			<!-- Server -->
 

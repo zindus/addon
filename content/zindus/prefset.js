@@ -26,7 +26,7 @@ function PrefSet(prefprefix, a)
 	this.m_id         = -1;
 	this.m_prefprefix = prefprefix;
 	this.m_properties = new Object();
-	// this.m_logger        = ZinLoggerFactory.instance().newZinLogger("Prefset");
+	// this.m_logger        = newLogger("Prefset");
 
 	for (var i in a)
 		this.m_properties[a[i]] = PrefSet.DEFAULT_VALUE;
@@ -60,7 +60,7 @@ PrefSet.prototype.load = function(id, branch)
 {
 	var i, mp, prefs;
 
-	ZinUtil.assert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
+	zinAssert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
 
 	if (arguments.length == 0)
 		id = null;
@@ -101,7 +101,7 @@ PrefSet.prototype.save = function()
 	var i;
 	var retval = false;
 
-	ZinUtil.assert(this.m_id >= 0);
+	zinAssert(this.m_id >= 0);
 
 	// this.m_logger.debug("save: ");
 
@@ -130,7 +130,7 @@ PrefSet.prototype.remove = function()
 	var prefs = mp.branch();
 	var retval = false;
 
-	ZinUtil.assert(this.m_id >= 0);
+	zinAssert(this.m_id >= 0);
 
 	// this.m_logger.debug("remove: ");
 
@@ -174,7 +174,7 @@ PrefSet.prototype.isPropertyPresent = function(property)
 
 PrefSet.prototype.getProperty = function(property)
 {
-	ZinUtil.assert(arguments.length == 1);
+	zinAssert(arguments.length == 1);
 	return this.m_properties[property];
 }
 

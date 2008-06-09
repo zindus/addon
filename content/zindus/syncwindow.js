@@ -27,14 +27,14 @@ function SyncWindow()
 {
 	// logging enabled for issue #50
 	//
-	this.m_logger    = ZinLoggerFactory.instance().newZinLogger("SyncWindow"); // this.m_logger.level(ZinLogger.NONE);
+	this.m_logger    = newLogger("SyncWindow"); // this.m_logger.level(Logger.NONE);
 
 	this.m_logger.debug("constructor starts");
 
 	this.m_syncfsm   = null;
 	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
 	this.m_payload   = null; // we keep it around so that we can pass the results back
-	this.m_zwc       = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
+	this.m_zwc       = new WindowCollection(SHOW_STATUS_PANEL_IN);
 
 	this.m_has_observer_been_called = false;
 
@@ -56,8 +56,8 @@ SyncWindow.prototype.onLoad = function()
 		this.m_sfo     = new SyncFsmObserver(this.m_payload.m_es);
 		this.m_syncfsm = this.m_payload.m_syncfsm;
 
-		var listen_to = ZinUtil.cloneObject(ZinMaestro.FSM_GROUP_SYNC);
-		ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
+		var listen_to = cloneObject(Maestro.FSM_GROUP_SYNC);
+		Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
 	}
 
 	this.m_logger.debug("onLoad: exits");
@@ -68,7 +68,7 @@ SyncWindow.prototype.onAccept = function()
 	this.m_logger.debug("onAccept: enters");
 
 	if (!this.m_payload.m_is_cancelled)
-		ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_SYNCWINDOW);
+		Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_SYNCWINDOW);
 
 	this.m_logger.debug("onAccept: exits");
 
@@ -119,7 +119,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	}
 	else if (!this.m_has_observer_been_called)
 	{
-		// ZinUtil.assert(fsmstate == null);
+		// zinAssert(fsmstate == null);
 
 		this.m_has_observer_been_called = true;
 
@@ -127,7 +127,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_zwc.populate();
 
-		ZinLoggerFactory.instance().newZinLogger().info("sync start:  " + ZinUtil.getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
+		newLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 		this.m_syncfsm.start(window);
 	}
 	else 
@@ -142,9 +142,9 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 
 			var elDescription = document.getElementById('zindus-syncwindow-progress-description');
-			var elHtml        = document.createElementNS(ZinXpath.NS_XHTML, "p");
+			var elHtml        = document.createElementNS(Xpath.NS_XHTML, "p");
 
-			elHtml.innerHTML = ZinUtil.stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString();
+			elHtml.innerHTML = stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString();
 
 			if (!elDescription.hasChildNodes())
 				elDescription.appendChild(elHtml);
@@ -162,13 +162,13 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			functor.m_showlogo = true;
 			this.m_zwc.forEach(functor);
 
-			if (ZinUtil.isPropertyPresent(ZinMaestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
+			if (isPropertyPresent(Maestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
 			{
 				StatusPanel.save(this.m_payload.m_es);
 				StatusPanel.update();
 			}
 
-			ZinLoggerFactory.instance().newZinLogger().info("sync finish: " + ZinUtil.getFriendlyTimeString());
+			newLogger().info("sync finish: " + getFriendlyTimeString());
 
 			document.getElementById('zindus-syncwindow').acceptDialog();
 		}

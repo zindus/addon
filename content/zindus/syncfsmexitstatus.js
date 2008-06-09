@@ -29,7 +29,7 @@ function SyncFsmExitStatus()
 	this.m_fail_soapmethod  = null;
 	this.m_fail_fsmoldstate = null;
 	this.m_count_conflicts  = 0;
-	this.m_logger           = ZinLoggerFactory.instance().newZinLogger("SyncFsmExitStatus");
+	this.m_logger           = newLogger("SyncFsmExitStatus");
 
 	this.m_a_valid_code = {
 		FailOnService                   : { 'hasdetail' : 0 }, // 1.  some sort of service failure
@@ -95,7 +95,7 @@ SyncFsmExitStatus.prototype.failcode = function()
 	if (arguments.length == 1)
 	{
 		this.m_fail_code = arguments[0];
-		ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(this.m_a_valid_code, this.m_fail_code), "unmatched code: " + this.m_fail_code);
+		zinAssertAndLog(isPropertyPresent(this.m_a_valid_code, this.m_fail_code), "unmatched code: " + this.m_fail_code);
 	}
 
 	return this.m_fail_code;
@@ -114,21 +114,21 @@ SyncFsmExitStatus.prototype.asMessage = function(sbsSuccess, sbsFailure)
 	//
 	try {
 		if (this.m_exit_status == 0)
-			msg += ZinUtil.stringBundleString(sbsSuccess);
+			msg += stringBundleString(sbsSuccess);
 		else
 		{
-			msg += ZinUtil.stringBundleString(sbsFailure);
-			msg += "\n" + ZinUtil.stringBundleString(this.failCodeStringId());
+			msg += stringBundleString(sbsFailure);
+			msg += "\n" + stringBundleString(this.failCodeStringId());
 
 			if (this.failcode() == 'FailOnFault')
 			{
 				msg += "\n" + this.m_fail_detail;
-				msg += "\n" + ZinUtil.stringBundleString("statusFailSoapMethod") + " " + this.m_fail_soapmethod;
+				msg += "\n" + stringBundleString("statusFailSoapMethod") + " " + this.m_fail_soapmethod;
 			}
 			else if (this.failcode() == 'FailOnCancel')
-				msg += "\n" + ZinUtil.stringBundleString("statusFailOnCancelDetail");
+				msg += "\n" + stringBundleString("statusFailOnCancelDetail");
 			else if (this.failcode() == 'FailOnService')
-				msg += "\n" + ZinUtil.stringBundleString("statusFailOnServiceDetail");
+				msg += "\n" + stringBundleString("statusFailOnServiceDetail");
 			else if (this.hasDetail())
 				msg += this.m_fail_detail;
 		}

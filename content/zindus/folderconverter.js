@@ -21,12 +21,12 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-ZinFolderConverter.PREFIX_CLASS_NONE     = 1;
-ZinFolderConverter.PREFIX_CLASS_INTERNAL = 2;
-ZinFolderConverter.PREFIX_CLASS_PRIMARY  = 3;
-ZinFolderConverter.PREFIX_CLASS_SHARED   = 4;
+FolderConverter.PREFIX_CLASS_NONE     = 1;
+FolderConverter.PREFIX_CLASS_INTERNAL = 2;
+FolderConverter.PREFIX_CLASS_PRIMARY  = 3;
+FolderConverter.PREFIX_CLASS_SHARED   = 4;
 
-function ZinFolderConverter()
+function FolderConverter()
 {
 	this.m_bimap_pab = new BiMap(              [FORMAT_TB,           FORMAT_ZM,          FORMAT_GD ],
 	                                           [TB_PAB,              ZM_FOLDER_CONTACTS, GD_PAB    ]);
@@ -77,7 +77,7 @@ function ZinFolderConverter()
 	for (var i in this.m_locale_map)
 		this.m_locale_names_to_migrate[this.m_locale_map[i]] = true;
 
-	this.m_logger = ZinLoggerFactory.instance().newZinLogger("ZinFolderConverter");
+	this.m_logger = newLogger("FolderConverter");
 }
 
 // This method converts to/from ATTR_NAME attributes in Tb and Zm maps.
@@ -87,21 +87,21 @@ function ZinFolderConverter()
 // For Tb, the map name must be converted to a public-facing name (to handle TB_PAB and TB_EMAILED_CONTACTS)
 // The method has to take a zfi to distinguish between folders that the in the primary account vs foreign folders
 //
-ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
+FolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
 {
 	var ret;
 
-	ZinUtil.assert(arguments.length == 3); // catch programming errors
-	ZinUtil.assertAndLog(typeof(zfi) == 'object', " zfi ain't an ZinFeedItem object: " + zfi);
+	zinAssert(arguments.length == 3); // catch programming errors
+	zinAssertAndLog(typeof(zfi) == 'object', " zfi ain't an FeedItem object: " + zfi);
 
-	ZinUtil.assertAndLog((zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == ZinFeedItem.TYPE_SF,
+	zinAssertAndLog((zfi.type() == FeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == FeedItem.TYPE_SF,
 	                  "can't convertForMap zfi: " + zfi.toString());
 
-	var name = zfi.get(ZinFeedItem.ATTR_NAME);
+	var name = zfi.get(FeedItem.ATTR_NAME);
 
-	if (zfi.type() == ZinFeedItem.TYPE_FL && this.m_bimap_pab.lookup(format_from, null) == name)
+	if (zfi.type() == FeedItem.TYPE_FL && this.m_bimap_pab.lookup(format_from, null) == name)
 		ret = this.m_bimap_pab.lookup(format_to, null);
-	else if (zfi.type() == ZinFeedItem.TYPE_FL && this.m_bimap_emailed_contacts.lookup(format_from, null) == name)
+	else if (zfi.type() == FeedItem.TYPE_FL && this.m_bimap_emailed_contacts.lookup(format_from, null) == name)
 		ret = this.m_bimap_emailed_contacts.lookup(format_to, null);  // this will assert if FORMAT_GD ... as it should ...
 	else if (format_from == format_to)
 		ret = name;
@@ -109,11 +109,11 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zf
 		ret = this.selectPrefix(zfi) + name;
 	else // format_to == FORMAT_ZM
 	{
-		ZinUtil.assertAndLog(this.prefixClass(name) != ZinFolderConverter.PREFIX_CLASS_NONE, name);
+		zinAssertAndLog(this.prefixClass(name) != FolderConverter.PREFIX_CLASS_NONE, name);
 		ret = name.substring(this.m_prefix_length)
 	}
 
-	// this.m_logger.debug("ZinFolderConverter.convert: name: " + name + " from: " + format_from +" to: " + format_to + " returns: " + ret);
+	// this.m_logger.debug("FolderConverter.convert: name: " + name + " from: " + format_from +" to: " + format_to + " returns: " + ret);
 
 	return ret;
 }
@@ -123,10 +123,10 @@ ZinFolderConverter.prototype.convertForMap = function(format_to, format_from, zf
 // are for internal-use only.  This routine returns their thunderbird addressbook names, and for all other ids
 // returns the item's ATTR_NAME.
 
-ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from, zfi)
+FolderConverter.prototype.convertForPublic = function(format_to, format_from, zfi)
 {
 	// catch programming errors
-	ZinUtil.assertAndLog(arguments.length == 3 && this.m_localised_pab,
+	zinAssertAndLog(arguments.length == 3 && this.m_localised_pab,
 	                " arguments.length: " + arguments.length + " m_localised_pab: " + this.m_localised_pab + " zfi: " + zfi.toString());
 
 	var ret = this.convertForMap(format_to, format_from, zfi);
@@ -140,12 +140,12 @@ ZinFolderConverter.prototype.convertForPublic = function(format_to, format_from,
 			              (this.m_localised_emailed_contacts ? this.m_localised_emailed_contacts : ZM_FOLDER_EMAILED_CONTACTS);
 	}
 
-	ZinUtil.assert(ret);
+	zinAssert(ret);
 
 	return ret;
 }
 
-ZinFolderConverter.prototype.localised_pab = function()
+FolderConverter.prototype.localised_pab = function()
 {
 	if (arguments.length == 1)
 	{
@@ -157,7 +157,7 @@ ZinFolderConverter.prototype.localised_pab = function()
 	return this.m_localised_pab;
 }
 
-ZinFolderConverter.prototype.localised_emailed_contacts = function()
+FolderConverter.prototype.localised_emailed_contacts = function()
 {
 	if (arguments.length == 1)
 	{
@@ -174,7 +174,7 @@ ZinFolderConverter.prototype.localised_emailed_contacts = function()
 // 2. Thunderbird's "general.useragent.locale" preference (if set)
 // 3. "Emailed Contacts"
 //
-ZinFolderConverter.prototype.translate_emailed_contacts = function()
+FolderConverter.prototype.translate_emailed_contacts = function()
 {
 	var ret = ZM_FOLDER_EMAILED_CONTACTS;
 	var value;
@@ -207,57 +207,57 @@ ZinFolderConverter.prototype.translate_emailed_contacts = function()
 	return ret;
 }
 
-ZinFolderConverter.prototype.emailed_contacts_per_locale = function(key)
+FolderConverter.prototype.emailed_contacts_per_locale = function(key)
 {
 	var ret = null;
 
-	if (ZinUtil.isPropertyPresent(this.m_locale_map, key))
+	if (isPropertyPresent(this.m_locale_map, key))
 		ret = this.m_locale_map[key];
 	else
 	{
 		key = key.substr(0, 2);
 
-		if (ZinUtil.isPropertyPresent(this.m_locale_map, key))
+		if (isPropertyPresent(this.m_locale_map, key))
 			ret = this.m_locale_map[key];
 	}
 
 	return ret;
 }
 
-ZinFolderConverter.prototype.selectPrefix = function(zfi)
+FolderConverter.prototype.selectPrefix = function(zfi)
 {
 	var ret;
 
-	ZinUtil.assertAndLog((zfi.type() == ZinFeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == ZinFeedItem.TYPE_SF,
+	zinAssertAndLog((zfi.type() == FeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == FeedItem.TYPE_SF,
 	                  "can't selectPrefix zfi: " + zfi.toString());
 	
-	if (zfi.type() == ZinFeedItem.TYPE_FL)
+	if (zfi.type() == FeedItem.TYPE_FL)
 		ret = this.m_prefix_primary_account;
 	else
 	{
-		var perm = ZinUtil.zmPermFromZfi(zfi);
+		var perm = zmPermFromZfi(zfi);
 
 		if (perm & ZM_PERM_WRITE)
 			ret = this.m_prefix_foreign_readwrite;
 		else if (perm & ZM_PERM_READ)
 			ret = this.m_prefix_foreign_readonly;
 		else
-			ZinUtil.assertAndLog(false, "unable to selectPrefix zfi: " + zfi.toString());
+			zinAssertAndLog(false, "unable to selectPrefix zfi: " + zfi.toString());
 	}
 
 	return ret;
 
 }
 
-ZinFolderConverter.prototype.prefixClass = function(str)
+FolderConverter.prototype.prefixClass = function(str)
 {
-	var ret    = ZinFolderConverter.PREFIX_CLASS_NONE;
+	var ret    = FolderConverter.PREFIX_CLASS_NONE;
 	var prefix = str.substring(0, this.m_prefix_length);
 
-	if (prefix == this.m_prefix_primary_account)        ret = ZinFolderConverter.PREFIX_CLASS_PRIMARY;
-	else if (prefix == this.m_prefix_internal)          ret = ZinFolderConverter.PREFIX_CLASS_INTERNAL;
-	else if (prefix == this.m_prefix_foreign_readonly)  ret = ZinFolderConverter.PREFIX_CLASS_SHARED;
-	else if (prefix == this.m_prefix_foreign_readwrite) ret = ZinFolderConverter.PREFIX_CLASS_SHARED;
+	if (prefix == this.m_prefix_primary_account)        ret = FolderConverter.PREFIX_CLASS_PRIMARY;
+	else if (prefix == this.m_prefix_internal)          ret = FolderConverter.PREFIX_CLASS_INTERNAL;
+	else if (prefix == this.m_prefix_foreign_readonly)  ret = FolderConverter.PREFIX_CLASS_SHARED;
+	else if (prefix == this.m_prefix_foreign_readwrite) ret = FolderConverter.PREFIX_CLASS_SHARED;
 
 	// this.m_logger.debug("prefixClass: str: " + str + " prefix: " + prefix + " returns: " + ret);
 

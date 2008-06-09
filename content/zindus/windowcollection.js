@@ -21,18 +21,18 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function ZinWindowCollection(a_id)
+function WindowCollection(a_id)
 {
 	this.m_h_a = new Object();
-	this.m_logger  = ZinLoggerFactory.instance().newZinLogger("ZinWindowCollection"); this.m_logger.level(ZinLogger.NONE);
+	this.m_logger  = newLogger("WindowCollection"); this.m_logger.level(Logger.NONE);
 
 	for (var i = 0; i < a_id.length; i++)
 		this.m_h_a[a_id[i]] = new Array();
 }
 
-ZinWindowCollection.prototype.forEach = function(functor)
+WindowCollection.prototype.forEach = function(functor)
 {
-	ZinUtil.assert(typeof(functor.run) == "function");
+	zinAssert(typeof(functor.run) == "function");
 
 	for (var id in this.m_h_a)
 		for (var i = 0; i < this.m_h_a[id].length; i++)
@@ -55,7 +55,7 @@ ZinWindowCollection.prototype.forEach = function(functor)
 // which links to this page, which offers the code snippet below:
 //   http://developer.mozilla.org/en/docs/nsIWindowMediator
 //
-ZinWindowCollection.prototype.populate = function()
+WindowCollection.prototype.populate = function()
 {
 	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
 

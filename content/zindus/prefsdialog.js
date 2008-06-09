@@ -51,15 +51,15 @@ function Prefs()
 	this.m_timer_functor       = null;
 	this.m_maestro             = null;
 	this.m_is_fsm_running      = false;
-	this.m_logger              = ZinLoggerFactory.instance().newZinLogger("Prefs"); // this.m_logger.level(ZinLogger.NONE); // TODO for debugging
+	this.m_logger              = newLogger("Prefs"); // this.m_logger.level(Logger.NONE); // TODO for debugging
 
-	this.m_preferences         = new MozillaPreferences();
+	this.m_preferences         = Singleton.instance().preferences();
 	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
 
 	this.m_server_type_last    = null;
 	this.a_server_type_values  = new Object();
 
-	this.m_console_listener    = ZinLogger.nsIConsoleListener();
+	this.m_console_listener    = Logger.nsIConsoleListener();
 	this.m_payload             = null;
 }
 
@@ -84,24 +84,24 @@ Prefs.prototype.onLoad = function(target)
 
 Prefs.prototype.maestroRegister = function()
 {
-	if (!ObserverService.isRegistered(ZinMaestro.TOPIC))
+	if (!ObserverService.isRegistered(Maestro.TOPIC))
 	{
-		this.m_maestro = new ZinMaestro();
+		this.m_maestro = new Maestro();
 
-		ObserverService.register(this.m_maestro, ZinMaestro.TOPIC);
+		ObserverService.register(this.m_maestro, Maestro.TOPIC);
 	}
 
-	ZinMaestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, ZinMaestro.ID_FUNCTOR_PREFSDIALOG, ZinMaestro.FSM_GROUP_SYNC);
-	ZinLogger.nsIConsoleService().registerListener(this.m_console_listener);
+	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_PREFSDIALOG, Maestro.FSM_GROUP_SYNC);
+	Logger.nsIConsoleService().registerListener(this.m_console_listener);
 }
 
 Prefs.prototype.maestroUnregister = function()
 {
-	ZinLogger.nsIConsoleService().unregisterListener(this.m_console_listener);
-	ZinMaestro.notifyFunctorUnregister(ZinMaestro.ID_FUNCTOR_PREFSDIALOG);
+	Logger.nsIConsoleService().unregisterListener(this.m_console_listener);
+	Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_PREFSDIALOG);
 
-	if (this.m_maestro && ObserverService.isRegistered(ZinMaestro.TOPIC))
-		ObserverService.unregister(this.m_maestro, ZinMaestro.TOPIC);
+	if (this.m_maestro && ObserverService.isRegistered(Maestro.TOPIC))
+		ObserverService.unregister(this.m_maestro, Maestro.TOPIC);
 }
 
 Prefs.prototype.stop_timer_fsm_and_deregister = function()
@@ -136,7 +136,7 @@ Prefs.prototype.onAccept = function()
 	// server tab - url, username and password
 	//
 	var url      = document.getElementById("zindus-prefs-server-url").value;
-	var username = ZinUtil.zinTrim(document.getElementById("zindus-prefs-server-username").value);
+	var username = zinTrim(document.getElementById("zindus-prefs-server-username").value);
 	var password = document.getElementById("zindus-prefs-server-password").value;
 
 	var prev_url      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
@@ -177,19 +177,19 @@ Prefs.prototype.onCommand = function(id_target)
 			this.m_payload.m_es = new SyncFsmExitStatus();
 			this.m_payload.m_is_cancelled = false;
 
-			ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
+			Singleton.instance().logger().debug("Prefs.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "dependent=yes,chrome=yes,modal=yes", this.m_payload);
 
 
 			if (!window.closed)
 			{
-				ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: after openDialog: m_is_cancelled: " +
+				Singleton.instance().logger().debug("Prefs.onCommand: after openDialog: m_is_cancelled: " +
 				                                              this.m_payload.m_is_cancelled + " m_es: " + this.m_payload.m_es.toString());
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
-					ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
-					msg = ZinUtil.stringBundleString("statusSyncFailedUnexpectedly");
+					Singleton.instance().logger().debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
+					msg = stringBundleString("statusSyncFailedUnexpectedly");
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
 					msg = this.m_payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
@@ -207,18 +207,18 @@ Prefs.prototype.onCommand = function(id_target)
 			this.m_payload.m_syncfsm = this.getSyncFsm( this.serverType(), "authonly");
 			this.m_payload.m_es = new SyncFsmExitStatus();
 
-			ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
+			Singleton.instance().logger().debug("Prefs.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul", "_blank", "chrome,modal", this.m_payload);
 
 			if (!window.closed)
 			{
-				ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: after openDialog: m_es: " + this.m_payload.m_es.toString());
+				Singleton.instance().logger().debug("Prefs.onCommand: after openDialog: m_es: " + this.m_payload.m_es.toString());
 
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
-					ZinLoggerFactory.instance().logger().debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
-					msg = ZinUtil.stringBundleString("statusSyncFailedUnexpectedly");
+					Singleton.instance().logger().debug("Prefs.onCommand: statusSyncFailedUnexpectedly");
+					msg = stringBundleString("statusSyncFailedUnexpectedly");
 				}
 				else
 					msg = this.m_payload.m_es.asMessage("statusAuthSucceeded", "statusAuthFailed");
@@ -231,7 +231,7 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-general-button-test-harness":
-			var testharness = new ZinTestHarness();
+			var testharness = new TestHarness();
 			testharness.run();
 			break;
 
@@ -270,11 +270,11 @@ Prefs.prototype.getSyncFsm = function(format, type)
 	var syncfsm;
 	var id_fsm = null
 
-	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = ZinMaestro.FSM_ID_ZM_TWOWAY;   }
-	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = ZinMaestro.FSM_ID_GD_TWOWAY;   }
-	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = ZinMaestro.FSM_ID_ZM_AUTHONLY; }
-	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = ZinMaestro.FSM_ID_GD_AUTHONLY; }
-	else ZinUtil.assertAndLog(false, "mismatched case: format: " + format + " type: " + type);
+	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
+	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
+	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
+	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
+	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
 
 	this.updatePrefsetsFromDocument();
 
@@ -292,7 +292,7 @@ Prefs.prototype.onTimerFire = function(context)
 	// It should only be visible in the UI with debugging turned on anyways...
 	//
 	context.m_logger.debug("onTimerFire: ");
-	context.m_timer_functor = new ZinTimerFunctorSync(ZinMaestro.ID_FUNCTOR_PREFSDIALOG_TIMER, null, null);
+	context.m_timer_functor = new TimerFunctor(Maestro.ID_FUNCTOR_PREFSDIALOG_TIMER, null, null);
 	context.m_timer_functor.run();
 }
 
@@ -330,8 +330,8 @@ Prefs.prototype.initialiseView = function()
 	//
 	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
 
-	var msg = ZinUtil.stringBundleString("prefsGalIfFewerPartOne") + " " + if_fewer + " " +
-	          ZinUtil.stringBundleString("prefsGalIfFewerPartTwo");
+	var msg = stringBundleString("prefsGalIfFewerPartOne") + " " + if_fewer + " " +
+	          stringBundleString("prefsGalIfFewerPartTwo");
 
 	document.getElementById("zindus-prefs-general-gal-if-fewer").label = msg;
 
@@ -414,7 +414,7 @@ Prefs.prototype.updateView = function()
 
 		this.rememberLastServerType(this.m_server_type_last);
 
-		if (ZinUtil.isPropertyPresent(this.a_server_type_values, server_type_current))
+		if (isPropertyPresent(this.a_server_type_values, server_type_current))
 		{
 			document.getElementById("zindus-prefs-server-username").value = this.a_server_type_values[server_type_current].username;
 			document.getElementById("zindus-prefs-server-url").value      = this.a_server_type_values[server_type_current].url;
@@ -477,7 +477,7 @@ Prefs.prototype.serverType = function()
 	         document.getElementById("zindus-prefs-server-type-zimbra"))
 		ret = FORMAT_ZM;
 	else
-		ZinUtil.assertAndLog(false, "mismatched case: ");
+		zinAssertAndLog(false, "mismatched case: ");
 
 	return ret;
 }
@@ -486,7 +486,7 @@ Prefs.prototype.rememberLastServerType = function(server_type)
 {
 	this.m_logger.debug("rememberLastServerType: setting: m_server_type_last: " + this.m_server_type_last);
 
-	if (!ZinUtil.isPropertyPresent(this.a_server_type_values, this.m_server_type_last))
+	if (!isPropertyPresent(this.a_server_type_values, this.m_server_type_last))
 		this.a_server_type_values[this.m_server_type_last] = new Object();
 
 	this.a_server_type_values[this.m_server_type_last].username = document.getElementById("zindus-prefs-server-username").value;
@@ -518,17 +518,17 @@ Prefs.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, property, de
 		
 	document.getElementById(radiogroup_id).selectedItem = document.getElementById(selected_id);
 
-	// ZinLoggerFactory.instance().logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
+	// Singleton.instance().logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
 }
 
 Prefs.prototype.setGdSyncWithLabel = function()
 {
 	var zg_addressbook;
 
-	zg_addressbook = ZinUtil.stringBundleString("prefsGeneralGdSyncWithZgPrefix") +
+	zg_addressbook = stringBundleString("prefsGeneralGdSyncWithZgPrefix") +
 	                       (this.isServerSettingsComplete() ?
 	                       document.getElementById("zindus-prefs-server-username").value :
-	                       ZinUtil.stringBundleString("prefsGeneralGdSyncWithZgSuffix"));
+	                       stringBundleString("prefsGeneralGdSyncWithZgSuffix"));
 
 	document.getElementById("zindus-prefs-general-gdsyncwith-zg").label = zg_addressbook;
 }
@@ -540,7 +540,7 @@ Prefs.prototype.updatePrefsetsFromDocument = function()
 	// server tab - url, username and password
 	//
 	var url      = document.getElementById("zindus-prefs-server-url").value;
-	var username = ZinUtil.zinTrim(document.getElementById("zindus-prefs-server-username").value);
+	var username = zinTrim(document.getElementById("zindus-prefs-server-username").value);
 
 	this.m_prefset_server.setProperty(PrefSet.SERVER_URL,      url );
 	this.m_prefset_server.setProperty(PrefSet.SERVER_USERNAME, username );

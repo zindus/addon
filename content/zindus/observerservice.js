@@ -41,7 +41,7 @@ ObserverService.isRegistered = function(topic)
 		try {
 			var o = enumerator.getNext().QueryInterface(Components.interfaces.nsIObserver);
 
-			// dump("observerServiceIsRegistered: blah: o: " + ZinUtil.aToString(o) + "\n");
+			// dump("observerServiceIsRegistered: blah: o: " + aToString(o) + "\n");
 
 			count++;
 		}
@@ -62,14 +62,14 @@ ObserverService.notify = function(topic, subject, data)
 
 ObserverService.register = function(obj, topic)
 {
-	ZinLoggerFactory.instance().logger().debug("ObserverService.register: " + topic);
+	Singleton.instance().logger().debug("ObserverService.register: " + topic);
 
 	ObserverService.service().addObserver(obj, topic, false);
 }
 
 ObserverService.unregister = function(obj, topic)
 {
-	ZinLoggerFactory.instance().logger().debug("ObserverService.unregister: " + topic);
+	Singleton.instance().logger().debug("ObserverService.unregister: " + topic);
 
 	ObserverService.service().removeObserver(obj, topic);
 }

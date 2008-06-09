@@ -24,7 +24,7 @@
 function ZmSoapDocument()
 {
 	this.doc      = document.implementation.createDocument("", "", null);
-	this.envelope = this.doc.createElementNS(ZinXpath.NS_SOAP_ENVELOPE, "soap:Envelope");
+	this.envelope = this.doc.createElementNS(Xpath.NS_SOAP_ENVELOPE, "soap:Envelope");
 
 	this.doc.appendChild(this.envelope);
 }
@@ -49,14 +49,14 @@ ZmSoapDocument.nsFromMethod = function(method)
 		last_notused:   null
 	};
 
-	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(aMethod, method), "method missing from namespace table: " + method);
+	zinAssertAndLog(isPropertyPresent(aMethod, method), "method missing from namespace table: " + method);
 
 	return aMethod[method];
 }
 
 ZmSoapDocument.prototype.setElementAsBody = function(element)
 {
-	var elBody = this.doc.createElementNS(ZinXpath.NS_SOAP_ENVELOPE, "soap:Body");
+	var elBody = this.doc.createElementNS(Xpath.NS_SOAP_ENVELOPE, "soap:Body");
 
 	elBody.appendChild(element);
 	this.envelope.appendChild(elBody);
@@ -64,7 +64,7 @@ ZmSoapDocument.prototype.setElementAsBody = function(element)
 
 ZmSoapDocument.prototype.toString = function()
 {
-	return ZinUtil.xmlDocumentToString(this.doc);
+	return xmlDocumentToString(this.doc);
 }
 
 ZmSoapDocument.prototype.toStringFiltered = function()
@@ -79,12 +79,12 @@ ZmSoapDocument.prototype.toStringFiltered = function()
 
 ZmSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 {
-	var elHeader    = this.doc.createElementNS(ZinXpath.NS_SOAP_ENVELOPE, "soap:Header");
-	var elContext   = this.doc.createElementNS(ZinXpath.NS_ZIMBRA, "context");
-	var elNonotify  = this.doc.createElementNS(ZinXpath.NS_ZIMBRA, "nonotify");
-	var elNoqualify = this.doc.createElementNS(ZinXpath.NS_ZIMBRA, "noqualify");
-	var elNoSession = this.doc.createElementNS(ZinXpath.NS_ZIMBRA, "nosession");
-	var elUserAgent = this.doc.createElementNS(ZinXpath.NS_ZIMBRA, "userAgent");
+	var elHeader    = this.doc.createElementNS(Xpath.NS_SOAP_ENVELOPE, "soap:Header");
+	var elContext   = this.doc.createElementNS(Xpath.NS_ZIMBRA, "context");
+	var elNonotify  = this.doc.createElementNS(Xpath.NS_ZIMBRA, "nonotify");
+	var elNoqualify = this.doc.createElementNS(Xpath.NS_ZIMBRA, "noqualify");
+	var elNoSession = this.doc.createElementNS(Xpath.NS_ZIMBRA, "nosession");
+	var elUserAgent = this.doc.createElementNS(Xpath.NS_ZIMBRA, "userAgent");
 
 	// UserAgent is useless to zindus - we add it so that server administrators can see what's going on
 	//
@@ -108,7 +108,7 @@ ZmSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 
 	if (authToken != null)
 	{
-		var elAuthtoken = this.doc.createElementNS(ZinXpath.NS_ZIMBRA, "authToken");
+		var elAuthtoken = this.doc.createElementNS(Xpath.NS_ZIMBRA, "authToken");
 
 		elAuthtoken.textContent = authToken;
 
@@ -116,7 +116,7 @@ ZmSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 
 		if (zimbraId != null)
 		{
-			var elAccount = this.doc.createElementNS(ZinXpath.NS_ZIMBRA, "account");
+			var elAccount = this.doc.createElementNS(Xpath.NS_ZIMBRA, "account");
 
 			elAccount.setAttribute("by", "id");
 			elAccount.textContent = zimbraId;
@@ -128,9 +128,9 @@ ZmSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 
 ZmSoapDocument.prototype.Auth = function(name, password, virtualhost)
 {
-	var elRequest  = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "AuthRequest");
-	var elAccount  = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "account");
-	var elPassword = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "password");
+	var elRequest  = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "AuthRequest");
+	var elAccount  = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "account");
+	var elPassword = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "password");
 
 	elAccount.setAttribute("by", "name");
 	elAccount.textContent = name;
@@ -142,7 +142,7 @@ ZmSoapDocument.prototype.Auth = function(name, password, virtualhost)
 
 	if (virtualhost != null)
 	{
-		var elVirtualHost = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "virtualHost");
+		var elVirtualHost = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "virtualHost");
 
 		elVirtualHost.textContent = virtualhost;
 
@@ -154,8 +154,8 @@ ZmSoapDocument.prototype.Auth = function(name, password, virtualhost)
 
 ZmSoapDocument.prototype.GetAccountInfo = function(by, name)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "GetAccountInfoRequest");
-	var elAccount = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "account");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "GetAccountInfoRequest");
+	var elAccount = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "account");
 
 	elAccount.setAttribute("by", by);
 	elAccount.textContent = name;
@@ -167,14 +167,14 @@ ZmSoapDocument.prototype.GetAccountInfo = function(by, name)
 
 ZmSoapDocument.prototype.GetInfo = function()
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "GetInfoRequest");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "GetInfoRequest");
 
 	this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.CheckLicense = function()
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "CheckLicenseRequest");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "CheckLicenseRequest");
 
 	elRequest.setAttribute("feature", "mapi");
 
@@ -183,7 +183,7 @@ ZmSoapDocument.prototype.CheckLicense = function()
 
 ZmSoapDocument.prototype.SyncGal = function(token)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZACCOUNT, "SyncGalRequest");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "SyncGalRequest");
 
 	if (token != null)
 		elRequest.setAttribute("token", token);
@@ -193,14 +193,14 @@ ZmSoapDocument.prototype.SyncGal = function(token)
 
 ZmSoapDocument.prototype.GetContacts = function(a_id)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "GetContactsRequest");
-	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "cn");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "GetContactsRequest");
+	var elCn      = this.doc.createElementNS(Xpath.NS_ZMAIL, "cn");
 
-	ZinUtil.assert(a_id != null && a_id.length > 0);
+	zinAssert(a_id != null && a_id.length > 0);
 
 	elRequest.setAttribute("sync", "1");
 
-	elCn.setAttribute("id", ZinUtil.hyphenate(",", a_id));
+	elCn.setAttribute("id", hyphenate(",", a_id));
 
 	elRequest.appendChild(elCn);
 
@@ -209,7 +209,7 @@ ZmSoapDocument.prototype.GetContacts = function(a_id)
 
 ZmSoapDocument.prototype.Sync = function(token)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "SyncRequest");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "SyncRequest");
 
 	if (token != null)
 		elRequest.setAttribute("token", token);
@@ -220,11 +220,11 @@ ZmSoapDocument.prototype.Sync = function(token)
 ZmSoapDocument.prototype.CreateFolder = function(folder)
 {
 	var elFolder;
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "CreateFolderRequest");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "CreateFolderRequest");
 
-	elFolder = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "folder");
+	elFolder = this.doc.createElementNS(Xpath.NS_ZMAIL, "folder");
 
-	ZinUtil.assert(ZinUtil.isPropertyPresent(folder, 'name') && ZinUtil.isPropertyPresent(folder, 'l') && folder.name.length > 0)
+	zinAssert(isPropertyPresent(folder, 'name') && isPropertyPresent(folder, 'l') && folder.name.length > 0)
 
 	elFolder.setAttribute("name", folder.name);
 	elFolder.setAttribute("l",    folder.l);
@@ -238,18 +238,18 @@ ZmSoapDocument.prototype.CreateFolder = function(folder)
 
 ZmSoapDocument.prototype.CreateContact = function(args)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "CreateContactRequest");
-	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "cn");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "CreateContactRequest");
+	var elCn      = this.doc.createElementNS(Xpath.NS_ZMAIL, "cn");
 	var i, elA;
 
-	ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(args, 'properties') && ZinUtil.isPropertyPresent(args, 'l') && ZinUtil.aToLength(args.properties) > 0, 
-	                    "properties: " + ZinUtil.aToString(args));
+	zinAssertAndLog(isPropertyPresent(args, 'properties') && isPropertyPresent(args, 'l') && aToLength(args.properties) > 0, 
+	                    "properties: " + aToString(args));
 
 	elCn.setAttribute("l", args.l);
 
 	for (i in args.properties)
 	{
-		elA = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "a");
+		elA = this.doc.createElementNS(Xpath.NS_ZMAIL, "a");
 		elA.setAttribute("n", i);
 		elA.textContent = args.properties[i];
 		elCn.appendChild(elA);
@@ -272,8 +272,8 @@ ZmSoapDocument.prototype.ContactAction = function(args)
 
 ZmSoapDocument.prototype.ActionRequest = function(name, args)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, name);
-	var elAction  = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "action");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, name);
+	var elAction  = this.doc.createElementNS(Xpath.NS_ZMAIL, "action");
 
 	for (var i in args)
 		elAction.setAttribute(i, args[i]); // attributes passed in here include: id, op, l and name
@@ -285,27 +285,27 @@ ZmSoapDocument.prototype.ActionRequest = function(name, args)
 
 ZmSoapDocument.prototype.FakeHead = function(args)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "FakeHeadRequest");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "FakeHeadRequest");
 
 	this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.ModifyContact = function(args)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "ModifyContactRequest");
-	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "cn");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "ModifyContactRequest");
+	var elCn      = this.doc.createElementNS(Xpath.NS_ZMAIL, "cn");
 	var i, elA;
 
-	ZinUtil.assert(ZinUtil.isPropertyPresent(args, 'properties') &&
-	          ZinUtil.isPropertyPresent(args, 'l') &&
-			  ZinUtil.isPropertyPresent(args, 'id') && ZinUtil.aToLength(args.properties) > 0);
+	zinAssert(isPropertyPresent(args, 'properties') &&
+	          isPropertyPresent(args, 'l') &&
+			  isPropertyPresent(args, 'id') && aToLength(args.properties) > 0);
 
 	elCn.setAttribute("id", args.id);
 	elCn.setAttribute("l", args.l);
 
 	for (i in args.properties)
 	{
-		elA = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "a");
+		elA = this.doc.createElementNS(Xpath.NS_ZMAIL, "a");
 
 		elA.setAttribute("n", i);
 
@@ -322,14 +322,14 @@ ZmSoapDocument.prototype.ModifyContact = function(args)
 
 ZmSoapDocument.prototype.ForeignContactDelete = function(args)
 {
-	var elRequest = this.doc.createElementNS(ZinXpath.NS_ZIMBRA, "BatchRequest");
-	var elCreate  = this.doc.createElementNS(ZinXpath.NS_ZMAIL,  "CreateContactRequest");
-	var elCn      = this.doc.createElementNS(ZinXpath.NS_ZMAIL,  "cn");
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZIMBRA, "BatchRequest");
+	var elCreate  = this.doc.createElementNS(Xpath.NS_ZMAIL,  "CreateContactRequest");
+	var elCn      = this.doc.createElementNS(Xpath.NS_ZMAIL,  "cn");
 	var i, elA;
 
-	ZinUtil.assert(ZinUtil.isPropertyPresent(args, 'properties') && ZinUtil.aToLength(args.properties) > 0 &&
-	          ZinUtil.isPropertyPresent(args, 'zid') &&
-	          ZinUtil.isPropertyPresent(args, 'id') );
+	zinAssert(isPropertyPresent(args, 'properties') && aToLength(args.properties) > 0 &&
+	          isPropertyPresent(args, 'zid') &&
+	          isPropertyPresent(args, 'id') );
 
 	elRequest.setAttribute("onerror", "stop");
 
@@ -337,7 +337,7 @@ ZmSoapDocument.prototype.ForeignContactDelete = function(args)
 
 	for (i in args.properties)
 	{
-		elA = this.doc.createElementNS(ZinXpath.NS_ZMAIL, "a");
+		elA = this.doc.createElementNS(Xpath.NS_ZMAIL, "a");
 		elA.setAttribute("n", i);
 		elA.textContent = args.properties[i];
 		elCn.appendChild(elA);
@@ -346,7 +346,7 @@ ZmSoapDocument.prototype.ForeignContactDelete = function(args)
 	elCn.appendChild(elA);
 	elCreate.appendChild(elCn);
 
-	var delete_args = ZinUtil.newObject("id", args.zid + ":" + args.id, "op", "delete");
+	var delete_args = newObject("id", args.zid + ":" + args.id, "op", "delete");
 	elDeleteForeign = this.ActionRequest("ContactActionRequest", delete_args);
 
 	elRequest.appendChild(elCreate);

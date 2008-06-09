@@ -40,7 +40,7 @@ StatusPanel.save = function(es)
 {
 	var zfcStatus = StatusPanel.getZfc();
 	var now       = new Date();
-	var zfiStatus = new ZinFeedItem(null, ZinFeedItem.ATTR_KEY, ZinFeedItem.KEY_STATUSPANEL,
+	var zfiStatus = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSPANEL,
 									  'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
 									  'exitstatus', es.m_exit_status,
 									  'conflicts', es.m_count_conflicts,
@@ -52,7 +52,7 @@ StatusPanel.save = function(es)
 
 StatusPanel.getZfc = function()
 {
-	var ret = new ZinFeedCollection();
+	var ret = new FeedCollection();
 	ret.filename(Filesystem.FILENAME_STATUS);
 
 	return ret;
@@ -65,15 +65,15 @@ StatusPanel.getZfi = function()
 
 	zfcStatus.load();
 
-	if (zfcStatus.isPresent(ZinFeedItem.KEY_STATUSPANEL))
-		zfiStatus = zfcStatus.get(ZinFeedItem.KEY_STATUSPANEL);
+	if (zfcStatus.isPresent(FeedItem.KEY_STATUSPANEL))
+		zfiStatus = zfcStatus.get(FeedItem.KEY_STATUSPANEL);
 
 	return zfiStatus;
 }
 
 StatusPanel.update = function(zwc)
 {
-	var logger    = ZinLoggerFactory.instance().newZinLogger("StatusPanel");
+	var logger    = newLogger("StatusPanel");
 	var zfiStatus = StatusPanel.getZfi();
 
 	if (zfiStatus)
@@ -90,18 +90,18 @@ StatusPanel.update = function(zwc)
 		if (exitstatus != 0)
 		{
 			status = "error"
-			tooltip_prefix = ZinUtil.stringBundleString("statusLastSyncFailed");
+			tooltip_prefix = stringBundleString("statusLastSyncFailed");
 		}
 		else if (conflicts > 0)
 		{
 			status = "alert";
-			tooltip_prefix = ZinUtil.stringBundleString("statusLastSync") + ": " + conflicts + " " +
-			                 ZinUtil.stringBundleString("statusLastSyncConflicts");
+			tooltip_prefix = stringBundleString("statusLastSync") + ": " + conflicts + " " +
+			                 stringBundleString("statusLastSyncConflicts");
 		}
 		else
 		{
 			status = "insync";
-			tooltip_prefix = ZinUtil.stringBundleString("statusLastSync");
+			tooltip_prefix = stringBundleString("statusLastSync");
 		}
 
 		tooltip = tooltip_prefix + ": " + tooltip;
@@ -109,7 +109,7 @@ StatusPanel.update = function(zwc)
 	else
 	{
 		status = "alert";
-		tooltip = ZinUtil.stringBundleString("statusLastSyncNever");
+		tooltip = stringBundleString("statusLastSyncNever");
 	}
 
 	var obj = { alert : '!', error : 'X', insync : 'Y' };
@@ -118,7 +118,7 @@ StatusPanel.update = function(zwc)
 
 	if (arguments.length == 0)
 	{
-		zwc = new ZinWindowCollection(SHOW_STATUS_PANEL_IN);
+		zwc = new WindowCollection(SHOW_STATUS_PANEL_IN);
 		zwc.populate();
 	}
 

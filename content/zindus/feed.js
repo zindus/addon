@@ -21,70 +21,70 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-ZinFeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
-ZinFeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
+FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
+FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
 
-ZinFeedItem.ITER_ALL                = 3;   // 
-ZinFeedItem.ITER_GID_ITEM           = 4;   // don't call functor when key == ZinFeedItem.ATTR_KEY or key == ZinFeedItem.ATTR_VER
+FeedItem.ITER_ALL                = 3;   // 
+FeedItem.ITER_GID_ITEM           = 4;   // don't call functor when key == FeedItem.ATTR_KEY or key == FeedItem.ATTR_VER
 
-ZinFeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the one with the 'next' attribute
-ZinFeedItem.KEY_STATUSPANEL         = "2#zindus-housekeeping"; // this key is used in the StatusPanel's ZinFeedCollection
-ZinFeedItem.KEYS_RESERVED           = ZinUtil.newObject(ZinFeedItem.KEY_AUTO_INCREMENT, null, ZinFeedItem.KEY_STATUSPANEL, null);
+FeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the one with the 'next' attribute
+FeedItem.KEY_STATUSPANEL         = "2#zindus-housekeeping"; // this key is used in the StatusPanel's FeedCollection
+FeedItem.KEYS_RESERVED           = newObject(FeedItem.KEY_AUTO_INCREMENT, null, FeedItem.KEY_STATUSPANEL, null);
 
-ZinFeedItem.ATTR_KEY  = 'key';
-ZinFeedItem.ATTR_MS   = 'ms';
-ZinFeedItem.ATTR_LS   = 'ls';   // last sync - concatenation of gid version, ms, DEL etc eg. 1#-134217729### or 1##1801#1801#
-ZinFeedItem.ATTR_VER  = 'ver';  // only an attribute in the gid
-ZinFeedItem.ATTR_REV  = 'rev';
-ZinFeedItem.ATTR_DEL  = 'del';
-ZinFeedItem.ATTR_ID   = 'id';
-ZinFeedItem.ATTR_L    = 'l';
-ZinFeedItem.ATTR_TPI  = 'tpi';  // thunderbird pref id - see http://www.xulplanet.com/references/xpcomref/ifaces/nsIAbDirectory.html
-ZinFeedItem.ATTR_TYPE = 'type';
-ZinFeedItem.ATTR_NAME = 'name';
-ZinFeedItem.ATTR_RID  = 'rid';  // <link> elements have this attribute - it's the id of the object in the remote users's account
-ZinFeedItem.ATTR_ZID  = 'zid';  // <link> elements have this attribute - it's the remote user's zimbraId
-ZinFeedItem.ATTR_LKEY = 'lkey'; // TYPE_SF elements have this attribute - it's the key of the <link> element
-ZinFeedItem.ATTR_FKEY = 'fkey'; // TYPE_SF elements have this attribute - it's the key of the foreign <folder> element
-ZinFeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this attribute - it's the key of the TYPE_SF element
-ZinFeedItem.ATTR_PERM = 'perm'; // 
-ZinFeedItem.ATTR_CS   = 'cs';   // checksum
-ZinFeedItem.ATTR_CSGD = 'csgd'; // gd checksum for type == gd items - persisted but not used in compare()
-ZinFeedItem.ATTR_EDIT = 'edit'; // gd edit url - used for deletes
-ZinFeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
-ZinFeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
+FeedItem.ATTR_KEY  = 'key';
+FeedItem.ATTR_MS   = 'ms';
+FeedItem.ATTR_LS   = 'ls';   // last sync - concatenation of gid version, ms, DEL etc eg. 1#-134217729### or 1##1801#1801#
+FeedItem.ATTR_VER  = 'ver';  // only an attribute in the gid
+FeedItem.ATTR_REV  = 'rev';
+FeedItem.ATTR_DEL  = 'del';
+FeedItem.ATTR_ID   = 'id';
+FeedItem.ATTR_L    = 'l';
+FeedItem.ATTR_TPI  = 'tpi';  // thunderbird pref id - see http://www.xulplanet.com/references/xpcomref/ifaces/nsIAbDirectory.html
+FeedItem.ATTR_TYPE = 'type';
+FeedItem.ATTR_NAME = 'name';
+FeedItem.ATTR_RID  = 'rid';  // <link> elements have this attribute - it's the id of the object in the remote users's account
+FeedItem.ATTR_ZID  = 'zid';  // <link> elements have this attribute - it's the remote user's zimbraId
+FeedItem.ATTR_LKEY = 'lkey'; // TYPE_SF elements have this attribute - it's the key of the <link> element
+FeedItem.ATTR_FKEY = 'fkey'; // TYPE_SF elements have this attribute - it's the key of the foreign <folder> element
+FeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this attribute - it's the key of the TYPE_SF element
+FeedItem.ATTR_PERM = 'perm'; // 
+FeedItem.ATTR_CS   = 'cs';   // checksum
+FeedItem.ATTR_CSGD = 'csgd'; // gd checksum for type == gd items - persisted but not used in compare()
+FeedItem.ATTR_EDIT = 'edit'; // gd edit url - used for deletes
+FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
+FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
 
-ZinFeedItem.TYPE_CN   = 0x01; // contact
-ZinFeedItem.TYPE_FL   = 0x02; // folder
-ZinFeedItem.TYPE_LN   = 0x04; // link
-ZinFeedItem.TYPE_SF   = 0x08; // link-folder - a hybrid of <link> and remote <folder> managed by zindus
-ZinFeedItem.TYPE_MASK = (ZinFeedItem.TYPE_CN | ZinFeedItem.TYPE_FL | ZinFeedItem.TYPE_LN | ZinFeedItem.TYPE_SF);
+FeedItem.TYPE_CN   = 0x01; // contact
+FeedItem.TYPE_FL   = 0x02; // folder
+FeedItem.TYPE_LN   = 0x04; // link
+FeedItem.TYPE_SF   = 0x08; // link-folder - a hybrid of <link> and remote <folder> managed by zindus
+FeedItem.TYPE_MASK = (FeedItem.TYPE_CN | FeedItem.TYPE_FL | FeedItem.TYPE_LN | FeedItem.TYPE_SF);
 
-ZinFeedItem.TYPE_BIMAP = new BiMap(
-		[ZinFeedItem.TYPE_CN, ZinFeedItem.TYPE_FL, ZinFeedItem.TYPE_LN, ZinFeedItem.TYPE_SF],
+FeedItem.TYPE_BIMAP = new BiMap(
+		[FeedItem.TYPE_CN, FeedItem.TYPE_FL, FeedItem.TYPE_LN, FeedItem.TYPE_SF],
 		['cn',                'fl',                'ln'               , 'sf'               ]);
 
-function ZinFeedCollection()
+function FeedCollection()
 {
 	this.m_collection = new Object();
 	this.m_filename   = null; // this is a string containing the filename (like "fred.txt"), not an nsIFile
-	this.m_logger     = ZinLoggerFactory.instance().newZinLogger("ZinFeedCollection"); this.m_logger.level(ZinLogger.NONE);
+	this.m_logger     = newLogger("FeedCollection"); this.m_logger.level(Logger.NONE);
 }
 
-ZinFeedCollection.prototype.clone = function()
+FeedCollection.prototype.clone = function()
 {
 	// we can't run cloneObject() on 'this' because it contains a logger
 	// which contains a reference to an appender which doesn't clone.
 	//
-	var ret = new ZinFeedCollection();
+	var ret = new FeedCollection();
 
-	ret.m_collection = ZinUtil.cloneObject(this.m_collection);
-	ret.m_filename = ZinUtil.cloneObject(this.m_filename);
+	ret.m_collection = cloneObject(this.m_collection);
+	ret.m_filename = cloneObject(this.m_filename);
 
 	return ret;
 }
 
-ZinFeedCollection.prototype.filename = function()
+FeedCollection.prototype.filename = function()
 {
 	if (arguments.length == 1)
 		this.m_filename = arguments[0];
@@ -93,9 +93,9 @@ ZinFeedCollection.prototype.filename = function()
 	return this.m_filename;
 }
 
-ZinFeedCollection.prototype.nsifile = function()
+FeedCollection.prototype.nsifile = function()
 {
-	ZinUtil.assert(this.m_filename);
+	zinAssert(this.m_filename);
 
 	var ret = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
 
@@ -104,70 +104,70 @@ ZinFeedCollection.prototype.nsifile = function()
 	return ret;
 }
 
-ZinFeedCollection.prototype.length = function()
+FeedCollection.prototype.length = function()
 {
-	return ZinUtil.aToLength(this.m_collection);
+	return aToLength(this.m_collection);
 }
 
-ZinFeedCollection.prototype.get = function(key)
+FeedCollection.prototype.get = function(key)
 {
-	ZinUtil.assertAndLog(typeof(key) != 'undefined' && typeof(key) != 'object', "key: " + key);
+	zinAssertAndLog(typeof(key) != 'undefined' && typeof(key) != 'object', "key: " + key);
 	return (this.isPresent(key) ? this.m_collection[key] : null);
 }
 
-ZinFeedCollection.prototype.set = function(zfi)
+FeedCollection.prototype.set = function(zfi)
 {
-	ZinUtil.assert(zfi != null && typeof(zfi) == 'object');
+	zinAssert(zfi != null && typeof(zfi) == 'object');
 
 	// migration-note: remove ATTR_ID when xpi update indicates that no clients are on versions earlier than 0.6.19.20080320.111511
 	// ATTR_ID is only in the assertion below to allow status.txt versions pre 0.6.19.20080320.111511 to load - they had an id= but no key=
 	//
-	ZinUtil.assertAndLog(zfi.isPresent(ZinFeedItem.ATTR_KEY) ||
-	                zfi.isPresent(ZinFeedItem.ATTR_ID),
+	zinAssertAndLog(zfi.isPresent(FeedItem.ATTR_KEY) ||
+	                zfi.isPresent(FeedItem.ATTR_ID),
 					"zfi: " + zfi.toString());
 
-	this.m_collection[zfi.m_properties[ZinFeedItem.ATTR_KEY]] = zfi;
+	this.m_collection[zfi.m_properties[FeedItem.ATTR_KEY]] = zfi;
 }
 
-ZinFeedCollection.prototype.del = function(key)
+FeedCollection.prototype.del = function(key)
 {
-	ZinUtil.assert(this.isPresent(key));
+	zinAssert(this.isPresent(key));
 	delete this.m_collection[key];
 }
 
-ZinFeedCollection.prototype.isPresent = function(key)
+FeedCollection.prototype.isPresent = function(key)
 {
 	return typeof(this.m_collection[key]) != 'undefined';
 }
 
-ZinFeedCollection.prototype.forEach = function(functor, flavour)
+FeedCollection.prototype.forEach = function(functor, flavour)
 {
 	var fContinue;
 
 	if (arguments.length == 1)
-		flavour = ZinFeedCollection.ITER_NON_RESERVED;
+		flavour = FeedCollection.ITER_NON_RESERVED;
 	else if (arguments.length == 2)
-		ZinUtil.assert(flavour == ZinFeedCollection.ITER_ALL || flavour == ZinFeedCollection.ITER_NON_RESERVED);
+		zinAssert(flavour == FeedCollection.ITER_ALL || flavour == FeedCollection.ITER_NON_RESERVED);
 
 	for (var key in this.m_collection)
 	{
-		ZinUtil.assert(this.isPresent(key));
+		zinAssert(this.isPresent(key));
 
-		if (flavour == ZinFeedCollection.ITER_NON_RESERVED && (ZinUtil.isPropertyPresent(ZinFeedItem.KEYS_RESERVED, key)))
+		if (flavour == FeedCollection.ITER_NON_RESERVED && (isPropertyPresent(FeedItem.KEYS_RESERVED, key)))
 			fContinue = true;
 		else
 			fContinue = functor.run(this.m_collection[key]);
 
-		ZinUtil.assert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		if (!fContinue)
 			break;
 	}
 }
 
-ZinFeedCollection.prototype.findFirst = function(functor_is_found)
+FeedCollection.prototype.findFirst = function(functor_is_found)
 {
-	var functor_is_found_arg1 = arguments[ZinFeedCollection.prototype.findFirst.length];
+	var functor_is_found_arg1 = arguments[FeedCollection.prototype.findFirst.length];
 
 	var functor = {
 		zfiFound: null,
@@ -185,12 +185,12 @@ ZinFeedCollection.prototype.findFirst = function(functor_is_found)
 	return functor.zfiFound ? functor.zfiFound.key() : null;
 }
 
-ZinFeedCollection.prototype.load = function()
+FeedCollection.prototype.load = function()
 {
 	var functor =
 	{
 		m_zfc: this,
-		m_zfi: new ZinFeedItem(),
+		m_zfi: new FeedItem(),
 		m_logger: this.m_logger,
 		run: function(line)
 		{
@@ -200,10 +200,10 @@ ZinFeedCollection.prototype.load = function()
 				; // do nothing
 			else if (line.length == 0)
 			{
-				// this.m_logger.debug("setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[ZinFeedItem.ATTR_KEY] + "]");
+				// this.m_logger.debug("setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[FeedItem.ATTR_KEY] + "]");
 
 				this.m_zfc.set(this.m_zfi);
-				this.m_zfi = new ZinFeedItem();
+				this.m_zfi = new FeedItem();
 			}
 			else
 			{
@@ -223,7 +223,7 @@ ZinFeedCollection.prototype.load = function()
 		Filesystem.fileReadByLine(file.path, functor);
 }
 
-ZinFeedCollection.prototype.save = function()
+FeedCollection.prototype.save = function()
 {
 	var content = this.toString("\n");
 
@@ -243,7 +243,7 @@ ZinFeedCollection.prototype.save = function()
 // - by zid
 // - by ascending key
 //
-ZinFeedCollection.prototype.toString = function(eol_char_arg)
+FeedCollection.prototype.toString = function(eol_char_arg)
 {
 	var ret = "";
 	var i, key,zid;
@@ -251,10 +251,10 @@ ZinFeedCollection.prototype.toString = function(eol_char_arg)
 	var a_key = new Object();
 
 	var a_sort_order = [ null,
-						 ZinFeedItem.typeAsString(ZinFeedItem.TYPE_FL),
-						 ZinFeedItem.typeAsString(ZinFeedItem.TYPE_LN),
-	                     ZinFeedItem.typeAsString(ZinFeedItem.TYPE_SF),
-						 ZinFeedItem.typeAsString(ZinFeedItem.TYPE_CN) ];
+						 FeedItem.typeAsString(FeedItem.TYPE_FL),
+						 FeedItem.typeAsString(FeedItem.TYPE_LN),
+	                     FeedItem.typeAsString(FeedItem.TYPE_SF),
+						 FeedItem.typeAsString(FeedItem.TYPE_CN) ];
 
 	for (i = 0; i < a_sort_order.length; i++)
 		a_key[a_sort_order[i]] = new Object();
@@ -263,14 +263,14 @@ ZinFeedCollection.prototype.toString = function(eol_char_arg)
 	{
 		zfi = this.get(key);
 
-		if (zfi.isPresent(ZinFeedItem.ATTR_TYPE))
-			type = zfi.get(ZinFeedItem.ATTR_TYPE);
+		if (zfi.isPresent(FeedItem.ATTR_TYPE))
+			type = zfi.get(FeedItem.ATTR_TYPE);
 		else
 			type = null;
 
-		zuio = new Zuio(zfi.get(ZinFeedItem.ATTR_KEY));
+		zuio = new Zuio(zfi.get(FeedItem.ATTR_KEY));
 
-		if (!ZinUtil.isPropertyPresent(a_key[type], zuio.zid))
+		if (!isPropertyPresent(a_key[type], zuio.zid))
 			a_key[type][zuio.zid] = new Array();
 
 		a_key[type][zuio.zid].push(isNaN(zuio.id) ? zuio.id : Number(zuio.id));
@@ -301,179 +301,179 @@ ZinFeedCollection.prototype.toString = function(eol_char_arg)
 // The constructor takes one of three styles of arguments:
 // - 0 arguments
 // - 2 arguments                where the first argument is type and
-//                                    the second argument is an object: eg new ZinFeedItem(ZinFeedItem.TYPE_FL, attributes)
+//                                    the second argument is an object: eg new FeedItem(FeedItem.TYPE_FL, attributes)
 // - an odd number of arguments where the first argument is type, followed by zero or more 
-//                                    pairs of property/values: eg new ZinFeedItem(ZinFeedItem.TYPE_FL, ZinFeedItem.ATTR_KEY, 33);
+//                                    pairs of property/values: eg new FeedItem(FeedItem.TYPE_FL, FeedItem.ATTR_KEY, 33);
 //
-function ZinFeedItem()
+function FeedItem()
 {
 	this.m_properties = new Object();
 
 	if (arguments.length == 2)
 	{
-		ZinUtil.assert(arguments[0] && typeof(arguments[1]) == 'object' && ZinUtil.isPropertyPresent(arguments[1], ZinFeedItem.ATTR_KEY));
+		zinAssert(arguments[0] && typeof(arguments[1]) == 'object' && isPropertyPresent(arguments[1], FeedItem.ATTR_KEY));
 
-		this.set(ZinFeedItem.ATTR_TYPE, ZinFeedItem.typeAsString(arguments[0]));
+		this.set(FeedItem.ATTR_TYPE, FeedItem.typeAsString(arguments[0]));
 		this.set(arguments[1]);
 	}
 	else if (arguments.length > 0)
 	{
-		ZinUtil.assert(arguments.length % 2 == 1);
+		zinAssert(arguments.length % 2 == 1);
 
 		for (var i = 1; i < arguments.length; i+=2)
 		{
-			ZinUtil.assertAndLog(typeof(arguments[i]) != 'undefined',   " undefined key for: " + arguments[0]);
-			ZinUtil.assertAndLog(typeof(arguments[i+1]) != 'undefined', " undefined value for attribute: " + arguments[i]);
+			zinAssertAndLog(typeof(arguments[i]) != 'undefined',   " undefined key for: " + arguments[0]);
+			zinAssertAndLog(typeof(arguments[i+1]) != 'undefined', " undefined value for attribute: " + arguments[i]);
 			this.m_properties[arguments[i]] = arguments[i+1];
 		}
 
-		ZinUtil.assert(!ZinUtil.isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_TYPE));
-		ZinUtil.assertAndLog(ZinUtil.isPropertyPresent(this.m_properties, ZinFeedItem.ATTR_KEY),
-		                   " ATTR_KEY missing from: " + ZinUtil.aToString(this.m_properties));
+		zinAssert(!isPropertyPresent(this.m_properties, FeedItem.ATTR_TYPE));
+		zinAssertAndLog(isPropertyPresent(this.m_properties, FeedItem.ATTR_KEY),
+		                   " ATTR_KEY missing from: " + aToString(this.m_properties));
 
 		if (arguments[0] != null)
-			this.m_properties[ZinFeedItem.ATTR_TYPE] = ZinFeedItem.typeAsString(arguments[0]);
+			this.m_properties[FeedItem.ATTR_TYPE] = FeedItem.typeAsString(arguments[0]);
 	}
 }
 
-ZinFeedItem.prototype.get = function(key)
+FeedItem.prototype.get = function(key)
 {
-	ZinUtil.assertAndLog(this.isPresent(key), " key not present: " + key +
-	                                     " key: " + (ZinUtil.isPropertyPresent(this.m_properties, 'key') ? this.m_properties['key'] : "undefined"));
+	zinAssertAndLog(this.isPresent(key), " key not present: " + key +
+	                                     " key: " + (isPropertyPresent(this.m_properties, 'key') ? this.m_properties['key'] : "undefined"));
 
 	return this.m_properties[key];
 }
 
-ZinFeedItem.prototype.getOrNull = function(key)
+FeedItem.prototype.getOrNull = function(key)
 {
 	return this.isPresent(key) ? this.m_properties[key] : null;
 }
 
-ZinFeedItem.prototype.del = function(key)
+FeedItem.prototype.del = function(key)
 {
-	ZinUtil.assert(this.isPresent(key));
+	zinAssert(this.isPresent(key));
 	delete this.m_properties[key];
 }
 
 // - if one argument:  an object (iterated for properties)
 // - if two arguments: name = value
 //
-ZinFeedItem.prototype.set = function(arg1, arg2)
+FeedItem.prototype.set = function(arg1, arg2)
 {
 	if (arguments.length == 2)
 	{
-		ZinUtil.assert(typeof(arg2) != 'object' && arg2 != null);
+		zinAssert(typeof(arg2) != 'object' && arg2 != null);
 
 		this.m_properties[arg1] = arg2;
 	}
 	else if (arguments.length == 1 && (typeof(arg1) == 'object'))
 	{
-		// this is handy for creating/updating an existing ZinFeedItem based on a response from a zimbra server
+		// this is handy for creating/updating an existing FeedItem based on a response from a zimbra server
 		//
-		ZinUtil.assert(this.isPresent(ZinFeedItem.ATTR_TYPE) &&
-		          ZinUtil.isPropertyPresent(arg1, ZinFeedItem.ATTR_KEY) &&
-				  !ZinUtil.isPropertyPresent(arg1, ZinFeedItem.ATTR_TYPE));
+		zinAssert(this.isPresent(FeedItem.ATTR_TYPE) &&
+		          isPropertyPresent(arg1, FeedItem.ATTR_KEY) &&
+				  !isPropertyPresent(arg1, FeedItem.ATTR_TYPE));
 
-		for each (var j in ZinFeedItem.attributesForType(this.type()))
+		for each (var j in FeedItem.attributesForType(this.type()))
 			this.setWhenValueDefined(j, arg1[j]);
 	}
 	else
-		ZinUtil.assert(false);
+		zinAssert(false);
 }
 
-ZinFeedItem.prototype.isPresent = function(key)
+FeedItem.prototype.isPresent = function(key)
 {
 	return typeof(this.m_properties[key]) != 'undefined';
 }
 
-ZinFeedItem.prototype.length = function()
+FeedItem.prototype.length = function()
 {
-	return ZinUtil.aToLength(this.m_properties);
+	return aToLength(this.m_properties);
 }
 
-ZinFeedItem.prototype.id = function()
+FeedItem.prototype.id = function()
 {
-	return this.get(ZinFeedItem.ATTR_ID);
+	return this.get(FeedItem.ATTR_ID);
 }
 
-ZinFeedItem.prototype.name = function()
+FeedItem.prototype.name = function()
 {
-	return this.get(ZinFeedItem.ATTR_NAME);
+	return this.get(FeedItem.ATTR_NAME);
 }
 
-ZinFeedItem.prototype.key = function()
+FeedItem.prototype.key = function()
 {
-	return this.get(ZinFeedItem.ATTR_KEY);
+	return this.get(FeedItem.ATTR_KEY);
 }
 
-ZinFeedItem.prototype.keyParent = function()
+FeedItem.prototype.keyParent = function()
 {
-	var zuio = new Zuio(this.get(ZinFeedItem.ATTR_KEY));
+	var zuio = new Zuio(this.get(FeedItem.ATTR_KEY));
 
-	return Zuio.key(this.get(ZinFeedItem.ATTR_L), zuio.zid);
+	return Zuio.key(this.get(FeedItem.ATTR_L), zuio.zid);
 }
 
-ZinFeedItem.prototype.isForeign = function()
+FeedItem.prototype.isForeign = function()
 {
-	var zuio = new Zuio(this.get(ZinFeedItem.ATTR_KEY));
+	var zuio = new Zuio(this.get(FeedItem.ATTR_KEY));
 
 	return (zuio.zid != null);
 }
 
-ZinFeedItem.prototype.type = function()
+FeedItem.prototype.type = function()
 {
-	return ZinFeedItem.TYPE_BIMAP.lookup(null, this.get(ZinFeedItem.ATTR_TYPE));
+	return FeedItem.TYPE_BIMAP.lookup(null, this.get(FeedItem.ATTR_TYPE));
 }
 
-ZinFeedItem.prototype.setWhenValueDefined = function(arg1, arg2)
+FeedItem.prototype.setWhenValueDefined = function(arg1, arg2)
 {
 	if (typeof(arg2) != 'undefined')
 		this.m_properties[arg1] = arg2;
 }
 
-ZinFeedItem.prototype.forEach = function(functor, flavour)
+FeedItem.prototype.forEach = function(functor, flavour)
 {
 	var fContinue;
-	ZinUtil.assert(arguments.length == 2 && (flavour == ZinFeedItem.ITER_ALL || flavour == ZinFeedItem.ITER_GID_ITEM));
+	zinAssert(arguments.length == 2 && (flavour == FeedItem.ITER_ALL || flavour == FeedItem.ITER_GID_ITEM));
 
 	for (var i in this.m_properties)
 	{
-		if (flavour == ZinFeedItem.ITER_GID_ITEM && (i == ZinFeedItem.ATTR_KEY || i == ZinFeedItem.ATTR_VER))
+		if (flavour == FeedItem.ITER_GID_ITEM && (i == FeedItem.ATTR_KEY || i == FeedItem.ATTR_VER))
 			fContinue = true;
 		else
 			fContinue = functor.run(i, this.m_properties[i]);
 
-		ZinUtil.assert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		if (!fContinue)
 			break;
 	}
 }
 
-ZinFeedItem.prototype.toString = function(eol_char_arg)
+FeedItem.prototype.toString = function(eol_char_arg)
 {
 	var ret = "";
 	var do_first = { type: null, key: null, id: null, l: null, name: null, ms: null, rev: null };
 	var name;
 
 	for (name in do_first)
-		if (ZinUtil.isPropertyPresent(this.m_properties, name))
+		if (isPropertyPresent(this.m_properties, name))
 			ret += name + "=" + this.m_properties[name] + ((arguments.length == 0 || typeof(eol_char_arg) != 'string') ? " " :eol_char_arg);
 
 	for (name in this.m_properties)
-		if (!ZinUtil.isPropertyPresent(do_first, name))
+		if (!isPropertyPresent(do_first, name))
 			ret += name + "=" + this.m_properties[name] + ((arguments.length == 0 || typeof(eol_char_arg) != 'string') ? " " :eol_char_arg);
 
 	return ret;
 }
 
-ZinFeedItem.prototype.increment = function(key)
+FeedItem.prototype.increment = function(key)
 {
-	ZinUtil.assert(this.isPresent(key));
+	zinAssert(this.isPresent(key));
 
 	var value = this.get(key);
 
-	ZinUtil.assert(!isNaN(value));
+	zinAssert(!isNaN(value));
 
 	var ret = parseInt(value);
 
@@ -482,13 +482,13 @@ ZinFeedItem.prototype.increment = function(key)
 	return ret;
 }
 
-ZinFeedItem.prototype.decrement = function(key)
+FeedItem.prototype.decrement = function(key)
 {
-	ZinUtil.assert(this.isPresent(key));
+	zinAssert(this.isPresent(key));
 
 	var value = this.get(key);
 
-	ZinUtil.assert(!isNaN(value));
+	zinAssert(!isNaN(value));
 
 	var ret = parseInt(value);
 
@@ -497,20 +497,20 @@ ZinFeedItem.prototype.decrement = function(key)
 	return ret;
 }
 
-ZinFeedItem.typeAsString = function(type)
+FeedItem.typeAsString = function(type)
 {
-	return ZinFeedItem.TYPE_BIMAP.lookup(type, null);
+	return FeedItem.TYPE_BIMAP.lookup(type, null);
 }
 
-ZinFeedItem.attributesForType = function(type)
+FeedItem.attributesForType = function(type)
 {
-	var ret = [ ZinFeedItem.ATTR_KEY, ZinFeedItem.ATTR_ID, ZinFeedItem.ATTR_MS, ZinFeedItem.ATTR_L ];
+	var ret = [ FeedItem.ATTR_KEY, FeedItem.ATTR_ID, FeedItem.ATTR_MS, FeedItem.ATTR_L ];
 
 	switch (type) {
-		case ZinFeedItem.TYPE_CN: ret = ret.concat(ZinFeedItem.ATTR_REV);                         break;
-		case ZinFeedItem.TYPE_FL: ret = ret.concat(ZinFeedItem.ATTR_NAME, ZinFeedItem.ATTR_PERM); break;
-		case ZinFeedItem.TYPE_LN: ret = ret.concat(ZinFeedItem.ATTR_NAME, ZinFeedItem.ATTR_ZID, ZinFeedItem.ATTR_RID); break;
-		default: ZinUtil.assertAndLog(false, "unmatched case: " + type);
+		case FeedItem.TYPE_CN: ret = ret.concat(FeedItem.ATTR_REV);                         break;
+		case FeedItem.TYPE_FL: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_PERM); break;
+		case FeedItem.TYPE_LN: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_ZID, FeedItem.ATTR_RID); break;
+		default: zinAssertAndLog(false, "unmatched case: " + type);
 	}
 
 	return ret;

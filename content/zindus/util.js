@@ -21,11 +21,7 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function ZinUtil()
-{
-}
-
-ZinUtil.assert = function(expr)
+function zinAssert(expr)
 {
 	if (!expr || arguments.length != 1)
 	{
@@ -37,12 +33,9 @@ ZinUtil.assert = function(expr)
 		}
 		catch(ex)
 		{
-			if (typeof(ZinLoggerFactory) == 'function' &&
-			    typeof(ZinLoggerFactory.instance()) == 'object' &&
-				typeof(ZinLoggerFactory.instance().logger()) == 'object' &&
-				typeof(ZinLoggerFactory.instance().logger().error) == 'function')
+			if (isSingletonInScope())
 			{
-				var logger = ZinLoggerFactory.instance().newZinLogger("Utils");
+				var logger = newLogger("Utils");
 				logger.fatal(ex.message);
 				logger.fatal(ex.stack);
 			}
@@ -52,7 +45,7 @@ ZinUtil.assert = function(expr)
 			else
 				print(ex.message + " stack: \n" + ex.stack);
 
-			var zwc = new ZinWindowCollection([ 'zindus-syncwindow' ]);
+			var zwc = new WindowCollection([ 'zindus-syncwindow' ]);
 			zwc.populate();
 			var zwc_functor = {
 				run: function(win) {
@@ -66,16 +59,16 @@ ZinUtil.assert = function(expr)
 	}
 }
 
-ZinUtil.assertAndLog = function(expr, msg)
+function zinAssertAndLog(expr, msg)
 {
 	if (!expr)
 	{
-		ZinLoggerFactory.instance().newZinLogger("Utils").error(msg)
-		ZinUtil.assert(expr);
+		newLogger("Utils").error(msg)
+		zinAssert(expr);
 	}
 }
 
-ZinUtil.cloneObject = function(obj)
+function cloneObject(obj)
 {
 	var ret;
 
@@ -84,7 +77,7 @@ ZinUtil.cloneObject = function(obj)
 		ret = new Object();
 
 		for (var i in obj)
-			ret[i] = ZinUtil.cloneObject(obj[i]);
+			ret[i] = cloneObject(obj[i]);
 	}
 	else
 	{
@@ -94,7 +87,7 @@ ZinUtil.cloneObject = function(obj)
 	return ret;
 }
 
-ZinUtil.stringBundleString = function(id_string, args)
+function stringBundleString(id_string, args)
 {
 	var string_bundle_id = "zindus-stringbundle";
 
@@ -102,18 +95,15 @@ ZinUtil.stringBundleString = function(id_string, args)
 	var ret = "";
 	var is_exception = false;
 
-	ZinUtil.assert(arguments.length == 1 || arguments.length == 2);
-	ZinUtil.assertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
+	zinAssert(arguments.length == 1 || arguments.length == 2);
+	zinAssertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
 
 	if (stringbundle == null)
 	{
 		ret = "Unable to load string-bundle: " + string_bundle_id;
 
-		if (typeof(ZinLoggerFactory) == 'function' &&
-		    typeof(ZinLoggerFactory.instance()) == 'object' &&
-			typeof(ZinLoggerFactory.instance().logger()) == 'object' &&
-			typeof(ZinLoggerFactory.instance().logger().error) == 'function')
-			ZinLoggerFactory.instance().logger().error(ret);
+		if (isSingletonInScope())
+			Singleton.instance().logger().error(ret);
 	}
 	else try
 	{
@@ -124,25 +114,22 @@ ZinUtil.stringBundleString = function(id_string, args)
 	}
 	catch (e)
 	{
-		if (typeof(ZinLoggerFactory) == 'function' &&
-		    typeof(ZinLoggerFactory.instance()) == 'object' &&
-			typeof(ZinLoggerFactory.instance().logger()) == 'object' &&
-			typeof(ZinLoggerFactory.instance().logger().error) == 'function')
-			ZinLoggerFactory.instance().logger().error("stringBundleString: id_string: " + id_string + " exception: " + e);
+		if (isSingletonInScope())
+			Singleton.instance().logger().error("stringBundleString: id_string: " + id_string + " exception: " + e);
 		else
-			dump("stringBundleString: ZinLoggerFactory.instance().logger() undefined: id_string: " + id_string + " exception: " + e);
+			dump("stringBundleString: Singleton.instance().logger() undefined: id_string: " + id_string + " exception: " + e);
 
 		is_exception = true;
 	}
 
-	ZinUtil.assertAndLog(!is_exception, "id_string: " + id_string);
+	zinAssertAndLog(!is_exception, "id_string: " + id_string);
 
 	return ret;
 }
 
-ZinUtil.xmlDocumentToString = function(doc)
+function xmlDocumentToString(doc)
 {
-	ZinUtil.assert(doc != null);
+	zinAssert(doc != null);
 
 	var serializer = new XMLSerializer();
 
@@ -154,13 +141,13 @@ ZinUtil.xmlDocumentToString = function(doc)
 	}
 	catch (e)
 	{
-		ZinUtil.assert(false);
+		zinAssert(false);
 	}
 
 	return str;
 }
 
-ZinUtil.conditionalGetElementByTagNameNS = function(doc, ns, tag, object, property)
+function conditionalGetElementByTagNameNS(doc, ns, tag, object, property)
 {
 	var nodelist = doc.getElementsByTagNameNS(ns, tag);
 
@@ -168,9 +155,9 @@ ZinUtil.conditionalGetElementByTagNameNS = function(doc, ns, tag, object, proper
 		object[property] = nodelist.item(0).firstChild.nodeValue;
 }
 
-ZinUtil.attributesFromNode = function(node)
+function attributesFromNode(node)
 {
-	ZinUtil.assert(node.nodeType == Node.ELEMENT_NODE);
+	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
 	var ret = new Object();
 	
@@ -183,7 +170,7 @@ ZinUtil.attributesFromNode = function(node)
 
 // return a printable string for an associatve array
 //
-ZinUtil.aToString = function(obj)
+function aToString(obj)
 {
 	var ret = "";
 	var first = true;
@@ -208,25 +195,25 @@ ZinUtil.aToString = function(obj)
 				ret += "Null";
 			else if (typeof(obj[x]) == 'object')
 				try {
-					ret += "{ " + ZinUtil.aToString(obj[x]) + " }";
+					ret += "{ " + aToString(obj[x]) + " }";
 				} catch (e)
 				{
 					dump("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-					ZinLoggerFactory.instance().logger().error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-					ZinLoggerFactory.instance().logger().error("ret: " + ret);
+					Singleton.instance().logger().error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
+					Singleton.instance().logger().error("ret: " + ret);
 				}
 			else if (typeof(obj[x]) == 'function')
 				ret += "Function";
 			else
 				ret += obj[x];
 
-			ZinUtil.assert(!was_exception_thrown);
+			zinAssert(!was_exception_thrown);
 		}
 
 	return ret;
 }
 
-ZinUtil.keysToString = function(obj)
+function keysToString(obj)
 {
 	ret = "";
 	var is_first = true;
@@ -244,7 +231,7 @@ ZinUtil.keysToString = function(obj)
 	return ret;
 }
 
-ZinUtil.aToLength = function(obj)
+function aToLength(obj)
 {
 	var count = 0;
 
@@ -254,45 +241,45 @@ ZinUtil.aToLength = function(obj)
 	return count;
 }
 
-ZinUtil.isInArray = function(item, a)
+function isInArray(item, a)
 {
-	ZinUtil.assert(typeof a == 'object' && typeof a.indexOf == 'function');
+	zinAssert(typeof a == 'object' && typeof a.indexOf == 'function');
 
 	return a.indexOf(item) != -1;
 }
 
 // isIn(id_fsm, [ blah1, blah2 ] )
 
-ZinUtil.isPropertyPresent = function(obj, property)
+function isPropertyPresent(obj, property)
 {
-	ZinUtil.assertAndLog(typeof(obj) == 'object', "argument[0] of this function should be a hash!"); // catch programming errors
-	ZinUtil.assertAndLog(arguments.length == 2,   "this function takes two arguments!");
+	zinAssertAndLog(typeof(obj) == 'object', "argument[0] of this function should be a hash!"); // catch programming errors
+	zinAssertAndLog(arguments.length == 2,   "this function takes two arguments!");
 
 	return (typeof(obj[property]) != 'undefined');
 }
 
 // return true iff the keys in both objects match
 //
-ZinUtil.isMatchObjectKeys = function(obj1, obj2)
+function isMatchObjectKeys(obj1, obj2)
 {
 	var i;
 	var ret = true;
 
 	if (ret)
 		for (i in obj1)
-			if (!ZinUtil.isPropertyPresent(obj2, i))
+			if (!isPropertyPresent(obj2, i))
 			{
 				ret = false;
-				// ZinLoggerFactory.instance().newZinLogger("Utils").debug("ZinUtil.isMatchObjectKeys: mismatched key: " + i);
+				// newLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 
 	if (ret)
 		for (i in obj2)
-			if (!ZinUtil.isPropertyPresent(obj1, i))
+			if (!isPropertyPresent(obj1, i))
 			{
 				ret = false;
-				// ZinLoggerFactory.instance().newZinLogger("Utils").debug("ZinUtil.isMatchObjectKeys: mismatched key: " + i);
+				// newLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
 				break;
 			}
 
@@ -301,11 +288,11 @@ ZinUtil.isMatchObjectKeys = function(obj1, obj2)
 
 // return true iff the both the keys and the values in both objects match
 // 
-ZinUtil.isMatchObjects = function(obj1, obj2)
+function isMatchObjects(obj1, obj2)
 {
 	var is_match = true;
 
-	is_match = is_match &&ZinUtil.isMatchObjectKeys(obj1, obj2);
+	is_match = is_match &&isMatchObjectKeys(obj1, obj2);
 
 	if (is_match)
 		for (var i in obj1)
@@ -320,12 +307,12 @@ ZinUtil.isMatchObjects = function(obj1, obj2)
 
 // return true iff each element in the array has a matching key in the object
 //
-ZinUtil.isMatchArrayElementInObject = function(a, obj)
+function isMatchArrayElementInObject(a, obj)
 {
 	var ret = true;
 
 	for (var i = 0; i < a.length; i++)
-		if (!ZinUtil.isPropertyPresent(obj, a[i]))
+		if (!isPropertyPresent(obj, a[i]))
 		{
 			ret = false;
 			break;
@@ -338,14 +325,14 @@ ZinUtil.isMatchArrayElementInObject = function(a, obj)
 // one argument - an array with an even number of elements
 // an even number of arguments
 //
-ZinUtil.newObject = function()
+function newObject()
 {
 	var ret = new Object();
 	var args;
 
 	if (arguments.length == 1)
 	{
-		ZinUtil.assert(typeof(arguments[0]) == 'object');
+		zinAssert(typeof(arguments[0]) == 'object');
 
 		args = arguments[0];
 	}
@@ -358,7 +345,12 @@ ZinUtil.newObject = function()
 	return ret;
 }
 
-ZinUtil.firstKeyInObject = function(obj)
+function newLogger(prefix)
+{
+	return new Logger(Singleton.instance().loglevel(), prefix);
+}
+
+function firstKeyInObject(obj)
 {
 	var ret = null;
 
@@ -368,19 +360,19 @@ ZinUtil.firstKeyInObject = function(obj)
 		break;
 	}
 
-	ZinUtil.assert(ret != null);
+	zinAssert(ret != null);
 
 	return ret;
 }
 
-ZinUtil.getTime = function()
+function getTime()
 {
 	var now = new Date();
 
 	return now.getTime();
 }
 
-ZinUtil.getFriendlyTimeString = function(increment)
+function getFriendlyTimeString(increment)
 {
 	var date = new Date();
 
@@ -390,7 +382,7 @@ ZinUtil.getFriendlyTimeString = function(increment)
 	return date.toLocaleString();
 }
 
-ZinUtil.hyphenate = function()
+function hyphenate()
 {
 	var ret = "";
 	var isFirst = true;
@@ -398,7 +390,7 @@ ZinUtil.hyphenate = function()
 	var args;
 	var startAt;
 
-	ZinUtil.assert(arguments.length >= 2);
+	zinAssert(arguments.length >= 2);
 
 	if (arguments[1] instanceof Array)
 	{
@@ -413,7 +405,7 @@ ZinUtil.hyphenate = function()
 
 	for (var i = startAt; i < args.length; i++)
 	{
-		ZinUtil.assertAndLog(typeof(args[i]) == 'string' ||
+		zinAssertAndLog(typeof(args[i]) == 'string' ||
 		                     typeof(args[i]) == 'number', args[i] + " is not a string or number, typeof: " + typeof(args[i]));
 
 		if (isFirst)
@@ -428,23 +420,23 @@ ZinUtil.hyphenate = function()
 	return ret;
 }
 
-ZinUtil.isValidSourceId = function(sourceid)
+function isValidSourceId(sourceid)
 {
 	return (sourceid == SOURCEID_TB || sourceid == SOURCEID_AA);
 }
 
-ZinUtil.isValidFormat = function(format)
+function isValidFormat(format)
 {
-	return ZinUtil.isInArray(format, A_VALID_FORMATS);
+	return isInArray(format, A_VALID_FORMATS);
 }
 
-ZinUtil.getBimapFormat = function()
+function getBimapFormat()
 {
 	return new BiMap( [ FORMAT_TB, FORMAT_ZM, FORMAT_GD ],
 	                  [ 'tb',      'zm',      'gd'      ]);
 }
 
-ZinUtil.isValidUrl = function(url)
+function isValidUrl(url)
 {
 	var is_valid = true;
 	var xhr      = new XMLHttpRequest();
@@ -470,9 +462,9 @@ ZinUtil.isValidUrl = function(url)
 // is that A's constructor is called when the file is loaded.
 // And of course the scope chain when the file is loaded is likely different from when B's constructor is called.
 // In particular, if the file is loaded from the .xul, then the document isn't fully loaded when document.blah is referenced.
-// To avoid this trickness, if A's constructor references 'document' or 'window' we use ZinUtil.copyPrototype()
+// To avoid this trickness, if A's constructor references 'document' or 'window' we use copyPrototype()
 //
-ZinUtil.copyPrototype = function(child, parent)
+function copyPrototype(child, parent)
 { 
 	var sConstructor = parent.toString(); 
 	var aMatch       = sConstructor.match( /\s*function (.*)\(/ ); 
@@ -484,21 +476,21 @@ ZinUtil.copyPrototype = function(child, parent)
 		child.prototype[i] = parent.prototype[i]; 
 }
 
-ZinUtil.dateSuffixForFolder = function()
+function dateSuffixForFolder()
 {
 	var d = new Date();
 
-	return " " + ZinUtil.hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
-	       "-" + ZinUtil.hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+	return " " + hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
+	       "-" + hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 }
 
 // eg 24 +/- 4 is a number between 16 and 28...
 //
-ZinUtil.randomPlusOrMinus = function(central, varies_by)
+function randomPlusOrMinus(central, varies_by)
 {
 	var ret = central - varies_by + Math.floor(Math.random() * (2 * varies_by + 1));
 
-	// ZinLoggerFactory.instance().newZinLogger("Utils").debug("ZinUtil.randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
+	// newLogger("Utils").debug("randomPlusOrMinus(" + central + ", " + varies_by + ") returns: " + ret);
 
 	return ret;
 }
@@ -516,7 +508,7 @@ ZinUtil.randomPlusOrMinus = function(central, varies_by)
 // whereas our        "version part" is simply                         <number>
 // And in the spec, version parts are compared bytewise whereas here we compare two numbers.
 //
-ZinUtil.compareToolkitVersionStrings = function(string_a, string_b)
+function compareToolkitVersionStrings(string_a, string_b)
 {
 	var a_a = string_a.split(".");
 	var a_b = string_b.split(".");
@@ -531,8 +523,8 @@ ZinUtil.compareToolkitVersionStrings = function(string_a, string_b)
 		var part_int_a = parseInt(part_string_a, 10);
 		var part_int_b = parseInt(part_string_b, 10);
 
-		ZinUtil.assert(part_int_a.toString() == part_string_a); // assert that the parts really are only numbers
-		ZinUtil.assert(part_int_b.toString() == part_string_b); // otherwise, our simplified comparison here is no good
+		zinAssert(part_int_a.toString() == part_string_a); // assert that the parts really are only numbers
+		zinAssert(part_int_b.toString() == part_string_b); // otherwise, our simplified comparison here is no good
 
 		if (part_int_a > part_int_b)
 			ret = 1;
@@ -540,14 +532,14 @@ ZinUtil.compareToolkitVersionStrings = function(string_a, string_b)
 			ret = -1;
 	}
 
-	ZinLoggerFactory.instance().logger().debug("ZinUtil.compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
+	Singleton.instance().logger().debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
 
 	return ret;
 }
 
 // turn obj into a string and pad it out to a given length with spaces - helpul in lining up output in the absence of s/printf
 //
-ZinUtil.strPadTo = function(obj, length)
+function strPadTo(obj, length)
 {
 	var ret = "";
 	var str = new String(obj);
@@ -567,9 +559,9 @@ ZinUtil.strPadTo = function(obj, length)
 	return ret;
 }
 
-ZinUtil.zmPermFromZfi = function(zfi)
+function zmPermFromZfi(zfi)
 {
-	var perm = zfi.getOrNull(ZinFeedItem.ATTR_PERM);
+	var perm = zfi.getOrNull(FeedItem.ATTR_PERM);
 	var ret  = ZM_PERM_NONE;
 
 	if (perm && perm.length > 0)
@@ -581,12 +573,12 @@ ZinUtil.zmPermFromZfi = function(zfi)
 			ret |= ZM_PERM_WRITE;
 	}
 
-	// ZinLoggerFactory.instance().logger().debug("ZinUtil.zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
+	// Singleton.instance().logger().debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
 
 	return ret;
 }
 
-ZinUtil.arrayfromArguments = function(args, start_at)
+function arrayfromArguments(args, start_at)
 {
 	var ret = new Array();
 
@@ -599,13 +591,13 @@ ZinUtil.arrayfromArguments = function(args, start_at)
 // Trim leading and trailing whitespace from a string.
 // http://javascript.crockford.com/remedial.html
 
-ZinUtil.zinTrim = function(str)
+function zinTrim(str)
 {
 	var ret;
 
 	if (str)
 	{
-		ZinUtil.assert(typeof(str) == "string");
+		zinAssert(typeof(str) == "string");
 
 		ret = str.replace(/^\s+|\s+$/g, "");
 	}
@@ -619,7 +611,7 @@ ZinUtil.zinTrim = function(str)
 // this is a workaround
 // Handy during testing...
 //
-ZinUtil.sleep = function(milliseconds)
+function zinSleep(milliseconds)
 {
 	var start = new Date();
 	var current = null;
@@ -630,24 +622,31 @@ ZinUtil.sleep = function(milliseconds)
 	while (current - start < milliseconds);
 } 
 
-ZinUtil.leftOfChar = function(str, c)
+function leftOfChar(str, c)
 {
 	if (arguments.length == 1)
 		c = '#';
 
-	ZinUtil.assert(str && c && c.length == 1);
+	zinAssert(str && c && c.length == 1);
 
 	return str.substr(0, str.indexOf(c));
 }
 
 // rfc3986 refers to the part to the right of the hash as "fragment"
 //
-ZinUtil.rightOfChar = function(str, c)
+function rightOfChar(str, c)
 {
 	if (arguments.length == 1)
 		c = '#';
 
-	ZinUtil.assert(str && c && c.length == 1);
+	zinAssert(str && c && c.length == 1);
 
 	return str.substr(str.indexOf(c) + 1);
+}
+
+function isSingletonInScope()
+{
+	return (typeof(Singleton) == 'function' && typeof(Singleton.instance()) == 'object'
+	                                        && typeof(Singleton.instance().logger()) == 'object'
+											&& typeof(Singleton.instance().logger().error) == 'function');
 }
