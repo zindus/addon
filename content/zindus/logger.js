@@ -21,8 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/prefset.js");
-
 // simple logging api, no appenders
 
 ZinLogger.NONE  = 6;

@@ -27,7 +27,6 @@
 // But, when "this" is called back by the observer service, the file of source code is no longer loaded into javascript scope,
 // so the static methods are gone.  So anything that's required by .observe() must be a per-object method.  Hence the duplication.
 //
-include("chrome://zindus/content/observerservice.js");
 
 function ZinMaestro()
 {

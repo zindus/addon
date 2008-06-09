@@ -21,9 +21,7 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/feed.js");
-include("chrome://zindus/content/lso.js");
-include("chrome://zindus/content/gdaddressconverter.js");
+ZindusScopeRegistry.includejs("contactconverter.js");
 
 function ZinTestHarness()
 {
@@ -42,6 +40,7 @@ ZinTestHarness.prototype.run = function()
 {
 	var ret = true;
 
+	ret = ret && this.testScope();
 	// ret = ret && this.testCrc32();
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testFilesystem();
@@ -62,8 +61,8 @@ ZinTestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContacts1();
 	// ret = ret && this.testGoogleContacts2();
 	// ret = ret && this.testGoogleContacts3();
-	ret = ret && this.testGdAddressConverter();
-	ret = ret && this.testGdContact();
+	// ret = ret && this.testGdAddressConverter();
+	// ret = ret && this.testGdContact();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1087,6 +1086,48 @@ ZinTestHarness.prototype.testGdContact = function()
 	contact.updateFromProperties(gd_properties);
 	this.m_logger.debug("contact after update: " + contact.toString());
 	ZinUtil.assert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
+
+	return true;
+}
+
+ZinTestHarness.prototype.testScope = function()
+{
+	const scopeRegistry = {
+		subscriptLoader: Components.classes["@mozilla.org/moz/jssubscript-loader;1"].
+		                       getService(Components.interfaces.mozIJSSubScriptLoader),
+		registeredScopes: {},
+		getScope: function getScope(aScopeId) {
+			if (typeof this.registeredScopes[aScopeId] == "undefined")
+				this.registeredScopes[aScopeId] = {};
+			return this.registeredScopes[aScopeId];
+		},
+		loadScriptByScope: function loadScriptByScope(aURL, aScopeId) {
+			if (aScopeId) {
+				var scopeObj = this.getScope(aScopeId);
+				this.subscriptLoader.loadSubScript(aURL, scopeObj);
+			} else {
+				this.subscriptLoader.loadSubScript(aURL);
+			}
+		}
+	};
+
+	scopeRegistry.loadScriptByScope("chrome://zindus/content/prefset.js", "fred");
+	scopeRegistry.loadScriptByScope("chrome://zindus/content/const.js", "fred");
+
+	with (scopeRegistry.getScope("fred"))
+	{
+	dump(typeof scopeRegistry.getScope("fred").PrefSet + "\n");
+	dump(APP_NAME + "\n");
+	scopeRegistry.loadScriptByScope("chrome://zindus/content/blah.js", "fred");
+	scopeRegistry.loadScriptByScope("chrome://zindus/content/blah2.js", "fred");
+
+	var b = new Blah2();
+	dump(b.blah().x() + "\n");
+
+	function F() { }
+	}
+
+	dump(typeof scopeRegistry.getScope("fred").F + "\n");
 
 	return true;
 }

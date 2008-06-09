@@ -21,20 +21,9 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/prefset.js");
-include("chrome://zindus/content/bimap.js");
-include("chrome://zindus/content/payload.js");
-include("chrome://zindus/content/logger.js");
-include("chrome://zindus/content/removedatastore.js");
-include("chrome://zindus/content/passwordmanager.js");
-include("chrome://zindus/content/mozillapreferences.js");
-include("chrome://zindus/content/util.js");
-include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/syncfsmexitstatus.js");
-include("chrome://zindus/content/syncfsm.js");
-include("chrome://zindus/content/testharness.js");
-include("chrome://zindus/content/timer.js");
-include("chrome://zindus/content/prefsadvanced.js");
+ZindusScopeRegistry.includejs("payload.js");
+ZindusScopeRegistry.includejs("testharness.js");
+ZindusScopeRegistry.includejs("prefsadvanced.js");
 
 const GOOGLE_URL_CLIENT_LOGIN = "https://www.google.com/accounts/ClientLogin";
 

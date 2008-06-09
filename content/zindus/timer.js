@@ -21,10 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/syncfsmobserver.js");
-include("chrome://zindus/content/windowcollection.js");
-include("chrome://zindus/content/statuspanel.js");
-
 function ZinTimerFunctorSync(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {
 	ZinUtil.assert(arguments.length == 3);

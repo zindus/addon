@@ -31,20 +31,17 @@
 	id="zindus-syncwindow"
 	title = "Zindus Sync"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="window.wd = new SyncWindow(); window.wd.onLoad();"
+	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new SyncWindow(); } window.wd.onLoad();"
 	ondialogcancel="return window.wd.onCancel();"
 	ondialogaccept="return window.wd.onAccept();"
 	buttons="cancel"
 	>
 
-	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/util.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/bimap.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/logger.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/syncwindow.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/scope.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
+	<script type="application/x-javascript"> <![CDATA[
+		with (ZindusScopeRegistry.getScope()) { ZindusScopeRegistry.includejs('syncwindow.js'); }
+	]]> </script>
 
 	<stringbundleset>
 		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />

@@ -25,27 +25,21 @@
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
-<overlay
-	id="zindus-addressbookoverlay" 
-	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	>
+<overlay id="zindus-addressbookoverlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
 
-	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/util.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/bimap.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/logger.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/feed.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/windowcollection.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/statuspanel.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/addressbookoverlay.js" />
+	<script type="application/x-javascript" src="chrome://zindus/content/scope.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
+
+	<script type="application/x-javascript"> <![CDATA[
+		window.addEventListener('load',
+			function() {
+				with (ZindusScopeRegistry.getScope()) { StatusPanel.update(); }
+			}, false);
+	]]> </script>
 
 	<stringbundleset id="stringbundleset" >
 		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
 	</stringbundleset>
-
 
 	<statusbar id="status-bar" >
 		<statusbarpanel id="zindus-progresspanel" hidden="true" insertafter="statusText" >

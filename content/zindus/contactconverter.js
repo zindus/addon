@@ -21,8 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/crc32.js");
-include("chrome://zindus/content/gdaddressconverter.js");
+ZindusScopeRegistry.includejs("crc32.js");
+ZindusScopeRegistry.includejs("gdaddressconverter.js");
 
 // For the Thunderbird properties, see: mozilla/mailnews/addrbook/resources/content/abCardOverlay.js
 // which is a subset of the constants defined in mozilla/mailnews/addrbook/public/nsIAddrDatabase.idl

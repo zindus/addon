@@ -21,13 +21,7 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/syncfsm.js");
-include("chrome://zindus/content/filesystem.js");
-include("chrome://zindus/content/payload.js");
-include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/syncfsmobserver.js");
-include("chrome://zindus/content/windowcollection.js");
-include("chrome://zindus/content/statuspanel.js");
+ZindusScopeRegistry.includejs("payload.js");
 
 function SyncWindow()
 {

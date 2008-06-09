@@ -21,28 +21,23 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/fsm.js");
-include("chrome://zindus/content/zmsoapdocument.js");
-include("chrome://zindus/content/zmcontact.js");
-include("chrome://zindus/content/gdcontact.js");
-include("chrome://zindus/content/xpath.js");
-include("chrome://zindus/content/addressbook.js");
-include("chrome://zindus/content/contactconverter.js");
-include("chrome://zindus/content/folderconverter.js");
-include("chrome://zindus/content/feed.js");
-include("chrome://zindus/content/suo.js");
-include("chrome://zindus/content/zuio.js");
-include("chrome://zindus/content/gcs.js");
-include("chrome://zindus/content/lso.js");
-include("chrome://zindus/content/removedatastore.js");
-include("chrome://zindus/content/zidbag.js");
-include("chrome://zindus/content/mozillapreferences.js");
-include("chrome://zindus/content/syncfsmexitstatus.js");
-include("chrome://zindus/content/prefset.js");
-include("chrome://zindus/content/passwordmanager.js");
-include("chrome://zindus/content/stopwatch.js");
-
-const AB_GAL = "GAL";
+ZindusScopeRegistry.includejs("fsm.js");
+ZindusScopeRegistry.includejs("zmsoapdocument.js");
+ZindusScopeRegistry.includejs("zmcontact.js");
+ZindusScopeRegistry.includejs("gdcontact.js");
+ZindusScopeRegistry.includejs("xpath.js");
+ZindusScopeRegistry.includejs("addressbook.js");
+ZindusScopeRegistry.includejs("contactconverter.js");
+ZindusScopeRegistry.includejs("folderconverter.js");
+ZindusScopeRegistry.includejs("feed.js");
+ZindusScopeRegistry.includejs("suo.js");
+ZindusScopeRegistry.includejs("zuio.js");
+ZindusScopeRegistry.includejs("gcs.js");
+ZindusScopeRegistry.includejs("lso.js");
+ZindusScopeRegistry.includejs("zidbag.js");
+ZindusScopeRegistry.includejs("syncfsmexitstatus.js");
+ZindusScopeRegistry.includejs("passwordmanager.js");
+ZindusScopeRegistry.includejs("stopwatch.js");
 
 const ORDER_SOURCE_UPDATE = [
 	Suo.MOD | ZinFeedItem.TYPE_FL, Suo.MOD | ZinFeedItem.TYPE_SF,
@@ -54,8 +49,8 @@ const ORDER_SOURCE_UPDATE = [
 ];
 
 const AUTO_INCREMENT_STARTS_AT = 256;  // the 'next' attribute of the AUTO_INCREMENT item starts at this value + 1.
-
-const ZM_FIRST_USER_ID = 256;
+const ZM_FIRST_USER_ID         = 256;
+const AB_GAL                   = "GAL";
 
 function SyncFsm()
 {

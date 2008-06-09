@@ -34,19 +34,19 @@
 	buttonlabelextra2="&ZinPrefs.buttonlabelextra2;"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="window.wd = new Prefs; window.wd.onLoad(event.target);"
+	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new Prefs(); } window.wd.onLoad(event.target);"
 	oncommand="window.wd.onCommand(event.target.id);"
 	ondialogaccept="window.wd.onAccept();"
 	ondialogcancel="window.wd.onCancel();"
 	ondialogextra2="window.wd.onHelp('http://www.zindus.com/faq-thunderbird/');"
 	>
 
-	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/util.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/prefsdialog.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/scope.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
+	<script type="application/x-javascript"> <![CDATA[
+		with (ZindusScopeRegistry.getScope()) { ZindusScopeRegistry.includejs('prefsdialog.js'); }
+	]]> </script>
+
 	<!--
 	Notes:
 	- couldn't get the "help" button above to work - use extra2 (which defaults to appearing on the left hand side) instead

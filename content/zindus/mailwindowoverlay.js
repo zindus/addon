@@ -21,24 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-include("chrome://zindus/content/maestro.js");
-include("chrome://zindus/content/timer.js");
-include("chrome://zindus/content/removedatastore.js");
-
-window.addEventListener("load", onLoad, false);
-window.addEventListener("unload", onUnLoad, false);
-
-function onLoad()
-{ 
-	window.zindus = new ZinMailWindowOverlay();
-	window.zindus.onLoad();
-}
-
-function onUnLoad()
-{
-	window.zindus.onUnLoad();
-}
-
 function ZinMailWindowOverlay()
 {
 	this.m_logger           = ZinLoggerFactory.instance().newZinLogger("MailWindowOverlay");
@@ -304,12 +286,4 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 			this.m_logger.debug("migrated pref: " + old + " " + value + " to " + new_key + " " + bimap.lookup(value, null));
 		}
 	}
-}
-
-
-function zindusPrefsDialog()
-{
-	window.openDialog("chrome://zindus/content/prefsdialog.xul", "_blank", "chrome,modal,centerscreen");
-
-	return true;
 }

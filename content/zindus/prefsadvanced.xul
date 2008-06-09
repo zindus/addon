@@ -33,18 +33,17 @@
 	buttons="accept,cancel"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="window.wd = new PrefsAdvanced; window.wd.onLoad(event.target);"
+	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new PrefsAdvanced(); } window.wd.onLoad(event.target);"
 	oncommand="window.wd.onCommand(event.target.id);"
 	ondialogaccept="window.wd.onAccept();"
 	ondialogcancel="window.wd.onCancel();"
 	>
 
-	<script type="application/x-javascript" src="chrome://zindus/content/include.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/const.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/util.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/filesystem.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/mozillapreferences.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/prefsdialog.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/scope.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
+	<script type="application/x-javascript"> <![CDATA[
+		with (ZindusScopeRegistry.getScope()) { ZindusScopeRegistry.includejs('prefsadvanced.js'); }
+	]]> </script>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
