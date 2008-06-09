@@ -21,7 +21,7 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-with (ZindusScopeRegistry.getScope("fred"))
+with (ZindusScopeRegistry.getScope())
 {
 	ZindusScopeRegistry.includejs("const.js");
 	ZindusScopeRegistry.includejs("util.js");

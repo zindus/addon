@@ -37,7 +37,7 @@
 	buttons="cancel"
 	>
 
-	<script type="application/x-javascript" src="chrome://zindus/content/scope.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
 	<script type="application/x-javascript"> <![CDATA[
 		with (ZindusScopeRegistry.getScope()) { ZindusScopeRegistry.includejs('syncwindow.js'); }

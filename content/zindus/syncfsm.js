@@ -5309,8 +5309,8 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 	if (!this.state.m_http || event == "evCancel")
 		return;
 
-	var remote_update_package  = this.state.remote_update_package;
-	var is_response_understood = false;
+	var remote_update_package = this.state.remote_update_package;
+	var is_response_processed = false;
 	var suo       = this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
 	var zfiGid    = this.state.zfcGid.get(suo.gid);
 	var zfcTarget = this.state.sources[suo.sourceid_target]['zfcLuid'];
@@ -5346,7 +5346,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 						msg += "added luid and gid"; 
 
-						is_response_understood = true;
+						is_response_processed = true;
 					}
 				}
 				break;
@@ -5372,7 +5372,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 					msg += "map updated: zfi: " + zfcTarget.get(luid_target);
 
-					is_response_understood = true;
+					is_response_processed = true;
 				}
 				break;
 
@@ -5386,7 +5386,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 					msg += " marking as deleted: id: " + luid_target;
 
-					is_response_understood = true;
+					is_response_processed = true;
 				}
 				break;
 
@@ -5394,7 +5394,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				zinAssertAndLog(false, "unmatched case: " + remote_update_package.bucket);
 		}
 
-	if (!is_response_understood)
+	if (!is_response_processed)
 	{
 		if (this.state.m_http.is_http_status(HTTP_STATUS_409_CONFLICT))
 		{
@@ -5422,7 +5422,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 				zfiWinner.set(FeedItem.ATTR_KEEP, 1);
 
-				is_response_understood = true;
+				is_response_processed = true;
 			}
 			else
 			{
@@ -5454,12 +5454,10 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 			                            " "  + this.state.m_http.m_http_status_code;
 
 			if (this.state.m_http.response('text') && this.state.m_http.response('text').length > 0)
-			{
 				this.state.stopFailDetail += "\n" + stringBundleString("statusFailOnUnableToUpdateServerDetail3") +
 				                             " " + this.state.m_http.response('text');
-			}
 
-			var zfiGid      = this.state.zfcGid.get(suo.gid);
+			var zfiGid = this.state.zfcGid.get(suo.gid);
 
 			if (zfiGid.isPresent(suo.sourceid_winner))
 			{
@@ -5471,11 +5469,11 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 		}
 	}
 
-	if (is_response_understood)
+	if (is_response_processed)
 		delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
 	else
 	{
-		msg += "didn't understand response";
+		msg += "the update operation wasn't successful";
 
 		this.state.is_remote_update_problem = true;
 	}
@@ -6445,7 +6443,7 @@ HttpStateGd.prototype.handleResponse = function()
 	else
 		nextEvent = 'evCancel';
 
-	this.m_logger.debug("HttpStateGd: nextEvent: " + nextEvent + msg);
+	this.m_logger.debug("HttpStateGd: nextEvent: " + nextEvent + " http status: " + this.m_http_status_code + " " + msg);
 
 	return nextEvent;
 }

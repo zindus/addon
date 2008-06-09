@@ -38,7 +38,6 @@ TestHarness.prototype.run = function()
 {
 	var ret = true;
 
-	// ret = ret && this.testScope();
 	// ret = ret && this.testCrc32();
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testFilesystem();
@@ -1081,43 +1080,6 @@ TestHarness.prototype.testGdContact = function()
 	contact.updateFromProperties(gd_properties);
 	// this.m_logger.debug("contact after update: " + contact.toString());
 	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
-
-	return true;
-}
-
-TestHarness.prototype.testScope = function()
-{
-	const scopeRegistry = {
-		subscriptLoader: Components.classes["@mozilla.org/moz/jssubscript-loader;1"].
-		                       getService(Components.interfaces.mozIJSSubScriptLoader),
-		registeredScopes: {},
-		getScope: function getScope(aScopeId) {
-			if (typeof this.registeredScopes[aScopeId] == "undefined")
-				this.registeredScopes[aScopeId] = {};
-			return this.registeredScopes[aScopeId];
-		},
-		loadScriptByScope: function loadScriptByScope(aURL, aScopeId) {
-			if (aScopeId) {
-				var scopeObj = this.getScope(aScopeId);
-				this.subscriptLoader.loadSubScript(aURL, scopeObj);
-			} else {
-				this.subscriptLoader.loadSubScript(aURL);
-			}
-		}
-	};
-
-	scopeRegistry.loadScriptByScope("chrome://zindus/content/prefset.js", "fred");
-	scopeRegistry.loadScriptByScope("chrome://zindus/content/const.js", "fred");
-
-	with (scopeRegistry.getScope("fred"))
-	{
-	dump(typeof scopeRegistry.getScope("fred").PrefSet + "\n");
-	dump(APP_NAME + "\n");
-
-	function F() { }
-	}
-
-	dump(typeof scopeRegistry.getScope("fred").F + "\n");
 
 	return true;
 }

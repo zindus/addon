@@ -40,7 +40,6 @@
 			               label="&ZinToolsMenuItem.label;"
 						   tooltiptext="&ZinToolBarButton.tooltip;"
 			               oncommand="zindusPrefsDialog();" />
-		<!-- class="toolbarbutton-1" -->
 		</toolbarpalette>
 	</toolbox>	
 

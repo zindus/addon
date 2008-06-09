@@ -25,10 +25,7 @@
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
-<overlay
-	id="zindus-mailwindowoverlay-sm" 
-	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	>
+<overlay id="zindus-mailwindowoverlay-sm" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
 
 	<statusbar id="status-bar" >
 		<statusbarpanel id="zindus-progresspanel" hidden="true" insertbefore="unreadMessageCount" >

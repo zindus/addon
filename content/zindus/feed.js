@@ -79,7 +79,7 @@ FeedCollection.prototype.clone = function()
 	var ret = new FeedCollection();
 
 	ret.m_collection = cloneObject(this.m_collection);
-	ret.m_filename = cloneObject(this.m_filename);
+	ret.m_filename   = cloneObject(this.m_filename);
 
 	return ret;
 }
