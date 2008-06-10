@@ -140,29 +140,58 @@ FeedCollection.prototype.isPresent = function(key)
 	return typeof(this.m_collection[key]) != 'undefined';
 }
 
+FeedCollection.prototype.forEachIterator = function(functor, itCollection)
+{
+	var flavour = typeof(itCollection.m_flavour) == 'undefined' ? FeedCollection.ITER_NON_RESERVED : itCollection.m_flavour;
+	var count = 1;
+	var key;
+
+	try { while (true) {
+		key = itCollection.next();
+
+		count++;
+		itCollection.m_count++;
+
+		itCollection.m_is_finished = ! this.forEachDoOne(functor, key, flavour);
+
+		if (itCollection.m_is_finished || count > itCollection.m_chunk)
+			break;
+	} } catch(ex if ex instanceof StopIteration) {
+		itCollection.m_is_finished = true;
+	}
+}
+
 FeedCollection.prototype.forEach = function(functor, flavour)
 {
 	var fContinue;
 
 	if (arguments.length == 1)
 		flavour = FeedCollection.ITER_NON_RESERVED;
-	else if (arguments.length == 2)
-		zinAssert(flavour == FeedCollection.ITER_ALL || flavour == FeedCollection.ITER_NON_RESERVED);
 
 	for (var key in this.m_collection)
 	{
-		zinAssert(this.isPresent(key));
-
-		if (flavour == FeedCollection.ITER_NON_RESERVED && (isPropertyPresent(FeedItem.KEYS_RESERVED, key)))
-			fContinue = true;
-		else
-			fContinue = functor.run(this.m_collection[key]);
-
-		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+		fContinue = this.forEachDoOne(functor, key, flavour);
 
 		if (!fContinue)
 			break;
 	}
+}
+
+FeedCollection.prototype.forEachDoOne = function(functor, key, flavour)
+{
+	var ret;
+
+	zinAssert(flavour == FeedCollection.ITER_ALL || flavour == FeedCollection.ITER_NON_RESERVED);
+	zinAssert(this.isPresent(key));
+
+	if (flavour == FeedCollection.ITER_NON_RESERVED && (isPropertyPresent(FeedItem.KEYS_RESERVED, key)))
+		ret = true;
+	else
+		ret = functor.run(this.m_collection[key]);
+
+	zinAssert(typeof(ret) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+
+	return ret;
 }
 
 FeedCollection.prototype.findFirst = function(functor_is_found)

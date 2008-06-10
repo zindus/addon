@@ -118,7 +118,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGetContactGd1:  { count: 1 },
 		stGetContactGd2:  { count: 1 },
 		stDeXmlifyAddrGd: { count: 1 },
-		stGdConverge4:    { count: 1 },
+		stGdConverge5:    { count: 1 },
 		stGetContactPuGd: { count: 1 },
 		stUpdateGd:       { count: 1 },
 	};
@@ -130,11 +130,12 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stLoadTb:         { count: 1 },
 		stConverge1:      { count: 1 },
 		stConverge2:      { count: 1 },
-		stConverge3:      { count: 1 },
-		stConverge5:      { },
-		stConverge6:      { count: 1 },
+		stConverge3:      {          },
+		stConverge4:      { count: 1 },
+		stConverge6:      { },
 		stConverge7:      { count: 1 },
 		stConverge8:      { count: 1 },
+		stConverge9:      { count: 1 },
 		stUpdateTb:       { count: 1 },
 		stUpdateCleanup:  { count: 1 },
 		stHttpRequest:    { },
@@ -206,12 +207,11 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "Load");        break;
 			case 'stConverge1':     
 			case 'stConverge2':     
-			case 'stConverge3':     
-			case 'stGdConverge4':     
-			case 'stConverge5':     
-			case 'stConverge6':     
+			case 'stConverge4':     
+			case 'stGdConverge5':     
 			case 'stConverge7':     
-			case 'stConverge8':      this.progressReportOn("Converge");                                     break;
+			case 'stConverge8':     
+			case 'stConverge9':      this.progressReportOn("Converge");                                     break;
 			case 'stUpdateTb':       this.progressReportOnSource(context.state.sourceid_tb, "PutOne");      break;
 			case 'stUpdateCleanup':  this.progressReportOn("Saving");                                       break;
 
@@ -360,7 +360,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stLoad' ]))
 						es.failcode(context.state.stopFailCode);
-					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheckGd', 'stLoadTb', 'stConverge1', 'stConverge6', 'stConverge8',
+					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheckGd', 'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9',
 					                                                       'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);
