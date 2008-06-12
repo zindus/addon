@@ -33,6 +33,20 @@ MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
 MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME = "system.zm_prefer_soapurl_scheme";
 MozillaPreferences.GD_SCHEME_DATA_TRANSFER  = "system.gd_data_transfer_scheme";
 
+
+MozillaPreferences.getAllSystemPrefs = function()
+{
+	return newObject(
+		MozillaPreferences.AS_LOGFILE_MAX_SIZE,      'int',
+		MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT, 'int',
+		MozillaPreferences.AS_TIMER_DELAY_ON_START,  'int',
+		MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL,  'int',
+		MozillaPreferences.ZM_SYNC_GAL_IF_FEWER,     'int',
+		MozillaPreferences.ZM_SYNC_GAL_RECHECK,      'int',
+		MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME, 'char',
+		MozillaPreferences.GD_SCHEME_DATA_TRANSFER,  'char' );
+}
+
 function MozillaPreferences()
 {
 	if (arguments.length == 0)
@@ -57,6 +71,7 @@ MozillaPreferences.prototype.branch = function()
 		}
 		catch(ex)
 		{
+			dump(ex.message + " stack: " + ex.stack); // TODO
 			alert("Preferences::getService : " + ex);
 		}
 	}
@@ -90,8 +105,6 @@ MozillaPreferences.prototype.setIntPref = function(branch, key, value)
 
 	zinAssert(!isNaN(intValue));
 
-	// dump("33443366: setIntPref sets preference " + key + ", and " + typeof(intValue) + " " + intValue + "\n");
-
 	if (branch)
 		branch.setIntPref(key, intValue);
 }
@@ -102,53 +115,28 @@ MozillaPreferences.prototype.setCharPref = function(branch, key, value)
 		branch.setCharPref(key, value);
 }
 
-MozillaPreferences.prototype.getCharPrefReal = function(branch, key, mustbepresent)
+MozillaPreferences.prototype.getPrefReal = function(branch, key, type, mustbepresent)
 {
 	var ret = null;
+	var tmp;
+	zinAssert(type == 'int' || type == 'char');
 
 	if (branch)
 	{
 		try
 		{
-			ret = String(branch.getCharPref(key));
-		}
-		catch(ex)
-		{
-			if (mustbepresent)
+			if (type == 'int')
 			{
-				this.reportCatch(ex, key);
+				tmp = branch.getIntPref(key);
 
-				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+				if (!isNaN(tmp))
+					ret = parseInt(tmp);
 			}
-		}
-	}
-
-	return ret;
-}
-
-MozillaPreferences.prototype.getCharPref = function(branch, key)
-{
-	return this.getCharPrefReal(branch, key, true);
-}
-
-MozillaPreferences.prototype.getCharPrefOrNull = function(branch, key)
-{
-	return this.getCharPrefReal(branch, key, false);
-}
-
-MozillaPreferences.prototype.getIntPrefReal = function(branch, key, value, mustbepresent)
-{
-	var ret = null;
-
-	if (branch)
-	{
-		try
-		{
-			var tmp = branch.getIntPref(key);
-
-			if (!isNaN(tmp))
+			else if (type == 'char')
 			{
-				ret = parseInt(tmp);
+				tmp = branch.getCharPref(key);
+
+				ret = String(tmp);
 			}
 		}
 		catch(ex)
@@ -165,15 +153,10 @@ MozillaPreferences.prototype.getIntPrefReal = function(branch, key, value, mustb
 	return ret;
 }
 
-MozillaPreferences.prototype.getIntPref = function(branch, key, value)
-{
-	return this.getIntPrefReal(branch, key, value, true);
-}
-
-MozillaPreferences.prototype.getIntPrefOrNull = function(branch, key, value)
-{
-	return this.getIntPrefReal(branch, key, value, false);
-}
+MozillaPreferences.prototype.getCharPref       = function(branch, key) { return this.getPrefReal(branch, key, 'char', true);  }
+MozillaPreferences.prototype.getCharPrefOrNull = function(branch, key) { return this.getPrefReal(branch, key, 'char', false); }
+MozillaPreferences.prototype.getIntPref        = function(branch, key) { return this.getPrefReal(branch, key, 'int',  true);  }
+MozillaPreferences.prototype.getIntPrefOrNull  = function(branch, key) { return this.getPrefReal(branch, key, 'int',  false); }
 
 MozillaPreferences.prototype.reportCatch = function(ex, key)
 {
@@ -181,4 +164,30 @@ MozillaPreferences.prototype.reportCatch = function(ex, key)
 		alert(ex.message + " with key " + key + " stack: \n" + ex.stack);
 	else
 		print(ex.message + " with key " + key + " stack: \n" + ex.stack);
+}
+
+MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
+{
+	var ret = null;
+
+	if (branch)
+	{
+		try
+		{
+			var a_tmp = branch.getChildList(key, {});
+
+			ret = { };
+			var re = new RegExp('^' + key + '(.*?\.).*$');
+
+			for (var i = 0; i < a_tmp.length; i++)
+				ret[String(a_tmp[i]).replace(re, "$1")] = null;
+		}
+		catch(ex)
+		{
+				this.reportCatch(ex, key);
+				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+		}
+	}
+
+	return ret;
 }

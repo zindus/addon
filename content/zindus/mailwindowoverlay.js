@@ -52,8 +52,8 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 			if (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_AUTO_SYNC) != "false")
 			{
-				var delay_on_start     = parseInt(prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_START ));
-				this.m_delay_on_repeat = parseInt(prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT ));
+				var delay_on_start     = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_START );
+				this.m_delay_on_repeat = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT );
 
 				var x = this.statusSummary();
 

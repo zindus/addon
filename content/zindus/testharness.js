@@ -38,6 +38,7 @@ TestHarness.prototype.run = function()
 {
 	var ret = true;
 
+	ret = ret && this.testPreferencesHaveDefaults();
 	// ret = ret && this.testCrc32();
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testFilesystem();
@@ -1080,6 +1081,54 @@ TestHarness.prototype.testGdContact = function()
 	contact.updateFromProperties(gd_properties);
 	// this.m_logger.debug("contact after update: " + contact.toString());
 	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
+
+	return true;
+}
+
+// test that all "system" and "general" preferences have a value in the default branch
+//
+TestHarness.prototype.testPreferencesHaveDefaults = function()
+{
+	var prefs = new MozillaPreferences();
+	var i, j, prefset, key, value;
+
+	// test system preferences
+	//
+	var a_system_prefs = MozillaPreferences.getAllSystemPrefs();
+
+	for (key in a_system_prefs)
+	{
+		if (a_system_prefs[key] == 'char')
+			value = prefs.getCharPrefOrNull(prefs.defaultbranch(), key);
+		else
+			value = prefs.getIntPrefOrNull(prefs.defaultbranch(), key);
+
+		zinAssertAndLog(value, "key: " + key);
+	}
+
+	// test PrefSet.GENERAL preferences
+	//
+	var a_prefset = [];
+	a_prefset.push({ parent: PrefSet.GENERAL, properties: PrefSet.GENERAL_PROPERTIES, id: null });
+
+	a_preauth = prefs.getImmediateChildren(prefs.branch(), PrefSet.PREAUTH + '.');
+
+	for (var j in a_preauth)
+		a_prefset.push({ parent: PrefSet.PREAUTH, properties: PrefSet.PREAUTH_PROPERTIES, id: j });
+
+	for (i = 0; i < a_prefset.length; i++)
+	{
+		prefset = new PrefSet(a_prefset[i].parent, a_prefset[i].properties);
+		prefset.load(a_prefset[i].id, prefs.defaultbranch());
+
+		this.m_logger.debug("prefset: " + a_prefset[i].parent + " is: " + prefset.toString());
+
+		for (j = 0; j < a_prefset[i].properties.length; j++)
+		{
+			key = a_prefset[i].properties[j];
+			zinAssertAndLog(prefset.getProperty(key), "key: " + key);
+		}
+	}
 
 	return true;
 }

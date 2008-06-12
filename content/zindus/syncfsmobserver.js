@@ -101,6 +101,10 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 	var ret;
 
 	var a_states_zm = {
+		stAuthSelect:     { count: 1 },
+		stAuthLogin:      { count: 1 },
+		stAuthPreAuth:    { count: 1 },
+		stAuthCheck:      { },
 		stGetAccountInfo: { count: 1 },
 		stSelectSoapUrl:  { count: 1 },
 		stSync:           { },
@@ -114,7 +118,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 	};
 
 	var a_states_gd = {
-		stAuthCheckGd:    {          },
+		stAuth:           { count: 1 },
+		stAuthCheck:      { },
 		stGetContactGd1:  { count: 1 },
 		stGetContactGd2:  { count: 1 },
 		stDeXmlifyAddrGd: { count: 1 },
@@ -125,7 +130,6 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 	var a_states_common = {
 		start:            { count: 1 },
-		stAuth:           { count: 1 },
 		stLoad:           { count: 1 },
 		stLoadTb:         { count: 1 },
 		stConverge1:      { count: 1 },
@@ -195,6 +199,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 		switch(fsmstate.newstate)
 		{
 			case 'start':            this.progressReportOn("LoadAddressbooks");                             break;
+			case 'stAuthSelect':
+			case 'stAuthLogin':
+			case 'stAuthPreAuth':
 			case 'stAuth':           this.progressReportOnSource(context.state.sourceid_pr, "RemoteAuth");  break;
 			case 'stLoad':           this.progressReportOn("Load");                                         break;
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "AccountInfo"); break;
@@ -358,9 +365,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				{
 					es.m_exit_status = 1;
 
-					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stLoad' ]))
+					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuthSelect', 'stLoad' ]))
 						es.failcode(context.state.stopFailCode);
-					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheckGd', 'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9',
+					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheck', 'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9',
 					                                                       'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);

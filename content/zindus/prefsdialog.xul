@@ -76,7 +76,7 @@
 							<caption label="&ZinPrefsServerTypeCaption.label;" />
 							<radiogroup id="zindus-prefs-server-type-radiogroup">
 								<radio id="zindus-prefs-server-type-google" label="Google" />
-								<radio id="zindus-prefs-server-type-zimbra" label="Zimbra"  selected="true" />
+								<radio id="zindus-prefs-server-type-zimbra" label="Zimbra" />
 							</radiogroup>
 						</vbox>
 						<description id="zindus-prefs-server-url-description"

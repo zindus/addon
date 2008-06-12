@@ -77,9 +77,8 @@ Prefs.prototype.onLoad = function(target)
 	// this.m_logger.debug("onLoad: m_prefset_server == "  + this.m_prefset_server.toString());
 	// this.m_logger.debug("onLoad: m_prefset_general == " + this.m_prefset_general.toString());
 
-	this.maestroRegister()
 	this.initialiseView();
-	this.updateView();
+	this.maestroRegister(); // during which we get notified and updateView() is called...
 }
 
 Prefs.prototype.maestroRegister = function()
@@ -309,7 +308,7 @@ Prefs.prototype.initialiseView = function()
 	// server tab - server type
 	//
 	Prefs.setRadioFromPrefset("zindus-prefs-server-type-radiogroup", this.m_server_type_bimap, this.m_prefset_server,
-	                          PrefSet.SERVER_TYPE, "zindus-prefs-server-type-zimbra")
+	                          PrefSet.SERVER_TYPE, "zindus-prefs-server-type-google")
 
 	this.m_server_type_last = this.serverType();
 	this.rememberLastServerType(this.m_server_type_last);
@@ -433,6 +432,32 @@ Prefs.prototype.updateView = function()
 
 		this.m_server_type_last = this.serverType();
 	}
+
+	if (server_type_current == FORMAT_ZM)
+	{
+		var prefs   = Singleton.instance().preferences();
+		var url     = document.getElementById("zindus-prefs-server-url").value;
+		var prefset = prefsetMatchWithPreAuth(url);
+
+		this.m_logger.debug("blah: server url matches preauth: " + (prefset ? prefset.getProperty(PrefSet.PREAUTH_NAME) : "no"));
+		this.m_logger.debug("blah: m_prefset_general.hasUserValue: " + this.m_prefset_general.hasUserValue(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED));
+
+		if (prefset && this.isServerSettingsComplete()
+		            && !this.m_prefset_general.hasUserValue(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED)
+		            && !this.m_prefset_server.hasUserValue(PrefSet.SERVER_URL)
+		            && !this.m_is_changed_default_for__zm_sync_gal_enabled)
+		{
+			this.m_is_changed_default_for__zm_sync_gal_enabled = true;
+
+			this.m_logger.debug("blah: setting a reasonable default for PREAUTH_ZM_SYNC_GAL_ENABLED");
+
+			this.m_prefset_general.setProperty(PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED,
+			               prefset.getProperty(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED));
+
+			Prefs.setRadioFromPrefset("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap, this.m_prefset_general,
+	                          PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, "zindus-prefs-general-gal-if-fewer")
+		}
+	}
 }
 
 Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
@@ -518,7 +543,7 @@ Prefs.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, property, de
 		
 	document.getElementById(radiogroup_id).selectedItem = document.getElementById(selected_id);
 
-	// Singleton.instance().logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
+	Singleton.instance().logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);  // TODO
 }
 
 Prefs.prototype.setGdSyncWithLabel = function()

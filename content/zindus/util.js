@@ -650,3 +650,23 @@ function isSingletonInScope()
 	                                        && typeof(Singleton.instance().logger()) == 'object'
 											&& typeof(Singleton.instance().logger().error) == 'function');
 }
+
+function prefsetMatchWithPreAuth(url)
+{
+	var prefs     = Singleton.instance().preferences();
+	var a_preauth = prefs.getImmediateChildren(prefs.branch(), PrefSet.PREAUTH + '.');
+	var prefset   = new PrefSet(PrefSet.PREAUTH, PrefSet.PREAUTH_PROPERTIES);
+	var is_match  = false;
+
+	for (var i in a_preauth)
+	{
+		prefset.load(i);
+
+		is_match = url.match(new RegExp(prefset.getProperty(PrefSet.PREAUTH_REGEXP))) != null;
+
+		if (is_match)
+			break;
+	}
+
+	return is_match ? prefset : null;
+}

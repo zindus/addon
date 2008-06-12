@@ -176,12 +176,13 @@ LogAppenderOpenClose.prototype.fileOpen = function()
 
 		// dump("logfile.fileSize == " + this.m_logfile.fileSize + " and m_logfile_size_max == " + this.m_logfile_size_max);
 	}
-	catch (e)
+	catch (ex)
 	{
 		if (typeof(is_first_logging_file_open_exception) == 'undefined')
 		{
 			dump("fileOpen: exception opening file: " + this.m_logfile.path + "\n");
-			Components.utils.reportError(e);
+			dump(ex.message + " stack: \n" + ex.stack); // TODO
+			Components.utils.reportError(ex);
 			is_first_logging_file_open_exception = true;
 		}
 

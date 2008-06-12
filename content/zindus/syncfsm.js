@@ -38,6 +38,7 @@ ZindusScopeRegistry.includejs("zidbag.js");
 ZindusScopeRegistry.includejs("syncfsmexitstatus.js");
 ZindusScopeRegistry.includejs("passwordmanager.js");
 ZindusScopeRegistry.includejs("stopwatch.js");
+ZindusScopeRegistry.includejs("cookieobserver.js");
 
 const ORDER_SOURCE_UPDATE = [
 	Suo.MOD | FeedItem.TYPE_FL, Suo.MOD | FeedItem.TYPE_SF,
@@ -75,8 +76,11 @@ SyncFsmGdTwoWay.prototype   = new SyncFsmGd();
 SyncFsmZm.prototype.initialiseFsm = function()
 {
 	var transitions = {
-		start:             { evCancel: 'final', evNext: 'stAuth',                                           evLackIntegrity: 'final'     },
-		stAuth:            { evCancel: 'final', evNext: 'stLoad',           evHttpRequest: 'stHttpRequest', evLackIntegrity: 'final'     },
+		start:             { evCancel: 'final', evNext: 'stAuthSelect',                                     evLackIntegrity: 'final'     },
+		stAuthSelect:      { evCancel: 'final', evNext: 'stAuthLogin',      evPreAuth:     'stAuthPreAuth', evLackIntegrity: 'final'     },
+		stAuthLogin:       { evCancel: 'final', evNext: 'stLoad',           evHttpRequest: 'stHttpRequest'                               },
+		stAuthPreAuth:     { evCancel: 'final', evNext: 'stAuthCheck',      evHttpRequest: 'stHttpRequest',                              },
+		stAuthCheck:       { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
 		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',                                         evLackIntegrity: 'final'     },
 		stLoadTb:          { evCancel: 'final', evNext: 'stGetAccountInfo',                                 evLackIntegrity: 'final'     },
 		stGetAccountInfo:  { evCancel: 'final', evNext: 'stSelectSoapUrl',  evHttpRequest: 'stHttpRequest'                               },
@@ -109,7 +113,10 @@ SyncFsmZm.prototype.initialiseFsm = function()
 
 	var a_entry = {
 		start:                  this.entryActionStart,
-		stAuth:                 this.entryActionAuth,
+		stAuthSelect:           this.entryActionAuthSelect,
+		stAuthLogin:            this.entryActionAuthLogin,
+		stAuthPreAuth:          this.entryActionAuthPreAuth,
+		stAuthCheck:            this.entryActionAuthCheck,
 		stLoad:                 this.entryActionLoad,
 		stLoadTb:               this.entryActionLoadTb,
 		stGetAccountInfo:       this.entryActionGetAccountInfo,
@@ -141,7 +148,8 @@ SyncFsmZm.prototype.initialiseFsm = function()
 	};
 
 	var a_exit = {
-		stAuth:                 this.exitActionAuth,
+		stAuthLogin:            this.exitActionAuthLogin,
+		stAuthPreAuth:          this.exitActionAuthPreAuth,
 		stGetAccountInfo:       this.exitActionGetAccountInfo,
 		stSelectSoapUrl:        this.exitActionSelectSoapUrl,
 		stGetContactZm:         this.exitActionGetContactZm,
@@ -158,8 +166,8 @@ SyncFsmGd.prototype.initialiseFsm = function()
 {
 	var transitions = {
 		start:             { evCancel: 'final', evNext: 'stAuth',                                           evLackIntegrity: 'final'     },
-		stAuth:            { evCancel: 'final', evNext: 'stAuthCheckGd',    evHttpRequest: 'stHttpRequest', evLackIntegrity: 'final'     },
-		stAuthCheckGd:     { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
+		stAuth:            { evCancel: 'final', evNext: 'stAuthCheck',      evHttpRequest: 'stHttpRequest', evLackIntegrity: 'final'     },
+		stAuthCheck:       { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
 		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',                                         evLackIntegrity: 'final'     },
 		stLoadTb:          { evCancel: 'final', evNext: 'stGetContactGd1',                                  evLackIntegrity: 'final'     },
 		stGetContactGd1:   { evCancel: 'final', evNext: 'stGetContactGd2',  evHttpRequest: 'stHttpRequest',                              },
@@ -189,7 +197,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 	var a_entry = {
 		start:                  this.entryActionStart,
 		stAuth:                 this.entryActionAuth,
-		stAuthCheckGd:          this.entryActionAuthCheckGd,
+		stAuthCheck:            this.entryActionAuthCheck,
 		stLoad:                 this.entryActionLoad,
 		stLoadTb:               this.entryActionLoadTb,
 		stGetContactGd1:        this.entryActionGetContactGd1,
@@ -303,17 +311,16 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
-SyncFsmZm.prototype.entryActionAuth = function(state, event, continuation)
+SyncFsmZm.prototype.entryActionAuthSelect = function(state, event, continuation)
 {
 	var nextEvent = null;
 
 	this.state.stopwatch.mark(state);
 
 	var sourceid_pr = this.state.sourceid_pr;
-
-	var url      = this.state.sources[sourceid_pr]['soapURL'];
-	var username = this.state.sources[sourceid_pr]['username'];
-	var password = this.state.sources[sourceid_pr]['password'];
+	var url         = this.state.sources[sourceid_pr]['soapURL'];
+	var username    = this.state.sources[sourceid_pr]['username'];
+	var password    = this.state.sources[sourceid_pr]['password'];
 
 	if (/^https?:\/\//.test(url) && username.length > 0 && password.length > 0 && isValidUrl(url))
 	{
@@ -322,11 +329,24 @@ SyncFsmZm.prototype.entryActionAuth = function(state, event, continuation)
 		this.state.zidbag.push(null);
 		this.state.zidbag.set(null, 'soapURL', this.state.sources[sourceid_pr]['soapURL']);
 
-		this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(0), null, "Auth", 
-		                                      this.state.sources[this.state.sourceid_pr]['username'],
-		                                      this.state.sources[this.state.sourceid_pr]['password']);
+		var prefs   = Singleton.instance().preferences();
+		var soapURL = this.state.sources[this.state.sourceid_pr]['soapURL'];
+		var prefset = prefsetMatchWithPreAuth(soapURL);
 
-		nextEvent = 'evHttpRequest';
+		if (prefset)
+		{
+			this.state.preauthURL  = soapURL.replace(/^(https?:\/\/.+?\/).*$/, "$1") + prefset.getProperty(PrefSet.PREAUTH_URI_HIER_PART);
+			this.state.preauthBody = prefset.getProperty(PrefSet.PREAUTH_POST_BODY);
+			this.state.preauthBody = this.state.preauthBody.replace(/\%username\%/, username);
+			this.state.preauthBody = this.state.preauthBody.replace(/\%password\%/, password);
+
+			this.debug("entryActionAuthSelect: matched: " + soapURL + " against: " + prefset.getProperty(PrefSet.PREAUTH_REGEXP)
+			                                              + " preauth url: " + this.state.preauthURL);
+
+			nextEvent = 'evPreAuth';
+		}
+		else
+			nextEvent = 'evNext';
 	}
 	else
 	{
@@ -337,7 +357,19 @@ SyncFsmZm.prototype.entryActionAuth = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
-SyncFsmZm.prototype.exitActionAuth = function(state, event)
+SyncFsmZm.prototype.entryActionAuthLogin = function(state, event, continuation)
+{
+	this.state.stopwatch.mark(state);
+
+	var sourceid_pr = this.state.sourceid_pr;
+
+	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(0), null, "Auth", this.state.sources[sourceid_pr]['username'],
+	                                                                              this.state.sources[sourceid_pr]['password']);
+
+	continuation('evHttpRequest');
+}
+
+SyncFsmZm.prototype.exitActionAuthLogin = function(state, event)
 {
 	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
 		return;
@@ -350,6 +382,50 @@ SyncFsmZm.prototype.exitActionAuth = function(state, event)
 
 		// ignore lifetime - in doing so we assume that no sync will take longer than the default lifetime of an hour.
 		// conditionalGetElementByTagNameNS(response, Xpath.NS_ZACCOUNT, "lifetime",  this.state, 'lifetime');
+	}
+}
+
+SyncFsmZm.prototype.entryActionAuthPreAuth = function(state, event, continuation)
+{
+	var headers = newObject("Content-type", "application/x-www-form-urlencoded");
+
+	this.setupHttpGd(state, 'evNext', 'POST', this.state.preauthURL, headers, this.state.preauthBody, HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_NO);
+
+	var host = this.state.preauthURL.replace(/^https?:\/\/(.+?)\/.*$/, "$1");
+
+	this.state.preauthCookieObserver = new CookieObserver(host);
+
+	ObserverService.register(this.state.preauthCookieObserver, this.state.preauthCookieObserver.m_topic);
+
+	continuation('evHttpRequest');
+}
+
+SyncFsmZm.prototype.exitActionAuthPreAuth = function(state, event)
+{
+	ObserverService.unregister(this.state.preauthCookieObserver, this.state.preauthCookieObserver.m_topic);
+
+	if (!this.state.m_http || !this.state.m_http.response('text') || event == "evCancel")
+		return;
+
+	// http://developer.mozilla.org/en/docs/Code_snippets:Cookies
+	// if the cookie:
+	// a) was added or changed during the request               then it's fresh and
+	// b) matches the cookie used in the XMLHttpRequest channel then it's associated with our request
+	//
+	var ios           = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
+	var uri           = ios.newURI("http://zimbra.free.fr/", null, null);
+	var cookieSvc     = Components.classes["@mozilla.org/cookieService;1"].getService(Components.interfaces.nsICookieService);
+	var cookieFromSvc = cookieSvc.getCookieString(uri, this.state.m_http.m_xhr.channel);
+
+	this.debug("exitActionAuthPreAuth: cookie from observer:  " + this.state.preauthCookieObserver.m_cookie);
+	this.debug("exitActionAuthPreAuth: cookie from cookieSvc: " + cookieFromSvc);
+
+	if (this.state.preauthCookieObserver.m_cookie && cookieFromSvc &&
+	    String(cookieFromSvc).replace(/^ZM_AUTH_TOKEN=(.*?);.*$/, "$1") == this.state.preauthCookieObserver.m_cookie)
+	{
+		this.state.authToken = this.state.preauthCookieObserver.m_cookie;
+
+		this.debug("exitActionAuthPreAuth: authToken: " + this.state.authToken);
 	}
 }
 
@@ -2884,16 +2960,16 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 			if (isPropertyPresent(reverse[sourceid], luid))
 			{
 				zfcGid.get(reverse[sourceid][luid]).set(FeedItem.ATTR_PRES, 1);
-				msg += " - already in gid";
+				msg += " already in gid";
 			}
 			else if (SyncFsm.isOfInterest(zfc, luid))
 			{
 				var gid = SyncFsm.addToGid(zfcGid, sourceid, luid, reverse);
 
-				msg += " - added to gid: " + gid;
+				msg += " added to gid: " + gid;
 			}
 			else
-				msg += " - luid is not of interest - ignoring";
+				msg += " luid is not of interest - ignoring";
 
 			foreach_msg += "\n  " + msg;
 
@@ -2974,7 +3050,7 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 				}
 			}
 			else
-				msg += " - luid is not of interest - ignoring";
+				msg += " luid is not of interest - ignoring";
 
 			foreach_msg += "\n  " + msg;
 
@@ -5328,7 +5404,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 								  " remote.method: " + remote.method + " remote.url: " + remote.url);
 
 
-		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, true);
+		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_YES);
 
 		nextEvent = 'evHttpRequest';
 	}
@@ -6028,7 +6104,7 @@ SyncFsm.isOfInterest = function(zfc, key)
 	return ret;
 }
 
-SyncFsm.prototype.setupHttpGd = function(state, eventOnResponse, http_method, url, headers, body, is_evnext_on_error)
+SyncFsm.prototype.setupHttpGd = function(state, eventOnResponse, http_method, url, headers, body, on_error, log_response)
 {
 	// this.state.m_logger.debug("setupHttpGd: blah: " +
 	//                           " state: " + state + " eventOnResponse: " + eventOnResponse + " url: " + url +
@@ -6037,7 +6113,7 @@ SyncFsm.prototype.setupHttpGd = function(state, eventOnResponse, http_method, ur
 	zinAssert(SyncFsm.prototype.setupHttpGd.length == arguments.length); // catch programming errors
 	zinAssert(http_method && url);
 
-	this.state.m_http = new HttpStateGd(http_method, url, headers, this.state.authToken, body, is_evnext_on_error, this.state.m_logger);
+	this.state.m_http = new HttpStateGd(http_method, url, headers, this.state.authToken, body, on_error, log_response, this.state.m_logger);
 
 	this.setupHttpCommon(state, eventOnResponse);
 }
@@ -6108,7 +6184,8 @@ function closureToHandleXmlHttpResponse(context, continuation)
 {
 	var ret = function()
 	{
-		// zinSleep(1000); // helpful when testing that cancel works when an http request is pending
+		// zinSleep(1000); // used to test that cancel works when an http request is pending
+		// context.debug("am here: readyState: " + context.state.m_http.m_xhr.readyState);  // TODO remove me
 
 		if (context.state.m_http.m_xhr.readyState == 4)
 			context.handleXmlHttpResponse(continuation, context);
@@ -6399,8 +6476,10 @@ HttpStateZm.prototype.handleResponse = function()
 	return nextEvent;
 }
 
-function HttpStateGd(http_method, url, headers, authToken, body, is_evnext_on_error, logger)
+function HttpStateGd(http_method, url, headers, authToken, body, on_error, log_response, logger)
 {
+	zinAssert(on_error == HttpStateGd.ON_ERROR_EVNEXT || on_error == HttpStateGd.ON_ERROR_EVCANCEL);
+
 	var a_default_headers = { 'Accept':          null,
 	                          'Accept-Language': null,
 							  'Accept-Encoding': null,
@@ -6422,12 +6501,17 @@ function HttpStateGd(http_method, url, headers, authToken, body, is_evnext_on_er
 
 	HttpState.call(this, http_method, url, http_headers, logger);
 
-	this.m_body = body;
-	this.is_evnext_on_error = is_evnext_on_error; // if the caller sets this, handleResponse does evNext instead of evCancel on an error
+	this.m_body         = body;
+	this.m_on_error     = on_error;
+	this.m_log_response = log_response;
 }
 
 HttpStateGd.prototype = new HttpState();
 
+HttpStateGd.ON_ERROR_EVNEXT     = 1;
+HttpStateGd.ON_ERROR_EVCANCEL   = 2;
+HttpStateGd.LOG_RESPONSE_YES    = 3;
+HttpStateGd.LOG_RESPONSE_NO     = 4;
 HttpStateGd.AUTH_REGEXP_PATTERN = /Auth=(.+?)(\s|$)/;
 
 HttpStateGd.prototype.toStringFiltered = function()
@@ -6463,18 +6547,18 @@ HttpStateGd.prototype.handleResponse = function()
 	var nextEvent;
 	var msg = "";
 
-	if (this.response('text'))
-		msg += " response: " + this.filterSensitive(this.response('text'));
+	if (this.m_log_response == HttpStateGd.LOG_RESPONSE_NO)
+		msg += " response: supressed";
+	else if (this.response('text'))
+		msg += " response: " + this.filterOut(this.response('text'));
 	else
 		msg += " response: " + "empty";
-
-	// msg += " headers: " + this.m_xhr.getAllResponseHeaders();
 
 	if (this.is_cancelled)
 		nextEvent = 'evCancel';
 	else if (this.is_http_status(HTTP_STATUS_2xx))
 		nextEvent = 'evNext';
-	else if (this.is_evnext_on_error)
+	else if (this.m_on_error == HttpStateGd.ON_ERROR_EVNEXT)
 		nextEvent = 'evNext';
 	else
 		nextEvent = 'evCancel';
@@ -6484,11 +6568,11 @@ HttpStateGd.prototype.handleResponse = function()
 	return nextEvent;
 }
 
-HttpStateGd.prototype.filterSensitive = function(str1)
+HttpStateGd.prototype.filterOut = function(str)
 {
-	var str2 = str1.replace(HttpStateGd.AUTH_REGEXP_PATTERN, "Auth=suppressed");
+	str = str.replace(HttpStateGd.AUTH_REGEXP_PATTERN, "Auth=suppressed");
 
-	return str2;
+	return str;
 }
 
 // notes:
@@ -6503,9 +6587,12 @@ SyncFsm.prototype.initialise = function(id_fsm, sourceid, prefset_general, prefs
 	this.initialiseFsm();
 
 	if (id_fsm == Maestro.FSM_ID_ZM_AUTHONLY)
-		this.fsm.m_transitions['stAuth']['evNext'] = 'final';
+	{
+		this.fsm.m_transitions['stAuthLogin']['evNext'] = 'final';
+		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
+	}
 	else if (id_fsm == Maestro.FSM_ID_GD_AUTHONLY)
-		this.fsm.m_transitions['stAuthCheckGd']['evNext'] = 'final';
+		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
 
 	if (arguments.length == 2)
 	{
@@ -6623,6 +6710,8 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid)
 
 	state.zidbag                 = new ZidBag();
 	state.suggestedSoapURL       = null;         // a <soapURL> response returned in GetAccountInfo
+	state.preauthURL             = null;
+	state.preauthBody            = null;
 	state.isSlowSync             = false;        // true iff no data files
 	state.aSyncGalContact        = null;         // SyncGal
 	state.mapIdSyncGalContact    = null;      
@@ -6694,7 +6783,7 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 		body += "&service=cp"; // gbase
 		body += "&source=Toolware" + "-" + APP_NAME + "-" + APP_VERSION_NUMBER;
 
-		this.setupHttpGd(state, 'evNext', "POST", url, headers, body, true)
+		this.setupHttpGd(state, 'evNext', "POST", url, headers, body, HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_YES);
 
 		nextEvent = 'evHttpRequest';
 	}
@@ -6725,7 +6814,7 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 	this.state.m_logger.debug("authToken.length: " + (this.state.authToken ? this.state.authToken.length : "null") );
 }
 
-SyncFsmGd.prototype.entryActionAuthCheckGd = function(state, event, continuation)
+SyncFsm.prototype.entryActionAuthCheck = function(state, event, continuation)
 {
 	nextEvent = 'evNext';
 
@@ -6733,7 +6822,7 @@ SyncFsmGd.prototype.entryActionAuthCheckGd = function(state, event, continuation
 
 	if (!this.state.authToken)
 	{
-		this.state.stopFailCode   = 'FailOnAuthGd';
+		this.state.stopFailCode   = 'FailOnAuth';
 		this.state.stopFailDetail = "\n" + stringBundleString("statusFailMsgHttpStatusCode") + ": " + this.state.m_http.m_http_status_code;
 
 		nextEvent = 'evLackIntegrity';  // this isn't really a lack of integrity, but it's processed in the same way
@@ -6756,7 +6845,7 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 
 	this.state.m_logger.debug("entryActionGetContactGd1: url: " + url);
 
-	this.setupHttpGd(state, 'evNext', "GET", url, null, null, false);
+	this.setupHttpGd(state, 'evNext', "GET", url, null, null, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
 
 	continuation('evHttpRequest');
 }
@@ -6936,7 +7025,7 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 		var id = this.state.a_gd_contact_to_get.pop();
 		var url = id;
 
-		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, false);
+		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
 		
 		nextEvent = 'evHttpRequest'
 	}
@@ -7022,7 +7111,8 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 		remote.headers = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT");
 		remote.body    = contact.toStringXml();
 
-		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, true);
+		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, HttpStateGd.ON_ERROR_EVCANCEL,
+		                  HttpStateGd.LOG_RESPONSE_YES);
 		
 		nextEvent = 'evHttpRequest'
 	}

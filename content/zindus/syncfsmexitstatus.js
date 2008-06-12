@@ -61,7 +61,7 @@ function SyncFsmExitStatus()
 		FailOnGdEmptyContact            : { 'hasdetail' : 1 }, // 27. 
 		FailOnNoGdSyncWithZg            : { 'hasdetail' : 0 }, // 28. 
 		FailOnUnauthorized              : { 'hasdetail' : 0 }, // 29. server returned 401 - perhaps a proxy removed the 'Authorized' header?
-		FailOnAuthGd                    : { 'hasdetail' : 1 }  // 30. server returned a non 200 status code
+		FailOnAuth                      : { 'hasdetail' : 1 }  // 30. Failed to login to Google or Zimbra via preauth
 	};
 }
 

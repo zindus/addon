@@ -50,6 +50,15 @@ PrefSet.GENERAL_PROPERTIES             = [ PrefSet.GENERAL_AUTO_SYNC,           
                                            PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED,   PrefSet.GENERAL_GD_SYNC_WITH,
 										   PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS ];
 
+PrefSet.PREAUTH                     = "preauth";
+PrefSet.PREAUTH_NAME                = "name";
+PrefSet.PREAUTH_REGEXP              = "regexp";
+PrefSet.PREAUTH_URI_HIER_PART       = "preauth_url_hier_part";
+PrefSet.PREAUTH_POST_BODY           = "preauth_post_body";
+PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED = PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED;
+PrefSet.PREAUTH_PROPERTIES          = [ PrefSet.PREAUTH_NAME,      PrefSet.PREAUTH_REGEXP, PrefSet.PREAUTH_URI_HIER_PART, 
+                                        PrefSet.PREAUTH_POST_BODY, PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED ];
+
 // Both id and branch are optional
 // id is option because there might only be a single subsection under prefprefix
 // branch is optional because
@@ -62,24 +71,14 @@ PrefSet.prototype.load = function(id, branch)
 
 	zinAssert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
 
-	if (arguments.length == 0)
-		id = null;
-
-	if (arguments.length < 2)
-	{
-		mp = new MozillaPreferences();
-		prefs = mp.branch();
-	}
-	else
-	{
-		prefs = branch;
-	}
+	id     = (typeof(id)     != 'undefined') ? id     : null;
+	branch = (typeof(branch) != 'undefined') ? branch : Singleton.instance().preferences().branch();
 
 	for (i in this.m_properties)
 	{
 		try
 		{
-			this.m_properties[i] = prefs.getCharPref(this.makePrefKey(id, i));
+			this.m_properties[i] = branch.getCharPref(this.makePrefKey(id, i));
 		}
 		catch (ex)
 		{
@@ -96,8 +95,7 @@ PrefSet.prototype.load = function(id, branch)
 
 PrefSet.prototype.save = function()
 {
-	var mp = new MozillaPreferences();
-	var prefs = mp.branch();
+	var branch = Singleton.instance().preferences().branch();
 	var i;
 	var retval = false;
 
@@ -109,7 +107,7 @@ PrefSet.prototype.save = function()
 	{
 		for (i in this.m_properties)
 		{
-			prefs.setCharPref(this.makePrefKey(this.m_id, i), this.m_properties[i]);
+			branch.setCharPref(this.makePrefKey(this.m_id, i), this.m_properties[i]);
 
 			// this.m_logger.debug("save: preference: " + this.makePrefKey(this.m_id, i) + " == " + this.m_properties[i]);
 		}
@@ -126,17 +124,14 @@ PrefSet.prototype.save = function()
 
 PrefSet.prototype.remove = function()
 {
-	var mp = new MozillaPreferences();
-	var prefs = mp.branch();
+	var branch = Singleton.instance().preferences().branch();
 	var retval = false;
 
 	zinAssert(this.m_id >= 0);
 
-	// this.m_logger.debug("remove: ");
-
 	try
 	{
-		prefs.deleteBranch(this.makePrefKey(this.m_id));
+		branch.deleteBranch(this.makePrefKey(this.m_id));
 
 		retval = true;
 	}
@@ -146,6 +141,23 @@ PrefSet.prototype.remove = function()
 	}
 	
 	return retval;
+}
+
+PrefSet.prototype.hasUserValue = function(property)
+{
+	var branch = Singleton.instance().preferences().branch();
+	var ret = false;
+
+	try
+	{
+		ret = branch.prefHasUserValue(this.makePrefKey(this.m_id, property));
+	}
+	catch (ex)
+	{
+		// do nothing
+	}
+
+	return ret;
 }
 
 PrefSet.prototype.toString = function()
@@ -211,11 +223,6 @@ PrefSet.prototype.makePrefKey = function(id, property)
 	}
 
 	return ret;
-}
-
-PrefSet.keyFrom = function(parent, child)
-{
-	return parent + "." + child;
 }
 
 PrefSet.getPassword = function(prefset)
