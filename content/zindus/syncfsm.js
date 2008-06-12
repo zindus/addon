@@ -6185,7 +6185,7 @@ function closureToHandleXmlHttpResponse(context, continuation)
 	var ret = function()
 	{
 		// zinSleep(1000); // used to test that cancel works when an http request is pending
-		// context.debug("am here: readyState: " + context.state.m_http.m_xhr.readyState);  // TODO remove me
+		// context.debug("am here: readyState: " + context.state.m_http.m_xhr.readyState);
 
 		if (context.state.m_http.m_xhr.readyState == 4)
 			context.handleXmlHttpResponse(continuation, context);

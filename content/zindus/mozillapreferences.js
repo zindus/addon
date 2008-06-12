@@ -71,7 +71,7 @@ MozillaPreferences.prototype.branch = function()
 		}
 		catch(ex)
 		{
-			dump(ex.message + " stack: " + ex.stack); // TODO
+			dump(ex.message + " stack: " + ex.stack);
 			alert("Preferences::getService : " + ex);
 		}
 	}

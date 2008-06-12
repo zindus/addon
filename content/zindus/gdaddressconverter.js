@@ -125,7 +125,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 		msg += " xml: " + a_xml[key]
 	}
 
-	// this.m_logger.debug("convert: blah:" + msg + " returns: " + ret); // TODO
+	// this.m_logger.debug("convert: blah:" + msg + " returns: " + ret);
 
 	return ret;
 }

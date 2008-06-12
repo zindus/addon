@@ -181,7 +181,7 @@ LogAppenderOpenClose.prototype.fileOpen = function()
 		if (typeof(is_first_logging_file_open_exception) == 'undefined')
 		{
 			dump("fileOpen: exception opening file: " + this.m_logfile.path + "\n");
-			dump(ex.message + " stack: \n" + ex.stack); // TODO
+			dump(ex.message + " stack: \n" + ex.stack);
 			Components.utils.reportError(ex);
 			is_first_logging_file_open_exception = true;
 		}

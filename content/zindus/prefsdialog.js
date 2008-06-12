@@ -113,7 +113,7 @@ Prefs.prototype.stop_timer_fsm_and_deregister = function()
 
 Prefs.prototype.onCancel = function()
 {
-	if (this.m_payload) // TODO
+	if (this.m_payload)
 	{
 		this.m_logger.debug("cancelling syncwindow by setting a flag in payload");
 		this.m_payload.m_is_cancelled = true;
@@ -543,7 +543,7 @@ Prefs.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, property, de
 		
 	document.getElementById(radiogroup_id).selectedItem = document.getElementById(selected_id);
 
-	Singleton.instance().logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);  // TODO
+	// Singleton.instance().logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " set to: " + selected_id);
 }
 
 Prefs.prototype.setGdSyncWithLabel = function()
