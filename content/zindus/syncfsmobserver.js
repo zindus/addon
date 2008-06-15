@@ -122,6 +122,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stAuthCheck:      { },
 		stGetContactGd1:  { count: 1 },
 		stGetContactGd2:  { count: 1 },
+		stGetContactGd3:  { count: 1 },
 		stDeXmlifyAddrGd: { count: 1 },
 		stGdConverge5:    { count: 1 },
 		stGetContactPuGd: { count: 1 },
@@ -208,6 +209,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stSync':          
 			case 'stSyncResult':
 			case 'stGetContactGd1':
+			case 'stGetContactGd2':
 			case 'stDeXmlifyAddrGd': this.progressReportOnSource(context.state.sourceid_pr, "RemoteSync");  break;
 			case 'stGalSync':        
 			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "GetGAL");      break;
@@ -261,7 +263,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					ret = false; // no need to update the UI
 				break;
 
-			case 'stGetContactGd2':
+			case 'stGetContactGd3':
 				if (aToLength(context.state.a_gd_contact) > 0)
 				{
 					var op = this.buildOp(context.state.sourceid_pr, "GetMany");
@@ -365,7 +367,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				{
 					es.m_exit_status = 1;
 
-					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuthSelect', 'stLoad' ]))
+					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stGetContactGd2', 'stAuthSelect', 'stGetContactGd2', 'stLoad' ]))
 						es.failcode(context.state.stopFailCode);
 					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheck', 'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9',
 					                                                       'stUpdateCleanup' ]))

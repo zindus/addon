@@ -49,10 +49,11 @@ const ORDER_SOURCE_UPDATE = [
 	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF
 ];
 
-const AUTO_INCREMENT_STARTS_AT = 256;  // the 'next' attribute of the AUTO_INCREMENT item starts at this value + 1.
-const ZM_FIRST_USER_ID         = 256;
-const AB_GAL                   = "GAL";
-const GOOGLE_URL_HIER_PART     = "://www.google.com/m8/feeds/contacts/";
+const AUTO_INCREMENT_STARTS_AT        = 256;  // the 'next' attribute of the AUTO_INCREMENT item starts at this value + 1.
+const ZM_FIRST_USER_ID                = 256;
+const AB_GAL                          = "GAL";
+const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/contacts/";
+const GOOGLE_SHOW_CONFLICTS_AT_A_TIME = 5;
 
 function SyncFsm()
 {
@@ -171,7 +172,8 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',                                         evLackIntegrity: 'final'     },
 		stLoadTb:          { evCancel: 'final', evNext: 'stGetContactGd1',                                  evLackIntegrity: 'final'     },
 		stGetContactGd1:   { evCancel: 'final', evNext: 'stGetContactGd2',  evHttpRequest: 'stHttpRequest',                              },
-		stGetContactGd2:   { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge1',   evRepeat: 'stGetContactGd2', },
+		stGetContactGd2:   { evCancel: 'final', evNext: 'stGetContactGd3',                                  evLackIntegrity: 'final'     },
+		stGetContactGd3:   { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge1',   evRepeat: 'stGetContactGd3', },
 		stDeXmlifyAddrGd:  { evCancel: 'final', evNext: 'stConverge1',      evHttpRequest: 'stHttpRequest', evRepeat: 'stDeXmlifyAddrGd' },
 		stConverge1:       { evCancel: 'final', evNext: 'stConverge2',                                      evLackIntegrity: 'final'     },
 		stConverge2:       { evCancel: 'final', evNext: 'stConverge3',      evRepeat:      'stConverge2'                                 },
@@ -202,6 +204,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stLoadTb:               this.entryActionLoadTb,
 		stGetContactGd1:        this.entryActionGetContactGd1,
 		stGetContactGd2:        this.entryActionGetContactGd2,
+		stGetContactGd3:        this.entryActionGetContactGd3,
 		stDeXmlifyAddrGd:       this.entryActionDeXmlifyAddrGd,
 		stConverge1:            this.entryActionConverge1,
 		stConverge2:            this.entryActionConverge2,
@@ -279,6 +282,12 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	var nextEvent = null;
 
 	this.state.stopwatch.mark(state + " 1");
+
+	this.state.m_logger.debug("system details: " + " cookieEnabled: " + navigator.cookieEnabled +
+	                                               " online: " + navigator.onLine +
+											       " oscpu: " + navigator.oscpu +
+											       " platform: " + navigator.platform +
+												   " userAgent: " + navigator.userAgent);
 
 	// The first call to .getPabName() iterates through the thunderbird addressbooks, and the first load of the Mork addressbooks
 	// can take *ages* (easily 5-6 seconds).
@@ -2625,6 +2634,7 @@ SyncFsm.prototype.testForGdProblems = function()
 
 	var a_email_luid     = this.state.foreach_tb_card_functor.m_a_email_luid;
 	var a_empty_contacts = this.state.foreach_tb_card_functor.m_a_empty_contacts;
+	var msg = "";
 
 	this.state.m_logger.debug("testForGdProblems:" + " gd_sync_with: " + this.state.gd_sync_with +
 	                                                 " gd_luid_ab_in_tb: " + this.state.gd_luid_ab_in_tb +
@@ -2637,43 +2647,47 @@ SyncFsm.prototype.testForGdProblems = function()
 	                                       this.zfcTb().get(this.state.gd_luid_ab_in_tb).isPresent(FeedItem.ATTR_DEL))
 		this.state.stopFailCode   = 'FailOnNoGdSyncWithZg';
 
-
-	if (this.state.stopFailCode == null)
+	if (this.state.stopFailCode == null && aToLength(a_empty_contacts) > 0)
 	{
-		var msg_duplicates = "";
-		var count = 0;
+		for (var key in a_empty_contacts)
+			msg += "\n" + a_empty_contacts[key];
 
-		for (var email in a_email_luid)
-			if (email != "" && a_email_luid[email].length > 1)
-			{
-				if (count++ > 5)
-					break;
-
-				msg_duplicates += this.testForGdEmailAppearsIn(email,
-				             'Thunderbird', this.getContactPrimaryEmailFromLuid(this.state.sourceid_tb, a_email_luid[email][0]),
-				             'Thunderbird', this.getContactPrimaryEmailFromLuid(this.state.sourceid_tb, a_email_luid[email][1]));
-			}
-
-		if (msg_duplicates.length > 0)
-		{
-			this.state.stopFailCode   = 'FailOnGdConflict1';
-			this.state.stopFailDetail = "\n" + msg_duplicates;
-			this.state.stopFailDetail += "\n\n" + stringBundleString("statusFailOnGdSeeFaq");
-		}
+		this.state.stopFailCode   = 'FailOnGdEmptyContact';
+		this.state.stopFailDetail = "\n" + msg + "\n";
 	}
 
 	if (this.state.stopFailCode == null)
 	{
-		var msg_empty = "";
+		var a_duplicates = {};
+		var count = 0;
+		var email;
 
-		for (var key in a_empty_contacts)
-			msg_empty += "\n" + a_empty_contacts[key];
+		for (email in a_email_luid)
+			if (email != "" && a_email_luid[email].length > 1)
+				a_duplicates[email] = true;
 
-		if (msg_empty.length > 0)
+		for (email in a_duplicates)
 		{
-			this.state.stopFailCode   = 'FailOnGdEmptyContact';
-			this.state.stopFailDetail = "\n" + msg_empty;
-			this.state.stopFailDetail += "\n\n" + stringBundleString("statusFailOnGdSeeFaq");
+			count++;
+
+			msg += this.testForGdEmailAppearsIn(email,
+			             'Thunderbird: ', this.getContactPrimaryEmailFromLuid(this.state.sourceid_tb, a_email_luid[email][0]), null, null,
+			             'Thunderbird: ', this.getContactPrimaryEmailFromLuid(this.state.sourceid_tb, a_email_luid[email][1]), null, null);
+
+			if (count >= GOOGLE_SHOW_CONFLICTS_AT_A_TIME)
+				break;
+		}
+
+		if (msg.length > 0)
+		{
+			this.state.stopFailCode   = 'FailOnGdConflict1';
+			this.state.stopFailDetail = "\n\n" + stringBundleString("statusFailOnGdConflictDetail");
+
+			if (count != aToLength(a_duplicates))
+				this.state.stopFailDetail += " " + stringBundleString("statusFailOnGdConflictProgress", [count, aToLength(a_duplicates)])
+
+			this.state.stopFailDetail += ":";
+			this.state.stopFailDetail += msg;
 		}
 	}
 
@@ -2685,6 +2699,8 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 	zinAssert(this.state.isSlowSync);
 
 	var zfcGid = this.state.zfcGid;
+	var sourceid_tb = this.state.sourceid_tb;
+	var sourceid_gd = this.state.sourceid_pr;
 	var a_gd_email = new Object();
 	var a_tb_email = new Object();
 	var a_conflict = new Object();
@@ -2731,35 +2747,94 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 	this.state.m_logger.debug("testForGdRemoteConflictOnSlowSync: a_gd_email: " + aToString(a_gd_email));
 	this.state.m_logger.debug("testForGdRemoteConflictOnSlowSync: a_tb_email: " + aToString(a_tb_email));
 
-	if (aToLength(a_conflict) > 0)
+	var conflict_count = aToLength(a_conflict);
+
+	if (conflict_count > 0)
 	{
-		this.state.stopFailCode   = 'FailOnGdConflict2';
-		this.state.stopFailDetail = "\n\n" + stringBundleString("statusFailOnGdConflictDetail");
-		
+		var msg_conflicting_addresses = "";
 		var count = 0;
+
 		for (email in a_conflict)
 		{
-			if (count++ > 5)
-				break;
+			count++;
 
-			var luid_gd = zfcGid.get(a_gd_email[email]).get(this.state.sourceid_pr);
-			this.state.stopFailDetail += this.testForGdEmailAppearsIn(email,
-			             'Thunderbird', this.getContactPrimaryEmailFromLuid(this.state.sourceid_tb, a_email_luid[email][0]),
-			             'Google',      this.getContactPrimaryEmailFromLuid(this.state.sourceid_pr, luid_gd));
+			var luid_gd = zfcGid.get(a_gd_email[email]).get(sourceid_gd);
+			var luid_tb = a_email_luid[email][0];
+
+			var a_diff = this.getFirstDifferingProperty(sourceid_tb, luid_tb, sourceid_gd, luid_gd);
+
+			msg_conflicting_addresses += this.testForGdEmailAppearsIn(email,
+			             'Thunderbird: ',    this.getContactPrimaryEmailFromLuid(sourceid_tb, luid_tb), a_diff['key'], a_diff[sourceid_tb],
+			             'Google:          ',this.getContactPrimaryEmailFromLuid(sourceid_gd, luid_gd), a_diff['key'], a_diff[sourceid_gd]);
+
+			if (count >= GOOGLE_SHOW_CONFLICTS_AT_A_TIME)
+				break;
 		}
+
+		this.state.stopFailCode   = 'FailOnGdConflict2';
+		this.state.stopFailDetail = "\n\n" + stringBundleString("statusFailOnGdConflictDetail");
+
+		if (count != conflict_count)
+			this.state.stopFailDetail += " " + stringBundleString("statusFailOnGdConflictProgress", [count, conflict_count ]);
+
+		this.state.stopFailDetail += ":";
 		
-		this.state.stopFailDetail += "\n\n" + stringBundleString("statusFailOnGdSeeFaq");
+		this.state.stopFailDetail += msg_conflicting_addresses;
 	}
 
 	return this.state.stopFailCode == null;
 }
 
-SyncFsm.prototype.testForGdEmailAppearsIn = function(email, source1, email_primary1, source2, email_primary2)
+SyncFsm.prototype.getFirstDifferingProperty = function(sourceid_a, luid_a, sourceid_b, luid_b)
 {
-	var ret = "\n\n";
-	ret += "         " + email + " " + stringBundleString("statusFailMsgGdConflictAppearsIn") + "\n";
-	ret += "                               " + source1 + ": " + email_primary1 + "\n";
-	ret += "                               " + source2 + ": " + email_primary2;
+	var a = this.getPropertiesAndParentNameFromSource(sourceid_a, luid_a, this.contact_converter());
+	var b = this.getPropertiesAndParentNameFromSource(sourceid_b, luid_b, this.contact_converter());
+	var a_keys = {};
+	var ret = null;
+	var key;
+
+	for (key in a.properties)
+		a_keys[key] = null;
+
+	for (key in b.properties)
+		a_keys[key] = null;
+
+	for (key in a_keys)
+	{
+		if ( (isPropertyPresent(a.properties, key) != isPropertyPresent(b.properties, key)) ||
+		     (isPropertyPresent(a.properties, key) && (a.properties[key] != b.properties[key]) ) )
+		{
+			ret = newObject('key', key, sourceid_a, a.properties[key], sourceid_b, b.properties[key]);
+			break;
+		}
+	}
+
+	if (!ret)
+	{
+		this.state.m_logger.debug("getFirstDifferingProperty a_keys: "       + aToString(a_keys));
+		this.state.m_logger.debug("getFirstDifferingProperty a.properties: " + aToString(a.properties));
+		this.state.m_logger.debug("getFirstDifferingProperty b.properties: " + aToString(b.properties));
+		zinAssert(false);
+	}
+
+	return ret;
+}
+
+SyncFsm.prototype.testForGdEmailAppearsIn = function(email, source1, email_primary1, k1, v1, source2, email_primary2, k2, v2)
+{
+	var ret = "\n";
+	 
+	zinAssert(SyncFsm.prototype.testForGdEmailAppearsIn.length == arguments.length);
+
+	var none = stringBundleString("statusFailMsgGdNone");
+
+	var add1 = (!k1 || k1 == 'PrimaryEmail' || k1 == 'DisplayName') ? "" : ("    " + k1 + ": " + (typeof(v1) == 'undefined' ? none : v1));
+	var add2 = (!k2 || k2 == 'PrimaryEmail' || k1 == 'DisplayName') ? "" : ("    " + k2 + ": " + (typeof(v2) == 'undefined' ? none : v2));
+
+	ret += "    " + email + " " + stringBundleString("statusFailMsgGdConflictAppearsIn") + "\n";
+	ret += "          " + source1 + email_primary1 + add1 + "\n";
+	ret += "          " + source2 + email_primary2 + add2 + "\n";
+
 	return ret;
 }
 
@@ -4428,7 +4503,8 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state);
 
-	if (!this.state.is_remote_update_problem)
+	if (!this.state.is_source_update_problem)
+		bigloop:
 		for (var i = 0; i < ORDER_SOURCE_UPDATE.length; i++)
 			if (isPropertyPresent(this.state.aSuo[this.state.sourceid_tb], ORDER_SOURCE_UPDATE[i]))
 				for (var indexSuo in this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]])
@@ -4507,13 +4583,27 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					uri = this.state.m_addressbook.newAddressBook(abName);
 
-					if (!uri || uri.length < 1) // this is for debugging issue #38 - reported by BillM
+					if (!uri || uri.length < 1) // re: issue #38
+					{
 						this.state.m_logger.error("bad uri after creating a tb addressbook: msg: " + msg);
+						this.state.stopFailCode   = 'FailOnUnableToUpdateThunderbird';
+						this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateThunderbirdDetail1")
+						                                 + " " + abName;
+						this.state.is_source_update_problem = true;
+						break bigloop;
+					}
 
 					tpi = this.state.m_addressbook.getAddressBookPrefId(uri);
 
-					if (!tpi || tpi.length < 1) // this is for debugging issue #38 - reported by BillM
+					if (!tpi || tpi.length < 1) // re: issue #38
+					{
 						this.state.m_logger.error("bad tpi returned after creating an tb addressbook: uri: " + uri + " msg: " + msg);
+						this.state.stopFailCode   = 'FailOnUnableToUpdateThunderbird';
+						this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateThunderbirdDetail2")
+						                                 + " " + abName;
+						this.state.is_source_update_problem = true;
+						break bigloop;
+					}
 
 					luid_target = zfcTarget.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
 
@@ -4807,7 +4897,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state);
 
-	if (!this.state.is_remote_update_problem)
+	if (!this.state.is_source_update_problem)
 		for (sourceid in this.state.sources)
 			if (this.state.sources[sourceid]['format'] == FORMAT_ZM)
 				for (var i = 0; i < ORDER_SOURCE_UPDATE.length && !bucket; i++)
@@ -5265,7 +5355,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 		this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateServerDetail1");
 		this.state.stopFailDetail += " " + remote_update_package.soap.method + " " + aToString(remote_update_package.soap.arg);
 
-		this.state.is_remote_update_problem = true;
+		this.state.is_source_update_problem = true;
 	}
 
 	this.state.m_logger.debug(msg);
@@ -5288,7 +5378,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state);
 
-	if (!this.state.is_remote_update_problem)
+	if (!this.state.is_source_update_problem)
 		for (sourceid in this.state.sources)
 			if (this.state.sources[sourceid]['format'] == FORMAT_GD)
 				for (var i = 0; i < ORDER_SOURCE_UPDATE.length && !bucket; i++)
@@ -5541,6 +5631,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				this.state.stopFailCode   = 'FailOnGdConflict2';
 
 				this.state.stopFailDetail = "\n\n" + stringBundleString("statusFailOnGdConflictDetail");
+				this.state.stopFailDetail += ":";
 
 				this.state.stopFailDetail += "\n\n";
 				this.state.stopFailDetail += 'Thunderbird' + ": " +
@@ -5553,8 +5644,6 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 					this.state.stopFailDetail += stringBundleString("statusFailMsgGdConflictWith") + "\n\n";
 					this.state.stopFailDetail += 'Google' + ": " + this.shortLabelForContactProperties(properties) + "\n";
 				}
-
-				this.state.stopFailDetail += "\n\n" + stringBundleString("statusFailOnGdSeeFaq");
 			}
 		}
 		else
@@ -5587,7 +5676,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 	{
 		msg += "the update operation wasn't successful";
 
-		this.state.is_remote_update_problem = true;
+		this.state.is_source_update_problem = true;
 	}
 
 	this.state.m_logger.debug(msg);
@@ -5683,7 +5772,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 
 	this.state.stopwatch.mark(state);
 
-	if (!this.state.is_remote_update_problem)
+	if (!this.state.is_source_update_problem)
 	{
 		var gid;
 		var aGidsToDelete = new Array();
@@ -6606,6 +6695,9 @@ SyncFsm.prototype.initialise = function(id_fsm, sourceid, prefset_general, prefs
 	this.state.sources[sourceid]['soapURL']  = prefset_server.getProperty(PrefSet.SERVER_URL);
 	this.state.sources[sourceid]['username'] = prefset_server.getProperty(PrefSet.SERVER_USERNAME);
 	this.state.sources[sourceid]['password'] = password;
+ 
+	this.state.m_logger.debug("initialise: soapURL: " + this.state.sources[sourceid]['soapURL'] + 
+	                                     " username: " + this.state.sources[sourceid]['username']);
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
@@ -6616,8 +6708,7 @@ SyncFsm.prototype.initialise = function(id_fsm, sourceid, prefset_general, prefs
 
 		this.state.SyncGalEnabled = prefset_general.getProperty(PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED);
 
-		this.state.m_logger.debug("initialise: soapURL: "        + this.state.sources[sourceid]['soapURL'] + 
-		                                     " SyncGalEnabled: " + this.state.SyncGalEnabled);
+		this.state.m_logger.debug("initialise: SyncGalEnabled: " + this.state.SyncGalEnabled);
 	}
 	else // this.formatPr() == FORMAT_GD
 	{
@@ -6678,7 +6769,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.aSuo                = null;         // container for source update operations - populated in Converge
 	state.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	state.is_done_get_contacts_pu  = false;   // have we worked out the contacts to get from the server pre update?
-	state.is_remote_update_problem = false;   // true iff a remote update indicates a problem (eg soap response couldn't be understood)
+	state.is_source_update_problem = false;   // true iff an update operation on a source had a problem (eg soap response 404)
 	state.remote_update_package    = null;    // maintains state between an server update request and the response
 	state.stopFailCode             = null;    // if a state continues on evLackIntegrity, this is set for the observer
 	state.stopFailDetail           = null;
@@ -6808,7 +6899,7 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 		this.state.authToken = aMatch[1];
 
 	if (this.state.authToken)
-		this.state.gd_url_base = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER) + GOOGLE_URL_HIER_PART +
+		this.state.gd_url_base = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER) + GOOGLE_URL_HIER_PART + 
 		                                 encodeURIComponent(this.state.sources[this.state.sourceid_pr]['username']) + "/base";
 
 	this.state.m_logger.debug("authToken.length: " + (this.state.authToken ? this.state.authToken.length : "null") );
@@ -6845,23 +6936,28 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 
 	this.state.m_logger.debug("entryActionGetContactGd1: url: " + url);
 
-	this.setupHttpGd(state, 'evNext', "GET", url, null, null, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
+	this.setupHttpGd(state, 'evNext', "GET", url, null, null, HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_YES);
 
 	continuation('evHttpRequest');
 }
 
 SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuation)
 {
-	var is_finished = false;
-	var count       = 0;
-	var msg         = "";
-	var id;
+	var nextEvent;
+	var response;
 
-	this.state.stopwatch.mark(state);
+	if (!this.state.m_http || !this.state.m_http.response('text') || event == "evCancel")
+		return;
 
-	if (!this.state.a_gd_contact)
+	if (this.state.m_http.is_http_status(HTTP_STATUS_403_FORBIDDEN))
 	{
-		var response = this.state.m_http.response();
+		this.state.stopFailCode   = 'FailOnGdForbidden';
+
+		nextEvent = 'evLackIntegrity';
+	}
+	else if (this.state.m_http.is_http_status(HTTP_STATUS_2xx))
+	{
+		response = this.state.m_http.response();
 
 		// set the sync token
 		//
@@ -6879,9 +6975,24 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 		if (this.state.gd_is_dexmlify_postal_address)
 			this.state.a_gd_contact_dexmlify = GdContact.arrayFromXpath(this.state.m_contact_converter_vary_gd_postal,
 		                                                                response, "/atom:feed/atom:entry");
+		nextEvent = 'evNext';
 	}
+	else
+		nextEvent = 'evCancel';
 
-	msg += "entryActionGetContactGd2:";
+	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuation)
+{
+	var is_finished = false;
+	var count       = 0;
+	var msg         = "";
+	var id;
+
+	this.state.stopwatch.mark(state);
+
+	msg += "entryActionGetContactGd3:";
 
 	try {
 		while (count < this.state.a_gd_contact_iterator.m_zindus_contact_chunk) {

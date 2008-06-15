@@ -960,8 +960,8 @@ TestHarness.prototype.testGdAddressConverter = function()
 	gac.convert(out, 'x', a_fields, GdAddressConverter.ADDR_TO_XML );
 
 	xml_as_char   = out['x'];
-	xml_as_entity = gac.convertCER(xml_as_char, GdAddressConverter.CER_TO_ENTITY);
-	xml_as_char2  = gac.convertCER(xml_as_entity, GdAddressConverter.CER_TO_CHAR);
+	xml_as_entity = convertCER(xml_as_char, CER_TO_ENTITY);
+	xml_as_char2  = convertCER(xml_as_entity, CER_TO_CHAR);
 
 	// this.m_logger.debug("testGdAddressConverter: xml_as_char: " + xml_as_char);
 	// this.m_logger.debug("testGdAddressConverter: xml_as_char2: " + xml_as_char2);
@@ -1034,7 +1034,7 @@ TestHarness.prototype.setupFixtureGdPostalAddress = function()
 
 	this.m_gac = new GdAddressConverter();
 	this.m_address_as_xml        = this.m_address_as_e4x.toXMLString();
-	this.m_address_as_xml_entity = this.m_gac.convertCER(this.m_address_as_xml, GdAddressConverter.CER_TO_ENTITY);
+	this.m_address_as_xml_entity = convertCER(this.m_address_as_xml, CER_TO_ENTITY);
 
 	// this.m_logger.debug("blahzz: m_address_as_xml: " + this.m_address_as_xml );
 }
@@ -1050,7 +1050,7 @@ TestHarness.prototype.testGdContact = function()
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should preverse <otheraddr>
 	//
 	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@",
-	                                       contact_converter.m_gac.convertCER(this.m_address_as_xml, GdAddressConverter.CER_TO_ENTITY)));
+	                                       convertCER(this.m_address_as_xml, CER_TO_ENTITY)));
 
 	zinAssert(contact.isAnyPostalAddressInXml());
 
@@ -1121,7 +1121,7 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 		prefset = new PrefSet(a_prefset[i].parent, a_prefset[i].properties);
 		prefset.load(a_prefset[i].id, prefs.defaultbranch());
 
-		this.m_logger.debug("prefset: " + a_prefset[i].parent + " is: " + prefset.toString());
+		// this.m_logger.debug("prefset: " + a_prefset[i].parent + " is: " + prefset.toString());
 
 		for (j = 0; j < a_prefset[i].properties.length; j++)
 		{

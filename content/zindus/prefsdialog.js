@@ -180,8 +180,13 @@ Prefs.prototype.onCommand = function(id_target)
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "dependent=yes,chrome=yes,modal=yes", this.m_payload);
 
-
-			if (!window.closed)
+			// The window could be closed if the esc key was pressed before openDialog() was called (ie during getSyncFsm()).
+			// The payload could be mangled because if the AddressBook new Card window got opened before the syncwindow finishes,
+			// we see SyncWindow.onAccept() exits but window.openDialog() hasn't returned!  And ... the "Sync Now" button
+			// is enabled because updateView() got told that the fsm finished.  So if the user starts another fsm, the payload of
+			// of the original window is lost.
+			// 
+			if (!window.closed && this.m_payload instanceof Payload)
 			{
 				Singleton.instance().logger().debug("Prefs.onCommand: after openDialog: m_is_cancelled: " +
 				                                              this.m_payload.m_is_cancelled + " m_es: " + this.m_payload.m_es.toString());
@@ -194,7 +199,18 @@ Prefs.prototype.onCommand = function(id_target)
 					msg = this.m_payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
 
 				if (msg != "")
-					alert(msg);
+				{
+					if (this.m_payload.m_es.m_fail_code == 'FailOnGdConflict1' ||
+					    this.m_payload.m_es.m_fail_code == 'FailOnGdConflict2' ||
+						this.m_payload.m_es.m_fail_code == 'FailOnGdEmptyContact')
+					{
+						var payload2 = new Payload();
+						payload2.m_args = newObject('fail_code', this.m_payload.m_es.m_fail_code, 'msg', msg);
+						window.openDialog("chrome://zindus/content/prefsmsg.xul",  "_blank", "dependent=yes,chrome=yes,modal=yes",payload2);
+					}
+					else
+						alert(msg);
+				}
 			}
 
 			this.m_payload = null;
@@ -329,8 +345,7 @@ Prefs.prototype.initialiseView = function()
 	//
 	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
 
-	var msg = stringBundleString("prefsGalIfFewerPartOne") + " " + if_fewer + " " +
-	          stringBundleString("prefsGalIfFewerPartTwo");
+	var msg = stringBundleString("prefsGalIfFewer", [ if_fewer ]);
 
 	document.getElementById("zindus-prefs-general-gal-if-fewer").label = msg;
 
@@ -438,9 +453,6 @@ Prefs.prototype.updateView = function()
 		var prefs   = Singleton.instance().preferences();
 		var url     = document.getElementById("zindus-prefs-server-url").value;
 		var prefset = prefsetMatchWithPreAuth(url);
-
-		this.m_logger.debug("blah: server url matches preauth: " + (prefset ? prefset.getProperty(PrefSet.PREAUTH_NAME) : "no"));
-		this.m_logger.debug("blah: m_prefset_general.hasUserValue: " + this.m_prefset_general.hasUserValue(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED));
 
 		if (prefset && this.isServerSettingsComplete()
 		            && !this.m_prefset_general.hasUserValue(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED)

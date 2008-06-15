@@ -25,17 +25,6 @@ function GdAddressConverter()
 {
 	this.m_logger = newLogger("GdAddressConverter");
 
-	this.a_char   = [ '&',     '<',    '>',    '"'      ]; // ampersand must come first, otherwise &lt; becomes &amp;lt;
-	this.a_entity = [ '&amp;', '&lt;', '&gt;', '&quot;' ];
-
-	this.a_regexp = new Object();
-
-	for (var i = 0; i < this.a_char.length; i++)
-	{
-		this.a_regexp[this.a_char[i]]   = new RegExp(this.a_char[i],   "gm");
-		this.a_regexp[this.a_entity[i]] = new RegExp(this.a_entity[i], "gm");
-	}
-
 	this.a_element_unique = [ "city", "state", "postcode", "country", "otheraddr" ];
 	this.a_suffix_unique  = [ "City", "State", "ZipCode",  "Country", "otheraddr" ];
 	this.a_suffix_all     = [ "Address", "Address2" ].concat(this.a_suffix_unique);
@@ -43,8 +32,6 @@ function GdAddressConverter()
 	this.m_suffix_element_bimap = new BiMap(this.a_suffix_unique, this.a_element_unique);
 }
 
-GdAddressConverter.CER_TO_CHAR        = 0x01; // output xml is encoded using Characters ie < > 
-GdAddressConverter.CER_TO_ENTITY      = 0x02; // output xml is encoded using Character Entity References instead of Characters ie &lt;
 GdAddressConverter.PRETTY_XML         = 0x04;
 GdAddressConverter.ADDR_TO_XML        = 0x10;
 GdAddressConverter.ADDR_TO_PROPERTIES = 0x20;
@@ -53,8 +40,7 @@ GdAddressConverter.ADDR_TO_PROPERTIES = 0x20;
 //
 GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 {
-	zinAssert(dirn && !(dirn & (GdAddressConverter.CER_TO_CHAR | dirn & GdAddressConverter.CER_TO_ENTITY))
-	               && typeof(a_xml) == 'object');
+	zinAssert(dirn && typeof(a_xml) == 'object');
 
 	var address, value;
 	var msg = "";
@@ -126,26 +112,6 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 	}
 
 	// this.m_logger.debug("convert: blah:" + msg + " returns: " + ret);
-
-	return ret;
-}
-
-// Convert Character Entity References: &lt; &gt; etc to/from characters: < >
-// This method is also a convenient place to add newlines to make the xml slightly more human-readable.
-//
-// See: http://www.w3.org/TR/html401/charset.html#h-5.3.2
-//
-GdAddressConverter.prototype.convertCER = function(xml_cdata_string, dirn)
-{
-	zinAssertAndLog(xml_cdata_string && dirn > 0, "xml_cdata_string: " + xml_cdata_string + "dirn: " + dirn);
-
-	var ret = xml_cdata_string;
-
-	for (var i = 0; i < this.a_char.length; i++)
-		if (dirn & GdAddressConverter.CER_TO_CHAR)
-			ret = ret.replace(this.a_regexp[this.a_entity[i]], this.a_char[i]);
-		else // (dirn & GdAddressConverter.CER_TO_ENTITY)
-			ret = ret.replace(this.a_regexp[this.a_char[i]], this.a_entity[i]);
 
 	return ret;
 }

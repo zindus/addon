@@ -1,5 +1,7 @@
 <!-- See http://books.mozdev.org/html/mozilla-chp-11-sect-4.html for the naming scheme -->
 
+<!-- Localisation note: properties in ContactConverter are exposed via Google conflict reporting -->
+
 <!ENTITY ZinToolsMenuItem.label                  "Zindus">
 <!ENTITY ZinToolsMenuItem.accesskey              "z">
 <!ENTITY ZinToolBarButton.tooltip                "Zindus Preferences">
@@ -49,9 +51,9 @@
 <!ENTITY ZinPrefsGeneralButtonAdvanced.label     "Advanced...">
 <!ENTITY ZinPrefsGeneralButtonAdvanced.accesskey "A">
 
-<!ENTITY ZinPrefsAdvancedGdPostal.label          "Postal Address Fields (experimental)">
+<!ENTITY ZinPrefsAdvancedGdPostal.label          "Postal Address Fields">
 <!ENTITY ZinPrefsAdvancedGdFalse.label           "Not synced">
-<!ENTITY ZinPrefsAdvancedGdTrue.label            "Thunderbird fields are represented as xml in the Google address field">
+<!ENTITY ZinPrefsAdvancedGdTrue.label            "Thunderbird fields are represented as xml in Google">
 <!ENTITY ZinPrefsAdvancedGdExample1.value        "An example...">
 <!ENTITY ZinPrefsAdvancedGdExample2.value        "
                                                   <html:strong>Thunderbird Address Fields</html:strong>

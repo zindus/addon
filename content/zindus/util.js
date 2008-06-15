@@ -97,6 +97,7 @@ function stringBundleString(id_string, args)
 
 	zinAssert(arguments.length == 1 || arguments.length == 2);
 	zinAssertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
+	zinAssert(typeof(args) == 'undefined' || args instanceof Array);
 
 	if (stringbundle == null)
 	{
@@ -110,7 +111,7 @@ function stringBundleString(id_string, args)
 		if (arguments.length == 1)
 			ret = stringbundle.getString(APP_NAME + "." + id_string);
 		else if (arguments.length == 2)
-			ret = stringbundle.getFormattedString(APP_NAME + "." + id_string, args); // untested!
+			ret = stringbundle.getFormattedString(APP_NAME + "." + id_string, args);
 	}
 	catch (e)
 	{
@@ -669,4 +670,38 @@ function prefsetMatchWithPreAuth(url)
 	}
 
 	return is_match ? prefset : null;
+}
+
+// Convert Character Entity References: &lt; &gt; etc to/from characters: < >
+// This method is also a convenient place to add newlines to make the xml slightly more human-readable.
+//
+// See: http://www.w3.org/TR/html401/charset.html#h-5.3.2
+//
+function convertCER(str, dirn)
+{
+	zinAssertAndLog(str && (dirn & CER_TO_CHAR || dirn & CER_TO_ENTITY), "str: " + str + "dirn: " + dirn);
+
+	const a_char   = [ '&',     '<',    '>',    '"'      ]; // ampersand must come first, otherwise &lt; becomes &amp;lt;
+	const a_entity = [ '&amp;', '&lt;', '&gt;', '&quot;' ];
+	var ret = str;
+	var i;
+
+	if (typeof(convertCER.a_regexp) == 'undefined')
+	{
+		convertCER.a_regexp = new Object();
+
+		for (i = 0; i < a_char.length; i++)
+		{
+			convertCER.a_regexp[a_char[i]]   = new RegExp(a_char[i],   "gm");
+			convertCER.a_regexp[a_entity[i]] = new RegExp(a_entity[i], "gm");
+		}
+	}
+
+	for (i = 0; i < a_char.length; i++)
+		if (dirn & CER_TO_CHAR)
+			ret = ret.replace(convertCER.a_regexp[a_entity[i]], a_char[i]);
+		else // (dirn & CER_TO_ENTITY)
+			ret = ret.replace(convertCER.a_regexp[a_char[i]], a_entity[i]);
+
+	return ret;
 }

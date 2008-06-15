@@ -94,7 +94,7 @@ GdContact.prototype.updateFromContainer = function(node)
 					break;
 				case "postalAddress#home":
 				case "postalAddress#work":
-					function f(str) { return context.m_contact_converter.m_gac.convertCER(str, GdAddressConverter.CER_TO_CHAR); }
+					function f(str) { return convertCER(str, CER_TO_CHAR); }
 					context.setProperty(node, null,  context.m_properties, key, f);
 					break;
 				case "PrimaryEmail":

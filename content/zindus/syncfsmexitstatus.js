@@ -51,17 +51,18 @@ function SyncFsmExitStatus()
 		FailOnFolderSourceUpdate        : { 'hasdetail' : 1 }, // 17. the source update operations can't be applied with confidence
 		FailOnFolderCantCreateShared    : { 'hasdetail' : 1 }, // 18. 
 		FailOnUnableToUpdateServer      : { 'hasdetail' : 1 }, // 19. couldn't make sense of the http/soap response
-		FailOnNoXpath                   : { 'hasdetail' : 0 }, // 20. 
-		FailOnNoPab                     : { 'hasdetail' : 0 }, // 21. 
-		FailOnMultipleLn                : { 'hasdetail' : 1 }, // 22. 
-		FailOnGdConflict1               : { 'hasdetail' : 1 }, // 23. 
-		FailOnGdConflict2               : { 'hasdetail' : 1 }, // 24. 
-		FailOnGdConflict3               : { 'hasdetail' : 1 }, // 25. 
-		FailOnZmEmptyContact            : { 'hasdetail' : 1 }, // 26. 
-		FailOnGdEmptyContact            : { 'hasdetail' : 1 }, // 27. 
-		FailOnNoGdSyncWithZg            : { 'hasdetail' : 0 }, // 28. 
-		FailOnUnauthorized              : { 'hasdetail' : 0 }, // 29. server returned 401 - perhaps a proxy removed the 'Authorized' header?
-		FailOnAuth                      : { 'hasdetail' : 1 }  // 30. Failed to login to Google or Zimbra via preauth
+		FailOnUnableToUpdateThunderbird : { 'hasdetail' : 1 }, // 20. 
+		FailOnNoXpath                   : { 'hasdetail' : 0 }, // 21. 
+		FailOnNoPab                     : { 'hasdetail' : 0 }, // 22. 
+		FailOnMultipleLn                : { 'hasdetail' : 1 }, // 23. 
+		FailOnGdConflict1               : { 'hasdetail' : 1 }, // 24. 
+		FailOnGdConflict2               : { 'hasdetail' : 1 }, // 25. 
+		FailOnGdForbidden               : { 'hasdetail' : 0 }, // 26. 
+		FailOnZmEmptyContact            : { 'hasdetail' : 1 }, // 27. 
+		FailOnGdEmptyContact            : { 'hasdetail' : 1 }, // 28. 
+		FailOnNoGdSyncWithZg            : { 'hasdetail' : 0 }, // 29. 
+		FailOnUnauthorized              : { 'hasdetail' : 0 }, // 30. server returned 401 - perhaps a proxy removed the 'Authorized' header?
+		FailOnAuth                      : { 'hasdetail' : 1 }  // 31. Failed to login to Google or Zimbra via preauth
 	};
 }
 

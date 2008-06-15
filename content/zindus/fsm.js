@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.13 2008-06-09 08:00:00 cvsuser Exp $
+// $Id: fsm.js,v 1.14 2008-06-15 19:38:22 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -50,11 +50,7 @@ function fsmTransitionDo(fsmstate)
 
 		var continuation = function(nextEvent) {
 				// See:  http://en.wikipedia.org/wiki/Closure_%28computer_science%29
-				// Closures are commonly used in functional programming to defer calculation, to hide state,
-				// and as arguments to higher-order functions
 				//
-				// fsm.m_logger.debug("blah1: newstate: " + newstate + " nextEvent: " + nextEvent);
-				// fsm.m_logger.debug("blah2: context.fsm.m_transitions: " + aToString(context.fsm.m_transitions));
 				zinAssert(nextEvent);
 
 				if (fsm.m_a_exit[newstate])
@@ -64,12 +60,8 @@ function fsmTransitionDo(fsmstate)
 
 				var nextState = context.fsm.m_transitions[newstate][nextEvent];
 
-				// fsm.m_logger.debug("blah3: nextState: " + nextState);
-
 				if (nextState)
-				{
 					fsmTransitionSchedule(id_fsm, newstate, nextState, nextEvent, context);
-				}
 				else
 				{
 					// Even though Finite State Machines in UML are supposed to silently ignore events that they don't know about,
@@ -79,8 +71,8 @@ function fsmTransitionDo(fsmstate)
 				}
 			}
 
-		// we add the continuation as a property of the fsm object to support context.cancel()
-		context.fsm.m_continuation = continuation;
+		context.fsm.m_continuation = continuation; // the continuation is made a property of the fsm object to support context.cancel()
+
 		fsm.m_logger.debug("TransitionDo: context.fsm.m_continuation set - about to call the entry action, newstate: " + newstate);
 
 		fsm.m_a_entry[newstate].call(context, newstate, event, continuation);
