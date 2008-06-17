@@ -171,8 +171,10 @@ Prefs.prototype.onCommand = function(id_target)
 	switch(id_target)
 	{
 		case "zindus-prefs-general-button-sync-now":
+			this.updatePrefsetsFromDocument();
+
 			this.m_payload = new Payload();
-			this.m_payload.m_syncfsm = this.getSyncFsm(this.serverType(), "twoway");
+			this.m_payload.m_syncfsm_details = this.getSyncFsmDetails(this.serverType(), "twoway");
 			this.m_payload.m_es = new SyncFsmExitStatus();
 			this.m_payload.m_is_cancelled = false;
 
@@ -180,7 +182,7 @@ Prefs.prototype.onCommand = function(id_target)
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", "dependent=yes,chrome=yes,modal=yes", this.m_payload);
 
-			// The window could be closed if the esc key was pressed before openDialog() was called (ie during getSyncFsm()).
+			// The window could be closed if the esc key was pressed before openDialog() was called.
 			// The payload could be mangled because if the AddressBook new Card window got opened before the syncwindow finishes,
 			// we see SyncWindow.onAccept() exits but window.openDialog() hasn't returned!  And ... the "Sync Now" button
 			// is enabled because updateView() got told that the fsm finished.  So if the user starts another fsm, the payload of
@@ -218,8 +220,10 @@ Prefs.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-prefs-server-button-authonly":
+			this.updatePrefsetsFromDocument();
+
 			this.m_payload = new Payload();
-			this.m_payload.m_syncfsm = this.getSyncFsm( this.serverType(), "authonly");
+			this.m_payload.m_syncfsm_details = this.getSyncFsmDetails(this.serverType(), "authonly");
 			this.m_payload.m_es = new SyncFsmExitStatus();
 
 			Singleton.instance().logger().debug("Prefs.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
@@ -280,23 +284,18 @@ Prefs.prototype.onCommand = function(id_target)
 	}
 }
 
-Prefs.prototype.getSyncFsm = function(format, type)
+Prefs.prototype.getSyncFsmDetails = function(format, type)
 {
-	var syncfsm;
-	var id_fsm = null
-
-	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
-	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
-	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
-	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
-	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
-
-	this.updatePrefsetsFromDocument();
-
 	var password = document.getElementById("zindus-prefs-server-password").value;
-	syncfsm.initialise(id_fsm, SOURCEID_AA, this.m_prefset_general, this.m_prefset_server, password);
 
-	return syncfsm;
+	// this.m_logger.debug("getSyncFsmDetails: blah: prefset_server: " + this.m_prefset_server.toString());
+
+	return newObject('format',          format,
+	                 'type',            type,
+	                 'password',        password,
+	                 'sourceid',        SOURCEID_AA,
+	                 'prefset_general', this.m_prefset_general,
+	                 'prefset_server',  this.m_prefset_server);
 }
 
 Prefs.prototype.onTimerFire = function(context)
@@ -317,17 +316,18 @@ Prefs.prototype.initialiseView = function()
 
 	// server tab - url, username and password
 	//
-	document.getElementById("zindus-prefs-server-username").value = this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME);
-	document.getElementById("zindus-prefs-server-url").value      = this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
-	document.getElementById("zindus-prefs-server-password").value = PrefSet.getPassword(this.m_prefset_server);
-
 	// server tab - server type
 	//
 	Prefs.setRadioFromPrefset("zindus-prefs-server-type-radiogroup", this.m_server_type_bimap, this.m_prefset_server,
 	                          PrefSet.SERVER_TYPE, "zindus-prefs-server-type-google")
 
+	document.getElementById("zindus-prefs-server-username").value = this.m_prefset_server.getProperty(PrefSet.SERVER_USERNAME);
+	document.getElementById("zindus-prefs-server-password").value = PrefSet.getPassword(this.m_prefset_server);
+	document.getElementById("zindus-prefs-server-url").value      = (this.serverType() == FORMAT_GD) ? GOOGLE_URL_CLIENT_LOGIN : 
+	                                                                  this.m_prefset_server.getProperty(PrefSet.SERVER_URL);
+
 	this.m_server_type_last = this.serverType();
-	this.rememberLastServerType(this.m_server_type_last);
+	this.serverTypeDetailsRemember();
 
 	// general tab - checkbox elements
 	//
@@ -426,7 +426,7 @@ Prefs.prototype.updateView = function()
 	{
 		this.m_logger.debug("updateView: server_type changed: server_type_current: " + server_type_current);
 
-		this.rememberLastServerType(this.m_server_type_last);
+		this.serverTypeDetailsRemember();
 
 		if (isPropertyPresent(this.a_server_type_values, server_type_current))
 		{
@@ -435,15 +435,7 @@ Prefs.prototype.updateView = function()
 			document.getElementById("zindus-prefs-server-password").value = this.a_server_type_values[server_type_current].password;
 		}
 		else
-		{
-			if (server_type_current == FORMAT_GD)
-				document.getElementById("zindus-prefs-server-url").value = GOOGLE_URL_CLIENT_LOGIN;
-			else
-				document.getElementById("zindus-prefs-server-url").value = "";
-
-			document.getElementById("zindus-prefs-server-username").value = "";
-			document.getElementById("zindus-prefs-server-password").value = "";
-		}
+			this.serverTypeDetailsReset();
 
 		this.m_server_type_last = this.serverType();
 	}
@@ -461,7 +453,7 @@ Prefs.prototype.updateView = function()
 		{
 			this.m_is_changed_default_for__zm_sync_gal_enabled = true;
 
-			this.m_logger.debug("blah: setting a reasonable default for PREAUTH_ZM_SYNC_GAL_ENABLED");
+			// this.m_logger.debug("blah: setting a reasonable default for PREAUTH_ZM_SYNC_GAL_ENABLED");
 
 			this.m_prefset_general.setProperty(PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED,
 			               prefset.getProperty(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED));
@@ -519,9 +511,9 @@ Prefs.prototype.serverType = function()
 	return ret;
 }
 
-Prefs.prototype.rememberLastServerType = function(server_type)
+Prefs.prototype.serverTypeDetailsRemember = function()
 {
-	this.m_logger.debug("rememberLastServerType: setting: m_server_type_last: " + this.m_server_type_last);
+	this.m_logger.debug("serverTypeDetailsRemember: setting: m_server_type_last: " + this.m_server_type_last);
 
 	if (!isPropertyPresent(this.a_server_type_values, this.m_server_type_last))
 		this.a_server_type_values[this.m_server_type_last] = new Object();
@@ -529,6 +521,17 @@ Prefs.prototype.rememberLastServerType = function(server_type)
 	this.a_server_type_values[this.m_server_type_last].username = document.getElementById("zindus-prefs-server-username").value;
 	this.a_server_type_values[this.m_server_type_last].url      = document.getElementById("zindus-prefs-server-url").value;
 	this.a_server_type_values[this.m_server_type_last].password = document.getElementById("zindus-prefs-server-password").value;
+}
+
+Prefs.prototype.serverTypeDetailsReset = function()
+{
+	if (this.serverType() == FORMAT_GD)
+		document.getElementById("zindus-prefs-server-url").value = GOOGLE_URL_CLIENT_LOGIN;
+	else
+		document.getElementById("zindus-prefs-server-url").value = "";
+
+	document.getElementById("zindus-prefs-server-username").value = "";
+	document.getElementById("zindus-prefs-server-password").value = "";
 }
 
 Prefs.getValueFromRadio = function(radiogroup_id, bimap)

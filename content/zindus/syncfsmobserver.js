@@ -74,7 +74,13 @@ SyncFsmObserver.prototype.progressReportOnSource = function()
 
 SyncFsmObserver.prototype.buildOp = function(sourceid, stringid)
 {
-	return this.state.sources[sourceid]['name'] + " " + stringBundleString(this.tweakStringId(stringid));
+	return this.sourceName(sourceid) + " " + stringBundleString(this.tweakStringId(stringid));
+}
+
+SyncFsmObserver.prototype.sourceName = function(sourceid)
+{
+	return this.state.sources[sourceid]['format'] == FORMAT_TB ? stringBundleString("formatThunderbird").toLowerCase() :
+	                                                             stringBundleString("formatServer").toLowerCase();
 }
 
 SyncFsmObserver.prototype.tweakStringId = function(stringid)
@@ -124,7 +130,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGetContactGd2:  { count: 1 },
 		stGetContactGd3:  { count: 1 },
 		stDeXmlifyAddrGd: { count: 1 },
-		stGdConverge5:    { count: 1 },
+		stConverge5:      { count: 1 },
 		stGetContactPuGd: { count: 1 },
 		stUpdateGd:       { count: 1 },
 	};
@@ -217,7 +223,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stConverge1':     
 			case 'stConverge2':     
 			case 'stConverge4':     
-			case 'stGdConverge5':     
+			case 'stConverge5':     
 			case 'stConverge7':     
 			case 'stConverge8':     
 			case 'stConverge9':      this.progressReportOn("Converge");                                     break;
@@ -244,20 +250,21 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
 						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", context.state.aContact.length);
-						this.count_get_contact_zm = 1;
+						this.m_zm_get_contact_count = 1;
+						this.m_zm_get_contact_max   = context.state.aContact.length;
 					}
 
 					var aGetContactRequest = SyncFsm.GetContactZmNextBatch(context.state.aContact);
 
-					var lo = this.count_get_contact_zm;
-					var hi = this.count_get_contact_zm + aGetContactRequest.length - 1;
+					var lo = this.m_zm_get_contact_count;
+					var hi = intMin(this.m_zm_get_contact_count + aGetContactRequest.length - 1, this.m_zm_get_contact_max);
 
 					if (lo == hi)
 						this.set(SyncFsmObserver.PROG_CNT, lo);
 					else
 						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
 
-					this.count_get_contact_zm += aGetContactRequest.length;
+					this.m_zm_get_contact_count += aGetContactRequest.length;
 				}
 				else
 					ret = false; // no need to update the UI
@@ -269,11 +276,14 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					var op = this.buildOp(context.state.sourceid_pr, "GetMany");
 
 					if (this.get(SyncFsmObserver.OP) != op)
-						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", aToLength(context.state.a_gd_contact));
+					{
+						this.m_gd_contact_length = aToLength(context.state.a_gd_contact);
+						this.progressReportOnSource(context.state.sourceid_pr, "GetMany", this.m_gd_contact_length);
+					}
 
 					var lo = context.state.a_gd_contact_iterator.m_zindus_contact_count;
-					var hi = this.state.a_gd_contact_iterator.m_zindus_contact_count +
-					         this.state.a_gd_contact_iterator.m_zindus_contact_chunk - 1; 
+					var hi = intMin(this.m_gd_contact_length, this.state.a_gd_contact_iterator.m_zindus_contact_count +
+					                                          this.state.a_gd_contact_iterator.m_zindus_contact_chunk - 1); 
 
 					if (lo == hi)
 						this.set(SyncFsmObserver.PROG_CNT, lo);

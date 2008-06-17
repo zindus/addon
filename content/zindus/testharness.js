@@ -1047,6 +1047,13 @@ TestHarness.prototype.testGdContact = function()
 
 	this.setupFixtureGdPostalAddress();
 
+	// test isAnyPostalAddressInXml()
+	//
+	var properties = this.sampleGoogleContactProperties();
+	contact = new GdContact(contact_converter);
+	contact.updateFromProperties(properties);
+	zinAssert(!contact.isAnyPostalAddressInXml());
+
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should preverse <otheraddr>
 	//
 	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@",
@@ -1071,15 +1078,28 @@ TestHarness.prototype.testGdContact = function()
 	// 
 	this.setupFixtureGdPostalAddress();
 
-	contact = this.gdContactFromXmlString(contact_converter,
-	                                      this.m_entry_as_xml_char.replace("@@postal@@", this.m_otheraddr));
+	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", this.m_otheraddr));
 	zinAssert(!contact.isAnyPostalAddressInXml());
+	zinAssert(contact.isAnyPostalAddressNotInXml());
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
 	tb_properties["HomeAddress2"] = HomeAddress2;
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 	contact.updateFromProperties(gd_properties);
+	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
+
+	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact (no address field) should xmlify the plain-text
+	// into the <otheraddr> element
+	// 
+	this.setupFixtureGdPostalAddress();
+
+	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", this.m_otheraddr));
+
+	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
+	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
+	contact.updateFromProperties(gd_properties);
 	// this.m_logger.debug("contact after update: " + contact.toString());
+	// this.m_logger.debug("contact.postalAddressOtherAddr: " + contact.postalAddressOtherAddr("postalAddress#home"));
 	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
 
 	return true;

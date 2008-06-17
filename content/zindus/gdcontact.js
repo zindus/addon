@@ -276,12 +276,17 @@ GdContact.prototype.nodeModifyOrMarkForDeletion = function(node, attribute, a_fi
 GdContact.transformProperties = function(properties)
 {
 	for (key in properties)
-	{
-		properties[key] = zinTrim(properties[key]);
-	
-		if (key == "PrimaryEmail" || key == "SecondEmail")
-			properties[key] = properties[key].toLowerCase();
-	}
+		properties[key] = GdContact.transformProperty(key, properties[key]);
+}
+
+GdContact.transformProperty = function(key, value)
+{
+	var ret = zinTrim(value);
+
+	if (key == "PrimaryEmail" || key == "SecondEmail")
+		ret = ret.toLowerCase();
+
+	return ret;
 }
 
 GdContact.prototype.updateFromProperties = function(properties)
@@ -321,25 +326,26 @@ GdContact.prototype.updateFromProperties = function(properties)
 					// if the contact's field contains xml,  preserve the <otheraddr> element
 					// if the contact's field contacts text, move the text into an <otheraddr> element in the xml and save that
 					//
-					var is_parsed, a_new_field;
-					var a_gac_properties = { };
+					var is_a_field_postal = false;
+					var a_gac_properties  = { };
 					var contact_converter = context.m_contact_converter;
+					var otheraddr         = context.postalAddressOtherAddr(key);
+					var a_new_field;
 
 					if (isPropertyPresent(a_field, key))
-						is_parsed = contact_converter.m_gac.convert(a_field, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
+						is_a_field_postal = contact_converter.m_gac.convert(a_field, key, a_gac_properties,
+						                                                                  GdAddressConverter.ADDR_TO_PROPERTIES);
 
-					if (is_parsed)
+					if (is_a_field_postal || otheraddr == null)
 					{
 						a_new_field = newObject(key, null);
 
-						var otheraddr = context.postalAddressOtherAddr(key);
-
-						if (otheraddr && otheraddr.length > 0) // the original is xml
+						if (otheraddr && otheraddr.length > 0) // the postalAddress of the contact is xml
 							a_gac_properties["otheraddr"] = otheraddr;
-						else if (otheraddr == null)            // original is text
+						else if (otheraddr == null)            // the postalAddress of the contact is text
 							a_gac_properties["otheraddr"] = node.textContent;
 						else
-							;                                  // the original contained xml with an empty <otheraddr> element
+							;                                  // the postalAddress of the contact is xml with an empty <otheraddr> element
 
 						contact_converter.m_gac.convert(a_new_field, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML |
 						                                                                    GdAddressConverter.PRETTY_XML );
@@ -598,6 +604,23 @@ GdContact.prototype.isAnyPostalAddressInXml = function()
 	for (var key in this.m_contact_converter.gd_certain_keys_converted()["postalAddress"])
 	{
 		ret = (this.postalAddressOtherAddr(key) != null);
+
+		if (ret)
+			break;
+	}
+
+	return ret;
+}
+
+// returns true iff the contact had a postal address that wasn't in XML ie it was plain-text
+//
+GdContact.prototype.isAnyPostalAddressNotInXml = function()
+{
+	var ret = false;
+
+	for (var key in this.m_contact_converter.gd_certain_keys_converted()["postalAddress"])
+	{
+		ret = (this.postalAddressOtherAddr(key) == null);
 
 		if (ret)
 			break;

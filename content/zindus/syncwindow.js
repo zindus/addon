@@ -54,7 +54,6 @@ SyncWindow.prototype.onLoad = function()
 	else
 	{
 		this.m_sfo     = new SyncFsmObserver(this.m_payload.m_es);
-		this.m_syncfsm = this.m_payload.m_syncfsm;
 
 		var listen_to = cloneObject(Maestro.FSM_GROUP_SYNC);
 		Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
@@ -82,7 +81,8 @@ SyncWindow.prototype.onCancel = function()
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
 	// The observer is then notified and closes the window.
 	//
-	this.m_syncfsm.cancel(this.m_timeoutID);
+	if (this.m_syncfsm)
+		this.m_syncfsm.cancel(this.m_timeoutID);
 
 	// don't reference logger because logger.js is out of scope after the fsm has cancelled...
 	// this.m_logger.debug("onCancel: exits");
@@ -111,9 +111,13 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	// Do we want to create a specific error condition for this?  Perhaps it'd be better to fix the condition
 	// eg by altering the notification framework so that PrefsDialog can forestall the Timer immediately (while processing the click).
 	//
-	if (!this.m_has_observer_been_called && fsmstate != null)
+	if (!this.m_has_observer_been_called && (fsmstate != null || this.m_payload.m_is_cancelled))
 	{
-		this.m_logger.debug("functor: timer got in between 'Sync Now' and this window - aborting");
+		// if fsmstate != null              it means that the timer snuck in between 'Sync Now' and this window
+		// if this.m_payload.m_is_cancelled it means that the preferences window was cancelled in between 'Sync Now' and this window
+		//
+		this.m_logger.debug("onFsmStateChangeFunctor: aborting - closing the window - fsm not started: " +
+		                      " fsmstate: " + (fsmstate ? "set" : "not set") + " payload.m_is_cancelled: " + this.m_payload.m_is_cancelled);
 
 		document.getElementById('zindus-syncwindow').acceptDialog();
 	}
@@ -123,11 +127,14 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_has_observer_been_called = true;
 
-		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm);
-
 		this.m_zwc.populate();
 
 		newLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
+
+		this.m_syncfsm = SyncWindow.newSyncFsm(this.m_payload.m_syncfsm_details);
+
+		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm);
+
 		this.m_syncfsm.start(window);
 	}
 	else 
@@ -176,4 +183,20 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 	if (typeof(Log) == 'function')  // the scope into which the source file was included is out of scope after acceptDialog()
 		this.m_logger.debug("functor: exiting");
+}
+
+SyncWindow.newSyncFsm = function(d)
+{
+	var syncfsm;
+	var id_fsm = null;
+
+	if      (d.format == FORMAT_ZM && d.type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
+	else if (d.format == FORMAT_GD && d.type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
+	else if (d.format == FORMAT_ZM && d.type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
+	else if (d.format == FORMAT_GD && d.type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
+	else zinAssertAndLog(false, "mismatched case: format: " + d.format + " type: " + d.type);
+
+	syncfsm.initialise(id_fsm, d.sourceid, d.prefset_general, d.prefset_server, d.password);
+
+	return syncfsm;
 }

@@ -40,11 +40,11 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 		if (messengerWindow)
 		{
+			Filesystem.createDirectoriesIfRequired();  // this comes first - can't log without a directory for the logfile!
+
 			this.m_logger_no_prefix.info("startup:  " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
 
 			this.migratePrefs();
-
-			Filesystem.createDirectoriesIfRequired();
 
 			RemoveDatastore.removeZfcsIfNecessary();
 

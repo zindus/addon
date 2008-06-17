@@ -26,7 +26,6 @@ function PrefSet(prefprefix, a)
 	this.m_id         = -1;
 	this.m_prefprefix = prefprefix;
 	this.m_properties = new Object();
-	// this.m_logger        = newLogger("Prefset");
 
 	for (var i in a)
 		this.m_properties[a[i]] = PrefSet.DEFAULT_VALUE;
@@ -84,8 +83,6 @@ PrefSet.prototype.load = function(id, branch)
 		{
 			// do nothing
 		}
-
-		// this.m_logger.debug("load: loaded preference " + this.makePrefKey(id, i) + " == " + this.m_properties[i] + "\n");
 	}
 
 	this.m_id = id;
@@ -101,16 +98,10 @@ PrefSet.prototype.save = function()
 
 	zinAssert(this.m_id >= 0);
 
-	// this.m_logger.debug("save: ");
-
 	try
 	{
 		for (i in this.m_properties)
-		{
 			branch.setCharPref(this.makePrefKey(this.m_id, i), this.m_properties[i]);
-
-			// this.m_logger.debug("save: preference: " + this.makePrefKey(this.m_id, i) + " == " + this.m_properties[i]);
-		}
 
 		retval = true;
 	}

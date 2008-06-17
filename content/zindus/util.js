@@ -705,3 +705,8 @@ function convertCER(str, dirn)
 
 	return ret;
 }
+
+function intMin(a, b)
+{
+	return a < b ? a : b;
+}

@@ -120,8 +120,9 @@ Lso.prototype.compare = function(zfi)
 		switch (format)
 		{
 			case FORMAT_TB:
-				isGreaterThan = (Lso.normalise(zfi, CS) != this.m_properties[CS]) ||
-					  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL]) ;
+				isGreaterThan = (Lso.normalise(zfi, CS) != TBCARD_CHECKSUM_BACKWARDS) &&
+				                 ((Lso.normalise(zfi, CS)  != this.m_properties[CS]) ||
+					  			  (Lso.normalise(zfi, DEL) != this.m_properties[DEL]));
 				break;
 			case FORMAT_ZM:
 				isGreaterThan =

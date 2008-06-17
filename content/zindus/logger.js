@@ -182,6 +182,7 @@ LogAppenderOpenClose.prototype.fileOpen = function()
 		{
 			dump("fileOpen: exception opening file: " + this.m_logfile.path + "\n");
 			dump(ex.message + " stack: \n" + ex.stack);
+			Components.utils.reportError("exception opening file: " + this.m_logfile.path);
 			Components.utils.reportError(ex);
 			is_first_logging_file_open_exception = true;
 		}
