@@ -53,10 +53,9 @@ SyncWindow.prototype.onLoad = function()
 		window.close();
 	else
 	{
-		this.m_sfo     = new SyncFsmObserver(this.m_payload.m_es);
+		this.m_sfo = new SyncFsmObserver(this.m_payload.m_es);
 
-		var listen_to = cloneObject(Maestro.FSM_GROUP_SYNC);
-		Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
+		window.setTimeout(this.onTimerFire, 0, this);
 	}
 
 	this.m_logger.debug("onLoad: exits");
@@ -180,9 +179,6 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			document.getElementById('zindus-syncwindow').acceptDialog();
 		}
 	}
-
-	if (typeof(Log) == 'function')  // the scope into which the source file was included is out of scope after acceptDialog()
-		this.m_logger.debug("functor: exiting");
 }
 
 SyncWindow.newSyncFsm = function(d)
@@ -199,4 +195,26 @@ SyncWindow.newSyncFsm = function(d)
 	syncfsm.initialise(id_fsm, d.sourceid, d.prefset_general, d.prefset_server, d.password);
 
 	return syncfsm;
+}
+
+// this stuff used to be called from onLoad, but wierd things happen on Linux when the cancel button is pressed
+// In using window.setTimeout() this way, the window is guaranteed to be fully loaded before the fsm is started.
+//
+SyncWindow.prototype.onTimerFire = function(context)
+{
+	context.m_logger.debug("onTimerFire: enters");
+
+	if (context.m_payload.m_is_cancelled)
+	{
+		context.m_logger.debug("onTimerFire: payload.m_is_cancelled: " + context.m_payload.m_is_cancelled + " ... closing window");
+		window.close();
+	}
+	else
+	{
+		context.m_logger.debug("onTimerFire: registering functor");
+		var listen_to = cloneObject(Maestro.FSM_GROUP_SYNC);
+		Maestro.notifyFunctorRegister(context, context.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
+	}
+
+	context.m_logger.debug("onTimerFire: exits");
 }

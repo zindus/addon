@@ -61,6 +61,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContacts3();
 	ret = ret && this.testGdAddressConverter();
 	ret = ret && this.testGdContact();
+	ret = ret && this.testAbCreate2();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1151,4 +1152,39 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 	}
 
 	return true;
+}
+
+// code to create addressbook "fred" and get its prefId.
+//
+TestHarness.prototype.testAbCreate1 = function()
+{
+	var Cc = Components.classes;
+	var Ci = Components.interfaces;
+	var prefix = "fred";
+
+	for (var i = 1; i < 10; i++)
+	{
+		var name = prefix + "-" + i;
+		var abProps = Cc["@mozilla.org/addressbook/properties;1"].createInstance(Ci.nsIAbDirectoryProperties);
+		abProps.description = name;
+		abProps.dirType     = kPABDirectory;
+
+		var ab  = Cc["@mozilla.org/addressbook;1"].createInstance(Ci.nsIAddressBook);
+		ab.newAddressBook(abProps);
+		var uri = abProps.URI;
+		var zab = new AddressBookTb2();
+		zab.populateNameToUriMap();
+		var rdf = Cc["@mozilla.org/rdf/rdf-service;1"].getService(Ci.nsIRDFService);
+		var dir = rdf.GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
+
+		this.m_logger.debug("created addressbook name: " + name + " uri: " + uri + " typeof: " + typeof(uri));
+		this.m_logger.debug("abProps.prefName: " + abProps.prefName);
+		this.m_logger.debug("dirPrefId: " + dir.dirPrefId);
+	}
+}
+
+TestHarness.prototype.testAbCreate2 = function()
+{
+	var zab = new AddressBookTb3();
+	zab.newAddressBook("fred-1");
 }

@@ -460,7 +460,7 @@ function isValidUrl(url)
 //  function A ();
 //  function B ();
 //  B.prototype = new A();
-// is that A's constructor is called when the file is loaded.
+// is that A's constructor is called when the .js file is loaded.
 // And of course the scope chain when the file is loaded is likely different from when B's constructor is called.
 // In particular, if the file is loaded from the .xul, then the document isn't fully loaded when document.blah is referenced.
 // To avoid this trickness, if A's constructor references 'document' or 'window' we use copyPrototype()

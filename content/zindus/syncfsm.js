@@ -256,9 +256,9 @@ SyncFsm.prototype.cancel = function(timeoutID)
 	}
 	else
 	{
-		this.fsm.m_window.clearTimeout(timeoutID);
+		this.state.m_logger.debug("cancel: clearing timeoutID: " + timeoutID);
 
-		this.state.m_logger.debug("cancel: cleared timeoutID: " + timeoutID);
+		this.fsm.m_window.clearTimeout(timeoutID);
 
 		if (!this.fsm.m_continuation)
 		{
@@ -1676,7 +1676,10 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	                          " this.state.SyncGalEnabled: " + this.state.SyncGalEnabled);
 
 	if (isGalEnabled && uri == null)
-		uri = this.state.m_addressbook.newAddressBook(abName);
+	{
+		var abip = this.state.m_addressbook.newAddressBook(abName);
+		uri = abip.m_uri;
+	}
 
 	if (!isGalEnabled)
 	{
@@ -1736,7 +1739,8 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 			this.state.m_addressbook.deleteAddressBook(uri);
 
-			uri = this.state.m_addressbook.newAddressBook(abName);
+			var abip = this.state.m_addressbook.newAddressBook(abName);
+			uri = abip.m_uri;
 
 			for (var i in this.state.aSyncGalContact)
 				aAdd.push(i);
@@ -1847,7 +1851,8 @@ SyncFsm.prototype.entryActionLoadTbSetupGdAddressbook = function()
 	}
 	else if (this.state.gd_sync_with == 'zg' && aToLength(aUris) == 0)
 	{
-		var uri = this.state.m_addressbook.newAddressBook(abName);
+		var abip = this.state.m_addressbook.newAddressBook(abName);
+		var uri  = abip.m_uri;
 
 		this.state.m_logger.debug("entryActionLoadTbSetupGdAddressbook: created: addressbook: " + abName + " uri: " + uri);
 	}
@@ -4630,31 +4635,19 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 			case Suo.ADD | FeedItem.TYPE_FL:
 			case Suo.ADD | FeedItem.TYPE_SF:
 				var abName = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, zfiWinner);
-				var tpi;
 
 				if (!this.state.m_addressbook.getAddressBookUriByName(abName))
 				{
 					msg += "About to add a thunderbird addressbook (folder), gid: " + gid + " and luid_winner: " + luid_winner + " abName: " + abName;
 
-					uri = this.state.m_addressbook.newAddressBook(abName);
+					var abip = this.state.m_addressbook.newAddressBook(abName);
+					uri = abip.m_uri;
 
-					if (!uri || uri.length < 1) // re: issue #38
+					if (!abip.m_uri || abip.m_uri.length < 1 || !abip.m_prefid || abip.m_prefid.length < 1) // re: issue #38
 					{
-						this.state.m_logger.error("bad uri after creating a tb addressbook: msg: " + msg);
+						this.state.m_logger.error("bad uri or tpi after creating a tb addressbook: " + msg + " abip: " + abip.toString());
 						this.state.stopFailCode   = 'FailOnUnableToUpdateThunderbird';
 						this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateThunderbirdDetail1")
-						                                 + " " + abName;
-						this.state.is_source_update_problem = true;
-						break bigloop;
-					}
-
-					tpi = this.state.m_addressbook.getAddressBookPrefId(uri);
-
-					if (!tpi || tpi.length < 1) // re: issue #38
-					{
-						this.state.m_logger.error("bad tpi returned after creating an tb addressbook: uri: " + uri + " msg: " + msg);
-						this.state.stopFailCode   = 'FailOnUnableToUpdateThunderbird';
-						this.state.stopFailDetail = "\n" + stringBundleString("statusFailOnUnableToUpdateThunderbirdDetail2")
 						                                 + " " + abName;
 						this.state.is_source_update_problem = true;
 						break bigloop;
@@ -4666,9 +4659,9 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					zfcTarget.set(new FeedItem(FeedItem.TYPE_FL, FeedItem.ATTR_KEY, luid_target,
 					                       FeedItem.ATTR_NAME, name_for_map, FeedItem.ATTR_L, 1,
-					                       FeedItem.ATTR_MS, 1, FeedItem.ATTR_TPI, tpi));
+					                       FeedItem.ATTR_MS, 1, FeedItem.ATTR_TPI, abip.m_prefid));
 
-					msg += ".  Added: luid_target: " + luid_target + " name_for_map: " + name_for_map + " uri: " + uri + " tpi: " + tpi;
+					msg += ".  Added: luid_target: " + luid_target + " name_for_map: " + name_for_map + " uri: " + abip.m_uri + " tpi: " + abip.m_prefid;
 
 					zfiGid.set(sourceid_target, luid_target);
 					this.state.aReverseGid[sourceid_target][luid_target] = gid;
@@ -6812,11 +6805,9 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.cCallsToHttp        = 0;                       // handy for debugging the closure passed to soapCall.asyncInvoke()
 	state.zfcLastSync         = null;                    // FeedCollection - maintains state re: last sync (anchors, success/fail)
 	state.zfcGid              = null;                    // FeedCollection - map of gid to (sourceid, luid)
-	state.zfcPreUpdateWinners = new FeedCollection(); // has the winning zfi's before they're updated to reflect their win (LS unchanged)
+	state.zfcPreUpdateWinners = new FeedCollection();    // has the winning zfi's before they're updated to reflect their win (LS unchanged)
 	state.stopwatch           = new StopWatch("SyncFsm");
-
-	state.authToken           = null;         // 
-
+	state.authToken           = null;
 	state.isSlowSync          = false;        // true iff no data files
 	state.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
 	state.aGcs                = null;         // array of Global Converged State - passed between the phases of Converge
@@ -6826,11 +6817,13 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.aChecksum           = new Object(); // used in slow sync: aChecksum[sourceid][luid] = checksum;
 	state.aSuo                = null;         // container for source update operations - populated in Converge
 	state.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
+	state.stopFailCode        = null;         // if a state continues on evLackIntegrity, this is set for the observer
+	state.stopFailDetail      = null;
+	state.m_bimap_format      = getBimapFormat();
+
 	state.is_done_get_contacts_pu  = false;   // have we worked out the contacts to get from the server pre update?
 	state.is_source_update_problem = false;   // true iff an update operation on a source had a problem (eg soap response 404)
 	state.remote_update_package    = null;    // maintains state between an server update request and the response
-	state.stopFailCode             = null;    // if a state continues on evLackIntegrity, this is set for the observer
-	state.stopFailDetail           = null;
 	state.foreach_tb_card_functor  = null;
 	state.m_folder_converter       = new FolderConverter();
 
@@ -6841,8 +6834,6 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 		state.m_addressbook = new AddressBookTb2();
 	else
 		state.m_addressbook = new AddressBookTb3();
-
-	state.m_bimap_format = getBimapFormat();
 
 	state.sources = new Object();
 

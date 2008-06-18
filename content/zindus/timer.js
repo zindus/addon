@@ -41,7 +41,11 @@ function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg
 TimerFunctor.prototype.cancel = function()
 {
 	if (this.is_running)
+	{
+		this.m_logger.debug("cancelling fsm with m_timeoutID: " + this.m_timeoutID);
+
 		this.m_syncfsm.cancel(this.m_timeoutID);
+	}
 }
 
 TimerFunctor.prototype.run = function()

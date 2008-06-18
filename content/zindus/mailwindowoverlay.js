@@ -93,7 +93,7 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 			msg += "ObserverService: " + (is_observerserver_registered ? "registered" : "isn't registered");
 			msg += " m_maestro: " + (this.m_maestro != null);
 
-			if (ObserverService.isRegistered(Maestro.TOPIC) && this.m_maestro)
+			if (is_observerserver_registered && this.m_maestro)
 			{
 				ObserverService.unregister(this.m_maestro, Maestro.TOPIC);
 				msg += " ... deregistered";
@@ -107,12 +107,15 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 
 			if (this.m_timeoutID)
 			{
-				this.m_logger.debug("cancelling sync and timer...");
+				this.m_logger.debug("cancelling timer...");
 				window.clearTimeout(this.m_timeoutID);
 			}
 
 			if (this.m_timer_functor)
+			{
+				this.m_logger.debug("cancelling sync...");
 				this.m_timer_functor.cancel();
+			}
 
 			this.m_logger_no_prefix.info("shutdown: " + APP_NAME + " " + APP_VERSION_NUMBER + " " + getFriendlyTimeString());
 		}
@@ -125,7 +128,8 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 
 ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 {
-	context.m_logger.debug("entering onTimerFire...");
+	context.m_logger.debug("onTimerFire enters");
+
 	context.m_timeoutID = null; // allows us to do sanity checking
 
 	var x = context.statusSummary();
@@ -143,6 +147,8 @@ ZinMailWindowOverlay.prototype.onTimerFire = function(context)
 			context.m_logger.debug("ObserverService is already registered so don't reregister.");
 
 		var timer_id = hyphenate('-', Maestro.ID_FUNCTOR_MAILWINDOW_TIMER, Date.now());
+
+		context.m_logger.debug("onTimerFire creates new TimerFunctor with id: " + timer_id);
 
 		context.m_timer_functor = new TimerFunctor(timer_id, context.scheduleTimer, context);
 

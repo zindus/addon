@@ -72,37 +72,27 @@ Logger.prototype.log = function(l, msg)
 	this.m_appender.log(l, this.m_prefix, msg);
 }
 
-// Only one appender is implemented, and it's implemented as a singleton.
-// In an earlier implementation, the appender object was a member of Logger, but
-// I discovered that cloneObject() just hangs when trying to clone an appender.
-// Rather than looking into why clone() doesn't work on one of the xpcom objects,
-// I just made the appender a singleton, which is better for speed too.
-// If there was an abstract base class, LogAppenderOpenClose would have just one public method, namely log().
-//
-function LogAppenderOpenClose()
+function LogAppenderOpenClose() { LogAppender.call(this); }
+function LogAppenderHoldOpen()  { LogAppender.call(this); this.m_os = this.fileOpen(); }
+
+LogAppenderOpenClose.prototype = new LogAppender();
+LogAppenderHoldOpen.prototype  = new LogAppender();
+
+function LogAppender()
 {
 	var prefs = new MozillaPreferences();
 
 	this.m_logfile_size_max = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_LOGFILE_MAX_SIZE );
-	this.m_logfile          = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // returns an nsIFile object
+	this.m_logfile          = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // an nsIFile object
 
 	this.m_logfile.append(Filesystem.FILENAME_LOGFILE);
-	// dump("logfile.path == " + this.m_logfile.path + "\n");
 
 	this.bimap_LEVEL = new BiMap(
 		[Logger.NONE, Logger.FATAL, Logger.ERROR, Logger.WARN, Logger.INFO, Logger.DEBUG],
 		['none',         'fatal',         'error',         'warn',         'info',         'debug'        ]);
 }
 
-LogAppenderOpenClose.instance = function()
-{
-	if (typeof (LogAppenderOpenClose.m_instance) == "undefined")
-		LogAppenderOpenClose.m_instance = new LogAppenderOpenClose();
-
-	return LogAppenderOpenClose.m_instance;
-}
-
-LogAppenderOpenClose.prototype.log = function(level, prefix, msg)
+LogAppender.prototype.log = function(level, prefix, msg)
 {
 	var message = "";
 	var max_level_length = 7;
@@ -122,7 +112,7 @@ LogAppenderOpenClose.prototype.log = function(level, prefix, msg)
 	this.logToConsoleService(level, message);
 }
 
-LogAppenderOpenClose.prototype.logToConsoleService = function(level, message)
+LogAppender.prototype.logToConsoleService = function(level, message)
 {
 	if (level == Logger.WARN || level == Logger.ERROR || level == Logger.FATAL)
 	{
@@ -145,25 +135,16 @@ LogAppenderOpenClose.prototype.logToConsoleService = function(level, message)
 	}
 }
 
-LogAppenderOpenClose.prototype.logToFile = function(message)
-{
-	var os = this.fileOpen();
+LogAppender.prototype.logToFile = null; // abstract base class
 
-	if (typeof os != "undefined" && os != null)
-	{
-		os.write(message, message.length);
-
-		this.fileClose(os);
-	}
-}
-
-LogAppenderOpenClose.prototype.fileOpen = function()
+LogAppender.prototype.fileOpen = function()
 {
 	var ret = null;
 
 	try
 	{
-		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_RDONLY | Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
+		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_RDONLY | Filesystem.FLAG_PR_WRONLY
+		                                             | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
 
 		if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
 			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
@@ -173,29 +154,31 @@ LogAppenderOpenClose.prototype.fileOpen = function()
 		// this next line throws an exception if the logfile is already open (eg by a hung process)
 		//
 		ret.init(this.m_logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
-
-		// dump("logfile.fileSize == " + this.m_logfile.fileSize + " and m_logfile_size_max == " + this.m_logfile_size_max);
 	}
 	catch (ex)
 	{
-		if (typeof(is_first_logging_file_open_exception) == 'undefined')
+		if (typeof(LogAppender.is_first_logging_file_open_exception) == 'undefined')
 		{
-			dump("fileOpen: exception opening file: " + this.m_logfile.path + "\n");
-			dump(ex.message + " stack: \n" + ex.stack);
-			Components.utils.reportError("exception opening file: " + this.m_logfile.path);
-			Components.utils.reportError(ex);
-			is_first_logging_file_open_exception = true;
+			this.reportError("fileOpen: exception opening file: " + this.m_logfile.path, ex);
+			LogAppender.is_first_logging_file_open_exception = true;
 		}
 
 		ret = null;
 	}
 
-	// dump("loggingFileOpen returns: " + (ret == null ? "null" : ret) + "\n");
-
 	return ret;
 }
 
-LogAppenderOpenClose.prototype.fileClose = function(os)
+LogAppender.prototype.reportError = function(msg, ex)
+{
+	dump(msg + "\n");
+	dump(ex.message + " stack: \n" + ex.stack);
+
+	Components.utils.reportError(msg);
+	Components.utils.reportError(ex);
+}
+
+LogAppender.prototype.fileClose = function(os)
 {
 	if (typeof os != "undefined" && os != null)
 	{
@@ -204,21 +187,37 @@ LogAppenderOpenClose.prototype.fileClose = function(os)
 	}
 }
 
-function LogAppenderHoldOpen(state)
+LogAppenderOpenClose.prototype.logToFile = function(message)
 {
-	this.LogAppenderOpenClose();
-	this.m_os = this.fileOpen();
-}
+	var os = this.fileOpen();
 
-copyPrototype(LogAppenderHoldOpen, LogAppenderOpenClose);
+	if (os != null)
+	{
+		try {
+			os.write(message, message.length);
+		} catch (ex) {
+			this.reportError("logToFile: unable to write to logfile, message: " + message, ex);
+		}
+
+		try {
+			this.fileClose(os);
+		} catch (ex) {
+			this.reportError("logToFile: unable to close logfile", ex);
+		}
+	}
+}
 
 LogAppenderHoldOpen.prototype.logToFile = function(message)
 {
-	if (typeof this.m_os != "undefined" && this.m_os != null)
-		this.m_os.write(message, message.length);
+	if (this.m_os != null)
+		try {
+			this.m_os.write(message, message.length);
+		} catch (ex) {
+			this.reportError("logToFile: unable to write to logfile, message: " + message, ex);
+		}
 }
 
-LogAppenderHoldOpen.prototype.close = function(message)
+LogAppenderHoldOpen.prototype.close = function()
 {
 	this.fileClose(this.m_os);
 }

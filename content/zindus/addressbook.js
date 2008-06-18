@@ -27,6 +27,10 @@ function AddressBookTb3() { AddressBook.call(this); this.m_logger.debug("Tb3"); 
 AddressBookTb2.prototype = new AddressBook();
 AddressBookTb3.prototype = new AddressBook();
 
+const kPABDirectory           = 2;                               // dirType ==> mork address book
+const kMDBDirectoryRoot       = "moz-abmdbdirectory://";         // see: nsIAbMDBDirectory.idl
+const kPersonalAddressbookURI = kMDBDirectoryRoot + "abook.mab"; // see: resources/content/abCommon.js
+
 function AddressBook()
 {
 	this.m_contact_converter = null;
@@ -37,16 +41,6 @@ function AddressBook()
 	this.m_map_name_to_uri = null;
 
 	this.m_logger = newLogger("AddressBook");
-
-	// these used to be const but a user is reporting an error on this line:
-	// Error: redeclaration of const kPersonalAddressbookURI Source File: chrome://zindus/content/addressbook.js Line: 36 
-	// Perhaps a file is being included twice or perhaps the name has been defined by another extension the user has installed?
-	// either way, making them class members should fix it.
-	// See issue#51
-	//
-	this.kPABDirectory           = 2;                                    // dirType ==> mork address book
-	this.kMDBDirectoryRoot       = "moz-abmdbdirectory://";              // see: nsIAbMDBDirectory.idl
-	this.kPersonalAddressbookURI = this.kMDBDirectoryRoot + "abook.mab"; // see: resources/content/abCommon.js
 }
 
 AddressBook.TB2 = "TB2";
@@ -142,11 +136,11 @@ AddressBook.prototype.getAddressBookUriByName = function(name)
 	return ret;
 }
 
-AddressBook.prototype.getAddressBookPrefId = function(uri)
-{
-	var dir = this.nsIAbDirectory(uri);
-	return dir.dirPrefId;
-}
+// AddressBook.prototype.getAddressBookPrefId = function(uri)
+// {
+//	var dir = this.nsIAbDirectory(uri);
+//	return dir.dirPrefId;
+// }
 
 AddressBook.prototype.forEachAddressBook = function(functor)
 {
@@ -158,7 +152,7 @@ AddressBook.prototype.forEachAddressBook = function(functor)
 	{
 		var elem = nodes.getNext().QueryInterface(Components.interfaces.nsIAbDirectory);
 
-		if (this.directoryProperty(elem, "dirType") == this.kPABDirectory)
+		if (this.directoryProperty(elem, "dirType") == kPABDirectory)
 			fContinue = functor.run(elem);
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
@@ -249,7 +243,7 @@ AddressBookTb2.prototype.newAbDirectoryProperties = function(name)
 	                createInstance(Components.interfaces.nsIAbDirectoryProperties);
 
 	abProps.description = name;
-	abProps.dirType     = this.kPABDirectory;
+	abProps.dirType     = kPABDirectory;
 
 	return abProps;
 }
@@ -261,24 +255,26 @@ AddressBook.prototype.newAddressBook = function()
 
 AddressBookTb2.prototype.newAddressBook = function(name)
 {
-	abProps = this.newAbDirectoryProperties(name);
+	var abProps = this.newAbDirectoryProperties(name);
 	this.nsIAddressBook().newAddressBook(abProps);
 
 	AddressBook.prototype.newAddressBook.call(this);
 
-	return abProps.URI;
+	return new AddressBookImportantProperties(abProps.URI, abProps.prefName);
 }
 
 AddressBookTb3.prototype.newAddressBook = function(name)
 {
-	var prefkey = this.nsIAbManager().newAddressBook(name, "", this.kPABDirectory);
+	var prefkey = this.nsIAbManager().newAddressBook(name, "", kPABDirectory);
 
 	var prefs = new MozillaPreferences("");
-	var uri = this.kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
+	var uri = kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
 
 	AddressBook.prototype.newAddressBook.call(this);
 
-	return uri;
+	// this.m_logger.debug("blah: prefkey: " + prefkey + " uri: " + uri);
+
+	return new AddressBookImportantProperties(uri, prefkey);
 }
 
 AddressBook.prototype.deleteAddressBook = function()
@@ -558,7 +554,7 @@ AddressBook.prototype.setupPab = function()
 		context: this,
 		run: function(elem) {
 
-			if (this.context.directoryProperty(elem, "URI") == this.context.kPersonalAddressbookURI)
+			if (this.context.directoryProperty(elem, "URI") == kPersonalAddressbookURI)
 			{
 				pabByUri      = new Object();
 				pabByUri.uri  = this.context.directoryProperty(elem, "URI");
@@ -610,8 +606,7 @@ AddressBook.prototype.addressbooksToString = function()
 			       " dirPrefId: " + elem.dirPrefId +
 			       " fileName: "  + this.context.directoryProperty(elem, "fileName") +
 			       " position: "  + this.context.directoryProperty(elem, "position") +
-			       " matches kPersonalAddressbookURI: " +
-				         (this.context.directoryProperty(elem, "URI") == this.context.kPersonalAddressbookURI);
+			       " matches kPersonalAddressbookURI: " + (this.context.directoryProperty(elem, "URI") == kPersonalAddressbookURI);
 			
 			return true;
 		}
@@ -666,4 +661,15 @@ AddressBookTb2.prototype.directoryProperty = function(elem, property)
 AddressBookTb3.prototype.directoryProperty = function(elem, property)
 {
 	return elem[property];
+}
+
+function AddressBookImportantProperties(uri, prefId)
+{
+	this.m_uri    = uri;
+	this.m_prefid = prefId
+}
+
+AddressBookImportantProperties.prototype.toString = function()
+{
+	return "uri: " + this.m_uri + " prefid: " + this.m_prefid;
 }
