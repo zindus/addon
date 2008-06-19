@@ -64,8 +64,7 @@ MozillaPreferences.prototype.branch = function()
 	{
 		try
 		{
-			var instance = Components.classes["@mozilla.org/preferences-service;1"].
-		                                       getService(Components.interfaces.nsIPrefService);
+			var instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
 	
 			this.m_branch = instance.getBranch(this.m_prefix);
 		}
@@ -85,8 +84,7 @@ MozillaPreferences.prototype.defaultbranch = function()
 	{
 		try
 		{
-			var instance = Components. classes["@mozilla.org/preferences-service;1"].
-		                                        getService(Components.interfaces.nsIPrefService);
+			var instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
 	
 			this.m_defaultbranch = instance.getDefaultBranch(this.m_prefix);
 		}

@@ -475,8 +475,6 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 //
 Prefs.prototype.openURL = function(url)
 {
-	const Cc = Components.classes;
-	const Ci = Components.interfaces;
 	var ioservice = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
 	var uriToOpen = ioservice.newURI(url, null, null);
 	var extps     = Cc["@mozilla.org/uriloader/external-protocol-service;1"].getService(Ci.nsIExternalProtocolService);

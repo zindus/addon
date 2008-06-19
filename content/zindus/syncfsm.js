@@ -421,9 +421,9 @@ SyncFsmZm.prototype.exitActionAuthPreAuth = function(state, event)
 	// a) was added or changed during the request               then it's fresh and
 	// b) matches the cookie used in the XMLHttpRequest channel then it's associated with our request
 	//
-	var ios           = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
+	var ios           = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
 	var uri           = ios.newURI("http://zimbra.free.fr/", null, null);
-	var cookieSvc     = Components.classes["@mozilla.org/cookieService;1"].getService(Components.interfaces.nsICookieService);
+	var cookieSvc     = Cc["@mozilla.org/cookieService;1"].getService(Ci.nsICookieService);
 	var cookieFromSvc = cookieSvc.getCookieString(uri, this.state.m_http.m_xhr.channel);
 
 	this.debug("exitActionAuthPreAuth: cookie from observer:  " + this.state.preauthCookieObserver.m_cookie);
@@ -754,8 +754,8 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 		state: this.state,
 		run: function(uri, item)
 		{
-			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
-			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+			var abCard  = item.QueryInterface(Ci.nsIAbCard);
+			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
 
 			var luid =  mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 
@@ -1757,8 +1757,8 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 				run: function(uri, item)
 				{
-					var abCard   = item.QueryInterface(Components.interfaces.nsIAbCard);
-					var mdbCard  = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+					var abCard   = item.QueryInterface(Ci.nsIAbCard);
+					var mdbCard  = item.QueryInterface(Ci.nsIAbMDBCard);
 					var id       = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 					var index    = this.state.mapIdSyncGalContact[id];
 
@@ -2364,7 +2364,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		state: this.state,
 		run: function(uri, item)
 		{
-			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
+			var abCard  = item.QueryInterface(Ci.nsIAbCard);
 
 			if (abCard.isMailList)
 				aMailListUri[abCard.mailListURI] = uri;
@@ -2373,7 +2373,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			// we might end up with a card with an luid attribute but without the luid being in the map
 			// Here, we remove any such attributes...
 
-			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
 			var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 
 			if (id > AUTO_INCREMENT_STARTS_AT && !zfcTb.isPresent(id))
@@ -2410,11 +2410,11 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		state: this.state,
 		run: function(uri, item)
 		{
-			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
 
 			aCardKeysToExclude[this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard)] = aMailListUri[uri];
 
-			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
+			var abCard  = item.QueryInterface(Ci.nsIAbCard);
 			this.state.m_logger.debug("loadTbExclude pass 2: adding to aCardKeysToExclude: " +
 			                                 this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 
@@ -2436,8 +2436,8 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 		run: function(uri, item)
 		{
-			var abCard  = item.QueryInterface(Components.interfaces.nsIAbCard);
-			var mdbCard = item.QueryInterface(Components.interfaces.nsIAbMDBCard);
+			var abCard  = item.QueryInterface(Ci.nsIAbCard);
+			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
 			var key = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
 			var msg = "loadTbExclude pass 3: uri: " + uri + " card key: " + key;
 

@@ -642,17 +642,13 @@ TestHarness.prototype.testAddressBook2 = function()
 	var properties = { "DisplayName": "BlahDisplayName",
 					   "PrimaryEmail": "BlahPrimarEmail@example.com" };
 
-	var dir = Components.classes["@mozilla.org/abmanager;1"].getService(Components.interfaces.nsIAbManager).getDirectory(uri);
-
-	var abCard;
-	abCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].
-	                    createInstance(Components.interfaces.nsIAbCard);
+	var dir    = Cc["@mozilla.org/abmanager;1"].getService(Ci.nsIAbManager).getDirectory(uri);
+	var abCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance(Ci.nsIAbCard);
 
 	for (key in properties)
 		abCard.setCardValue(key, properties[key]);
 
 	abCard = dir.addCard(abCard);
-
 	abCard = dir.modifyCard(abCard);
 
 	var addressbook = new AddressBookTb3();
@@ -1158,8 +1154,6 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 //
 TestHarness.prototype.testAbCreate1 = function()
 {
-	var Cc = Components.classes;
-	var Ci = Components.interfaces;
 	var prefix = "fred";
 
 	for (var i = 1; i < 10; i++)

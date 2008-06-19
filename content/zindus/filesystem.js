@@ -59,9 +59,8 @@ Filesystem.getDirectory = function(code)
 		{
 			case Filesystem.DIRECTORY_PROFILE:
 				// http://developer.mozilla.org/en/docs/Code_snippets:File_I/O
-				Filesystem.aDirectory[code] = Components.classes["@mozilla.org/file/directory_service;1"]
-				                                  .getService(Components.interfaces.nsIProperties)
-				                                  .get("ProfD", Components.interfaces.nsIFile);
+				Filesystem.aDirectory[code] = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties)
+				                                  .get("ProfD", Ci.nsIFile);
 				Filesystem.aDirectory[code].clone();
 				break;
 
@@ -96,7 +95,7 @@ Filesystem.createDirectoryIfRequired = function(code)
 
 	if (!nsifile.exists() || !nsifile.isDirectory()) 
 		try {
-			nsifile.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRWXU);
+			nsifile.create(Ci.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRWXU);
 		}
 		catch (e) {
 			var msg1 = stringBundleString("errorFilesystemCreateDirectoryFailed");
@@ -120,11 +119,10 @@ Filesystem.writeToFile = function(file, content)
 	try 
 	{
 		if (!file.exists()) 
-			file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
+			file.create(Ci.nsIFile.NORMAL_FILE_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
 
 		// Write with nsIFileOutputStream.
-		var outputStream = Components.classes["@mozilla.org/network/file-output-stream;1"].
-		                              createInstance(Components.interfaces.nsIFileOutputStream);
+		var outputStream = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
 
 		outputStream.init(file, Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_TRUNCATE,
 		                        Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
@@ -144,18 +142,16 @@ Filesystem.writeToFile = function(file, content)
 
 Filesystem.fileReadByLine = function(path, functor)
 {
-	var file = Components.classes["@mozilla.org/file/local;1"].
-	                      createInstance(Components.interfaces.nsILocalFile);
+	var file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
 
 	file.initWithPath(path);
 
 	if (file.exists())
 	{
-		var istream = Components.classes["@mozilla.org/network/file-input-stream;1"].
-		                         createInstance(Components.interfaces.nsIFileInputStream);
+		var istream = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
 
 		istream.init(file, Filesystem.FLAG_PR_RDONLY,  Filesystem.PERM_PR_IRUSR, 0);
-		istream.QueryInterface(Components.interfaces.nsILineInputStream);
+		istream.QueryInterface(Ci.nsILineInputStream);
 
 		var line = {};
 

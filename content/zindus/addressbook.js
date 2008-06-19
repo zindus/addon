@@ -51,7 +51,7 @@ AddressBook.version = function()
 	var contract_id = "@mozilla.org/abmanager;1";
 	var ret;
 
-	if (contract_id in Components.classes)
+	if (contract_id in Cc)
 		ret = AddressBook.TB3;
 	else
 		ret = AddressBook.TB2;
@@ -144,13 +144,13 @@ AddressBook.prototype.getAddressBookUriByName = function(name)
 
 AddressBook.prototype.forEachAddressBook = function(functor)
 {
-	var root  = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
-	var nodes = root.childNodes;
+	var root      = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Ci.nsIAbDirectory);
+	var nodes     = root.childNodes;
 	var fContinue = true;
 
 	while (nodes.hasMoreElements() && fContinue)
 	{
-		var elem = nodes.getNext().QueryInterface(Components.interfaces.nsIAbDirectory);
+		var elem = nodes.getNext().QueryInterface(Ci.nsIAbDirectory);
 
 		if (this.directoryProperty(elem, "dirType") == kPABDirectory)
 			fContinue = functor.run(elem);
@@ -161,9 +161,8 @@ AddressBook.prototype.forEachAddressBook = function(functor)
 
 AddressBookTb3.prototype.forEachCard = function(uri, functor)
 {
-	var dir = this.nsIAbDirectory(uri);
-
-	var enm = dir.childCards;
+	var dir       = this.nsIAbDirectory(uri);
+	var enm       = dir.childCards;
 	var fContinue = true;
 
 	while (fContinue && enm.hasMoreElements())
@@ -178,8 +177,8 @@ AddressBookTb3.prototype.forEachCard = function(uri, functor)
 
 AddressBookTb2.prototype.forEachCard = function(uri, functor)
 {
-	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-	var enm = dir.childCards;
+	var dir       = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
+	var enm       = dir.childCards;
 	var fContinue = true;
 
 	try { enm.first() } catch(ex) { fContinue = false; }
@@ -198,33 +197,31 @@ AddressBookTb2.prototype.forEachCard = function(uri, functor)
 
 AddressBookTb2.prototype.nsIAddressBook = function()
 {
-	return Components.classes["@mozilla.org/addressbook;1"].createInstance(Components.interfaces.nsIAddressBook);
+	return Cc["@mozilla.org/addressbook;1"].createInstance(Ci.nsIAddressBook);
 }
 
 AddressBookTb3.prototype.nsIAbManager = function()
 {
-	return Components.classes["@mozilla.org/abmanager;1"].getService(Components.interfaces.nsIAbManager);
+	return Cc["@mozilla.org/abmanager;1"].getService(Ci.nsIAbManager);
 }
 
 AddressBookTb3.prototype.nsIAddrDatabase = function(uri)
 {
 	var dir = this.nsIAbDirectory(uri);
 
-	return dir.QueryInterface(Components.interfaces.nsIAbMDBDirectory).database;
+	return dir.QueryInterface(Ci.nsIAbMDBDirectory).database;
 }
 
 AddressBookTb2.prototype.nsIAbDirectory = function(uri)
 {
-	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-
-	return dir;
+	return this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
 }
 
 AddressBookTb3.prototype.nsIAbDirectory = function(uri)
 {
 	var dir = this.nsIAbManager().getDirectory(uri);
 
-	zinAssert(dir instanceof Components.interfaces.nsIAbMDBDirectory);
+	zinAssert(dir instanceof Ci.nsIAbMDBDirectory);
 
 	return dir;
 }
@@ -232,15 +229,14 @@ AddressBookTb3.prototype.nsIAbDirectory = function(uri)
 AddressBook.prototype.nsIRDFService = function()
 {
 	if (!this.m_nsIRDFService)
-		this.m_nsIRDFService = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService);
+		this.m_nsIRDFService = Cc["@mozilla.org/rdf/rdf-service;1"].getService(Ci.nsIRDFService);
 
 	return this.m_nsIRDFService;
 }
 
 AddressBookTb2.prototype.newAbDirectoryProperties = function(name)
 {
-	var abProps = Components.classes["@mozilla.org/addressbook/properties;1"].
-	                createInstance(Components.interfaces.nsIAbDirectoryProperties);
+	var abProps = Cc["@mozilla.org/addressbook/properties;1"].createInstance(Ci.nsIAbDirectoryProperties);
 
 	abProps.description = name;
 	abProps.dirType     = kPABDirectory;
@@ -266,9 +262,8 @@ AddressBookTb2.prototype.newAddressBook = function(name)
 AddressBookTb3.prototype.newAddressBook = function(name)
 {
 	var prefkey = this.nsIAbManager().newAddressBook(name, "", kPABDirectory);
-
-	var prefs = new MozillaPreferences("");
-	var uri = kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
+	var prefs   = new MozillaPreferences("");
+	var uri     = kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
 
 	AddressBook.prototype.newAddressBook.call(this);
 
@@ -284,12 +279,12 @@ AddressBook.prototype.deleteAddressBook = function()
 
 AddressBookTb2.prototype.deleteAddressBook = function(uri)
 {
-	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
+	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
+	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Ci.nsIAbDirectory);
 	var ds   = this.nsIRDFService().GetDataSource("rdf:addressdirectory");
 
-	var arrayDir  = Components.classes["@mozilla.org/supports-array;1"].createInstance(Components.interfaces.nsISupportsArray);
-	var arrayRoot = Components.classes["@mozilla.org/supports-array;1"].createInstance(Components.interfaces.nsISupportsArray);
+	var arrayDir  = Cc["@mozilla.org/supports-array;1"].createInstance(Ci.nsISupportsArray);
+	var arrayRoot = Cc["@mozilla.org/supports-array;1"].createInstance(Ci.nsISupportsArray);
 
 	arrayDir.AppendElement(dir);
 	arrayRoot.AppendElement(root);
@@ -313,8 +308,8 @@ AddressBook.prototype.renameAddressBook = function()
 
 AddressBookTb2.prototype.renameAddressBook = function(uri, name)
 {
-	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Components.interfaces.nsIAbDirectory);
+	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
+	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Ci.nsIAbDirectory);
 	var ds   = this.nsIRDFService().GetDataSource("rdf:addressdirectory");
 
 	this.nsIAddressBook().modifyAddressBook(ds, root, dir, this.newAbDirectoryProperties(name));
@@ -333,10 +328,8 @@ AddressBookTb3.prototype.renameAddressBook = function(uri, name)
 
 AddressBookTb2.prototype.deleteCards = function(uri, aCards)
 {
-	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
-
-	var cardsArray = Components.classes["@mozilla.org/supports-array;1"].createInstance().
-	                            QueryInterface(Components.interfaces.nsISupportsArray);
+	var dir        = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
+	var cardsArray = Cc["@mozilla.org/supports-array;1"].createInstance().QueryInterface(Ci.nsISupportsArray);
 
 	for (var i = 0; i < aCards.length; i++)
 	{
@@ -353,9 +346,8 @@ AddressBookTb2.prototype.deleteCards = function(uri, aCards)
 
 AddressBookTb3.prototype.deleteCards = function(uri, aCards)
 {
-	var dir = this.nsIAbDirectory(uri);
-
-	var cardsArray = Components.classes["@mozilla.org/array;1"].createInstance(Components.interfaces.nsIMutableArray);
+	var dir        = this.nsIAbDirectory(uri);
+	var cardsArray = Cc["@mozilla.org/array;1"].createInstance(Ci.nsIMutableArray);
 
 	for (var i = 0; i < aCards.length; i++)
 	{
@@ -377,10 +369,9 @@ AddressBook.prototype.addCard = function(uri, properties, attributes)
 	// this.m_logger.debug("addCard: blah: about to add a card: uri: " + uri + " properties: " + aToString(properties) +
 	//                                                       " attributes: " + aToString(attributes));
 
-	var dir = this.nsIAbDirectory(uri);
-	var abstractCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].
-	                      createInstance().QueryInterface(Components.interfaces.nsIAbCard);
-	var abCard = dir.addCard(abstractCard);
+	var dir          = this.nsIAbDirectory(uri);
+	var abstractCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Ci.nsIAbCard);
+	var abCard       = dir.addCard(abstractCard);
 
 	this.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
 
@@ -389,9 +380,9 @@ AddressBook.prototype.addCard = function(uri, properties, attributes)
 
 AddressBook.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
-	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
-	var key;
+	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	var a_field_used = new Object();
+	var key;
 
 	// this.m_logger.debug("updateCard: blah: " + " \n properties: " + aToString(properties) +
 	//                                            "\n card properties: " + aToString(this.getCardProperties(abCard)));
@@ -418,7 +409,7 @@ AddressBookTb2.prototype.updateCard = function(abCard, uri, properties, attribut
 {
 	AddressBook.prototype.updateCard.call(this, abCard, uri, properties, attributes, format);
 
-	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
+	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	mdbCard.editCardToDatabase(uri);
 
 	return abCard;
@@ -426,7 +417,7 @@ AddressBookTb2.prototype.updateCard = function(abCard, uri, properties, attribut
 
 AddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
-	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
+	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	var database = this.nsIAddrDatabase(uri);
 
 	mdbCard.setAbDatabase(database);
@@ -442,9 +433,9 @@ AddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attribut
 
 AddressBook.prototype.getCardProperties = function(abCard)
 {
-	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
+	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
+	var ret     = new Object();
 	var i, j, key, value;
-	var ret = new Object();
 
 	for (i in this.m_contact_converter.m_map[FORMAT_TB])
 	{
@@ -461,7 +452,7 @@ AddressBook.prototype.getCardProperties = function(abCard)
 
 AddressBook.prototype.getCardAttributes = function(abCard)
 {
-	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
+	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	var ret     = new Object();
 	var i, value;
 
@@ -490,7 +481,6 @@ AddressBookTb3.prototype.setCardAttribute = function(mdbCard, uri, key, value)
 	var database = this.nsIAddrDatabase(uri);
 
 	mdbCard.setAbDatabase(database);
-
 	mdbCard.setStringAttribute(key, value);
 
 	database.editCard(mdbCard, false);
@@ -505,7 +495,7 @@ AddressBookTb2.prototype.lookupCard = function(uri, key, value)
 	zinAssert(key);
 	zinAssert(value);
 
-	var dir = this.nsIRDFService().GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var dir    = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
 	var abCard = this.nsIAddressBook().getAbDatabaseFromURI(uri).getCardFromAttribute(dir, key, value, false);
 
 	return abCard; // an nsIABCard

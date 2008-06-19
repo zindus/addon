@@ -30,7 +30,7 @@ function PasswordManager()
 
 PasswordManager.prototype.createInstance = function()
 {
-	this.m_pm = Components.classes["@mozilla.org/passwordmanager;1"].createInstance();
+	this.m_pm = Cc["@mozilla.org/passwordmanager;1"].createInstance();
 }
 
 PasswordManager.prototype.get = function(server, login)
