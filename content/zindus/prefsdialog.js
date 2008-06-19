@@ -74,9 +74,6 @@ Prefs.prototype.onLoad = function(target)
 	this.m_prefset_server.load(SOURCEID_AA);
 	this.m_prefset_general.load();
 
-	// this.m_logger.debug("onLoad: m_prefset_server == "  + this.m_prefset_server.toString());
-	// this.m_logger.debug("onLoad: m_prefset_general == " + this.m_prefset_general.toString());
-
 	this.initialiseView();
 	this.maestroRegister(); // during which we get notified and updateView() is called...
 }
@@ -384,42 +381,34 @@ Prefs.prototype.updateView = function()
 
 	if (this.m_is_fsm_running)
 	{
-		document.getElementById("zindus-prefs-cmd-sync").setAttribute('disabled', true);
+		this.setAttribute('disabled', true, "zindus-prefs-cmd-sync");
 	}
 	else if (!this.isServerSettingsComplete())
 	{
-		this.m_logger.debug("updateView: server settings incomplete");
-		document.getElementById("zindus-prefs-cmd-sync").removeAttribute('disabled');
-		document.getElementById("zindus-prefs-general-button-run-timer").setAttribute('disabled', true);
-		document.getElementById("zindus-prefs-general-button-sync-now").setAttribute('disabled', true);
+		this.m_logger.debug("updateView: server settings incomplete - disabling buttons");
+		this.setAttribute('disabled', false, "zindus-prefs-cmd-sync");
+		this.setAttribute('disabled', true, "zindus-prefs-general-button-run-timer", "zindus-prefs-general-button-sync-now");
 	}
 	else
 	{
-		this.m_logger.debug("updateView: removing disabled attributes");
-		document.getElementById("zindus-prefs-cmd-sync").removeAttribute('disabled');
-		document.getElementById("zindus-prefs-general-button-run-timer").removeAttribute('disabled');
-		document.getElementById("zindus-prefs-general-button-sync-now").removeAttribute('disabled');
+		this.m_logger.debug("updateView: enabling buttons");
+		this.setAttribute('disabled', false,
+		                  "zindus-prefs-cmd-sync", "zindus-prefs-general-button-run-timer", "zindus-prefs-general-button-sync-now");
 	}
 
 	var server_type_current = this.serverType();
 
 	if (server_type_current == FORMAT_GD)
 	{
-		document.getElementById("zindus-prefs-server-url-description").style.visibility = "hidden";
-		document.getElementById("zindus-prefs-server-url-row").style.visibility = "hidden";
-		document.getElementById("zindus-prefs-general-gal").style.visibility = "hidden";
-		document.getElementById("zindus-prefs-general-gdsyncwith-vbox").style.visibility = "visible";
-		document.getElementById("zindus-prefs-general-advanced-hbox").style.visibility = "visible";
+		this.setAttribute('hidden', true, "zindus-prefs-server-url-description", "zindus-prefs-server-url-row", "zindus-prefs-general-gal");
+		this.setAttribute('hidden', false, "zindus-prefs-general-gdsyncwith-vbox", "zindus-prefs-general-advanced-hbox");
 
 		this.setGdSyncWithLabel();
 	}
 	else
 	{
-		document.getElementById("zindus-prefs-server-url-description").style.visibility = "visible";
-		document.getElementById("zindus-prefs-server-url-row").style.visibility = "visible";
-		document.getElementById("zindus-prefs-general-gal").style.visibility = "visible";
-		document.getElementById("zindus-prefs-general-gdsyncwith-vbox").style.visibility = "hidden";
-		document.getElementById("zindus-prefs-general-advanced-hbox").style.visibility = "hidden";
+		this.setAttribute('hidden', false, "zindus-prefs-server-url-description", "zindus-prefs-server-url-row","zindus-prefs-general-gal");
+		this.setAttribute('hidden', true, "zindus-prefs-general-gdsyncwith-vbox", "zindus-prefs-general-advanced-hbox");
 	}
 
 	if (this.m_server_type_last != server_type_current)
@@ -442,25 +431,25 @@ Prefs.prototype.updateView = function()
 
 	if (server_type_current == FORMAT_ZM)
 	{
-		var prefs   = Singleton.instance().preferences();
-		var url     = document.getElementById("zindus-prefs-server-url").value;
-		var prefset = prefsetMatchWithPreAuth(url);
+		var prefset = prefsetMatchWithPreAuth(document.getElementById("zindus-prefs-server-url").value);
 
-		if (prefset && this.isServerSettingsComplete()
-		            && !this.m_prefset_general.hasUserValue(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED)
-		            && !this.m_prefset_server.hasUserValue(PrefSet.SERVER_URL)
-		            && !this.m_is_changed_default_for__zm_sync_gal_enabled)
+		if (prefset && prefset.isPropertyPresent(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED))
 		{
-			this.m_is_changed_default_for__zm_sync_gal_enabled = true;
+			var value = prefset.getProperty(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED);
 
-			// this.m_logger.debug("blah: setting a reasonable default for PREAUTH_ZM_SYNC_GAL_ENABLED");
+			// this.m_logger.debug("blah: forcing PREAUTH_ZM_SYNC_GAL_ENABLED to: " + value);
 
-			this.m_prefset_general.setProperty(PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED,
-			               prefset.getProperty(PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED));
+			this.m_prefset_general.setProperty(PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, value);
 
 			Prefs.setRadioFromPrefset("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap, this.m_prefset_general,
 	                          PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, "zindus-prefs-general-gal-if-fewer")
+
+			this.setAttribute('disabled', true,
+			                  "zindus-prefs-general-gal-yes", "zindus-prefs-general-gal-if-fewer", "zindus-prefs-general-gal-no");
 		}
+		else
+			this.setAttribute('disabled', false,
+			                   "zindus-prefs-general-gal-yes", "zindus-prefs-general-gal-if-fewer", "zindus-prefs-general-gal-no");
 	}
 }
 
@@ -486,11 +475,11 @@ Prefs.prototype.onFsmStateChangeFunctor = function(fsmstate)
 //
 Prefs.prototype.openURL = function(url)
 {
-	var ioservice = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
+	const Cc = Components.classes;
+	const Ci = Components.interfaces;
+	var ioservice = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
 	var uriToOpen = ioservice.newURI(url, null, null);
-
-	var extps = Components.classes["@mozilla.org/uriloader/external-protocol-service;1"]
-	                      .getService(Components.interfaces.nsIExternalProtocolService);
+	var extps     = Cc["@mozilla.org/uriloader/external-protocol-service;1"].getService(Ci.nsIExternalProtocolService);
 
 	extps.loadURI(uriToOpen, null);
 }
@@ -602,4 +591,22 @@ Prefs.prototype.updatePrefsetsFromDocument = function()
 	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_WITH);
 	Prefs.setPrefsetFromRadio("zindus-prefs-general-gal-enabled", this.m_gal_radio_bimap,
 	                          this.m_prefset_general, PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED);
+}
+
+Prefs.prototype.setAttribute = function(attribute, flag)
+{
+	var i;
+	zinAssert(typeof(flag) == 'boolean' && attribute == 'disabled' || attribute == 'hidden' && arguments.length > 2);
+
+	for (i = 2; i < arguments.length; i++)
+		if (flag)
+			switch(attribute) {
+				case 'disabled': document.getElementById(arguments[i]).setAttribute('disabled', true); break;
+				case 'hidden':   document.getElementById(arguments[i]).style.visibility = "hidden";    break;
+			}
+		else
+			switch(attribute) {
+				case 'disabled': document.getElementById(arguments[i]).removeAttribute('disabled');    break;
+				case 'hidden':   document.getElementById(arguments[i]).style.visibility = "visible";   break;
+			}
 }
