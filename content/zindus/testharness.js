@@ -61,7 +61,6 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContacts3();
 	ret = ret && this.testGdAddressConverter();
 	ret = ret && this.testGdContact();
-	ret = ret && this.testAbCreate2();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1051,6 +1050,13 @@ TestHarness.prototype.testGdContact = function()
 	contact.updateFromProperties(properties);
 	zinAssert(!contact.isAnyPostalAddressInXml());
 
+	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", test that you can create a contact with an empty <gd:postalAddress> element
+	// Issue #TODO
+	//
+	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", ""));
+
+	zinAssert(!contact.isAnyPostalAddressInXml());
+
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should preverse <otheraddr>
 	//
 	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@",
@@ -1175,10 +1181,4 @@ TestHarness.prototype.testAbCreate1 = function()
 		this.m_logger.debug("abProps.prefName: " + abProps.prefName);
 		this.m_logger.debug("dirPrefId: " + dir.dirPrefId);
 	}
-}
-
-TestHarness.prototype.testAbCreate2 = function()
-{
-	var zab = new AddressBookTb3();
-	zab.newAddressBook("fred-1");
 }

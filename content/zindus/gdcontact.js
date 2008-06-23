@@ -516,7 +516,7 @@ GdContact.prototype.setProperty = function(node, attribute, collection, key, fil
 
 	// this.m_logger.debug("setProperty: blah: key: " + key + " value: " + value);
 
-	if (typeof(filter) == 'function')
+	if (typeof(filter) == 'function' && value.length > 0)
 		value = filter(value);
 
 	if (value.length > 0)

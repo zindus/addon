@@ -83,7 +83,6 @@ ZmSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 	var elContext   = this.doc.createElementNS(Xpath.NS_ZIMBRA, "context");
 	var elNonotify  = this.doc.createElementNS(Xpath.NS_ZIMBRA, "nonotify");
 	var elNoqualify = this.doc.createElementNS(Xpath.NS_ZIMBRA, "noqualify");
-	var elNoSession = this.doc.createElementNS(Xpath.NS_ZIMBRA, "nosession");
 	var elUserAgent = this.doc.createElementNS(Xpath.NS_ZIMBRA, "userAgent");
 
 	// UserAgent is useless to zindus - we add it so that server administrators can see what's going on
@@ -101,7 +100,6 @@ ZmSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 
 	elContext.appendChild(elUserAgent);
 	elContext.appendChild(elNonotify);
-	elContext.appendChild(elNoSession);
 
 	if (is_noqualify)
 		elContext.appendChild(elNoqualify);
