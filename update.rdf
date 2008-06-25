@@ -2,21 +2,21 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAD8i7KGxZOHXnkzEMDDxoj5AaZFnREsH8u7e4GeXCRcSV+OU+9DP74G22lBmpfaAXnSKDpaoa9/tWBz3pGFAv/17vyLUA2yuW6Xb9/EtJ3wuPeIwCqSmek18YWbAfbwYg25J8ykVfa+RwQ0FRDLjUbZuBX99HeHsin5dM0/LGGfG">
-    <em:updates RDF:resource="rdf:#$IEjs8"/>
+  <RDF:Description RDF:about="rdf:#$JEjs8"
+                   em:version="0.7.7.20080625.131207">
+    <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
   </RDF:Description>
   <RDF:Seq RDF:about="rdf:#$IEjs8">
     <RDF:li RDF:resource="rdf:#$JEjs8"/>
   </RDF:Seq>
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAJxqNhG9bmr7z5URECz0dpSpPqCEkTh+qDGatZL9hH4ibL1+yABy99Cejz25NRZjWnW5bDZGY8ZG8/2jhEhnUrT4M5WWEwDEgn6AR5d59g/DjYUPocirhsc/G0+46CNZfXZ4snx5lmxPTcs8laey5l0uw0yo68BlgTXOw98DohtY">
+    <em:updates RDF:resource="rdf:#$IEjs8"/>
+  </RDF:Description>
   <RDF:Description RDF:about="rdf:#$MEjs8"
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:minVersion="2.0b2"
                    em:maxVersion="3.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.7.20080625.125552-tb.xpi"
-                   em:updateHash="sha256:76cd9591253b94701c9831db7987b1daefc804a173a28999e7cc65f895a24781" />
-  <RDF:Description RDF:about="rdf:#$JEjs8"
-                   em:version="0.7.7.20080625.125552">
-    <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
-  </RDF:Description>
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.7.20080625.131207-tb.xpi"
+                   em:updateHash="sha256:1302b21b02cd262387734770bda98bd06e46e408f4e94312719d517bd6e53741" />
 </RDF:RDF>

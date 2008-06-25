@@ -4008,6 +4008,11 @@ SyncFsm.prototype.shortLabelForContactProperties = function(properties)
 	if (isPropertyPresent(properties, key))
 		ret += properties[key];
 
+	key = 'SecondEmail';
+
+	if (ret == "" && isPropertyPresent(properties, key))
+		ret += key + ": " + properties[key];
+
 	return ret;
 }
 
@@ -5756,12 +5761,10 @@ SyncFsm.luidFromLuidTypeSf = function(zfcTarget, luid_target, item_type)
 SyncFsm.prototype.getContactPrimaryEmailFromLuid = function(sourceid, luid)
 {
 	var properties = this.getContactFromLuid(sourceid, luid, FORMAT_TB);
-	
-	// return properties['PrimaryEmail'] ? properties['PrimaryEmail'] :  stringBundleString("statusFailMsgGdBlank");
-	var ret = this.shortLabelForContactProperties(properties);
+	var ret        = this.shortLabelForContactProperties(properties);
 
 	if (ret == "")
-		ret = stringBundleString("statusFailOnGdBlank");
+		ret = stringBundleString("statusFailMsgBlank");
 
 	return ret;
 }
