@@ -673,13 +673,11 @@ function prefsetMatchWithPreAuth(url)
 }
 
 // Convert Character Entity References: &lt; &gt; etc to/from characters: < >
-// This method is also a convenient place to add newlines to make the xml slightly more human-readable.
-//
 // See: http://www.w3.org/TR/html401/charset.html#h-5.3.2
 //
 function convertCER(str, dirn)
 {
-	zinAssertAndLog(str && (dirn & CER_TO_CHAR || dirn & CER_TO_ENTITY), "str: " + str + "dirn: " + dirn);
+	zinAssertAndLog(typeof(str) == 'string' && (dirn & CER_TO_CHAR || dirn & CER_TO_ENTITY), "str: " + str + "dirn: " + dirn);
 
 	const a_char   = [ '&',     '<',    '>',    '"'      ]; // ampersand must come first, otherwise &lt; becomes &amp;lt;
 	const a_entity = [ '&amp;', '&lt;', '&gt;', '&quot;' ];
@@ -702,6 +700,8 @@ function convertCER(str, dirn)
 			ret = ret.replace(convertCER.a_regexp[a_entity[i]], a_char[i]);
 		else // (dirn & CER_TO_ENTITY)
 			ret = ret.replace(convertCER.a_regexp[a_char[i]], a_entity[i]);
+
+	// Singleton.instance().logger().debug("convertCER: blah: input: " + str + " and returns: " + ret);
 
 	return ret;
 }

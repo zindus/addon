@@ -2353,6 +2353,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	//
 
 	// pass 1 - iterate through the cards in the zindus folders building an associative array of mailing list uris
+	//          and do some housekeeping.
 	//
 	var aMailListUri = new Object();
 	var zfcTb        = this.zfcTb();
@@ -2383,7 +2384,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 				// but not commit it to the db until after the remote update is successful.
 				// As things stand though, this warning message appears and everything works ok.
 				//
-				this.state.m_logger.warn("loadTbExclude : card had attribute luid: " + id +
+				this.state.m_logger.debug("loadTbExclude : card had attribute luid: " + id +
 				                         " that wasn't in the map.  If the previous sync wasn't successful due to a conflict \
 										   around this card then it's normal behaviour and nothing to worry about. \
 										   Attribute removed.  Card: " +
@@ -4436,10 +4437,6 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 
 		passed = passed && this.testForCreateSharedAddressbook();
 	}
-	else if (this.formatPr() == FORMAT_GD)
-	{
-		this.testForCsGd();
-	}
 
 	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
 
@@ -5605,25 +5602,26 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 			case Suo.MOD | FeedItem.TYPE_CN:
 				if (this.state.m_http.is_http_status(HTTP_STATUS_200_OK))
 				{
-					var luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
-					var zfiTarget   = zfcTarget.get(luid_target);
-					var converter   = this.contact_converter();
-					var properties  = converter.convert(FORMAT_TB, FORMAT_GD, remote_update_package.remote.contact.m_properties);
-					var checksum    = converter.crc32(properties);
+					var luid_target  = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+					var zfiTarget    = zfcTarget.get(luid_target);
+					var a_gd_contact = GdContact.arrayFromXpath(this.contact_converter(), response, "/atom:entry");
 
-					// The server doesn't return the contact's <updated> time so we can't set REV.
-					// Which means that on the next sync with the server, we'd see this contact as having changed and we'd
-					// update the local contact (unnecessarily).
-					// To avoid this, ATTR_CSGD gets added here and checked on the next sync.
-					// The updated contact should get returned on the next sync and when it does, if the checksum matches ATTR_CSGD
-					// we call setLsoToGid, so avoiding an update of the local contact.
-					//
-					zfiTarget.set(FeedItem.ATTR_CSGD, checksum);
-					SyncFsm.setLsoToGid(this.state.zfcGid.get(suo.gid), zfiTarget);
+					if (aToLength(a_gd_contact) == 1)
+					{
+						var id = firstKeyInObject(a_gd_contact);
+						var contact = a_gd_contact[id];
 
-					msg += "map updated: zfi: " + zfcTarget.get(luid_target);
+						zinAssert(id == contact.m_meta['id']);
+						zinAssert(luid_target == contact.m_meta['id']);
 
-					is_response_processed = true;
+						zfiTarget.set(FeedItem.ATTR_REV,  contact.m_meta['updated']);
+						zfiTarget.set(FeedItem.ATTR_EDIT, contact.m_meta['edit']);
+						SyncFsm.setLsoToGid(this.state.zfcGid.get(suo.gid), zfiTarget);
+
+						msg += "map updated: zfi: " + zfcTarget.get(luid_target);
+
+						is_response_processed = true;
+					}
 				}
 				break;
 
@@ -5944,28 +5942,30 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 {
 	var sourceid_pr = this.state.sourceid_pr;
+	var zfcLastSync = this.state.zfcLastSync;
 
 	this.state.stopwatch.mark(state);
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
 		for (zid in this.state.zidbag.m_properties)
-			this.state.zfcLastSync.get(this.state.sourceid_pr).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
+			zfcLastSync.get(this.state.sourceid_pr).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
 	}
 	else if (this.formatPr() == FORMAT_GD)
 	{
-		this.state.zfcLastSync.get(sourceid_pr).set('SyncToken',                 this.state.gd_sync_token);
-		this.state.zfcLastSync.get(sourceid_pr).set('gd_sync_with',              this.state.gd_sync_with);
-		this.state.zfcLastSync.get(sourceid_pr).set('gd_is_sync_postal_address', String(this.state.gd_is_sync_postal_address));
+		zfcLastSync.get(sourceid_pr).set('SyncToken',                 this.state.gd_sync_token);
+		zfcLastSync.get(sourceid_pr).set('gd_sync_with',              this.state.gd_sync_with);
+		zfcLastSync.get(sourceid_pr).set('gd_is_sync_postal_address', String(this.state.gd_is_sync_postal_address));
 	}
-	
-	this.state.m_logger.debug("entryActionCommit: soapURL: "  + this.state.sources[sourceid_pr]['soapURL']);
-	this.state.m_logger.debug("entryActionCommit: username: " + this.state.sources[sourceid_pr]['username']);
 
-	this.state.zfcLastSync.get(sourceid_pr).set('soapURL',   this.state.sources[sourceid_pr]['soapURL']);
-	this.state.zfcLastSync.get(sourceid_pr).set('username',  this.state.sources[sourceid_pr]['username']);
+	zfcLastSync.get(sourceid_pr).set('soapURL',   this.state.sources[sourceid_pr]['soapURL']);
+	zfcLastSync.get(sourceid_pr).set('username',  this.state.sources[sourceid_pr]['username']);
 
-	this.state.zfcLastSync.save();
+	this.state.m_logger.debug("entryActionCommit: soapURL: " + this.state.sources[sourceid_pr]['soapURL'] +
+	                                           " username: " + this.state.sources[sourceid_pr]['username'] +
+	                                           " SyncToken: " + zfcLastSync.get(sourceid_pr).get('SyncToken'));
+
+	zfcLastSync.save();
 
 	this.state.zfcGid.save();
 
@@ -6474,8 +6474,8 @@ HttpState.prototype.toHtml = function()
 	return this.toString().replace(/\n/g, "<html:br>");
 }
 
-HttpState.prototype.toStringFiltered = function() { zinAssert(false); } // abstract method 
-HttpState.prototype.httpBody         = function() { zinAssert(false); } // abstract method 
+HttpState.prototype.toStringFiltered = null; // abstract method 
+HttpState.prototype.httpBody         = null; // abstract method 
 
 function HttpStateZm(url, logger)
 {
@@ -6657,6 +6657,7 @@ HttpStateGd.AUTH_REGEXP_PATTERN = /Auth=(.+?)(\s|$)/;
 HttpStateGd.prototype.toStringFiltered = function()
 {
 	return this.m_http_method + " " + this.m_url;
+	// for debugging: return this.m_http_method + " " + this.m_url + this.httpBody();;
 }
 
 HttpStateGd.prototype.httpBody = function()
@@ -6982,7 +6983,7 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 	this.state.stopwatch.mark(state);
 
 	if (SyncToken)
-		url += "&updated-min=" + SyncToken + "&";
+		url += "&updated-min=" + SyncToken;
 
 	url += "&max-results=10000";
 
@@ -7078,7 +7079,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 
 					if (zfi.isPresent(FeedItem.ATTR_CSGD))
 						zfi.del(FeedItem.ATTR_CSGD);
-					
+
 					msg += " marked as deleted: ";
 				}
 				else if (zfi.isPresent(FeedItem.ATTR_CSGD))
@@ -7141,25 +7142,6 @@ SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, gd_luid_ab_in_gd)
 											       FeedItem.ATTR_L,    gd_luid_ab_in_gd);
 
 	return zfi;
-}
-
-SyncFsmGd.prototype.testForCsGd = function()
-{
-	var functor = {
-		state: this.state,
-		run: function(zfi)
-		{
-			if (zfi.isPresent(FeedItem.ATTR_CSGD))
-			{
-				this.state.m_logger.warn("zfi retained a ATTR_CSGD attribute after GetContactGd.  This shouldn't happen.  zfi: " + zfi.toString());
-				zfi.del(FeedItem.ATTR_CSGD);
-			}
-
-			return true;
-		}
-	};
-
-	this.zfcPr().forEach(functor);
 }
 
 SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuation)

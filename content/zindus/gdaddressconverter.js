@@ -50,13 +50,9 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 	{
 		var xml_as_char = a_xml[key].replace(/\<\?xml version=.*?\?\>/, ""); // bug 336551
 
-		try {
-			address = new XML(xml_as_char);
-		} catch(e) {
-			ret = false;
-		}
+		address = this.string_to_e4x(xml_as_char);
 
-		ret = typeof(address) == 'xml' && address.localName() == "address" && address.namespace() == Xpath.NS_ZINDUS_ADDRESS;
+		ret = this.is_e4x_address(address);
 
 		if (ret)
 		{
@@ -100,11 +96,17 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 					default:         tag = this.m_suffix_element_bimap.lookup(this.a_suffix_all[i], null); break;
 				}
 
+				// this.m_logger.debug("blah: tag: " + tag + " this.a_suffix_all[i]: " + this.a_suffix_all[i]);
+
 				if (tag)
-					address += "\n<" + tag + ">" + pretty_char + zinTrim(a_fields[this.a_suffix_all[i]]) + pretty_char + "</"+tag+">";
+					address += "\n<" + tag + ">" + pretty_char
+					                       + convertCER(zinTrim(a_fields[this.a_suffix_all[i]]), CER_TO_ENTITY)
+										   + pretty_char + "</"+tag+">";
 			}
 
 		address += "\n</address>";
+
+		zinAssertAndLog(this.is_e4x_address(this.string_to_e4x(address)), "address: " + address);
 
 		a_xml[key] = address;
 
@@ -121,5 +123,27 @@ GdAddressConverter.prototype.setIfNotBlankOrEmpty = function(properties, key, va
 	value = zinTrim(String(value));
 
 	if (value.length > 0)
-		properties[key] = value;
+		properties[key] = convertCER(value, CER_TO_CHAR);
+}
+
+GdAddressConverter.prototype.string_to_e4x = function(str)
+{
+	var ret = null;
+
+	try {
+		ret = new XML(str);
+	} catch(e) {
+		; // do nothing
+	}
+
+	return ret;
+}
+
+GdAddressConverter.prototype.is_e4x_address = function(e4x_xml)
+{
+	// this.m_logger.debug("typeof(e4x_xml): " + typeof(e4x_xml));
+	// this.m_logger.debug("e4x_xml.localName(): " + e4x_xml.localName());
+	// this.m_logger.debug("e4x_xml.namespace(): " + e4x_xml.namespace());
+
+	return typeof(e4x_xml) == 'xml' && e4x_xml.localName() == "address" && e4x_xml.namespace() == Xpath.NS_ZINDUS_ADDRESS;
 }

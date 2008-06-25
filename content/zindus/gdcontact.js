@@ -94,8 +94,8 @@ GdContact.prototype.updateFromContainer = function(node)
 					break;
 				case "postalAddress#home":
 				case "postalAddress#work":
-					function f(str) { return convertCER(str, CER_TO_CHAR); }
-					context.setProperty(node, null,  context.m_properties, key, f);
+					// function f(str) { return convertCER(str, CER_TO_CHAR); }
+					context.setProperty(node, null,  context.m_properties, key, null);
 					break;
 				case "PrimaryEmail":
 				case "SecondEmail":
@@ -328,13 +328,12 @@ GdContact.prototype.updateFromProperties = function(properties)
 					//
 					var is_a_field_postal = false;
 					var a_gac_properties  = { };
-					var contact_converter = context.m_contact_converter;
 					var otheraddr         = context.postalAddressOtherAddr(key);
 					var a_new_field;
 
 					if (isPropertyPresent(a_field, key))
-						is_a_field_postal = contact_converter.m_gac.convert(a_field, key, a_gac_properties,
-						                                                                  GdAddressConverter.ADDR_TO_PROPERTIES);
+						is_a_field_postal = context.m_contact_converter.m_gac.convert(a_field, key, a_gac_properties,
+						                                                                            GdAddressConverter.ADDR_TO_PROPERTIES);
 
 					if (is_a_field_postal || otheraddr == null)
 					{
@@ -347,11 +346,13 @@ GdContact.prototype.updateFromProperties = function(properties)
 						else
 							;                                  // the postalAddress of the contact is xml with an empty <otheraddr> element
 
-						contact_converter.m_gac.convert(a_new_field, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML |
-						                                                                    GdAddressConverter.PRETTY_XML );
+						context.m_contact_converter.m_gac.convert(a_new_field, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML |
+						                                                                              GdAddressConverter.PRETTY_XML );
 					}
 					else
 						a_new_field = a_field;
+
+					context.m_logger.debug("blah: key: " + key + " a_new_field: " + aToString(a_new_field));
 
 					context.nodeModifyOrMarkForDeletion(node, null, a_new_field, key, a_field_used, a_to_be_deleted);
 					break;
@@ -573,17 +574,15 @@ GdContact.prototype.postalAddressOtherAddr = function(key)
 GdContact.prototype.addWhitespaceToPostalProperties = function(properties_in)
 {
 	var properties_out = cloneObject(properties_in);
-	var is_modified_postal = false;
 	var is_sane, a_gac_properties;
 
 	for (var key in this.m_contact_converter.gd_certain_keys_converted()["postalAddress"])
 		if (isPropertyPresent(properties_out, key))
 		{
-			is_modified_postal = true;
 			a_gac_properties   = new Object();
 			is_sane = this.m_contact_converter.m_gac.convert(properties_out, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
 
-			zinAssert(is_sane);
+			zinAssertAndLog(is_sane, "key: " + key + " properties_out: " + aToString(properties_out));
 
 			for (var i in a_gac_properties)
 				a_gac_properties[i] = " " + a_gac_properties[i] + " ";
@@ -591,8 +590,6 @@ GdContact.prototype.addWhitespaceToPostalProperties = function(properties_in)
 			this.m_contact_converter.m_gac.convert(properties_out, key, a_gac_properties,
 			                                       GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
 		}
-
-	// don't use is_modified_postal
 
 	return properties_out;
 }

@@ -158,10 +158,11 @@ TestHarness.prototype.testContactConverterGdPostalAddress = function()
 	contact_converter = this.newContactConverter(ContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
 	zinAssert(contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, "HomeAddress"));
 
-	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", this.m_address_as_xml_entity ));
-
+	xmlInput   = this.m_entry_as_xml_char.replace("@@postal@@", this.m_address_as_xml_entity );
+	contact    = this.gdContactFromXmlString(contact_converter, xmlInput);
 	properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
 
+	// this.m_logger.debug("xmlInput: "   + xmlInput);
 	// this.m_logger.debug("properties: " + aToString(properties));
 
 	zinAssert(isPropertyPresent(properties, "HomeAddress")  && properties["HomeAddress"]  == this.m_street1);
@@ -972,6 +973,8 @@ TestHarness.prototype.testGdAddressConverter = function()
 	var a_fields_orig = a_fields;
 	a_fields = { };
 
+	// this.m_logger.debug("testGdAddressConverter: out[x]: " + out['x']);
+
 	gac.convert(out, 'x', a_fields, GdAddressConverter.ADDR_TO_PROPERTIES);
 
 	// this.m_logger.debug("testGdAddressConverter: a_fields: " + aToString(a_fields));
@@ -1037,21 +1040,19 @@ TestHarness.prototype.setupFixtureGdPostalAddress = function()
 
 TestHarness.prototype.testGdContact = function()
 {
-	var contact, tb_properties, gd_properties;
-	var HomeAddress2      = "456 Collins st";
 	var contact_converter = this.newContactConverter(ContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
+	var contact, properties, tb_properties, gd_properties;
 
 	this.setupFixtureGdPostalAddress();
 
 	// test isAnyPostalAddressInXml()
 	//
-	var properties = this.sampleGoogleContactProperties();
+	properties = this.sampleGoogleContactProperties();
 	contact = new GdContact(contact_converter);
 	contact.updateFromProperties(properties);
 	zinAssert(!contact.isAnyPostalAddressInXml());
 
-	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", test that you can create a contact with an empty <gd:postalAddress> element
-	// Issue #TODO
+	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", test a contact can be created with an empty <gd:postalAddress> element - Issue #83
 	//
 	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", ""));
 
@@ -1059,14 +1060,13 @@ TestHarness.prototype.testGdContact = function()
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should preverse <otheraddr>
 	//
-	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@",
-	                                       convertCER(this.m_address_as_xml, CER_TO_ENTITY)));
+	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", this.m_address_as_xml_entity));
 
 	zinAssert(contact.isAnyPostalAddressInXml());
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
 
-	tb_properties["HomeAddress2"] = HomeAddress2;
+	tb_properties["HomeAddress2"] = this.m_street2;
 
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 
@@ -1075,7 +1075,23 @@ TestHarness.prototype.testGdContact = function()
 	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
-	zinAssert(tb_properties["HomeAddress2"] == HomeAddress2);
+	zinAssert(tb_properties["HomeAddress2"] == this.m_street2);
+
+	// repeat the above but use characters that require CER translation to be valid XML
+	//
+	this.m_street2 = 'Hello <less >greater &ampersand "quote';
+	tb_properties["HomeAddress2"] = this.m_street2;
+	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
+	// this.m_logger.debug("blah: gd_properties: " + aToString(gd_properties));
+
+	contact.updateFromProperties(gd_properties);
+
+	// this.m_logger.debug("blah: contact after update: " + contact.toString());
+
+	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
+
+	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
+	zinAssert(tb_properties["HomeAddress2"] == this.m_street2);
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should xmlify the Google contact
 	// 
@@ -1086,7 +1102,7 @@ TestHarness.prototype.testGdContact = function()
 	zinAssert(contact.isAnyPostalAddressNotInXml());
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
-	tb_properties["HomeAddress2"] = HomeAddress2;
+	tb_properties["HomeAddress2"] = this.m_street2;
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 	contact.updateFromProperties(gd_properties);
 	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
@@ -1104,6 +1120,14 @@ TestHarness.prototype.testGdContact = function()
 	// this.m_logger.debug("contact after update: " + contact.toString());
 	// this.m_logger.debug("contact.postalAddressOtherAddr: " + contact.postalAddressOtherAddr("postalAddress#home"));
 	zinAssert(contact.postalAddressOtherAddr("postalAddress#home") == this.m_otheraddr);
+
+	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", test creating and matching a contact from xml that contains entities
+	// 
+	var entity_str = " &amp;lt;fred&amp;gt; ";
+	var xml_with_entity_str = this.m_address_as_xml_entity.replace(this.m_street1, entity_str);
+	contact = this.gdContactFromXmlString(contact_converter, this.m_entry_as_xml_char.replace("@@postal@@", xml_with_entity_str));
+	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
+	zinAssert(tb_properties["HomeAddress"] == zinTrim(convertCER(entity_str, CER_TO_CHAR)));
 
 	return true;
 }

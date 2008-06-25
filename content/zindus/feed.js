@@ -49,7 +49,7 @@ FeedItem.ATTR_FKEY = 'fkey'; // TYPE_SF elements have this attribute - it's the 
 FeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this attribute - it's the key of the TYPE_SF element
 FeedItem.ATTR_PERM = 'perm'; // 
 FeedItem.ATTR_CS   = 'cs';   // checksum
-FeedItem.ATTR_CSGD = 'csgd'; // gd checksum for type == gd items - persisted but not used in compare()
+FeedItem.ATTR_CSGD = 'csgd'; // gd checksum for type == gd items - persisted but not used in compare()  // TODO - delete this after next bumping APP_VERSION_DATA_CONSISTENT_WITH
 FeedItem.ATTR_EDIT = 'edit'; // gd edit url - used for deletes
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
