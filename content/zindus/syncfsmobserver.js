@@ -130,7 +130,6 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGetContactGd2:  { count: 1 },
 		stGetContactGd3:  { count: 1 },
 		stDeXmlifyAddrGd: { count: 1 },
-		stConverge5:      { count: 1 },
 		stGetContactPuGd: { count: 1 },
 		stUpdateGd:       { count: 1 },
 	};
@@ -143,6 +142,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stConverge2:      { count: 1 },
 		stConverge3:      {          },
 		stConverge4:      { count: 1 },
+		stConverge5:      { count: 1 },
 		stConverge6:      { },
 		stConverge7:      { count: 1 },
 		stConverge8:      { count: 1 },
