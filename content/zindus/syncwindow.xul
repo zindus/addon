@@ -40,7 +40,7 @@
 	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
 	<script type="application/x-javascript"> <![CDATA[
-		with (ZindusScopeRegistry.getScope()) { ZindusScopeRegistry.includejs('syncwindow.js'); }
+		with (ZindusScopeRegistry.getScope()) { includejs('syncwindow.js'); }
 	]]> </script>
 
 	<stringbundleset>

@@ -942,6 +942,7 @@ TestHarness.prototype.testGoogleContacts3 = function()
 	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
 }
 
+
 TestHarness.prototype.testGdAddressConverter = function()
 {
 	var xml_as_entity;
@@ -1160,8 +1161,8 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 
 	a_preauth = prefs.getImmediateChildren(prefs.branch(), PrefSet.PREAUTH + '.');
 
-	for (var j in a_preauth)
-		a_prefset.push({ parent: PrefSet.PREAUTH, properties: PrefSet.PREAUTH_PROPERTIES, id: j });
+	for (j = 0; j < a_preauth.length; j++)
+		a_prefset.push({ parent: PrefSet.PREAUTH, properties: PrefSet.PREAUTH_PROPERTIES, id: a_preauth[j] });
 
 	for (i = 0; i < a_prefset.length; i++)
 	{

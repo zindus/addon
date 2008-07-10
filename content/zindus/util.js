@@ -431,10 +431,19 @@ function isValidFormat(format)
 	return isInArray(format, A_VALID_FORMATS);
 }
 
-function getBimapFormat()
+function getBimapFormat(type)
 {
-	return new BiMap( [ FORMAT_TB, FORMAT_ZM, FORMAT_GD ],
-	                  [ 'tb',      'zm',      'gd'      ]);
+	var a1 = [ FORMAT_TB, FORMAT_GD, FORMAT_ZM ];
+	var a2;
+
+	if (type == 'short')
+		a2 = [ 'tb', 'gd', 'zm' ];
+	else if (type == 'long')
+		a2 = [ stringBundleString("formatThunderbird"), stringBundleString("formatGoogle"), stringBundleString("formatZimbra") ];
+	else
+		zinAssertAndLog(false, "mismatched: type: " + type);
+		
+	return new BiMap(a1, a2);
 }
 
 function isValidUrl(url)
@@ -659,9 +668,9 @@ function prefsetMatchWithPreAuth(url)
 	var prefset   = new PrefSet(PrefSet.PREAUTH, PrefSet.PREAUTH_PROPERTIES);
 	var is_match  = false;
 
-	for (var i in a_preauth)
+	for (i = 0; i < a_preauth.length; i++)
 	{
-		prefset.load(i);
+		prefset.load(a_preauth[i]);
 
 		is_match = url.match(new RegExp(prefset.getProperty(PrefSet.PREAUTH_REGEXP))) != null;
 
@@ -709,4 +718,82 @@ function convertCER(str, dirn)
 function intMin(a, b)
 {
 	return a < b ? a : b;
+}
+
+function dId(id)
+{
+	return document.getElementById(id);
+}
+
+function includejs(url, scope_id)
+{
+	ZindusScopeRegistry.includejs(url, scope_id);
+}
+
+// See: http://developer.mozilla.org/en/docs/Opening_a_Link_in_the_Default_Browser
+//
+function openURL(url)
+{
+	var ioservice = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+	var uriToOpen = ioservice.newURI(url, null, null);
+	var extps     = Cc["@mozilla.org/uriloader/external-protocol-service;1"].getService(Ci.nsIExternalProtocolService);
+
+	extps.loadURI(uriToOpen, null);
+}
+
+function migratePrefName(a_map)
+{
+	var prefs = Singleton.instance().preferences();
+
+	for (var old in a_map)
+	{
+		if (a_map[old].type == 'char')
+			value = prefs.getCharPrefOrNull(prefs.branch(), old);
+		else
+			value = prefs.getIntPrefOrNull(prefs.branch(), old);
+
+		if (value != null)
+		{
+			if (a_map[old].type == 'char')
+				prefs.branch().setCharPref(a_map[old].new, value);
+			else
+				prefs.branch().setIntPref(a_map[old].new, value);
+
+			prefs.branch().deleteBranch(old);
+
+			Singleton.instance().logger().debug("migrated pref: " + old + " to " + a_map[old].new + " value: " + value);
+		}
+	}
+}
+
+function migratePrefValue(a_key, bimap)
+{
+	var prefs = Singleton.instance().preferences();
+	var key;
+
+	for (var i = 0; i < a_key.length; i++)
+	{
+		key = a_key[i];
+
+		value = prefs.getCharPrefOrNull(prefs.branch(), key);
+
+		if (value != null && bimap.isPresent(value, null))
+		{
+			Singleton.instance().logger().debug("blah: key: " + key + " value: " + value);
+
+			prefs.setCharPref(prefs.branch(), key, bimap.lookup(value, null) );
+
+			Singleton.instance().logger().debug("migrated pref key: " + key + " old value: " + value
+			                                                                + " to new value: " + bimap.lookup(value, null));
+		}
+	}
+}
+
+function numeric_compare(a, b)
+{
+	if(a > b)
+		return 1;
+	if(a < b)
+		return -1;
+	return 0;
 }

@@ -23,65 +23,55 @@
 
 function PasswordManager()
 {
-	this.m_pm = null;
-
-	this.createInstance();
+	this.m_pm                         = Cc["@mozilla.org/passwordmanager;1"].createInstance();
+	this.m_nsIPasswordManagerInternal = this.m_pm.QueryInterface(Components.interfaces.nsIPasswordManagerInternal);
+	this.m_nsIPasswordManager         = this.m_pm.QueryInterface(Components.interfaces.nsIPasswordManager);
+	this.m_logger                     = newLogger("PasswordManager");
 }
 
-PasswordManager.prototype.createInstance = function()
-{
-	this.m_pm = Cc["@mozilla.org/passwordmanager;1"].createInstance();
-}
-
-PasswordManager.prototype.get = function(server, login)
+PasswordManager.prototype.get = function(host, username)
 {
 	var value = null;
 
 	try {
-		var hostname = { value: "" };
-		var username = { value: "" };
-		var password = { value: "" };
+		var a_host     = { value: "" };
+		var a_username = { value: "" };
+		var a_password = { value: "" };
 
-		var pm = this.m_pm.QueryInterface(Components.interfaces.nsIPasswordManagerInternal);
+		this.m_nsIPasswordManagerInternal.findPasswordEntry(host, username, "", a_host, a_username, a_password);
 
-		pm.findPasswordEntry(server, login, "", hostname, username, password);
-
-		value = password.value;
+		value = a_password.value;
 	}
 	catch (ex) {
-		// do nothing - if (server, login) doesn't exist the component throws an exception
 	}
 
 	return value;
 }
 
-PasswordManager.prototype.del = function(server, login)
+PasswordManager.prototype.del = function(host, username)
 {
-	var pm = this.m_pm.QueryInterface(Components.interfaces.nsIPasswordManager);
+	var is_success = true;
 
 	try {
-		pm.removeUser(server, login);
+		this.m_nsIPasswordManager.removeUser(host, username);
 	}
 	catch (ex) {
-		// do nothing - if (server, login) doesn't exist the component throws an exception
-		newLogger("PasswordManager").debug("PasswordManager.del: server: " + server + " login: " + login);
+		is_success = false;
 	}
+
+	this.m_logger.debug("PasswordManager.del: host: " + host + " username: " + username + (is_success ? " succeeded" : " failed"));
 }
 
-PasswordManager.prototype.set = function(server, login, password)
+PasswordManager.prototype.set = function(host, username, password)
 {
 	try {
-		var pm = this.m_pm.QueryInterface(Components.interfaces.nsIPasswordManager);
-
-		// Here we have to remove the old password first, because
-		// addUser does not update it
-
-		pm.removeUser(server, login);
+		this.m_nsIPasswordManager.removeUser(host, username); // Remove the old password first because addUser does "add" not "udpate"
 	}
 	catch (ex)
 	{
-		newLogger("PasswordManager").debug("PasswordManager.set: server: " + server + " login: " + login);
 	}
 
-	this.m_pm.addUser(server, login, password);
+	this.m_nsIPasswordManager.addUser(host, username, password);
+
+	this.m_logger.debug("PasswordManager.set: host: " + host + " username: " + username);
 }

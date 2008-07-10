@@ -305,20 +305,11 @@ FeedCollection.prototype.toString = function(eol_char_arg)
 		a_key[type][zuio.zid].push(isNaN(zuio.id) ? zuio.id : Number(zuio.id));
 	}
 
-	var numeric_compare_function = function(a, b)
-	{
-		if(a > b)
-			return 1;
-		if(a < b)
-			return -1;
-		return 0;
-	};
-
 	for (i = 0; i < a_sort_order.length; i++)
 		for (zid in a_key[a_sort_order[i]])
 		{
 			a_sorted_ids = a_key[a_sort_order[i]][zid];
-			a_sorted_ids.sort(numeric_compare_function);
+			a_sorted_ids.sort(numeric_compare);
 
 			for (j = 0; j < a_sorted_ids.length; j++)
 				ret += this.m_collection[Zuio.key(a_sorted_ids[j], zid)].toString(eol_char_arg)+"\n";

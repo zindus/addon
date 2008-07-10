@@ -166,7 +166,8 @@ MozillaPreferences.prototype.reportCatch = function(ex, key)
 
 MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
 {
-	var ret = null;
+	var ret   = new Array();
+	var a_key = {};
 
 	if (branch)
 	{
@@ -174,11 +175,12 @@ MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
 		{
 			var a_tmp = branch.getChildList(key, {});
 
-			ret = { };
-			var re = new RegExp('^' + key + '(.*?\.).*$');
+			// Singleton.instance().logger().debug("getImmediateChildren: key: " + key + " a_tmp: " + a_tmp.toString());
+
+			var re = new RegExp('^' + key + '(\\w*).*$');
 
 			for (var i = 0; i < a_tmp.length; i++)
-				ret[String(a_tmp[i]).replace(re, "$1")] = null;
+				a_key[String(a_tmp[i]).replace(re, "$1")] = null;
 		}
 		catch(ex)
 		{
@@ -186,6 +188,9 @@ MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
 				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
 		}
 	}
+
+	for (var key in a_key)
+		ret.push(key);
 
 	return ret;
 }

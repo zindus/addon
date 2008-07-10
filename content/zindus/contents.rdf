@@ -16,7 +16,7 @@
         chrome:name="zindus"
         chrome:extension="true"
         chrome:description="Address Book sync for Seamonkey and Zimbra."
-        chrome:settingsURL="chrome://zindus/content/prefsdialog.xul">
+        chrome:settingsURL="chrome://zindus/content/configsettings.xul">
   </RDF:Description>
 
   <!-- zindus overlay information -->

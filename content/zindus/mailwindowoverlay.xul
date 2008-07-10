@@ -40,11 +40,11 @@
 		window.addEventListener('unload', function() { window.zindus.onUnLoad(); }, false);
 
 		function zindusPrefsDialog() {
-			window.openDialog('chrome://zindus/content/prefsdialog.xul', '_blank', 'chrome=yes,modal=yes,centerscreen=yes');
+			window.openDialog('chrome://zindus/content/configsettings.xul', '_blank', 'chrome=yes,modal=yes,centerscreen=yes');
 			return true;
 		}
 
-		with (ZindusScopeRegistry.getScope()) { ZindusScopeRegistry.includejs('mailwindowoverlay.js'); }
+		with (ZindusScopeRegistry.getScope()) { includejs('mailwindowoverlay.js'); }
 	]]> </script>
 
 	<!--

@@ -16,7 +16,6 @@ pref("extensions.zindus.preauth.0.name",                  "free.fr");
 pref("extensions.zindus.preauth.0.regexp",                "^https?://zimbra\.free\.fr\/?");
 pref("extensions.zindus.preauth.0.preauth_url_hier_part", "zimbra.pl");
 pref("extensions.zindus.preauth.0.preauth_post_body",     "login=%username%&password=%password%");
-pref("extensions.zindus.preauth.0.zm_sync_gal_enabled",   "no");
 
 pref("extensions.zindus.general.as_verbose_logging",      "true");     // 
 pref("extensions.zindus.general.as_auto_sync",            "true");     // 

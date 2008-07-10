@@ -23,7 +23,7 @@
 
 function PrefSet(prefprefix, a)
 {
-	this.m_id         = -1;
+	this.m_id         = PrefSet.ID_UNINITIALISED;
 	this.m_prefprefix = prefprefix;
 	this.m_properties = new Object();
 
@@ -31,13 +31,21 @@ function PrefSet(prefprefix, a)
 		this.m_properties[a[i]] = PrefSet.DEFAULT_VALUE;
 }
 
-PrefSet.DEFAULT_VALUE            = null;
+PrefSet.DEFAULT_VALUE         = null;
+PrefSet.ID_UNINITIALISED      = -1;
 
-PrefSet.SERVER                   = "server";
-PrefSet.SERVER_TYPE              = "type";
-PrefSet.SERVER_URL               = "url";
-PrefSet.SERVER_USERNAME          = "username";
-PrefSet.SERVER_PROPERTIES        = [ PrefSet.SERVER_URL, PrefSet.SERVER_USERNAME, PrefSet.SERVER_TYPE ];
+PrefSet.ACCOUNT               = "account";
+PrefSet.ACCOUNT_FORMAT        = "format";
+PrefSet.ACCOUNT_URL           = "url";
+PrefSet.ACCOUNT_USERNAME      = "username";
+PrefSet.ACCOUNT_PROPERTIES    = [ PrefSet.ACCOUNT_URL, PrefSet.ACCOUNT_USERNAME, PrefSet.ACCOUNT_FORMAT ];
+
+PrefSet.PREAUTH               = "preauth";
+PrefSet.PREAUTH_NAME          = "name";
+PrefSet.PREAUTH_REGEXP        = "regexp";
+PrefSet.PREAUTH_URI_HIER_PART = "preauth_url_hier_part";
+PrefSet.PREAUTH_POST_BODY     = "preauth_post_body";
+PrefSet.PREAUTH_PROPERTIES    = [ PrefSet.PREAUTH_NAME, PrefSet.PREAUTH_REGEXP, PrefSet.PREAUTH_URI_HIER_PART, PrefSet.PREAUTH_POST_BODY ];
 
 PrefSet.GENERAL                        = "general";
 PrefSet.GENERAL_AUTO_SYNC              = "as_auto_sync";
@@ -49,44 +57,28 @@ PrefSet.GENERAL_PROPERTIES             = [ PrefSet.GENERAL_AUTO_SYNC,           
                                            PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED,   PrefSet.GENERAL_GD_SYNC_WITH,
 										   PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS ];
 
-PrefSet.PREAUTH                     = "preauth";
-PrefSet.PREAUTH_NAME                = "name";
-PrefSet.PREAUTH_REGEXP              = "regexp";
-PrefSet.PREAUTH_URI_HIER_PART       = "preauth_url_hier_part";
-PrefSet.PREAUTH_POST_BODY           = "preauth_post_body";
-PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED = PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED;
-PrefSet.PREAUTH_PROPERTIES          = [ PrefSet.PREAUTH_NAME,      PrefSet.PREAUTH_REGEXP, PrefSet.PREAUTH_URI_HIER_PART, 
-                                        PrefSet.PREAUTH_POST_BODY, PrefSet.PREAUTH_ZM_SYNC_GAL_ENABLED ];
-
 // Both id and branch are optional
-// id is option because there might only be a single subsection under prefprefix
+// id is optional because there might only be a single subsection under prefprefix
 // branch is optional because
 // a) the collection need only create one branch object and pass it to each .load() method
 // b) at some point we might like to distinguish between user-defined and default preferences,
 //
 PrefSet.prototype.load = function(id, branch)
 {
-	var i, mp, prefs;
-
 	zinAssert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
 
-	id     = (typeof(id)     != 'undefined') ? id     : null;
-	branch = (typeof(branch) != 'undefined') ? branch : Singleton.instance().preferences().branch();
+	this.m_id = id ?     id     : PrefSet.ID_UNINITIALISED;
+	branch    = branch ? branch : Singleton.instance().preferences().branch();
 
-	for (i in this.m_properties)
+	for (var i in this.m_properties)
 	{
-		try
-		{
-			this.m_properties[i] = branch.getCharPref(this.makePrefKey(id, i));
+		try {
+			this.m_properties[i] = branch.getCharPref(this.makePrefKey(this.m_id, i));
 		}
-		catch (ex)
-		{
-			// do nothing
+		catch (ex) {
 		}
 	}
 
-	this.m_id = id;
-	
 	return true;
 }
 
@@ -96,18 +88,15 @@ PrefSet.prototype.save = function()
 	var i;
 	var retval = false;
 
-	zinAssert(this.m_id >= 0);
+	zinAssert(this.m_id != null && (this.m_id == PrefSet.ID_UNINITIALISED || this.m_id >= 0));
 
-	try
-	{
+	try {
 		for (i in this.m_properties)
 			branch.setCharPref(this.makePrefKey(this.m_id, i), this.m_properties[i]);
 
 		retval = true;
 	}
-	catch (ex)
-	{
-		// do nothing
+	catch (ex) {
 	}
 	
 	return retval;
@@ -116,22 +105,19 @@ PrefSet.prototype.save = function()
 PrefSet.prototype.remove = function()
 {
 	var branch = Singleton.instance().preferences().branch();
-	var retval = false;
+	var ret = false;
 
-	zinAssert(this.m_id >= 0);
+	zinAssert(this.m_id != null && (this.m_id == PrefSet.ID_UNINITIALISED || this.m_id >= 0));
 
-	try
-	{
+	try {
 		branch.deleteBranch(this.makePrefKey(this.m_id));
 
-		retval = true;
+		ret = true;
 	}
-	catch (ex)
-	{
-		// do nothing
+	catch (ex) {
 	}
 	
-	return retval;
+	return ret;
 }
 
 PrefSet.prototype.hasUserValue = function(property)
@@ -139,13 +125,10 @@ PrefSet.prototype.hasUserValue = function(property)
 	var branch = Singleton.instance().preferences().branch();
 	var ret = false;
 
-	try
-	{
+	try {
 		ret = branch.prefHasUserValue(this.makePrefKey(this.m_id, property));
 	}
-	catch (ex)
-	{
-		// do nothing
+	catch (ex) {
 	}
 
 	return ret;
@@ -186,11 +169,6 @@ PrefSet.prototype.setProperty = function(property, value)
 	this.m_properties[property] = value;
 }
 
-PrefSet.prototype.getId = function()
-{
-	return this.m_id;
-}
-
 // Makes keys of the following form:
 // with m_prefprefix == "fred"
 //    id      property      key
@@ -205,21 +183,21 @@ PrefSet.prototype.makePrefKey = function(id, property)
 
 	ret += this.m_prefprefix;
 	
-	if (id != null)
+	if (id != PrefSet.ID_UNINITIALISED)
 		ret += "." + id;
 
 	if (arguments.length == 2)
-	{
 		ret +=  "." + property;
-	}
 
 	return ret;
 }
 
-PrefSet.getPassword = function(prefset)
+PrefSet.prototype.getPassword = function()
 {
-	var username = prefset.getProperty(PrefSet.SERVER_USERNAME);
-	var url      = prefset.getProperty(PrefSet.SERVER_URL);
+	zinAssert(this.m_prefprefix == PrefSet.ACCOUNT);
+
+	var username = this.getProperty(PrefSet.ACCOUNT_USERNAME);
+	var url      = this.getProperty(PrefSet.ACCOUNT_URL);
 	var ret      = null;
 
 	if (username != null && url != null)

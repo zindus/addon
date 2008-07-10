@@ -21,24 +21,24 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-ZindusScopeRegistry.includejs("fsm.js");
-ZindusScopeRegistry.includejs("zmsoapdocument.js");
-ZindusScopeRegistry.includejs("zmcontact.js");
-ZindusScopeRegistry.includejs("gdcontact.js");
-ZindusScopeRegistry.includejs("xpath.js");
-ZindusScopeRegistry.includejs("addressbook.js");
-ZindusScopeRegistry.includejs("contactconverter.js");
-ZindusScopeRegistry.includejs("folderconverter.js");
-ZindusScopeRegistry.includejs("feed.js");
-ZindusScopeRegistry.includejs("suo.js");
-ZindusScopeRegistry.includejs("zuio.js");
-ZindusScopeRegistry.includejs("gcs.js");
-ZindusScopeRegistry.includejs("lso.js");
-ZindusScopeRegistry.includejs("zidbag.js");
-ZindusScopeRegistry.includejs("syncfsmexitstatus.js");
-ZindusScopeRegistry.includejs("passwordmanager.js");
-ZindusScopeRegistry.includejs("stopwatch.js");
-ZindusScopeRegistry.includejs("cookieobserver.js");
+includejs("fsm.js");
+includejs("zmsoapdocument.js");
+includejs("zmcontact.js");
+includejs("gdcontact.js");
+includejs("xpath.js");
+includejs("addressbook.js");
+includejs("contactconverter.js");
+includejs("folderconverter.js");
+includejs("feed.js");
+includejs("suo.js");
+includejs("zuio.js");
+includejs("gcs.js");
+includejs("lso.js");
+includejs("zidbag.js");
+includejs("syncfsmexitstatus.js");
+includejs("passwordmanager.js");
+includejs("stopwatch.js");
+includejs("cookieobserver.js");
 
 const ORDER_SOURCE_UPDATE = [
 	Suo.MOD | FeedItem.TYPE_FL, Suo.MOD | FeedItem.TYPE_SF,
@@ -470,7 +470,7 @@ SyncFsm.prototype.loadZfcs = function(a_zfc)
 
 SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 {
-	// Here is (one of the places) where we pay for not having a real data store.
+	// This is (one of the places) where we pay for not having a real data store.
 	// Even though data is stored in at least four separate files: 1-tb.txt, 2-zm.txt, gid.txt, lastsync.txt 
 	// as far as integrity is concerned they are a single unit.
 	//
@@ -1828,38 +1828,6 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	continuation('evNext');
 }
 
-// if slow sync then...
-//   if gd_sync_with == 'pab' and there's a zindus/<email-address> folder, rename it to <email-address> <date>
-//   if gd_sync_with == 'zg'  and there's no zindus/<email-address> folder, create it
-//
-SyncFsm.prototype.entryActionLoadTbSetupGdAddressbook = function()
-{
-	var abName = this.gdAddressbookName();
-	var aUris  = this.state.m_addressbook.getAddressBookUrisByPattern(new RegExp( "^" + abName + "$" ));
-
-	if (this.state.gd_sync_with == 'pab' && aToLength(aUris) > 0)
-	{
-		this.state.m_logger.debug("entryActionLoadTbSetupGdAddressbook: about to rename out of the way: " + aToString(aUris));
-
-		var username = this.state.sources[this.state.sourceid_pr]['username'];
-
-		for (var key in aUris)
-			for (var i = 0; i < aUris[key].length; i++)
-				this.state.m_addressbook.renameAddressBook(aUris[key][i], username + " " + (new Date()).toUTCString());
-	}
-	else if (this.state.gd_sync_with == 'zg' && aToLength(aUris) == 0)
-	{
-		var abip = this.state.m_addressbook.newAddressBook(abName);
-
-		this.state.m_logger.debug("entryActionLoadTbSetupGdAddressbook: created: addressbook: " + abName + " uri: " + abip.m_uri);
-	}
-}
-
-SyncFsm.prototype.gdAddressbookName = function()
-{
-	return this.state.m_folder_converter.m_prefix_primary_account + this.state.sources[this.state.sourceid_pr]['username'];
-}
-
 SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 {
 	// A big decision in simplifying this code was the decision to give up convergence
@@ -2032,6 +2000,37 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 	return functor;
 }
 
+// if slow sync then...
+//   if gd_sync_with == 'pab' and there's a zindus/<email-address> folder, rename it to <email-address> <date>
+//   if gd_sync_with == 'zg'  and there's no zindus/<email-address> folder, create it
+//
+SyncFsm.prototype.entryActionLoadTbSetupGdAddressbook = function()
+{
+	var abName = this.gdAddressbookName();
+	var aUris  = this.state.m_addressbook.getAddressBookUrisByPattern(new RegExp( "^" + abName + "$" ));
+
+	if (this.state.gd_sync_with == 'pab' && aToLength(aUris) > 0)
+	{
+		this.state.m_logger.debug("entryActionLoadTbSetupGdAddressbook: about to rename out of the way: " + aToString(aUris));
+
+		var username = this.state.sources[this.state.sourceid_pr]['username'];
+
+		for (var key in aUris)
+			for (var i = 0; i < aUris[key].length; i++)
+				this.state.m_addressbook.renameAddressBook(aUris[key][i], username + " " + (new Date()).toUTCString());
+	}
+	else if (this.state.gd_sync_with == 'zg' && aToLength(aUris) == 0)
+	{
+		var abip = this.state.m_addressbook.newAddressBook(abName);
+
+		this.state.m_logger.debug("entryActionLoadTbSetupGdAddressbook: created: addressbook: " + abName + " uri: " + abip.m_uri);
+	}
+}
+
+SyncFsm.prototype.gdAddressbookName = function()
+{
+	return this.state.m_folder_converter.m_prefix_primary_account + this.state.sources[this.state.sourceid_pr]['username'];
+}
 
 SyncFsm.zfiFromName = function(name)
 {
@@ -6822,6 +6821,11 @@ HttpStateGd.prototype.filterOut = function(str)
 // notes:
 // - the last 3 args are optional (not passed when called from timer)
 // - sourceid needs to get passed to initialiseState
+// TODO ==> for multiple accounts, this will change to:
+// - one argument:    id_fsm                                     - called from timer
+// - two arguments:   id_fsm and prefset_general                 - called from Sync Now
+// - three arguments: id_fsm and prefset_general and the account - called from "Test Connection"
+//                    and here "account" contains sourceid, url, username and password
 //
 SyncFsm.prototype.initialise = function(id_fsm, sourceid, prefset_general, prefset_server, password)
 {
@@ -6841,14 +6845,14 @@ SyncFsm.prototype.initialise = function(id_fsm, sourceid, prefset_general, prefs
 	if (arguments.length == 2)
 	{
 		prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
-		prefset_server  = new PrefSet(PrefSet.SERVER,  PrefSet.SERVER_PROPERTIES);
+		prefset_server  = new PrefSet(PrefSet.ACCOUNT,  PrefSet.ACCOUNT_PROPERTIES);
 		prefset_general.load();
 		prefset_server.load(sourceid);
-		password = PrefSet.getPassword(prefset_server);
+		password = prefset_server.getPassword();
 	}
 
-	this.state.sources[sourceid]['soapURL']  = prefset_server.getProperty(PrefSet.SERVER_URL);
-	this.state.sources[sourceid]['username'] = prefset_server.getProperty(PrefSet.SERVER_USERNAME);
+	this.state.sources[sourceid]['soapURL']  = prefset_server.getProperty(PrefSet.ACCOUNT_URL);
+	this.state.sources[sourceid]['username'] = prefset_server.getProperty(PrefSet.ACCOUNT_USERNAME);
 	this.state.sources[sourceid]['password'] = password;
  
 	var msg = "initialise: ";
@@ -6925,7 +6929,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	state.stopFailCode        = null;         // if a state continues on evLackIntegrity, this is set for the observer
 	state.stopFailDetail      = null;
-	state.m_bimap_format      = getBimapFormat();
+	state.m_bimap_format      = getBimapFormat('short');
 
 	state.is_done_get_contacts_pu  = false;   // have we worked out the contacts to get from the server pre update?
 	state.is_source_update_problem = false;   // true iff an update operation on a source had a problem (eg soap response 404)
@@ -7159,7 +7163,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 
 			var rev        = this.state.a_gd_contact[id].m_meta['updated'];
 			var edit_url   = this.state.a_gd_contact[id].m_meta['edit'];
-			var is_deleted = isPropertyPresent(this.state.a_gd_contact[id].m_meta, 'deleted');
+			var is_deleted = this.state.a_gd_contact[id].is_deleted();
 			var zfi = null;
 
 			msg += "id: " + id;

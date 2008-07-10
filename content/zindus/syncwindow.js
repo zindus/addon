@@ -21,7 +21,7 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-ZindusScopeRegistry.includejs("payload.js");
+includejs("payload.js");
 
 function SyncWindow()
 {
@@ -118,7 +118,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		this.m_logger.debug("onFsmStateChangeFunctor: aborting - closing the window - fsm not started: " +
 		                      " fsmstate: " + (fsmstate ? "set" : "not set") + " payload.m_is_cancelled: " + this.m_payload.m_is_cancelled);
 
-		document.getElementById('zindus-syncwindow').acceptDialog();
+		dId('zindus-syncwindow').acceptDialog();
 	}
 	else if (!this.m_has_observer_been_called)
 	{
@@ -144,10 +144,10 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
-			document.getElementById('zindus-syncwindow-progress-meter').setAttribute('value',
+			dId('zindus-syncwindow-progress-meter').setAttribute('value',
 			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 
-			var elDescription = document.getElementById('zindus-syncwindow-progress-description');
+			var elDescription = dId('zindus-syncwindow-progress-description');
 			var elHtml        = document.createElementNS(Xpath.NS_XHTML, "p");
 
 			elHtml.innerHTML = stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString();
@@ -176,23 +176,32 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			newLogger().info("sync finish: " + getFriendlyTimeString());
 
-			document.getElementById('zindus-syncwindow').acceptDialog();
+			dId('zindus-syncwindow').acceptDialog();
 		}
 	}
 }
 
-SyncWindow.newSyncFsm = function(d)
+SyncWindow.newSyncFsm = function(syncfsm_details)
 {
+	var id_fsm  = null;
+	var account = syncfsm_details.account;
+	var type    = syncfsm_details.type;
+	var format  = getBimapFormat('long').lookup(null, account.get('format'));
 	var syncfsm;
-	var id_fsm = null;
 
-	if      (d.format == FORMAT_ZM && d.type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
-	else if (d.format == FORMAT_GD && d.type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
-	else if (d.format == FORMAT_ZM && d.type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
-	else if (d.format == FORMAT_GD && d.type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
-	else zinAssertAndLog(false, "mismatched case: format: " + d.format + " type: " + d.type);
+	zinAssert(syncfsm_details.account); // this only supports authonly - TODO: Sync Now
 
-	syncfsm.initialise(id_fsm, d.sourceid, d.prefset_general, d.prefset_server, d.password);
+	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
+	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
+	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
+	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
+	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
+
+	var prefset_server = new PrefSet(PrefSet.ACCOUNT,  PrefSet.ACCOUNT_PROPERTIES);
+	prefset_server.setProperty(PrefSet.ACCOUNT_URL,      account.get('url'));
+	prefset_server.setProperty(PrefSet.ACCOUNT_USERNAME, account.get('username'));
+
+	syncfsm.initialise(id_fsm, account.get('sourceid'), syncfsm_details.prefset_general, prefset_server, account.get('password'));
 
 	return syncfsm;
 }

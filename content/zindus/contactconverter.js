@@ -21,8 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-ZindusScopeRegistry.includejs("crc32.js");
-ZindusScopeRegistry.includejs("gdaddressconverter.js");
+includejs("crc32.js");
+includejs("gdaddressconverter.js");
 
 // For the Thunderbird properties, see: mozilla/mailnews/addrbook/resources/content/abCardOverlay.js
 // which is a subset of the constants defined in mozilla/mailnews/addrbook/public/nsIAddrDatabase.idl
@@ -137,7 +137,7 @@ ContactConverter.prototype.setup = function(vary)
 	                                           "zimbraCalResType",            0,
 	                                           "modifyTimeStamp",             0);
 
-	this.m_bimap_format = getBimapFormat();
+	this.m_bimap_format = getBimapFormat('short');
 
 	this.m_zm_street_field = new Object();
 	this.m_zm_street_field[FORMAT_TB] = { "HomeAddress":  0, "HomeAddress2" : 0, "WorkAddress" : 0, "WorkAddress2" : 0 };

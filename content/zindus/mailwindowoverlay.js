@@ -229,49 +229,32 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 	return ret;
 }
 
-// migrate the zindus.blah preferences to the mozilla convention extensions.zindus.blah
-// delete once confident all users are on version >= 0.6.13
+// migrate the zindus.blah preferences
 //
 ZinMailWindowOverlay.prototype.migratePrefs = function()
 {
 	var old, value;
 	var prefs = Singleton.instance().preferences();
 
+	// delete once confident all users are on version >= 0.6.13
+	// 
 	var a_map = {
-		"general.verboselogging":        { type: 'char', new: "general." + PrefSet.GENERAL_VERBOSE_LOGGING             }, 
-		"general.verbose_logging":       { type: 'char', new: "general." + PrefSet.GENERAL_VERBOSE_LOGGING             },
-		"general.gdsyncwith":            { type: 'char', new: "general." + PrefSet.GENERAL_GD_SYNC_WITH                },
-		"general.SyncGalEnabled":        { type: 'char', new: "general." + PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED         },
-		"system.logfileSizeMax":         { type: 'int',  new: MozillaPreferences.AS_LOGFILE_MAX_SIZE      },
-		"system.timerDelayOnStart":      { type: 'int',  new: MozillaPreferences.AS_TIMER_DELAY_ON_START  },
-		"system.timerDelayOnRepeat":     { type: 'int',  new: MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT },
-		"system.SyncGalMdInterval":      { type: 'int',  new: MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  },
-		"system.SyncGalEnabledRecheck":  { type: 'int',  new: MozillaPreferences.ZM_SYNC_GAL_RECHECK      },
-		"system.SyncGalEnabledIfFewer":  { type: 'char', new: MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     },
-		"system.preferSchemeForSoapUrl": { type: 'char', new: MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME }
+		"general.verboselogging":        { type: 'char', new: "general." + PrefSet.GENERAL_VERBOSE_LOGGING     },
+		"general.verbose_logging":       { type: 'char', new: "general." + PrefSet.GENERAL_VERBOSE_LOGGING     },
+		"general.gdsyncwith":            { type: 'char', new: "general." + PrefSet.GENERAL_GD_SYNC_WITH        },
+		"general.SyncGalEnabled":        { type: 'char', new: "general." + PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED },
+		"system.logfileSizeMax":         { type: 'int',  new: MozillaPreferences.AS_LOGFILE_MAX_SIZE           },
+		"system.timerDelayOnStart":      { type: 'int',  new: MozillaPreferences.AS_TIMER_DELAY_ON_START       },
+		"system.timerDelayOnRepeat":     { type: 'int',  new: MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT      },
+		"system.SyncGalMdInterval":      { type: 'int',  new: MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL       },
+		"system.SyncGalEnabledRecheck":  { type: 'int',  new: MozillaPreferences.ZM_SYNC_GAL_RECHECK           },
+		"system.SyncGalEnabledIfFewer":  { type: 'char', new: MozillaPreferences.ZM_SYNC_GAL_IF_FEWER          },
+		"system.preferSchemeForSoapUrl": { type: 'char', new: MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME      }
 		};
 
 	this.m_logger.debug("migrate old prefs... ");
 
-	for (old in a_map)
-	{
-		if (a_map[old].type == 'char')
-			value = prefs.getCharPrefOrNull(prefs.branch(), old);
-		else
-			value = prefs.getIntPrefOrNull(prefs.branch(), old);
-
-		if (value != null)
-		{
-			if (a_map[old].type == 'char')
-				prefs.branch().setCharPref(a_map[old].new, value);
-			else
-				prefs.branch().setIntPref(a_map[old].new, value);
-
-			prefs.branch().deleteBranch(old);
-
-			this.m_logger.debug("migrated pref: " + old + " to " + a_map[old].new + " value: " + value);
-		}
-	}
+	migratePrefName(a_map);
 
 	// replace MANUAL_SYNC_ONLY with AUTO_SYNC
 	//
@@ -292,4 +275,18 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 			this.m_logger.debug("migrated pref: " + old + " " + value + " to " + new_key + " " + bimap.lookup(value, null));
 		}
 	}
+
+	// delete once confident all users are on version >= 0.7.9
+	// 
+	a_map = {
+		"server.2.type":        { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT     },
+		"server.2.url":         { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_URL        },
+		"server.2.username":    { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_USERNAME   },
+	};
+
+	migratePrefName(a_map);
+
+	bimap = new BiMap( [ "google", "zimbra" ], [ stringBundleString("formatGoogle"), stringBundleString("formatZimbra") ] );
+
+	migratePrefValue([ PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT ], bimap);
 }

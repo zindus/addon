@@ -11,31 +11,31 @@
 <!ENTITY ZinPrefs.title                          "Zindus Configuration Settings">
 <!ENTITY ZinPrefs.buttonlabelextra2              "Help">
 <!ENTITY ZinPrefsTabServer.label                 "Server Settings">
+<!ENTITY ZinPrefsTabAccounts.label               "Accounts">
 <!ENTITY ZinPrefsTabGeneral.label                "Preferences">
 <!ENTITY ZinPrefsSpacer.style                    "height:15px">
-
-<!ENTITY ZinPrefsAdvanced.title                  "Zindus Advanced Configuration Settings">
+<!ENTITY ZinPrefsTabVbox.style                   "margin:10px">
 
 <!ENTITY ZinPrefsServerGrid.style                "margin-left:10px; margin-right:20px; margin-top:10px ">
 <!ENTITY ZinPrefsServerDescription.style         "margin-top:5px; margin-bottom:10px; padding:5px ">
 <!ENTITY ZinPrefsServerLabel.style               "margin-left:20px">
 <!ENTITY ZinPrefsServerUrlDescription.value      "Type the url you use to log on to the server.
                                                   <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
-<!ENTITY ZinPrefsServerTypeCaption.label          "Select server type">
+<!ENTITY ZinPrefsServerTypeCaption.label          "Select Account Type">
 
 <!ENTITY ZinPrefsServerUrl.label                 "Server Url:">
 <!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on.">
-<!ENTITY ZinPrefsServerUsername.label            "Email Address">
-<!ENTITY ZinPrefsServerPassword.label            "Password">
+<!ENTITY ZinPrefsServerUsername.label            "Email Address:">
+<!ENTITY ZinPrefsServerPassword.label            "Password:">
 <!ENTITY ZinPrefsServerTestConnection.label      "Test Connection to Server">
 <!ENTITY ZinPrefsServerTestConnection.accesskey  "T">
 
 <!ENTITY ZinPrefsGeneralIntroduction.value       "Restart Thunderbird after changing settings to be sure they are in effect.">
-<!ENTITY ZinPrefsGeneralGroupAdvanced.label      "Settings">
+<!ENTITY ZinPrefsGeneralGroupSettings.label      "Settings">
 <!ENTITY ZinPrefsGeneralGroupActions.label       "Actions">
 <!ENTITY ZinPrefsGeneralAutoSync.label           "Auto Sync">
 <!ENTITY ZinPrefsGeneralVerboseLogging.label     "Verbose logging">
-<!ENTITY ZinPrefsGeneralGal.label                "Global Address List (GAL)">
+<!ENTITY ZinPrefsGeneralGal.label                "Global Address List (GAL): ">
 <!ENTITY ZinPrefsGeneralGalYes.label             "Yes">
 <!ENTITY ZinPrefsGeneralGalNo.label              "No">
 <!ENTITY ZinPrefsGeneralGdSyncWith.label         "Sync Google contacts with">
@@ -51,26 +51,39 @@
 <!ENTITY ZinPrefsGeneralButtonAdvanced.label     "Advanced...">
 <!ENTITY ZinPrefsGeneralButtonAdvanced.accesskey "A">
 
-<!ENTITY ZinPrefsAdvancedGdPostal.label          "Postal Address Fields">
-<!ENTITY ZinPrefsAdvancedGdFalse.label           "Not synced">
-<!ENTITY ZinPrefsAdvancedGdTrue.label            "Thunderbird fields are represented as xml in Google">
-<!ENTITY ZinPrefsAdvancedGdExample1.value        "An example...">
-<!ENTITY ZinPrefsAdvancedGdExample2.value        "
-                                                  <html:strong>Thunderbird Address Fields</html:strong>
-                                                  <html:br/>
-                                                  <html:br/> 1 Example st
-                                                  <html:br/> Melbourne
-                                                  <html:br/> 3000 
-                                                  <html:br/> Australia
-                                                  ">
-<!ENTITY ZinPrefsAdvancedGdExample3.value "
-                                                  <html:strong>Google Address Field</html:strong>
-                                                  <html:br/> &lt;address&gt;
-                                                  <html:br/> &lt;street&gt; 1 Example st &lt;/street&gt;
-                                                  <html:br/> &lt;city&gt; Melbourne &lt;/city&gt;
-                                                  <html:br/> &lt;postcode&gt; 3000 &lt;/postcode&gt;
-                                                  <html:br/> &lt;country&gt; Australia &lt;/country&gt;
-                                                  <html:br/> &lt;/address&gt;
-                                                  ">
+<!ENTITY ZinConfigMsg.title                      "Zindus Contact Conflict Report">
+
+<!ENTITY ZinConfigAdvancedGd.title               "Zindus Advanced Configuration Settings">
+<!ENTITY ZinConfigAdvancedGdPostal.label         "Postal Address Fields">
+<!ENTITY ZinConfigAdvancedGdFalse.label          "Not synced">
+<!ENTITY ZinConfigAdvancedGdTrue.label           "Thunderbird fields are represented as xml in Google">
+<!ENTITY ZinConfigAdvancedGdExample1.value       "An example...">
+<!ENTITY ZinConfigAdvancedGdExample2.value       "
+                                                 <html:strong>Thunderbird Address Fields</html:strong>
+                                                 <html:br/>
+                                                 <html:br/> 1 Example st
+                                                 <html:br/> Melbourne
+                                                 <html:br/> 3000 
+                                                 <html:br/> Australia
+                                                 ">
+<!ENTITY ZinConfigAdvancedGdExample3.value       "
+                                                 <html:strong>Google Address Field</html:strong>
+                                                 <html:br/> &lt;address&gt;
+                                                 <html:br/> &lt;street&gt; 1 Example st &lt;/street&gt;
+                                                 <html:br/> &lt;city&gt; Melbourne &lt;/city&gt;
+                                                 <html:br/> &lt;postcode&gt; 3000 &lt;/postcode&gt;
+                                                 <html:br/> &lt;country&gt; Australia &lt;/country&gt;
+                                                 <html:br/> &lt;/address&gt;
+                                                 ">
 
 <!ENTITY ZinSyncWindowProgressDescription.style  "width:35em">
+
+<!ENTITY zindus.cs.account.add.label             "Add">
+<!ENTITY zindus.cs.account.add.accesskey         "A">
+<!ENTITY zindus.cs.account.edit.label            "Edit">
+<!ENTITY zindus.cs.account.edit.accesskey        "E">
+<!ENTITY zindus.cs.account.delete.label          "Delete">
+<!ENTITY zindus.cs.account.delete.accesskey      "D">
+
+<!ENTITY zindus.cs.account.email.label           "Email address">
+<!ENTITY zindus.cs.account.type.label            "Account Type">

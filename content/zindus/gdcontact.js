@@ -626,6 +626,11 @@ GdContact.prototype.isAnyPostalAddressNotInXml = function()
 	return ret;
 }
 
+GdContact.prototype.is_deleted = function()
+{
+	return isPropertyPresent(this.m_meta, 'deleted');
+}
+
 function GdContactFunctorToMakeHashFromNodes(contact_converter)
 {
 	this.m_collection        = new Object();

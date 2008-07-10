@@ -174,8 +174,11 @@ LogAppender.prototype.reportError = function(msg, ex)
 	dump(msg + "\n");
 	dump(ex.message + " stack: \n" + ex.stack);
 
-	Components.utils.reportError(msg);
-	Components.utils.reportError(ex);
+	if (typeof(Components) == 'object')
+	{
+		Components.utils.reportError(msg);
+		Components.utils.reportError(ex);
+	}
 }
 
 LogAppender.prototype.fileClose = function(os)
