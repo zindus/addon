@@ -424,7 +424,7 @@ AddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attribut
 
 	AddressBook.prototype.updateCard.call(this, abCard, uri, properties, attributes, format);
 
-	database.editCard(mdbCard, false);
+	database.editCard(mdbCard, false, null); // see editCard comment above
 	var dir = this.nsIAbDirectory(uri);
 	dir.modifyCard(abCard);
 
@@ -483,7 +483,7 @@ AddressBookTb3.prototype.setCardAttribute = function(mdbCard, uri, key, value)
 	mdbCard.setAbDatabase(database);
 	mdbCard.setStringAttribute(key, value);
 
-	database.editCard(mdbCard, false);
+	database.editCard(mdbCard, false, null); // Tb3a3 added the third param here.  null means that listeners aren't notified of change, see http://mxr.mozilla.org/mozilla/source/mailnews/addrbook/public/nsIAddrDatabase.idl
 
 	var dir = this.nsIAbDirectory(uri);
 	dir.modifyCard(mdbCard);

@@ -98,8 +98,8 @@ Filesystem.createDirectoryIfRequired = function(code)
 			nsifile.create(Ci.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRWXU);
 		}
 		catch (e) {
-			var msg1 = stringBundleString("errorFilesystemCreateDirectoryFailed");
-			var msg2 = stringBundleString("errorFilesystemCreateDirectoryFailedSuggest");
+			var msg1 = stringBundleString("filesystem.create.directory.failed");
+			var msg2 = stringBundleString("filesystem.create.directory.failedSuggest");
 			alert(msg1 + "\n" + nsifile.path + "\n" + msg2 + "\n" + e);
 			// alert("Unable to create directory:\n  " + nsifile.path + "\nSuggest checking file/directory permissions.\nException: " + e);
 		}

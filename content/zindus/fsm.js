@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.14 2008-06-15 19:38:22 cvsuser Exp $
+// $Id: fsm.js,v 1.15 2008-07-10 22:53:47 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -182,7 +182,7 @@ Fsm.prototype.sanityCheck = function()
 		//
 		this.m_logger.debug("sanityCheck: stateFrom: " + stateFrom);
 
-		zinAssertAndLog(typeof this.m_a_entry[stateFrom] == 'function', "stateFrom: " + stateFrom);
+		zinAssertAndLog(typeof(this.m_a_entry[stateFrom])== 'function', "stateFrom: " + stateFrom);
 
 		for (var event in this.m_transitions[stateFrom])
 		{

@@ -37,7 +37,7 @@
 				window.zindus.onLoad();
 			}, false);
 
-		window.addEventListener('unload', function() { window.zindus.onUnLoad(); }, false);
+		window.addEventListener('unload', function() { window.zindus.onUnload(); }, false);
 
 		function zindusPrefsDialog() {
 			window.openDialog('chrome://zindus/content/configsettings.xul', '_blank', 'chrome=yes,modal=yes,centerscreen=yes');

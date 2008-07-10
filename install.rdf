@@ -6,14 +6,14 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.7.8.20080710.172642</em:version>  <!-- version populated by build script -->
+    <em:version>0.7.8.20080711.081628</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <Description>
         <!-- Thunderbird -->
         <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id>
         <em:minVersion>2.0b2</em:minVersion>
-        <em:maxVersion>3.0a1</em:maxVersion> <!-- TODO 3.0a1 2.0.0.* -->
+        <em:maxVersion>3.0a2</em:maxVersion> <!-- TODO 3.0a1 2.0.0.* -->
       </Description>
     </em:targetApplication>
 

@@ -34,7 +34,7 @@ ConfigMsg.prototype.onLoad = function(target)
 
 	html = html.replace(/\n/mg, "<br/>");
 	html = html.replace(/ ( )/mg, " &#160;");
-	html += stringBundleString("statusFailOnGdSeeFaq").replace("%fail_code%", this.m_payload.m_args.fail_code);
+	html += stringBundleString("status.failmsg.gd.see.faq").replace("%fail_code%", this.m_payload.m_args.fail_code);
 
 	// <noscript> is used here because it's a structural html element that can contain other elements
 	//

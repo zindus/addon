@@ -160,19 +160,19 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				                                              this.m_payload.m_is_cancelled + " m_es: " + this.m_payload.m_es.toString());
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
-					Singleton.instance().logger().debug("ConfigSettings.onCommand: statusSyncFailedUnexpectedly");
-					msg = stringBundleString("statusSyncFailedUnexpectedly");
+					Singleton.instance().logger().debug("ConfigSettings.onCommand: status.msg.sync.failed.unexpectedly");
+					msg = stringBundleString("status.msg.sync.failed.unexpectedly");
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
-					msg = this.m_payload.m_es.asMessage("statusSyncSucceeded", "statusSyncFailed");
+					msg = this.m_payload.m_es.asMessage("status.msg.sync.succeeded", "status.msg.sync.failed");
 
 				if (msg != "")
 				{
-					if (isInArray(this.m_payload.m_es.m_fail_code, [ 'FailOnGdConflict1', 'FailOnGdConflict2', 'FailOnGdEmptyContact' ]))
+					if (isInArray(this.m_payload.m_es.m_fail_code, [ 'failon.gd.conflict1', 'failon.gd.conflict2', 'failon.gd.empty.contact' ]))
 					{
 						var payload2 = new Payload();
 						payload2.m_args = newObject('fail_code', this.m_payload.m_es.m_fail_code, 'msg', msg);
-						window.openDialog("chrome://zindus/content/prefsmsg.xul",  "_blank", WINDOW_FEATURES, payload2);
+						window.openDialog("chrome://zindus/content/configmsg.xul",  "_blank", WINDOW_FEATURES, payload2);
 					}
 					else
 						alert(msg);
@@ -330,7 +330,7 @@ ConfigSettings.prototype.initialiseView = function()
 	//
 	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
 
-	var msg = stringBundleString("csGalIfFewer", [ if_fewer ]);
+	var msg = stringBundleString("cs.general.zm.gal.if.fewer", [ if_fewer ]);
 
 	dId("zindus-cs-general-gal-if-fewer").label = msg;
 
@@ -449,16 +449,16 @@ ConfigSettings.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, pro
 ConfigSettings.prototype.gdSyncWithLabel = function()
 {
 	var a_rowid = this.accountsArrayOf(FORMAT_GD);
-	var ret     = stringBundleString("csGeneralGdSyncWithZgPrefix");
+	var ret     = stringBundleString("cs.general.gd.syncwith.prefix");
 
 	if (a_rowid.length == 0)
-		ret += stringBundleString("csGeneralGdSyncWithZgSuffix");
+		ret += stringBundleString("cs.general.gd.syncwith.suffix");
 	else
 	{
 		ret += this.m_accounts[a_rowid[0]].get('username');
 
 		if (a_rowid.length > 1)
-			ret += " " + stringBundleString("prefsGeneralGdSyncWithZgEtc");
+			ret += " " + stringBundleString("cs.general.gd.syncwith.etc");
 	}
 
 	return ret;

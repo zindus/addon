@@ -112,11 +112,11 @@ ConfigAccount.prototype.onCommand = function(id_target)
 
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
-					Singleton.instance().logger().debug("ConfigAccount.onCommand: statusSyncFailedUnexpectedly");
-					msg = stringBundleString("statusSyncFailedUnexpectedly");
+					Singleton.instance().logger().debug("ConfigAccount.onCommand: status.msg.sync.failed.unexpectedly");
+					msg = stringBundleString("status.msg.sync.failed.unexpectedly");
 				}
 				else
-					msg = this.m_payload.m_es.asMessage("statusAuthSucceeded", "statusAuthFailed");
+					msg = this.m_payload.m_es.asMessage("status.msg.auth.succeeded", "status.msg.auth.failed");
 
 				alert(msg);
 			}

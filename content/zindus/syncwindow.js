@@ -150,7 +150,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var elDescription = dId('zindus-sw-progress-description');
 			var elHtml        = document.createElementNS(Xpath.NS_XHTML, "p");
 
-			elHtml.innerHTML = stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString();
+			elHtml.innerHTML = stringBundleString("progress.prefix") + " " + this.m_sfo.progressToString();
 
 			if (!elDescription.hasChildNodes())
 				elDescription.appendChild(elHtml);
