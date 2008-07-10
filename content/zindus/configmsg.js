@@ -21,12 +21,12 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function PrefsMsg()
+function ConfigMsg()
 {
 	this.m_payload         = null;
 }
 
-PrefsMsg.prototype.onLoad = function(target)
+ConfigMsg.prototype.onLoad = function(target)
 {
 	this.m_payload = window.arguments[0];
 
@@ -38,9 +38,9 @@ PrefsMsg.prototype.onLoad = function(target)
 
 	// <noscript> is used here because it's a structural html element that can contain other elements
 	//
-	var el = document.createElementNS("http://www.w3.org/1999/xhtml", "noscript");
+	var el = document.createElementNS(Xpath.NS_XHTML, "noscript");
 
 	el.innerHTML = html;
 
-	document.getElementById("zindus-prefs-msg-description").appendChild(el);
+	document.getElementById("zindus-cm-description").appendChild(el);
 }

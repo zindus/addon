@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+
+<!-- ***** BEGIN LICENSE BLOCK *****
+  
+  "The contents of this file are subject to the Mozilla Public License
+  Version 1.1 (the "License"); you may not use this file except in
+  compliance with the License. You may obtain a copy of the License at
+  http://www.mozilla.org/MPL/
+  
+  Software distributed under the License is distributed on an "AS IS"
+  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+  License for the specific language governing rights and limitations
+  under the License.
+  
+  The Original Code is Zindus Sync.
+  
+  The Initial Developer of the Original Code is Toolware Pty Ltd.
+ 
+  Portions created by Initial Developer are Copyright (C) 2007
+  the Initial Developer. All Rights Reserved.
+ 
+  Contributor(s): Leni Mayo
+  
+  ***** END LICENSE BLOCK ***** -->
+
+<?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
+
+<dialog
+	title="&ZinPrefs.title;"
+	buttons="accept,extra2"
+	buttonlabelextra2="&ZinPrefs.buttonlabelextra2;"
+	flex="1"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigSettings(); } window.wd.onLoad(event.target);"
+	oncommand="window.wd.onCommand(event.target.id);"
+	ondialogaccept="window.wd.onAccept();"
+	ondialogcancel="window.wd.onCancel();"
+	ondialogextra2="with (ZindusScopeRegistry.getScope()) { openURL('http://www.zindus.com/faq-thunderbird/'); }"
+	>
+
+	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
+	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
+	<script type="application/x-javascript"> <![CDATA[
+		with (ZindusScopeRegistry.getScope()) { includejs('configsettings.js'); }
+	]]> </script>
+
+	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
+
+	<tabbox id="zindus-cs-tabbox" orient="vertical" flex="1" >
+		<tabs>
+			<tab id="zindus-cs-tab-server"  label="&ZinPrefsTabAccounts.label;" />
+			<tab id="zindus-cs-tab-general" label="&ZinPrefsTabGeneral.label;"  />
+		</tabs>
+
+		<tabpanels flex="1">
+			<command id="zindus-cs-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
+
+			<tabpanel> <!-- Accounts -->
+				<vbox flex="1" style="&ZinPrefsTabVbox.style;" >
+					<tree id="zindus-cs-account-tree" seltype="single" enableColumnDrag="true" flex="9"
+							onselect="window.wd.updateView();"
+							ondblclick="document.getElementById('zindus-cs-account-edit').doCommand();"
+							>
+						<treecols>
+							<treecol id="zindus-cs-account-email" label="&zindus.cs.account.email.label;"
+							         persist="width ordinal hidden" flex="2" />
+							<splitter class="tree-splitter"/>
+							<treecol id="zindus-cs-account-type" label="&zindus.cs.account.type.label;"
+							         persist="width ordinal hidden" flex="1" />
+						</treecols>
+						<treechildren id="zindus-cs-account-treechildren" />
+					</tree>
+					<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+					<hbox>
+						<button id="zindus-cs-account-add"    label="&zindus.cs.account.add.label;"
+						                                  accesskey="&zindus.cs.account.add.accesskey;" />
+						<button id="zindus-cs-account-edit"   label="&zindus.cs.account.edit.label;"
+						                                  accesskey="&zindus.cs.account.edit.accesskey;" />
+						<button id="zindus-cs-account-delete" label="&zindus.cs.account.delete.label;"
+						                                  accesskey="&zindus.cs.account.delete.accesskey;" />
+					</hbox>
+					<spacer style="&ZinPrefsSpacer.style;" flex="7"/> 
+				</vbox>
+			</tabpanel>
+
+			<tabpanel> <!-- General -->
+				<vbox flex="1" style="&ZinPrefsTabVbox.style;" >
+					<description xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
+						&ZinPrefsGeneralIntroduction.value;
+					</description>
+					<groupbox pack="center" >
+						<caption label="&ZinPrefsGeneralGroupSettings.label;"/>
+						<vbox align="left" >
+							<checkbox id="zindus-cs-general-auto-sync"       label="&ZinPrefsGeneralAutoSync.label;"       />
+							<checkbox id="zindus-cs-general-verbose-logging" label="&ZinPrefsGeneralVerboseLogging.label;" />
+						</vbox>
+					</groupbox>
+
+					<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+					<groupbox id="zindus-cs-general-google-groupbox" pack="center" >
+						<caption label="Google" />
+						<hbox pack="start" >
+							<vbox pack="center" >
+								<label value="&ZinPrefsGeneralGdSyncWith.label;" />
+								<radiogroup id="zindus-cs-general-gdsyncwith-radiogroup" >
+									<radio id="zindus-cs-general-gdsyncwith-pab" label="&ZinPrefsGeneralGdSyncWithPab.label;" />
+									<radio id="zindus-cs-general-gdsyncwith-zg" />
+								</radiogroup>
+							</vbox>
+							<spacer flex="1"/>
+							<vbox pack="start" >
+								<button id="zindus-cs-general-advanced-button"
+				         			accesskey="&ZinPrefsGeneralButtonAdvanced.accesskey;" label="&ZinPrefsGeneralButtonAdvanced.label;" />
+							</vbox>
+						</hbox>
+					</groupbox>
+
+					<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+					<groupbox id="zindus-cs-general-zimbra-groupbox" pack="center" >
+						<caption label="Zimbra" />
+						<hbox pack="baseline" >
+							<label value="&ZinPrefsGeneralGal.label;" />
+							<menulist id="zindus-cs-general-gal" >
+								<menupopup>
+									<menuitem id="zindus-cs-general-gal-yes"      label="&ZinPrefsGeneralGalYes.label;" />
+									<menuitem id="zindus-cs-general-gal-if-fewer" />
+									<menuitem id="zindus-cs-general-gal-no"       label="&ZinPrefsGeneralGalNo.label;" />
+								</menupopup>
+							</menulist>
+						</hbox>
+					</groupbox>
+
+					<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+					<groupbox pack="center" >
+				    	<caption label="&ZinPrefsGeneralGroupActions.label;"/>
+						<hbox align="right" >
+							<button id="zindus-cs-general-button-test-harness" hidden="true"
+						        	align="center" command="zindus-cs-command" label="&ZinPrefsGeneralButtonTestHarness.label;" />
+							<button id="zindus-cs-general-button-run-timer" hidden="true"
+						        	align="center" command="zindus-cs-command" label="&ZinPrefsGeneralButtonTimer.label;" />
+							<button id="zindus-cs-general-button-reset"
+						        	align="center" command="zindus-cs-command" label="&ZinPrefsGeneralButtonReset.label;"
+									accesskey="&ZinPrefsGeneralButtonReset.accesskey;" />
+							<spacer flex="1"/> 
+							<button id="zindus-cs-general-button-sync-now"
+						        	align="center" command="zindus-cs-command" label="&ZinPrefsGeneralButtonSyncNow.label;"
+									accesskey="&ZinPrefsGeneralButtonSyncNow.accesskey;" />
+						</hbox>
+					</groupbox>
+				</vbox>
+			</tabpanel>
+		</tabpanels>
+	</tabbox>
+</dialog>

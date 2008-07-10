@@ -28,26 +28,38 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
-	id="zindus-prefs-msg-dialog"
-	title="Zindus Contact Conflict Report"
-	style="margin: 10px"
-	buttons="accept"
-	buttonpack="center"
+	title="&ZinConfigAdvancedGd.title;"
+	buttons="accept,cancel"
+	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new PrefsMsg(); } window.wd.onLoad(event.target);"
+	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigAdvanced(); } window.wd.onLoad(event.target);"
+	oncommand="window.wd.onCommand(event.target.id);"
+	ondialogaccept="window.wd.onAccept();"
+	ondialogcancel="window.wd.onCancel();"
 	>
 
 	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
 	<script type="application/x-javascript"> <![CDATA[
-		with (ZindusScopeRegistry.getScope()) { ZindusScopeRegistry.includejs('prefsdialog.js');
-		                                        ZindusScopeRegistry.includejs('prefsmsg.js'); }
+		with (ZindusScopeRegistry.getScope()) { includejs('configsettings.js');
+		                                        includejs('configadvanced.js'); }
 	]]> </script>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<description id="zindus-prefs-msg-description"
-	             xmlns:html="http://www.w3.org/1999/xhtml"
-				 style="max-width: 60em; margin-bottom: 20px">
-	</description>
+	<groupbox pack="center" >
+		<caption label="&ZinConfigAdvancedGdPostal.label;" />
+		<radiogroup id="zindus-ca-sync-postal-radiogroup">
+			<radio id="zindus-ca-sync-postal-false" label="&ZinConfigAdvancedGdFalse.label;" />
+			<radio id="zindus-ca-sync-postal-true"  label="&ZinConfigAdvancedGdTrue.label;"  />
+		</radiogroup>
+
+		<vbox id="zindus-prefs-gd-sync-postal-example" xmlns:html="http://www.w3.org/1999/xhtml" style="margin-left:20px" >
+			<description style="margin-left:10px;"> &ZinConfigAdvancedGdExample1.value; </description>
+			<hbox style="margin-left:10px; margin-right:10px">
+				<description> &ZinConfigAdvancedGdExample2.value; </description>
+				<description> &ZinConfigAdvancedGdExample3.value; </description>
+			</hbox>
+		</vbox>
+	</groupbox>
 </dialog>

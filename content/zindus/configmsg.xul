@@ -28,39 +28,25 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
-	id="zindus-prefs-advanced-dialog"
-	title="&ZinPrefsAdvanced.title;"
-	buttons="accept,cancel"
-	flex="1"
+	title="&ZinConfigMsg.title;"
+	style="margin: 10px"
+	buttons="accept"
+	buttonpack="center"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new PrefsAdvanced(); } window.wd.onLoad(event.target);"
-	oncommand="window.wd.onCommand(event.target.id);"
-	ondialogaccept="window.wd.onAccept();"
-	ondialogcancel="window.wd.onCancel();"
+	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigMsg(); } window.wd.onLoad(event.target);"
 	>
 
 	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
 	<script type="application/x-javascript"> <![CDATA[
-		with (ZindusScopeRegistry.getScope()) { ZindusScopeRegistry.includejs('prefsdialog.js');
-		                                        ZindusScopeRegistry.includejs('prefsadvanced.js'); }
+		with (ZindusScopeRegistry.getScope()) { includejs('configsettings.js');
+		                                        includejs('configmsg.js'); }
 	]]> </script>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<groupbox pack="center" >
-		<caption label="&ZinPrefsAdvancedGdPostal.label;" />
-		<radiogroup id="zindus-prefs-general-gd-sync-postal-radiogroup">
-			<radio id="zindus-prefs-general-gd-sync-postal-false" label="&ZinPrefsAdvancedGdFalse.label;" />
-			<radio id="zindus-prefs-general-gd-sync-postal-true"  label="&ZinPrefsAdvancedGdTrue.label;"  />
-		</radiogroup>
-
-		<vbox id="zindus-prefs-gd-sync-postal-example" xmlns:html="http://www.w3.org/1999/xhtml" style="margin-left:20px" >
-			<description style="margin-left:10px;"> &ZinPrefsAdvancedGdExample1.value; </description>
-		<hbox style="margin-left:10px; margin-right:10px">
-			<description> &ZinPrefsAdvancedGdExample2.value; </description>
-			<description> &ZinPrefsAdvancedGdExample3.value; </description>
-		</hbox>
-		</vbox>
-	</groupbox>
+	<description id="zindus-cm-description"
+	             xmlns:html="http://www.w3.org/1999/xhtml"
+				 style="max-width: 60em; margin-bottom: 20px">
+	</description>
 </dialog>
