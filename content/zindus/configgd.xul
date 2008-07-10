@@ -32,7 +32,7 @@
 	buttons="accept,cancel"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigAdvanced(); } window.wd.onLoad(event.target);"
+	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigGd(); } window.wd.onLoad(event.target);"
 	oncommand="window.wd.onCommand(event.target.id);"
 	ondialogaccept="window.wd.onAccept();"
 	ondialogcancel="window.wd.onCancel();"
@@ -42,7 +42,7 @@
 	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
 	<script type="application/x-javascript"> <![CDATA[
 		with (ZindusScopeRegistry.getScope()) { includejs('configsettings.js');
-		                                        includejs('configadvanced.js'); }
+		                                        includejs('configgd.js'); }
 	]]> </script>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>

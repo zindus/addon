@@ -21,7 +21,7 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function ConfigAdvanced()
+function ConfigGd()
 {
 	this.m_payload         = null;
 	this.m_prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
@@ -30,7 +30,7 @@ function ConfigAdvanced()
 	                                                 [ "zindus-ca-sync-postal-true", "zindus-ca-sync-postal-false" ] );
 }
 
-ConfigAdvanced.prototype.onLoad = function(target)
+ConfigGd.prototype.onLoad = function(target)
 {
 	this.m_payload = window.arguments[0];
 
@@ -41,23 +41,23 @@ ConfigAdvanced.prototype.onLoad = function(target)
 	this.updateView();
 }
 
-ConfigAdvanced.prototype.onCancel = function()
+ConfigGd.prototype.onCancel = function()
 {
 }
 
-ConfigAdvanced.prototype.onAccept = function()
+ConfigGd.prototype.onAccept = function()
 {
 	this.m_payload.m_args.setProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS,
 	        this.m_prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS));
 }
 
-ConfigAdvanced.prototype.initialiseView = function()
+ConfigGd.prototype.initialiseView = function()
 {
 	ConfigSettings.setRadioFromPrefset("zindus-ca-sync-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
 	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, "zindus-ca-sync-postal-false")
 }
 
-ConfigAdvanced.prototype.onCommand = function(id_target)
+ConfigGd.prototype.onCommand = function(id_target)
 {
 	switch (id_target)
 	{
@@ -68,7 +68,7 @@ ConfigAdvanced.prototype.onCommand = function(id_target)
 	}
 }
 
-ConfigAdvanced.prototype.updateView = function()
+ConfigGd.prototype.updateView = function()
 {
 	ConfigSettings.setPrefsetFromRadio("zindus-ca-sync-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
 	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS);
