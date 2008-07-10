@@ -28,7 +28,7 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
-	title="&ZinConfigAdvancedGd.title;"
+	title="&zindus.cgd.title;"
 	buttons="accept,cancel"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
@@ -48,17 +48,17 @@
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<groupbox pack="center" >
-		<caption label="&ZinConfigAdvancedGdPostal.label;" />
-		<radiogroup id="zindus-ca-sync-postal-radiogroup">
-			<radio id="zindus-ca-sync-postal-false" label="&ZinConfigAdvancedGdFalse.label;" />
-			<radio id="zindus-ca-sync-postal-true"  label="&ZinConfigAdvancedGdTrue.label;"  />
+		<caption label="&zindus.cgd.postalPostal.label;" />
+		<radiogroup id="zindus-cgd-postal-radiogroup">
+			<radio id="zindus-cgd-postal-false" label="&zindus.cgd.postal.false.label;" />
+			<radio id="zindus-cgd-postal-true"  label="&zindus.cgd.postal.true.label;"  />
 		</radiogroup>
 
 		<vbox id="zindus-prefs-gd-sync-postal-example" xmlns:html="http://www.w3.org/1999/xhtml" style="margin-left:20px" >
-			<description style="margin-left:10px;"> &ZinConfigAdvancedGdExample1.value; </description>
+			<description style="margin-left:10px;"> &zindus.cgd.postalExample1.value; </description>
 			<hbox style="margin-left:10px; margin-right:10px">
-				<description> &ZinConfigAdvancedGdExample2.value; </description>
-				<description> &ZinConfigAdvancedGdExample3.value; </description>
+				<description> &zindus.cgd.postalExample2.value; </description>
+				<description> &zindus.cgd.postalExample3.value; </description>
 			</hbox>
 		</vbox>
 	</groupbox>

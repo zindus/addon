@@ -59,8 +59,8 @@
 	</stringbundleset>
 
 	<menupopup id="taskPopup">
-		<menuitem label="&ZinToolsMenuItem.label;"
-		          accesskey="&ZinToolsMenuItem.accesskey;"
+		<menuitem label="&zindus.tools.menuitem.label;"
+		          accesskey="&zindus.tools.menuitem.accesskey;"
 		          insertafter="javaScriptConsole"
 				  oncommand="zindusPrefsDialog();" />
 	</menupopup>

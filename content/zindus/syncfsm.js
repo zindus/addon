@@ -2825,8 +2825,8 @@ SyncFsm.prototype.getGdConflictMsg = function(email, sourceid1, luid1, sourceid2
 {
 	var context = this;
 	function getSourceName(sourceid) {
-		return context.state.sources[sourceid]['format'] == FORMAT_TB ? (stringBundleString("formatThunderbird") + ": ") :
-		                                                             (stringBundleString("formatGoogle") + ":          ");
+		return context.state.sources[sourceid]['format'] == FORMAT_TB ? (stringBundleString("format.thunderbird") + ": ") :
+		                                                             (stringBundleString("format.google") + ":          ");
 	}
 
 	var email1 = this.getContactPrimaryEmailFromLuid(sourceid1, luid1);
@@ -3890,8 +3890,8 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 					var context = this;
 					function getSourceName(sourceid) {
 						return context.state.sources[sourceid]['format'] == FORMAT_TB ?
-						           stringBundleString("formatThunderbird").toLowerCase() :
-						           stringBundleString("formatServer").toLowerCase();
+						           stringBundleString("format.thunderbird").toLowerCase() :
+						           stringBundleString("format.server").toLowerCase();
 					}
 
 					var conflict_msg = "";

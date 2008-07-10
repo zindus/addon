@@ -79,8 +79,8 @@ SyncFsmObserver.prototype.buildOp = function(sourceid, stringid)
 
 SyncFsmObserver.prototype.sourceName = function(sourceid)
 {
-	return this.state.sources[sourceid]['format'] == FORMAT_TB ? stringBundleString("formatThunderbird").toLowerCase() :
-	                                                             stringBundleString("formatServer").toLowerCase();
+	return this.state.sources[sourceid]['format'] == FORMAT_TB ? stringBundleString("format.thunderbird").toLowerCase() :
+	                                                             stringBundleString("format.server").toLowerCase();
 }
 
 SyncFsmObserver.prototype.tweakStringId = function(stringid)

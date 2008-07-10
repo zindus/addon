@@ -133,8 +133,8 @@ ConfigAccount.prototype.onCommand = function(id_target)
 
 ConfigAccount.prototype.initialiseView = function()
 {
-	dId("zindus-ca-format-google").label = stringBundleString("formatGoogle");
-	dId("zindus-ca-format-zimbra").label = stringBundleString("formatZimbra");
+	dId("zindus-ca-format-google").label = stringBundleString("format.google");
+	dId("zindus-ca-format-zimbra").label = stringBundleString("format.zimbra");
 
 	var account = this.m_payload_configsettings.m_account;
 

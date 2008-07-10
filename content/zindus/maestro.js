@@ -65,8 +65,8 @@ Maestro.FSM_GROUP_SYNC     = newObject(Maestro.FSM_ID_ZM_TWOWAY,   0, Maestro.FS
 // ID_FUNCTOR_* uniquely identifies each functor
 //
 Maestro.ID_FUNCTOR_SYNCWINDOW         = "syncwindow";
-Maestro.ID_FUNCTOR_PREFSDIALOG        = "configsettings";
-Maestro.ID_FUNCTOR_PREFSDIALOG_TIMER  = "configsettings-timer";
+Maestro.ID_FUNCTOR_CONFIGSETTINGS        = "configsettings";
+Maestro.ID_FUNCTOR_CONFIGSETTINGS_TIMER  = "configsettings-timer";
 Maestro.ID_FUNCTOR_CONFIGACCOUNT      = "configaccount";
 Maestro.ID_FUNCTOR_MAILWINDOW_TIMER   = "mailwindow-timer";
 

@@ -23,7 +23,7 @@
 
 includejs("payload.js");
 includejs("testharness.js");
-includejs("configadvanced.js");
+includejs("configgd.js");
 includejs("configaccount.js");
 includejs("account.js");
 
@@ -77,14 +77,14 @@ ConfigSettings.prototype.maestroRegister = function()
 		ObserverService.register(this.m_maestro, Maestro.TOPIC);
 	}
 
-	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_PREFSDIALOG, Maestro.FSM_GROUP_SYNC);
+	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_CONFIGSETTINGS, Maestro.FSM_GROUP_SYNC);
 	Logger.nsIConsoleService().registerListener(this.m_console_listener);
 }
 
 ConfigSettings.prototype.maestroUnregister = function()
 {
 	Logger.nsIConsoleService().unregisterListener(this.m_console_listener);
-	Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_PREFSDIALOG);
+	Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_CONFIGSETTINGS);
 
 	if (this.m_maestro && ObserverService.isRegistered(Maestro.TOPIC))
 		ObserverService.unregister(this.m_maestro, Maestro.TOPIC);
@@ -201,7 +201,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 		case "zindus-cs-general-advanced-button":
 			var payload = new Payload();
 			payload.m_args = this.m_prefset_general;
-			window.openDialog("chrome://zindus/content/configadvanced.xul", "_blank", WINDOW_FEATURES, payload);
+			window.openDialog("chrome://zindus/content/configgd.xul", "_blank", WINDOW_FEATURES, payload);
 	        this.m_logger.debug("gd_postal: " + this.m_prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS));
 			break;
 
@@ -301,7 +301,7 @@ ConfigSettings.prototype.onTimerFire = function(context)
 	// It should only be visible in the UI with debugging turned on anyways...
 	//
 	context.m_logger.debug("onTimerFire: ");
-	context.m_timer_functor = new TimerFunctor(Maestro.ID_FUNCTOR_PREFSDIALOG_TIMER, null, null);
+	context.m_timer_functor = new TimerFunctor(Maestro.ID_FUNCTOR_CONFIGSETTINGS_TIMER, null, null);
 	context.m_timer_functor.run();
 }
 
@@ -330,7 +330,7 @@ ConfigSettings.prototype.initialiseView = function()
 	//
 	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
 
-	var msg = stringBundleString("prefsGalIfFewer", [ if_fewer ]);
+	var msg = stringBundleString("csGalIfFewer", [ if_fewer ]);
 
 	dId("zindus-cs-general-gal-if-fewer").label = msg;
 
@@ -449,10 +449,10 @@ ConfigSettings.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, pro
 ConfigSettings.prototype.gdSyncWithLabel = function()
 {
 	var a_rowid = this.accountsArrayOf(FORMAT_GD);
-	var ret     = stringBundleString("prefsGeneralGdSyncWithZgPrefix");
+	var ret     = stringBundleString("csGeneralGdSyncWithZgPrefix");
 
 	if (a_rowid.length == 0)
-		ret += stringBundleString("prefsGeneralGdSyncWithZgSuffix");
+		ret += stringBundleString("csGeneralGdSyncWithZgSuffix");
 	else
 	{
 		ret += this.m_accounts[a_rowid[0]].get('username');

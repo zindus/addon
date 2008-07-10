@@ -45,11 +45,11 @@ function zinAssert(expr)
 			else
 				print(ex.message + " stack: \n" + ex.stack);
 
-			var zwc = new WindowCollection([ 'zindus-syncwindow' ]);
+			var zwc = new WindowCollection([ 'zindus-sw' ]);
 			zwc.populate();
 			var zwc_functor = {
 				run: function(win) {
-					win.document.getElementById('zindus-syncwindow').cancelDialog();
+					win.document.getElementById('zindus-sw').cancelDialog();
 				}
 			};
 			zwc.forEach(zwc_functor);
@@ -439,7 +439,7 @@ function getBimapFormat(type)
 	if (type == 'short')
 		a2 = [ 'tb', 'gd', 'zm' ];
 	else if (type == 'long')
-		a2 = [ stringBundleString("formatThunderbird"), stringBundleString("formatGoogle"), stringBundleString("formatZimbra") ];
+		a2 = [ stringBundleString("format.thunderbird"), stringBundleString("format.google"), stringBundleString("format.zimbra") ];
 	else
 		zinAssertAndLog(false, "mismatched: type: " + type);
 		

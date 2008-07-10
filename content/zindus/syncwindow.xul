@@ -28,8 +28,8 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
-	id="zindus-syncwindow"
-	title = "Zindus Sync"
+	id="zindus-sw"
+	title = "&zindus.sw.title;"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new SyncWindow(); } window.wd.onLoad();"
 	ondialogcancel="return window.wd.onCancel();"
@@ -48,11 +48,10 @@
 	</stringbundleset>
 
 	<vbox align="center" style="margin:20px" >
-		<progressmeter id="zindus-syncwindow-progress-meter" value="0%" style="&ZinSyncWindowProgressDescription.style;" />
-		<spacer style="&ZinPrefsSpacer.style;" flex="1" /> 
-		<description  id="zindus-syncwindow-progress-description" style="width:30em; height:4em;" />
-		<spacer style="&ZinPrefsSpacer.style;" flex="1" /> 
+		<progressmeter id="zindus-sw-progress-meter" value="0%" style="&zindus.sw.progress.meter.style;" />
+		<spacer style="&zindus.spacer.style;" flex="1" /> 
+		<description  id="zindus-sw-progress-description" style="&zindus.sw.progress.description.style;" />
+		<spacer style="&zindus.spacer.style;" flex="1" /> 
 		<button dlgtype="cancel" align="center" />
 	</vbox>
-
 </dialog>

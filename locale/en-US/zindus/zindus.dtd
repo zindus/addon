@@ -2,88 +2,85 @@
 
 <!-- Localisation note: properties in ContactConverter are exposed via Google conflict reporting -->
 
-<!ENTITY ZinToolsMenuItem.label                  "Zindus">
-<!ENTITY ZinToolsMenuItem.accesskey              "z">
-<!ENTITY ZinToolBarButton.tooltip                "Zindus Preferences">
+<!ENTITY zindus.tools.menuitem.label                    "Zindus">
+<!ENTITY zindus.tools.menuitem.accesskey                "z">
+<!ENTITY zindus.toolbar.button.tooltip                  "Zindus Preferences">
 
-<!ENTITY ZinProgressPanelPrefix.label            "Zindus:">
+<!ENTITY zindus.progresspanel.prefix.label              "Zindus:">
 
-<!ENTITY ZinPrefs.title                          "Zindus Configuration Settings">
-<!ENTITY ZinPrefs.buttonlabelextra2              "Help">
-<!ENTITY ZinPrefsTabServer.label                 "Server Settings">
-<!ENTITY ZinPrefsTabAccounts.label               "Accounts">
-<!ENTITY ZinPrefsTabGeneral.label                "Preferences">
-<!ENTITY ZinPrefsSpacer.style                    "height:15px">
-<!ENTITY ZinPrefsTabVbox.style                   "margin:10px">
+<!ENTITY zindus.spacer.style                            "height:15px">
+<!ENTITY zindus.enclosing.vbox.style                    "margin:10px">
+<!ENTITY zindus.description.style                       "margin-top:5px; margin-bottom:10px; padding:5px ">
 
-<!ENTITY ZinPrefsServerGrid.style                "margin-left:10px; margin-right:20px; margin-top:10px ">
-<!ENTITY ZinPrefsServerDescription.style         "margin-top:5px; margin-bottom:10px; padding:5px ">
-<!ENTITY ZinPrefsServerLabel.style               "margin-left:20px">
-<!ENTITY ZinPrefsServerUrlDescription.value      "Type the url you use to log on to the server.
-                                                  <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
-<!ENTITY ZinPrefsServerTypeCaption.label          "Select Account Type">
+<!ENTITY zindus.google.label                            "Google">
+<!ENTITY zindus.zimbra.label                            "Zimbra">
 
-<!ENTITY ZinPrefsServerUrl.label                 "Server Url:">
-<!ENTITY ZinPrefsServerUsernameDescription.value "Type the email address and password you use to log on.">
-<!ENTITY ZinPrefsServerUsername.label            "Email Address:">
-<!ENTITY ZinPrefsServerPassword.label            "Password:">
-<!ENTITY ZinPrefsServerTestConnection.label      "Test Connection to Server">
-<!ENTITY ZinPrefsServerTestConnection.accesskey  "T">
+<!ENTITY zindus.cs.title                                "Zindus Configuration Settings">
+<!ENTITY zindus.cs.buttonlabelextra2                    "Help">
+<!ENTITY zindus.cs.tab.accounts.label                   "Accounts">
+<!ENTITY zindus.cs.tab.general.label                    "Preferences">
 
-<!ENTITY ZinPrefsGeneralIntroduction.value       "Restart Thunderbird after changing settings to be sure they are in effect.">
-<!ENTITY ZinPrefsGeneralGroupSettings.label      "Settings">
-<!ENTITY ZinPrefsGeneralGroupActions.label       "Actions">
-<!ENTITY ZinPrefsGeneralAutoSync.label           "Auto Sync">
-<!ENTITY ZinPrefsGeneralVerboseLogging.label     "Verbose logging">
-<!ENTITY ZinPrefsGeneralGal.label                "Global Address List (GAL): ">
-<!ENTITY ZinPrefsGeneralGalYes.label             "Yes">
-<!ENTITY ZinPrefsGeneralGalNo.label              "No">
-<!ENTITY ZinPrefsGeneralGdSyncWith.label         "Sync Google contacts with">
-<!ENTITY ZinPrefsGeneralGdSyncWithPab.label      "Personal Address Book">
-<!ENTITY ZinPrefsGeneralGdSyncWithGd.tooltip     "This addressbook may be created and is synced with Google instead of Personal Address Book.">
-<!ENTITY ZinPrefsGeneralButtonSyncNow.label      "Sync Now">
-<!ENTITY ZinPrefsGeneralButtonSyncNow.accesskey  "S">
-<!ENTITY ZinPrefsGeneralButtonReset.label        "Reset">
-<!ENTITY ZinPrefsGeneralButtonReset.accesskey    "R">
-<!ENTITY ZinPrefsGeneralButtonTimer.label        "Run Timer">
-<!ENTITY ZinPrefsGeneralButtonTestHarness.label  "Test Harness">
+<!ENTITY zindus.ca.grid.style                           "margin-left:10px; margin-right:20px; margin-top:10px ">
+<!ENTITY zindus.ca.url.description.value                "Type the url you use to log on to the server.
+                                                         <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
+<!ENTITY zindus.ca.format.label                         "Select Account Type">
 
-<!ENTITY ZinPrefsGeneralButtonAdvanced.label     "Advanced...">
-<!ENTITY ZinPrefsGeneralButtonAdvanced.accesskey "A">
+<!ENTITY zindus.ca.url.label                            "Server Url:">
+<!ENTITY zindus.ca.username.description.value           "Type the email address and password you use to log on.">
+<!ENTITY zindus.ca.username.label                       "Email Address:">
+<!ENTITY zindus.ca.password.label                       "Password:">
+<!ENTITY zindus.ca.test.connection.label                "Test Connection to Server">
+<!ENTITY zindus.ca.test.connection.accesskey            "T">
 
-<!ENTITY ZinConfigMsg.title                      "Zindus Contact Conflict Report">
+<!ENTITY zindus.cs.general.introduction.value           "Restart Thunderbird after changing settings to be sure they are in effect.">
+<!ENTITY zindus.cs.general.settings.label               "Settings">
+<!ENTITY zindus.cs.general.actions.label                "Actions">
+<!ENTITY zindus.cs.general.auto.sync.label              "Auto Sync">
+<!ENTITY zindus.cs.general.verbose.logging.label        "Verbose logging">
+<!ENTITY zindus.cs.general.zm.gal.label                 "Global Address List (GAL): ">
+<!ENTITY zindus.cs.general.zm.gal.yes.label             "Yes">
+<!ENTITY zindus.cs.general.zm.gal.no.label              "No">
+<!ENTITY zindus.cs.general.gd.sync.with.label           "Sync Google contacts with">
+<!ENTITY zindus.cs.general.gd.sync.with.pab.label       "Personal Address Book">
+<!ENTITY zindus.cs.general.button.sync.now.label        "Sync Now">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey    "S">
+<!ENTITY zindus.cs.general.button.reset.label           "Reset">
+<!ENTITY zindus.cs.general.button.reset.accesskey       "R">
+<!ENTITY zindus.cs.general.button.timer.label           "Run Timer">
+<!ENTITY zindus.cs.general.button.test.harness.label    "Test Harness">
+<!ENTITY zindus.cs.general.button.gd.advanced.label     "Advanced...">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "A">
 
-<!ENTITY ZinConfigAdvancedGd.title               "Zindus Advanced Configuration Settings">
-<!ENTITY ZinConfigAdvancedGdPostal.label         "Postal Address Fields">
-<!ENTITY ZinConfigAdvancedGdFalse.label          "Not synced">
-<!ENTITY ZinConfigAdvancedGdTrue.label           "Thunderbird fields are represented as xml in Google">
-<!ENTITY ZinConfigAdvancedGdExample1.value       "An example...">
-<!ENTITY ZinConfigAdvancedGdExample2.value       "
-                                                 <html:strong>Thunderbird Address Fields</html:strong>
-                                                 <html:br/>
-                                                 <html:br/> 1 Example st
-                                                 <html:br/> Melbourne
-                                                 <html:br/> 3000 
-                                                 <html:br/> Australia
-                                                 ">
-<!ENTITY ZinConfigAdvancedGdExample3.value       "
-                                                 <html:strong>Google Address Field</html:strong>
-                                                 <html:br/> &lt;address&gt;
-                                                 <html:br/> &lt;street&gt; 1 Example st &lt;/street&gt;
-                                                 <html:br/> &lt;city&gt; Melbourne &lt;/city&gt;
-                                                 <html:br/> &lt;postcode&gt; 3000 &lt;/postcode&gt;
-                                                 <html:br/> &lt;country&gt; Australia &lt;/country&gt;
-                                                 <html:br/> &lt;/address&gt;
-                                                 ">
+<!ENTITY zindus.cm.title                                "Zindus Contact Conflict Report">
 
-<!ENTITY ZinSyncWindowProgressDescription.style  "width:35em">
+<!ENTITY zindus.cgd.title                               "Zindus Advanced Configuration Settings">
+<!ENTITY zindus.cgd.postalPostal.label                  "Postal Address Fields">
+<!ENTITY zindus.cgd.postal.false.label                  "Not synced">
+<!ENTITY zindus.cgd.postal.true.label                   "Thunderbird fields are represented as xml in Google">
+<!ENTITY zindus.cgd.postalExample1.value                "An example...">
+<!ENTITY zindus.cgd.postalExample2.value                "<html:strong>Thunderbird Address Fields</html:strong>
+                                                         <html:br/>
+                                                         <html:br/> 1 Example st
+                                                         <html:br/> Melbourne
+                                                         <html:br/> 3000 
+                                                         <html:br/> Australia ">
+<!ENTITY zindus.cgd.postalExample3.value                "<html:strong>Google Address Field</html:strong>
+                                                         <html:br/> &lt;address&gt;
+                                                         <html:br/> &lt;street&gt; 1 Example st &lt;/street&gt;
+                                                         <html:br/> &lt;city&gt; Melbourne &lt;/city&gt;
+                                                         <html:br/> &lt;postcode&gt; 3000 &lt;/postcode&gt;
+                                                         <html:br/> &lt;country&gt; Australia &lt;/country&gt;
+                                                         <html:br/> &lt;/address&gt; ">
 
-<!ENTITY zindus.cs.account.add.label             "Add">
-<!ENTITY zindus.cs.account.add.accesskey         "A">
-<!ENTITY zindus.cs.account.edit.label            "Edit">
-<!ENTITY zindus.cs.account.edit.accesskey        "E">
-<!ENTITY zindus.cs.account.delete.label          "Delete">
-<!ENTITY zindus.cs.account.delete.accesskey      "D">
+<!ENTITY zindus.cs.account.add.label                    "Add">
+<!ENTITY zindus.cs.account.add.accesskey                "A">
+<!ENTITY zindus.cs.account.edit.label                   "Edit">
+<!ENTITY zindus.cs.account.edit.accesskey               "E">
+<!ENTITY zindus.cs.account.delete.label                 "Delete">
+<!ENTITY zindus.cs.account.delete.accesskey             "D">
+<!ENTITY zindus.cs.account.email.label                  "Email address">
+<!ENTITY zindus.cs.account.type.label                   "Account Type">
 
-<!ENTITY zindus.cs.account.email.label           "Email address">
-<!ENTITY zindus.cs.account.type.label            "Account Type">
+<!ENTITY zindus.sw.title                                "Zindus Sync">
+<!ENTITY zindus.sw.progress.meter.style                 "width:35em">
+<!ENTITY zindus.sw.progress.description.style           "width:30em; height:4em;">

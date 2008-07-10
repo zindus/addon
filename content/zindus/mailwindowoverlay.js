@@ -286,7 +286,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 
 	migratePrefName(a_map);
 
-	bimap = new BiMap( [ "google", "zimbra" ], [ stringBundleString("formatGoogle"), stringBundleString("formatZimbra") ] );
+	bimap = new BiMap( [ "google", "zimbra" ], [ stringBundleString("format.google"), stringBundleString("format.zimbra") ] );
 
 	migratePrefValue([ PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT ], bimap);
 }

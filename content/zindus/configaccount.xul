@@ -29,7 +29,7 @@
 
 <dialog
 	buttons="accept,cancel,extra2"
-	buttonlabelextra2="&ZinPrefs.buttonlabelextra2;"
+	buttonlabelextra2="&zindus.cs.buttonlabelextra2;"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigAccount(); } window.wd.onLoad(event.target);"
@@ -48,8 +48,8 @@
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<vbox flex="1" style="&ZinPrefsTabVbox.style;" pack="center" >
-		<grid flex="1" style="&ZinPrefsServerGrid.style;" > 
+	<vbox flex="1" style="&zindus.enclosing.vbox.style;" pack="center" >
+		<grid flex="1" style="&zindus.ca.grid.style;" > 
 			<columns>
 				<column style="margin-left:15px" />
 				<column flex="1" />
@@ -58,40 +58,39 @@
 				<command id="zindus-ca-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
 
 				<vbox >
-					<caption label="&ZinPrefsServerTypeCaption.label;" />
+					<caption label="&zindus.ca.format.label;" />
 					<radiogroup id="zindus-ca-format-radiogroup">
 						<radio id="zindus-ca-format-google" selected="true" />
 						<radio id="zindus-ca-format-zimbra" />
 					</radiogroup>
 				</vbox>
-				<description id="zindus-ca-url-description"
-				             xmlns:html="http://www.w3.org/1999/xhtml" style="&ZinPrefsServerDescription.style;" >
-					&ZinPrefsServerUrlDescription.value;
+				<description id="zindus-ca-url-description" xmlns:html="http://www.w3.org/1999/xhtml" style="&zindus.description.style;" >
+					&zindus.ca.url.description.value;
 				</description>
 				<row id="zindus-ca-url-row" >
-					<label value="&ZinPrefsServerUrl.label;" />
+					<label value="&zindus.ca.url.label;" />
 					<textbox id="zindus-ca-url" />
 				</row>
-				<description value="&ZinPrefsServerUsernameDescription.value;" style="&ZinPrefsServerDescription.style;" />
+				<description value="&zindus.ca.username.description.value;" style="&zindus.description.style;" />
 				<row>
-					<label value="&ZinPrefsServerUsername.label;" />
+					<label value="&zindus.ca.username.label;" />
 					<textbox id="zindus-ca-username" />
 				</row>
-				<spacer style="&ZinPrefsSpacer.style;" />
+				<spacer style="&zindus.spacer.style;" />
 				<row>
-					<label value="&ZinPrefsServerPassword.label;" />
+					<label value="&zindus.ca.password.label;" />
 					<textbox id="zindus-ca-password" type="password" />
 				</row>
-				<spacer style="&ZinPrefsSpacer.style;" /> 
+				<spacer style="&zindus.spacer.style;" /> 
 				<row>
 					<label value="" />
 					<hbox align="left" >
 						<button id="zindus-ca-button-authonly" command="zindus-ca-command" flex="1"
-						        align="center" label="&ZinPrefsServerTestConnection.label;"
-								accesskey="&ZinPrefsServerTestConnection.accesskey;" />
+						        align="center" label="&zindus.ca.test.connection.label;"
+								accesskey="&zindus.ca.test.connection.accesskey;" />
 					</hbox>
 				</row>
-				<spacer style="&ZinPrefsSpacer.style;" flex="1"/> 
+				<spacer style="&zindus.spacer.style;" flex="1"/> 
 			</rows>
 		</grid>
 	</vbox>

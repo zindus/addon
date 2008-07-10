@@ -118,7 +118,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		this.m_logger.debug("onFsmStateChangeFunctor: aborting - closing the window - fsm not started: " +
 		                      " fsmstate: " + (fsmstate ? "set" : "not set") + " payload.m_is_cancelled: " + this.m_payload.m_is_cancelled);
 
-		dId('zindus-syncwindow').acceptDialog();
+		dId('zindus-sw').acceptDialog();
 	}
 	else if (!this.m_has_observer_been_called)
 	{
@@ -144,10 +144,10 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
-			dId('zindus-syncwindow-progress-meter').setAttribute('value',
+			dId('zindus-sw-progress-meter').setAttribute('value',
 			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 
-			var elDescription = dId('zindus-syncwindow-progress-description');
+			var elDescription = dId('zindus-sw-progress-description');
 			var elHtml        = document.createElementNS(Xpath.NS_XHTML, "p");
 
 			elHtml.innerHTML = stringBundleString("zfomPrefix") + " " + this.m_sfo.progressToString();
@@ -176,7 +176,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			newLogger().info("sync finish: " + getFriendlyTimeString());
 
-			dId('zindus-syncwindow').acceptDialog();
+			dId('zindus-sw').acceptDialog();
 		}
 	}
 }

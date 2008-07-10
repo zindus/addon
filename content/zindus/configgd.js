@@ -27,7 +27,7 @@ function ConfigGd()
 	this.m_prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 
 	this.m_gd_sync_postal_address_bimap = new BiMap( [ "true",                       "false"                       ], 
-	                                                 [ "zindus-ca-sync-postal-true", "zindus-ca-sync-postal-false" ] );
+	                                                 [ "zindus-cgd-postal-true", "zindus-cgd-postal-false" ] );
 }
 
 ConfigGd.prototype.onLoad = function(target)
@@ -53,16 +53,16 @@ ConfigGd.prototype.onAccept = function()
 
 ConfigGd.prototype.initialiseView = function()
 {
-	ConfigSettings.setRadioFromPrefset("zindus-ca-sync-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
-	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, "zindus-ca-sync-postal-false")
+	ConfigSettings.setRadioFromPrefset("zindus-cgd-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
+	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, "zindus-cgd-postal-false")
 }
 
 ConfigGd.prototype.onCommand = function(id_target)
 {
 	switch (id_target)
 	{
-		case "zindus-ca-sync-postal-true":
-		case "zindus-ca-sync-postal-false":
+		case "zindus-cgd-postal-true":
+		case "zindus-cgd-postal-false":
 			this.updateView();
 			break;
 	}
@@ -70,7 +70,7 @@ ConfigGd.prototype.onCommand = function(id_target)
 
 ConfigGd.prototype.updateView = function()
 {
-	ConfigSettings.setPrefsetFromRadio("zindus-ca-sync-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
+	ConfigSettings.setPrefsetFromRadio("zindus-cgd-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
 	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS);
 
 	ConfigSettings.setAttribute('hidden', !(this.m_prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS) == "true"),

@@ -28,7 +28,7 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
-	title="&ZinConfigMsg.title;"
+	title="&zindus.cm.title;"
 	style="margin: 10px"
 	buttons="accept"
 	buttonpack="center"
