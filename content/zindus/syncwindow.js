@@ -186,7 +186,7 @@ SyncWindow.newSyncFsm = function(syncfsm_details)
 	var id_fsm  = null;
 	var account = syncfsm_details.account;
 	var type    = syncfsm_details.type;
-	var format  = getBimapFormat('long').lookup(null, account.get('format'));
+	var format  = account.format_xx();
 	var syncfsm;
 
 	zinAssert(syncfsm_details.account); // this only supports authonly - TODO: Sync Now

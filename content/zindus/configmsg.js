@@ -42,5 +42,5 @@ ConfigMsg.prototype.onLoad = function(target)
 
 	el.innerHTML = html;
 
-	document.getElementById("zindus-cm-description").appendChild(el);
+	dId("zindus-cm-description").appendChild(el);
 }

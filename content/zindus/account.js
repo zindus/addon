@@ -26,6 +26,7 @@ Account.PROPERTIES = [ 'sourceid', 'format', 'url', 'username', 'password' ];
 function Account()
 {
 	this.m_properties = new Object();
+	this.m_bimap_format = getBimapFormat('long');
 }
 
 Account.prototype.get = function(key)
@@ -38,6 +39,16 @@ Account.prototype.get = function(key)
 Account.prototype.set = function(key, value)
 {
 	this.m_properties[key] = value;
+}
+
+Account.prototype.format = function()
+{
+	return this.m_properties['format'];
+}
+
+Account.prototype.format_xx = function()
+{
+	return this.m_bimap_format.lookup(null, this.format());
 }
 
 Account.prototype.toString = function(key, value)

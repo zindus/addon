@@ -59,8 +59,11 @@ function ConfigSettings()
 
 ConfigSettings.prototype.onLoad = function(target)
 {
-	ConfigSettings.setAttribute('hidden', !this.is_developer_mode, "zindus-cs-general-button-test-harness",
-	                                                               "zindus-cs-general-button-run-timer");
+	if (this.is_developer_mode)
+	{
+		document.getElementById("zindus-cs-general-button-test-harness").removeAttribute('hidden');
+		document.getElementById("zindus-cs-general-button-run-timer").removeAttribute('hidden');
+	}
 
 	this.m_prefset_general.load();
 
@@ -160,11 +163,11 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				                                              this.m_payload.m_is_cancelled + " m_es: " + this.m_payload.m_es.toString());
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
-					Singleton.instance().logger().debug("ConfigSettings.onCommand: status.msg.sync.failed.unexpectedly");
-					msg = stringBundleString("status.msg.sync.failed.unexpectedly");
+					Singleton.instance().logger().debug("ConfigSettings.onCommand: cs.sync.failed.unexpectedly");
+					msg = stringBundleString("cs.sync.failed.unexpectedly");
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
-					msg = this.m_payload.m_es.asMessage("status.msg.sync.succeeded", "status.msg.sync.failed");
+					msg = this.m_payload.m_es.asMessage("cs.sync.succeeded", "cs.sync.failed");
 
 				if (msg != "")
 				{

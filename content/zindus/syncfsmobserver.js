@@ -377,13 +377,14 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				{
 					es.m_exit_status = 1;
 
-					if (isInArray(fsmstate.oldstate, [ 'start', 'stAuth', 'stGetContactGd2', 'stAuthSelect', 'stGetContactGd2', 'stLoad' ]))
-						es.failcode(context.state.stopFailCode);
-					else if (isInArray(fsmstate.oldstate, [ 'stAuthCheck', 'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9',
-					                                                       'stUpdateCleanup' ]))
+					if (isInArray(fsmstate.oldstate,
+					               [ 'start', 'stAuth', 'stGetContactGd2', 'stAuthSelect', 'stGetContactGd2', 'stLoad', 'stAuthCheck',
+								     'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9', 'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);
-						es.m_fail_detail = context.state.stopFailDetail;
+
+						if (context.state.stopFailDetail)
+							es.m_fail_detail = context.state.stopFailDetail;
 					}
 					else
 						es.failcode('failon.unknown');

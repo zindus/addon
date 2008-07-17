@@ -43,9 +43,7 @@
 		with (ZindusScopeRegistry.getScope()) { includejs('syncwindow.js'); }
 	]]> </script>
 
-	<stringbundleset>
-		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
-	</stringbundleset>
+	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<vbox align="center" style="margin:20px" >
 		<progressmeter id="zindus-sw-progress-meter" value="0%" style="&zindus.sw.progress.meter.style;" />

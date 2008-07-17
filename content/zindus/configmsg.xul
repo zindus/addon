@@ -45,8 +45,5 @@
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<description id="zindus-cm-description"
-	             xmlns:html="http://www.w3.org/1999/xhtml"
-				 style="max-width: 60em; margin-bottom: 20px">
-	</description>
+	<description id="zindus-cm-description" xmlns:html="http://www.w3.org/1999/xhtml" style="max-width: 60em; margin-bottom: 20px" />
 </dialog>

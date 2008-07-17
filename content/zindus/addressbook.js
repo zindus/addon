@@ -136,24 +136,27 @@ AddressBook.prototype.getAddressBookUriByName = function(name)
 	return ret;
 }
 
-// AddressBook.prototype.getAddressBookPrefId = function(uri)
-// {
-//	var dir = this.nsIAbDirectory(uri);
-//	return dir.dirPrefId;
-// }
-
 AddressBook.prototype.forEachAddressBook = function(functor)
 {
 	var root      = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Ci.nsIAbDirectory);
 	var nodes     = root.childNodes;
 	var fContinue = true;
+	var aUri      = new Object();
+	var uri;
 
 	while (nodes.hasMoreElements() && fContinue)
 	{
 		var elem = nodes.getNext().QueryInterface(Ci.nsIAbDirectory);
 
-		if (this.directoryProperty(elem, "dirType") == kPABDirectory)
+		uri = this.directoryProperty(elem, "URI");
+
+		if (this.directoryProperty(elem, "dirType") == kPABDirectory && !isPropertyPresent(aUri, uri))
 			fContinue = functor.run(elem);
+
+		if (isPropertyPresent(aUri, uri))
+			this.m_logger.warn("forEachAddressBook: avoid calling functor twice on uri: " + uri);
+
+		aUri[uri] = true;
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 	}
@@ -330,6 +333,9 @@ AddressBookTb2.prototype.deleteCards = function(uri, aCards)
 {
 	var dir        = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
 	var cardsArray = Cc["@mozilla.org/supports-array;1"].createInstance().QueryInterface(Ci.nsISupportsArray);
+	var ret        = true;
+
+	zinAssert(aCards.length > 0);
 
 	for (var i = 0; i < aCards.length; i++)
 	{
@@ -337,11 +343,21 @@ AddressBookTb2.prototype.deleteCards = function(uri, aCards)
 		cardsArray.AppendElement(aCards[i]);
 	}
 
-	this.m_logger.debug("deleteCards: about to delete");
+	this.m_logger.debug("deleteCards: about to delete: " + cardsArray.Count() + " card(s)");
 
-	dir.deleteCards(cardsArray);
+	// cardsArray = {}; // TODO force excaption
 
-	this.m_logger.debug("deleteCards: done");
+	try {
+		dir.deleteCards(cardsArray);
+	}
+	catch (e) {
+		ret = false;
+		this.m_logger.error("deleteCards: failed: exception: " + e);
+	}
+
+	this.m_logger.debug("deleteCards: " + (ret ? "succeeded" : "failed"));
+
+	return ret;
 }
 
 AddressBookTb3.prototype.deleteCards = function(uri, aCards)
@@ -440,6 +456,8 @@ AddressBook.prototype.getCardProperties = function(abCard)
 	for (i in this.m_contact_converter.m_map[FORMAT_TB])
 	{
 		value = abCard.getCardValue(i);
+
+		// this.m_logger.debug("AddressBook.getCardProperties: i: " + i + " value: " + value);
 
 		if (value)
 			ret[i] = value;

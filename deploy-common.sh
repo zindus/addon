@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-common.sh,v 1.1 2007-12-13 20:54:20 cvsuser Exp $
+# $Id: deploy-common.sh,v 1.2 2008-07-17 23:51:51 cvsuser Exp $
 
 get_appversion()
 {
@@ -13,6 +13,8 @@ generate_and_copy_rdfs()
 
 	if [ -z "$n_appversion" -o -z "$n_remotereltype" ]; then
 		echo bad number of params
+		echo n_appversion: $n_appversion
+		echo n_remotereltype: $n_remotereltype
 		return 'bad!'  # force an error
 	fi
 

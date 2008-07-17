@@ -1,4 +1,4 @@
-<!-- See http://books.mozdev.org/html/mozilla-chp-11-sect-4.html for the naming scheme -->
+<!-- Naming scheme adapted from: http://books.mozdev.org/html/mozilla-chp-11-sect-4.html -->
 
 <!-- Localisation note: properties in ContactConverter are exposed via Google conflict reporting -->
 
@@ -6,6 +6,7 @@
 <!ENTITY zindus.tools.menuitem.accesskey                "z">
 <!ENTITY zindus.toolbar.button.tooltip                  "Zindus Preferences">
 
+<!ENTITY zindus.progresspanel.style                     "max-width: 20px; opacity: .25">
 <!ENTITY zindus.progresspanel.prefix.label              "Zindus:">
 
 <!ENTITY zindus.spacer.style                            "height:15px">

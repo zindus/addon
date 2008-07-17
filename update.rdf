@@ -2,21 +2,21 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Description RDF:about="rdf:#$MEjs8"
+                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
+                   em:minVersion="2.0b2"
+                   em:maxVersion="3.0a2"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.8.20080718.094848-tb.xpi"
+                   em:updateHash="sha256:c47a8ee5952da6197bc732c56a2b8917b927e11dc57162bb1d1b461f45721155" />
+  <RDF:Description RDF:about="rdf:#$JEjs8"
+                   em:version="0.7.8.20080718.094848">
+    <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
+  </RDF:Description>
   <RDF:Seq RDF:about="rdf:#$IEjs8">
     <RDF:li RDF:resource="rdf:#$JEjs8"/>
   </RDF:Seq>
   <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBACH1MCh5qI1hMj3SRwytoi2ikDjkY+j/NddiBe1aGVbvGPzKrNmFk/bzTDRXRvJjLW7WXZDtZJqYlp/F0zHjWt1yxGNeJizNzBGany6MwPteTpnT86llfXqZ7ZGO/gmuxEwhVRMivkWPJPW+ZBlW6AX6MMfm6QXmStBj2BtzMN+l">
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBABRnILEaptKSUBNfzEZ+cf52Q1cMRgZf6ujVJeROpCnB3oXZY9jwISD3ETrjHvKRt5ag3Vr/bOETPVbjdVFlHBdrQUAYSHwX6mootnb1ADkyQeW/hH/uOEWnO4Rs7DH1YxySBCc0nvPas4IoPQx8jzrXaGbWKY4qREE4rk6rPRMM">
     <em:updates RDF:resource="rdf:#$IEjs8"/>
   </RDF:Description>
-  <RDF:Description RDF:about="rdf:#$JEjs8"
-                   em:version="0.7.8.20080711.081628">
-    <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
-  </RDF:Description>
-  <RDF:Description RDF:about="rdf:#$MEjs8"
-                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
-                   em:minVersion="2.0b2"
-                   em:maxVersion="3.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.8.20080711.081628-tb.xpi"
-                   em:updateHash="sha256:59d93a95f1ea4ffcf435c582505b5e12b21e9249c25acecad063a6e939edd452" />
 </RDF:RDF>

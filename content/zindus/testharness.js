@@ -44,7 +44,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	ret = ret && this.testContactConverter();
+	// ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testAddressBookBugzilla432145Create();
@@ -59,8 +59,11 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContacts1();
 	// ret = ret && this.testGoogleContacts2();
 	// ret = ret && this.testGoogleContacts3();
-	ret = ret && this.testGdAddressConverter();
-	ret = ret && this.testGdContact();
+	ret = ret && this.testGoogleContacts4();
+	// ret = ret && this.testGdAddressConverter();
+	// ret = ret && this.testGdContact();
+	// ret = ret && this.testStringBundleContainsContactProperties();
+	// ret = ret && this.testAddCard();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -940,6 +943,31 @@ TestHarness.prototype.testGoogleContacts3 = function()
 	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
 	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + aToLength(a_gd_contact));
 	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
+
+	return true;
+}
+
+
+// this looks at a google contact whereby the corresponding thunderbird contact has no properties
+//
+TestHarness.prototype.testGoogleContacts4 = function()
+{
+	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/blah%40example.com/base/4fa24c410ca0d4f1</id><updated>2008-07-10T15:23:32.801Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'></title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/blah%40example.com/base/4fa24c410ca0d4f1'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/blah%40example.com/base/4fa24c410ca0d4f1/1215703412801000'/><gd:organization primary='true' rel='http://schemas.google.com/g/2005#other'><gd:orgName>Fred Bloggs</gd:orgName></gd:organization></entry>";
+
+	var domparser = new DOMParser();
+	var response = domparser.parseFromString(xmlString, "text/xml");
+	var contact_converter = this.newContactConverter();
+	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
+	this.m_logger.debug("testGoogleContacts4: number of contacts parsed: " + aToLength(a_gd_contact));
+
+	var contact = a_gd_contact[firstKeyInObject(a_gd_contact)];
+
+	zinAssert(contact.is_empty());
+	zinAssert(!contact.is_deleted());
+
+	this.m_logger.debug("testGoogleContacts4: contact: " + contact.toString());
+
+	return true;
 }
 
 
@@ -1206,4 +1234,33 @@ TestHarness.prototype.testAbCreate1 = function()
 		this.m_logger.debug("abProps.prefName: " + abProps.prefName);
 		this.m_logger.debug("dirPrefId: " + dir.dirPrefId);
 	}
+}
+
+TestHarness.prototype.testStringBundleContainsContactProperties = function()
+{
+	var properties = {};
+	var contact_converter = this.newContactConverter();
+
+	for (key in contact_converter.m_common_to[FORMAT_TB][FORMAT_GD])
+		zinAssertAndLog(stringBundleString("cc." + key).length > 0, "unable to load string for key: " + key);
+
+	return true;
+}
+
+TestHarness.prototype.testAddCard = function()
+{
+	this.m_logger.debug("testAddCard");
+
+	var uri    = "moz-abmdbdirectory://abook.mab";
+	var dir    = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService).GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+	var abCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Components.interfaces.nsIAbCard);
+	abCard = dir.addCard(abCard);
+	
+	abCard.setCardValue("PrimaryEmail", "111-test@example.com");
+	abCard.setCardValue("DisplayName", "111 test");
+
+	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
+	mdbCard.editCardToDatabase(uri);
+
+	return true;
 }

@@ -758,8 +758,7 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 		{
 			var abCard  = item.QueryInterface(Ci.nsIAbCard);
 			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
-
-			var luid =  mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+			var luid    = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 
 			if (luid && (luid > 0 || luid.length > 0)) // the TBCARD_ATTRIBUTE_LUID for GAL cards is an ldap dn hence the test for length>0
 				this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, 0);  // api doesn't have a "delete"
@@ -819,7 +818,7 @@ SyncFsm.prototype.getGidInReverse = function()
 
 	this.state.zfcGid.forEach(functor_foreach_gid);
 
-	this.state.m_logger.debug("getGidInReverse returns: " + aToString(reverse));
+	this.debug("getGidInReverse returns: " + aToString(reverse));
 
 	return reverse;
 }
@@ -3468,9 +3467,7 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 	else
 		zinAssert(false, "unmatched case: " + format);
 
-	// all the other uses of contact_converter can use the default, but this one has to use the _vary_none version
-	// when called from the slow sync checksum code - because we don't want to include Google postalAddress in the checksum/isTwin
-	// comparison
+	// which is why slow sync doesn't notice differences in _AimScreenName for example ... even though it is synced b/n tb and google
 	//
 	contact_converter.removeKeysNotCommonToAllFormats(FORMAT_TB, properties);
 
@@ -4797,6 +4794,8 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB);
 
 				var is_noop_modification = false;
+				var error_msg = null;
+				var is_delete_failed = false;
 
 				if (l_target == l_current && !properties)
 				{
@@ -4830,15 +4829,15 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 						abCard = this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, format_winner);
 					}
 					else
-						msg += " couldn't find the card to modify by searching on luid.  It's possible that it was deleted between now and the start of sync but it may also indicate a problem.";
+						error_msg = " couldn't find the card to modify by searching on luid.  It's possible that it was deleted between now and the start of sync but it may also indicate a problem.";
 				}
 				else
 				{
 					msg += " - parent folder changed"; // implement as delete+add
 
-					var uri_from= this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_current));
-					var uri_to  = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-					abCard      = this.state.m_addressbook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid_target);
+					var uri_from = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_current));
+					var uri_to   = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+					abCard       = this.state.m_addressbook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid_target);
 
 					if (abCard)
 					{
@@ -4858,9 +4857,12 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 							msg += " - content didn't change";
 						}
 
-						this.state.m_addressbook.deleteCards(uri_from, [ abCard ]);
+						is_delete_failed = !this.state.m_addressbook.deleteCards(uri_from, [ abCard ]);
 
-						msg += " - card deleted - card added: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
+						if (!is_delete_failed)
+							msg += " - card deleted - card added: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
+						else
+							error_msg = "card delete failed";
 
 						abCard = this.state.m_addressbook.addCard(uri_to, properties, attributes);
 					}
@@ -4877,19 +4879,23 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				}
 				else if (is_noop_modification)
 					; // do nothing - but luid_target must remain set because the gid's ver and the target's lso gets updated below
-				else
-				{
-					this.state.m_logger.warn("Can't find card to modify in the addressbook: luid: " + luid_target +
-					                                " - this shouldn't happen.");
 
-					// to date, whenever we've ended up in here it's been due to a bug, so we'll assert now.
-					// But at some point, we will need to do better here, because we could also end up here in this scenario:
-					// a) we're in the middle of a sync that is processing a remote MOD and
-					// b) during the sync, someone goes and deletes the local contact
-					// What we should probably do is fail to converge...
-					//
-					zinAssert(false);
-					luid_target = null;
+				if (!abCard)
+					error_msg = "Can't find card to modify in the addressbook: luid: " + luid_target + " - this shouldn't happen.";
+
+				if (error_msg)
+				{
+					this.state.m_logger.error(error_msg);
+
+					this.state.stopFailCode   = 'failon.unable.to.update.thunderbird';
+
+					if (is_delete_failed)
+						this.state.stopFailDetail = stringBundleString("status.failon.unable.to.update.thunderbird.detail2")
+					else
+						this.state.stopFailDetail = "\n";
+						
+					this.state.is_source_update_problem = true;
+					break bigloop;
 				}
 
 				break;
@@ -4939,22 +4945,40 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 			case Suo.DEL | FeedItem.TYPE_CN:
 				luid_target = zfiGid.get(sourceid_target);
 				l_target    = zfcTarget.get(luid_target).keyParent();
-				uri         = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+				uri         = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target,l_target));
 				abCard      = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
+				is_deleted  = false;
 
 				if (abCard)
 				{
 					msg += "Card to be deleted: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard);
 
-					this.state.m_addressbook.deleteCards(uri, [ abCard ]);
+					is_deleted = this.state.m_addressbook.deleteCards(uri, [ abCard ]);
 
 					zfcTarget.get(luid_target).set(FeedItem.ATTR_DEL, 1);
 				}
-				else
-				{
-					this.state.m_logger.warn("Can't find card to delete in the addressbook: luid: "+ luid_target + " - this shouldn't happen.");
 
-					luid_target = null;
+				var error_msg = null;
+
+				if (!abCard)
+					error_msg = "Can't find card to delete in the addressbook: luid: " + luid_target + " - this shouldn't happen.";
+
+				if (!is_deleted)
+					error_msg = "delete of cards failed."
+
+				if (error_msg)
+				{
+					this.state.m_logger.error(error_msg)
+
+					this.state.stopFailCode   = 'failon.unable.to.update.thunderbird';
+
+					if (!is_deleted)
+						this.state.stopFailDetail = stringBundleString("status.failon.unable.to.update.thunderbird.detail2")
+					else
+						this.state.stopFailDetail = "\n";
+						
+					this.state.is_source_update_problem = true;
+					break bigloop;
 				}
 
 				break;
@@ -7000,7 +7024,11 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid)
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
 
-	state.m_debug_filter_out                 = new RegExp('https?' + GOOGLE_URL_HIER_PART, "mg");
+	state.m_debug_filter_out            = new RegExp('https?' + GOOGLE_URL_HIER_PART, "mg");
+
+	// this contact_converter is used when we're syncing postalAddress with Google, but the _vary_none version is still called
+	// from the slow sync checksum code because we don't want to include Google postalAddress in the checksum/isTwin comparison
+	//
 	state.m_contact_converter_vary_gd_postal = new ContactConverter();
 	state.m_contact_converter_vary_gd_postal.setup(ContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
 
@@ -7148,7 +7176,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 	var is_finished = false;
 	var count       = 0;
 	var msg         = "";
-	var id;
+	var contact, id;
 
 	this.state.stopwatch.mark(state);
 
@@ -7161,15 +7189,16 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 
 			id = this.state.a_gd_contact_iterator.next();
 
-			var rev        = this.state.a_gd_contact[id].m_meta['updated'];
-			var edit_url   = this.state.a_gd_contact[id].m_meta['edit'];
-			var is_deleted = this.state.a_gd_contact[id].is_deleted();
-			var zfi = null;
+			var zfi                 = null;
+			var contact             = this.state.a_gd_contact[id];
+			var rev                 = contact.m_meta['updated'];
+			var edit_url            = contact.m_meta['edit'];
+			var is_deleted_or_empty = contact.is_deleted() || contact.is_empty();
 
 			msg += "id: " + id;
 			
-			if (!is_deleted)
-				msg += " properties: " + this.state.a_gd_contact[id].toString();
+			if (!is_deleted_or_empty)
+				msg += " properties: " + contact.toString();
 
 			if (this.zfcPr().isPresent(id))
 			{
@@ -7180,18 +7209,18 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 
 				msg += " updated: ";
 
-				if (is_deleted)
+				if (is_deleted_or_empty)
 				{
 					this.zfcPr().get(id).set(FeedItem.ATTR_DEL, '1');
 
 					if (zfi.isPresent(FeedItem.ATTR_CSGD))
 						zfi.del(FeedItem.ATTR_CSGD);
 
-					msg += " marked as deleted: ";
+					msg += " marked as deleted" + (contact.is_deleted() ? "" : " (because it is empty)") + ": ";
 				}
 				else if (zfi.isPresent(FeedItem.ATTR_CSGD))
 				{
-					var properties  = this.contact_converter().convert(FORMAT_TB, FORMAT_GD, this.state.a_gd_contact[id].m_properties);
+					var properties  = this.contact_converter().convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
 					var checksum    = this.contact_converter().crc32(properties);
 
 					if (checksum == zfi.get(FeedItem.ATTR_CSGD))
@@ -7208,14 +7237,14 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 
 				msg += " zfi: " + zfi.toString();
 			}
-			else if (!is_deleted)
+			else if (!is_deleted_or_empty)
 			{
 				zfi = this.newZfiCnGd(id, rev, edit_url, this.state.gd_luid_ab_in_gd);
 				this.zfcPr().set(zfi); // add new
 				msg += " added: " + zfi.toString();
 			}
 			else
-				msg += " ignored deleted contact";
+				msg += " ignored " + (contact.is_deleted() ? "deleted" : "empty") + " contact";
 
 			msg += "\n";
 		}

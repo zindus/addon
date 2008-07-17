@@ -90,18 +90,18 @@ StatusPanel.update = function(zwc)
 		if (exitstatus != 0)
 		{
 			status = "error"
-			tooltip_prefix = stringBundleString("status.msg.last.sync.failed");
+			tooltip_prefix = stringBundleString("sp.last.sync.failed");
 		}
 		else if (conflicts > 0)
 		{
 			status = "alert";
-			tooltip_prefix = stringBundleString("status.msg.last.sync") + ": " + conflicts + " " +
-			                 stringBundleString("status.msg.last.sync.conflicts");
+			tooltip_prefix = stringBundleString("sp.last.sync") + ": " + conflicts + " " +
+			                 stringBundleString("sp.last.sync.conflicts");
 		}
 		else
 		{
 			status = "insync";
-			tooltip_prefix = stringBundleString("status.msg.last.sync");
+			tooltip_prefix = stringBundleString("sp.last.sync");
 		}
 
 		tooltip = tooltip_prefix + ": " + tooltip;
@@ -109,7 +109,7 @@ StatusPanel.update = function(zwc)
 	else
 	{
 		status = "alert";
-		tooltip = stringBundleString("status.msg.last.sync.never");
+		tooltip = stringBundleString("sp.last.sync.never");
 	}
 
 	var obj = { alert : '!', error : 'X', insync : 'Y' };

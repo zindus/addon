@@ -91,7 +91,7 @@ function stringBundleString(id_string, args)
 {
 	var string_bundle_id = "zindus-stringbundle";
 
-	var stringbundle = document.getElementById(string_bundle_id);
+	var stringbundle = dId(string_bundle_id);
 	var ret = "";
 	var is_exception = false;
 

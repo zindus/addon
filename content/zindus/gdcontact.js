@@ -631,6 +631,24 @@ GdContact.prototype.is_deleted = function()
 	return isPropertyPresent(this.m_meta, 'deleted');
 }
 
+// return true when the contact doesn't contain any properties that we care about
+// - note that google returns deleted contacts without any properties so deleted contacts are also empty
+
+GdContact.prototype.is_empty = function()
+{
+	zinAssert(this.m_properties);
+
+	var ret = true;
+
+	for (var i in this.m_properties)
+	{
+		ret = false;
+		break;
+	}
+
+	return ret;
+}
+
 function GdContactFunctorToMakeHashFromNodes(contact_converter)
 {
 	this.m_collection        = new Object();
