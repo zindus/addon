@@ -6,7 +6,7 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.7.8.20080718.144314</em:version>  <!-- version populated by build script -->
+    <em:version>0.7.8.20080719.064152</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <Description>
@@ -18,7 +18,7 @@
     </em:targetApplication>
 
     <em:name>Zindus</em:name>
-    <em:optionsURL>chrome://zindus/content/prefsdialog.xul</em:optionsURL>
+    <em:optionsURL>chrome://zindus/content/configsettings.xul</em:optionsURL>
     <em:description>Google and Zimbra contact sync for Thunderbird.</em:description>
     <em:creator>Leni Mayo</em:creator>
     <em:contributor>Sunny Bains</em:contributor>
