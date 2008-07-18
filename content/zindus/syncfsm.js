@@ -86,8 +86,8 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stLoadTb:          { evCancel: 'final', evNext: 'stGetAccountInfo',                                 evLackIntegrity: 'final'     },
 		stGetAccountInfo:  { evCancel: 'final', evNext: 'stSelectSoapUrl',  evHttpRequest: 'stHttpRequest'                               },
 		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stSync',           evHttpRequest: 'stHttpRequest', evSkip: 'stSync'             },
-		stSync:            { evCancel: 'final', evNext: 'stSyncResult',     evHttpRequest: 'stHttpRequest'                               },
-		stSyncResult:      { evCancel: 'final', evNext: 'stGetContactZm',   evRedo:        'stSync',        evDo: 'stGetAccountInfo'     },
+		stSync:            { evCancel: 'final', evNext: 'stSyncResponse',   evHttpRequest: 'stHttpRequest'                               },
+		stSyncResponse:    { evCancel: 'final', evNext: 'stGetContactZm',   evRedo:        'stSync',        evDo: 'stGetAccountInfo'     },
 		stGetContactZm:    { evCancel: 'final', evNext: 'stGalConsider',    evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactZm'   },
 		stGalConsider:     { evCancel: 'final', evNext: 'stGalSync',        evSkip:        'stGalCommit'                                 },
 		stGalSync:         { evCancel: 'final', evNext: 'stGalCommit',      evHttpRequest: 'stHttpRequest'                               },
@@ -124,7 +124,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stGetAccountInfo:       this.entryActionGetAccountInfo,
 		stSelectSoapUrl:        this.entryActionSelectSoapUrl,
 		stSync:                 this.entryActionSync,
-		stSyncResult:           this.entryActionSyncResult,
+		stSyncResponse:         this.entryActionSyncResponse,
 		stGetContactZm:         this.entryActionGetContactZm,
 		stGetContactPuZm:       this.entryActionGetContactPuZm,
 		stGalConsider:          this.entryActionGalConsider,
@@ -973,7 +973,7 @@ SyncFsm.prototype.entryActionSync = function(state, event, continuation)
 	continuation('evHttpRequest');
 }
 
-SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
+SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 {
 	var nextEvent = null;
 
@@ -983,12 +983,12 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		nextEvent = 'evCancel';
 	else
 	{
-		var response = this.state.m_http.response();
-		var zfcZm    = this.zfcPr();
-		var key, id, functor, xpath_query, msg;
+		var response    = this.state.m_http.response();
+		var zfcZm       = this.zfcPr();
 		var sourceid_pr = this.state.sourceid_pr;
-		var change = newObject('acct', null);
+		var change      = newObject('acct', null);
 		var a_foreign_folder_present = null;
+		var key, id, functor, xpath_query, msg;
 
 		Xpath.setConditional(change, 'token', "/soap:Envelope/soap:Header/z:context/z:change/attribute::token", response, null);
 		Xpath.setConditional(change, 'acct',  "/soap:Envelope/soap:Header/z:context/z:change/attribute::acct",  response, null);
@@ -1031,13 +1031,12 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 				var attribute    = attributesFromNode(node);
 				var nodeName     = node.nodeName;
 				var is_processed = false;
-				var l    = attribute[FeedItem.ATTR_L];
-				var name = attribute[FeedItem.ATTR_NAME];
-				var type = nodeName == 'folder' ? FeedItem.TYPE_FL : FeedItem.TYPE_LN;
+				var l            = attribute[FeedItem.ATTR_L];
+				var name         = attribute[FeedItem.ATTR_NAME];
+				var type         = nodeName == 'folder' ? FeedItem.TYPE_FL : FeedItem.TYPE_LN;
 
-				key  = Zuio.key(attribute['id'], change.acct);
-
-				msg = "entryActionSyncResult: found a " + nodeName + ": key=" + key +" l=" + l + " name=" + name;
+				key = Zuio.key(attribute['id'], change.acct);
+				msg = "entryActionSyncResponse: found a " + nodeName + ": key=" + key +" l=" + l + " name=" + name;
 
 				if (nodeName == 'link')
 					msg += " rid: " + attribute[FeedItem.ATTR_RID] + " zid: " + attribute[FeedItem.ATTR_ZID];
@@ -1045,9 +1044,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 				attribute[FeedItem.ATTR_KEY] = key;
 
-				// don't expect to see <link> elements in foreign accounts
-				//
-				zinAssert( !(change.acct && type == FeedItem.TYPE_LN));
+				zinAssert( !(change.acct && type == FeedItem.TYPE_LN)); // don't expect to see <link> elements in foreign accounts
 
 				if (zfcZm.isPresent(key))
 				{
@@ -1113,7 +1110,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 
 				key = Zuio.key(id, change.acct);
 
-				msg = "entryActionSyncResult: found a <cn key='" + key +"' l='" + l + "'>";
+				msg = "entryActionSyncResponse: found a <cn key='" + key +"' l='" + l + "'>";
 				
 				// if the rev attribute is different from that in the map, it means a content change is pending so add the id to the queue,
 				// otherwise just add it to the map
@@ -1263,13 +1260,17 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 			}
 		}
 
+		// From soap.txt: the folders provided is the complete hierarchy of visible folders -
+		// which means that if a folder isn't in this complete list, it was deleted (or perm=""). 
+		//
 		if (a_foreign_folder_present)
 		{
 			functor = {
 				state: this.state,
 				run: function(zfi)
 				{
-					if (zfi.type() == FeedItem.TYPE_FL && zfi.isForeign() && !isPropertyPresent(a_foreign_folder_present, zfi.key()))
+					if (zfi.type() == FeedItem.TYPE_FL && zfi.isForeign() && (new Zuio(zfi.key())).zid() == change.acct
+					                                                      && !isPropertyPresent(a_foreign_folder_present, zfi.key()))
 					{
 						zfi.set(FeedItem.ATTR_DEL, 1);
 						this.state.m_logger.debug("foreign folder change detection: marked deleted: " + zfi.toString());
@@ -1279,7 +1280,9 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 				}
 			};
 
-				zfcZm.forEach(functor);
+			this.state.m_logger.debug("change.acct: " + change.acct + " a_foreign_folder_present: " + aToString(a_foreign_folder_present));
+
+			zfcZm.forEach(functor);
 		}
 
 		// At the end of all this:
@@ -1288,7 +1291,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		//   - contacts that are in the parent folders of interest, and
 		//   - contacts whose content has changed (indicated by the rev attribute being bumped)
 		//
-		msg = "entryActionSyncResult: aContact:";
+		msg = "entryActionSyncResponse: aContact:";
 		for (var i = 0; i < this.state.aContact.length; i++)
 			msg += " " + i + ": " + this.state.aContact[i].toString();
 		this.state.m_logger.debug(msg);
@@ -1296,7 +1299,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		if (this.state.isRedoSyncRequest)
 		{
 			nextEvent = 'evRedo';
-			this.state.m_logger.debug("entryActionSyncResult: forcing a second <SyncRequest>");
+			this.state.m_logger.debug("entryActionSyncResponse: forcing a second <SyncRequest>");
 		}
 		else
 		{
@@ -1379,7 +1382,7 @@ SyncFsm.prototype.entryActionSyncResult = function(state, event, continuation)
 		else
 			nextEvent = 'evNext';
 
-		this.state.m_logger.debug("entryActionSyncResult: zidbag: " + this.state.zidbag.toString());
+		this.state.m_logger.debug("entryActionSyncResponse: zidbag: " + this.state.zidbag.toString());
 	}
 
 	continuation(nextEvent);
@@ -1454,10 +1457,10 @@ SyncFsm.prototype.entryActionGetContactZmSetup = function(state)
 
 		var aGetContactRequest = SyncFsm.GetContactZmNextBatch(this.state.aContact);
 
-		this.state.m_logger.debug("entryActionGetContactZm: calling GetContactsRequest: zid: " + zuio.zid +
+		this.state.m_logger.debug("entryActionGetContactZm: calling GetContactsRequest: zid: " + zuio.zid() +
 		                          " ids:" + aGetContactRequest.toString());
 
-		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(zuio.zid), zuio.zid, "GetContacts", aGetContactRequest);
+		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(zuio.zid()), zuio.zid(), "GetContacts", aGetContactRequest);
 
 		nextEvent = 'evHttpRequest';
 	}
@@ -1475,12 +1478,12 @@ SyncFsm.GetContactZmNextBatch = function(aContact)
 	//
 	for (var i = 0; i < max_contacts_in_one_request && i < aContact.length; i++)
 	{
-		if (!zuio || zuio.zid == aContact[i].zid)
+		if (!zuio || zuio.zid() == aContact[i].zid())
 			zuio = aContact[i];
 		else
 			break;
 		
-		a_ret.push(zuio.id);
+		a_ret.push(zuio.id());
 	}
 
 	return a_ret;
@@ -2117,8 +2120,8 @@ SyncFsm.zfcFindFirstLink = function(zfc, key)
 	var zuio = new Zuio(key);
 
 	var f = function(zfi) {
-		return zfi.type() == FeedItem.TYPE_LN && zfi.getOrNull(FeedItem.ATTR_RID) == zuio.id &&
-		                                            zfi.getOrNull(FeedItem.ATTR_ZID) == zuio.zid;
+		return zfi.type() == FeedItem.TYPE_LN && zfi.getOrNull(FeedItem.ATTR_RID) == zuio.id() &&
+		                                            zfi.getOrNull(FeedItem.ATTR_ZID) == zuio.zid();
 	};
 
 	var ret = zfc.findFirst(f);
@@ -5122,8 +5125,8 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				l_zuio      = new Zuio(l_target);
 				properties  = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
 				soap.method = "CreateContact";
-				soap.arg    = newObject('properties', properties, FeedItem.ATTR_L, l_zuio.id);
-				soap.zid    = l_zuio.zid;
+				soap.arg    = newObject('properties', properties, FeedItem.ATTR_L, l_zuio.id());
+				soap.zid    = l_zuio.zid();
 				bucket      = ORDER_SOURCE_UPDATE[i];
 				msg        += " about to add contact: ";
 				break;
@@ -5160,7 +5163,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				zuio_target = new Zuio(luid_target);
 				l_zuio      = new Zuio(l_target);
 				msg        += " about to modify contact: ";
-				soap.zid    = zuio_target.zid;
+				soap.zid    = zuio_target.zid();
 				soap.method = null;
 
 				if (this.state.sources[sourceid_winner]['format'] == FORMAT_TB) // always a content update in Tb2 - may not be so in Tb3.
@@ -5187,12 +5190,12 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 						if (!isPropertyPresent(properties, key))
 							properties[key] = null;
 
-					soap.arg   = newObject('id', zuio_target.id, 'properties', properties, FeedItem.ATTR_L, l_zuio.id);
+					soap.arg   = newObject('id', zuio_target.id(), 'properties', properties, FeedItem.ATTR_L, l_zuio.id());
 					bucket     = ORDER_SOURCE_UPDATE[i];
 				}
 				else if (soap.method == "ContactAction")
 				{
-					soap.arg   = newObject('id', zuio_target.id, 'op', 'move', FeedItem.ATTR_L, l_zuio.id);
+					soap.arg   = newObject('id', zuio_target.id(), 'op', 'move', FeedItem.ATTR_L, l_zuio.id());
 					bucket     = ORDER_SOURCE_UPDATE[i];
 				}
 				else
@@ -5239,10 +5242,10 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				if (zfcTarget.get(luid_target).isForeign())
 				{
 					zuio        = new Zuio(luid_target);
-					properties = this.getContactFromLuid(sourceid_target, luid_target, FORMAT_ZM);
+					properties  = this.getContactFromLuid(sourceid_target, luid_target, FORMAT_ZM);
 					zinAssert(properties);
 					soap.method = "ForeignContactDelete";
-					soap.arg    = newObject('properties', properties, 'id', zuio.id, 'zid', zuio.zid);
+					soap.arg    = newObject('properties', properties, 'id', zuio.id(), 'zid', zuio.zid());
 					soap.zid    = null;
 					bucket      = ORDER_SOURCE_UPDATE[i];
 					msg        += " about to copy foreign contact to trash then delete it.";

@@ -588,9 +588,9 @@ TestHarness.prototype.testZuio = function()
 	key = "123";
 	zuio = new Zuio(key);
 
-	ret = ret && zuio.id == 123;
-	ret = ret && zuio.zid == null;
-	ret = ret && !zuio.zid;
+	ret = ret && zuio.id() == 123;
+	ret = ret && zuio.zid() == null;
+	ret = ret && !zuio.zid();
 
 	return ret;
 }

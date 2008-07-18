@@ -299,10 +299,10 @@ FeedCollection.prototype.toString = function(eol_char_arg)
 
 		zuio = new Zuio(zfi.get(FeedItem.ATTR_KEY));
 
-		if (!isPropertyPresent(a_key[type], zuio.zid))
-			a_key[type][zuio.zid] = new Array();
+		if (!isPropertyPresent(a_key[type], zuio.zid()))
+			a_key[type][zuio.zid()] = new Array();
 
-		a_key[type][zuio.zid].push(isNaN(zuio.id) ? zuio.id : Number(zuio.id));
+		a_key[type][zuio.zid()].push(isNaN(zuio.id()) ? zuio.id() : Number(zuio.id()));
 	}
 
 	for (i = 0; i < a_sort_order.length; i++)
@@ -430,14 +430,14 @@ FeedItem.prototype.keyParent = function()
 {
 	var zuio = new Zuio(this.get(FeedItem.ATTR_KEY));
 
-	return Zuio.key(this.get(FeedItem.ATTR_L), zuio.zid);
+	return Zuio.key(this.get(FeedItem.ATTR_L), zuio.zid());
 }
 
 FeedItem.prototype.isForeign = function()
 {
 	var zuio = new Zuio(this.get(FeedItem.ATTR_KEY));
 
-	return (zuio.zid != null);
+	return (zuio.zid() != null);
 }
 
 FeedItem.prototype.type = function()

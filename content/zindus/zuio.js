@@ -29,6 +29,9 @@
 //
 function Zuio()
 {
+	this.m_id  = null;
+	this.m_zid = null;
+
 	if (arguments.length == 1)
 		this.setFromKey(arguments[0]);
 	else if (arguments.length == 2)
@@ -39,12 +42,12 @@ function Zuio()
 
 Zuio.prototype.toString = function()
 {
-	return  "(" + this.id + " " + this.zid + ")";
+	return  "(" + this.m_id + " " + this.m_zid + ")";
 }
 
 Zuio.prototype.key = function()
 {
-	return Zuio.key(this.id, this.zid);
+	return Zuio.key(this.m_id, this.m_zid);
 }
 
 Zuio.key = function(id, zid)
@@ -63,8 +66,8 @@ Zuio.prototype.setFromPair = function(id, zid)
 {
 	zinAssert(id);
 
-	this.id  = id;
-	this.zid = zid;
+	this.m_id  = id;
+	this.m_zid = zid;
 }
 
 Zuio.prototype.setFromKey = function(key)
@@ -82,3 +85,6 @@ Zuio.prototype.setFromKey = function(key)
 	else 
 		zinAssert(false);
 }
+
+Zuio.prototype.id  = function() { return this.m_id;  }
+Zuio.prototype.zid = function() { return this.m_zid; }

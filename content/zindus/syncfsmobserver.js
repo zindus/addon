@@ -114,7 +114,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGetAccountInfo: { count: 1 },
 		stSelectSoapUrl:  { count: 1 },
 		stSync:           { },
-		stSyncResult:     { },
+		stSyncResponse:   { },
 		stGetContactZm:   { count: 1 },
 		stGalConsider:    { },
 		stGalSync:        { count: 1 },
@@ -213,7 +213,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stLoad':           this.progressReportOn("load");                                         break;
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "account.info"); break;
 			case 'stSync':          
-			case 'stSyncResult':
+			case 'stSyncResponse':
 			case 'stGetContactGd1':
 			case 'stGetContactGd2':
 			case 'stDeXmlifyAddrGd': this.progressReportOnSource(context.state.sourceid_pr, "remote.sync");  break;
