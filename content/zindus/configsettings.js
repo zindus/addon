@@ -25,7 +25,6 @@ includejs("payload.js");
 includejs("testharness.js");
 includejs("configgd.js");
 includejs("configaccount.js");
-includejs("account.js");
 
 const GOOGLE_URL_CLIENT_LOGIN = "https://www.google.com/accounts/ClientLogin";
 const WINDOW_FEATURES         = "chrome,centerscreen,modal=yes,dependent=yes";
@@ -54,7 +53,7 @@ function ConfigSettings()
 	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
 	this.m_console_listener    = Logger.nsIConsoleListener();
 	this.m_payload             = null;
-	this.m_accounts            = new Array();
+	this.m_accounts            = null;
 }
 
 ConfigSettings.prototype.onLoad = function(target)
@@ -171,14 +170,16 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 				if (msg != "")
 				{
-					if (isInArray(this.m_payload.m_es.m_fail_code, [ 'failon.gd.conflict1', 'failon.gd.conflict2', 'failon.gd.empty.contact' ]))
+					if (isInArray(this.m_payload.m_es.m_fail_code, [ 'failon.gd.conflict1', 'failon.gd.conflict2',
+					                                                 'failon.gd.conflict3', 'failon.gd.empty.contact' ]))
 					{
 						var payload2 = new Payload();
 						payload2.m_args = newObject('fail_code', this.m_payload.m_es.m_fail_code, 'msg', msg);
 						window.openDialog("chrome://zindus/content/configmsg.xul",  "_blank", WINDOW_FEATURES, payload2);
 					}
 					else
-						alert(msg);
+						zinAlert('cs.sync.title', msg, window);
+						// alert(msg);
 				}
 			}
 
@@ -312,7 +313,7 @@ ConfigSettings.prototype.initialiseView = function()
 {
 	// accounts tab
 	//
-	this.accountsLoadFromPrefset();
+	this.m_accounts = AccountFactory.accountsLoadFromPrefset();
 	this.accountsTreeRefresh();
 
 	if (this.m_accounts.length > 0)
@@ -505,26 +506,6 @@ ConfigSettings.setAttribute = function(attribute, flag)
 				case 'hidden':   el.style.visibility = "visible";   break;
 			}
 	}
-}
-
-ConfigSettings.prototype.accountsLoadFromPrefset = function()
-{
-	var a_sourceid = this.m_preferences.getImmediateChildren(this.m_preferences.branch(), PrefSet.ACCOUNT + '.');
-	var account;
-
-	for (var i = 0; i < a_sourceid.length; i++)
-		a_sourceid[i] = Number(a_sourceid[i]);
-
-	a_sourceid.sort(numeric_compare);
-
-	for (var i = 0; i < a_sourceid.length; i++)
-	{
-		account = new Account();
-		account.fromPrefset(a_sourceid[i]);
-		this.m_accounts.push(account);
-	}
-
-	// this.m_logger.debug("accountsLoadFromPrefset, a_sourceid: " + a_sourceid.toString() + " m_accounts: " + aToString(this.m_accounts));
 }
 
 ConfigSettings.prototype.accountsNextSourceId = function()

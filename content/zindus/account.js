@@ -100,3 +100,32 @@ Account.prototype.remove = function()
 
 	prefset.remove();
 }
+
+function AccountFactory()
+{
+}
+
+AccountFactory.accountsLoadFromPrefset = function()
+{
+	var preferences = Singleton.instance().preferences();
+	var a_sourceid  = preferences.getImmediateChildren(preferences.branch(), PrefSet.ACCOUNT + '.');
+	var ret         = new Array();
+	var account;
+
+	for (var i = 0; i < a_sourceid.length; i++)
+		a_sourceid[i] = Number(a_sourceid[i]);
+
+	a_sourceid.sort(numeric_compare);
+
+	for (var i = 0; i < a_sourceid.length; i++)
+	{
+		account = new Account();
+		account.fromPrefset(a_sourceid[i]);
+		ret.push(account);
+	}
+
+	// Singleton.instance().logger().debug("accountsLoadFromPrefset: a_sourceid: " + a_sourceid.toString() +" accounts: " + aToString(ret));
+
+	return ret;
+}
+

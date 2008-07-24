@@ -100,8 +100,7 @@ Filesystem.createDirectoryIfRequired = function(code)
 		catch (e) {
 			var msg1 = stringBundleString("filesystem.create.directory.failed");
 			var msg2 = stringBundleString("filesystem.create.directory.failedSuggest");
-			alert(msg1 + "\n" + nsifile.path + "\n" + msg2 + "\n" + e);
-			// alert("Unable to create directory:\n  " + nsifile.path + "\nSuggest checking file/directory permissions.\nException: " + e);
+			zinAlert('msg.alert.title', msg1 + "\n" + nsifile.path + "\n" + msg2 + "\n" + e);
 		}
 }
 
@@ -134,7 +133,7 @@ Filesystem.writeToFile = function(file, content)
 	}
 	catch (e) 
 	{
-		alert(e);
+		zinAlert('msg.alert.title', e);
 	}
 
 	return retval;

@@ -118,7 +118,7 @@ ConfigAccount.prototype.onCommand = function(id_target)
 				else
 					msg = this.m_payload_sw.m_es.asMessage("ca.auth.succeeded", "ca.auth.failed");
 
-				alert(msg);
+				zinAlert('ca.auth.title', msg);
 			}
 
 			this.m_payload_sw = null;

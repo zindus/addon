@@ -2,21 +2,21 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="rdf:#$JEjs8"
-                   em:version="0.7.8.20080719.064152">
-    <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
+  <RDF:Seq RDF:about="rdf:#$IEjs8">
+    <RDF:li RDF:resource="rdf:#$JEjs8"/>
+  </RDF:Seq>
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAKdS5KlDHbdAiM8vwVOAUI2nPLiW7HX5Ve2Ki44fF+Db2JV/uz5bAcUC6M9cAMWqgIOUNklQ8dwJCQ7GYEieMuNiis84LjXxrcXV0vJmI3TnzvYkCWiIK4p/4TWzpo7+4o4CN6DrIBgzn3t5qbYquYnh6x4AjMp6u7yzWKoqwe/X">
+    <em:updates RDF:resource="rdf:#$IEjs8"/>
   </RDF:Description>
   <RDF:Description RDF:about="rdf:#$MEjs8"
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:minVersion="2.0b2"
                    em:maxVersion="3.0a2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.8.20080719.064152-tb.xpi"
-                   em:updateHash="sha256:8de113a7556cf5fe37628be1989a319f16d8e3c1e05eb553234dfc47cc814dc2" />
-  <RDF:Seq RDF:about="rdf:#$IEjs8">
-    <RDF:li RDF:resource="rdf:#$JEjs8"/>
-  </RDF:Seq>
-  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAF+OL9jKIsTWcj8sbvbFcthDEYXYCmTPq6YQ0zqeiXH+X8B24H54egxyuklM5DmhflI3k5nK/SjAWWF0EQMgRURGQjsUzQ7x2uY/XlRHUFitnhPL0N3OWQPEg2FbQ+loK36+uo8RsX9k55L67ZWNs1vkjVtNxS67a0wh7dsOVpNX">
-    <em:updates RDF:resource="rdf:#$IEjs8"/>
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.8.20080724.140613-tb.xpi"
+                   em:updateHash="sha256:95edf453601dee810f5e5d3d6a3ab09eacadae9c3d609a446ff4488b0ea904e5" />
+  <RDF:Description RDF:about="rdf:#$JEjs8"
+                   em:version="0.7.8.20080724.140613">
+    <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
   </RDF:Description>
 </RDF:RDF>

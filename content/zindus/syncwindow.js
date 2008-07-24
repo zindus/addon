@@ -130,7 +130,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		newLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 
-		this.m_syncfsm = SyncWindow.newSyncFsm(this.m_payload.m_syncfsm_details);
+		this.m_syncfsm = SyncFsm.newSyncFsm(this.m_payload.m_syncfsm_details);
 
 		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm);
 
@@ -179,31 +179,6 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			dId('zindus-sw').acceptDialog();
 		}
 	}
-}
-
-SyncWindow.newSyncFsm = function(syncfsm_details)
-{
-	var id_fsm  = null;
-	var account = syncfsm_details.account;
-	var type    = syncfsm_details.type;
-	var format  = account.format_xx();
-	var syncfsm;
-
-	zinAssert(syncfsm_details.account); // this only supports authonly - TODO: Sync Now
-
-	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
-	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
-	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
-	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
-	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
-
-	var prefset_server = new PrefSet(PrefSet.ACCOUNT,  PrefSet.ACCOUNT_PROPERTIES);
-	prefset_server.setProperty(PrefSet.ACCOUNT_URL,      account.get('url'));
-	prefset_server.setProperty(PrefSet.ACCOUNT_USERNAME, account.get('username'));
-
-	syncfsm.initialise(id_fsm, account.get('sourceid'), syncfsm_details.prefset_general, prefset_server, account.get('password'));
-
-	return syncfsm;
 }
 
 // this stuff used to be called from onLoad, but wierd things happen on Linux when the cancel button is pressed

@@ -40,8 +40,8 @@ function zinAssert(expr)
 				logger.fatal(ex.stack);
 			}
 
-			if (typeof alert == 'function')
-				alert(ex.message + " stack: \n" + ex.stack);
+			if (typeof zinAlert == 'function')
+				zinAlert('msg.alert.title', ex.message + " stack: \n" + ex.stack);
 			else
 				print(ex.message + " stack: \n" + ex.stack);
 
@@ -349,6 +349,19 @@ function newObject()
 function newLogger(prefix)
 {
 	return new Logger(Singleton.instance().loglevel(), prefix);
+}
+
+function isObjectEmpty(obj)
+{
+	var ret = true;
+
+	for (var i in obj)
+	{
+		ret = false;
+		break;
+	}
+
+	return ret;
 }
 
 function firstKeyInObject(obj)
@@ -796,4 +809,26 @@ function numeric_compare(a, b)
 	if(a < b)
 		return -1;
 	return 0;
+}
+
+// The idea here was to replace window.alert with nsIPromptService
+// But under Thunderbird 2, windowing is buggy - if the parent windows closes quickly
+// eg a Sync Now followed by ESC ESC in quick succession, the prompt is displayed without it's parent!
+// We'll go on using window.alert until Thunderbird 3 rolls out and we drop support for Tb2.
+// In Tb3, the behaviour appears to be correct, ie the prompt closes if it's parent window is closed.
+//
+function zinAlert(title_string_id, msg, win)
+{
+	alert(msg);
+	return;
+
+	if (!win)
+		win = null;
+
+	Singleton.instance().logger().debug("zinAlert: blah: title_string_id: " + title_string_id + " msg: " + msg);
+
+	var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
+	prompts.alert(win, stringBundleString(title_string_id), msg);
+
+	Singleton.instance().logger().debug("zinAlert: blah: done");
 }

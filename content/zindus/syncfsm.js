@@ -1835,7 +1835,6 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	// A big decision in simplifying this code was the decision to give up convergence
 	// Now, if there's a problem, the sync just aborts and the user has to fix it.
 	//
-
 	this.state.stopwatch.mark(state + " 1");
 
 	this.state.zfcTbPreMerge = this.zfcTb().clone();           // 1. remember the tb luid's before merge so that we can follow changes
@@ -1892,9 +1891,11 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	var passed = true;
 
+	passed = passed && this.testForReservedFolderNames(); // test for zindus_pab etc
+
 	if (this.formatPr() == FORMAT_ZM)
 	{
-		passed = passed && this.testForLegitimateFolderNames(); // test for duplicate folder names, reserved names, illegal chars
+		passed = passed && this.testForLegitimateFolderNames(); // test for duplicate folder names, zimbra-reserved names, illegal chars
 		passed = passed && this.testForEmptyContacts();         // test that there are no empty contacts
 	}
 
@@ -2262,7 +2263,7 @@ SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 			          " description: " + elem.description +
 			          " supportsMailingLists: " + elem.supportsMailingLists;
 
-			// look for zindus/<folder-name> but don't permit '/'es in <folder-name> because:
+			// look for zindus/<folder-name> and don't permit '/'es in <folder-name> because:
 			// - we only support addressbook folders that are immediate children of the root folder - note the l='1' below.
 
 			// context.state.m_logger.debug("TbAddressBook: blah: dirName: " + elem.dirName);
@@ -2359,7 +2360,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 		state: this.state,
 		run: function(uri, item)
 		{
-			var abCard  = item.QueryInterface(Ci.nsIAbCard);
+			var abCard = item.QueryInterface(Ci.nsIAbCard);
 
 			if (abCard.isMailList)
 				aMailListUri[abCard.mailListURI] = uri;
@@ -2544,6 +2545,33 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	this.zfcTb().forEach(functor_mark_deleted, FeedCollection.ITER_NON_RESERVED);
 }
 
+
+SyncFsm.prototype.testForReservedFolderNames = function()
+{
+	var aReserved = [ TB_PAB, TB_EMAILED_CONTACTS ];
+	var pat = "";
+
+	for (var i = 0; i < aReserved.length; i++)
+	{
+		if (i != 0)
+			pat += "|";
+
+		pat += aReserved[i];
+	}
+	
+	var aUris = this.state.m_addressbook.getAddressBookUrisByPattern(new RegExp( "^" + pat + "$" ));
+
+	this.debug("testForReservedFolderNames: pat: " + pat + " aUris: " + aToString(aUris));
+
+	if (!isObjectEmpty(aUris))
+	{
+		this.state.stopFailCode   = 'failon.folder.name.reserved'
+		this.state.stopFailDetail = ": " + firstKeyInObject(aUris);
+	}
+
+	return this.state.stopFailCode == null;
+}
+
 SyncFsmZm.prototype.testForEmptyContacts = function()
 {
 	var a_empty_contacts = this.state.foreach_tb_card_functor.m_a_empty_contacts;
@@ -2694,6 +2722,81 @@ SyncFsm.prototype.testForGdProblems = function()
 	return this.state.stopFailCode == null;
 }
 
+// On a slow sync, the <feed> contains all the <entry>'s so it's a good time to check
+// that Google's uniqueness rule holds and if/when it doesn't then the <feed> stands up as evidence.
+//
+SyncFsm.prototype.testForGdServerConstraints = function()
+{
+	var a_gd_email = new Object();
+	var email;
+
+	zinAssert(this.state.isSlowSync);
+
+	var functor = {
+		state: this.state,
+
+		add_email: function(luid)
+		{
+			for (key in { 'PrimaryEmail' : null, 'SecondEmail' : null })
+				if (isPropertyPresent(this.state.a_gd_contact[luid].m_properties, key))
+				{
+					email = GdContact.transformProperty(key, this.state.a_gd_contact[luid].m_properties[key]);
+
+					if (!isPropertyPresent(a_gd_email, email))
+						a_gd_email[email] = new Array();
+
+					a_gd_email[email].push(luid);
+				}
+		},
+		run: function(zfi)
+		{
+			var luid = zfi.key();
+
+			this.state.m_logger.debug("blah: luid: " + luid);  // TODO
+
+			if (zfi.type() == FeedItem.TYPE_CN)
+				this.add_email(luid);
+
+			return true;
+		}
+	};
+
+	this.zfcPr().forEach(functor);
+
+	this.debug("testForGdServerConstraints: a_gd_email: " + aToString(a_gd_email));
+
+	a_conflict = new Array();
+
+	for (email in a_gd_email)
+		if (a_gd_email[email].length > 1)
+			a_conflict.push(email);
+
+	if (a_conflict.length > 0)
+	{
+		var msg_conflicting_addresses = "";
+		var count = 0;
+
+		for (var i = 0; i < a_conflict.length && i < GOOGLE_SHOW_CONFLICTS_AT_A_TIME; i++)
+			msg_conflicting_addresses += "\n                  " + a_conflict[i];
+
+		msg_conflicting_addresses += "\n";
+
+		this.state.stopFailCode   = 'failon.gd.conflict3';
+		this.state.stopFailDetail = "\n\n" + stringBundleString("status.failmsg.gd.conflict.detail");
+
+		if (a_conflict.length > GOOGLE_SHOW_CONFLICTS_AT_A_TIME)
+			this.state.stopFailDetail += " " + stringBundleString("status.failmsg.gd.conflict.progress",
+			                                    [ GOOGLE_SHOW_CONFLICTS_AT_A_TIME, a_conflict.length ]);
+
+		this.state.stopFailDetail += ":";
+		
+		this.state.stopFailDetail += msg_conflicting_addresses;
+	}
+
+	return this.state.stopFailCode == null;
+}
+
+
 SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 {
 	zinAssert(this.state.isSlowSync);
@@ -2814,6 +2917,8 @@ SyncFsm.prototype.getFirstDifferingProperty = function(sourceid_a, luid_a, sourc
 
 	if (!ret)
 	{
+		this.state.m_logger.debug("getFirstDifferingProperty sourceid_a/luid_a sourceid_b/luid_b: " + sourceid_a + "/" + luid_a + " " +
+		                                                                                              sourceid_b + "/" + luid_b);
 		this.state.m_logger.debug("getFirstDifferingProperty a_keys: "       + aToString(a_keys));
 		this.state.m_logger.debug("getFirstDifferingProperty a.properties: " + aToString(a.properties));
 		this.state.m_logger.debug("getFirstDifferingProperty b.properties: " + aToString(b.properties));
@@ -4508,7 +4613,7 @@ SyncFsm.sharedFoldersUpdateAttributes = function(zfc, luid_link)
 
 // Converge is slow when "verbose logging" is turned on so it is broken up into multiple states.  This means:
 // - mozilla's failsafe stop/continue javascript dialog is less likely to pop up
-// - the user gets to see a little bit of movement in the progress bar between each state
+// - the user sees a little of movement in the progress bar between each state
 //
 SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 {
@@ -4536,6 +4641,8 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 
 		passed = passed && this.testForCreateSharedAddressbook();
 	}
+	else if (this.formatPr() == FORMAT_GD && this.state.isSlowSync)
+		passed = passed && this.testForGdServerConstraints();
 
 	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
 
@@ -6373,6 +6480,31 @@ SyncFsm.isOfInterest = function(zfc, key)
 	return ret;
 }
 
+SyncFsm.newSyncFsm = function(syncfsm_details)
+{
+	var id_fsm  = null;
+	var account = syncfsm_details.account;
+	var type    = syncfsm_details.type;
+	var format  = account.format_xx();
+	var syncfsm;
+
+	zinAssert(syncfsm_details.account); // this only supports authonly - TODO: Sync Now
+
+	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
+	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
+	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
+	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
+	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
+
+	var prefset_server = new PrefSet(PrefSet.ACCOUNT,  PrefSet.ACCOUNT_PROPERTIES);
+	prefset_server.setProperty(PrefSet.ACCOUNT_URL,      account.get('url'));
+	prefset_server.setProperty(PrefSet.ACCOUNT_USERNAME, account.get('username'));
+
+	syncfsm.initialise(id_fsm, account.get('sourceid'), syncfsm_details.prefset_general, prefset_server, account.get('password'));
+
+	return syncfsm;
+}
+
 SyncFsm.prototype.setupHttpGd = function(state, eventOnResponse, http_method, url, headers, body, on_error, log_response)
 {
 	// this.state.m_logger.debug("setupHttpGd: blah: " +
@@ -7183,7 +7315,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 
 	this.state.stopwatch.mark(state);
 
-	msg += "entryActionGetContactGd3:";
+	msg += "entryActionGetContactGd3:\n";
 
 	try {
 		while (count < this.state.a_gd_contact_iterator.m_zindus_contact_chunk) {

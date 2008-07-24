@@ -57,12 +57,13 @@ function SyncFsmExitStatus()
 		'failon.multiple.ln'                  : { 'hasdetail' : 1 }, // 23. 
 		'failon.gd.conflict1'                 : { 'hasdetail' : 1 }, // 24. 
 		'failon.gd.conflict2'                 : { 'hasdetail' : 1 }, // 25. 
-		'failon.gd.forbidden'                 : { 'hasdetail' : 0 }, // 26. 
-		'failon.zm.empty.contact'             : { 'hasdetail' : 1 }, // 27. 
-		'failon.gd.empty.contact'             : { 'hasdetail' : 1 }, // 28. 
-		'failon.gd.syncwith'                  : { 'hasdetail' : 0 }, // 29. 
-		'failon.unauthorized'                 : { 'hasdetail' : 0 }, // 30. server 401 - did a proxy remove the 'Authorized' header?
-		'failon.auth'                         : { 'hasdetail' : 1 }  // 31. Failed to login to Google or Zimbra via preauth
+		'failon.gd.conflict3'                 : { 'hasdetail' : 1 }, // 
+		'failon.gd.forbidden'                 : { 'hasdetail' : 0 }, // 
+		'failon.zm.empty.contact'             : { 'hasdetail' : 1 }, // 
+		'failon.gd.empty.contact'             : { 'hasdetail' : 1 }, // 
+		'failon.gd.syncwith'                  : { 'hasdetail' : 0 }, // 30. 
+		'failon.unauthorized'                 : { 'hasdetail' : 0 }, //     server 401 - did a proxy remove the 'Authorized' header?
+		'failon.auth'                         : { 'hasdetail' : 1 }  //     Failed to login to Google or Zimbra via preauth
 	};
 }
 

@@ -40,5 +40,6 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("observerservice.js");
 	ZindusScopeRegistry.includejs("maestro.js");
 	ZindusScopeRegistry.includejs("timer.js");
+	ZindusScopeRegistry.includejs("account.js");
 	ZindusScopeRegistry.includejs("removedatastore.js");
 }

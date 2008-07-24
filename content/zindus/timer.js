@@ -83,21 +83,29 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			newLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 
-			var prefs       = Singleton.instance().preferences();
-			var server_type = prefs.getCharPrefOrNull(prefs.branch(), "server." + SOURCEID_AA + ".type");
+			var accounts = AccountFactory.accountsLoadFromPrefset();
+			var account;
 
-			this.m_logger.debug("onFsmStateChangeFunctor: server_type: " + server_type);
-
-			if (server_type == "google")
-			{
-				this.m_syncfsm = new SyncFsmGd();
-				this.m_syncfsm.initialise(Maestro.FSM_ID_GD_TWOWAY, SOURCEID_AA);
-			}
+			if (accounts.length > 0)
+				account = accounts[0];
 			else
 			{
-				this.m_syncfsm = new SyncFsmZm();
-				this.m_syncfsm.initialise(Maestro.FSM_ID_ZM_TWOWAY, SOURCEID_AA);
+				// we're faking a sync to a zimbra account where the url/username/password are unspecified.
+				// Naturally this will fail (which is what we want).
+				//
+				account = new Account();
+				account.set('sourceid', Number(SOURCEID_TB) + 1);
+				account.set('format', stringBundleString("format.zimbra"));
 			}
+
+			var prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
+			prefset_general.load();
+
+			var syncfsm_details = newObject('account', account,  'type', "twoway", 'prefset_general', prefset_general);
+
+			this.m_logger.debug("onFsmStateChangeFunctor: account: " + account.toString());
+
+			this.m_syncfsm = SyncFsm.newSyncFsm(syncfsm_details);
 
 			this.m_syncfsm.start(window);
 			this.is_running = true;

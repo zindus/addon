@@ -62,16 +62,13 @@ MozillaPreferences.prototype.branch = function()
 {
 	if (this.m_branch == null)
 	{
-		try
-		{
+		try {
 			var instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
 	
 			this.m_branch = instance.getBranch(this.m_prefix);
 		}
-		catch(ex)
-		{
-			dump(ex.message + " stack: " + ex.stack);
-			alert("Preferences::getService : " + ex);
+		catch(ex) {
+			zinAlert('msg.alert.title', "MozillaPreferences::branch : " + ex);
 		}
 	}
 
@@ -82,15 +79,13 @@ MozillaPreferences.prototype.defaultbranch = function()
 {
 	if (this.m_defaultbranch == null)
 	{
-		try
-		{
+		try {
 			var instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
 	
 			this.m_defaultbranch = instance.getDefaultBranch(this.m_prefix);
 		}
-		catch(ex)
-		{
-			alert("Preferences::getService : " + ex);
+		catch(ex) {
+			zinAlert('msg.alert.title', "MozillaPreferences::defaultbranch : " + ex);
 		}
 	}
 
@@ -121,8 +116,7 @@ MozillaPreferences.prototype.getPrefReal = function(branch, key, type, mustbepre
 
 	if (branch)
 	{
-		try
-		{
+		try {
 			if (type == 'int')
 			{
 				tmp = branch.getIntPref(key);
@@ -137,8 +131,7 @@ MozillaPreferences.prototype.getPrefReal = function(branch, key, type, mustbepre
 				ret = String(tmp);
 			}
 		}
-		catch(ex)
-		{
+		catch(ex) {
 			if (mustbepresent)
 			{
 				this.reportCatch(ex, key);
@@ -158,8 +151,8 @@ MozillaPreferences.prototype.getIntPrefOrNull  = function(branch, key) { return 
 
 MozillaPreferences.prototype.reportCatch = function(ex, key)
 {
-	if (typeof alert == 'function')
-		alert(ex.message + " with key " + key + " stack: \n" + ex.stack);
+	if (typeof zinAlert == 'function')
+		zinAlert('msg.alert.title', ex.message + " with key " + key + " stack: \n" + ex.stack);
 	else
 		print(ex.message + " with key " + key + " stack: \n" + ex.stack);
 }
@@ -171,8 +164,7 @@ MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
 
 	if (branch)
 	{
-		try
-		{
+		try {
 			var a_tmp = branch.getChildList(key, {});
 
 			// Singleton.instance().logger().debug("getImmediateChildren: key: " + key + " a_tmp: " + a_tmp.toString());
@@ -182,8 +174,7 @@ MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
 			for (var i = 0; i < a_tmp.length; i++)
 				a_key[String(a_tmp[i]).replace(re, "$1")] = null;
 		}
-		catch(ex)
-		{
+		catch(ex) {
 				this.reportCatch(ex, key);
 				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
 		}

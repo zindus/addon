@@ -46,7 +46,7 @@ ObserverService.isRegistered = function(topic)
 			count++;
 		}
 		catch (e) {
-			alert("exception while enumerating: e: " + e);
+			zinAlert('msg.alert.title', "exception while enumerating: e: " + e);
 		}
 	}
 
@@ -55,8 +55,6 @@ ObserverService.isRegistered = function(topic)
 
 ObserverService.notify = function(topic, subject, data)
 {
-	// dump("ObserverService.notify: data: " + data);
-
 	ObserverService.service().notifyObservers(subject, topic, data);
 }
 

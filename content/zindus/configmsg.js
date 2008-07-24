@@ -34,7 +34,7 @@ ConfigMsg.prototype.onLoad = function(target)
 
 	html = html.replace(/\n/mg, "<br/>");
 	html = html.replace(/ ( )/mg, " &#160;");
-	html += stringBundleString("status.failmsg.gd.see.faq").replace("%fail_code%", this.m_payload.m_args.fail_code);
+	html += stringBundleString("status.failmsg.gd.see.faq", [ this.fail_code_to_string(this.m_payload.m_args.fail_code ) ] );
 
 	// <noscript> is used here because it's a structural html element that can contain other elements
 	//
@@ -43,4 +43,28 @@ ConfigMsg.prototype.onLoad = function(target)
 	el.innerHTML = html;
 
 	dId("zindus-cm-description").appendChild(el);
+}
+
+// The reason the url is added here in the window as opposed to being part of the detail of the error message
+// is that the error message is passed through convertCER (which changes < to an entity) whereas we want the url to be clickable.
+// The issue is that error messages are plain text, whereas here we are displaying html.
+//
+ConfigMsg.prototype.fail_code_to_string = function(fail_code)
+{
+	var url;
+
+	if (isInArray(fail_code, [ 'failon.gd.conflict1', 'failon.gd.conflict2', 'failon.gd.empty.contact' ]))
+	{
+		url = "http://www.zindus.com/faq-thunderbird-google/";
+		ret = '<a href="' + url + '#' + fail_code + '">' + url + '</a>';
+	}
+	else if (isInArray(fail_code, [ 'failon.gd.conflict3' ]))
+	{
+		url = "http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs";
+		ret = '<a href="' + url + '">' + url + '</a>';
+	}
+	else
+		zinAssertAndLog(false, "mismatched case: fail_code: " + fail_code);
+
+	return ret;
 }

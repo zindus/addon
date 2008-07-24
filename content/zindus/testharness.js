@@ -551,8 +551,8 @@ TestHarness.prototype.testXmlHttpRequest = function()
 	var xhrCallback = function()
 	{
 		if (xhr.readyState==4) {
-			alert(xhr.status);
-			alert(xhr.responseText);
+			zinAlert('msg.alert.title', xhr.status);
+			zinAlert('msg.alert.title', xhr.responseText);
 		}
 	};
 
