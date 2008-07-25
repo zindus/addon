@@ -28,7 +28,7 @@ function ConfigAccount()
 	this.m_logger                 = newLogger("ConfigAccount"); // this.m_logger.level(Logger.NONE); // TODO for debugging
 	this.m_preferences            = Singleton.instance().preferences();
 	this.m_payload_configsettings = null;
-	this.m_payload_sw     = null;
+	this.m_payload_sw             = null;
 	this.m_maestro                = null;
 	this.m_is_fsm_running         = false;
 	this.m_prefset_general        = null;
@@ -100,7 +100,7 @@ ConfigAccount.prototype.onCommand = function(id_target)
 			this.m_payload_sw.m_syncfsm_details = newObject('account', account, 'type',"authonly",'prefset_general',this.m_prefset_general);
 			this.m_payload_sw.m_es = new SyncFsmExitStatus();
 
-			Singleton.instance().logger().debug("ConfigAccount.onCommand: before openDialog: m_es: " + this.m_payload_sw.m_es.toString());
+			logger().debug("ConfigAccount.onCommand: before openDialog: m_es: " + this.m_payload_sw.m_es.toString());
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul", "_blank", WINDOW_FEATURES, this.m_payload_sw);
 
@@ -108,11 +108,11 @@ ConfigAccount.prototype.onCommand = function(id_target)
 			{
 				var msg;
 
-				Singleton.instance().logger().debug("ConfigAccount.onCommand: after openDialog: m_es: " +this.m_payload_sw.m_es.toString());
+				logger().debug("ConfigAccount.onCommand: after openDialog: m_es: " +this.m_payload_sw.m_es.toString());
 
 				if (this.m_payload_sw.m_es.m_exit_status == null)
 				{
-					Singleton.instance().logger().debug("ConfigAccount.onCommand: cs.sync.failed.unexpectedly");
+					logger().debug("ConfigAccount.onCommand: cs.sync.failed.unexpectedly");
 					msg = stringBundleString("cs.sync.failed.unexpectedly");
 				}
 				else

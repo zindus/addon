@@ -167,7 +167,7 @@ MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
 		try {
 			var a_tmp = branch.getChildList(key, {});
 
-			// Singleton.instance().logger().debug("getImmediateChildren: key: " + key + " a_tmp: " + a_tmp.toString());
+			// logger().debug("getImmediateChildren: key: " + key + " a_tmp: " + a_tmp.toString());
 
 			var re = new RegExp('^' + key + '(\\w*).*$');
 

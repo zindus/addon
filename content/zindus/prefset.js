@@ -68,7 +68,7 @@ PrefSet.prototype.load = function(id, branch)
 	zinAssert((arguments.length == 0) || (arguments.length == 1) || (arguments.length == 2));
 
 	this.m_id = id ?     id     : PrefSet.ID_UNINITIALISED;
-	branch    = branch ? branch : Singleton.instance().preferences().branch();
+	branch    = branch ? branch : preferences().branch();
 
 	for (var i in this.m_properties)
 	{
@@ -84,7 +84,7 @@ PrefSet.prototype.load = function(id, branch)
 
 PrefSet.prototype.save = function()
 {
-	var branch = Singleton.instance().preferences().branch();
+	var branch = preferences().branch();
 	var i;
 	var retval = false;
 
@@ -104,7 +104,7 @@ PrefSet.prototype.save = function()
 
 PrefSet.prototype.remove = function()
 {
-	var branch = Singleton.instance().preferences().branch();
+	var branch = preferences().branch();
 	var ret = false;
 
 	zinAssert(this.m_id != null && (this.m_id == PrefSet.ID_UNINITIALISED || this.m_id >= 0));
@@ -122,7 +122,7 @@ PrefSet.prototype.remove = function()
 
 PrefSet.prototype.hasUserValue = function(property)
 {
-	var branch = Singleton.instance().preferences().branch();
+	var branch = preferences().branch();
 	var ret = false;
 
 	try {

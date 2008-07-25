@@ -340,7 +340,6 @@ SyncFsmZm.prototype.entryActionAuthSelect = function(state, event, continuation)
 		this.state.zidbag.push(null);
 		this.state.zidbag.set(null, 'soapURL', this.state.sources[sourceid_pr]['soapURL']);
 
-		var prefs   = Singleton.instance().preferences();
 		var soapURL = this.state.sources[this.state.sourceid_pr]['soapURL'];
 		var prefset = prefsetMatchWithPreAuth(soapURL);
 
@@ -2098,7 +2097,7 @@ SyncFsm.zfcFindFirstFolder = function(zfc, name)
 
 	var ret = zfc.findFirst(f, name);
 
-	// Singleton.instance().logger().debug("zfcFindFirstFolder: blah: name: " + name + " returns: " + ret);
+	// logger().debug("zfcFindFirstFolder: blah: name: " + name + " returns: " + ret);
 
 	return ret;
 }
@@ -2111,7 +2110,7 @@ SyncFsm.zfcFindFirstSharedFolder = function(zfc, key)
 
 	var ret = zfc.findFirst(f, key);
 
-	// Singleton.instance().logger().debug("zfcFindFirstSharedFolder: blah: key: " + key + " returns: " + ret);
+	// logger().debug("zfcFindFirstSharedFolder: blah: key: " + key + " returns: " + ret);
 
 	return ret;
 }
@@ -2127,7 +2126,7 @@ SyncFsm.zfcFindFirstLink = function(zfc, key)
 
 	var ret = zfc.findFirst(f);
 
-	// Singleton.instance().logger().debug("lookupInZfc: blah: zfcFindFirstLink: key: " + key + " returns: " + ret);
+	// logger().debug("lookupInZfc: blah: zfcFindFirstLink: key: " + key + " returns: " + ret);
 
 	return ret;
 }
@@ -2141,7 +2140,7 @@ SyncFsm.isZmFolderReservedName = function(name)
 	var reReservedFolderNames = /^\s*(inbox|trash|junk|sent|drafts|tags|calendar|notebook|chats)\s*$/i;
 	var ret = name.match(reReservedFolderNames) != null;
 
-	// Singleton.instance().logger().debug("isZmFolderReservedName: blah: name: " + name + " returns: " + ret);
+	// logger().debug("isZmFolderReservedName: blah: name: " + name + " returns: " + ret);
 
 	return ret;
 }
@@ -2151,7 +2150,7 @@ SyncFsm.isZmFolderContainsInvalidCharacter = function(name)
 	var reInvalidCharacter = /[:/\"\t\r\n]/;
 	var ret = name.match(reInvalidCharacter) != null;
 
-	// Singleton.instance().logger().debug("isZmFolderContainsInvalidCharacter: blah: name: " + name + " returns: " + ret);
+	// logger().debug("isZmFolderContainsInvalidCharacter: blah: name: " + name + " returns: " + ret);
 
 	return ret;
 }
@@ -6233,8 +6232,8 @@ SyncFsm.prototype.zfcTb    = function() { return this.state.sources[this.state.s
 SyncFsm.prototype.zfcPr    = function() { return this.state.sources[this.state.sourceid_pr]['zfcLuid']; }
 SyncFsm.prototype.formatPr = function() { return this.state.sources[this.state.sourceid_pr]['format']; }
 
-SyncFsm.prototype.getIntPref  = function(key) { var p = Singleton.instance().preferences(); return p.getIntPref(  p.branch(), key); }
-SyncFsm.prototype.getCharPref = function(key) { var p = Singleton.instance().preferences(); return p.getCharPref( p.branch(), key); }
+SyncFsm.prototype.getIntPref  = function(key) { var p = preferences(); return p.getIntPref(  p.branch(), key); }
+SyncFsm.prototype.getCharPref = function(key) { var p = preferences(); return p.getCharPref( p.branch(), key); }
 
 SyncFsm.prototype.debug = function(str)
 {
@@ -6403,7 +6402,7 @@ SyncFsm.isRelevantToGid = function(zfc, key)
 			zinAssertAndLog(false, "unmatched case: " + zfi.type());
 	}
 
-	// Singleton.instance().logger().debug("isRelevantToGid: blah: zfi: " + zfi.toString() + " returns: " + ret);
+	// logger().debug("isRelevantToGid: blah: zfi: " + zfi.toString() + " returns: " + ret);
 
 	return ret;
 }
@@ -6418,7 +6417,7 @@ SyncFsm.isRelevantToGid = function(zfc, key)
 //
 SyncFsm.isOfInterest = function(zfc, key)
 {
-	// Singleton.instance().logger().debug("SyncFsm.isOfInterest: blah: key: " + key + " arguments.length: " + arguments.length +
+	// logger().debug("SyncFsm.isOfInterest: blah: key: " + key + " arguments.length: " + arguments.length +
 	//               " zfc: " + (zfc ? "non-null" : "null") + " zfc.isPresent(key): " + zfc.isPresent(key));
 
 	zinAssertAndLog(arguments.length == 2 && zfc && key, "arguments.length: " + arguments.length + " key: " + key);
@@ -6475,7 +6474,7 @@ SyncFsm.isOfInterest = function(zfc, key)
 		}
 	}
 
-	// Singleton.instance().logger().debug("SyncFsm.isOfInterest: blah: key: " + key + " returns: " + ret);
+	// logger().debug("SyncFsm.isOfInterest: blah: key: " + key + " returns: " + ret);
 
 	return ret;
 }

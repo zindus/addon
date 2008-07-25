@@ -29,7 +29,7 @@ function RemoveDatastore()
 
 RemoveDatastore.removeZfcs = function()
 {
-	Singleton.instance().logger().debug("reset: ");
+	logger().debug("reset: ");
 
 	var file;
 	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
@@ -49,11 +49,12 @@ RemoveDatastore.removeZfcs = function()
 	}
 }
 
+// remove the logfile
+//
 RemoveDatastore.removeLogfile = function()
 {
-	// remove the logfile
-	//
 	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
+
 	file.append(Filesystem.FILENAME_LOGFILE);
 
 	if (file.exists() && !file.isDirectory())
@@ -94,11 +95,11 @@ RemoveDatastore.removeZfcsIfNecessary = function()
 	else
 		msg += " - ok";
 
-	Singleton.instance().logger().debug(msg);
+	logger().debug(msg);
 
 	if (is_out_of_date)
 	{
-		Singleton.instance().logger().info("data format was out of date - removing data files and forcing slow sync");
+		logger().info("data format was out of date - removing data files and forcing slow sync");
 
 		RemoveDatastore.removeZfcs();
 	}

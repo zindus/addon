@@ -72,7 +72,7 @@ Lso.prototype.compareFormat = function()
 	else
 		zinAssertAndLog(false, "m_properties: " + aToString(this.m_properties));
 
-	// Singleton.instance().logger().debug("Lso.compareFormat: blah: returns: " + ret);
+	// logger().debug("Lso.compareFormat: blah: returns: " + ret);
 
 	return ret;
 }

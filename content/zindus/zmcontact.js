@@ -51,7 +51,7 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 	var key = null;
 	var value = null;
 
-	// Singleton.instance().logger().debug("loadFromNode: node.nodeName == " + node.nodeName);
+	// logger().debug("loadFromNode: node.nodeName == " + node.nodeName);
 
 	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
@@ -67,7 +67,7 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 	//
 	var nodelist_of_a = node.getElementsByTagNameNS(ns, "a");
 
-	// Singleton.instance().logger().debug("nodelist_of_a.length == " + nodelist_of_a.length");
+	// logger().debug("nodelist_of_a.length == " + nodelist_of_a.length");
 
 	for (var i = 0; i < nodelist_of_a.length; i++)
 	{
@@ -77,8 +77,8 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 		
 		if (!elementA || !elementA.childNodes)
 		{
-			Singleton.instance().logger().warn("Unexpected response from server: <a> element didn't have attributes - skipping the rest of this contact.");
-			Singleton.instance().logger().warn("the xml received from the server is: " + xmlDocumentToString(node));
+			logger().warn("Unexpected response from server: <a> element didn't have attributes - skipping the rest of this contact.");
+			logger().warn("the xml received from the server is: " + xmlDocumentToString(node));
 			break;
 		}
 
@@ -93,10 +93,10 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 		else if (elementA.hasAttribute("ct"))
 			; // if it has a ct (content-type) attribute, Tb2: ignore it Tb3: look for n="image" and get+store the image(s)
 		else
-			Singleton.instance().logger().warn("This contact contains something that isn't understood: " +
+			logger().warn("This contact contains something that isn't understood: " +
 			                                                xmlDocumentToString(node));
 
-		// if (key && value) Singleton.instance().logger().debug("77224: setting contact." + key + " to " + value);
+		// if (key && value) logger().debug("77224: setting contact." + key + " to " + value);
 	}
 }
 

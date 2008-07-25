@@ -144,7 +144,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			this.m_payload.m_es = new SyncFsmExitStatus();
 			this.m_payload.m_is_cancelled = false;
 
-			Singleton.instance().logger().debug("ConfigSettings.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
+			logger().debug("ConfigSettings.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
 
 			window.openDialog("chrome://zindus/content/syncwindow.xul",  "_blank", WINDOW_FEATURES, this.m_payload);
 
@@ -158,11 +158,11 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			{
 				var msg = "";
 
-				Singleton.instance().logger().debug("ConfigSettings.onCommand: after openDialog: m_is_cancelled: " +
+				logger().debug("ConfigSettings.onCommand: after openDialog: m_is_cancelled: " +
 				                                              this.m_payload.m_is_cancelled + " m_es: " + this.m_payload.m_es.toString());
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
-					Singleton.instance().logger().debug("ConfigSettings.onCommand: cs.sync.failed.unexpectedly");
+					logger().debug("ConfigSettings.onCommand: cs.sync.failed.unexpectedly");
 					msg = stringBundleString("cs.sync.failed.unexpectedly");
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
@@ -440,7 +440,7 @@ ConfigSettings.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, pro
 	var selected_id;
 	var value = prefset.getProperty(property);
 
-	Singleton.instance().logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " value: " + value);
+	logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " value: " + value);
 
 	if (value && bimap.isPresent(value, null))
 		selected_id = bimap.lookup(value, null);

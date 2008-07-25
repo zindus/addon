@@ -104,7 +104,7 @@ function stringBundleString(id_string, args)
 		ret = "Unable to load string-bundle: " + string_bundle_id;
 
 		if (isSingletonInScope())
-			Singleton.instance().logger().error(ret);
+			logger().error(ret);
 	}
 	else try
 	{
@@ -116,9 +116,9 @@ function stringBundleString(id_string, args)
 	catch (e)
 	{
 		if (isSingletonInScope())
-			Singleton.instance().logger().error("stringBundleString: id_string: " + id_string + " exception: " + e);
+			logger().error("stringBundleString: id_string: " + id_string + " exception: " + e);
 		else
-			dump("stringBundleString: Singleton.instance().logger() undefined: id_string: " + id_string + " exception: " + e);
+			dump("stringBundleString: logger() undefined: id_string: " + id_string + " exception: " + e);
 
 		is_exception = true;
 	}
@@ -200,8 +200,8 @@ function aToString(obj)
 				} catch (e)
 				{
 					dump("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-					Singleton.instance().logger().error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-					Singleton.instance().logger().error("ret: " + ret);
+					logger().error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
+					logger().error("ret: " + ret);
 				}
 			else if (typeof(obj[x]) == 'function')
 				ret += "Function";
@@ -434,6 +434,8 @@ function hyphenate()
 	return ret;
 }
 
+// TODO  - this won't work with multiple accounts...
+//
 function isValidSourceId(sourceid)
 {
 	return (sourceid == SOURCEID_TB || sourceid == SOURCEID_AA);
@@ -555,7 +557,7 @@ function compareToolkitVersionStrings(string_a, string_b)
 			ret = -1;
 	}
 
-	Singleton.instance().logger().debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
+	logger().debug("compareToolkitVersionStrings(" + string_a + ", " + string_b + ") returns: " + ret);
 
 	return ret;
 }
@@ -596,7 +598,7 @@ function zmPermFromZfi(zfi)
 			ret |= ZM_PERM_WRITE;
 	}
 
-	// Singleton.instance().logger().debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
+	// logger().debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
 
 	return ret;
 }
@@ -676,8 +678,7 @@ function isSingletonInScope()
 
 function prefsetMatchWithPreAuth(url)
 {
-	var prefs     = Singleton.instance().preferences();
-	var a_preauth = prefs.getImmediateChildren(prefs.branch(), PrefSet.PREAUTH + '.');
+	var a_preauth = preferences().getImmediateChildren(preferences().branch(), PrefSet.PREAUTH + '.');
 	var prefset   = new PrefSet(PrefSet.PREAUTH, PrefSet.PREAUTH_PROPERTIES);
 	var is_match  = false;
 
@@ -723,7 +724,7 @@ function convertCER(str, dirn)
 		else // (dirn & CER_TO_ENTITY)
 			ret = ret.replace(convertCER.a_regexp[a_char[i]], a_entity[i]);
 
-	// Singleton.instance().logger().debug("convertCER: blah: input: " + str + " and returns: " + ret);
+	// logger().debug("convertCER: blah: input: " + str + " and returns: " + ret);
 
 	return ret;
 }
@@ -756,7 +757,7 @@ function openURL(url)
 
 function migratePrefName(a_map)
 {
-	var prefs = Singleton.instance().preferences();
+	var prefs = preferences();
 
 	for (var old in a_map)
 	{
@@ -774,30 +775,28 @@ function migratePrefName(a_map)
 
 			prefs.branch().deleteBranch(old);
 
-			Singleton.instance().logger().debug("migrated pref: " + old + " to " + a_map[old].new + " value: " + value);
+			logger().debug("migrated pref: " + old + " to " + a_map[old].new + " value: " + value);
 		}
 	}
 }
 
 function migratePrefValue(a_key, bimap)
 {
-	var prefs = Singleton.instance().preferences();
 	var key;
 
 	for (var i = 0; i < a_key.length; i++)
 	{
 		key = a_key[i];
 
-		value = prefs.getCharPrefOrNull(prefs.branch(), key);
+		value = preferences().getCharPrefOrNull(preferences().branch(), key);
 
 		if (value != null && bimap.isPresent(value, null))
 		{
-			Singleton.instance().logger().debug("blah: key: " + key + " value: " + value);
+			logger().debug("blah: key: " + key + " value: " + value);
 
-			prefs.setCharPref(prefs.branch(), key, bimap.lookup(value, null) );
+			preferences().setCharPref(preferences().branch(), key, bimap.lookup(value, null) );
 
-			Singleton.instance().logger().debug("migrated pref key: " + key + " old value: " + value
-			                                                                + " to new value: " + bimap.lookup(value, null));
+			logger().debug("migrated pref key: " + key + " old value: " + value + " to new value: " + bimap.lookup(value, null));
 		}
 	}
 }
@@ -825,10 +824,14 @@ function zinAlert(title_string_id, msg, win)
 	if (!win)
 		win = null;
 
-	Singleton.instance().logger().debug("zinAlert: blah: title_string_id: " + title_string_id + " msg: " + msg);
+	logger().debug("zinAlert: blah: title_string_id: " + title_string_id + " msg: " + msg);
 
 	var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
 	prompts.alert(win, stringBundleString(title_string_id), msg);
 
-	Singleton.instance().logger().debug("zinAlert: blah: done");
+	logger().debug("zinAlert: blah: done");
 }
+
+function logger()      { return Singleton.instance().logger();      }
+function preferences() { return Singleton.instance().preferences(); }
+

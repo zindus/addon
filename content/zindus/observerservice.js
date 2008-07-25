@@ -60,14 +60,14 @@ ObserverService.notify = function(topic, subject, data)
 
 ObserverService.register = function(obj, topic)
 {
-	Singleton.instance().logger().debug("ObserverService.register: " + topic);
+	logger().debug("ObserverService.register: " + topic);
 
 	ObserverService.service().addObserver(obj, topic, false);
 }
 
 ObserverService.unregister = function(obj, topic)
 {
-	Singleton.instance().logger().debug("ObserverService.unregister: " + topic);
+	logger().debug("ObserverService.unregister: " + topic);
 
 	ObserverService.service().removeObserver(obj, topic);
 }

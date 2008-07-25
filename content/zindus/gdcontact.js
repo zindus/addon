@@ -118,7 +118,7 @@ GdContact.prototype.set_visited = function(a_visited, key)
 	if (!isPropertyPresent(a_visited, key))
 		a_visited[key] = true;
 	else
-		Singleton.instance().logger().error("GdContact: visited this node twice - this shouldn't happen: key: " + key +
+		logger().error("GdContact: visited this node twice - this shouldn't happen: key: " + key +
 		                                                                   " a_visited: " + aToString(a_visited)); 
 }
 
@@ -445,7 +445,7 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 	switch(key)
 	{
 		case "title":
-			Singleton.instance().logger().error("fieldAdd: shouldn't be here: key: " + key);
+			logger().error("fieldAdd: shouldn't be here: key: " + key);
 			break;
 		case "content":
 			element = this.m_document.createElementNS(Xpath.NS_ATOM, "content");

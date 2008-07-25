@@ -85,7 +85,7 @@ Account.prototype.save = function()
 	prefset.setProperty(PrefSet.ACCOUNT_USERNAME, this.get('username'));
 	prefset.setProperty(PrefSet.ACCOUNT_FORMAT,   this.get('format'));
 
-	// Singleton.instance().logger().debug("Account.prototype.save: blah: saving prefset with sourceid: " + prefset.m_id);
+	// logger().debug("Account.prototype.save: blah: saving prefset with sourceid: " + prefset.m_id);
 
 	prefset.save();
 }
@@ -96,7 +96,7 @@ Account.prototype.remove = function()
 
 	prefset.m_id = this.get('sourceid');
 
-	// Singleton.instance().logger().debug("Account.prototype.remove: blah: removing prefset with sourceid: " + prefset.m_id);
+	// logger().debug("Account.prototype.remove: blah: removing prefset with sourceid: " + prefset.m_id);
 
 	prefset.remove();
 }
@@ -107,8 +107,7 @@ function AccountFactory()
 
 AccountFactory.accountsLoadFromPrefset = function()
 {
-	var preferences = Singleton.instance().preferences();
-	var a_sourceid  = preferences.getImmediateChildren(preferences.branch(), PrefSet.ACCOUNT + '.');
+	var a_sourceid  = preferences().getImmediateChildren(preferences().branch(), PrefSet.ACCOUNT + '.');
 	var ret         = new Array();
 	var account;
 
@@ -124,7 +123,7 @@ AccountFactory.accountsLoadFromPrefset = function()
 		ret.push(account);
 	}
 
-	// Singleton.instance().logger().debug("accountsLoadFromPrefset: a_sourceid: " + a_sourceid.toString() +" accounts: " + aToString(ret));
+	// logger().debug("accountsLoadFromPrefset: a_sourceid: " + a_sourceid.toString() +" accounts: " + aToString(ret));
 
 	return ret;
 }

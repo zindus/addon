@@ -31,12 +31,9 @@ Gcs.bimap_state = new BiMap(
 	[Gcs.WIN, Gcs.CONFLICT],
 	['win',   'conflict', ]);
 
-
 function Gcs(sourceid, state)
 {
-	// Singleton.instance().logger().debug("Gcs: sourceid: " + sourceid); // blah
-	// Singleton.instance().logger().debug("Gcs: state:    " + state);
-	// Singleton.instance().logger().debug("Gcs: Gcs.bimap_state.isPresent(state): " + Gcs.bimap_state.isPresent(state));
+	// logger().debug("Gcs: sourceid: " + sourceid + " state: " + state + " isPresent(state): " + Gcs.bimap_state.isPresent(state));
 
 	zinAssert(isValidSourceId(sourceid) && Gcs.bimap_state.isPresent(state));
 
@@ -46,6 +43,5 @@ function Gcs(sourceid, state)
 
 Gcs.prototype.toString = function()
 {
-	return  "winner: " + this.sourceid +
-			" state: " + Gcs.bimap_state.lookup(this.state);
+	return  "winner: " + this.sourceid + " state: " + Gcs.bimap_state.lookup(this.state);
 }

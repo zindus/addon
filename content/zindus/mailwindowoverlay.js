@@ -48,7 +48,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 			RemoveDatastore.removeZfcsIfNecessary();
 
-			var prefs = Singleton.instance().preferences();
+			var prefs = preferences();
 
 			if (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_AUTO_SYNC) != "false")
 			{
@@ -234,7 +234,7 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 ZinMailWindowOverlay.prototype.migratePrefs = function()
 {
 	var old, value;
-	var prefs = Singleton.instance().preferences();
+	var prefs = preferences();
 
 	// delete once confident all users are on version >= 0.6.13
 	// 
