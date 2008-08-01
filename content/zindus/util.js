@@ -434,11 +434,9 @@ function hyphenate()
 	return ret;
 }
 
-// TODO  - this won't work with multiple accounts...
-//
 function isValidSourceId(sourceid)
 {
-	return (sourceid == SOURCEID_TB || sourceid == SOURCEID_AA);
+	return (sourceid == SOURCEID_TB || Number(sourceid) > SOURCEID_TB);
 }
 
 function isValidFormat(format)
@@ -830,6 +828,16 @@ function zinAlert(title_string_id, msg, win)
 	prompts.alert(win, stringBundleString(title_string_id), msg);
 
 	logger().debug("zinAlert: blah: done");
+}
+
+function textToHtml(text)
+{
+	var html = convertCER(String(text), CER_TO_ENTITY);
+
+	html = html.replace(/\n/mg, "<br/>");
+	html = html.replace(/ ( )/mg, " &#160;");
+
+	return html;
 }
 
 function logger()      { return Singleton.instance().logger();      }

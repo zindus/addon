@@ -310,6 +310,11 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		this.state.stopFailCode = 'failon.no.xpath';
 		nextEvent = 'evLackIntegrity';
 	}
+	else if (String(navigator.userAgent).match(/pre$/))
+	{
+		this.state.stopFailCode = 'failon.no.tbpre';
+		nextEvent = 'evLackIntegrity';
+	}
 	else if (!this.state.m_addressbook.getPabName())
 	{
 		this.state.stopFailCode = 'failon.no.pab';
@@ -480,26 +485,20 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	//
 	this.state.stopwatch.mark(state);
 
-	var nextEvent = null;
-	var cExist;
-
-	var a_zfc = new Object(); // associative array of zfc, key is the file name
-
-	cExist = this.loadZfcs(a_zfc);
-
-	this.state.m_logger.debug("entryActionLoad: number of file load attempts: " + aToLength(a_zfc) +
-	                                          " number of file load actual: "   + cExist);
-
+	var nextEvent   = null;
 	var sourceid_pr = this.state.sourceid_pr;
+	var a_zfc       = new Object();          // associative array of zfc, key is the file name
+	var cExist      = this.loadZfcs(a_zfc);  // load the zfcs...
 	var zfcLastSync = this.state.zfcLastSync;
 
-	this.state.m_logger.debug("entryActionLoad: last sync soapURL: "  +
+	this.debug("entryActionLoad: number of file load attempts: " + aToLength(a_zfc) + " number of file load actual: "   + cExist);
+	this.debug("entryActionLoad: last sync soapURL: "  +
 		                    ( zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr).getOrNull('soapURL') : "not present"));
-	this.state.m_logger.debug("entryActionLoad: last sync username: "  +
+	this.debug("entryActionLoad: last sync username: "  +
 	   ( zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr).getOrNull('username') : "not present"));
 
-	this.state.m_logger.debug("entryActionLoad: this sync soapURL:  " + this.state.sources[sourceid_pr]['soapURL']);
-	this.state.m_logger.debug("entryActionLoad: this sync username: " + this.state.sources[sourceid_pr]['username']);
+	this.debug("entryActionLoad: this sync soapURL:  " + this.state.sources[sourceid_pr]['soapURL']);
+	this.debug("entryActionLoad: this sync username: " + this.state.sources[sourceid_pr]['username']);
 
 	var is_force_slow_sync =
 			cExist == 0 ||
@@ -511,7 +510,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	if (cExist != 0 && is_force_slow_sync)
 	{
-		this.state.m_logger.debug("entryActionLoad: server url, username or other critical setting changed since last sync - doing a reset to force slow sync");
+		this.debug("entryActionLoad: server url, username or other critical setting changed since last sync - doing a reset to force slow sync");
 
 		RemoveDatastore.removeZfcs();
 
@@ -520,7 +519,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	if (cExist == 0)
 	{
-		this.state.m_logger.debug("entryActionLoad: data files didn't exist - initialising maps and tb attributes...");
+		this.debug("entryActionLoad: data files didn't exist - initialising maps and tb attributes...");
 
 		this.state.isSlowSync = true;
 
@@ -543,7 +542,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		this.state.stopFailCode = 'failon.integrity.data.store.in';
 	}
 
-	this.state.m_logger.debug("entryActionLoad: isSlowSync: " + this.state.isSlowSync);
+	this.debug("entryActionLoad: isSlowSync: " + this.state.isSlowSync);
 
 	continuation(nextEvent);
 }
@@ -645,7 +644,7 @@ SyncFsm.prototype.isConsistentSources = function()
 	return is_consistent;
 }
 
-SyncFsm.prototype.isConsistentSharedFolderReferences = function()
+SyncFsmZm.prototype.isConsistentSharedFolderReferences = function()
 {
 	var is_consistent = true;
 	var error_msg = "";
@@ -1848,7 +1847,7 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	else if (this.formatPr() == FORMAT_GD)
 	{
 		if (this.state.isSlowSync)
-			this.entryActionLoadTbSetupGdAddressbook();
+			this.loadTbSetupGdAddressbook();
 	}
 
 	var aUri = this.loadTbMergeZfcWithAddressBook();           // 4. merge the current tb luid map with the current addressbook(s)
@@ -2006,14 +2005,14 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 //   if gd_sync_with == 'pab' and there's a zindus/<email-address> folder, rename it to <email-address> <date>
 //   if gd_sync_with == 'zg'  and there's no zindus/<email-address> folder, create it
 //
-SyncFsm.prototype.entryActionLoadTbSetupGdAddressbook = function()
+SyncFsm.prototype.loadTbSetupGdAddressbook = function()
 {
 	var abName = this.gdAddressbookName();
 	var aUris  = this.state.m_addressbook.getAddressBookUrisByPattern(new RegExp( "^" + abName + "$" ));
 
 	if (this.state.gd_sync_with == 'pab' && aToLength(aUris) > 0)
 	{
-		this.state.m_logger.debug("entryActionLoadTbSetupGdAddressbook: about to rename out of the way: " + aToString(aUris));
+		this.state.m_logger.debug("loadTbSetupGdAddressbook: about to rename out of the way: " + aToString(aUris));
 
 		var username = this.state.sources[this.state.sourceid_pr]['username'];
 
@@ -2025,7 +2024,7 @@ SyncFsm.prototype.entryActionLoadTbSetupGdAddressbook = function()
 	{
 		var abip = this.state.m_addressbook.newAddressBook(abName);
 
-		this.state.m_logger.debug("entryActionLoadTbSetupGdAddressbook: created: addressbook: " + abName + " uri: " + abip.m_uri);
+		this.state.m_logger.debug("loadTbSetupGdAddressbook: created: addressbook: " + abName + " uri: " + abip.m_uri);
 	}
 }
 
@@ -2680,8 +2679,8 @@ SyncFsm.prototype.testForGdProblems = function()
 		for (var key in a_empty_contacts)
 			msg += "\n" + a_empty_contacts[key];
 
-		this.state.stopFailCode   = 'failon.gd.empty.contact';
-		this.state.stopFailDetail = "\n" + msg + "\n";
+		this.state.stopFailCode   = 'failon.gd.conflict.4';
+		this.state.stopFailDetail = "<br/>" + textToHtml(msg) + this.gdConflictTrailer(this.state.stopFailCode);
 	}
 
 	if (this.state.stopFailCode == null)
@@ -2707,14 +2706,14 @@ SyncFsm.prototype.testForGdProblems = function()
 
 		if (msg.length > 0)
 		{
-			this.state.stopFailCode   = 'failon.gd.conflict1';
-			this.state.stopFailDetail = "\n\n" + stringBundleString("status.failmsg.gd.conflict.detail");
+			this.state.stopFailCode   = 'failon.gd.conflict.1';
+			this.state.stopFailDetail = "<br/><br/>" + stringBundleString("status.failmsg.gd.conflict.cause");
 
 			if (count != aToLength(a_duplicates))
-				this.state.stopFailDetail += " " + stringBundleString("status.failmsg.gd.conflict.progress", [count, aToLength(a_duplicates)])
+				this.state.stopFailDetail += " "+stringBundleString("status.failmsg.gd.conflict.progress", [count, aToLength(a_duplicates)])
 
 			this.state.stopFailDetail += ":";
-			this.state.stopFailDetail += msg;
+			this.state.stopFailDetail += textToHtml(msg) + this.gdConflictTrailer(this.state.stopFailCode);
 		}
 	}
 
@@ -2751,8 +2750,6 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 		{
 			var luid = zfi.key();
 
-			this.state.m_logger.debug("blah: luid: " + luid);  // TODO
-
 			if (zfi.type() == FeedItem.TYPE_CN)
 				this.add_email(luid);
 
@@ -2780,16 +2777,14 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 
 		msg_conflicting_addresses += "\n";
 
-		this.state.stopFailCode   = 'failon.gd.conflict3';
-		this.state.stopFailDetail = "\n\n" + stringBundleString("status.failmsg.gd.conflict.detail");
+		this.state.stopFailCode   = 'failon.gd.conflict.3';
+		this.state.stopFailDetail = "<br/><br/>" + stringBundleString("status.failmsg.gd.conflict.cause");
 
 		if (a_conflict.length > GOOGLE_SHOW_CONFLICTS_AT_A_TIME)
 			this.state.stopFailDetail += " " + stringBundleString("status.failmsg.gd.conflict.progress",
 			                                    [ GOOGLE_SHOW_CONFLICTS_AT_A_TIME, a_conflict.length ]);
 
-		this.state.stopFailDetail += ":";
-		
-		this.state.stopFailDetail += msg_conflicting_addresses;
+		this.state.stopFailDetail += ":" + textToHtml(msg_conflicting_addresses);
 	}
 
 	return this.state.stopFailCode == null;
@@ -2845,9 +2840,8 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 		if (isPropertyPresent(a_tb_email, email) && a_gd_email[email] != a_tb_email[email])
 			a_conflict[email] = true;
 
-	this.state.m_logger.debug("testForGdRemoteConflictOnSlowSync: a_conflict: " + aToString(a_conflict));
-	this.state.m_logger.debug("testForGdRemoteConflictOnSlowSync: a_gd_email: " + aToString(a_gd_email));
-	this.state.m_logger.debug("testForGdRemoteConflictOnSlowSync: a_tb_email: " + aToString(a_tb_email));
+	this.debug("testForGdRemoteConflictOnSlowSync:\n a_conflict: " + aToString(a_conflict) + "\n a_gd_email: " + aToString(a_gd_email) +
+	                                                                                         "\n a_tb_email: " + aToString(a_tb_email));
 
 	var conflict_count = aToLength(a_conflict);
 
@@ -2871,15 +2865,15 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 				break;
 		}
 
-		this.state.stopFailCode   = 'failon.gd.conflict2';
-		this.state.stopFailDetail = "\n\n" + stringBundleString("status.failmsg.gd.conflict.detail");
+		this.state.stopFailCode   = 'failon.gd.conflict.2';
+		this.state.stopFailDetail = "<br/><br/>" + stringBundleString("status.failmsg.gd.conflict.cause");
 
 		if (count != conflict_count)
 			this.state.stopFailDetail += " " + stringBundleString("status.failmsg.gd.conflict.progress", [count, conflict_count ]);
 
 		this.state.stopFailDetail += ":";
 		
-		this.state.stopFailDetail += msg_conflicting_addresses;
+		this.state.stopFailDetail += textToHtml(msg_conflicting_addresses) + this.gdConflictTrailer(this.state.stopFailCode);
 	}
 
 	return this.state.stopFailCode == null;
@@ -2939,8 +2933,8 @@ SyncFsm.prototype.getGdConflictMsg = function(email, sourceid1, luid1, sourceid2
 	var email2 = this.getContactPrimaryEmailFromLuid(sourceid2, luid2);
 	var add1   = "";
 	var add2   = "";
-	var none   = stringBundleString("status.failmsg.gd.none");
-	var other  = (a_diff && a_diff['more']) ? stringBundleString("status.failmsg.gd.other.differences") : "";
+	var none   = stringBundleString("status.failmsg.gd.conflict.none");
+	var other  = (a_diff && a_diff['more']) ? stringBundleString("status.failmsg.gd.conflict.other.differences") : "";
 	var ret    = "\n";
 
 	if (a_diff && a_diff['key'] != 'PrimaryEmail' && a_diff['key'] != 'DisplayName')
@@ -5912,22 +5906,22 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 			}
 			else
 			{
-				this.state.stopFailCode   = 'failon.gd.conflict2';
+				this.state.stopFailCode   = 'failon.gd.conflict.2';
 
-				this.state.stopFailDetail = "\n\n" + stringBundleString("status.failmsg.gd.conflict.detail");
-				this.state.stopFailDetail += ":";
+				this.state.stopFailDetail = "<br/><br/>" + stringBundleString("status.failmsg.gd.conflict.cause") + ":" + "<br/><br/>";
 
-				this.state.stopFailDetail += "\n\n";
-				this.state.stopFailDetail += 'Thunderbird' + ": " +
+				var conflict_msg = stringBundleString("format.thunderbird") + ": " +
 				                             this.getContactPrimaryEmailFromLuid(remote_update_package.remote.sourceid_winner,
 											                                     remote_update_package.remote.luid_winner) + "\n\n";
 
 				if (contact)
 				{
 					var properties = this.contact_converter().convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
-					this.state.stopFailDetail += stringBundleString("status.failmsg.gd.conflict.with") + "\n\n";
-					this.state.stopFailDetail += 'Google' + ": " + this.shortLabelForContactProperties(properties) + "\n";
+					conflict_msg += stringBundleString("status.failmsg.gd.conflict.with") + "\n\n";
+					conflict_msg += stringBundleString("format.google") + ": " + this.shortLabelForContactProperties(properties) + "\n";
 				}
+
+				this.state.stopFailDetail += textToHtml(conflict_msg);
 			}
 		}
 		else
@@ -6479,15 +6473,15 @@ SyncFsm.isOfInterest = function(zfc, key)
 	return ret;
 }
 
-SyncFsm.newSyncFsm = function(syncfsm_details)
+SyncFsm.newSyncFsm = function(syncfsm_details, account_number)
 {
 	var id_fsm  = null;
-	var account = syncfsm_details.account;
+	var account = syncfsm_details.accounts[account_number];
 	var type    = syncfsm_details.type;
 	var format  = account.format_xx();
 	var syncfsm;
 
-	zinAssert(syncfsm_details.account); // this only supports authonly - TODO: Sync Now
+	zinAssert(account);
 
 	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
 	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
@@ -7074,6 +7068,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.zfcLastSync         = null;                    // FeedCollection - maintains state re: last sync (anchors, success/fail)
 	state.zfcGid              = null;                    // FeedCollection - map of gid to (sourceid, luid)
 	state.zfcPreUpdateWinners = new FeedCollection();    // has the winning zfi's before they're updated to reflect their win (LS unchanged)
+	state.zfcTbPreMerge       = null;                    // the thunderbird map before merging tb addressbook - used to test invariance
 	state.stopwatch           = new StopWatch("SyncFsm");
 	state.authToken           = null;
 	state.isSlowSync          = false;        // true iff no data files
@@ -7133,7 +7128,6 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.aContact               = new Array();  // array of contact (zid, id) - push in SyncResponse, shift in GetContactResponse
 	state.isRedoSyncRequest      = false;        // we may need to do <SyncRequest> again - the second time without a token
 	state.aSyncContact           = new Object(); // each property is a ZmContact object returned in GetContactResponse
-	state.zfcTbPreMerge          = null;         // the thunderbird map before merging tb addressbook - used to test invariance
 
 	state.initialiseSource(sourceid, FORMAT_ZM);
 }
@@ -7385,6 +7379,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 	}
 	catch (ex if ex instanceof StopIteration) {
 		is_finished = true;
+
 	} catch (ex) {
 		this.state.m_logger.error(ex);
 		zinAssert(false);
@@ -7574,4 +7569,34 @@ SyncFsmGd.prototype.exitActionDeXmlifyAddrGd = function(state, event)
 SyncFsmGd.prototype.gdAdjustHttpHttps = function(url)
 {
 	return url.replace(/^https?/, this.state.gd_scheme_data_transfer);
+}
+
+SyncFsmGd.prototype.gdConflictTrailer = function(fail_code)
+{
+	var quickstart = this.state.gd_sync_with == "pab" ?
+			    stringBundleString("status.failon.gd.conflict.quickstart", [ stringBundleString("cs.general.gd.syncwith.label") ]) : "";
+
+	return stringBundleString("status.failon.gd.conflict.trailer",
+			[ quickstart,
+			  stringBundleString("status.failmsg.gd.conflict.see.faq", [ this.gdConflictFailCodeToHref(this.state.stopFailCode) ] ) ] );
+}
+
+SyncFsmGd.prototype.gdConflictFailCodeToHref = function(fail_code)
+{
+	var ret, url;
+
+	if (isInArray(fail_code, [ 'failon.gd.conflict.1', 'failon.gd.conflict.2', 'failon.gd.conflict.4' ]))
+	{
+		url = "http://www.zindus.com/faq-thunderbird-google/";
+		ret = '<a href="' + url + '#' + fail_code + '">' + url + '</a>';
+	}
+	else if (isInArray(fail_code, [ 'failon.gd.conflict.3' ]))
+	{
+		url = "http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs";
+		ret = '<a href="' + url + '">' + url + '</a>';
+	}
+	else
+		zinAssertAndLog(false, "mismatched case: fail_code: " + fail_code);
+
+	return ret;
 }

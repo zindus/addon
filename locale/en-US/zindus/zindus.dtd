@@ -41,7 +41,6 @@
 <!ENTITY zindus.cs.general.zm.gal.label                 "Global Address List (GAL): ">
 <!ENTITY zindus.cs.general.zm.gal.yes.label             "Yes">
 <!ENTITY zindus.cs.general.zm.gal.no.label              "No">
-<!ENTITY zindus.cs.general.gd.sync.with.label           "Sync Google contacts with">
 <!ENTITY zindus.cs.general.gd.sync.with.pab.label       "Personal Address Book">
 <!ENTITY zindus.cs.general.button.sync.now.label        "Sync Now">
 <!ENTITY zindus.cs.general.button.sync.now.accesskey    "S">

@@ -103,7 +103,7 @@
 						<caption label="&zindus.google.label;" />
 						<hbox pack="start" >
 							<vbox pack="center" >
-								<label value="&zindus.cs.general.gd.sync.with.label;" />
+								<label id="zindus-cs-general-gdsyncwith-label" />
 								<radiogroup id="zindus-cs-general-gdsyncwith-radiogroup" >
 									<radio id="zindus-cs-general-gdsyncwith-pab" label="&zindus.cs.general.gd.sync.with.pab.label;" />
 									<radio id="zindus-cs-general-gdsyncwith-zg" />

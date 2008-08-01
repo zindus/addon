@@ -138,8 +138,9 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			this.updatePrefsetsFromDocument();
 
 			this.m_payload = new Payload();
-			zinAssert(this.m_accounts.length == 1);
-			this.m_payload.m_syncfsm_details = newObject('account', this.m_accounts[0], 'type', "twoway",
+			if (!this.is_developer_mode) // TODO
+				zinAssert(this.m_accounts.length == 1);
+			this.m_payload.m_syncfsm_details = newObject('accounts', this.m_accounts, 'type', "twoway",
 			                                                         'prefset_general', this.m_prefset_general);
 			this.m_payload.m_es = new SyncFsmExitStatus();
 			this.m_payload.m_is_cancelled = false;
@@ -170,8 +171,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 				if (msg != "")
 				{
-					if (isInArray(this.m_payload.m_es.m_fail_code, [ 'failon.gd.conflict1', 'failon.gd.conflict2',
-					                                                 'failon.gd.conflict3', 'failon.gd.empty.contact' ]))
+					if (isInArray(this.m_payload.m_es.m_fail_code, [ 'failon.gd.conflict.1', 'failon.gd.conflict.2',
+					                                                 'failon.gd.conflict.3', 'failon.gd.conflict.4' ]))
 					{
 						var payload2 = new Payload();
 						payload2.m_args = newObject('fail_code', this.m_payload.m_es.m_fail_code, 'msg', msg);
@@ -179,7 +180,6 @@ ConfigSettings.prototype.onCommand = function(id_target)
 					}
 					else
 						zinAlert('cs.sync.title', msg, window);
-						// alert(msg);
 				}
 			}
 
@@ -351,7 +351,10 @@ ConfigSettings.prototype.initialiseView = function()
 ConfigSettings.prototype.updateView = function()
 {
 	if (this.m_is_fsm_running)
+	{
+		this.m_logger.debug("updateView: fsm is running - disabling buttons"); // TODO
 		ConfigSettings.setAttribute('disabled', true, "zindus-cs-command");
+	}
 	else if (!this.isServerSettingsComplete())
 	{
 		this.m_logger.debug("updateView: server settings incomplete - disabling buttons");
@@ -372,7 +375,10 @@ ConfigSettings.prototype.updateView = function()
 	ConfigSettings.setAttribute('hidden', a_zimbra.length == 0, "zindus-cs-general-zimbra-groupbox");
 
 	if (a_google.length > 0)
-		dId("zindus-cs-general-gdsyncwith-zg").label = this.gdSyncWithLabel();
+	{
+		dId("zindus-cs-general-gdsyncwith-zg").label    = this.gdSyncWithLabel();
+		dId("zindus-cs-general-gdsyncwith-label").value = stringBundleString("cs.general.gd.syncwith.label");
+	}
 
 	// free.fr
 	//

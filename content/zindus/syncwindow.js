@@ -31,32 +31,32 @@ function SyncWindow()
 
 	this.m_logger.debug("constructor starts");
 
-	this.m_syncfsm   = null;
-	this.m_timeoutID = null; // timoutID for the next schedule of the fsm
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new WindowCollection(SHOW_STATUS_PANEL_IN);
+	this.m_account_index = 0;
 
-	this.m_has_observer_been_called = false;
+	this.initialise_per_fsm_members();
 
 	this.m_logger.debug("constructor ends");
 }
 
+SyncWindow.prototype.initialise_per_fsm_members = function()
+{
+	this.m_syncfsm   = null;
+	this.m_timeoutID = null;
+	this.m_has_fsm_observer_been_called = false;
+}
+
 SyncWindow.prototype.onLoad = function()
 {
-	this.m_logger.debug("onLoad: enters");
+	this.m_logger.debug("onLoad: enters: is_cancelled: " + window.arguments[0].m_is_cancelled);
 
 	this.m_payload = window.arguments[0];
-
-	this.m_logger.debug("is_cancelled " + this.m_payload.m_is_cancelled);
 
 	if (this.m_payload.m_is_cancelled)
 		window.close();
 	else
-	{
-		this.m_sfo = new SyncFsmObserver(this.m_payload.m_es);
-
 		window.setTimeout(this.onTimerFire, 0, this);
-	}
 
 	this.m_logger.debug("onLoad: exits");
 }
@@ -93,24 +93,15 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	this.m_logger.debug("functor: entering: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
-	var functor = {
-		m_showlogo: false,
-
-		run: function(win) {
-			win.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', !this.m_showlogo);
-			win.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', this.m_showlogo);
-		}
-	};
-
 	// Strictly speaking, fsmstate should be null on first call to observer because the 'sync now' button is disabled when the fsm
 	// is running.  But there is a race condition because the timer can fire and start in between 'sync now' and here.
-	// especially because the addressbooks gets iterated through in the SyncFsmState constructor (which takes a bunch of time).
+	// especially when the addressbooks used to be iterated through in the SyncFsmState constructor (which takes a bunch of time).
 	// Fixing the race condition would require reworking the notification mechanism via the fsm+maestro
 	// So here, if the timer got in first, we just abort the 'Sync Now'.
-	// Do we want to create a specific error condition for this?  Perhaps it'd be better to fix the condition
-	// eg by altering the notification framework so that PrefsDialog can forestall the Timer immediately (while processing the click).
+	// We could create a specific error condition for this - but it'd be better to fix the condition
+	// eg by altering the notification framework so that ConfigSettings can forestall the Timer immediately (while processing the click).
 	//
-	if (!this.m_has_observer_been_called && (fsmstate != null || this.m_payload.m_is_cancelled))
+	if (!this.m_has_fsm_observer_been_called && (fsmstate != null || this.m_payload.m_is_cancelled))
 	{
 		// if fsmstate != null              it means that the timer snuck in between 'Sync Now' and this window
 		// if this.m_payload.m_is_cancelled it means that the preferences window was cancelled in between 'Sync Now' and this window
@@ -120,17 +111,17 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		dId('zindus-sw').acceptDialog();
 	}
-	else if (!this.m_has_observer_been_called)
+	else if (!this.m_has_fsm_observer_been_called)
 	{
-		// zinAssert(fsmstate == null);
-
-		this.m_has_observer_been_called = true;
+		this.m_has_fsm_observer_been_called = true;
 
 		this.m_zwc.populate();
 
 		newLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
 
-		this.m_syncfsm = SyncFsm.newSyncFsm(this.m_payload.m_syncfsm_details);
+		this.m_sfo     = new SyncFsmObserver(this.m_payload.m_es);
+		this.m_syncfsm = SyncFsm.newSyncFsm(this.m_payload.m_syncfsm_details, this.m_account_index);
+		this.m_account_index++;
 
 		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm);
 
@@ -144,13 +135,11 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
-			dId('zindus-sw-progress-meter').setAttribute('value',
-			                                        this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+			dId('zindus-sw-progress-meter').setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 
 			var elDescription = dId('zindus-sw-progress-description');
 			var elHtml        = document.createElementNS(Xpath.NS_XHTML, "p");
-
-			elHtml.innerHTML = stringBundleString("progress.prefix") + " " + this.m_sfo.progressToString();
+			elHtml.innerHTML  = stringBundleString("progress.prefix") + " " + this.m_sfo.progressToString();
 
 			if (!elDescription.hasChildNodes())
 				elDescription.appendChild(elHtml);
@@ -159,14 +148,12 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			this.m_logger.debug("ui: " + elHtml.innerHTML);
 
-			functor.m_showlogo = false;
-			this.m_zwc.forEach(functor);
+			this.m_zwc.forEach(this.zwc_functor(false));
 		}
 
 		if (fsmstate.isFinal())
 		{
-			functor.m_showlogo = true;
-			this.m_zwc.forEach(functor);
+			this.m_zwc.forEach(this.zwc_functor(true));
 
 			if (isPropertyPresent(Maestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
 			{
@@ -176,7 +163,10 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			newLogger().info("sync finish: " + getFriendlyTimeString());
 
-			dId('zindus-sw').acceptDialog();
+			if (this.m_account_index < this.m_payload.m_syncfsm_details.accounts.length)
+				window.setTimeout(this.onTimerFire, 0, this);
+			else
+				dId('zindus-sw').acceptDialog();
 		}
 	}
 }
@@ -195,10 +185,31 @@ SyncWindow.prototype.onTimerFire = function(context)
 	}
 	else
 	{
+		if (context.m_has_fsm_observer_been_called)
+		{
+			context.m_logger.debug("onTimerFire: unregistering functor");
+			Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_SYNCWINDOW);
+			context.initialise_per_fsm_members();
+		}
+
 		context.m_logger.debug("onTimerFire: registering functor");
 		var listen_to = cloneObject(Maestro.FSM_GROUP_SYNC);
 		Maestro.notifyFunctorRegister(context, context.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
 	}
 
 	context.m_logger.debug("onTimerFire: exits");
+}
+
+SyncWindow.prototype.zwc_functor = function(is_showlogo)
+{
+	var functor = {
+		m_is_showlogo: is_showlogo,
+
+		run: function(win) {
+			win.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', !this.m_is_showlogo);
+			win.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', this.m_is_showlogo);
+		}
+	};
+
+	return functor;
 }

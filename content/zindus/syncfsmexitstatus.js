@@ -52,16 +52,17 @@ function SyncFsmExitStatus()
 		'failon.folder.cant.create.shared'    : { 'hasdetail' : 1 }, // 18. 
 		'failon.unable.to.update.server'      : { 'hasdetail' : 1 }, // 19. couldn't make sense of the http/soap response
 		'failon.unable.to.update.thunderbird' : { 'hasdetail' : 1 }, // 20. 
-		'failon.no.xpath'                     : { 'hasdetail' : 0 }, // 21. 
-		'failon.no.pab'                       : { 'hasdetail' : 0 }, // 22. 
-		'failon.multiple.ln'                  : { 'hasdetail' : 1 }, // 23. 
-		'failon.gd.conflict1'                 : { 'hasdetail' : 1 }, // 24. 
-		'failon.gd.conflict2'                 : { 'hasdetail' : 1 }, // 25. 
-		'failon.gd.conflict3'                 : { 'hasdetail' : 1 }, // 
+		'failon.no.xpath'                     : { 'hasdetail' : 0 }, //    
+		'failon.no.tbpre'                     : { 'hasdetail' : 0 }, //    
+		'failon.no.pab'                       : { 'hasdetail' : 0 }, //     
+		'failon.multiple.ln'                  : { 'hasdetail' : 1 }, //     
+		'failon.gd.conflict.1'                : { 'hasdetail' : 1 }, // 25. 
+		'failon.gd.conflict.2'                : { 'hasdetail' : 1 }, //     
+		'failon.gd.conflict.3'                : { 'hasdetail' : 1 }, // 
+		'failon.gd.conflict.4'                : { 'hasdetail' : 1 }, //    
 		'failon.gd.forbidden'                 : { 'hasdetail' : 0 }, // 
-		'failon.zm.empty.contact'             : { 'hasdetail' : 1 }, // 
-		'failon.gd.empty.contact'             : { 'hasdetail' : 1 }, // 
-		'failon.gd.syncwith'                  : { 'hasdetail' : 0 }, // 30. 
+		'failon.zm.empty.contact'             : { 'hasdetail' : 1 }, // 30.
+		'failon.gd.syncwith'                  : { 'hasdetail' : 0 }, //     
 		'failon.unauthorized'                 : { 'hasdetail' : 0 }, //     server 401 - did a proxy remove the 'Authorized' header?
 		'failon.auth'                         : { 'hasdetail' : 1 }  //     Failed to login to Google or Zimbra via preauth
 	};

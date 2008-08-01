@@ -101,11 +101,11 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 			prefset_general.load();
 
-			var syncfsm_details = newObject('account', account,  'type', "twoway", 'prefset_general', prefset_general);
+			var syncfsm_details = newObject('accounts', [ account ], 'type', "twoway", 'prefset_general', prefset_general);
 
 			this.m_logger.debug("onFsmStateChangeFunctor: account: " + account.toString());
 
-			this.m_syncfsm = SyncFsm.newSyncFsm(syncfsm_details);
+			this.m_syncfsm = SyncFsm.newSyncFsm(syncfsm_details, 0);
 
 			this.m_syncfsm.start(window);
 			this.is_running = true;
