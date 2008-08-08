@@ -243,7 +243,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			payload.m_account = (id_target == "zindus-cs-account-add") ? null : this.m_accounts[rowid];
 			payload.m_prefset_general = this.m_prefset_general;
 
-			window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", "chrome", payload);
+			window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
 			if (payload.m_result)
 			{
