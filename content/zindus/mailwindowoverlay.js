@@ -286,7 +286,14 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 
 	migratePrefName(a_map);
 
-	bimap = new BiMap( [ "google", "zimbra" ], [ stringBundleString("format.google"), stringBundleString("format.zimbra") ] );
+	bimap = new BiMap( [ "google", "zimbra" ], [ Account.Google, Account.Zimbra ] );
 
 	migratePrefValue([ PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT ], bimap);
+
+	if ( prefs.getCharPrefOrNull(prefs.branch(), PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_URL) &&
+	    !prefs.getCharPrefOrNull(prefs.branch(), PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT))
+	{
+		this.m_logger.debug("account 2 had a url but no format - this account must have been created in version 0.6.19 or earlier when all accounts were assumed zimbra - set format to zimbra explicitly now..."); // issue #106
+		prefs.setCharPref(prefs.branch(), PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT, Account.Zimbra );
+	}
 }

@@ -604,7 +604,7 @@ ConfigSettings.prototype.accountsArrayOf = function(format_xx)
 	var a_rowid = new Array();
 
 	for (var rowid = 0; rowid < this.m_accounts.length; rowid++)
-		if (this.m_accounts[rowid].get('format') == format)
+		if (this.m_accounts[rowid].format() == format)
 			a_rowid.push(rowid);
 
 	// this.m_logger.debug("accountsArrayOf: format_xx: " + format_xx + " returns: " + a_rowid.toString());

@@ -23,6 +23,9 @@
 
 Account.PROPERTIES = [ 'sourceid', 'format', 'url', 'username', 'password' ];
 
+Account.Google = 'Google';   // these values are hardcoded into extensions.zindus.account.nn.format preferences
+Account.Zimbra = 'Zimbra';   // so if you ever want to change one (unlikely) you need to migrate the old preference values
+
 function Account()
 {
 	this.m_properties = new Object();

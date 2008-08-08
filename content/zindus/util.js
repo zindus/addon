@@ -446,16 +446,15 @@ function isValidFormat(format)
 
 function getBimapFormat(type)
 {
-	var a1 = [ FORMAT_TB, FORMAT_GD, FORMAT_ZM ];
-	var a2;
+	var a1, a2;
 
-	if (type == 'short')
-		a2 = [ 'tb', 'gd', 'zm' ];
-	else if (type == 'long')
-		a2 = [ stringBundleString("format.thunderbird"), stringBundleString("format.google"), stringBundleString("format.zimbra") ];
-	else
-		zinAssertAndLog(false, "mismatched: type: " + type);
-		
+	switch (type)
+	{
+		case 'short': a1 = [ FORMAT_TB, FORMAT_GD, FORMAT_ZM ];  a2 = [ 'tb', 'gd', 'zm' ];               break;
+		case 'long':  a1 = [            FORMAT_GD, FORMAT_ZM ];  a2 = [ Account.Google, Account.Zimbra ]; break;
+		default:      zinAssertAndLog(false, "mismatched: type: " + type);
+	}
+
 	return new BiMap(a1, a2);
 }
 

@@ -95,7 +95,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				//
 				account = new Account();
 				account.set('sourceid', Number(SOURCEID_TB) + 1);
-				account.set('format', stringBundleString("format.zimbra"));
+				account.set('format', Account.Zimbra );
 			}
 
 			var prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
