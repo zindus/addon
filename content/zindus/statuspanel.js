@@ -130,8 +130,8 @@ StatusPanel.update = function(zwc)
 				win.document.getElementById("zindus-statuspanel-" + x).value  = obj[x];
 			}
 
-			win.document.getElementById("zindus-statuspanel").tooltipText = tooltip;
-			win.document.getElementById("zindus-statuspanel").hidden = false;
+			win.document.getElementById("zindus-statusbar-state").tooltipText = tooltip;
+			win.document.getElementById("zindus-statusbar-state").hidden = false;
 		}
 	};
 

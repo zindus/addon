@@ -75,7 +75,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			var functor_unhide_progresspanel = {
 				run: function(win) {
-					win.document.getElementById('zindus-progresspanel').setAttribute('hidden', false);
+					win.document.getElementById('zindus-statusbar-progress').setAttribute('hidden', false);
 				}
 			};
 
@@ -125,10 +125,10 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 					// the window might have disappeared between when we iterated all open windows and now - so we test that
 					// the element exists just before setting it's attribute...
 					//
-					if (win.document && win.document.getElementById("zindus-progresspanel"))
+					if (win.document && win.document.getElementById("zindus-statusbar-progress"))
 					{
-						var el_statuspanel_progress_meter  = win.document.getElementById("zindus-progresspanel-progress-meter");
-						var el_statuspanel_progress_label  = win.document.getElementById("zindus-progresspanel-progress-label");
+						var el_statuspanel_progress_meter  = win.document.getElementById("zindus-statusbar-progress-meter");
+						var el_statuspanel_progress_label  = win.document.getElementById("zindus-statusbar-progress-text");
 						var el_statuspanel_logo            = win.document.getElementById("zindus-statuspanel-logo");
 						var el_statuspanel_logo_processing = win.document.getElementById("zindus-statuspanel-logo-processing");
 
@@ -149,10 +149,10 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			var functor_hide_progresspanel = {
 				run: function(win) {
-					if (win.document && win.document.getElementById("zindus-progresspanel"))
+					if (win.document && win.document.getElementById("zindus-statusbar-progress"))
 					{
-						win.document.getElementById("zindus-progresspanel-progress-label").setAttribute('value', "");
-						win.document.getElementById('zindus-progresspanel').setAttribute('hidden', true);
+						win.document.getElementById("zindus-statusbar-progress-text").setAttribute('value', "");
+						win.document.getElementById('zindus-statusbar-progress').setAttribute('hidden', true);
 						win.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', false);
 						win.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
 					}

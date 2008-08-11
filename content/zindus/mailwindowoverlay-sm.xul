@@ -28,20 +28,10 @@
 <overlay id="zindus-mailwindowoverlay-sm" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
 
 	<statusbar id="status-bar" >
-		<statusbarpanel id="zindus-progresspanel" hidden="true" insertbefore="unreadMessageCount" >
-			<label id="zindus-progresspanel-label-prefix" value="&zindus.progresspanel.prefix.label;" />
-			<stack>
-				<progressmeter id="zindus-progresspanel-progress-meter" mode="normal" style="&zindus.progresspanel.style;" value="50%" />
-				<label id="zindus-progresspanel-progress-label" value="" style="max-width: 20px" crop="end" />
-			</stack>
-		</statusbarpanel>
-		<statusbarpanel id="zindus-statuspanel" hidden="true" tooltiptext="" insertbefore="unreadMessageCount" class="statusbarpanel-iconic" >
-			<image id="zindus-statuspanel-logo"                            src="chrome://zindus/content/zindus16x16-bw.gif"       />
-			<image id="zindus-statuspanel-logo-processing"   hidden="true" src="chrome://zindus/content/zindus-processing-bw.gif" />
-			<label id="zindus-statuspanel-alert"             hidden="true" value="!" />
-			<label id="zindus-statuspanel-error"             hidden="true" value="X" />
-			<label id="zindus-statuspanel-insync"            hidden="true" value="Y" />
-		</statusbarpanel>
+		<?xul-overlay href="chrome://zindus/content/statusbar-overlay.xul"?>
+
+		<statusbarpanel id="zindus-statusbar-progress" hidden="true" insertbefore="unreadMessageCount" />
+		<statusbarpanel id="zindus-statusbar-state"    hidden="true" insertbefore="unreadMessageCount" tooltiptext="" class="statusbarpanel-iconic" />
 	</statusbar>
 
 </overlay>
