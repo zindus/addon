@@ -23,14 +23,13 @@
   
   ***** END LICENSE BLOCK ***** -->
 
+<?xul-overlay href="chrome://zindus/content/statusbar-overlay.xul" ?>
+
 <?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
-<overlay
-	id="zindus-mailwindowoverlay-tb" 
-	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	>
+<overlay id="zindus-mailwindowoverlay-tb" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
 
 	<toolbox id="mail-toolbox" class="toolbox-top" mode="full">
 		<toolbarpalette id="MailToolbarPalette">
@@ -43,11 +42,9 @@
 	</toolbox>	
 
 	<hbox id="statusTextBox" >
-
-		<?xul-overlay href="chrome://zindus/content/statusbar-overlay.xul"?>
-
 		<statusbarpanel id="zindus-statusbar-progress" hidden="true" insertbefore="statusbar-progresspanel" />
-		<statusbarpanel id="zindus-statusbar-state"    hidden="true" insertbefore="statusbar-progresspanel" tooltiptext="" class="statusbarpanel-iconic" />
+		<statusbarpanel id="zindus-statusbar-state"    hidden="true" insertbefore="statusbar-progresspanel"
+		                tooltiptext="" class="statusbarpanel-iconic" />
 	</hbox>
 
 </overlay>

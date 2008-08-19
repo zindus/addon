@@ -33,7 +33,8 @@
 		<label value="&zindus.statusbar.progress.leftmost.label;" />
 		<stack>
 			<progressmeter id="zindus-statusbar-progress-meter" style="&zindus.statusbar.progress.meter.style;" value="50%" mode="normal" />
-			<label         id="zindus-statusbar-progress-text"  style="&zindus.statusbar.progress.text.style;"  value="" crop="&zindus.statusbar.progress.text.crop;" />
+			<label         id="zindus-statusbar-progress-text"  style="&zindus.statusbar.progress.text.style;"  value=""
+			               crop="&zindus.statusbar.progress.text.crop;" />
 		</stack>
 	</statusbarpanel>
 
