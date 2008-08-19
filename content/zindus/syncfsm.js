@@ -7432,8 +7432,8 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 
 	if (this.state.a_gd_contact_to_get.length > 0)
 	{
-		var id = this.state.a_gd_contact_to_get.pop();
-		var url = id;
+		var id  = this.state.a_gd_contact_to_get.pop();
+		var url = this.gdAdjustHttpHttps(id);
 
 		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
 		
