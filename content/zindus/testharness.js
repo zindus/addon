@@ -59,11 +59,12 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContacts1();
 	// ret = ret && this.testGoogleContacts2();
 	// ret = ret && this.testGoogleContacts3();
-	ret = ret && this.testGoogleContacts4();
+	// ret = ret && this.testGoogleContacts4();
 	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testGdContact();
 	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
+	// ret = ret && this.testDeleteCard();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1247,7 +1248,7 @@ TestHarness.prototype.testStringBundleContainsContactProperties = function()
 	return true;
 }
 
-TestHarness.prototype.testAddCard = function()
+TestHarness.prototype.addCardTb2 = function()
 {
 	this.m_logger.debug("testAddCard");
 
@@ -1261,6 +1262,46 @@ TestHarness.prototype.testAddCard = function()
 
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	mdbCard.editCardToDatabase(uri);
+
+	return mdbCard;
+}
+
+TestHarness.prototype.testAddCard = function()
+{
+	this.m_logger.debug("testAddCard");
+
+	this.addCardTb2();
+
+	return true;
+}
+
+TestHarness.prototype.testDeleteCard = function()
+{
+	this.m_logger.debug("test delete card");
+
+	var uri    = "moz-abmdbdirectory://abook.mab";
+	var dir    = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService).GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
+
+	var mdbCard = this.addCardTb2();
+
+	// now we've got a card - try to delete it
+
+	if (true)
+	try {
+		var cardsArray = { };
+		dir.deleteCards(cardsArray);
+	} catch(ex)
+	{
+		// do nothing
+	}
+	else
+	{
+		var cardsArray = Cc["@mozilla.org/supports-array;1"].createInstance().QueryInterface(Ci.nsISupportsArray);
+
+		cardsArray.AppendElement(mdbCard);
+
+		dir.deleteCards(cardsArray);
+	}
 
 	return true;
 }
