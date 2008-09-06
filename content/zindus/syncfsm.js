@@ -36,6 +36,7 @@ includejs("gcs.js");
 includejs("lso.js");
 includejs("zidbag.js");
 includejs("syncfsmexitstatus.js");
+includejs("syncfsmchaindata.js");
 includejs("passwordmanager.js");
 includejs("stopwatch.js");
 includejs("cookieobserver.js");
@@ -53,6 +54,7 @@ const AUTO_INCREMENT_STARTS_AT        = 256;  // the 'next' attribute of the AUT
 const ZM_FIRST_USER_ID                = 256;
 const AB_GAL                          = "GAL";
 const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/contacts/";
+const GOOGLE_PROJECTION               = "/thin";  // use 'thin' to avoid gd:extendedProperty elements
 const GOOGLE_SHOW_CONFLICTS_AT_A_TIME = 5;
 
 function SyncFsm()
@@ -85,7 +87,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',                                         evLackIntegrity: 'final'     },
 		stLoadTb:          { evCancel: 'final', evNext: 'stGetAccountInfo',                                 evLackIntegrity: 'final'     },
 		stGetAccountInfo:  { evCancel: 'final', evNext: 'stSelectSoapUrl',  evHttpRequest: 'stHttpRequest'                               },
-		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stSync',           evHttpRequest: 'stHttpRequest', evSkip: 'stSync'             },
+		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stSync',           evHttpRequest: 'stHttpRequest',                              },
 		stSync:            { evCancel: 'final', evNext: 'stSyncResponse',   evHttpRequest: 'stHttpRequest'                               },
 		stSyncResponse:    { evCancel: 'final', evNext: 'stGetContactZm',   evRedo:        'stSync',        evDo: 'stGetAccountInfo'     },
 		stGetContactZm:    { evCancel: 'final', evNext: 'stGalConsider',    evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactZm'   },
@@ -252,13 +254,13 @@ SyncFsm.prototype.cancel = function(timeoutID)
 	{
 		this.state.m_http.is_cancelled = true
 
-		this.state.m_logger.debug("cancel: about to call: m_xhr.abort()");
+		this.debug("cancel: about to call: m_xhr.abort()");
 
 		this.state.m_http.m_xhr.abort();
 	}
 	else
 	{
-		this.state.m_logger.debug("cancel: clearing timeoutID: " + timeoutID);
+		this.debug("cancel: clearing timeoutID: " + timeoutID);
 
 		this.fsm.m_window.clearTimeout(timeoutID);
 
@@ -267,12 +269,12 @@ SyncFsm.prototype.cancel = function(timeoutID)
 			// the fsm hasn't had a transition yet so there's no continuation
 			// so we just enter the start state and give it a cancel event
 			//
-			this.state.m_logger.debug("cancel: fsm was about to enter start state - now it does that on evCancel");
+			this.debug("cancel: fsm was about to enter start state - now it does that on evCancel");
 			fsmTransitionSchedule(this.state.id_fsm, null, 'start', 'evCancel', this);
 		}
 		else
 		{
-			this.state.m_logger.debug("cancel: continuing on evCancel");
+			this.debug("cancel: continuing on evCancel");
 
 			this.fsm.m_continuation('evCancel');
 		}
@@ -315,9 +317,15 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		this.state.stopFailCode = 'failon.no.tbpre';
 		nextEvent = 'evLackIntegrity';
 	}
+	else if (this.state.m_sfcd.is_first_in_chain() && this.testForAccountsIntegrity())
+	{
+		nextEvent = 'evLackIntegrity';
+	}
 	else if (!this.state.m_addressbook.getPabName())
 	{
-		this.state.stopFailCode = 'failon.no.pab';
+		this.state.stopFailCode   = 'failon.no.pab';
+		this.state.stopFailDetail = "\n" + stringBundleString("status.failmsg.see.bug.reporting.url");
+
 		nextEvent = 'evLackIntegrity';
 		this.state.m_logger.debug("entryActionStart: addressbooks: " + this.state.m_addressbook.addressbooksToString());
 	}
@@ -334,18 +342,18 @@ SyncFsmZm.prototype.entryActionAuthSelect = function(state, event, continuation)
 	this.state.stopwatch.mark(state);
 
 	var sourceid_pr = this.state.sourceid_pr;
-	var url         = this.state.sources[sourceid_pr]['soapURL'];
-	var username    = this.state.sources[sourceid_pr]['username'];
-	var password    = this.state.sources[sourceid_pr]['password'];
+	var url         = this.state.sources[sourceid_pr][Account.url];
+	var username    = this.state.sources[sourceid_pr][Account.username];
+	var password    = this.state.sources[sourceid_pr][Account.passwordlocator].getPassword();
 
 	if (url && /^https?:\/\//.test(url) && username.length > 0 && password.length > 0 && isValidUrl(url))
 	{
 		zinAssert(this.state.zidbag.isPrimaryUser());
 
 		this.state.zidbag.push(null);
-		this.state.zidbag.set(null, 'soapURL', this.state.sources[sourceid_pr]['soapURL']);
+		this.state.zidbag.set(null, Account.url, this.state.sources[sourceid_pr][Account.url]);
 
-		var soapURL = this.state.sources[this.state.sourceid_pr]['soapURL'];
+		var soapURL = this.state.sources[this.state.sourceid_pr][Account.url];
 		var prefset = prefsetMatchWithPreAuth(soapURL);
 
 		if (prefset)
@@ -378,8 +386,9 @@ SyncFsmZm.prototype.entryActionAuthLogin = function(state, event, continuation)
 
 	var sourceid_pr = this.state.sourceid_pr;
 
-	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(0), null, "Auth", this.state.sources[sourceid_pr]['username'],
-	                                                                              this.state.sources[sourceid_pr]['password']);
+	this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(0), null, "Auth",
+	                                  this.state.sources[sourceid_pr][Account.username],
+	                                  this.state.sources[sourceid_pr][Account.passwordlocator].getPassword());
 
 	continuation('evHttpRequest');
 }
@@ -444,105 +453,226 @@ SyncFsmZm.prototype.exitActionAuthPreAuth = function(state, event)
 	}
 }
 
-SyncFsm.prototype.loadZfcs = function(a_zfc)
+SyncFsm.prototype.zfcFileNameFromSourceid = function(sourceid)
 {
-	var cExist = 0;
+	return hyphenate("-", sourceid) + ".txt";
+}
+
+// reset
+// - test:
+//   - when: is_first_in_chain() is true
+//   - cond: it's a reset (or first install) when any of lastsync.txt, gid.txt, or 1-tb.txt don't exist
+//   - cond: the account_signature in lastsync.txt has changed
+// - do: 
+//   - set sfcd.is_reset(true); ... indicates that this chain of syncfsm's started with a reset
+//   - remove all data stores - this forces a slow sync of the account
+//   - initialise lastsync.txt, gid.txt, zfcTb, tb addressbook
+// slow sync
+// - test:
+//   - when: every fsm
+//   - cond: when the sourceid data file doesn't exist
+//   - cond: when the sourceid isn't in lastsync.txt
+//   - cond: when a critical detail changed between last sync and this one
+// - do:
+//   - remove the data file
+//   - initialise the zfc
+//     
+// This is (one of the places) where we pay for not having a real data store.
+// Even though data is stored in at least four separate files: 1-tb.txt, 2-zm.txt, gid.txt, lastsync.txt 
+// as far as integrity is concerned they are a single unit.
+//
+
+SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
+{
+	this.state.stopwatch.mark(state);
+
+	var nextEvent = null;
+	var sfcd      = this.state.m_sfcd;
+	var is_reset  = false;
+	var a_zfc     = new Object();          // associative array of zfc, key is the file name
+	var a_account_independent_filenames = newObject(Filesystem.FILENAME_GID, 0,
+	                                                Filesystem.FILENAME_LASTSYNC, 0,
+													this.zfcFileNameFromSourceid(SOURCEID_TB), 0);
+	var filename, sourceid;
 
 	a_zfc[Filesystem.FILENAME_GID]      = this.state.zfcGid      = new FeedCollection();
 	a_zfc[Filesystem.FILENAME_LASTSYNC] = this.state.zfcLastSync = new FeedCollection();
 
-	for (var sourceid in this.state.sources)
+	a_zfc[Filesystem.FILENAME_GID].filename(Filesystem.FILENAME_GID);
+	a_zfc[Filesystem.FILENAME_LASTSYNC].filename(Filesystem.FILENAME_LASTSYNC);
+
+	for (sourceid in this.state.sources)
 	{
-		var key = hyphenate("-", sourceid, this.state.m_bimap_format.lookup(this.state.sources[sourceid]['format'], null)) + ".txt";
-		a_zfc[key] = this.state.sources[sourceid]['zfcLuid'] = new FeedCollection();
+		filename = this.zfcFileNameFromSourceid(sourceid);
+		a_zfc[filename] = this.state.sources[sourceid]['zfcLuid'] = new FeedCollection();
+		a_zfc[filename].filename(filename);
 	}
 
-	for (var i in a_zfc)
-	{
-		a_zfc[i].filename(i);
+	this.debug("entryActionLoad: is_first_in_chain: " + sfcd.is_first_in_chain());
 
-		if (a_zfc[i].nsifile().exists())
-			cExist++;
-
-		a_zfc[i].load();
-	}
-
-	this.state.aReverseGid = this.getGidInReverse();
-
-	return cExist;
-}
-
-SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
-{
-	// This is (one of the places) where we pay for not having a real data store.
-	// Even though data is stored in at least four separate files: 1-tb.txt, 2-zm.txt, gid.txt, lastsync.txt 
-	// as far as integrity is concerned they are a single unit.
+	// Work out whether the user forced a reset, or whether we are going to force one
 	//
-	// Three cases are identified:
-	// 1. clean slate (ie post install or reset)          ==> initialise and nextEvent == evNext
-	// 2. all the files exist and have integrity          ==> continue   and nextEvent == evNext
-	// 3. some files don't exist or don't have integrity  ==> continue   and nextEvent == evLackIntegrity (user is notified)
-	//
-	this.state.stopwatch.mark(state);
+	var msg_reset = "forcing a reset because: ";
 
-	var nextEvent   = null;
-	var sourceid_pr = this.state.sourceid_pr;
-	var a_zfc       = new Object();          // associative array of zfc, key is the file name
-	var cExist      = this.loadZfcs(a_zfc);  // load the zfcs...
+	if (sfcd.is_first_in_chain())
+		for (filename in a_account_independent_filenames)
+			if (!a_zfc[filename].nsifile().exists())
+			{
+				is_reset = true;
+				msg_reset += "a file is missing: " + filename;
+				break;
+			}
+
+	a_zfc[Filesystem.FILENAME_LASTSYNC].load();
+
 	var zfcLastSync = this.state.zfcLastSync;
 
-	this.debug("entryActionLoad: number of file load attempts: " + aToLength(a_zfc) + " number of file load actual: "   + cExist);
-	this.debug("entryActionLoad: last sync soapURL: "  +
-		                    ( zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr).getOrNull('soapURL') : "not present"));
-	this.debug("entryActionLoad: last sync username: "  +
-	   ( zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr).getOrNull('username') : "not present"));
-
-	this.debug("entryActionLoad: this sync soapURL:  " + this.state.sources[sourceid_pr]['soapURL']);
-	this.debug("entryActionLoad: this sync username: " + this.state.sources[sourceid_pr]['username']);
-
-	var is_force_slow_sync =
-			cExist == 0 ||
-			zfcLastSync.get(sourceid_pr).getOrNull('soapURL')  != this.state.sources[sourceid_pr]['soapURL'] ||
-	    	zfcLastSync.get(sourceid_pr).getOrNull('username') != this.state.sources[sourceid_pr]['username'] ||
-			(this.formatPr() == FORMAT_GD &&
-			  ( ( zfcLastSync.get(sourceid_pr).getOrNull('gd_sync_with')              != this.state.gd_sync_with) ||
-			    ( zfcLastSync.get(sourceid_pr).getOrNull('gd_is_sync_postal_address') != String(this.state.gd_is_sync_postal_address))));
-
-	if (cExist != 0 && is_force_slow_sync)
+	if (sfcd.is_first_in_chain())
 	{
-		this.debug("entryActionLoad: server url, username or other critical setting changed since last sync - doing a reset to force slow sync");
+		if (!is_reset && !zfcLastSync.isPresent(FeedItem.KEY_LASTSYNC_COMMON))
+		{
+			is_reset = true;
+			msg_reset += "a critical lastsync key isn't present.";
+		}
 
-		RemoveDatastore.removeZfcs();
+		if (!is_reset)
+		{
+			var account_signature = zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('account_signature');
 
-		cExist = this.loadZfcs(a_zfc);
+			if (account_signature != sfcd.signature())
+			{
+				is_reset = true;
+				msg_reset += "account_signature changed.  last: " + account_signature + " now: " + sfcd.signature();
+			}
+		}
+
+	    if (!is_reset && this.formatPr() == FORMAT_GD && 
+		      zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
+			    String(this.state.gd_is_sync_postal_address))
+		{
+			is_reset = true;
+			msg_reset += "gd_is_sync_postal_address changed";
+		}
+
+		this.debug("entryActionLoad: " + (is_reset ? msg_reset : "is_reset: false"));
+
+		sfcd.is_reset(is_reset);
 	}
 
-	if (cExist == 0)
+	// load (or reset) the account-independent data files
+	//
+	if (sfcd.is_first_in_chain() && sfcd.is_reset())
 	{
-		this.debug("entryActionLoad: data files didn't exist - initialising maps and tb attributes...");
+		this.debug("entryActionLoad: forcing a reset - removing data files and initialising maps and tb attributes...");
 
-		this.state.isSlowSync = true;
+		RemoveDatastore.removeZfcs();
 
 		this.initialiseZfcLastSync();
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
 		this.initialiseZfcAutoIncrement(this.zfcTb());
-		this.initialiseZfcAutoIncrement(this.zfcPr());
 		this.initialiseTbAddressbook();
+	}
+	else
+	{
+		a_zfc[Filesystem.FILENAME_GID].load();
+		a_zfc[this.zfcFileNameFromSourceid(SOURCEID_TB)].load();
+	}
 
-		if (this.formatPr() == FORMAT_GD)
+	// Work out whether we're doing a slow sync
+	//
+	var sourceid_pr       = this.state.sourceid_pr;
+	var filename_pr       = this.zfcFileNameFromSourceid(sourceid_pr);
+	var is_file_exists_pr = a_zfc[filename_pr].nsifile().exists();
+
+	function zfitem(zfc, zfc_key, zfi_key) { return zfc.isPresent(zfc_key) ? zfc.get(zfc_key).getOrNull(zfi_key) : null; }
+
+	this.debug("entryActionLoad: " +
+	      " \n last sync soapURL:  "          + zfitem(zfcLastSync, sourceid_pr, Account.url) +
+	      " \n last sync username: "          + zfitem(zfcLastSync, sourceid_pr, Account.username) +
+	      " \n last sync account_signature: " + zfitem(zfcLastSync, FeedItem.KEY_LASTSYNC_COMMON, 'account_signature') +
+	      " \n this sync soapURL:  "          + this.state.sources[sourceid_pr][Account.url] +
+	      " \n this sync username: "          + this.state.sources[sourceid_pr][Account.username] +
+	      " \n this sync account_signature: " + sfcd.signature() );
+
+	if (is_file_exists_pr)
+		a_zfc[filename_pr].load()
+
+	var is_critical_detail_changed =
+	  (!zfcLastSync.isPresent(sourceid_pr)) ||
+	    zfcLastSync.get(sourceid_pr).getOrNull(Account.url)  != this.state.sources[sourceid_pr][Account.url]  ||
+	    zfcLastSync.get(sourceid_pr).getOrNull(Account.username) != this.state.sources[sourceid_pr][Account.username] ||
+	    (this.formatPr() == FORMAT_GD && ( zfcLastSync.get(sourceid_pr).getOrNull(Account.gd_sync_with) != this.state.gd_sync_with));
+
+	var is_slow_sync = !is_file_exists_pr || is_critical_detail_changed;
+
+	this.debug("entryActionLoad: is_slow_sync: " + is_slow_sync + " is_file_exists_pr: " + is_file_exists_pr + " sourceid_pr: " + sourceid_pr + " present: " + zfcLastSync.isPresent(sourceid_pr) + " critical detail changed: " + is_critical_detail_changed);
+
+	sfcd.sourceid(sourceid_pr, 'is_slow_sync', is_slow_sync);
+
+	if (is_slow_sync)
+	{
+		RemoveDatastore.removeZfcs(filename_pr);
+
+		this.removeSourceIdFromGid(sourceid_pr);
+
+		for (sourceid in this.state.sources)
+			if (sourceid != SOURCEID_TB)
+			{
+				this.initialiseZfcLastSync(sourceid);
+				this.initialiseZfcAutoIncrement(this.zfc(sourceid));
+			}
+	}
+	else
+		a_zfc[filename_pr].load();
+
+	this.state.aReverseGid = new Object();
+	this.state.sources_not_synced = new Object();
+	this.parseGid(this.state.aReverseGid, this.state.sources_not_synced);
+
+	if (this.isConsistentDataStore())
+	{
+		nextEvent = 'evNext';
+
+		var sources_not_synced = this.state.sources_not_synced;
+
+		// note that the data file for sources_not_synced isn't guaranteed to have integrity - eg the signatures might have changed
+		//
+		for (sourceid in sources_not_synced)
+		{
+			filename = this.zfcFileNameFromSourceid(sourceid);
+			sources_not_synced[sourceid] = new Object();
+			sources_not_synced[sourceid]['zfcLuid'] = new FeedCollection();
+			sources_not_synced[sourceid]['zfcLuid'].filename(filename);
+			sources_not_synced[sourceid]['dirty'] = false; // optimisation ==> only save zfc's if they are dirty
+			sources_not_synced[sourceid]['exists'] = sources_not_synced[sourceid]['zfcLuid'].nsifile().exists();
+
+			if (sources_not_synced[sourceid]['exists'])
+				sources_not_synced[sourceid]['zfcLuid'].load();
+		
+			this.debug("entryActionLoad: : sources_not_synced: sourceid: " + sourceid +
+			            " exists: " + sources_not_synced[sourceid]['exists'] +
+			            " zfc: " + sources_not_synced[sourceid]['zfcLuid'].toString());
+		}
+
+		if (is_slow_sync && this.formatPr() == FORMAT_GD)
 			this.initialiseZfcGdFakeContactsFolder(this.zfcPr());
 
-		nextEvent = 'evNext';
+		if (this.formatPr() == FORMAT_ZM && zfcLastSync.isPresent(FeedItem.KEY_LASTSYNC_COMMON))
+		{
+			var str = zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('zm_tested_soapurls')
+
+			if (str)
+				this.state.a_zm_tested_soapurls = str.split(",");
+		}
 	}
-	else if (cExist == aToLength(a_zfc) && this.isConsistentDataStore())
-		nextEvent = 'evNext';
 	else
 	{
 		nextEvent = 'evLackIntegrity';
 		this.state.stopFailCode = 'failon.integrity.data.store.in';
 	}
 
-	this.debug("entryActionLoad: isSlowSync: " + this.state.isSlowSync);
+	// for (filename in a_zfc)
+	// 	this.debug("entryActionLoad: blah: filename: " + filename + " zfc: " + a_zfc[filename].toString());
 
 	continuation(nextEvent);
 }
@@ -564,7 +694,6 @@ SyncFsm.prototype.isConsistentDataStore = function()
 		ret = ret && this.isConsistentZfcAutoIncrement(this.zfcPr());
 		ret = ret && this.isConsistentSharedFolderReferences();
 	}
-
 	return ret;
 }
 
@@ -573,18 +702,39 @@ SyncFsm.prototype.isConsistentDataStore = function()
 SyncFsm.prototype.isConsistentGid = function()
 {
 	var is_consistent = true;
+	var sourceid;
 
 	bigloop:
-		for (var sourceid in this.state.aReverseGid)
+		for (sourceid in this.state.aReverseGid)
 			for (var luid in this.state.aReverseGid[sourceid])
-				if (!isPropertyPresent(this.state.sources, sourceid) || !this.state.sources[sourceid]['zfcLuid'].isPresent(luid))
+				if (!isPropertyPresent(this.state.sources, sourceid) || !this.zfc(sourceid).isPresent(luid))
 				{
-					this.state.m_logger.debug("isConsistentGid: inconsistency: sourceid: " + sourceid + " luid: " + luid);
+					this.debug("isConsistentGid: inconsistency: sourceid: " + sourceid + " luid: " + luid);
 					is_consistent = false;
 					break bigloop;
 				}
 
-	this.state.m_logger.debug("isConsistentGid: " + is_consistent);
+	if (is_consistent)
+	{
+		var sfcd = this.state.m_sfcd;
+
+		for (sourceid in this.state.sources_not_synced)
+		{
+			var is_present_in_sfcd = false;
+
+			for (i = 0; i < sfcd.length() && !is_present_in_sfcd; i++)
+				is_present_in_sfcd = sourceid == Account.indexToSourceId(i);
+
+			if (!is_present_in_sfcd)
+			{
+				is_consistent = false;
+				this.debug("isConsistentGid: inconsistency: sourceid: " + sourceid + " unrelated to any of the accounts we're syncing");
+				break;
+			}
+		}
+	}
+
+	this.debug("isConsistentGid: " + is_consistent);
 
 	return is_consistent;
 }
@@ -635,7 +785,7 @@ SyncFsm.prototype.isConsistentSources = function()
 
 	for (var sourceid in this.state.sources)
 	{
-		zfc = this.state.sources[sourceid]['zfcLuid'];
+		zfc = this.zfc(sourceid);
 		zfc.forEach(functor_foreach_luid);
 	}
 
@@ -701,7 +851,7 @@ SyncFsmZm.prototype.isConsistentSharedFolderReferences = function()
 
 	for (var sourceid in this.state.sources)
 	{
-		zfc = this.state.sources[sourceid]['zfcLuid'];
+		zfc = this.zfc(sourceid);
 		format = this.state.sources[sourceid]['format'];
 
 		if (format == FORMAT_ZM)
@@ -720,18 +870,28 @@ SyncFsm.prototype.isConsistentZfcAutoIncrement = function(zfc)
 		   parseInt(zfc.get(FeedItem.KEY_AUTO_INCREMENT).get('next')) > AUTO_INCREMENT_STARTS_AT;
 }
 
-SyncFsm.prototype.initialiseZfcLastSync = function()
+SyncFsm.prototype.initialiseZfcLastSync = function(sourceid)
 {
 	var zfcLastSync = this.state.zfcLastSync;
 
-	for (var sourceid in this.state.sources)
-		if (this.state.sources[sourceid]['format'] != FORMAT_TB && !zfcLastSync.isPresent(sourceid))
-			zfcLastSync.set(new FeedItem(null, FeedItem.ATTR_KEY, sourceid));
+	if (sourceid)
+	{
+		if (zfcLastSync.isPresent(sourceid))
+			zfcLastSync.del(sourceid);
+
+		zfcLastSync.set(new FeedItem(null, FeedItem.ATTR_KEY, sourceid));
+	}
+	else
+	{
+		zfcLastSync.empty();
+
+		zfcLastSync.set(new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_LASTSYNC_COMMON));
+	}
 }
 
 SyncFsm.prototype.initialiseZfcAutoIncrement = function(zfc)
 {
-	zinAssert(zfc.length() == 0);
+	zfc.empty();
 
 	zfc.set( new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_AUTO_INCREMENT, 'next', AUTO_INCREMENT_STARTS_AT + 1));
 }
@@ -779,24 +939,27 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 	this.state.m_addressbook.forEachAddressBook(functor_foreach_addressbook);
 }
 
-// build a two dimensional associative array for reverse lookups - meaning given a sourceid and luid, find the gid.
+// aReverse is a two dimensional associative array for reverse lookups - meaning given a sourceid and luid, find the gid.
 // For example: reverse.1.4 == 7 means that sourceid == 1, luid == 4, gid == 7
 // forward lookups are done via zfcGid: zfcGid.get(7).get(1) == 4
 //
-SyncFsm.prototype.getGidInReverse = function()
+SyncFsm.prototype.parseGid = function(aReverse, sources_not_synced)
 {
-	var reverse = new Object();
-	var sourceid;
+	var gid, sourceid;
 
 	for (sourceid in this.state.sources)
-		reverse[sourceid] = new Object();
+		aReverse[sourceid] = new Object();
 
 	var functor_each_gid_mapitem = {
 		state: this.state,
 
 		run: function(sourceid, luid)
 		{
-			reverse[sourceid][luid] = this.gid;
+			if (isPropertyPresent(this.state.sources, sourceid))
+				aReverse[sourceid][luid] = gid;
+
+			if (!isPropertyPresent(this.state.sources, sourceid))
+				sources_not_synced[sourceid] = new Object();
 
 			return true;
 		}
@@ -805,9 +968,8 @@ SyncFsm.prototype.getGidInReverse = function()
 	var functor_foreach_gid = {
 		run: function(zfi)
 		{
-			var gid = zfi.key();
+			gid = zfi.key();
 
-			functor_each_gid_mapitem.gid = gid;
 			zfi.forEach(functor_each_gid_mapitem, FeedItem.ITER_GID_ITEM);
 
 			return true;
@@ -816,10 +978,24 @@ SyncFsm.prototype.getGidInReverse = function()
 
 	this.state.zfcGid.forEach(functor_foreach_gid);
 
-	this.debug("getGidInReverse returns: " + aToString(reverse));
-
-	return reverse;
+	this.debug("parseGid: aReverse: " + aToString(aReverse) + " sources_not_synced: " + aToString(sources_not_synced));
 }
+
+SyncFsm.prototype.removeSourceIdFromGid = function(sourceid)
+{
+	var functor_foreach_gid = {
+		run: function(zfi)
+		{
+			if (zfi.isPresent(sourceid))
+				zfi.del(sourceid);
+
+			return true;
+		}
+	};
+
+	this.state.zfcGid.forEach(functor_foreach_gid);
+}
+
 
 SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuation)
 {
@@ -830,7 +1006,7 @@ SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuatio
 	if (this.state.zidbag.isPrimaryUser())
 	{
 		by    = "name";
-		value = this.state.sources[this.state.sourceid_pr]['username'];
+		value = this.state.sources[this.state.sourceid_pr][Account.username];
 	}
 	else
 	{
@@ -890,9 +1066,14 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 		newSoapURL = functor.a[0];
 
 	if (newSoapURL != this.state.zidbag.soapUrl())
-		this.state.suggestedSoapURL = newSoapURL;
+		this.state.suggestedSoapURL = String(newSoapURL);
 
 	this.state.m_logger.debug("exitActionGetAccountInfo: suggestedSoapURL: " + this.state.suggestedSoapURL);
+}
+
+SyncFsm.prototype.is_a_zm_tested_soapurl = function(url)
+{
+	return this.state.a_zm_tested_soapurls.indexOf(url) != -1;
 }
 
 // In a non-trivial number of Zimbra installations, the soapURL returned via GetAccountInfo doesn't work -
@@ -905,19 +1086,15 @@ SyncFsm.prototype.exitActionGetAccountInfo = function(state, event)
 
 SyncFsm.prototype.entryActionSelectSoapUrl = function(state, event, continuation)
 {
-	var nextEvent = null;
+	var nextEvent = 'evNext';
 
 	this.state.stopwatch.mark(state);
 
-	if (this.state.suggestedSoapURL)
+	if (this.state.suggestedSoapURL && !this.is_a_zm_tested_soapurl(this.state.suggestedSoapURL))
 	{
 		this.setupHttpZm(state, 'evNext', this.state.suggestedSoapURL, null, 'FakeHead');
 		nextEvent = 'evHttpRequest';
 	}
-	else if (this.state.zidbag.isPrimaryUser())
-		nextEvent = 'evNext';
-	else
-		nextEvent = 'evSkip';
 
 	continuation(nextEvent);
 }
@@ -929,11 +1106,17 @@ SyncFsm.prototype.exitActionSelectSoapUrl = function(state, event)
 
 	var msg = "exitActionSelectSoapUrl: ";
 
-	if (this.state.m_http.m_faultcode == "service.UNKNOWN_DOCUMENT")
-	{
-		this.state.zidbag.set(this.state.zidbag.zimbraId(), 'soapURL', this.state.suggestedSoapURL);
+	var is_tested = this.is_a_zm_tested_soapurl(this.state.suggestedSoapURL);
 
-		msg += " suggestedSoapURL works, switching to it: " + this.state.zidbag.soapUrl();
+	if (is_tested || this.state.m_http.m_faultcode == "service.UNKNOWN_DOCUMENT")
+	{
+		this.state.zidbag.set(this.state.zidbag.zimbraId(), Account.url, this.state.suggestedSoapURL);
+
+		if (!is_tested)
+			this.state.a_zm_tested_soapurls.push(this.state.suggestedSoapURL); // array is passed to hyphenate, which wants a string
+
+		msg += " suggestedSoapURL " + (is_tested ? "had been tested previously" : "works") +
+		                              ", switching to it: " + this.state.zidbag.soapUrl();
 	}
 	else
 		msg += " suggestedSoapURL doesn't work, continuing with the one used for Auth: " + this.state.zidbag.soapUrl();
@@ -1321,7 +1504,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 							if (!this.state.zidbag.isPresent(zid))
 							{
 								this.state.zidbag.push(zid);
-								this.state.zidbag.set(zid, 'soapURL', this.m_soapurl);
+								this.state.zidbag.set(zid, Account.url, this.m_soapurl);
 							}
 
 							if (!zfi.isPresent(FeedItem.ATTR_SKEY))
@@ -1405,7 +1588,7 @@ SyncFsm.prototype.entryActionGetContactPuZm = function(state, event, continuatio
 		for (sourceid in this.state.sources)
 		{
 			var format = this.state.sources[sourceid]['format'];
-			var zfc    = this.state.sources[sourceid]['zfcLuid'];
+			var zfc    = this.zfc(sourceid);
 
 			if (format == FORMAT_ZM)
 				for (bucket in this.state.aSuo[sourceid])
@@ -1562,7 +1745,7 @@ SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 	{
 		var SyncGalMdInterval = this.getIntPref(MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL);
 		var SyncMd = parseInt(zfcLastSync.get(sourceid_pr).getOrNull('SyncMd'));
-		var isSyncGalEnabledChanged = this.state.SyncGalEnabled != zfcLastSync.get(sourceid_pr).getOrNull('SyncGalEnabled')
+		var isSyncGalEnabledChanged = this.state.SyncGalEnabled != zfcLastSync.get(sourceid_pr).getOrNull('SyncGalEnabled');
 
 		this.state.m_logger.debug("entryActionGalConsider:" +
 												 " isSyncGalEnabledChanged: " + isSyncGalEnabledChanged +
@@ -1641,7 +1824,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	var aAdd   = new Array(); // each element in the array is an index into aSyncGalContact
 	var abName = APP_NAME + ">" + AB_GAL;
 	var uri    = this.state.m_addressbook.getAddressBookUriByName(abName);
-	var zc, attributes, properties, isGalEnabled;
+	var zc, attributes, properties, isGalEnabled, element;
 	var zfcLastSync = this.state.zfcLastSync;
 	var sourceid_pr = this.state.sourceid_pr;
 
@@ -1701,8 +1884,6 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 		// mm, except when the user doesn't have access to the GAL and SyncGalResponse returns an empty element
 		//
 		// zinAssert(this.state.aSyncGalContact.length > 0 && this.state.SyncGalTokenChanged);
-
-		var element;
 
 		for (var i in this.state.aSyncGalContact)
 		{
@@ -1807,8 +1988,6 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 		zfcLastSync.get(sourceid_pr).set('SyncMd',       this.state.SyncMd);
 	}
 
-	zfcLastSync.get(sourceid_pr).set('SyncGalEnabled', this.state.SyncGalEnabled);
-
 	if (this.state.SyncGalEnabled == "if-fewer" && this.state.SyncGalTokenInRequest == null && !isGalEnabled)
 	{
 		if (!zfcLastSync.get(sourceid_pr).isPresent('SyncGalEnabledRecheck'))
@@ -1841,12 +2020,12 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	{
 		this.loadTbLocaliseEmailedContacts();                  // 2. ensure that emailed contacts is in the current locale
 
-		if (this.state.isSlowSync)
+		if (this.is_slow_sync(this.state.sourceid_pr))
 			this.loadTbDeleteReadOnlySharedAddresbooks();      // 3. ensure that we don't try to update read-only addressbooks on the server
 	}
 	else if (this.formatPr() == FORMAT_GD)
 	{
-		if (this.state.isSlowSync)
+		if (this.is_slow_sync(this.state.sourceid_pr))
 			this.loadTbSetupGdAddressbook();
 	}
 
@@ -1900,7 +2079,7 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	this.state.stopwatch.mark(state + " 4: passed: " + passed);
 
 	if (this.formatPr() == FORMAT_GD)
-		passed = passed && this.testForGdProblems();
+		passed = passed && this.loadTbTestForGdProblems();
 
 	this.state.stopwatch.mark(state + " 5: passed: " + passed);
 
@@ -1908,7 +2087,7 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 6: passed: " + passed);
 
-	if (!this.state.isSlowSync)
+	if (!this.is_reset())
 	{
 		passed = passed && this.testForReservedFolderInvariant(TB_PAB);
 
@@ -2014,7 +2193,7 @@ SyncFsm.prototype.loadTbSetupGdAddressbook = function()
 	{
 		this.state.m_logger.debug("loadTbSetupGdAddressbook: about to rename out of the way: " + aToString(aUris));
 
-		var username = this.state.sources[this.state.sourceid_pr]['username'];
+		var username = this.state.sources[this.state.sourceid_pr][Account.username];
 
 		for (var key in aUris)
 			for (var i = 0; i < aUris[key].length; i++)
@@ -2030,7 +2209,7 @@ SyncFsm.prototype.loadTbSetupGdAddressbook = function()
 
 SyncFsm.prototype.gdAddressbookName = function()
 {
-	return this.state.m_folder_converter.m_prefix_primary_account + this.state.sources[this.state.sourceid_pr]['username'];
+	return this.state.m_folder_converter.m_prefix_primary_account + this.state.sources[this.state.sourceid_pr][Account.username];
 }
 
 SyncFsm.zfiFromName = function(name)
@@ -2064,7 +2243,7 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 	var zfcTbPost = this.zfcTb();
 	var ret;
 
-	zinAssert(!this.state.stopFailCode && !this.state.isSlowSync);
+	zinAssert(!this.state.stopFailCode && !this.is_reset());
 
 	var pre_id  = SyncFsm.zfcFindFirstFolder(zfcTbPre, name);
 	var post_id = SyncFsm.zfcFindFirstFolder(zfcTbPost, name);
@@ -2084,6 +2263,55 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 	ret = (this.state.stopFailCode == null);
 
 	this.state.m_logger.debug("testForReservedFolderInvariant: name: " + name + " returns: " + ret);
+
+	return ret;
+}
+
+SyncFsm.prototype.testForAccountsIntegrity = function()
+{
+	var a_keys          = new Object();
+	var index_identical = null;
+	var sfcd            = this.state.m_sfcd;
+	var cZimbra         = 0;
+	var i, account, key;
+
+	// test that no two accounts are the same
+	//
+	for (i = 0; i < sfcd.length(); i++)
+	{
+		account = sfcd.account(i);
+		key     = account.format() + account.get(Account.url) + account.get(Account.username);
+
+		if (account.format_xx() == FORMAT_ZM)
+			cZimbra++;
+
+		if (isPropertyPresent(a_keys, key))
+			index_identical = i;
+		else
+			a_keys[key] = true;
+	}
+
+	if (cZimbra > 1)
+	{
+		this.state.stopFailCode = 'failon.integrity.accounts.one.zimbra';
+	}
+	else if (index_identical)
+	{
+		this.state.stopFailCode = 'failon.integrity.accounts.identical';
+
+		account = sfcd.account(index_identical);
+
+		this.state.stopFailDetail = "\n" + format_xx_to_localisable_string(account.format_xx()) + ": ";
+
+		if (account.format_xx() == FORMAT_ZM)
+			this.state.stopFailDetail += " " + account.get(Account.url);
+
+		this.state.stopFailDetail += " " + account.get(Account.username);
+	}
+
+	ret = (this.state.stopFailCode != null);
+
+	this.state.m_logger.debug("testForIdenticalAccounts: returns: " + ret);
 
 	return ret;
 }
@@ -2170,16 +2398,16 @@ SyncFsm.prototype.getAbNameNormalised = function(elem)
 
 SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 {
-	var msg = "LocaliseEmailedContacts: isSlowSync: " + this.state.isSlowSync;
+	var msg = "LocaliseEmailedContacts: is_reset: " + this.is_reset();
 
-	if (this.state.isSlowSync)
+	if (this.state.m_sfcd.first_sourceid_of_format(FORMAT_ZM) == this.state.sourceid_pr)
 	{
 		var uri, old_translation, old_localised_ab;
 		var translation = this.state.m_folder_converter.translate_emailed_contacts();
 
 		this.state.m_folder_converter.localised_emailed_contacts(translation);
 
-		this.state.zfcLastSync.get(this.state.sourceid_pr).set('EmailedContacts', translation);
+		this.state.zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('zm_localised_emailed_contacts', translation);
 
 		var ab_localised = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS));
 
@@ -2208,14 +2436,14 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 		}
 	}
 	else
-		this.state.m_folder_converter.localised_emailed_contacts(this.state.zfcLastSync.get(this.state.sourceid_pr).get('EmailedContacts'));
+		this.state.m_folder_converter.localised_emailed_contacts(this.state.zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).get('zm_localised_emailed_contacts'));
 				
 	this.state.m_logger.debug(msg);
 }
 
 SyncFsm.prototype.loadTbDeleteReadOnlySharedAddresbooks = function()
 {
-	zinAssert(this.state.isSlowSync);
+	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
 
 	var aUris = this.state.m_addressbook.getAddressBookUrisByPattern(new RegExp(this.state.m_folder_converter.m_prefix_foreign_readonly));
 
@@ -2229,7 +2457,7 @@ SyncFsm.prototype.loadTbDeleteReadOnlySharedAddresbooks = function()
 SyncFsm.prototype.loadTbMergeZfcWithAddressBook = function()
 {
 	var sourceid = this.state.sourceid_tb;
-	var zfcTb    = this.state.sources[sourceid]['zfcLuid'];
+	var zfcTb    = this.zfcTb();
 	var context  = this;
 	var uri, functor_foreach_card, functor_foreach_addressbook;
 
@@ -2379,7 +2607,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 				// but not commit it to the db until after the remote update is successful.
 				// As things stand though, this warning message appears and everything works ok.
 				//
-				this.state.m_logger.debug("loadTbExclude : card had attribute luid: " + id +
+				this.state.m_logger.debug("loadTb: card had attribute luid: " + id +
 				                         " that wasn't in the map.  If the previous sync wasn't successful due to a conflict \
 										   around this card then it's normal behaviour and nothing to worry about. \
 										   Attribute removed.  Card: " +
@@ -2394,7 +2622,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 	for (uri in aUri)
 		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
 
-	this.state.m_logger.debug("loadTbExclude pass 1 - aMailListUri == " + aToString(aMailListUri));
+	this.state.m_logger.debug("loadTb pass 1 - aMailListUri == " + aToString(aMailListUri));
 
 	// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
 	//
@@ -2434,7 +2662,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			var abCard  = item.QueryInterface(Ci.nsIAbCard);
 			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
 			var key = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
-			msg = "loadTbExclude pass 3: uri: " + uri + " card key: " + key;
+			msg = "loadTb pass 3: uri: " + uri + " card key: " + key;
 
 			var isInTopLevelFolder = false;
 
@@ -2442,7 +2670,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			                            (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] != uri)))
 					isInTopLevelFolder = true;
 
-			// this.state.m_logger.debug("loadTbExclude pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
+			// this.state.m_logger.debug("loadTb pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
 			//                           " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard) +
 			//                           " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
 			//                           " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
@@ -2452,9 +2680,9 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 
 			if (isInTopLevelFolder)
 			{
-				var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
-				var properties  = this.state.m_addressbook.getCardProperties(abCard);
-				var checksum    = context.contact_converter().crc32(properties);
+				var id         = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+				var properties = this.state.m_addressbook.getCardProperties(abCard);
+				var checksum   = context.contact_converter().crc32(properties);
 
 				// this.state.m_logger.debug("Popularity Index: for card: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + "  is: " + abCard.popularityIndex);
 
@@ -2533,7 +2761,7 @@ SyncFsm.prototype.loadTbExcludeMailingListsAndDeletionDetection = function(aUri)
 			else
 			{
 				zfi.set(FeedItem.ATTR_DEL, 1);
-				this.state.m_logger.debug("loadTbExclude - marking as deleted: " + zfi.toString());
+				this.state.m_logger.debug("loadTb - marking as deleted: " + zfi.toString());
 			}
 
 			return true;
@@ -2579,8 +2807,9 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 
 	for (key in a_empty_contacts)
 	{
-		var a = this.getPropertiesAndParentNameFromSource(this.state.sourceid_tb, key, this.contact_converter());
-		a_empty_folder_names[a.parent] = true;
+		var luid_parent = SyncFsm.keyParentRelevantToGid(this.zfcTb(), key);
+		var name_parent_public = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, this.zfcTb().get(luid_parent));
+		a_empty_folder_names[name_parent_public] = true;
 	}
 
 	if (aToLength(a_empty_folder_names) > 0)
@@ -2597,6 +2826,8 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 
 SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 {
+	var msg = "";
+
 	var functor = {
 		a_folder_count:     new Object(),
 		a_folder_violation: new Object(),
@@ -2612,7 +2843,7 @@ SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 				zinAssert(zfi.isPresent(FeedItem.ATTR_NAME));
 				var name = this.m_folder_converter.convertForMap(FORMAT_ZM, FORMAT_TB, zfi);
 
-				this.state.m_logger.debug("testForLegitimateFolderNames: name: '" + name + "'");
+				msg += " " + name;
 
 				if (zinTrim(name).length == 0)
 					this.a_folder_violation[name] = 'failon.folder.name.empty';
@@ -2650,12 +2881,12 @@ SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 
 	var ret = this.state.stopFailCode == null;
 
-	this.state.m_logger.debug("testForLegitimateFolderNames: returns: " + ret);
+	this.state.m_logger.debug("testForLegitimateFolderNames: names: " + msg + " returns: " + ret);
 
 	return ret;
 }
 
-SyncFsm.prototype.testForGdProblems = function()
+SyncFsm.prototype.loadTbTestForGdProblems = function()
 {
 	zinAssert(this.state.stopFailCode == null);
 
@@ -2663,14 +2894,14 @@ SyncFsm.prototype.testForGdProblems = function()
 	var a_empty_contacts = this.state.foreach_tb_card_functor.m_a_empty_contacts;
 	var msg = "";
 
-	this.state.m_logger.debug("testForGdProblems:" + " gd_sync_with: " + this.state.gd_sync_with +
-	                                                 " gd_luid_ab_in_tb: " + this.state.gd_luid_ab_in_tb +
-	                                                 "\n zfcTb of gd_sync_with: " + this.zfcTb().get(this.state.gd_luid_ab_in_tb) +
-	                                                 "\n a_email_luid:     " + aToString(a_email_luid) +
-	                                                 "\n a_empty_contacts: " + aToString(a_empty_contacts) );
+	this.state.m_logger.debug("loadTbTestForGdProblems:" + " gd_sync_with: " + this.state.gd_sync_with +
+	                                                       " gd_luid_ab_in_tb: " + this.state.gd_luid_ab_in_tb +
+	                                                       "\n zfcTb of gd_sync_with: " + this.zfcTb().get(this.state.gd_luid_ab_in_tb) +
+	                                                       "\n a_email_luid:     " + aToString(a_email_luid) +
+	                                                       "\n a_empty_contacts: " + aToString(a_empty_contacts) );
 
 
-	if (this.state.gd_sync_with == 'zg' && !this.state.isSlowSync &&
+	if (this.state.gd_sync_with == 'zg' && !this.is_slow_sync(this.state.sourceid_pr) &&
 	                                       this.zfcTb().get(this.state.gd_luid_ab_in_tb).isPresent(FeedItem.ATTR_DEL))
 		this.state.stopFailCode   = 'failon.gd.syncwith';
 
@@ -2728,7 +2959,7 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 	var a_gd_email = new Object();
 	var email;
 
-	zinAssert(this.state.isSlowSync);
+	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
 
 	var functor = {
 		state: this.state,
@@ -2793,7 +3024,7 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 
 SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 {
-	zinAssert(this.state.isSlowSync);
+	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
 
 	var zfcGid      = this.state.zfcGid;
 	var a_gd_email  = new Object();
@@ -2995,7 +3226,7 @@ SyncFsm.prototype.deTwin = function(gid)
 
 		zfcGid.get(gid_new).del(FeedItem.ATTR_PRES);
 
-		this.state.sources[sourceid]['zfcLuid'].get(luid).del(FeedItem.ATTR_LS);
+		this.zfc(sourceid).get(luid).del(FeedItem.ATTR_LS);
 	}
 }
 
@@ -3065,6 +3296,8 @@ SyncFsm.prototype.updateGidDoChecksums = function(event)
 				foreach_msg += " luid: " + luid + " not of interest\n";
 			else if (!SyncFsm.isRelevantToGid(zfc, luid))
 				foreach_msg += " luid: " + luid + " not relevant to gid\n";
+			else if (zfi.isPresent(FeedItem.ATTR_DEL))
+				foreach_msg += " luid: " + luid + " deleted - ignoring\n";
 			else if (zfi.type() == FeedItem.TYPE_CN)
 			{
 				var a = context.getPropertiesAndParentNameFromSource(sourceid, luid, this.state.m_contact_converter_vary_none);
@@ -3110,7 +3343,7 @@ SyncFsm.prototype.updateGidDoChecksums = function(event)
 
 	try {
 		var sourceid    = this.state.itSource.next();
-		var zfc         = this.state.sources[sourceid]['zfcLuid'];
+		var zfc         = this.zfc(sourceid);
 		var foreach_msg = "about to run do_checksum functor for sourceid: " + sourceid + "\n";
 
 		zfc.forEach(functor_foreach_luid_do_checksum);
@@ -3142,21 +3375,21 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 		run: function(zfi)
 		{
 			var luid = zfi.key();
-			var msg  = "fast_sync: sourceid: " + sourceid + " and luid: " + luid;
+			var msg  = "fast_sync: " + sourceid + "/" + luid;
 
 			if (isPropertyPresent(reverse[sourceid], luid))
 			{
 				zfcGid.get(reverse[sourceid][luid]).set(FeedItem.ATTR_PRES, 1);
 				msg += " already in gid";
 			}
-			else if (SyncFsm.isOfInterest(zfc, luid))
+			else if (SyncFsm.isOfInterest(zfc, luid) && SyncFsm.isRelevantToGid(zfc, luid))
 			{
 				var gid = SyncFsm.addToGid(zfcGid, sourceid, luid, reverse);
 
 				msg += " added to gid: " + gid;
 			}
 			else
-				msg += " luid is not of interest - ignoring";
+				msg += " not of interest - ignoring";
 
 			foreach_msg += "\n  " + msg;
 
@@ -3171,7 +3404,7 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 		run: function(zfi)
 		{
 			var luid        = zfi.key();
-			var msg         = "slow_sync: sourceid: " + sourceid + " and luid: " + strPadTo(luid, 5);
+			var msg         = "slow_sync: " + sourceid + "/" + strPadTo(luid, 5);
 			var sourceid_tb = this.state.sourceid_tb;
 			var luid_tb     = null;
 			var gid;
@@ -3256,14 +3489,14 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 			this.state.itSource.m_sourceid = this.state.itSource.next();
 
 		sourceid    = this.state.itSource.m_sourceid;
-		zfc         = this.state.sources[sourceid]['zfcLuid'];
+		zfc         = this.zfc(sourceid);
 		format      = this.state.sources[sourceid]['format'];
 		foreach_msg = "";
 
 		if (event == 'evNext')
 			zinAssert(format == FORMAT_TB); // the first time through the format has to be TB
 
-		if ((format == FORMAT_TB) || !this.state.isSlowSync)
+		if ((format == FORMAT_TB) || !this.is_slow_sync(sourceid))
 			zfc.forEach(functor_foreach_luid_fast_sync);
 		else
 		{
@@ -3299,7 +3532,7 @@ SyncFsm.prototype.updateGidFromSourcesSanityCheck = function()
 			if (zfi.isPresent(FeedItem.ATTR_PRES))
 				zfi.del(FeedItem.ATTR_PRES);
 			else
-				zinAssertAndLog(false, "Found a gid unreferenced by any sourceid/luid.  This shouldn't happen.");
+				zinAssertAndLog(false, function() { return "Found a gid not referenced by any sourceid/luids.  zfi: " + zfi.toString(); });
 
 			return true;
 		}
@@ -3331,7 +3564,7 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddress = function()
 	var msg         = "twiddleMapsForGdPostalAddress:\n";
 	var context     = this;
 
-	zinAssert(this.state.isSlowSync);
+	zinAssert(this.is_slow_sync(sourceid_gd));
 
 	var functor_foreach_gid = {
 		state: this.state,
@@ -3417,7 +3650,7 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddress = function()
 
 SyncFsm.prototype.backdateZfcForcingItToLose = function(sourceid, luid)
 {
-	var zfc    = this.state.sources[sourceid]['zfcLuid'];
+	var zfc    = this.zfc(sourceid);
 	var zfi    = zfc.get(luid);
 	var format = this.state.sources[sourceid]['format'];
 
@@ -3455,7 +3688,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 	var a_checksum  = {};
 	var gid, old_gid, luid_gd, luid_tb;
 
-	zinAssert(!this.state.isSlowSync);
+	zinAssert(!this.is_slow_sync(sourceid_gd));
 
 	var functor_foreach_gid = {
 		state: this.state,
@@ -3471,7 +3704,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 			{
 				if (zfi.isPresent(sourceid))
 				{
-					zfc  = this.state.sources[sourceid]['zfcLuid'];
+					zfc  = context.zfc(sourceid);
 					luid = zfi.get(sourceid);
 
 					if ( (zfc.get(luid).type() == FeedItem.TYPE_CN) && SyncFsm.isOfInterest(zfc, luid)
@@ -3529,7 +3762,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 
 SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid, contact_converter)
 {
-	var zfc         = this.state.sources[sourceid]['zfcLuid'];
+	var zfc         = this.zfc(sourceid);
 	var zfi         = zfc.get(luid); zinAssert(zfi);
 	var luid_parent = SyncFsm.keyParentRelevantToGid(zfc, zfi.key());
 	var format      = this.state.sources[sourceid]['format'];
@@ -3552,7 +3785,8 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 		{
 			properties = { };
 
-			this.state.m_logger.warn("unable to retrieve properties for card: " + " luid: " + luid + " uri: " + uri);
+			this.state.m_logger.warn("unable to retrieve properties for card: " + " luid: " + luid + " uri: " + uri +
+			                                                                       "\n" + executionStackAsString());
 		}
 	}
 	else if (format == FORMAT_ZM)
@@ -3620,14 +3854,14 @@ SyncFsm.prototype.buildGcs = function()
 	var context       = this;
 
 	for (var i in this.state.sources)
-		aZfcCandidate[i] = this.state.sources[i]['zfcLuid'].clone(); // cloned because items get deleted out of this during merge
+		aZfcCandidate[i] = this.zfc(i).clone(); // cloned because items get deleted out of this during merge
 
 	// delete candidate mapitems in other sources once they've been compared
 	//
 	var functor_delete_other_candidate_mapitems = {
 		run: function(key, value)
 		{
-			if (key != FeedItem.ATTR_VER && key != sourceid)
+			if (isPropertyPresent(context.state.sources, key) && key != FeedItem.ATTR_VER && key != sourceid)
 				aZfcCandidate[key].del(value);
 
 			return true;
@@ -3640,16 +3874,21 @@ SyncFsm.prototype.buildGcs = function()
 
 		run: function(zfi)
 		{
-			var zfc = this.state.sources[sourceid]['zfcLuid'];
+			var zfc = context.zfc(sourceid);
 			var luid = zfi.key();
 
-			buildgcs_msg = "\n  buildGcs: candidate sourceid: " + sourceid;
+			buildgcs_msg = "\n  candidate sourceid: " + sourceid;
 
 			if (SyncFsm.isOfInterest(zfc, luid) && SyncFsm.isRelevantToGid(zfc, luid))
 			{
 				zinAssert(isPropertyPresent(reverse, sourceid) && isPropertyPresent(reverse[sourceid], luid));
 
 				var gid = reverse[sourceid][luid];
+
+				buildgcs_msg += " gid: " + gid;
+				
+				if (zfcGid.get(gid).isPresent(FeedItem.ATTR_VER))
+					buildgcs_msg += " ver: " + zfcGid.get(gid).get(FeedItem.ATTR_VER);
 
 				aGcs[gid] = this.compare(gid);// aZfcCandidate, reverse, zfcGid
 
@@ -3658,7 +3897,7 @@ SyncFsm.prototype.buildGcs = function()
 			else
 				buildgcs_msg += " - not of interest or not relevant - compare skipped: zfi: " + zfi.toString();
 
-			context.debug(buildgcs_msg);
+			context.debug("buildGcs: " + buildgcs_msg);
 
 			return true;
 		},
@@ -3678,11 +3917,11 @@ SyncFsm.prototype.buildGcs = function()
 
 				run: function(sourceid, luid)
 				{
-					if (sourceid == FeedItem.ATTR_VER)
+					if (!isPropertyPresent(this.state.sources, sourceid) || sourceid == FeedItem.ATTR_VER)
 						return true;
 
 					var zfi = aZfcCandidate[sourceid].get(luid);
-					var msg = "  buildGcs: compare:  sourceid: " + sourceid + " zfi: " + zfi.toString();
+					var msg = "  compare:  sourceid: " + sourceid + " zfi: " + zfi.toString();
 
 					if (!zfi.isPresent(FeedItem.ATTR_LS))
 					{
@@ -3692,7 +3931,6 @@ SyncFsm.prototype.buildGcs = function()
 					else
 					{
 						var lso = new Lso(zfi.get(FeedItem.ATTR_LS));
-						var gid = reverse[sourceid][luid];
 
 						if (zfi.isPresent(FeedItem.ATTR_DEL))
 							aDeletedYes[sourceid] = true;
@@ -3715,15 +3953,14 @@ SyncFsm.prototype.buildGcs = function()
 
 								// sanity check that the Contact folder hasn't changed - it's supposed to be immutable (isn't it?)
 								//
-								if (this.state.sources[sourceid]['zfcLuid'].get(luid).type() == FeedItem.TYPE_FL)
+								if (context.zfc(sourceid).get(luid).type() == FeedItem.TYPE_FL)
 									zinAssert(context.shortLabelForLuid(sourceid, luid, FORMAT_TB) != TB_PAB);
 							}
 						}
 						else
 							msg += " gid ver != lso ver: " + lso.get(FeedItem.ATTR_VER);
 
-						msg += " gid: " + gid + " gid's ver: " + zfcGid.get(gid).get(FeedItem.ATTR_VER) +
-							                    " lso: " + lso.toString() + " lso.compare == " + lso.compare(zfi);
+						msg += " lso: " + lso.toString() + " lso.compare == " + lso.compare(zfi);
 					}
 
 					buildgcs_msg += "\n" + msg;
@@ -3776,7 +4013,7 @@ SyncFsm.prototype.buildGcs = function()
 				ret = new Gcs(lowest_sourceid, Gcs.CONFLICT);
 			}
 
-			msg = "  buildGcs: compare: gid: " + gid + " returns: " + ret.toString() + msg;
+			msg = "  compare: gid: " + gid + " returns: " + ret.toString() + msg;
 
 			buildgcs_msg += "\n" + msg;
 
@@ -3787,9 +4024,9 @@ SyncFsm.prototype.buildGcs = function()
 	for (sourceid in this.state.sources)
 		aZfcCandidate[sourceid].forEach(functor_foreach_candidate);
 	
-	var msg = "";
+	var msg = "aGcs: ";
 	for (var gid in aGcs)
-		msg += "\n aGcs: gid: " + gid + ": " + aGcs[gid].toString();
+		msg += "\n gid: " + gid + ": " + aGcs[gid].toString();
 
 	this.state.m_logger.debug("buildGcs: " + msg);
 
@@ -3862,7 +4099,7 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 				case Gcs.WIN:
 				case Gcs.CONFLICT:
 					var sourceid_winner = aGcs[gid].sourceid;
-					var zfcWinner = this.state.sources[sourceid_winner]['zfcLuid'];
+					var zfcWinner = this.zfc(sourceid_winner);
 					var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(sourceid_winner));
 
 					if (!zfiWinner.isPresent(FeedItem.ATTR_LS)) // winner is new to gid
@@ -3918,125 +4155,177 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	var aSuoResult = new Object();
 	var indexSuo   = 0;
 	var msg        = "suoBuildLosers: ";
-	var suo;
+	var suo, a_sourceid;;
 
 	for (sourceid in this.state.sources)
 		aSuoResult[sourceid] = new Object();
 
+	var functor = {
+		state: this.state,
+		run: function(sourceid, luid)
+		{
+			if (sourceid != aGcs[gid].sourceid) // only look at losers
+				a_sourceid[sourceid] = true;
+
+			return true;
+		}
+	};
+
+	// leni TODO am here
+	// subsequent rethink - this isn't necessary: in UpdateCleanup:
+	// - if TB has a DEL attribute and there are gid map items not currently being synced, then
+	//   add a KEEP attribute to the Thunderbird mapitem which will
+	//     eventually drive deletion of the item in the not-currently-being-synced source
+
+	/// instead of looping through the sources pertaining to this sync
+	// we have to:
+	// - loop through all the sources in the gid
+	// - if the winner is DEL, then we have to create a DEL suo for sources that are in the gid but aren't in this.state.sources
+	// - we need a new state (?) to process these suo's - simply adding a DEL attribute to the corresponding item in the map
+	//
 	for (var gid in aGcs)
+	{
+		a_sourceid = new Object(); // the union of the sourceids in the gid and the sourceids of the current sync, excluding the winner
+
 		for (sourceid in this.state.sources)
 			if (sourceid != aGcs[gid].sourceid) // only look at losers
 				if (this.isInScopeGid(gid))
-	{
-		suo = null;
+					a_sourceid[sourceid] = true;
 
-		msg += "\n gid: " + gid + " loser: " + sourceid + " gcs: " + aGcs[gid].toString() + " -";
+		zfcGid.get(gid).forEach(functor, FeedItem.ITER_GID_ITEM);
 
-		switch (aGcs[gid].state)
+		for (sourceid in a_sourceid)
 		{
-			case Gcs.WIN:
-			case Gcs.CONFLICT:
+			suo = null;
+
+			msg += "\n gid: " + gid + " loser: " + sourceid + " gcs: " + aGcs[gid].toString() + " -";
+
+			switch (aGcs[gid].state)
 			{
-				var sourceid_winner = aGcs[gid].sourceid;
-				var zfcWinner       = this.state.sources[sourceid_winner]['zfcLuid'];
-				var zfcTarget       = this.state.sources[sourceid]['zfcLuid'];
-				var luid_winner     = zfcGid.get(gid).get(sourceid_winner);
-				var zfiWinner       = zfcWinner.get(luid_winner);
-				var zfiTarget       = zfcGid.get(gid).isPresent(sourceid) ? zfcTarget.get(zfcGid.get(gid).get(sourceid)) : null;
-				var is_delete_pair  = false;
-
-				if (!zfcGid.get(gid).isPresent(sourceid))
+				case Gcs.WIN:
+				case Gcs.CONFLICT:
 				{
-					// when we delete, we actually move to trash on zimbra
-					// when zimbra's trash gets emptied, we see the deletes, by which time the item is long gone from the original source
-					// so here, we only add items to the gid if the winner is of interest (and not deleted)
-					//
-					if (!zfiWinner.isPresent(FeedItem.ATTR_DEL) && SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
+					var sourceid_winner = aGcs[gid].sourceid;
+					var zfcWinner       = this.zfc(sourceid_winner);
+					var luid_winner     = zfcGid.get(gid).get(sourceid_winner);
+					var zfiWinner       = zfcWinner.get(luid_winner);
+
+					if (!isPropertyPresent(this.state.sources, sourceid))
 					{
-						msg += " source not in gid";
-						suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
+						// if the gid has a triple (tb, zm, gd) and we're syncing (tb, gd) and a contact was deleted
+						// then we need to leave a DEL attribute in the zm contacts' FeedItem
+						// otherwise when we come to sync (tb, zm) it'll appear as if the contact were added by zm!
+						//
+
+						if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+						{
+							msg += " source in gid but not being synced";
+							suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
+						}
 					}
 					else
-						msg += " winner is either deleted or uninteresting - no change";
-				}
-				else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
-					msg += " winner matches gid - no change";
-				else if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
-				{
-					if (!zfiTarget.isPresent(FeedItem.ATTR_DEL))
-						suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
-					else
 					{
-						is_delete_pair = true;
-						msg += " both winner and loser deleted - no change";
+						var zfcTarget       = this.zfc(sourceid);
+						var zfiTarget       = zfcGid.get(gid).isPresent(sourceid) ? zfcTarget.get(zfcGid.get(gid).get(sourceid)) : null;
+						var is_delete_pair  = false;
+
+						if (!zfcGid.get(gid).isPresent(sourceid))
+						{
+							// We implement delete for Zimbra as a move to Trash.
+							// When zimbra's Trash is emptied, we see the deletes, by which time the item is long gone from
+							// the original source.
+							// So here, we only add items to the gid if the winner is of interest (and not deleted)
+							//
+							if (!zfiWinner.isPresent(FeedItem.ATTR_DEL) && SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
+							{
+								msg += " source not in gid";
+								suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
+							}
+							else
+								msg += " winner is either deleted or uninteresting - no change";
+						}
+						else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
+							msg += " winner matches gid - no change";
+						else if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+						{
+							if (!zfiTarget.isPresent(FeedItem.ATTR_DEL))
+								suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
+							else
+							{
+								is_delete_pair = true;
+								msg += " both winner and loser deleted - no change";
+							}
+						}
+						else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
+							suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
+						else if (zfiTarget.isPresent(FeedItem.ATTR_DEL))
+						{
+							msg += " winner modified but loser had been deleted - ";
+							suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
+						}
+						else
+							suo = new Suo(gid, sourceid_winner, sourceid, Suo.MOD);
+
+						if (aGcs[gid].state == Gcs.CONFLICT && !is_delete_pair)
+						{
+							zinAssert(suo);
+
+							var context = this;
+							function getSourceName(sourceid) {
+								return context.state.sources[sourceid]['format'] == FORMAT_TB ?
+						           		stringBundleString("format.thunderbird").toLowerCase() :
+						           		stringBundleString("format.server").toLowerCase();
+							};
+
+							var conflict_msg       = "";
+							var source_name_winner = getSourceName(sourceid_winner);
+							var source_name_loser  = getSourceName(sourceid);
+							var format_winner      = this.state.sources[sourceid_winner]['format'];
+							var item               = (zfiWinner.type() == FeedItem.TYPE_CN ? "contact" : "addressbook");
+							var short_label_winner = this.shortLabelForLuid(sourceid_winner, luid_winner, FORMAT_TB);
+
+							conflict_msg += "conflict: " + item + ": " + short_label_winner +
+											" on " + source_name_winner +
+											" wins and " + item + " on " + source_name_loser +
+											" is " + Suo.opcodeAsStringPastTense(suo.opcode);
+
+							this.state.aConflicts.push(conflict_msg);
+
+							// sanity check that PAB and it's counterpart is invariant
+							//
+							if (zfiWinner.type() == FeedItem.TYPE_FL)
+							{
+								var luid_loser         = zfcGid.get(gid).get(sourceid);
+								var short_label_loser  = this.shortLabelForLuid(sourceid, luid_loser, FORMAT_TB);
+
+								zinAssert(short_label_winner != TB_PAB && short_label_loser != TB_PAB);
+							}
+						}
 					}
+
+					break;
 				}
-				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
-					suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
-				else if (zfiTarget.isPresent(FeedItem.ATTR_DEL))
-				{
-					msg += " winner modified but loser had been deleted - ";
-					suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
-				}
-				else
-					suo = new Suo(gid, sourceid_winner, sourceid, Suo.MOD);
-
-				if (aGcs[gid].state == Gcs.CONFLICT && !is_delete_pair)
-				{
-					zinAssert(suo);
-
-					var context = this;
-					function getSourceName(sourceid) {
-						return context.state.sources[sourceid]['format'] == FORMAT_TB ?
-						           stringBundleString("format.thunderbird").toLowerCase() :
-						           stringBundleString("format.server").toLowerCase();
-					}
-
-					var conflict_msg = "";
-					
-					var source_name_winner = getSourceName(sourceid_winner);
-					var source_name_loser  = getSourceName(sourceid);
-					var format_winner      = this.state.sources[sourceid_winner]['format'];
-					var item               = (zfiWinner.type() == FeedItem.TYPE_CN ? "contact" : "addressbook");
-					var short_label_winner = this.shortLabelForLuid(sourceid_winner, luid_winner, FORMAT_TB);
-
-					conflict_msg += "conflict: " + item + ": " + short_label_winner +
-									" on " + source_name_winner +
-									" wins and " + item + " on " + source_name_loser +
-									" is " + Suo.opcodeAsStringPastTense(suo.opcode);
-
-					this.state.aConflicts.push(conflict_msg);
-
-					// sanity check that PAB and it's counterpart is invariant
-					//
-					if (zfiWinner.type() == FeedItem.TYPE_FL)
-					{
-						var luid_loser         = zfcGid.get(gid).get(sourceid);
-						var short_label_loser  = this.shortLabelForLuid(sourceid, luid_loser, FORMAT_TB);
-
-						zinAssert(short_label_winner != TB_PAB && short_label_loser != TB_PAB);
-					}
-				}
-
-				break;
+				default:
+					zinAssert(false);
 			}
-			default:
-				zinAssert(false);
-		}
 
-		if (suo != null)
-		{
-			var bucket = this.suoOpcode(suo);
+			if (suo != null)
+			{
+				var bucket = this.suoOpcode(suo);
 
-			if (!isPropertyPresent(aSuoResult[sourceid], bucket))
-				aSuoResult[sourceid][bucket] = new Object();
+				if (!isPropertyPresent(aSuoResult, sourceid))
+					aSuoResult[sourceid] = new Object();
 
-			if (suo.opcode == Suo.ADD)
-				aSuoResult[sourceid][bucket][indexSuo++] = suo;
-			else
-				aSuoResult[sourceid][bucket][this.state.zfcGid.get(gid).get(sourceid)] = suo;
+				if (!isPropertyPresent(aSuoResult[sourceid], bucket))
+					aSuoResult[sourceid][bucket] = new Object();
 
-			msg += " added suo: " + suo.toString();
+				if (suo.opcode == Suo.ADD)
+					aSuoResult[sourceid][bucket][indexSuo++] = suo;
+				else
+					aSuoResult[sourceid][bucket][this.state.zfcGid.get(gid).get(sourceid)] = suo;
+
+				msg += " added suo: " + suo.toString();
+			}
 		}
 	}
 
@@ -4080,7 +4369,7 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 		{
 			suo         = this.state.aSuo[sourceid][Suo.DEL | FeedItem.TYPE_CN][indexSuo];
 			luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
-			l_target    = SyncFsm.keyParentRelevantToGid(this.state.sources[sourceid]['zfcLuid'], luid_target);
+			l_target    = SyncFsm.keyParentRelevantToGid(this.zfc(sourceid), luid_target);
 			gid_l_target = this.state.aReverseGid[sourceid][l_target];
 
 			if (isPropertyPresent(aFoldersBeingDeleted, gid_l_target))
@@ -4140,7 +4429,7 @@ SyncFsm.prototype.testForConflictingUpdateOperationsHelper = function(aName, op)
 		for (var indexSuo in this.state.aSuo[this.state.sourceid_tb][op])
 	{
 		suo = this.state.aSuo[this.state.sourceid_tb][op][indexSuo];
-		zfcWinner   = this.state.sources[suo.sourceid_winner]['zfcLuid'];
+		zfcWinner   = this.zfc(suo.sourceid_winner);
 		luid_winner = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
 		zfiWinner   = zfcWinner.get(luid_winner);
 		name        = zfiWinner.name();
@@ -4154,7 +4443,7 @@ SyncFsm.prototype.testForConflictingUpdateOperationsHelper = function(aName, op)
 
 SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 {
-	var zfc    = this.state.sources[sourceid]['zfcLuid'];
+	var zfc    = this.zfc(sourceid);
 	var format = this.state.sources[sourceid]['format'];
 	var zfi    = zfc.get(luid);
 	var ret    = "";
@@ -4218,7 +4507,7 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 	for (var gid in aGcs)
 	{
 		var sourceid = aGcs[gid].sourceid;
-		var zfc      = this.state.sources[sourceid]['zfcLuid'];
+		var zfc      = this.zfc(sourceid);
 		var format   = this.state.sources[sourceid]['format'];
 		var luid     = this.state.zfcGid.get(gid).get(sourceid);
 		var zfi      = zfc.get(luid);
@@ -4254,7 +4543,7 @@ SyncFsm.prototype.buildPreUpdateWinners = function(aGcs)
 	for (var gid in aGcs)
 	{
 		var sourceid = aGcs[gid].sourceid;
-		var zfc      = this.state.sources[sourceid]['zfcLuid'];
+		var zfc      = this.zfc(sourceid);
 		var luid     = this.state.zfcGid.get(gid).get(sourceid);
 		var zfi      = cloneObject(zfc.get(luid));
 
@@ -4274,7 +4563,7 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 
 		msg += " suo: "  + suo.toString() + "\n";
 
-		var zfcWinner   = this.state.sources[suo.sourceid_winner]['zfcLuid'];
+		var zfcWinner   = this.zfc(suo.sourceid_winner);
 		var luid_winner = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
 
 		this.resetLsoVer(suo.gid, zfcWinner.get(luid_winner));
@@ -4291,6 +4580,7 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 SyncFsm.prototype.testForCreateSharedAddressbook = function()
 {
 	var sourceid;
+	var is_slow_sync = this.is_slow_sync(this.state.sourceid_pr);
 
 	var functor = {
 		converter: this.state.m_folder_converter,
@@ -4303,12 +4593,13 @@ SyncFsm.prototype.testForCreateSharedAddressbook = function()
 			// else
 			// 	msg += " not a folder";
 			// this.state.m_logger.debug(msg);
+		
 
 			if (format == FORMAT_TB && zfi.type() == FeedItem.TYPE_FL
 			                        && this.converter.prefixClass(zfi.name()) == FolderConverter.PREFIX_CLASS_SHARED
-			                        && (this.state.isSlowSync || !this.state.aReverseGid[sourceid][zfi.key()]) )
+			                        && (is_slow_sync || !this.state.aReverseGid[sourceid][zfi.key()]) )
 				this.countName(zfi.name());
-			else if (format == FORMAT_ZM && this.state.isSlowSync && zfi.type() == FeedItem.TYPE_SF)
+			else if (format == FORMAT_ZM && is_slow_sync && zfi.type() == FeedItem.TYPE_SF)
 				this.countName(this.converter.convertForMap(FORMAT_TB, FORMAT_ZM, zfi));
 
 			return true;
@@ -4324,13 +4615,14 @@ SyncFsm.prototype.testForCreateSharedAddressbook = function()
 
 	for (sourceid in this.state.sources)
 	{
-		zfc    = this.state.sources[sourceid]['zfcLuid'];
+		zfc    = this.zfc(sourceid);
 		format = this.state.sources[sourceid]['format'];
 		a_name[sourceid] = new Object();
 
 		zfc.forEach(functor);
 	}
 
+	this.state.m_logger.debug("testForCreateSharedAddressbook: is_slow_sync(" + this.state.sourceid_pr + "): " + is_slow_sync);
 	this.state.m_logger.debug("testForCreateSharedAddressbook: Tb: " + aToString(a_name[this.state.sourceid_tb]));
 	this.state.m_logger.debug("testForCreateSharedAddressbook: Zm: " + aToString(a_name[this.state.sourceid_pr]));
 
@@ -4357,8 +4649,8 @@ SyncFsm.prototype.testForEmailedContactsMatch = function()
 
 	if (!this.zfcPr().isPresent(id) || this.zfcPr().get(id).isPresent(FeedItem.ATTR_DEL))
 		msg += " server doesn't have: " + ZM_FOLDER_EMAILED_CONTACTS;
-	else if (this.state.isSlowSync)
-		msg += " id: " + id + " isSlowSync: " + this.state.isSlowSync;
+	else if (this.is_slow_sync(this.state.sourceid_pr))
+		msg += " id: " + id + " sourceid: " + this.state.sourceid_pr + " is_slow_sync: " + this.is_slow_sync(this.state.sourceid_pr);
 	else
 	{
 		msg += " server has: " + ZM_FOLDER_EMAILED_CONTACTS;
@@ -4590,11 +4882,11 @@ SyncFsm.sharedFoldersUpdateAttributes = function(zfc, luid_link)
 {
 	var zfiLn = zfc.get(luid_link);
 
-	zinAssertAndLog(zfiLn.isPresent(FeedItem.ATTR_SKEY), "luid_link: " + luid_link + " zfiLn: " + zfiLn.toString());
+	zinAssertAndLog(zfiLn.isPresent(FeedItem.ATTR_SKEY), function() { return "luid_link: " + luid_link + " zfiLn: " + zfiLn.toString();});
 
 	var zfiSf = zfc.get(zfiLn.get(FeedItem.ATTR_SKEY));
 
-	zinAssertAndLog(zfiSf.isPresent(FeedItem.ATTR_FKEY), "zfiSf: " + zfiSf.toString());
+	zinAssertAndLog(zfiSf.isPresent(FeedItem.ATTR_FKEY), function() { return "zfiSf: " + zfiSf.toString();});
 
 	var zfiFl = zfc.get(zfiSf.get(FeedItem.ATTR_FKEY));
 
@@ -4634,7 +4926,7 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 
 		passed = passed && this.testForCreateSharedAddressbook();
 	}
-	else if (this.formatPr() == FORMAT_GD && this.state.isSlowSync)
+	else if (this.formatPr() == FORMAT_GD && this.is_slow_sync(this.state.sourceid_pr))
 		passed = passed && this.testForGdServerConstraints();
 
 	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
@@ -4648,7 +4940,7 @@ SyncFsm.prototype.entryActionConverge2 = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 1");
 
-	if (this.state.isSlowSync)
+	if (this.is_slow_sync(this.state.sourceid_pr))
 	{
 		this.updateGidDoChecksums(event);
 
@@ -4684,10 +4976,10 @@ SyncFsm.prototype.entryActionConverge5 = function(state, event, continuation)
 
 	if (this.formatPr() == FORMAT_GD)
 	{
-		if (this.state.isSlowSync && this.state.gd_is_sync_postal_address)
+		if (this.is_slow_sync(this.state.sourceid_pr) && this.state.gd_is_sync_postal_address)
 			this.twiddleMapsForGdPostalAddress();
 
-		if (!this.state.isSlowSync)
+		if (!this.is_slow_sync(this.state.sourceid_pr))
 			this.twiddleMapsToPairNewMatchingContacts();
 	}
 	else if (this.formatPr() == FORMAT_ZM)
@@ -4717,7 +5009,7 @@ SyncFsm.prototype.entryActionConverge7 = function(state, event, continuation)
 	
 	passed = passed && this.testForFolderNameDuplicate(this.state.aGcs); // 4. a bit of conflict detection
 
-	if (this.formatPr() == FORMAT_GD && this.state.isSlowSync)
+	if (this.formatPr() == FORMAT_GD && this.is_slow_sync(this.state.sourceid_pr))
 		passed = passed && this.testForGdRemoteConflictOnSlowSync();
 
 	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
@@ -4759,6 +5051,115 @@ SyncFsm.prototype.entryActionConverge9 = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
+// Add the ATTR_KEEP attribute to deleted tb mapitems when the gid has references to sources that aren't being synced.
+// This drives deletion of the items in those sources when those sources do get synced because the deleted tb item wins.
+//
+SyncFsm.prototype.keepCertainDeletedTbMapItems = function()
+{
+	var sourceid_tb = this.state.sourceid_tb;
+	var aReverseGid = this.state.aReverseGid;
+	var zfcGid      = this.state.zfcGid;
+	var msg         = "";
+	var is_a_source_in_gid_not_being_synced;
+
+	var functor_gid = {
+		state: this.state,
+
+		run: function(sourceid, luid)
+		{
+			is_a_source_in_gid_not_being_synced = !isPropertyPresent(this.state.sources, sourceid)
+
+			return !is_a_source_in_gid_not_being_synced;
+		}
+	};
+
+	var functor_tb = {
+		state: this.state,
+		run: function(zfi)
+		{
+			if (zfi.isPresent(FeedItem.ATTR_DEL))
+			{
+				var luid = zfi.key();
+				var gid  = isPropertyPresent(aReverseGid[sourceid_tb], luid) ? aReverseGid[sourceid_tb][luid] : null;
+
+				is_a_source_in_gid_not_being_synced = false;
+
+				zfcGid.get(gid).forEach(functor_gid, FeedItem.ITER_GID_ITEM);
+
+				if (is_a_source_in_gid_not_being_synced)
+				{
+					zfi.set(FeedItem.ATTR_KEEP, 1);
+					msg += " " + luid;
+				}
+			}
+
+			return true;
+		}
+	};
+
+	this.zfcTb().forEach(functor_tb);
+
+	this.debug("keepCertainDeletedTbMapItems: " +
+	           (msg.length > 0 ? ("added ATTR_KEEP to tb luids because the gid references sources not currently being synced: " + msg) :
+			     "nothing to do"));
+}
+
+SyncFsm.prototype.updateNonSyncedSources = function()
+{
+	var suo, luid_target, sourceid_target, bucket, item, sourceid, indexSuo, zfc;
+	var msg = "";
+	var a_suos_to_delete = new Array();
+	var sources_not_synced = this.state.sources_not_synced;
+
+	for (sourceid in this.state.aSuo)
+		if (!isPropertyPresent(this.state.sources, sourceid))
+			for (var i = 0; i < ORDER_SOURCE_UPDATE.length; i++)
+			{
+				bucket = ORDER_SOURCE_UPDATE[i];
+
+				if (isPropertyPresent(this.state.aSuo[sourceid], bucket) && (bucket & Suo.DEL))
+					for (indexSuo in this.state.aSuo[sourceid][bucket])
+					{
+						suo             = this.state.aSuo[sourceid][bucket][indexSuo];
+						sourceid_target = suo.sourceid_target;
+						luid_target     = this.state.zfcGid.get(suo.gid).get(sourceid_target);
+
+						// TODO this whole routine and related sources_not_synced stuff is replaced with FeedItem.ATTR_KEEP
+						//
+
+						this.debug("updateNonSyncedSources: 1. considering suo: " + suo.toString() + " exists:" + sources_not_synced[sourceid_target]['exists']); // TODO
+
+
+						zinAssertAndLog(isPropertyPresent(sources_not_synced, sourceid_target), sourceid_target);
+
+						if (sources_not_synced[sourceid_target]['exists'])
+						{
+							zfc = sources_not_synced[sourceid_target]['zfcLuid'];
+						this.debug("updateNonSyncedSources: 2. considering suo: " + suo.toString()); // TODO
+
+						// TODO am here - the target sourceid file has to be loaded!  and then saved during commit!
+							if (zfc.isPresent(luid_target))
+							{
+								msg += " " + suo.sourceid_target + "/" + luid_target;
+								this.debug("updateNonSyncedSources: 3. considering suo: " + suo.toString()); // TODO
+								zfc.get(luid_target).set(FeedItem.ATTR_DEL, 1);
+								sources_not_synced[sourceid_target]['dirty'] = true;
+							}
+						}
+
+						a_suos_to_delete.push({ sourceid: suo.sourceid_target, bucket: bucket, indexSuo: indexSuo });
+					}
+			}
+
+	this.debug("updateNonSyncedSources: " + (msg.length > 0 ? ("DEL attributes added to: " + msg) : "nothing to do"));
+
+	for (var i = 0; i < a_suos_to_delete; i++)
+	{
+		item = a_suos_to_delete[i];
+		delete this.state.aSuo[item[i].sourceid][item.bucket][item.indexSuo];
+	}
+}
+
 SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 {
 	var i, gid, id, type, sourceid_target, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
@@ -4772,14 +5173,14 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 			if (isPropertyPresent(this.state.aSuo[this.state.sourceid_tb], ORDER_SOURCE_UPDATE[i]))
 				for (var indexSuo in this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]])
 	{
-		suo = this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]][indexSuo];
+		suo  = this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]][indexSuo];
 		gid  = suo.gid;
 		type = this.feedItemTypeFromGid(gid, suo.sourceid_winner);
 		sourceid_winner = suo.sourceid_winner;
 		sourceid_target = suo.sourceid_target;
 		format_winner   = this.state.sources[sourceid_winner]['format'];
-		zfcWinner       = this.state.sources[sourceid_winner]['zfcLuid'];
-		zfcTarget       = this.state.sources[sourceid_target]['zfcLuid'];
+		zfcWinner       = this.zfc(sourceid_winner);
+		zfcTarget       = this.zfc(sourceid_target);
 		zfcGid          = this.state.zfcGid;
 		luid_winner     = zfcGid.get(gid).get(sourceid_winner);
 		zfiGid          = zfcGid.get(gid);
@@ -5193,8 +5594,8 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		sourceid_target = suo.sourceid_target;
 		format_winner   = this.state.sources[sourceid_winner]['format'];
 		luid_winner     = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
-		zfcWinner       = this.state.sources[suo.sourceid_winner]['zfcLuid'];
-		zfcTarget       = this.state.sources[suo.sourceid_target]['zfcLuid'];
+		zfcWinner       = this.zfc(suo.sourceid_winner);
+		zfcTarget       = this.zfc(suo.sourceid_target);
 		zfiWinner       = zfcWinner.get(luid_winner);
 
 		if (ORDER_SOURCE_UPDATE[i] & FeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
@@ -5400,6 +5801,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 	var change                 = newObject('acct', null);
 	var remote_update_package  = this.state.remote_update_package;
 	var is_response_understood = false;
+	var context                = this;
 	var msg = "exitActionUpdateZm: ";
 	var suo = this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
 	var msg, xpath_query, functor;
@@ -5434,7 +5836,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
 
 				var zfiGid = this.state.zfcGid.get(suo.gid);
-				zfcTarget = this.state.sources[suo.sourceid_target]['zfcLuid'];
+				zfcTarget = context.zfc(suo.sourceid_target);
 				var key = Zuio.key(id, change.acct);
 				var zfi;
 
@@ -5483,7 +5885,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 			{
 				delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
 
-				var zfcTarget   = this.state.sources[suo.sourceid_target]['zfcLuid'];
+				var zfcTarget   = context.zfc(suo.sourceid_target);
 				var luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 				var zfiTarget   = zfcTarget.get(luid_target);
 				var key         = Zuio.key(id, change.acct);
@@ -5542,7 +5944,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 		state: this.state,
 		run: function(doc, node)
 		{
-			var zfcTarget = this.state.sources[suo.sourceid_target]['zfcLuid'];
+			var zfcTarget = context.zfc(suo.sourceid_target);
 			var key       = Zuio.key(remote_update_package.soap.arg.id, remote_update_package.soap.arg.zid);
 
 			zfcTarget.get(key).set(FeedItem.ATTR_DEL, 1);
@@ -5671,7 +6073,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 		suo             = this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo];
 		sourceid_winner = suo.sourceid_winner;
 		sourceid_target = suo.sourceid_target;
-		zfcTarget       = this.state.sources[suo.sourceid_target]['zfcLuid'];
+		zfcTarget       = this.zfc(suo.sourceid_target);
 		zfiGid          = this.state.zfcGid.get(suo.gid);
 		luid_winner     = zfiGid.get(suo.sourceid_winner);
 
@@ -5792,7 +6194,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 	var is_response_processed = false;
 	var suo       = this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
 	var zfiGid    = this.state.zfcGid.get(suo.gid);
-	var zfcTarget = this.state.sources[suo.sourceid_target]['zfcLuid'];
+	var zfcTarget = this.zfc(suo.sourceid_target);
 	var response  = this.state.m_http.response();
 	var msg       = "exitActionUpdateGd: ";
 
@@ -5896,7 +6298,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 			    (remote_update_package.remote.url != contact.m_meta['edit']))
 			{
 				this.state.m_logger.debug("MOD/MOD or MOD/DEL conflict (edit url changed).  We'll retain our record of the winner and try again on the next sync...");
-				var zfcWinner   = this.state.sources[suo.sourceid_winner]['zfcLuid'];
+				var zfcWinner   = this.zfc(suo.sourceid_winner);
 				var luid_winner = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
 				var zfiWinner   = zfcWinner.get(luid_winner);
 
@@ -5998,7 +6400,7 @@ SyncFsm.prototype.getContactPrimaryEmailFromLuid = function(sourceid, luid)
 SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 {
 	var format_from = this.state.sources[sourceid]['format'];
-	var zfc         = this.state.sources[sourceid]['zfcLuid'];
+	var zfc         = this.zfc(sourceid);
 	var zfi         = zfc.get(luid);
 	var ret         = null;
 
@@ -6045,7 +6447,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 	var nextEvent = 'evNext';
 	var context = this;
 
-	this.state.stopwatch.mark(state);
+	this.state.stopwatch.mark(state + " 1");
 
 	if (!this.state.is_source_update_problem)
 	{
@@ -6053,11 +6455,15 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		var aGidsToDelete = new Array();
 		var msg = "UpdateCleanup: ";
 
+		this.keepCertainDeletedTbMapItems();
+
+		this.state.stopwatch.mark(state + " 2");
+
 		this.debug("UpdateCleanup: zfcTb:\n" + this.zfcTb().toString());
 		this.debug("UpdateCleanup: zfcPr:\n" + this.zfcPr().toString());
 		this.debug("UpdateCleanup: zfcGid: " + this.state.zfcGid.toString());
 
-		//  delete the luid item if it has a DEL attribute or (zimbra: it's not of interest)
+		//  delete the luid item if it has a DEL attribute (or zimbra: it's not of interest)
 		//  delete the mapping between a gid and an luid when the luid is not of interest
 		//
 		var functor_foreach_luid = {
@@ -6065,9 +6471,9 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 			run: function(zfi)
 			{
 				var luid = zfi.key();
-				var zfc = this.state.sources[sourceid]['zfcLuid'];
-				gid = isPropertyPresent(this.state.aReverseGid[sourceid], luid) ? this.state.aReverseGid[sourceid][luid] : null;
-				msg = "\n gid: " + gid + " sourceid/luid: " + sourceid + "/" + luid;
+				var zfc  = context.zfc(sourceid);
+				gid      = isPropertyPresent(this.state.aReverseGid[sourceid], luid) ? this.state.aReverseGid[sourceid][luid] : null;
+				msg     += "\n gid: " + gid + " " + sourceid + "/" + luid;
 
 				if (zfi.isPresent(FeedItem.ATTR_KEEP))
 				{
@@ -6116,7 +6522,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		};
 
 		for (sourceid in this.state.sources)
-			this.state.sources[sourceid]['zfcLuid'].forEach(functor_foreach_luid);
+			this.zfc(sourceid).forEach(functor_foreach_luid);
 
 		context.debug(msg);
 
@@ -6159,7 +6565,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		this.debug(msg);
 
 		if (!this.isConsistentDataStore())
-			this.state.stopFailCode   = 'failon.integrity.data.store.out'; // this indicates a bug in our code
+			this.state.stopFailCode = 'failon.integrity.data.store.out'; // this indicates a bug in our code
 	}
 
 	if (this.state.stopFailCode != null)
@@ -6172,34 +6578,60 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 {
 	var sourceid_pr = this.state.sourceid_pr;
 	var zfcLastSync = this.state.zfcLastSync;
+	var sfcd        = this.state.m_sfcd;
+	var sourceid;
 
 	this.state.stopwatch.mark(state);
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
 		for (zid in this.state.zidbag.m_properties)
-			zfcLastSync.get(this.state.sourceid_pr).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
+			zfcLastSync.get(sourceid_pr).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
+
+		zfcLastSync.get(sourceid_pr).set('SyncGalEnabled', this.state.SyncGalEnabled);
+
+		zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('zm_tested_soapurls', hyphenate(",", this.state.a_zm_tested_soapurls));
 	}
 	else if (this.formatPr() == FORMAT_GD)
 	{
 		zfcLastSync.get(sourceid_pr).set('SyncToken',                 this.state.gd_sync_token);
-		zfcLastSync.get(sourceid_pr).set('gd_sync_with',              this.state.gd_sync_with);
-		zfcLastSync.get(sourceid_pr).set('gd_is_sync_postal_address', String(this.state.gd_is_sync_postal_address));
+		zfcLastSync.get(sourceid_pr).set(Account.gd_sync_with,        this.state.gd_sync_with);
 	}
 
-	zfcLastSync.get(sourceid_pr).set('soapURL',   this.state.sources[sourceid_pr]['soapURL']);
-	zfcLastSync.get(sourceid_pr).set('username',  this.state.sources[sourceid_pr]['username']);
+	if (sfcd.first_sourceid_of_format(FORMAT_ZM) == this.state.sourceid_pr) // if this is the first ZM source...
+	{
+	}
+	else if (sfcd.first_sourceid_of_format(FORMAT_GD) == this.state.sourceid_pr) // if this is the first GD source...
+	{
+		zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('gd_is_sync_postal_address', String(this.state.gd_is_sync_postal_address));
+	}
 
-	this.state.m_logger.debug("entryActionCommit: soapURL: " + this.state.sources[sourceid_pr]['soapURL'] +
-	                                           " username: " + this.state.sources[sourceid_pr]['username'] +
-	                                           " SyncToken: " + zfcLastSync.get(sourceid_pr).get('SyncToken'));
+	if (sfcd.is_first_in_chain())
+	{
+		zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('account_signature', sfcd.signature());
+	}
+
+	zfcLastSync.get(sourceid_pr).set(Account.url,   this.state.sources[sourceid_pr][Account.url]);
+	zfcLastSync.get(sourceid_pr).set(Account.username,  this.state.sources[sourceid_pr][Account.username]);
+
+	this.state.m_logger.debug("entryActionCommit: url: " + this.state.sources[sourceid_pr][Account.url] +
+	                                       " username: " + this.state.sources[sourceid_pr][Account.username] +
+	                                      " SyncToken: " + zfcLastSync.get(sourceid_pr).get('SyncToken') +
+	                              " account_signature: " + sfcd.signature());
 
 	zfcLastSync.save();
 
 	this.state.zfcGid.save();
 
-	for (var sourceid in this.state.sources)
-		this.state.sources[sourceid]['zfcLuid'].save();
+	for (sourceid in this.state.sources)
+		this.zfc(sourceid).save();
+
+	for (sourceid in this.state.sources_not_synced)
+		if (this.state.sources_not_synced[sourceid]['exists'] && this.state.sources_not_synced[sourceid]['dirty'])
+		{
+			this.debug("entryActionCommit: sources_not_synced: saving sourceid: " + sourceid);
+			this.state.sources_not_synced[sourceid]['zfcLuid'].save();
+		}
 
 	continuation('evNext');
 }
@@ -6222,19 +6654,27 @@ SyncFsm.prototype.suoOpcode = function(suo)
 	return (type | suo.opcode);
 }
 
-SyncFsm.prototype.zfcTb    = function() { return this.state.sources[this.state.sourceid_tb]['zfcLuid']; }
-SyncFsm.prototype.zfcPr    = function() { return this.state.sources[this.state.sourceid_pr]['zfcLuid']; }
-SyncFsm.prototype.formatPr = function() { return this.state.sources[this.state.sourceid_pr]['format']; }
+SyncFsm.prototype.zfcTb        = function()         { return this.zfc(this.state.sourceid_tb);                       }
+SyncFsm.prototype.zfcPr        = function()         { return this.zfc(this.state.sourceid_pr);                       }
+SyncFsm.prototype.formatPr     = function()         { return this.state.sources[this.state.sourceid_pr]['format'];   }
+SyncFsm.prototype.getIntPref   = function(key)      { var p = preferences(); return p.getIntPref(  p.branch(), key); }
+SyncFsm.prototype.getCharPref  = function(key)      { var p = preferences(); return p.getCharPref( p.branch(), key); }
+SyncFsm.prototype.is_slow_sync = function(sourceid) { return this.state.m_sfcd.sourceid(sourceid, 'is_slow_sync');   }
+SyncFsm.prototype.is_reset     = function(sourceid) { return this.state.m_sfcd.is_reset();                           }
 
-SyncFsm.prototype.getIntPref  = function(key) { var p = preferences(); return p.getIntPref(  p.branch(), key); }
-SyncFsm.prototype.getCharPref = function(key) { var p = preferences(); return p.getCharPref( p.branch(), key); }
+SyncFsm.prototype.zfc = function(sourceid)
+{
+	zinAssertAndLog(isPropertyPresent(this.state.sources, sourceid), sourceid);
+
+	return this.state.sources[sourceid]['zfcLuid'];
+}
 
 SyncFsm.prototype.debug = function(str)
 {
 	zinAssert(arguments.length == 1);
 
 	if (this.state.m_debug_filter_out)
-		str = str.replace(this.state.m_debug_filter_out, "...");
+		str = str.replace(this.state.m_debug_filter_out, "~");
 
 	this.state.m_logger.debug(str);
 }
@@ -6368,7 +6808,7 @@ SyncFsm.keyParentRelevantToGid = function(zfc, key)
 			if (zfi.type() == FeedItem.TYPE_FL)
 				ret = zfi.get(FeedItem.ATTR_SKEY);
 			else
-				zinAssertAndLog(false, "something is wrong: zfi: " + zfi.toString() + " key: " + key);
+				zinAssertAndLog(false, function () { return "something is wrong: zfi: " + zfi.toString() + " key: " + key; });
 		}
 	}
 
@@ -6473,15 +6913,17 @@ SyncFsm.isOfInterest = function(zfc, key)
 	return ret;
 }
 
-SyncFsm.newSyncFsm = function(syncfsm_details, account_number)
+SyncFsm.newSyncFsm = function(syncfsm_details, sfcd)
 {
 	var id_fsm  = null;
-	var account = syncfsm_details.accounts[account_number];
+	var account = sfcd.account(sfcd.m_account_index);
 	var type    = syncfsm_details.type;
 	var format  = account.format_xx();
 	var syncfsm;
 
 	zinAssert(account);
+
+	logger().debug("newSyncFsm: account: " + account.toString() + " account_index: " + sfcd.m_account_index);
 
 	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
 	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
@@ -6490,10 +6932,10 @@ SyncFsm.newSyncFsm = function(syncfsm_details, account_number)
 	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
 
 	var prefset_server = new PrefSet(PrefSet.ACCOUNT,  PrefSet.ACCOUNT_PROPERTIES);
-	prefset_server.setProperty(PrefSet.ACCOUNT_URL,      account.get('url'));
-	prefset_server.setProperty(PrefSet.ACCOUNT_USERNAME, account.get('username'));
+	prefset_server.setProperty(PrefSet.ACCOUNT_URL,      account.get(Account.url));
+	prefset_server.setProperty(PrefSet.ACCOUNT_USERNAME, account.get(Account.username));
 
-	syncfsm.initialise(id_fsm, account.get('sourceid'), syncfsm_details.prefset_general, prefset_server, account.get('password'));
+	syncfsm.initialise(id_fsm, sfcd, syncfsm_details.prefset_general);
 
 	return syncfsm;
 }
@@ -6627,7 +7069,7 @@ SyncFsm.prototype.entryActionHttpResponse = function(state, event, continuation)
 {
 	var http = this.state.m_http;
 
-	zinAssertAndLog(http.isPostResponse(), http.toString());
+	zinAssertAndLog(http.isPostResponse(), function () { return http.toString(); });
 
 	if (http.m_restore_exit_function) // if setupHttpZm zapped the exit method of the state that called it, restore it...
 		this.fsm.m_a_exit[http.m_restore_exit_state] = http.m_restore_exit_function;
@@ -6751,7 +7193,8 @@ HttpStateZm.prototype.failCode = function()
 {
 	var ret;
 
-	zinAssertAndLog(this.m_xhr && this.isFailed(), "HttpState: " + this.toString()); // don't come in here unless we've failed...
+	// don't come in here unless we've failed...
+	zinAssertAndLog(this.m_xhr && this.isFailed(), function () { return "HttpState: " + this.toString();});
 
 	if (this.is_cancelled)                         ret = 'failon.cancel';
 	else if (this.is_mismatched_response)          ret = 'failon.mismatched.response';
@@ -6923,7 +7366,8 @@ HttpStateGd.prototype.failCode = function()
 {
 	var ret;
 
-	zinAssertAndLog(this.m_xhr && this.isFailed(), "HttpState: " + this.toString()); // don't come in here unless we've failed...
+	// don't come in here unless we've failed...
+	zinAssertAndLog(this.m_xhr && this.isFailed(), function () { return "HttpState: " + this.toString();});
 
 	if (this.is_cancelled)                                         ret = 'failon.cancel';
 	else if (this.is_http_status(HTTP_STATUS_401_UNAUTHORIZED))    ret = 'failon.unauthorized';
@@ -6932,7 +7376,7 @@ HttpStateGd.prototype.failCode = function()
 	else                                                           ret = 'failon.unknown';  // this really is unknown
 
 	if (ret == 'failon.unknown')
-		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
+		this.m_logger.debug("failCode: " + ret + " and HttpStateGd: " + this.toString());
 
 	return ret;
 }
@@ -6970,20 +7414,22 @@ HttpStateGd.prototype.filterOut = function(str)
 	return str;
 }
 
-// notes:
-// - the last 3 args are optional (not passed when called from timer)
-// - sourceid needs to get passed to initialiseState
+// This function has a different number of optional arguments corresponding to where it's called from:
+// - 3 arguments ==> called from timer, load prefsets from preferences
+// - 6 arguments ==> called from either "Test Connection" or "Sync Now"
 // TODO ==> for multiple accounts, this will change to:
 // - one argument:    id_fsm                                     - called from timer
 // - two arguments:   id_fsm and prefset_general                 - called from Sync Now
 // - three arguments: id_fsm and prefset_general and the account - called from "Test Connection"
 //                    and here "account" contains sourceid, url, username and password
 //
-SyncFsm.prototype.initialise = function(id_fsm, sourceid, prefset_general, prefset_server, password)
+SyncFsm.prototype.initialise = function(id_fsm, sfcd, prefset_general)
 {
-	zinAssert(arguments.length == 2 || arguments.length == 5);
+	var account  = sfcd.account(sfcd.m_account_index);
+	var sourceid = account.sourceid();
+	zinAssert(arguments.length == 3 || arguments.length == 6);
 
-	this.initialiseState(id_fsm, sourceid);
+	this.initialiseState(id_fsm, sourceid, sfcd);
 	this.initialiseFsm();
 
 	if (id_fsm == Maestro.FSM_ID_ZM_AUTHONLY)
@@ -6994,41 +7440,32 @@ SyncFsm.prototype.initialise = function(id_fsm, sourceid, prefset_general, prefs
 	else if (id_fsm == Maestro.FSM_ID_GD_AUTHONLY)
 		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
 
-	if (arguments.length == 2)
-	{
-		prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
-		prefset_server  = new PrefSet(PrefSet.ACCOUNT,  PrefSet.ACCOUNT_PROPERTIES);
-		prefset_general.load();
-		prefset_server.load(sourceid);
-		password = prefset_server.getPassword();
-	}
-
-	this.state.sources[sourceid]['soapURL']  = prefset_server.getProperty(PrefSet.ACCOUNT_URL);
-	this.state.sources[sourceid]['username'] = prefset_server.getProperty(PrefSet.ACCOUNT_USERNAME);
-	this.state.sources[sourceid]['password'] = password;
+	this.state.sources[sourceid][Account.url]         = account.get(Account.url);
+	this.state.sources[sourceid][Account.username]        = account.get(Account.username);
+	this.state.sources[sourceid][Account.passwordlocator] = account.get(Account.passwordlocator);
  
-	var msg = "initialise: ";
-	msg += " soapURL: " + this.state.sources[sourceid]['soapURL'] + " username: " + this.state.sources[sourceid]['username'];
+	var msg = "initialise: sourceid: " + sourceid + " soapURL: "  + this.state.sources[sourceid][Account.url] +
+	                                                " username: " + this.state.sources[sourceid][Account.username];
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
-		if (this.state.sources[sourceid]['soapURL'])
+		if (this.state.sources[sourceid][Account.url])
 		{
-			if (this.state.sources[sourceid]['soapURL'].charAt(this.state.sources[sourceid]['soapURL'].length - 1) != '/')
-				this.state.sources[sourceid]['soapURL'] += '/';
+			if (this.state.sources[sourceid][Account.url].charAt(this.state.sources[sourceid][Account.url].length - 1) != '/')
+				this.state.sources[sourceid][Account.url] += '/';
 
-			this.state.sources[sourceid]['soapURL'] += "service/soap/";
+			this.state.sources[sourceid][Account.url] += "service/soap/";
 		}
 		else
 			; // if extension is installed but not configured, we end up in here with no preferences set - stAuth will report url is invalid
 
-		this.state.SyncGalEnabled = prefset_general.getProperty(PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED);
+		this.state.SyncGalEnabled = account.get(Account.zm_sync_gal_enabled);
 
 		msg += " SyncGalEnabled: " + this.state.SyncGalEnabled;
 	}
 	else // this.formatPr() == FORMAT_GD
 	{
-		this.state.gd_sync_with              = prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_WITH);
+		this.state.gd_sync_with              = account.get(Account.gd_sync_with);
 		this.state.gd_is_sync_postal_address = (prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS) == "true");
 
 		msg += " gd_sync_with: " + this.state.gd_sync_with + " gd_is_sync_postal_address: " + this.state.gd_is_sync_postal_address;
@@ -7052,7 +7489,7 @@ FsmState.prototype.initialiseSource = function(sourceid, format)
 	this.aChecksum[sourceid] = new Object();
 }
 
-SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
+SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 {
 	this.state = new FsmState();
 
@@ -7060,9 +7497,10 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 
 	state.id_fsm              = id_fsm;
 	state.sourceid_pr         = sourceid;
+	state.m_sfcd              = sfcd;
 	state.m_logappender       = new LogAppenderHoldOpen(); // holds an output stream open - must be closed explicitly
 	state.m_logger            = new Logger(Singleton.instance().loglevel(), "SyncFsm", state.m_logappender);
-	state.m_debug_filter_out  = null;
+	state.m_debug_filter_out  = new RegExp('https?' + GOOGLE_URL_HIER_PART + '|' + GOOGLE_PROJECTION, "mg");
 	state.m_http              = null;
 	state.cCallsToHttp        = 0;                       // handy for debugging the closure passed to soapCall.asyncInvoke()
 	state.zfcLastSync         = null;                    // FeedCollection - maintains state re: last sync (anchors, success/fail)
@@ -7071,8 +7509,8 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.zfcTbPreMerge       = null;                    // the thunderbird map before merging tb addressbook - used to test invariance
 	state.stopwatch           = new StopWatch("SyncFsm");
 	state.authToken           = null;
-	state.isSlowSync          = false;        // true iff no data files
 	state.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
+	state.sources_not_synced  = new Object(); // associative array of sourceids referenced by the gid, excluding state.sources
 	state.aGcs                = null;         // array of Global Converged State - passed between the phases of Converge
 	state.itSource            = null;         // iterator across sourceids
 	state.itCollection        = null;         // iterator across a FeedCollection
@@ -7105,17 +7543,17 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.sourceid_tb = SOURCEID_TB;
 }
 
-SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid)
+SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 {
-	SyncFsm.prototype.initialiseState.call(this, id_fsm, sourceid);
+	SyncFsm.prototype.initialiseState.call(this, id_fsm, sourceid, sfcd);
 
 	var state = this.state;
 
 	state.zidbag                 = new ZidBag();
 	state.suggestedSoapURL       = null;         // a <soapURL> response returned in GetAccountInfo
+	state.a_zm_tested_soapurls   = new Array();  // soapURLs that have been tested with FakeHead - saved to lastsync.txt
 	state.preauthURL             = null;
 	state.preauthBody            = null;
-	state.isSlowSync             = false;        // true iff no data files
 	state.aSyncGalContact        = null;         // SyncGal
 	state.mapIdSyncGalContact    = null;      
 	state.SyncGalEnabled         = null;         // From the preference of the same name.  Possible values: yes, no, if-fewer
@@ -7132,9 +7570,9 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid)
 	state.initialiseSource(sourceid, FORMAT_ZM);
 }
 
-SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid)
+SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 {
-	SyncFsm.prototype.initialiseState.call(this, id_fsm, sourceid);
+	SyncFsm.prototype.initialiseState.call(this, id_fsm, sourceid, sfcd);
 
 	var state = this.state;
 
@@ -7151,8 +7589,6 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid)
 	state.gd_sync_with                  = null;         // pab or zg
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
-
-	state.m_debug_filter_out            = new RegExp('https?' + GOOGLE_URL_HIER_PART, "mg");
 
 	// this contact_converter is used when we're syncing postalAddress with Google, but the _vary_none version is still called
 	// from the slow sync checksum code because we don't want to include Google postalAddress in the checksum/isTwin comparison
@@ -7171,9 +7607,9 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 
 	var sourceid_pr = this.state.sourceid_pr;
 
-	var url      = this.state.sources[sourceid_pr]['soapURL'];
-	var username = this.state.sources[sourceid_pr]['username'];
-	var password = this.state.sources[sourceid_pr]['password'];
+	var url      = this.state.sources[sourceid_pr][Account.url];
+	var username = this.state.sources[sourceid_pr][Account.username];
+	var password = this.state.sources[sourceid_pr][Account.passwordlocator].getPassword();
 
 	// See RFC 2821 and http://en.wikipedia.org/wiki/E-mail_address
 	// Thank goodness Gmail doesn't support email addresses where the local-part is a quoted string :-)
@@ -7215,8 +7651,10 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 		this.state.authToken = aMatch[1];
 
 	if (this.state.authToken)
-		this.state.gd_url_base = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER) + GOOGLE_URL_HIER_PART + 
-		                                 encodeURIComponent(this.state.sources[this.state.sourceid_pr]['username']) + "/base";
+		this.state.gd_url_base = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER) +
+		                         GOOGLE_URL_HIER_PART + 
+		                         encodeURIComponent(this.state.sources[this.state.sourceid_pr][Account.username]) +
+								 GOOGLE_PROJECTION;
 
 	this.state.m_logger.debug("authToken.length: " + (this.state.authToken ? this.state.authToken.length : "null") );
 }
@@ -7286,7 +7724,7 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 		this.state.a_gd_contact_iterator.m_zindus_contact_count = 1;
 		this.state.a_gd_contact_iterator.m_zindus_contact_chunk = 100;
 
-		this.state.gd_is_dexmlify_postal_address = this.state.isSlowSync && !this.state.gd_is_sync_postal_address;
+		this.state.gd_is_dexmlify_postal_address = this.is_slow_sync(this.state.sourceid_pr) && !this.state.gd_is_sync_postal_address;
 
 		if (this.state.gd_is_dexmlify_postal_address)
 			this.state.a_gd_contact_dexmlify = GdContact.arrayFromXpath(this.state.m_contact_converter_vary_gd_postal,
@@ -7341,26 +7779,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 				{
 					this.zfcPr().get(id).set(FeedItem.ATTR_DEL, '1');
 
-					if (zfi.isPresent(FeedItem.ATTR_CSGD))
-						zfi.del(FeedItem.ATTR_CSGD);
-
 					msg += " marked as deleted" + (contact.is_deleted() ? "" : " (because it is empty)") + ": ";
-				}
-				else if (zfi.isPresent(FeedItem.ATTR_CSGD))
-				{
-					var properties  = this.contact_converter().convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
-					var checksum    = this.contact_converter().crc32(properties);
-
-					if (checksum == zfi.get(FeedItem.ATTR_CSGD))
-					{
-						var gid = this.state.aReverseGid[this.state.sourceid_pr][id];
-						SyncFsm.setLsoToGid(this.state.zfcGid.get(gid), zfi);
-						msg += " ATTR_CSGD matched, lso updated: ";
-					}
-					else
-						msg += " ATTR_CSGD didn't match: "; // so the contact changed since we updated it...
-
-					zfi.del(FeedItem.ATTR_CSGD);
 				}
 
 				msg += " zfi: " + zfi.toString();
@@ -7574,7 +7993,7 @@ SyncFsmGd.prototype.gdAdjustHttpHttps = function(url)
 SyncFsmGd.prototype.gdConflictTrailer = function(fail_code)
 {
 	var quickstart = this.state.gd_sync_with == "pab" ?
-			    stringBundleString("status.failon.gd.conflict.quickstart", [ stringBundleString("cs.general.gd.syncwith.label") ]) : "";
+			    stringBundleString("status.failon.gd.conflict.quickstart", [ stringBundleString("ca.pap.gd.syncwith.label") ]) : "";
 
 	return stringBundleString("status.failon.gd.conflict.trailer",
 			[ quickstart,
@@ -7592,7 +8011,7 @@ SyncFsmGd.prototype.gdConflictFailCodeToHref = function(fail_code)
 	}
 	else if (isInArray(fail_code, [ 'failon.gd.conflict.3' ]))
 	{
-		url = "http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs";
+		url = BUG_REPORT_URI;
 		ret = '<a href="' + url + '">' + url + '</a>';
 	}
 	else
