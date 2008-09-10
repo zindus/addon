@@ -21,8 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function AddressBookTb2() { AddressBook.call(this); this.m_logger.debug("Tb2"); }
-function AddressBookTb3() { AddressBook.call(this); this.m_logger.debug("Tb3"); }
+function AddressBookTb2() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb2"); }
+function AddressBookTb3() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb3"); }
 
 AddressBookTb2.prototype = new AddressBook();
 AddressBookTb3.prototype = new AddressBook();
@@ -40,7 +40,9 @@ function AddressBook()
 	this.m_nsIRDFService = null;
 	this.m_map_name_to_uri = null;
 
-	this.m_logger = newLogger("AddressBook");
+	// used to construct m_logger here but since this constructor is called at .js file load time
+	// and we don't want to hold open a reference to the logfile, better to delay the logger construction
+	// until it's needed (ie. when the derived class get constructed).
 }
 
 AddressBook.TB2 = "TB2";
@@ -72,23 +74,22 @@ AddressBook.prototype.contact_converter = function()
 AddressBook.prototype.populateNameToUriMap = function()
 {
 	var ret = null;
+	var context = this;
 
 	var functor =
 	{
-		context : this,
-
 		run: function(elem)
 		{
-			var key   = elem.dirName;
-			var value = this.context.directoryProperty(elem, "URI");
+			var key = elem.dirName;
+			var uri = context.directoryProperty(elem, "URI");
 
-			if (key == this.context.getPabName())
-				value = this.context.getPabURI();
+			if (key == context.getPabName())
+				uri = context.getPabURI();
 		
-			if (!isPropertyPresent(this.context.m_map_name_to_uri, key))
-				this.context.m_map_name_to_uri[key] = new Array();
+			if (!isPropertyPresent(context.m_map_name_to_uri, key))
+				context.m_map_name_to_uri[key] = new Array();
 
-			this.context.m_map_name_to_uri[key].push(value);
+			context.m_map_name_to_uri[key].push(new AddressBookImportantProperties(uri, elem.dirPrefId));
 
 			return true;
 		}
@@ -98,6 +99,8 @@ AddressBook.prototype.populateNameToUriMap = function()
 	{
 		this.m_map_name_to_uri = new Object();
 		this.forEachAddressBook(functor);
+
+		// this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + aToString(this.m_map_name_to_uri));
 	}
 }
 
@@ -115,8 +118,6 @@ AddressBook.prototype.getAddressBookUrisByPattern = function(pat)
 		if (pat.test(key))
 			ret[key] = this.m_map_name_to_uri[key];
 			
-	// this.m_logger.debug("getAddressBookUrisByPattern: blah: aToString(ret));
-
 	return ret;
 }
 
@@ -129,9 +130,7 @@ AddressBook.prototype.getAddressBookUriByName = function(name)
 	this.populateNameToUriMap();
 
 	if (isPropertyPresent(this.m_map_name_to_uri, name) && this.m_map_name_to_uri[name].length == 1)
-		ret = this.m_map_name_to_uri[name];
-
-	// this.m_logger.debug("getAddressBookUriByName: blah: name: " + name + " returns: " + ret);
+		ret = this.m_map_name_to_uri[name][0].uri();
 
 	return ret;
 }
@@ -555,24 +554,24 @@ AddressBook.prototype.setupPab = function()
 	var pabByUri  = null;
 	var pabByName = null;
 	var pabName   = null;
-	var ret = null;
+	var context   = this;
+	var ret       = null;
 	var msg;
 
 	var functor_foreach_addressbook = {
-		context: this,
 		run: function(elem) {
 
-			if (this.context.directoryProperty(elem, "URI") == kPersonalAddressbookURI)
+			if (context.directoryProperty(elem, "URI") == kPersonalAddressbookURI)
 			{
 				pabByUri      = new Object();
-				pabByUri.uri  = this.context.directoryProperty(elem, "URI");
+				pabByUri.uri  = context.directoryProperty(elem, "URI");
 				pabByUri.name = elem.dirName;
 			}
 
 			if (elem.dirName == "Personal Address Book")
 			{
 				pabByName      = new Object();
-				pabByName.uri  = this.context.directoryProperty(elem, "URI");
+				pabByName.uri  = context.directoryProperty(elem, "URI");
 				pabByName.name = elem.dirName;
 			}
 
@@ -603,18 +602,18 @@ AddressBook.prototype.setupPab = function()
 
 AddressBook.prototype.addressbooksToString = function()
 {
-	var ret = "";
+	var context = this;
+	var ret     = "";
 
 	var functor_foreach_addressbook = {
-		context: this,
 		run: function(elem) {
 			ret += "\n " +
 			       " dirName: " + elem.dirName +
-			       " uri: "       + this.context.directoryProperty(elem, "URI") +
+			       " uri: "       + context.directoryProperty(elem, "URI") +
 			       " dirPrefId: " + elem.dirPrefId +
-			       " fileName: "  + this.context.directoryProperty(elem, "fileName") +
-			       " position: "  + this.context.directoryProperty(elem, "position") +
-			       " matches kPersonalAddressbookURI: " + (this.context.directoryProperty(elem, "URI") == kPersonalAddressbookURI);
+			       " fileName: "  + context.directoryProperty(elem, "fileName") +
+			       " position: "  + context.directoryProperty(elem, "position") +
+			       " matches kPersonalAddressbookURI: " + (context.directoryProperty(elem, "URI") == kPersonalAddressbookURI);
 			
 			return true;
 		}
@@ -680,4 +679,14 @@ function AddressBookImportantProperties(uri, prefId)
 AddressBookImportantProperties.prototype.toString = function()
 {
 	return "uri: " + this.m_uri + " prefid: " + this.m_prefid;
+}
+
+AddressBookImportantProperties.prototype.uri = function()
+{
+	return this.m_uri;
+}
+
+AddressBookImportantProperties.prototype.prefid = function()
+{
+	return this.m_prefid;
 }

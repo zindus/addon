@@ -40,3 +40,8 @@ StopWatch.prototype.elapsedToString = function()
 {
 	return (new Date(Date.now()) - this.m_start);
 }
+
+StopWatch.prototype.reset = function()
+{
+	this.m_start  = new Date(Date.now());
+}

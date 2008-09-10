@@ -42,7 +42,6 @@ Maestro.prototype.initialise = function()
 {
 	this.m_a_functor  = new Object();  // an associative array where key is of ID_FUNCTOR_* and value == functor
 	this.m_a_fsmstate = new Object();
-	this.m_logger     = newLogger("Maestro"); this.m_logger.level(Logger.NONE);
 }
 
 Maestro.TOPIC = "ZindusMaestroObserver";
@@ -100,7 +99,7 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 
 	if (topic == this.TOPIC)
 	{
-		this.m_logger.debug("observe: " + " do: " + data + " maestro: " + this.toString());
+		// logger().debug("Maestro: observe: " + " do: " + data + " maestro: " + this.toString());
 
 		switch (data)
 		{
@@ -112,7 +111,7 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 
 				var id_functor = subject['id_functor'];
 
-				this.m_logger.debug("observe: register: " + id_functor);
+				// logger().debug("Maestro: observe: register: " + id_functor);
 
 				zinAssert(!isPropertyPresent(this.m_a_functor, id_functor));
 
@@ -127,27 +126,26 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 				zinAssert(isPropertyPresent(subject, 'id_functor'));
 				var id_functor = subject['id_functor'];
 				delete this.m_a_functor[id_functor]; // clients register and unregister functors with unique ids
-				this.m_logger.debug("observe: after unregister: " + id_functor + " maestro: " + this.toString() );
+				// logger().debug("Maestro: observe: after unregister: " + id_functor + " maestro: " + this.toString() );
 				break;
 
 			case this.DO_FSM_STATE_UPDATE:
 				zinAssert(isPropertyPresent(subject, 'fsmstate'));
 				var id_fsm = subject.fsmstate.id_fsm;
 
-				if (!isPropertyPresent(this.m_a_fsmstate, id_fsm) && !subject.fsmstate.isFinal())
-					this.m_logger.debug("observe: adding to m_a_fsmstate: " + id_fsm);
+				// if (!isPropertyPresent(this.m_a_fsmstate, id_fsm) && !subject.fsmstate.isFinal())
+				//	logger().debug("Maestro: observe: adding to m_a_fsmstate: " + id_fsm);
 					
 				this.m_a_fsmstate[id_fsm] = subject.fsmstate;
 
-				// this.m_logger.debug("DO_FSM_STATE_UPDATE: m_a_fsmstate[" + id_fsm + "]: " + this.m_a_fsmstate[id_fsm].toString());
+				// logger().debug("Maestro: DO_FSM_STATE_UPDATE: m_a_fsmstate[" + id_fsm + "]: " + this.m_a_fsmstate[id_fsm].toString());
 
 				this.functorNotifyAll(id_fsm);
 
 				if (this.m_a_fsmstate[id_fsm].isFinal())
 				{
 					delete this.m_a_fsmstate[id_fsm];
-					this.m_logger.debug("observe: removing from m_a_fsmstate: " + id_fsm + " mastro is now: " + this.toString() );
-					// this.initialise();
+					// logger().debug("Maestro: observe: removing from m_a_fsmstate: " + id_fsm + " mastro is now: " + this.toString() );
 				}
 
 				break;
@@ -162,7 +160,7 @@ Maestro.prototype.functorNotifyAll = function(id_fsm)
 {
 	var functor;
 
-	// this.m_logger.debug("functorNotifyAll: id_fsm: " + id_fsm);
+	// logger().debug("Maestro: functorNotifyAll: id_fsm: " + id_fsm);
 
 	for (var id_functor in this.m_a_functor)
 	{
@@ -176,12 +174,12 @@ Maestro.prototype.functorNotifyAll = function(id_fsm)
 			var context = this.m_a_functor[id_functor]['context'];
 			var args    = isPropertyPresent(this.m_a_fsmstate, id_fsm) ? this.m_a_fsmstate[id_fsm] : null;
 
-			this.m_logger.debug("functorNotifyAll: status of: " + id_fsm + " has changed - about to notify: " + id_functor + " passing arg: " + (args ? "fsmstate" : "null"));
+			// logger().debug("Maestro: functorNotifyAll: status of: " + id_fsm + " has changed - about to notify: " + id_functor + " passing arg: " + (args ? "fsmstate" : "null"));
 
 			functor.call(context, args);
 		}
 		else
-			this.m_logger.debug("functorNotifyAll: " + id_functor + ": not interested in change to this fsm");
+			; // logger().debug("Maestro: functorNotifyAll: " + id_functor + ": not interested in change to this fsm");
 	}
 }
 

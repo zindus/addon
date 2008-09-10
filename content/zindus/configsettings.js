@@ -24,36 +24,32 @@
 includejs("payload.js");
 includejs("testharness.js");
 includejs("configgd.js");
-includejs("configaccount.js");
 
-const GOOGLE_URL_CLIENT_LOGIN = "https://www.google.com/accounts/ClientLogin";
-const WINDOW_FEATURES         = "chrome,centerscreen,modal=yes,dependent=yes";
+const WINDOW_FEATURES = "chrome,centerscreen,modal=yes,dependent=yes";
 
 function ConfigSettings()
 {
-	this.m_checkbox_properties = [ PrefSet.GENERAL_AUTO_SYNC,     PrefSet.GENERAL_VERBOSE_LOGGING     ];
-	this.m_checkbox_ids        = [ "zindus-cs-general-auto-sync", "zindus-cs-general-verbose-logging" ];
-	this.m_checkbox_bimap      = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
+	this.m_checkbox_properties  = [ PrefSet.GENERAL_AUTO_SYNC,     PrefSet.GENERAL_VERBOSE_LOGGING     ];
+	this.m_checkbox_ids         = [ "zindus-cs-general-auto-sync", "zindus-cs-general-verbose-logging" ];
+	this.m_checkbox_bimap       = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
-	this.m_gal_radio_values    = [ "yes",                       "if-fewer",                       "no"                       ];
-	this.m_gal_radio_ids       = [ "zindus-cs-general-gal-yes", "zindus-cs-general-gal-if-fewer", "zindus-cs-general-gal-no" ];
-	this.m_gal_radio_bimap     = new BiMap(this.m_gal_radio_values, this.m_gal_radio_ids);
+	this.m_gd_sync_with_bimap   = new BiMap( [ "zg",                              "pab"                              ], 
+	                                         [ "zindus-cs-general-gdsyncwith-zg", "zindus-cs-general-gdsyncwith-pab" ] );
 
-	this.m_gd_sync_with_bimap  = new BiMap( [ "zg",                              "pab"                              ], 
-	                                        [ "zindus-cs-general-gdsyncwith-zg", "zindus-cs-general-gdsyncwith-pab" ] );
-
-	this.m_prefset_general     = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
-	this.m_format_bimap        = getBimapFormat('long');
-	this.m_timer_timeoutID     = null;
-	this.m_timer_functor       = null;
-	this.m_maestro             = null;
-	this.m_is_fsm_running      = false;
-	this.m_logger              = newLogger("ConfigSettings"); // this.m_logger.level(Logger.NONE); // TODO for debugging
-	this.m_preferences         = Singleton.instance().preferences();
-	this.is_developer_mode     = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
-	this.m_console_listener    = Logger.nsIConsoleListener();
-	this.m_payload             = null;
-	this.m_accounts            = null;
+	this.m_prefset_general      = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
+	this.m_prefset_general_orig = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
+	this.m_format_bimap         = getBimapFormat('long');
+	this.m_timer_timeoutID      = null;
+	this.m_timer_functor        = null;
+	this.m_maestro              = null;
+	this.m_is_fsm_running       = false;
+	this.m_preferences          = Singleton.instance().preferences();
+	this.is_developer_mode      = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
+	this.m_console_listener     = Logger.nsIConsoleListener();
+	this.m_payload              = null;
+	this.m_accounts             = null;
+	this.m_logappender          = new LogAppenderOpenClose(); // don't hold open a filehandle to the logfile
+	this.m_logger               = new Logger(Singleton.instance().loglevel(), "ConfigSettings", this.m_logappender); // this.m_logger.level(Logger.NONE);
 }
 
 ConfigSettings.prototype.onLoad = function(target)
@@ -65,6 +61,7 @@ ConfigSettings.prototype.onLoad = function(target)
 	}
 
 	this.m_prefset_general.load();
+	this.m_prefset_general_orig.load();
 
 	this.initialiseView();
 	this.maestroRegister(); // during which we get notified and updateView() is called...
@@ -110,6 +107,8 @@ ConfigSettings.prototype.onCancel = function()
 	else
 		this.m_logger.debug("no syncwindow active");
 
+	this.m_prefset_general_orig.save();
+
 	this.m_logger.debug("onCancel:");
 
 	this.stop_timer_fsm_and_deregister();
@@ -125,25 +124,40 @@ ConfigSettings.prototype.onAccept = function()
 
 	this.stop_timer_fsm_and_deregister();
 
+	var is_notify_preference_change = false;
+
+	for (var i = 0; i < this.m_checkbox_properties.length; i++)
+		if (this.m_prefset_general.getProperty(this.m_checkbox_properties[i]) !=
+		    this.m_prefset_general_orig.getProperty(this.m_checkbox_properties[i]))
+				is_notify_preference_change = true;
+
+	if (is_notify_preference_change)
+		ObserverService.notify(ObserverService.TOPIC_PREFERENCE_CHANGE, null, null);
+
 	this.m_logger.debug("onAccept: exits");
 }
 
 ConfigSettings.prototype.onCommand = function(id_target)
 {
 	this.m_logger.debug("onCommand: target: " + id_target);
+	var is_accounts_changed = false;
+	var rowid;
 
 	switch (id_target)
 	{
 		case "zindus-cs-general-button-sync-now":
 			this.updatePrefsetsFromDocument();
+			var stopwatch = new StopWatch("Configsettings");
+			stopwatch.mark("start")
 
-			this.m_payload = new Payload();
 			if (!this.is_developer_mode) // TODO
 				zinAssert(this.m_accounts.length == 1);
-			this.m_payload.m_syncfsm_details = newObject('accounts', this.m_accounts, 'type', "twoway",
-			                                                         'prefset_general', this.m_prefset_general);
-			this.m_payload.m_es = new SyncFsmExitStatus();
-			this.m_payload.m_is_cancelled = false;
+
+			this.m_payload = new Payload();
+			this.m_payload.m_a_accounts      = this.m_accounts;
+			this.m_payload.m_syncfsm_details = newObject('type', "twoway", 'prefset_general', this.m_prefset_general);
+			this.m_payload.m_es              = new SyncFsmExitStatus();
+			this.m_payload.m_is_cancelled    = false;
 
 			logger().debug("ConfigSettings.onCommand: before openDialog: m_es: " + this.m_payload.m_es.toString());
 
@@ -159,12 +173,15 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			{
 				var msg = "";
 
+				stopwatch.mark("finish")
+
 				logger().debug("ConfigSettings.onCommand: after openDialog: m_is_cancelled: " +
 				                                              this.m_payload.m_is_cancelled + " m_es: " + this.m_payload.m_es.toString());
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
 					logger().debug("ConfigSettings.onCommand: cs.sync.failed.unexpectedly");
-					msg = stringBundleString("cs.sync.failed.unexpectedly");
+					msg = stringBundleString("cs.sync.failed.unexpectedly") + "\n" +
+					      stringBundleString("status.failmsg.see.bug.reporting.url")
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
 					msg = this.m_payload.m_es.asMessage("cs.sync.succeeded", "cs.sync.failed");
@@ -197,9 +214,14 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-cs-general-button-reset":
+			logger().appender().close();
+			logger().appender(new LogAppenderOpenClose());
+
 			RemoveDatastore.removeZfcs();
 			RemoveDatastore.removeLogfile();
 			StatusPanel.update();
+
+			logger().appender(LogAppenderFactory.new());
 			break;
 
 		case "zindus-cs-general-advanced-button":
@@ -210,36 +232,29 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-cs-account-delete":
-			var rowid    = dId("zindus-cs-account-tree").currentIndex;
-			var treeitem = this.accountsTreeItem(rowid);
+			rowid           = dId("zindus-cs-account-tree").currentIndex;
+			var old_account = this.m_accounts[rowid];
 
-			var url      = this.m_accounts[rowid].get('url');
-			var username = this.m_accounts[rowid].get('username');
+			this.m_logger.debug("account-delete: rowid: " + rowid + " username: " + old_account.get(Account.username));
 
 			this.m_accounts[rowid].remove();
 			this.m_accounts.splice(rowid, 1);
 
-			this.m_logger.debug("blah: account-delete: rowid: " + rowid);
+			this.deletePasswordWhenRequired(old_account);
 
-			dId("zindus-cs-account-treechildren").removeChild(treeitem);
-
-			this.deletePasswordWhenRequired(url, username);
-
-			if (this.m_accounts.length > 0)
-				if (rowid < this.m_accounts.length)
-					dId("zindus-cs-account-tree").view.selection.select(rowid);
-				else
-					dId("zindus-cs-account-tree").view.selection.select(this.m_accounts.length - 1);
-
-			this.updateView();
+			is_accounts_changed = true;
 			break;
 
 		case "zindus-cs-account-add":
 		case "zindus-cs-account-edit":
+			var c_zimbra = this.accountsArrayOf(FORMAT_ZM).length;
+
 			this.updatePrefsetsFromDocument(); // because prefset_general gets passed through to SyncWindow
-			var rowid = dId("zindus-cs-account-tree").currentIndex;
+
+			rowid = dId("zindus-cs-account-tree").currentIndex;
 
 			var payload = new Payload();
+			payload.m_is_zm_enabled = rowid == -1 || this.m_accounts[rowid].format_xx() == FORMAT_ZM || (c_zimbra == 0);
 			payload.m_account = (id_target == "zindus-cs-account-add") ? null : this.m_accounts[rowid];
 			payload.m_prefset_general = this.m_prefset_general;
 
@@ -247,44 +262,51 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			if (payload.m_result)
 			{
-				var account = new Account(); // get the Account object into the scope of the current window.
-				account.m_properties = payload.m_result.m_properties;
+				var account = new Account(payload.m_result); // bring the Account object into the scope of the current window.
 
 				if (id_target == "zindus-cs-account-add")
 				{
-					account.set('sourceid', this.accountsNextSourceId());
-					account.save();
 					this.m_accounts.push(account);
 
-					rowid = this.m_accounts.length - 1;
+					if (account.format_xx() == FORMAT_ZM)
+						rowid = c_zimbra; // Zimbra accounts appear above Google accounts
+					else
+						rowid = this.m_accounts.length - 1;
 				}
 				else
 				{
 					zinAssert(id_target == "zindus-cs-account-edit");
 
-					var prev_url      = this.m_accounts[rowid].get('url');
-					var prev_username = this.m_accounts[rowid].get('username');
-
-					// this.m_logger.debug("blah: url: " + account.get('url') + " username: " + account.get('username') +
-					//                     " prev_url: " + prev_url + " prev_username: " + prev_username);
-
-					account.set('sourceid', this.m_accounts[rowid].get('sourceid'));
-					account.save();
+					var old_account = this.m_accounts[rowid];
 
 					this.m_accounts[rowid] = account;
 
-					if (account.get('url') != prev_url || account.get('username') != prev_username)
-						this.deletePasswordWhenRequired(prev_url, prev_username);
+					// TODO
+					// if (account.get(Account.url)      != old_account.get(Account.url) ||
+					//    account.get(Account.username) != old_account.get(Account.username))
+					this.deletePasswordWhenRequired(old_account);
 				}
 
-				var pm = new PasswordManager();
-				pm.set(account.get('url'), account.get('username'), account.get('password'));
+				var old_pl = new PasswordLocator(account.get(Account.passwordlocator));
+				var new_pl = new PasswordLocator(account.get(Account.url), account.get(Account.username));
 
-				this.accountsTreeRefresh(rowid);
-				dId("zindus-cs-account-tree").view.selection.select(rowid);
+				new_pl.setPassword(old_pl.getPassword());
+				old_pl.delPassword();
 
-				this.updateView();
+				account.set(Account.passwordlocator, new_pl);
+
+				is_accounts_changed = true;
 			}
+
+			break;
+
+		case "zindus-cs-general-auto-sync":
+		case "zindus-cs-general-verbose-logging":
+			this.updatePrefsetsFromDocument();
+			this.m_prefset_general.save();
+
+			this.m_logger.level(Singleton.instance().get_loglevel_from_preference());
+			Singleton.instance().logger().level(Singleton.instance().get_loglevel_from_preference());
 
 			break;
 
@@ -293,8 +315,45 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 	}
 
-	if (isInArray(id_target, [ "zindus-cs-account-add", "zindus-cs-account-edit", "zindus-cs-account-delete" ]))
-		this.m_logger.debug("blah: id_target: " + id_target + " m_accounts is: " + aToString(this.m_accounts)); // TODO
+	if (is_accounts_changed)
+	{
+		this.m_logger.debug("blah: accounts have changed.");
+
+		this.m_accounts = this.accountsSortAndSave(this.m_accounts);
+
+		this.m_logger.debug("blah: 2.");
+
+		if (id_target == "zindus-cs-account-delete")
+		{
+			// remove the last account from preferences because it has shifted up...
+			//
+			account = new Account();
+			account.sourceid(Account.indexToSourceId(this.m_accounts.length));
+			account.remove();
+
+			// set rowid so that the right row gets selected below
+			//
+			if (this.m_accounts.length > 0)
+			{
+				if (rowid == this.m_accounts.length)
+					rowid = this.m_accounts.length - 1;
+			}
+			else
+				rowid = null;
+		}
+
+		this.accountsTreeRefresh();
+
+		// this.m_logger.debug("blah: selecting rowid: " + rowid);
+
+		if (rowid != null)
+			dId("zindus-cs-account-tree").view.selection.select(rowid);
+
+		this.updateView();
+
+		if (isInArray(id_target, [ "zindus-cs-account-add", "zindus-cs-account-edit", "zindus-cs-account-delete" ]))
+			this.m_logger.debug("blah: id_target: " + id_target + " m_accounts is: " + Account.arrayToString(this.m_accounts));
+	}
 }
 
 ConfigSettings.prototype.onTimerFire = function(context)
@@ -324,35 +383,12 @@ ConfigSettings.prototype.initialiseView = function()
 	for (var i = 0; i < this.m_checkbox_properties.length; i++)
 		dId(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked =
 		           (this.m_prefset_general.getProperty(this.m_checkbox_properties[i]) == "true");
-
-	// general tab - Google Sync With
-	//
-	ConfigSettings.setRadioFromPrefset("zindus-cs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap, this.m_prefset_general,
-	                         PrefSet.GENERAL_GD_SYNC_WITH, "zindus-cs-general-gdsyncwith-pab")
-
-	// general tab - Gal radiogroup
-	//
-	var if_fewer = this.m_preferences.getIntPref(this.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER );
-
-	var msg = stringBundleString("cs.general.zm.gal.if.fewer", [ if_fewer ]);
-
-	dId("zindus-cs-general-gal-if-fewer").label = msg;
-
-	ConfigSettings.setRadioFromPrefset("zindus-cs-general-gal", this.m_gal_radio_bimap, this.m_prefset_general,
-	                          PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, "zindus-cs-general-gal-if-fewer")
-	
-	// work out which tab appears on top
-	//
-	var selected_id = this.isServerSettingsComplete() ? "zindus-cs-tab-general" : "zindus-cs-tab-server";
-
-	dId("zindus-cs-tabbox").selectedTab = dId(selected_id);
 }
 
 ConfigSettings.prototype.updateView = function()
 {
 	if (this.m_is_fsm_running)
 	{
-		this.m_logger.debug("updateView: fsm is running - disabling buttons"); // TODO
 		ConfigSettings.setAttribute('disabled', true, "zindus-cs-command");
 	}
 	else if (!this.isServerSettingsComplete())
@@ -371,41 +407,7 @@ ConfigSettings.prototype.updateView = function()
 	var a_google = this.accountsArrayOf(FORMAT_GD);
 	var a_zimbra = this.accountsArrayOf(FORMAT_ZM);
 
-	ConfigSettings.setAttribute('hidden', a_google.length == 0, "zindus-cs-general-google-groupbox");
-	ConfigSettings.setAttribute('hidden', a_zimbra.length == 0, "zindus-cs-general-zimbra-groupbox");
-
-	if (a_google.length > 0)
-	{
-		dId("zindus-cs-general-gdsyncwith-zg").label    = this.gdSyncWithLabel();
-		dId("zindus-cs-general-gdsyncwith-label").value = stringBundleString("cs.general.gd.syncwith.label");
-	}
-
-	// free.fr
-	//
-	var is_free_fr = false;
-
-	if (a_zimbra.length > 0)
-	{
-		var prefset;
-
-		for (var i = 0; i < a_zimbra.length; i++)
-		{
-			prefset = prefsetMatchWithPreAuth(this.m_accounts[a_zimbra[i]].get('url'));
-
-			if (prefset && prefset.getProperty(PrefSet.PREAUTH_NAME) == "free.fr")
-				is_free_fr = true;
-		}
-	}
-
-	if (is_free_fr)
-	{
-		this.m_prefset_general.setProperty(PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, "no");
-
-		ConfigSettings.setRadioFromPrefset("zindus-cs-general-gal", this.m_gal_radio_bimap, this.m_prefset_general,
-	                          PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED, null);
-	}
-
-	ConfigSettings.setAttribute('disabled', is_free_fr, "zindus-cs-general-gal");
+	ConfigSettings.setAttribute('hidden', a_google.length == 0, "zindus-cs-general-advanced-button");
 
 	ConfigSettings.setAttribute('disabled', dId("zindus-cs-account-tree").currentIndex < 0,
 	                                        "zindus-cs-account-edit", "zindus-cs-account-delete");
@@ -431,7 +433,12 @@ ConfigSettings.prototype.isServerSettingsComplete = function()
 
 ConfigSettings.getValueFromRadio = function(radiogroup_id, bimap)
 {
-	var selected_id  = dId(radiogroup_id).selectedItem.id;
+	var el = dId(radiogroup_id);
+
+	zinAssertAndLog(el, "radiogroup_id: " + radiogroup_id);
+
+	var selected_id = el.selectedItem.id;
+
 	return bimap.lookup(null, selected_id);
 }
 
@@ -465,7 +472,7 @@ ConfigSettings.prototype.gdSyncWithLabel = function()
 		ret += stringBundleString("cs.general.gd.syncwith.suffix");
 	else
 	{
-		ret += this.m_accounts[a_rowid[0]].get('username');
+		ret += this.m_accounts[a_rowid[0]].get(Account.username);
 
 		if (a_rowid.length > 1)
 			ret += " " + stringBundleString("cs.general.gd.syncwith.etc");
@@ -481,13 +488,6 @@ ConfigSettings.prototype.updatePrefsetsFromDocument = function()
 	for (var i = 0; i < this.m_checkbox_properties.length; i++)
 		this.m_prefset_general.setProperty(this.m_checkbox_properties[i],
 			dId(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked ? "true" : "false" );
-
-	// general tab - radio elements: GAL and Google Sync With
-	//
-	ConfigSettings.setPrefsetFromRadio("zindus-cs-general-gdsyncwith-radiogroup", this.m_gd_sync_with_bimap,
-	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_WITH);
-	ConfigSettings.setPrefsetFromRadio("zindus-cs-general-gal", this.m_gal_radio_bimap,
-	                          this.m_prefset_general, PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED);
 }
 
 ConfigSettings.setAttribute = function(attribute, flag)
@@ -514,74 +514,84 @@ ConfigSettings.setAttribute = function(attribute, flag)
 	}
 }
 
-ConfigSettings.prototype.accountsNextSourceId = function()
+ConfigSettings.prototype.getDomainFromUrl = function(url)
 {
-	var sourceid_max = SOURCEID_TB;
-
-	for (var i = 0; i < this.m_accounts.length; i++)
-		if (this.m_accounts[i].get('sourceid') > sourceid_max)
-			sourceid_max = this.m_accounts[i].get('sourceid');
-
-	sourceid_max = Number(sourceid_max) + 1;
-
-	return sourceid_max;
+	// http://gunblad3.blogspot.com/2008/05/uri-url-parsing.html
+	// 0  ==> url,      2  ==> protocol,    4  ==> username, 5 ==> password, 6 ==> host, 7 ==> port, 8 ==> pathname, 9 ==> urlparamseparator
+	// 10 ==> urlparam, 11 ==> querystring, 12 ==> fragment
+	//
+	var re = /^((\w+):\/\/\/?)?((\w+):?(\w+)?@)?([^\/\?:]+):?(\d+)?(\/?[^\?#;\|]+)?([;\|])?([^\?#]+)?\??([^#]+)?#?(\w*)/;
+	var a  = re.exec(url);
+	return a[6];
 }
 
-ConfigSettings.prototype.accountsTreeRefresh = function(rowid)
+ConfigSettings.prototype.accountsTreeRefresh = function()
 {
-	if (arguments.length == 0)
+	var account, rowid, treeitem, treerow, treecell;
+
+	var treechildren = dId("zindus-cs-account-treechildren");
+
+	// delete the tree
+	//
+	for (rowid = 0; rowid <= this.m_accounts.length; rowid++) // try to delete one more than the number of elements in m_accounts
 	{
-		for (rowid = 0; rowid < this.m_accounts.length; rowid++)
-			this.accountsTreeRefresh(rowid);
+		treeitem = dId(this.accountsTreeItemId(rowid));
+
+		if (treeitem)
+			treechildren.removeChild(treeitem);
 	}
-	else
+
+	// populate the tree with the accounts
+	//
+	for (rowid = 0; rowid < this.m_accounts.length; rowid++)
 	{
-		// two scenarios:
-		// rowid <  this.m_accounts.length but the dId(zindus-cs-account-rowid) doesn't exist  ==> add
-		// rowid <  this.m_accounts.length but the dId(zindus-cs-account-rowid)         exists ==> modify
-		//
-		var treechildren = dId("zindus-cs-account-treechildren");
-		var treeitem     = document.createElement("treeitem");
-		var treerow      = document.createElement("treerow");
-		var account      = this.m_accounts[rowid];
-		var treecell;
+		treeitem = document.createElement("treeitem");
+		treerow  = document.createElement("treerow");
+		account  = this.m_accounts[rowid];
 
 		zinAssert(rowid < this.m_accounts.length);
 
-		treeitem.id = "zindus-cs-account-treeitem-" + account.get('sourceid');
+		treeitem.id = this.accountsTreeItemId(rowid);
 
 		treecell = document.createElement("treecell");
-		treecell.setAttribute("label", account.get('username'));
+		treecell.setAttribute("label", account.get(Account.username));
 		treerow.appendChild(treecell);
 
 		treecell = document.createElement("treecell");
-		treecell.setAttribute("label", account.get('format'));
+		treecell.setAttribute("label", account.format_xx() == FORMAT_GD ? stringBundleString("format.google") : 
+		                               this.getDomainFromUrl(account.get(Account.url)));
 		treerow.appendChild(treecell);
+
+		this.m_logger.debug("accountsTreeRefresh: treeitem at rowid: " + rowid + " account: " + account.get(Account.username) + " " + account.get('format'));
 
 		treeitem.appendChild(treerow);
 
-		var treeitematrow = this.accountsTreeItem(rowid);
-
-		// this.m_logger.debug("accountsTreeRefresh: blah: " + ((!treeitematrow) ? "adding a treeitem" : "replacing treeitem"));
-
-		if (!treeitematrow)
-			treechildren.appendChild(treeitem);
-		else
-			treechildren.replaceChild(treeitem, treeitematrow);
+		treechildren.appendChild(treeitem);
 	}
 }
 
-ConfigSettings.prototype.accountsTreeItem = function(rowid)
+ConfigSettings.prototype.accountsTreeItemId = function(rowid)
 {
-	return dId("zindus-cs-account-treeitem-" + this.m_accounts[rowid].get('sourceid'));
+	return "zindus-cs-account-treeitem-" + rowid;
 }
 
-ConfigSettings.prototype.deletePasswordWhenRequired = function(url, username)
+ConfigSettings.prototype.deletePasswordWhenRequired = function(account)
 {
-	var pm = new PasswordManager();
+	var url      = account.get(Account.url);
+	var username = account.get(Account.username);
+	var pm       = new PasswordManager();
 
-	if (pm.get(url, username) && !this.accountsIsPresentUrlUsername(url, username))
+	if (!this.accountsIsPresentUrlUsername(url, username))
 		pm.del(url, username);
+
+	// always delete the authtoken because the password may have changed
+	//
+	if (account.format_xx() == FORMAT_GD)
+	{
+		url = googleClientLoginUrl('use-authtoken');
+
+		pm.del(url, username);
+	}
 }
 
 ConfigSettings.prototype.accountsIsPresentUrlUsername = function(url, username)
@@ -589,7 +599,7 @@ ConfigSettings.prototype.accountsIsPresentUrlUsername = function(url, username)
 	var ret = false;
 
 	for (var rowid = 0; rowid < this.m_accounts.length; rowid++)
-		if (this.m_accounts[rowid].get('url') == url && this.m_accounts[rowid].get('username') == username)
+		if (this.m_accounts[rowid].get(Account.url) == url && this.m_accounts[rowid].get(Account.username) == username)
 		{
 			ret = true;
 			break;
@@ -607,7 +617,41 @@ ConfigSettings.prototype.accountsArrayOf = function(format_xx)
 		if (this.m_accounts[rowid].format() == format)
 			a_rowid.push(rowid);
 
-	// this.m_logger.debug("accountsArrayOf: format_xx: " + format_xx + " returns: " + a_rowid.toString());
-
 	return a_rowid;
+}
+
+ConfigSettings.prototype.accountsSortAndSave = function(accounts)
+{
+	var ret = new Array();
+	var i;
+
+	// move Zimbra accounts to the top so that they get synced first
+	//
+	// we do this because of this scenario:
+	// 1. slow sync ==> Google then Zimbra.
+	// 2. Slow Sync with Google, account has conflicts, user resolves by deleting some Thunderbird contacts (eg duplicates)
+	// 3. Slow Sync with Zimbra, contacts that the user may have deleted in Thunderbird to resolve Google conflict get added
+	//    because they exist at Zimbra (ouch!)
+	// 4. Next sync (a fast sync) ==> the same conflict that got resolved earlier!
+	//    If the user had the patience to fix the conflict a second time it'd stay fixed
+	//    but still not acceptable.
+	// 
+	// Having Zimbra accounts sync first means that the Google conflicts appear second so if the user deletes a contact and syncs again,
+	// the deletes are propagated to Zimbra
+	//
+	for (i = 0; i < accounts.length; i++)
+		if (accounts[i].format_xx() == FORMAT_ZM)
+			ret.push(accounts[i]);
+
+	for (i = 0; i < accounts.length; i++)
+		if (accounts[i].format_xx() == FORMAT_GD)
+			ret.push(accounts[i]);
+
+	for (var i = 0; i < accounts.length; i++)
+	{
+		ret[i].sourceid(Account.indexToSourceId(i));
+		ret[i].save();
+	}
+
+	return ret;
 }

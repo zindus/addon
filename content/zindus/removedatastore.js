@@ -27,9 +27,9 @@ function RemoveDatastore()
 {
 }
 
-RemoveDatastore.removeZfcs = function()
+RemoveDatastore.removeZfcs = function(filename)
 {
-	logger().debug("reset: ");
+	logger().debug("removeZfcs: " + (filename ? filename : "all files"));
 
 	var file;
 	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
@@ -38,13 +38,24 @@ RemoveDatastore.removeZfcs = function()
 	//
 	if (directory.exists() && directory.isDirectory())
 	{
-		var iter = directory.directoryEntries;
- 
-		while (iter.hasMoreElements())
+		if (filename)
 		{
-			file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+			file = directory;
+			file.append(filename);
 
-			file.remove(false);
+			if (file.exists())
+				file.remove(false);
+		}
+		else
+		{
+			var iter = directory.directoryEntries;
+ 
+			while (iter.hasMoreElements())
+			{
+				file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+
+				file.remove(false);
+			}
 		}
 	}
 }
@@ -59,11 +70,18 @@ RemoveDatastore.removeLogfile = function()
 
 	if (file.exists() && !file.isDirectory())
 	{
-		// file.remove(false);
 		// Save the old logfile.  Often folk have a problem, "reset" to fix it, then email support and we don't know
 		// what happened because the logfile is gone.
 		//
-		file.moveTo(null, Filesystem.FILENAME_LOGFILE + ".old");
+		var oldfile = Filesystem.FILENAME_LOGFILE + ".old";
+
+		try {
+			file.moveTo(null, oldfile);
+		}
+		catch (ex)
+		{
+			logger().error("RemoveDatastore:removeLogfile: unable to rename: " + file.path + " to: " + oldfile + " error: " + ex);
+		}
 	}
 }
 

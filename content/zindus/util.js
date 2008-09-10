@@ -28,8 +28,7 @@ function zinAssert(expr)
 		try
 		{
 			throw new Error("Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
-				            APP_NAME + " version " + APP_VERSION_NUMBER + "\n" +
-				            "See http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs\n");
+				            APP_NAME + " version " + APP_VERSION_NUMBER + "\nSee: " + BUG_REPORT_URI + "\n");
 		}
 		catch(ex)
 		{
@@ -37,13 +36,13 @@ function zinAssert(expr)
 			{
 				var logger = newLogger("Utils");
 				logger.fatal(ex.message);
-				logger.fatal(ex.stack);
+				logger.fatal(executionStackFilter(ex.stack));
 			}
 
 			if (typeof zinAlert == 'function')
-				zinAlert('msg.alert.title', ex.message + " stack: \n" + ex.stack);
+				zinAlert('msg.alert.title', ex.message + " stack: \n" + executionStackFilter(ex.stack));
 			else
-				print(ex.message + " stack: \n" + ex.stack);
+				print(ex.message + " stack: \n" + executionStackFilter(ex.stack));
 
 			var zwc = new WindowCollection([ 'zindus-sw' ]);
 			zwc.populate();
@@ -54,7 +53,7 @@ function zinAssert(expr)
 			};
 			zwc.forEach(zwc_functor);
 
-			throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+			throw new Error(ex.message + "\n\n stack:\n" + executionStackFilter(ex.stack));
 		}
 	}
 }
@@ -63,10 +62,33 @@ function zinAssertAndLog(expr, msg)
 {
 	if (!expr)
 	{
+		// sometimes use a function as the second param to delay calculation if the msg is a costly .toString() sort of string
+		//
+		if (typeof(msg) == 'function')
+			msg = msg();
+
 		newLogger("Utils").error(msg)
 		zinAssert(expr);
 	}
 }
+
+function executionStackAsString()
+{
+	var ret = "";
+
+	try {throw new Error();} catch(ex) {ret = new String(ex.stack);}
+
+	return executionStackFilter(ret);
+}
+
+function executionStackFilter(str)
+{
+	str = str.replace(new RegExp("^.*@", "mg"),"");
+	str = str.replace(new RegExp(":0", "mg"),"");
+
+	return str;
+}
+
 
 function cloneObject(obj)
 {
@@ -214,6 +236,17 @@ function aToString(obj)
 	return ret;
 }
 
+function keysIn()
+{
+	var ret = new Object();
+
+	for (var i = 0; i < arguments.length; i++)
+		for (j in arguments[i])
+			ret[j] = true;
+
+	return ret;
+}
+
 function keysToString(obj)
 {
 	ret = "";
@@ -248,8 +281,6 @@ function isInArray(item, a)
 
 	return a.indexOf(item) != -1;
 }
-
-// isIn(id_fsm, [ blah1, blah2 ] )
 
 function isPropertyPresent(obj, property)
 {
@@ -456,6 +487,20 @@ function getBimapFormat(type)
 	}
 
 	return new BiMap(a1, a2);
+}
+
+function format_xx_to_localisable_string(format_xx)
+{
+	var ret;
+
+	switch(format_xx)
+	{
+		case FORMAT_GD: ret = stringBundleString("format.google"); break;
+		case FORMAT_ZM: ret = stringBundleString("format.zimbra"); break;
+		default:        zinAssertAndLog(false, "mismatched: format_xx: " + format_xx);
+	}
+
+	return ret;
 }
 
 function isValidUrl(url)
@@ -842,3 +887,29 @@ function textToHtml(text)
 function logger()      { return Singleton.instance().logger();      }
 function preferences() { return Singleton.instance().preferences(); }
 
+function googleClientLoginUrl(type)
+{
+	zinAssert(type == 'use-password' || type == 'use-authtoken');
+
+	const GOOGLE_URL_CLIENT_LOGIN = "https://www.google.com/accounts/ClientLogin";
+
+	return (type == 'use-password') ? GOOGLE_URL_CLIENT_LOGIN : GOOGLE_URL_CLIENT_LOGIN + "/AuthToken";
+}
+
+function getInfoMessage(type, arg1)
+{
+	var ret;
+
+	switch(type)
+	{
+		case 'start':    ret = "sync start:   " + getFriendlyTimeString() + " account(s): " + arg1;                    break;
+		case 'finish':   ret = "sync finish:  " + getFriendlyTimeString();                                             break;
+		case 'backoff':  ret = "sync backoff: " + getFriendlyTimeString();                                             break;
+		case 'next':     ret = "sync next:    " + getFriendlyTimeString(arg1);                                         break;
+		case 'startup':  ret = "startup:      " + getFriendlyTimeString() + " " + APP_NAME + " " + APP_VERSION_NUMBER; break;
+		case 'shutdown': ret = "shutdown:     " + getFriendlyTimeString() + " " + APP_NAME + " " + APP_VERSION_NUMBER; break;
+		default:         zinAssertAndLog(false, type);
+	}
+
+	return ret;
+}

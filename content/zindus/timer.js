@@ -26,16 +26,23 @@ function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg
 	zinAssert(arguments.length == 3);
 
 	this.m_logger                 = newLogger("TimerFunctor");
-	this.m_es                     = new SyncFsmExitStatus();
-	this.m_sfo                    = new SyncFsmObserver(this.m_es);
 	this.m_zwc                    = new WindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_id_fsm_functor         = id_fsm_functor;
-	this.m_syncfsm                = null;
-	this.m_timeoutID              = null;
-	this.is_running               = false;
 	this.m_on_finish_function     = on_finish_function;
 	this.m_on_finish_function_arg = on_finish_function_arg;
-	this.m_is_fsm_functor_first_entry = true;
+	this.m_sfcd                   = null;
+
+	this.initialise_per_fsm_members();
+}
+
+TimerFunctor.prototype.initialise_per_fsm_members = function()
+{
+	this.m_es        = new SyncFsmExitStatus();
+	this.m_sfo       = new SyncFsmObserver(this.m_es);
+	this.m_syncfsm   = null;
+	this.m_timeoutID = null;
+	this.is_running  = false;
+	this.m_has_fsm_state_changed = false;
 }
 
 TimerFunctor.prototype.cancel = function()
@@ -52,15 +59,48 @@ TimerFunctor.prototype.run = function()
 {
 	this.m_logger.debug("run: m_id_fsm_functor: " + this.m_id_fsm_functor);
 
-	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, this.m_id_fsm_functor, Maestro.FSM_GROUP_SYNC);
+	var accounts = AccountFactory.accountsLoadFromPrefset();
+
+	if (accounts.length > 0)
+	{
+		this.m_sfcd = new SyncFsmChainData(accounts);
+
+		newLogger().info(getInfoMessage('start', this.m_sfcd.account_names_as_string()));
+
+		window.setTimeout(this.onTimerFire, 0, this);
+	}
+	else
+	{
+		newLogger().info(getInfoMessage('start', "no accounts configured"));
+		StatusPanel.save(this.m_es, true);
+		StatusPanel.update(this.m_zwc);
+		zinAssert(!this.m_has_fsm_state_changed); // don't want finish() to unregister the fsm observer
+		this.finish();
+	}
+}
+
+TimerFunctor.prototype.onTimerFire = function(context)
+{
+	if (context.m_has_fsm_state_changed)
+	{
+		Maestro.notifyFunctorUnregister(context.m_id_fsm_functor);
+		context.initialise_per_fsm_members();
+	}
+
+	Maestro.notifyFunctorRegister(context, context.onFsmStateChangeFunctor, context.m_id_fsm_functor, Maestro.FSM_GROUP_SYNC);
 }
 
 TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	this.m_logger.debug("onFsmStateChangeFunctor: entering: m_id_fsm_functor: " + this.m_id_fsm_functor + " fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+	var context = this;
 
-	if (this.m_is_fsm_functor_first_entry)
+	this.m_logger.debug("onFsmStateChangeFunctor: entering: m_id_fsm_functor: " + this.m_id_fsm_functor +
+	                       " fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+
+	if (!this.m_has_fsm_state_changed)
 	{
+		this.m_has_fsm_state_changed = true;
+
 		if (fsmstate)
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is running - backing off");
@@ -68,7 +108,6 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		}
 		else
 		{
-			this.m_is_fsm_functor_first_entry = false;
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
 			this.m_zwc.populate();
@@ -76,36 +115,19 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var functor_unhide_progresspanel = {
 				run: function(win) {
 					win.document.getElementById('zindus-statusbar-progress').setAttribute('hidden', false);
+					win.document.getElementById('zindus-statusbar-progress-leftmost').value = 
+						stringBundleString("progress.prefix") + " " + context.m_sfcd.account().get(Account.username);
 				}
 			};
 
 			this.m_zwc.forEach(functor_unhide_progresspanel);
 
-			newLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
-
-			var accounts = AccountFactory.accountsLoadFromPrefset();
-			var account;
-
-			if (accounts.length > 0)
-				account = accounts[0];
-			else
-			{
-				// we're faking a sync to a zimbra account where the url/username/password are unspecified.
-				// Naturally this will fail (which is what we want).
-				//
-				account = new Account();
-				account.set('sourceid', Number(SOURCEID_TB) + 1);
-				account.set('format', Account.Zimbra );
-			}
-
 			var prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
 			prefset_general.load();
 
-			var syncfsm_details = newObject('accounts', [ account ], 'type', "twoway", 'prefset_general', prefset_general);
+			var syncfsm_details = newObject('type', "twoway", 'prefset_general', prefset_general);
 
-			this.m_logger.debug("onFsmStateChangeFunctor: account: " + account.toString());
-
-			this.m_syncfsm = SyncFsm.newSyncFsm(syncfsm_details, 0);
+			this.m_syncfsm = SyncFsm.newSyncFsm(syncfsm_details, this.m_sfcd);
 
 			this.m_syncfsm.start(window);
 			this.is_running = true;
@@ -120,7 +142,6 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		if (is_window_update_required)
 		{
 			var functor_update_progresspanel = {
-				context: this,
 				run: function(win) {
 					// the window might have disappeared between when we iterated all open windows and now - so we test that
 					// the element exists just before setting it's attribute...
@@ -132,8 +153,8 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 						var el_statuspanel_logo            = win.document.getElementById("zindus-statuspanel-logo");
 						var el_statuspanel_logo_processing = win.document.getElementById("zindus-statuspanel-logo-processing");
 
-						el_statuspanel_progress_meter.setAttribute('value', this.context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
-						el_statuspanel_progress_label.setAttribute('value', this.context.m_sfo.progressToString());
+						el_statuspanel_progress_meter.setAttribute('value', context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+						el_statuspanel_progress_label.setAttribute('value', context.m_sfo.progressToString());
 						el_statuspanel_logo.setAttribute('hidden', true);
 						el_statuspanel_logo_processing.setAttribute('hidden', false);
 					}
@@ -147,23 +168,30 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			StatusPanel.save(this.m_es);
 
-			var functor_hide_progresspanel = {
-				run: function(win) {
-					if (win.document && win.document.getElementById("zindus-statusbar-progress"))
-					{
-						win.document.getElementById("zindus-statusbar-progress-text").setAttribute('value', "");
-						win.document.getElementById('zindus-statusbar-progress').setAttribute('hidden', true);
-						win.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', false);
-						win.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
+			this.m_sfcd.m_account_index++;
+
+			if (this.m_es.m_exit_status == 0 && this.m_sfcd.m_account_index < this.m_sfcd.length())
+				window.setTimeout(this.onTimerFire, 0, this);
+			else
+			{
+				var functor_hide_progresspanel = {
+					run: function(win) {
+						if (win.document && win.document.getElementById ("zindus-statusbar-progress"))
+						{
+							win.document.getElementById ("zindus-statusbar-progress-text").setAttribute('value', "");
+							win.document.getElementById ('zindus-statusbar-progress').setAttribute('hidden', true);
+							win.document.getElementById ('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
+							win.document.getElementById ('zindus-statuspanel-logo').setAttribute('hidden', false);
+						}
 					}
-				}
-			};
+				};
 
-			this.m_zwc.forEach(functor_hide_progresspanel);
+				this.m_zwc.forEach(functor_hide_progresspanel);
 			
-			StatusPanel.update(this.m_zwc);
+				StatusPanel.update(this.m_zwc);
 
-			this.finish(false);
+				this.finish(false);
+			}
 		}
 	}
 }
@@ -172,12 +200,12 @@ TimerFunctor.prototype.finish = function(is_back_off)
 {
 	this.m_logger.debug("finish: is_back_off: " + is_back_off);
 
-	if (is_back_off)
-		newLogger().info("sync backing off: " + getFriendlyTimeString());
-	else
-		newLogger().info("sync finish: " + getFriendlyTimeString());
+	newLogger().info(getInfoMessage(is_back_off ? 'backoff' : 'finish'));
 
-	Maestro.notifyFunctorUnregister(this.m_id_fsm_functor);
+	if (this.m_has_fsm_state_changed)
+	{
+		Maestro.notifyFunctorUnregister(this.m_id_fsm_functor);
+	}
 
 	this.is_running = false;
 

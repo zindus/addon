@@ -48,109 +48,67 @@
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<tabbox id="zindus-cs-tabbox" orient="vertical" flex="1" >
-		<tabs>
-			<tab id="zindus-cs-tab-server"  label="&zindus.cs.tab.accounts.label;" />
-			<tab id="zindus-cs-tab-general" label="&zindus.cs.tab.general.label;"  />
-		</tabs>
+	<command id="zindus-cs-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
 
-		<tabpanels flex="1">
-			<command id="zindus-cs-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
+	<vbox flex="1" style="&zindus.enclosing.vbox.style;" >
+		<groupbox>
+			<caption label="Accounts" />
+			<vbox flex="1" >
+				<tree id="zindus-cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5"
+				         style="&zindus.accounts.tree.style;" ondblclick="document.getElementById('zindus-cs-account-edit').doCommand();" >
+					<treecols>
+						<treecol id="zindus-cs-account-email" label="&zindus.cs.account.email.label;"
+									persist="width ordinal hidden" flex="2" />
+						<splitter class="tree-splitter"/>
+						<treecol id="zindus-cs-account-type" label="&zindus.cs.account.type.label;"
+									persist="width ordinal hidden" flex="1" />
+					</treecols>
+					<treechildren id="zindus-cs-account-treechildren" flex="9" />
+				</tree>
+				<spacer style="&zindus.spacer.style;" flex="1"/> 
+				<hbox>
+					<button id="zindus-cs-account-add"    label="&zindus.cs.account.add.label;"
+					                                  accesskey="&zindus.cs.account.add.accesskey;" />
+					<button id="zindus-cs-account-edit"   label="&zindus.cs.account.edit.label;"
+					                                  accesskey="&zindus.cs.account.edit.accesskey;" />
+					<button id="zindus-cs-account-delete" label="&zindus.cs.account.delete.label;"
+					                                  accesskey="&zindus.cs.account.delete.accesskey;" />
+				</hbox>
+			</vbox>
+		</groupbox>
 
-			<tabpanel> <!-- Accounts -->
-				<vbox flex="1" style="&zindus.enclosing.vbox.style;" >
-					<tree id="zindus-cs-account-tree" seltype="single" enableColumnDrag="true" flex="9"
-							onselect="window.wd.updateView();"
-							ondblclick="document.getElementById('zindus-cs-account-edit').doCommand();"
-							>
-						<treecols>
-							<treecol id="zindus-cs-account-email" label="&zindus.cs.account.email.label;"
-							         persist="width ordinal hidden" flex="2" />
-							<splitter class="tree-splitter"/>
-							<treecol id="zindus-cs-account-type" label="&zindus.cs.account.type.label;"
-							         persist="width ordinal hidden" flex="1" />
-						</treecols>
-						<treechildren id="zindus-cs-account-treechildren" />
-					</tree>
-					<spacer style="&zindus.spacer.style;" flex="1"/> 
-					<hbox>
-						<button id="zindus-cs-account-add"    label="&zindus.cs.account.add.label;"
-						                                  accesskey="&zindus.cs.account.add.accesskey;" />
-						<button id="zindus-cs-account-edit"   label="&zindus.cs.account.edit.label;"
-						                                  accesskey="&zindus.cs.account.edit.accesskey;" />
-						<button id="zindus-cs-account-delete" label="&zindus.cs.account.delete.label;"
-						                                  accesskey="&zindus.cs.account.delete.accesskey;" />
-					</hbox>
-					<spacer style="&zindus.spacer.style;" flex="7"/> 
+		<groupbox pack="center" >
+			<caption label="&zindus.cs.general.settings.label;"/>
+			<hbox>
+				<vbox align="left" >
+					<checkbox id="zindus-cs-general-auto-sync"       label="&zindus.cs.general.auto.sync.label;"       />
+					<checkbox id="zindus-cs-general-verbose-logging" label="&zindus.cs.general.verbose.logging.label;" />
 				</vbox>
-			</tabpanel>
-
-			<tabpanel> <!-- General -->
-				<vbox flex="1" style="&zindus.enclosing.vbox.style;" >
-					<description xmlns:html="http://www.w3.org/1999/xhtml" style="&zindus.description.style;" >
-						&zindus.cs.general.introduction.value;
-					</description>
-					<groupbox pack="center" >
-						<caption label="&zindus.cs.general.settings.label;"/>
-						<vbox align="left" >
-							<checkbox id="zindus-cs-general-auto-sync"       label="&zindus.cs.general.auto.sync.label;"       />
-							<checkbox id="zindus-cs-general-verbose-logging" label="&zindus.cs.general.verbose.logging.label;" />
-						</vbox>
-					</groupbox>
-
-					<spacer style="&zindus.spacer.style;" flex="1"/> 
-					<groupbox id="zindus-cs-general-google-groupbox" pack="center" >
-						<caption label="&zindus.google.label;" />
-						<hbox pack="start" >
-							<vbox pack="center" >
-								<label id="zindus-cs-general-gdsyncwith-label" />
-								<radiogroup id="zindus-cs-general-gdsyncwith-radiogroup" >
-									<radio id="zindus-cs-general-gdsyncwith-pab" label="&zindus.cs.general.gd.sync.with.pab.label;" />
-									<radio id="zindus-cs-general-gdsyncwith-zg" />
-								</radiogroup>
-							</vbox>
-							<spacer flex="1"/>
-							<vbox pack="start" >
-								<button id="zindus-cs-general-advanced-button"
-				         			accesskey="&zindus.cs.general.button.gd.advanced.accesskey;" label="&zindus.cs.general.button.gd.advanced.label;" />
-							</vbox>
-						</hbox>
-					</groupbox>
-
-					<spacer style="&zindus.spacer.style;" flex="1"/> 
-					<groupbox id="zindus-cs-general-zimbra-groupbox" pack="center" >
-						<caption label="&zindus.zimbra.label;" />
-						<hbox pack="baseline" >
-							<label value="&zindus.cs.general.zm.gal.label;" />
-							<menulist id="zindus-cs-general-gal" >
-								<menupopup>
-									<menuitem id="zindus-cs-general-gal-yes"      label="&zindus.cs.general.zm.gal.yes.label;" />
-									<menuitem id="zindus-cs-general-gal-if-fewer" />
-									<menuitem id="zindus-cs-general-gal-no"       label="&zindus.cs.general.zm.gal.no.label;" />
-								</menupopup>
-							</menulist>
-						</hbox>
-					</groupbox>
-
-					<spacer style="&zindus.spacer.style;" flex="1"/> 
-					<groupbox pack="center" >
-				    	<caption label="&zindus.cs.general.actions.label;"/>
-						<hbox align="right" >
-							<button id="zindus-cs-general-button-test-harness" hidden="true"
-						        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.test.harness.label;" />
-							<button id="zindus-cs-general-button-run-timer" hidden="true"
-						        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.timer.label;" />
-							<button id="zindus-cs-general-button-reset"
-						        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.reset.label;"
-									accesskey="&zindus.cs.general.button.reset.accesskey;" />
-							<spacer flex="1"/> 
-							<button id="zindus-cs-general-button-sync-now"
-						        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.sync.now.label;"
-									accesskey="&zindus.cs.general.button.sync.now.accesskey;" />
-						</hbox>
-					</groupbox>
+				<spacer flex="1"/>
+				<vbox pack="end" >
+					<button id="zindus-cs-general-advanced-button" label="&zindus.cs.general.button.gd.advanced.label;"
+					             accesskey="&zindus.cs.general.button.gd.advanced.accesskey;" />
 				</vbox>
-			</tabpanel>
-		</tabpanels>
-	</tabbox>
+			</hbox>
+		</groupbox>
+
+		<spacer style="&zindus.spacer.style;" flex="1"/> 
+
+		<groupbox pack="center" >
+		    	<caption label="&zindus.cs.general.actions.label;"/>
+			<hbox align="right" >
+				<button id="zindus-cs-general-button-test-harness" hidden="true"
+			        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.test.harness.label;" />
+				<button id="zindus-cs-general-button-run-timer" hidden="true"
+			        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.timer.label;" />
+				<button id="zindus-cs-general-button-reset"
+			        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.reset.label;"
+						accesskey="&zindus.cs.general.button.reset.accesskey;" />
+				<spacer flex="1"/> 
+				<button id="zindus-cs-general-button-sync-now"
+			        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.sync.now.label;"
+						accesskey="&zindus.cs.general.button.sync.now.accesskey;" />
+			</hbox>
+		</groupbox>
+	</vbox>
 </dialog>

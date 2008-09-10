@@ -231,7 +231,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stUpdateCleanup':  this.progressReportOn("saving");                                       break;
 
 			case 'stSelectSoapUrl':
-				if (context.state.suggestedSoapURL)
+				if (context.state.suggestedSoapURL && !context.is_a_zm_tested_soapurl(context.state.suggestedSoapURL))
 				{
 					this.progressReportOnSource(context.state.sourceid_pr, "select.soapurl");
 					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP) + " " + context.state.suggestedSoapURL + "<br/>"
@@ -396,10 +396,11 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				else
 					zinAssert(false); // ensure that all cases are covered above
 
+				if (es.failcode() == 'failon.unknown')
+					es.m_fail_detail = stringBundleString("status.failmsg.see.bug.reporting.url");
+
 				if (es.m_exit_status != 0)
 					es.m_fail_fsmoldstate = fsmstate.oldstate;
-
-				// zinAssert(es.failcode() != 'failon.unknown');
 
 				for (var i = 0; i < context.state.aConflicts.length; i++)
 					this.m_logger.info("conflict: " + context.state.aConflicts[i]);

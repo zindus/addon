@@ -6,44 +6,42 @@
 <!ENTITY zindus.tools.menuitem.accesskey                "z">
 <!ENTITY zindus.toolbar.button.tooltip                  "Zindus Preferences">
 
-<!ENTITY zindus.statusbar.progress.meter.style          "max-width: 20px; opacity: .25">
-<!ENTITY zindus.statusbar.progress.text.style           "max-width: 20px">
+<!ENTITY zindus.statusbar.progress.leftmost.style       "width: 15em">
+<!ENTITY zindus.statusbar.progress.meter.style          "width: 15em; opacity: .20">
+<!ENTITY zindus.statusbar.progress.text.style           "width: 15em">
 <!ENTITY zindus.statusbar.progress.text.crop            "end">
-<!ENTITY zindus.statusbar.progress.leftmost.label       "Zindus:">
 
 <!ENTITY zindus.spacer.style                            "height:15px">
 <!ENTITY zindus.enclosing.vbox.style                    "margin:10px">
 <!ENTITY zindus.description.style                       "margin-top:5px; margin-bottom:10px; padding:5px ">
+<!ENTITY zindus.accounts.tree.style                     "min-width:30em">
 
 <!ENTITY zindus.google.label                            "Google">
 <!ENTITY zindus.zimbra.label                            "Zimbra">
 
 <!ENTITY zindus.cs.title                                "Zindus Configuration Settings">
 <!ENTITY zindus.cs.buttonlabelextra2                    "Help">
-<!ENTITY zindus.cs.tab.accounts.label                   "Accounts">
-<!ENTITY zindus.cs.tab.general.label                    "Preferences">
 
+<!ENTITY zindus.ca.group.login.details.label            "Login Details">
+<!ENTITY zindus.ca.group.pap.label                      "For this account">
 <!ENTITY zindus.ca.grid.style                           "margin-left:10px; margin-right:20px; margin-top:10px ">
 <!ENTITY zindus.ca.url.description.value                "Type the url you use to log on to the server.
-                                                         <html:br/>example: http://example.com<html:br/>example: https://example.com:443">
-<!ENTITY zindus.ca.format.label                         "Select Account Type">
-
+                                                         <html:br/>example: https://mymail.example.com">
 <!ENTITY zindus.ca.url.label                            "Server Url:">
 <!ENTITY zindus.ca.username.description.value           "Type the email address and password you use to log on.">
 <!ENTITY zindus.ca.username.label                       "Email Address:">
 <!ENTITY zindus.ca.password.label                       "Password:">
 <!ENTITY zindus.ca.test.connection.label                "Test Connection to Server">
 <!ENTITY zindus.ca.test.connection.accesskey            "T">
+<!ENTITY zindus.ca.google.sync.with.pab.label           "Personal Address Book">
+<!ENTITY zindus.ca.zimbra.gal.label                     "Global Address List (GAL): ">
+<!ENTITY zindus.ca.zimbra.gal.yes.label                 "Yes">
+<!ENTITY zindus.ca.zimbra.gal.no.label                  "No">
 
-<!ENTITY zindus.cs.general.introduction.value           "Restart Thunderbird after changing settings to be sure they are in effect.">
 <!ENTITY zindus.cs.general.settings.label               "Settings">
 <!ENTITY zindus.cs.general.actions.label                "Actions">
 <!ENTITY zindus.cs.general.auto.sync.label              "Auto Sync">
 <!ENTITY zindus.cs.general.verbose.logging.label        "Verbose logging">
-<!ENTITY zindus.cs.general.zm.gal.label                 "Global Address List (GAL): ">
-<!ENTITY zindus.cs.general.zm.gal.yes.label             "Yes">
-<!ENTITY zindus.cs.general.zm.gal.no.label              "No">
-<!ENTITY zindus.cs.general.gd.sync.with.pab.label       "Personal Address Book">
 <!ENTITY zindus.cs.general.button.sync.now.label        "Sync Now">
 <!ENTITY zindus.cs.general.button.sync.now.accesskey    "S">
 <!ENTITY zindus.cs.general.button.reset.label           "Reset">
@@ -51,7 +49,7 @@
 <!ENTITY zindus.cs.general.button.timer.label           "Run Timer">
 <!ENTITY zindus.cs.general.button.test.harness.label    "Test Harness">
 <!ENTITY zindus.cs.general.button.gd.advanced.label     "Advanced...">
-<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "A">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "v">
 
 <!ENTITY zindus.cm.title                                "Zindus Contact Conflict Report">
 
@@ -80,9 +78,9 @@
 <!ENTITY zindus.cs.account.edit.accesskey               "E">
 <!ENTITY zindus.cs.account.delete.label                 "Delete">
 <!ENTITY zindus.cs.account.delete.accesskey             "D">
-<!ENTITY zindus.cs.account.email.label                  "Email address">
-<!ENTITY zindus.cs.account.type.label                   "Account Type">
+<!ENTITY zindus.cs.account.email.label                  "Email Address">
+<!ENTITY zindus.cs.account.type.label                   "Sync With">
 
 <!ENTITY zindus.sw.title                                "Zindus Sync">
 <!ENTITY zindus.sw.progress.meter.style                 "width:35em">
-<!ENTITY zindus.sw.progress.description.style           "width:30em; height:4em;">
+<!ENTITY zindus.sw.progress.description.style           "width:30em;height:4em;">

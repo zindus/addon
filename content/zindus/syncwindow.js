@@ -22,6 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 includejs("payload.js");
+includejs("syncfsmchaindata.js");
 
 function SyncWindow()
 {
@@ -33,7 +34,7 @@ function SyncWindow()
 
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new WindowCollection(SHOW_STATUS_PANEL_IN);
-	this.m_account_index = 0;
+	this.m_sfcd      = null;
 
 	this.initialise_per_fsm_members();
 
@@ -42,9 +43,10 @@ function SyncWindow()
 
 SyncWindow.prototype.initialise_per_fsm_members = function()
 {
+	this.m_sfo       = null;
 	this.m_syncfsm   = null;
 	this.m_timeoutID = null;
-	this.m_has_fsm_observer_been_called = false;
+	this.m_has_fsm_state_changed = false;
 }
 
 SyncWindow.prototype.onLoad = function()
@@ -56,7 +58,15 @@ SyncWindow.prototype.onLoad = function()
 	if (this.m_payload.m_is_cancelled)
 		window.close();
 	else
+	{
+		this.m_sfcd = new SyncFsmChainData(this.m_payload.m_a_accounts);
+
+		this.m_logger.debug("onLoad: blah: sfcd: " + this.m_sfcd.toString());
+
+		newLogger().info(getInfoMessage('start', this.m_sfcd.account_names_as_string()));
+
 		window.setTimeout(this.onTimerFire, 0, this);
+	}
 
 	this.m_logger.debug("onLoad: exits");
 }
@@ -65,6 +75,8 @@ SyncWindow.prototype.onAccept = function()
 {
 	this.m_logger.debug("onAccept: enters");
 
+	newLogger().info(getInfoMessage('finish'));
+			
 	if (!this.m_payload.m_is_cancelled)
 		Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_SYNCWINDOW);
 
@@ -76,14 +88,14 @@ SyncWindow.prototype.onAccept = function()
 SyncWindow.prototype.onCancel = function()
 {
 	this.m_logger.debug("onCancel: enters");
-			
+
 	// this fires an evCancel event into the fsm, which subsequently transitions into the 'final' state.
-	// The observer is then notified and closes the window.
+	// The observer is then notified (below), which calls acceptDialog() to close the window, which means we end up exiting via onAccept()
 	//
 	if (this.m_syncfsm)
 		this.m_syncfsm.cancel(this.m_timeoutID);
 
-	// don't reference logger because logger.js is out of scope after the fsm has cancelled...
+	// don't reference logger here because logger.js is out of scope after the window is closed...
 	// this.m_logger.debug("onCancel: exits");
 
 	return false;
@@ -101,7 +113,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	// We could create a specific error condition for this - but it'd be better to fix the condition
 	// eg by altering the notification framework so that ConfigSettings can forestall the Timer immediately (while processing the click).
 	//
-	if (!this.m_has_fsm_observer_been_called && (fsmstate != null || this.m_payload.m_is_cancelled))
+	if (!this.m_has_fsm_state_changed && (fsmstate != null || this.m_payload.m_is_cancelled))
 	{
 		// if fsmstate != null              it means that the timer snuck in between 'Sync Now' and this window
 		// if this.m_payload.m_is_cancelled it means that the preferences window was cancelled in between 'Sync Now' and this window
@@ -111,17 +123,14 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		dId('zindus-sw').acceptDialog();
 	}
-	else if (!this.m_has_fsm_observer_been_called)
+	else if (!this.m_has_fsm_state_changed)
 	{
-		this.m_has_fsm_observer_been_called = true;
+		this.m_has_fsm_state_changed = true;
 
 		this.m_zwc.populate();
 
-		newLogger().info("sync start:  " + getFriendlyTimeString() + " version: " + APP_VERSION_NUMBER);
-
 		this.m_sfo     = new SyncFsmObserver(this.m_payload.m_es);
-		this.m_syncfsm = SyncFsm.newSyncFsm(this.m_payload.m_syncfsm_details, this.m_account_index);
-		this.m_account_index++;
+		this.m_syncfsm = SyncFsm.newSyncFsm(this.m_payload.m_syncfsm_details, this.m_sfcd);
 
 		this.m_logger.debug("functor: starting fsm: " + this.m_syncfsm.state.id_fsm);
 
@@ -139,7 +148,8 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			var elDescription = dId('zindus-sw-progress-description');
 			var elHtml        = document.createElementNS(Xpath.NS_XHTML, "p");
-			elHtml.innerHTML  = stringBundleString("progress.prefix") + " " + this.m_sfo.progressToString();
+			elHtml.innerHTML  = this.m_sfcd.account().get(Account.username) + "<br/><br/>" + this.m_sfo.progressToString();
+			// stringBundleString("progress.prefix") 
 
 			if (!elDescription.hasChildNodes())
 				elDescription.appendChild(elHtml);
@@ -161,9 +171,9 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 				StatusPanel.update();
 			}
 
-			newLogger().info("sync finish: " + getFriendlyTimeString());
+			this.m_sfcd.m_account_index++;
 
-			if (this.m_account_index < this.m_payload.m_syncfsm_details.accounts.length)
+			if (this.m_payload.m_es.m_exit_status == 0 && this.m_sfcd.m_account_index < this.m_sfcd.length())
 				window.setTimeout(this.onTimerFire, 0, this);
 			else
 				dId('zindus-sw').acceptDialog();
@@ -176,28 +186,25 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 //
 SyncWindow.prototype.onTimerFire = function(context)
 {
-	context.m_logger.debug("onTimerFire: enters");
+	// context.m_logger.debug("onTimerFire: enters");
 
 	if (context.m_payload.m_is_cancelled)
 	{
-		context.m_logger.debug("onTimerFire: payload.m_is_cancelled: " + context.m_payload.m_is_cancelled + " ... closing window");
 		window.close();
 	}
 	else
 	{
-		if (context.m_has_fsm_observer_been_called)
+		if (context.m_has_fsm_state_changed)
 		{
-			context.m_logger.debug("onTimerFire: unregistering functor");
 			Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_SYNCWINDOW);
 			context.initialise_per_fsm_members();
 		}
 
-		context.m_logger.debug("onTimerFire: registering functor");
 		var listen_to = cloneObject(Maestro.FSM_GROUP_SYNC);
 		Maestro.notifyFunctorRegister(context, context.onFsmStateChangeFunctor, Maestro.ID_FUNCTOR_SYNCWINDOW, listen_to);
 	}
 
-	context.m_logger.debug("onTimerFire: exits");
+	// context.m_logger.debug("onTimerFire: exits");
 }
 
 SyncWindow.prototype.zwc_functor = function(is_showlogo)

@@ -36,7 +36,7 @@ function StatusPanel()
 
 // save SyncFsmExitStatus to zfcStatus
 //
-StatusPanel.save = function(es)
+StatusPanel.save = function(es, is_never_synced)
 {
 	var zfcStatus = StatusPanel.getZfc();
 	var now       = new Date();
@@ -44,6 +44,7 @@ StatusPanel.save = function(es)
 									  'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
 									  'exitstatus', es.m_exit_status,
 									  'conflicts', es.m_count_conflicts,
+									  'is_never_synced', (is_never_synced ? "true" : "false"),
 									  'appversion', APP_VERSION_NUMBER );
 
 	zfcStatus.set(zfiStatus);
@@ -73,21 +74,26 @@ StatusPanel.getZfi = function()
 
 StatusPanel.update = function(zwc)
 {
-	var logger    = newLogger("StatusPanel");
 	var zfiStatus = StatusPanel.getZfi();
 
 	if (zfiStatus)
 	{
-		var exitstatus = zfiStatus.getOrNull('exitstatus');
-		var conflicts  = zfiStatus.getOrNull('conflicts');
-		var status     = null;
+		var exitstatus      = zfiStatus.getOrNull('exitstatus');
+		var conflicts       = zfiStatus.getOrNull('conflicts');
+		var is_never_synced = zfiStatus.getOrNull('is_never_synced');
+		var status          = null;
 		var tooltip, tooltip_prefix;
 
 		var last_sync_date = new Date();
 		last_sync_date.setTime(zfiStatus.getOrNull('date'));
 		tooltip = last_sync_date.toLocaleString();
 
-		if (exitstatus != 0)
+		if (is_never_synced && is_never_synced == "true")
+		{
+			status = "alert";
+			tooltip = stringBundleString("sp.last.sync.never");
+		}
+		else if (exitstatus != 0)
 		{
 			status = "error"
 			tooltip_prefix = stringBundleString("sp.last.sync.failed");
@@ -114,7 +120,7 @@ StatusPanel.update = function(zwc)
 
 	var obj = { alert : '!', error : 'X', insync : 'Y' };
 
-	logger.debug("update: status: " + obj[status] + " (" + status + ") tooltip: " + tooltip);
+	logger().debug("StatusPanel: update: status: " + obj[status] + " (" + status + ") tooltip: " + tooltip);
 
 	if (arguments.length == 0)
 	{

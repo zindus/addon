@@ -24,7 +24,6 @@
 function WindowCollection(a_id)
 {
 	this.m_h_a = new Object();
-	this.m_logger  = newLogger("WindowCollection"); this.m_logger.level(Logger.NONE);
 
 	for (var i = 0; i < a_id.length; i++)
 		this.m_h_a[a_id[i]] = new Array();
@@ -69,11 +68,11 @@ WindowCollection.prototype.populate = function()
 		for (var id in this.m_h_a)
 			if (win.document.getElementById(id))
 			{
-				this.m_logger.debug("found a window with id: " + id + (win.document.title ? win.document.title : "no title"));
+				// logger().debug("found a window with id: " + id + (win.document.title ? win.document.title : "no title"));
 				this.m_h_a[id].push(win);
 				break;
 			}
 			else
-				this.m_logger.debug("id: " + id + " not present in window title: " + (win.document.title ? win.document.title : "no title") + " id: " + (win.id ? win.id : "no id"));
+				; // logger().debug("id: " + id + " not present in window title: " + (win.document.title ? win.document.title : "no title") + " id: " + (win.id ? win.id : "no id"));
 	}
 }

@@ -29,10 +29,10 @@
 
 function ZidBag()
 {
-	this.a_zid        = new Array();
-	this.m_index      = 0;
-	this.m_properties = new Object();
-	this.a_valid_properties = { soapURL: 0, SyncToken: 0 };
+	this.a_zid              = new Array();
+	this.m_index            = 0;
+	this.m_properties       = new Object();
+	this.a_valid_properties = newObject(Account.url, 0, 'SyncToken', 0);
 }
 
 ZidBag.prototype.toString = function()
@@ -104,7 +104,7 @@ ZidBag.prototype.soapUrl = function(arg)
 	else if (typeof(arg) == 'number')
 		ret = this.soapUrl(this.a_zid[arg]);
 	else if (typeof(arg) == 'string' || arg == null)
-		ret = this.get(arg, 'soapURL');
+		ret = this.get(arg, Account.url);
 	else
 		zinAssertAndLog(false, "invalid argument: " + arg);
 

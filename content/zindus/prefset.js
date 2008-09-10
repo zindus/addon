@@ -34,11 +34,14 @@ function PrefSet(prefprefix, a)
 PrefSet.DEFAULT_VALUE         = null;
 PrefSet.ID_UNINITIALISED      = -1;
 
-PrefSet.ACCOUNT               = "account";
-PrefSet.ACCOUNT_FORMAT        = "format";
-PrefSet.ACCOUNT_URL           = "url";
-PrefSet.ACCOUNT_USERNAME      = "username";
-PrefSet.ACCOUNT_PROPERTIES    = [ PrefSet.ACCOUNT_URL, PrefSet.ACCOUNT_USERNAME, PrefSet.ACCOUNT_FORMAT ];
+PrefSet.ACCOUNT                     = "account";
+PrefSet.ACCOUNT_FORMAT              = "format";
+PrefSet.ACCOUNT_URL                 = "url";
+PrefSet.ACCOUNT_USERNAME            = "username";
+PrefSet.ACCOUNT_GD_SYNC_WITH        = "gd_sync_with";
+PrefSet.ACCOUNT_ZM_SYNC_GAL_ENABLED = "zm_sync_gal_enabled";
+PrefSet.ACCOUNT_PROPERTIES          = [ PrefSet.ACCOUNT_FORMAT, PrefSet.ACCOUNT_URL, PrefSet.ACCOUNT_USERNAME,
+                                        PrefSet.ACCOUNT_GD_SYNC_WITH,                PrefSet.ACCOUNT_ZM_SYNC_GAL_ENABLED ];
 
 PrefSet.PREAUTH               = "preauth";
 PrefSet.PREAUTH_NAME          = "name";
@@ -50,11 +53,8 @@ PrefSet.PREAUTH_PROPERTIES    = [ PrefSet.PREAUTH_NAME, PrefSet.PREAUTH_REGEXP, 
 PrefSet.GENERAL                        = "general";
 PrefSet.GENERAL_AUTO_SYNC              = "as_auto_sync";
 PrefSet.GENERAL_VERBOSE_LOGGING        = "as_verbose_logging";
-PrefSet.GENERAL_GD_SYNC_WITH           = "gd_sync_with";
 PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS = "gd_sync_postal_address";
-PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED    = "zm_sync_gal_enabled";
-PrefSet.GENERAL_PROPERTIES             = [ PrefSet.GENERAL_AUTO_SYNC,             PrefSet.GENERAL_VERBOSE_LOGGING,
-                                           PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED,   PrefSet.GENERAL_GD_SYNC_WITH,
+PrefSet.GENERAL_PROPERTIES             = [ PrefSet.GENERAL_AUTO_SYNC, PrefSet.GENERAL_VERBOSE_LOGGING,
 										   PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS ];
 
 // Both id and branch are optional
@@ -76,6 +76,7 @@ PrefSet.prototype.load = function(id, branch)
 			this.m_properties[i] = branch.getCharPref(this.makePrefKey(this.m_id, i));
 		}
 		catch (ex) {
+			// logger().debug("PrefSet.prototype.load: exception when getting key: " + this.makePrefKey(this.m_id, i));
 		}
 	}
 
@@ -85,8 +86,8 @@ PrefSet.prototype.load = function(id, branch)
 PrefSet.prototype.save = function()
 {
 	var branch = preferences().branch();
-	var i;
 	var retval = false;
+	var i;
 
 	zinAssert(this.m_id != null && (this.m_id == PrefSet.ID_UNINITIALISED || this.m_id >= 0));
 
@@ -97,6 +98,7 @@ PrefSet.prototype.save = function()
 		retval = true;
 	}
 	catch (ex) {
+		logger().warn("PrefSet.prototype.save: exception thrown i: " + i);
 	}
 	
 	return retval;
@@ -136,17 +138,10 @@ PrefSet.prototype.hasUserValue = function(property)
 
 PrefSet.prototype.toString = function()
 {
-	var ret = "";
-	var str;
-
-	ret += " m_id: " + this.m_id;
-	ret += " m_properties: {";
+	var ret = " m_id: " + this.m_id + " m_properties: {";
 
 	for (i in this.m_properties)
-	{
-		str = this.m_properties[i] == PrefSet.DEFAULT_VALUE ? "<no-pref-value>" : this.m_properties[i];
-		ret += " " + i + ": \"" + str + "\"";
-	}
+		ret += " " + i + ": \'" + (this.m_properties[i] == PrefSet.DEFAULT_VALUE ? "<not-set>" : this.m_properties[i]) + "\'";
 
 	ret += " }";
 
@@ -167,6 +162,12 @@ PrefSet.prototype.getProperty = function(property)
 PrefSet.prototype.setProperty = function(property, value)
 {
 	this.m_properties[property] = value;
+}
+
+PrefSet.prototype.delProperty = function(property)
+{
+	zinAssert(arguments.length == 1);
+	delete this.m_properties[property];
 }
 
 // Makes keys of the following form:

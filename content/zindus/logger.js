@@ -38,7 +38,9 @@ function Logger(level, prefix, appender)
 	if (arguments.length == 3)
 		this.m_appender = appender;
 	else
-		this.m_appender = new LogAppenderOpenClose();
+		this.m_appender = LogAppenderFactory.new();
+
+	// dump("executionStackAsString: " + executionStackAsString() + "\n");
 }
 
 Logger.prototype.level = function()
@@ -47,6 +49,14 @@ Logger.prototype.level = function()
 		this.m_level = arguments[0];
 
 	return this.m_level;
+}
+
+Logger.prototype.appender = function()
+{
+	if (arguments.length == 1)
+		this.m_appender = arguments[0];
+
+	return this.m_appender;
 }
 
 Logger.prototype.debug = function(msg)
@@ -72,8 +82,16 @@ Logger.prototype.log = function(l, msg)
 	this.m_appender.log(l, this.m_prefix, msg);
 }
 
-function LogAppenderOpenClose() { LogAppender.call(this); }
-function LogAppenderHoldOpen()  { LogAppender.call(this); this.m_os = this.fileOpen(); }
+function LogAppenderOpenClose()
+{
+	LogAppender.call(this);
+}
+
+function LogAppenderHoldOpen()
+{
+	LogAppender.call(this);
+	this.m_os = this.fileOpen();
+}
 
 LogAppenderOpenClose.prototype = new LogAppender();
 LogAppenderHoldOpen.prototype  = new LogAppender();
@@ -82,57 +100,78 @@ function LogAppender()
 {
 	var prefs = new MozillaPreferences();
 
-	this.m_logfile_size_max = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_LOGFILE_MAX_SIZE );
-	this.m_logfile          = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // an nsIFile object
+	this.m_logfile_size_max  = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_LOGFILE_MAX_SIZE );
+	this.m_logfile           = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // an nsIFile object
+	this.m_max_level_length  = 7;
+	this.m_max_prefix_length = 15;
+	// this.m_buffer            = null;
+	// this.m_buffer_length     = 10;
 
 	this.m_logfile.append(Filesystem.FILENAME_LOGFILE);
 
 	this.bimap_LEVEL = new BiMap(
 		[Logger.NONE, Logger.FATAL, Logger.ERROR, Logger.WARN, Logger.INFO, Logger.DEBUG],
-		['none',         'fatal',         'error',         'warn',         'info',         'debug'        ]);
+		['none',      'fatal',      'error',      'warn',      'info',      'debug'     ]);
 }
 
 LogAppender.prototype.log = function(level, prefix, msg)
 {
-	var message = "";
-	var max_level_length = 7;
-	var max_prefix_length = 15;
-	
-	message += new String(this.bimap_LEVEL.lookup(level, null) + ":   ").substr(0, max_level_length);
+	var message = new String(this.bimap_LEVEL.lookup(level, null) + ":   ").substr(0, this.m_max_level_length).concat(
+		(prefix ? (new String(prefix.substr(0, this.m_max_prefix_length) +
+		                      ":                ").substr(0, this.m_max_prefix_length + 1) + " ") : ""), msg, "\n");
 
-	if (prefix)
-		message += new String(prefix.substr(0, max_prefix_length) + ":                ").substr(0, max_prefix_length + 1) + " ";
+//	if (!this.m_buffer)
+//		this.m_buffer = new Array();
 
-	message += msg + "\n";
+//	this.m_buffer.push(message);
 
-	dump(message);
+	if (this.isLoud(level))
+		dump(message);
 
 	this.logToFile(message);
 
-	this.logToConsoleService(level, message);
+	if (this.isLoud(level))
+		this.logToConsoleService(level, message);
+
+//	if (this.m_buffer.length >= this.m_buffer_length || this.isLoud(level))
+//	{
+//		var big_message = String.prototype.concat.apply("", this.m_buffer);
+//		this.m_buffer = null;
+//
+//		if (this.isLoud(level))
+//			dump(big_message);
+//
+//		this.logToFile(big_message);
+//
+//		if (this.isLoud(level))
+//			this.logToConsoleService(level, big_message);
+//	}
+}
+
+LogAppender.prototype.isLoud = function(level)
+{
+	return (level == Logger.WARN || level == Logger.ERROR || level == Logger.FATAL);
 }
 
 LogAppender.prototype.logToConsoleService = function(level, message)
 {
-	if (level == Logger.WARN || level == Logger.ERROR || level == Logger.FATAL)
+	// See: http://developer.mozilla.org/en/docs/nsIConsoleService
+	//
+	var consoleService = Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService);
+	var scriptError    = Cc["@mozilla.org/scripterror;1"].createInstance(Ci.nsIScriptError);
+	var category       = "";
+	var flags;
+
+	switch (level)
 	{
-		// See: http://developer.mozilla.org/en/docs/nsIConsoleService
-		var consoleService = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
-		var scriptError    = Components.classes["@mozilla.org/scripterror;1"].createInstance(Components.interfaces.nsIScriptError);
-		var category       = "";
-		var flags;
-
-		switch (level)
-		{
-			case Logger.WARN:  flags = scriptError.warningFlag; break;
-			case Logger.ERROR: flags = scriptError.errorFlag;   break;
-			case Logger.FATAL: flags = scriptError.errorFlag;   break;
-			default: zinAssert(false);
-		}
-
-		scriptError.init(message, null, null, null, null, flags, category);
-		consoleService.logMessage(scriptError);
+		case Logger.WARN:  flags = scriptError.warningFlag; break;
+		case Logger.ERROR: flags = scriptError.errorFlag;   break;
+		case Logger.FATAL: flags = scriptError.errorFlag;   break;
+		default: zinAssert(false);
 	}
+
+	scriptError.init(message, null, null, null, null, flags, category);
+	consoleService.logMessage(scriptError);
 }
 
 LogAppender.prototype.logToFile = null; // abstract base class
@@ -144,12 +183,12 @@ LogAppender.prototype.fileOpen = function()
 	try
 	{
 		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_RDONLY | Filesystem.FLAG_PR_WRONLY
-		                                             | Filesystem.FLAG_PR_APPEND | Filesystem.FLAG_PR_SYNC;
+		                                             | Filesystem.FLAG_PR_APPEND; // | Filesystem.FLAG_PR_SYNC;
 
 		if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
 			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
 
-		ret = Components.classes["@mozilla.org/network/file-output-stream;1"].createInstance(Components.interfaces.nsIFileOutputStream);
+		ret = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
 
 		// this next line throws an exception if the logfile is already open (eg by a hung process)
 		//
@@ -223,6 +262,17 @@ LogAppenderHoldOpen.prototype.logToFile = function(message)
 LogAppenderHoldOpen.prototype.close = function()
 {
 	this.fileClose(this.m_os);
+	this.m_os = null;
+}
+
+function LogAppenderFactory()
+{
+}
+
+LogAppenderFactory.new = function()
+{
+	return new LogAppenderHoldOpen();
+	// return new LogAppenderOpenClose();
 }
 
 Logger.nsIConsoleListener = function()
@@ -237,7 +287,7 @@ Logger.nsIConsoleListener = function()
 			logger.debug("console: " + aMessage.message);
 		},
 		QueryInterface: function (iid) {
-			if (!iid.equals(Components.interfaces.nsIConsoleListener) && !iid.equals(Components.interfaces.nsISupports)) {
+			if (!iid.equals(Ci.nsIConsoleListener) && !iid.equals(Ci.nsISupports)) {
 				throw Components.results.NS_ERROR_NO_INTERFACE;
 			}
 			return this;
@@ -249,5 +299,5 @@ Logger.nsIConsoleListener = function()
 
 Logger.nsIConsoleService = function()
 {
-	return Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
+	return Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService);
 }

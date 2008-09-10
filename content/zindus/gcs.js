@@ -33,8 +33,6 @@ Gcs.bimap_state = new BiMap(
 
 function Gcs(sourceid, state)
 {
-	// logger().debug("Gcs: sourceid: " + sourceid + " state: " + state + " isPresent(state): " + Gcs.bimap_state.isPresent(state));
-
 	zinAssert(isValidSourceId(sourceid) && Gcs.bimap_state.isPresent(state));
 
 	this.sourceid = sourceid;

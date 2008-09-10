@@ -59,8 +59,6 @@ Xpath.nsResolver = function(prefix)
 	return map[prefix];
 };
 
-Xpath.logger = newLogger("Xpath");
-
 Xpath.setConditional = function(object, property, xpath_query, doc, warning_msg)
 {
 	zinAssert(xpath_query.indexOf("attribute::") > 0); // this function is only intended for xpath queries that return a single attribute
@@ -70,7 +68,7 @@ Xpath.setConditional = function(object, property, xpath_query, doc, warning_msg)
 	if (node && node.nodeValue)
 		object[property] = node.nodeValue;
 	else if (warning_msg != null)
-		Xpath.logger.warn(warning_msg);
+		Xpath.logger.warn("Xpath: " + warning_msg);
 }
 
 Xpath.getOneNode = function(xpath_query, doc, contextNode)
@@ -110,7 +108,7 @@ Xpath.setConditionalFromSingleElement = function(object, property, xpath_query, 
 	if (functor.a.length == 1)
 		object[property] = String(functor.a[0]);
 	else if (warning_msg != null)
-		Xpath.logger.warn(warning_msg);
+		Xpath.logger.warn("Xpath: " + warning_msg);
 }
 
 Xpath.runFunctor = function(functor, xpath_query, doc, xpathResultType)
@@ -140,8 +138,8 @@ Xpath.runFunctor = function(functor, xpath_query, doc, xpathResultType)
 
 Xpath.reportException = function(ex)
 {
-	Xpath.logger.error("Exception: " + ex);
-	Xpath.logger.error("Stack: " + ex.stack);
+	Xpath.logger.error("Xpath: " + "Exception: " + ex);
+	Xpath.logger.error("Xpath: " + "Stack: " + ex.stack);
 }
 
 Xpath.queryFromMethod = function(method)

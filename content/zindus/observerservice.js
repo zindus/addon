@@ -25,6 +25,8 @@ function ObserverService()
 {
 }
 
+ObserverService.TOPIC_PREFERENCE_CHANGE = "ZindusPreferenceChange";
+
 ObserverService.service = function()
 {
 	return Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService);

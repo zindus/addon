@@ -65,6 +65,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
 	// ret = ret && this.testDeleteCard();
+	// ret = ret && this.testFileLoggingTimes();
+	// ret = ret && this.testStringTimes();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1302,6 +1304,151 @@ TestHarness.prototype.testDeleteCard = function()
 
 		dir.deleteCards(cardsArray);
 	}
+
+	return true;
+}
+
+TestHarness.prototype.testFileLoggingTimes = function()
+{
+	var log_appender = new LogAppenderHoldOpen();
+	var logger       = new Logger(Singleton.instance().loglevel(), "TestHarnessTimer", log_appender);
+	var msg          = " 123456789 123456789 123456789 123456789 123456789 123456789";
+	var lines        = 8683;
+	var i, a;
+
+	if (false)
+	{
+	this.testFileLoggingTimeOutput(logger, lines, msg);
+
+	var msg2 = "";
+
+	for (i = 1; i <= 10; i++)
+		msg2 += msg;
+
+	this.testFileLoggingTimeOutput(logger, lines/10, msg2);
+	}
+
+	// test #3 - build a LIFO buffer and output when it's full
+	//
+	var stopwatch = new StopWatch("logging stopwatch");
+
+	stopwatch.mark("start: lines: " + lines + " line length: " + msg.length + " via arrayx");
+
+	for (i = 0; i < lines/10; i++)
+	{
+		a = new Array();
+	
+		for (j = 1; j <= 10; j++)
+		{
+			a.push(msg);
+			a.push("\n");
+		}
+
+		logger.debug(a.toString());
+	}
+	stopwatch.mark("end");
+
+	// test #4 - as above but use concat()
+	//
+	var stopwatch = new StopWatch("logging stopwatch");
+
+	stopwatch.mark("start: lines: " + lines + " line length: " + msg.length + " via concat");
+
+	for (i = 0; i < lines/10; i++)
+	{
+		logger.debug("".concat(msg, msg, msg, msg, msg, msg, msg, msg, msg, msg));
+	}
+	stopwatch.mark("end");
+
+	// test #5 - as per 3 but use concat and apply()
+	//
+	var stopwatch = new StopWatch("logging stopwatch");
+
+	stopwatch.mark("start: lines: " + lines + " line length: " + msg.length + " via array and concat and apply");
+
+	for (i = 0; i < lines/10; i++)
+	{
+		a = new Array();
+	
+		for (j = 1; j <= 10; j++)
+			a.push(msg);
+
+		logger.debug(String.prototype.concat.apply("", a));
+	}
+	stopwatch.mark("end");
+
+	return true;
+}
+
+TestHarness.prototype.testFileLoggingTimeOutput = function(logger, lines, msg)
+{
+	var stopwatch = new StopWatch("logging stopwatch");
+
+	stopwatch.mark("start: lines: " + lines + " line length: " + msg.length);
+
+	for (var i = 0; i < lines; i++)
+		logger.debug(msg);
+
+	stopwatch.mark("end");
+}
+
+TestHarness.prototype.testStringTimes = function()
+{
+	var count = 10000;
+	var i, j;
+	var x = " 123456789";
+	var stopwatch = new StopWatch("logging stopwatch");
+
+	stopwatch.mark("start: using '+': count: " + count);
+
+	for (i = 1; i <= count; i++)
+	{
+		msg = "";
+
+		for (j = 1; j <= 10; j++)
+			msg += x;
+	}
+	
+	stopwatch.mark("end");
+
+	stopwatch.reset();
+	stopwatch.mark("start: build an array, then use concat: count: " + count);
+
+	for (i = 1; i <= count; i++)
+	{
+		var a = new Array();
+
+		for (j = 1; j <= 10; j++)
+			a.push(x);
+
+		msg = String.prototype.concat.apply("", a);
+	}
+	stopwatch.mark("end");
+
+	stopwatch.reset();
+	stopwatch.mark("start: zinAssert " + count);
+	for (i = 1; i <= count; i++)
+		zinAssert(true);
+	stopwatch.mark("end");
+
+	stopwatch.reset();
+	stopwatch.mark("start: zinAssertAndLog with x+y strings" + count);
+	for (i = 1; i <= count; i++)
+		zinAssertAndLog(true, "" + msg + "lkjsdf" + msg + "lkjsdflkj");
+	stopwatch.mark("end");
+
+	stopwatch.reset();
+	stopwatch.mark("start: zinAssertAndLog with a function" + count);
+	for (i = 1; i <= count; i++)
+		zinAssertAndLog(true, function() {"" + msg });
+	stopwatch.mark("end");
+
+	stopwatch.reset();
+	stopwatch.mark("start: bimap" + count);
+	var bimap = getBimapFormat('short');
+	for (i = 1; i <= count; i++)
+		bimap.lookup(FORMAT_TB, null)
+	stopwatch.mark("end");
 
 	return true;
 }

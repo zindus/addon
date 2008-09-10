@@ -29,7 +29,9 @@ FeedItem.ITER_GID_ITEM           = 4;   // don't call functor when key == FeedIt
 
 FeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the one with the 'next' attribute
 FeedItem.KEY_STATUSPANEL         = "2#zindus-housekeeping"; // this key is used in the StatusPanel's FeedCollection
-FeedItem.KEYS_RESERVED           = newObject(FeedItem.KEY_AUTO_INCREMENT, null, FeedItem.KEY_STATUSPANEL, null);
+FeedItem.KEY_LASTSYNC_COMMON     = "3#zindus-housekeeping"; // this key is used in lastsync.txt for attributes common to all accounts
+FeedItem.KEYS_RESERVED           = newObject(FeedItem.KEY_AUTO_INCREMENT, null, FeedItem.KEY_STATUSPANEL, null,
+                                             FeedItem.KEY_LASTSYNC_COMMON, null);
 
 FeedItem.ATTR_KEY  = 'key';
 FeedItem.ATTR_MS   = 'ms';
@@ -49,8 +51,7 @@ FeedItem.ATTR_FKEY = 'fkey'; // TYPE_SF elements have this attribute - it's the 
 FeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this attribute - it's the key of the TYPE_SF element
 FeedItem.ATTR_PERM = 'perm'; // 
 FeedItem.ATTR_CS   = 'cs';   // checksum
-FeedItem.ATTR_CSGD = 'csgd'; // gd checksum for type == gd items - persisted but not used in compare()  // TODO - delete this after next bumping APP_VERSION_DATA_CONSISTENT_WITH
-FeedItem.ATTR_EDIT = 'edit'; // gd edit url - used for deletes
+FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
 
@@ -68,14 +69,10 @@ function FeedCollection()
 {
 	this.m_collection = new Object();
 	this.m_filename   = null; // this is a string containing the filename (like "fred.txt"), not an nsIFile
-	this.m_logger     = newLogger("FeedCollection"); this.m_logger.level(Logger.NONE);
 }
 
 FeedCollection.prototype.clone = function()
 {
-	// we can't run cloneObject() on 'this' because it contains a logger
-	// which contains a reference to an appender which doesn't clone.
-	//
 	var ret = new FeedCollection();
 
 	ret.m_collection = cloneObject(this.m_collection);
@@ -89,7 +86,7 @@ FeedCollection.prototype.filename = function()
 	if (arguments.length == 1)
 		this.m_filename = arguments[0];
 
-	this.m_logger.debug("filename: " + this.m_filename);
+	// logger().debug("FeedCollection: filename: " + this.m_filename);
 	return this.m_filename;
 }
 
@@ -127,6 +124,11 @@ FeedCollection.prototype.set = function(zfi)
 					"zfi: " + zfi.toString());
 
 	this.m_collection[zfi.m_properties[FeedItem.ATTR_KEY]] = zfi;
+}
+
+FeedCollection.prototype.empty = function()
+{
+	this.m_collection = new Object();
 }
 
 FeedCollection.prototype.del = function(key)
@@ -220,16 +222,15 @@ FeedCollection.prototype.load = function()
 	{
 		m_zfc: this,
 		m_zfi: new FeedItem(),
-		m_logger: this.m_logger,
 		run: function(line)
 		{
-			// this.m_logger.debug("line.length: " + line.length + " line: " + line);
+			// logger().debug("functor: line.length: " + line.length + " line: " + line);
 
 			if (line.charAt(0) == '#')
 				; // do nothing
 			else if (line.length == 0)
 			{
-				// this.m_logger.debug("setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[FeedItem.ATTR_KEY] + "]");
+				// logger().debug("functor: setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[FeedItem.ATTR_KEY] + "]");
 
 				this.m_zfc.set(this.m_zfi);
 				this.m_zfi = new FeedItem();
@@ -240,13 +241,13 @@ FeedCollection.prototype.load = function()
 
 				this.m_zfi.set([line.substring(0, eq)], line.substring(eq + 1));
 
-				// this.m_logger.debug("m_zfi.m_properties[" + line.substring(0, eq) + "] = " + line.substring(eq + 1));
+				// logger().debug("functor: m_zfi.m_properties[" + line.substring(0, eq) + "] = " + line.substring(eq + 1));
 			}
 		}
 	};
 
 	var file = this.nsifile();
-	this.m_logger.debug("about to parse file: " + file.path);
+	// logger()..debug("FeedCollection: about to parse file: " + file.path);
 
 	if (file.exists() && !file.isDirectory())
 		Filesystem.fileReadByLine(file.path, functor);
