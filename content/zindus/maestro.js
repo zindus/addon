@@ -68,6 +68,7 @@ Maestro.ID_FUNCTOR_CONFIGSETTINGS        = "configsettings";
 Maestro.ID_FUNCTOR_CONFIGSETTINGS_TIMER  = "configsettings-timer";
 Maestro.ID_FUNCTOR_CONFIGACCOUNT         = "configaccount";
 Maestro.ID_FUNCTOR_MAILWINDOW_TIMER      = "mailwindow-timer";
+Maestro.ID_FUNCTOR_STATUSBAR_TIMER       = "statusbar-timer";
 
 Maestro.prototype.toString = function()
 {

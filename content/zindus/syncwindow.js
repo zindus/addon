@@ -167,8 +167,8 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			if (isPropertyPresent(Maestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
 			{
-				StatusPanel.save(this.m_payload.m_es);
-				StatusPanel.update();
+				StatusBar.saveState(this.m_payload.m_es);
+				StatusBar.update();
 			}
 
 			this.m_sfcd.m_account_index++;
@@ -213,8 +213,8 @@ SyncWindow.prototype.zwc_functor = function(is_showlogo)
 		m_is_showlogo: is_showlogo,
 
 		run: function(win) {
-			win.document.getElementById('zindus-statuspanel-logo').setAttribute('hidden', !this.m_is_showlogo);
-			win.document.getElementById('zindus-statuspanel-logo-processing').setAttribute('hidden', this.m_is_showlogo);
+			win.document.getElementById('zindus-statusbar-logo').setAttribute('hidden', !this.m_is_showlogo);
+			win.document.getElementById('zindus-statusbar-logo-processing').setAttribute('hidden', this.m_is_showlogo);
 		}
 	};
 

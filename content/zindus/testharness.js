@@ -124,7 +124,7 @@ TestHarness.prototype.testFeedCollection = function()
 
 	this.m_logger.debug("3233: zfc.toString() after del(1) == \n" + zfc.toString());
 
-	zfi = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSPANEL , 'appversion', 1234 );
+	zfi = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSBAR , 'appversion', 1234 );
 
 	return true;
 }

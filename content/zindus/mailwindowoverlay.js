@@ -57,7 +57,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 			this.timerStartup();
 
-			StatusPanel.update();
+			StatusBar.update();
 		}
 	}
 	catch (ex)
@@ -158,7 +158,7 @@ ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 ZinMailWindowOverlay.prototype.statusSummary = function()
 {
 	var last_sync_date = null;
-	var zfiStatus      = StatusPanel.getZfi();
+	var zfiStatus      = StatusBar.stateAsZfi();
 	var now            = new Date();
 	var next_sync_date = now;
 

@@ -23,7 +23,7 @@
   
   ***** END LICENSE BLOCK ***** -->
 
-<?xul-overlay href="chrome://zindus/content/statusbar-overlay.xul"?>
+<?xul-overlay href="chrome://zindus/content/statusbaroverlay.xul"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
@@ -35,7 +35,7 @@
 	<script type="application/x-javascript"> <![CDATA[
 		window.addEventListener('load',
 			function() {
-				with (ZindusScopeRegistry.getScope()) { StatusPanel.update(); }
+				with (ZindusScopeRegistry.getScope()) { StatusBar.update(); }
 			}, false);
 	]]> </script>
 
@@ -44,6 +44,8 @@
 	</stringbundleset>
 
 	<statusbar id="status-bar" >
+		<menupopup id="zindus-statusbar-menu"/>
+
 		<statusbarpanel id="zindus-statusbar-progress" hidden="true" insertafter="statusText" />
 		<statusbarpanel id="zindus-statusbar-state"    hidden="true" insertbefore="zindus-statusbar-progress"
 		                tooltiptext="" class="statusbarpanel-iconic" />

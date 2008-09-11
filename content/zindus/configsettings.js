@@ -219,7 +219,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			RemoveDatastore.removeZfcs();
 			RemoveDatastore.removeLogfile();
-			StatusPanel.update();
+			StatusBar.update();
 
 			logger().appender(LogAppenderFactory.new());
 			break;
@@ -654,4 +654,35 @@ ConfigSettings.prototype.accountsSortAndSave = function(accounts)
 	}
 
 	return ret;
+}
+
+ConfigSettings.open = function()
+{
+	var is_already_open = false;
+
+	var id = 'zindus-config-settings';
+	var zwc = new WindowCollection([ id ]);
+	zwc.populate();
+
+	zinAssertAndLog(zwc.length(id) <= 1, zwc.length(id));
+
+	if (zwc.length(id) == 1)
+	{
+		var zwc_functor = {
+			run: function(win) {
+				var el = win.document.getElementById(id);
+
+				if (el && !el.closed)
+				{
+					logger().debug("settings focus to the ConfigSettings window that's already open");
+					win.focus();
+					is_already_open = true;
+				}
+			}
+		};
+		zwc.forEach(zwc_functor);
+	}
+
+	if (!is_already_open)
+		window.openDialog('chrome://zindus/content/configsettings.xul', '_blank', WINDOW_FEATURES);
 }

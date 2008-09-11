@@ -23,11 +23,16 @@
 
 function zinAssert(expr)
 {
+	var msg = "";
+
+	if (arguments.length != 1)
+		msg += "Invalid number of arguments to zinAssert().  "
+
 	if (!expr || arguments.length != 1)
 	{
 		try
 		{
-			throw new Error("Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
+			throw new Error(msg + "Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
 				            APP_NAME + " version " + APP_VERSION_NUMBER + "\nSee: " + BUG_REPORT_URI + "\n");
 		}
 		catch(ex)

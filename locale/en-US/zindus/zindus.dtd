@@ -19,8 +19,7 @@
 <!ENTITY zindus.google.label                            "Google">
 <!ENTITY zindus.zimbra.label                            "Zimbra">
 
-<!ENTITY zindus.cs.title                                "Zindus Configuration Settings">
-<!ENTITY zindus.cs.buttonlabelextra2                    "Help">
+<!-- Account Configuration -->
 
 <!ENTITY zindus.ca.group.login.details.label            "Login Details">
 <!ENTITY zindus.ca.group.pap.label                      "For this account">
@@ -37,6 +36,20 @@
 <!ENTITY zindus.ca.zimbra.gal.label                     "Global Address List (GAL): ">
 <!ENTITY zindus.ca.zimbra.gal.yes.label                 "Yes">
 <!ENTITY zindus.ca.zimbra.gal.no.label                  "No">
+
+<!-- Configuration Settings -->
+
+<!ENTITY zindus.cs.title                                "Zindus Configuration Settings">
+<!ENTITY zindus.cs.buttonlabelextra2                    "Help">
+
+<!ENTITY zindus.cs.account.add.label                    "Add">
+<!ENTITY zindus.cs.account.add.accesskey                "A">
+<!ENTITY zindus.cs.account.edit.label                   "Edit">
+<!ENTITY zindus.cs.account.edit.accesskey               "E">
+<!ENTITY zindus.cs.account.delete.label                 "Delete">
+<!ENTITY zindus.cs.account.delete.accesskey             "D">
+<!ENTITY zindus.cs.account.email.label                  "Email Address">
+<!ENTITY zindus.cs.account.type.label                   "Sync With">
 
 <!ENTITY zindus.cs.general.settings.label               "Settings">
 <!ENTITY zindus.cs.general.actions.label                "Actions">
@@ -72,15 +85,11 @@
                                                          <html:br/> &lt;country&gt; Australia &lt;/country&gt;
                                                          <html:br/> &lt;/address&gt; ">
 
-<!ENTITY zindus.cs.account.add.label                    "Add">
-<!ENTITY zindus.cs.account.add.accesskey                "A">
-<!ENTITY zindus.cs.account.edit.label                   "Edit">
-<!ENTITY zindus.cs.account.edit.accesskey               "E">
-<!ENTITY zindus.cs.account.delete.label                 "Delete">
-<!ENTITY zindus.cs.account.delete.accesskey             "D">
-<!ENTITY zindus.cs.account.email.label                  "Email Address">
-<!ENTITY zindus.cs.account.type.label                   "Sync With">
+<!-- Sync Window -->
 
 <!ENTITY zindus.sw.title                                "Zindus Sync">
 <!ENTITY zindus.sw.progress.meter.style                 "width:35em">
 <!ENTITY zindus.sw.progress.description.style           "width:30em;height:4em;">
+
+<!-- Status Bar -->
+<!ENTITY zindus.sb.settings.label                       "Settings">

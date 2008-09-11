@@ -23,7 +23,7 @@
   
   ***** END LICENSE BLOCK ***** -->
 
-<?xul-overlay href="chrome://zindus/content/statusbar-overlay.xul" ?>
+<?xul-overlay href="chrome://zindus/content/statusbaroverlay.xul" ?>
 
 <?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
@@ -37,11 +37,13 @@
 			               class="toolbarbutton-1"
 			               label="&zindus.tools.menuitem.label;"
 						   tooltiptext="&zindus.toolbar.button.tooltip;"
-			               oncommand="zindusConfigSettings();" />
+			               oncommand="with (ZindusScopeRegistry.getScope()) { ConfigSettings.open(); };" />
 		</toolbarpalette>
 	</toolbox>	
 
 	<hbox id="statusTextBox" >
+		<menupopup id="zindus-statusbar-menu"/>
+
 		<statusbarpanel id="zindus-statusbar-progress" hidden="true" insertbefore="statusbar-progresspanel" />
 		<statusbarpanel id="zindus-statusbar-state"    hidden="true" insertbefore="statusbar-progresspanel"
 		                tooltiptext="" class="statusbarpanel-iconic" />

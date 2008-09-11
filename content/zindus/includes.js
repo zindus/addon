@@ -33,7 +33,7 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("logger.js");
 	ZindusScopeRegistry.includejs("singleton.js");
 	ZindusScopeRegistry.includejs("windowcollection.js");
-	ZindusScopeRegistry.includejs("statuspanel.js");
+	ZindusScopeRegistry.includejs("statusbar.js");
 	ZindusScopeRegistry.includejs("syncfsm.js");
 	ZindusScopeRegistry.includejs("syncfsmexitstatus.js");
 	ZindusScopeRegistry.includejs("syncfsmobserver.js");
@@ -42,4 +42,5 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("timer.js");
 	ZindusScopeRegistry.includejs("account.js");
 	ZindusScopeRegistry.includejs("removedatastore.js");
+	ZindusScopeRegistry.includejs("configsettings.js");
 }

@@ -29,6 +29,13 @@ function WindowCollection(a_id)
 		this.m_h_a[a_id[i]] = new Array();
 }
 
+WindowCollection.prototype.length = function(id)
+{
+	zinAssertAndLog(isPropertyPresent(this.m_h_a, id), id);
+
+	return this.m_h_a[id].length;
+}
+
 WindowCollection.prototype.forEach = function(functor)
 {
 	zinAssert(typeof(functor.run) == "function");

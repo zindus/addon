@@ -28,9 +28,9 @@ FeedItem.ITER_ALL                = 3;   //
 FeedItem.ITER_GID_ITEM           = 4;   // don't call functor when key == FeedItem.ATTR_KEY or key == FeedItem.ATTR_VER
 
 FeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the one with the 'next' attribute
-FeedItem.KEY_STATUSPANEL         = "2#zindus-housekeeping"; // this key is used in the StatusPanel's FeedCollection
+FeedItem.KEY_STATUSBAR         = "2#zindus-housekeeping"; // this key is used in the StatusBar's FeedCollection
 FeedItem.KEY_LASTSYNC_COMMON     = "3#zindus-housekeeping"; // this key is used in lastsync.txt for attributes common to all accounts
-FeedItem.KEYS_RESERVED           = newObject(FeedItem.KEY_AUTO_INCREMENT, null, FeedItem.KEY_STATUSPANEL, null,
+FeedItem.KEYS_RESERVED           = newObject(FeedItem.KEY_AUTO_INCREMENT, null, FeedItem.KEY_STATUSBAR, null,
                                              FeedItem.KEY_LASTSYNC_COMMON, null);
 
 FeedItem.ATTR_KEY  = 'key';

@@ -30,28 +30,87 @@
 // - AUTHONLY: last auth: (time, success/fail and optional failure reason)
 //
 
-function StatusPanel()
+function StatusBar()
 {
+	this.m_logappender = new LogAppenderOpenClose();
+	this.m_logger      = new Logger(Singleton.instance().loglevel(), "StatusBar", this.m_logappender);
+	this.m_logger.debug("constructor");
+
+	this.m_timer_functor   = null;
+	this.m_is_fsm_running = false;
+	this.m_maestro = null;
 }
 
-// save SyncFsmExitStatus to zfcStatus
+StatusBar.prototype.onLoad = function()
+{
+	this.m_logger.debug("onLoad: enters and exits");
+
+	if (!ObserverService.isRegistered(Maestro.TOPIC))
+	{
+		this.m_maestro = new Maestro();
+
+		ObserverService.register(this.m_maestro, Maestro.TOPIC);
+	}
+
+	var timer_id = hyphenate('-', Maestro.ID_FUNCTOR_STATUSBAR_TIMER, Date.now());
+
+	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, timer_id, Maestro.FSM_GROUP_SYNC);
+}
+
+StatusBar.prototype.onUnLoad = function()
+{
+	this.m_logger.debug("onUnLoad: enters");
+
+	if (this.m_timer_functor != null && this.m_is_fsm_running)
+	{
+		this.m_logger.debug("onUnLoad: cancelling sync...");
+		this.m_timer_functor.cancel();
+		this.m_timer_functor = null;
+	}
+}
+
+StatusBar.prototype.onDblClick = function(event)
+{
+	this.m_logger.debug("onDblClick: event: button: " + event.button);
+}
+
+StatusBar.prototype.timerStart = function()
+{
+	this.m_is_fsm_running = true;
+	window.setTimeout(this.onTimerFire, 0, this);
+}
+
+StatusBar.prototype.onTimerFire = function(context)
+{
+	context.m_timer_functor = new TimerFunctor(Maestro.ID_FUNCTOR_STATUSBAR_TIMER, null, null);
+	context.m_timer_functor.run();
+}
+
+StatusBar.prototype.onFsmStateChangeFunctor = function(fsmstate)
+{
+	this.m_is_fsm_running = Boolean(fsmstate && ! fsmstate.isFinal());
+
+	ConfigSettings.setAttribute('disabled', this.m_is_fsm_running, "zindus-statusbar-sync-now");
+}
+
+// Static methods that interact with status.txt
 //
-StatusPanel.save = function(es, is_never_synced)
+StatusBar.saveState = function(es, is_never_synced)
 {
-	var zfcStatus = StatusPanel.getZfc();
-	var now       = new Date();
-	var zfiStatus = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSPANEL,
-									  'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
-									  'exitstatus', es.m_exit_status,
-									  'conflicts', es.m_count_conflicts,
-									  'is_never_synced', (is_never_synced ? "true" : "false"),
-									  'appversion', APP_VERSION_NUMBER );
+	var zfc = StatusBar.stateAsZfc();
+	var now = new Date();
+	var zfi = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSBAR,
+								  'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
+								  'exitstatus', es.m_exit_status,
+								  'conflicts', es.m_count_conflicts,
+								  'is_never_synced', (is_never_synced ? "true" : "false"),
+								  'appversion', APP_VERSION_NUMBER );
 
-	zfcStatus.set(zfiStatus);
-	zfcStatus.save();
+	zfc.set(zfi);
+	zfc.save();
 }
 
-StatusPanel.getZfc = function()
+StatusBar.stateAsZfc = function()
 {
 	var ret = new FeedCollection();
 	ret.filename(Filesystem.FILENAME_STATUS);
@@ -59,22 +118,22 @@ StatusPanel.getZfc = function()
 	return ret;
 }
 
-StatusPanel.getZfi = function()
+StatusBar.stateAsZfi = function()
 {
-	var zfcStatus = StatusPanel.getZfc();
-	var zfiStatus = null;
+	var zfc = StatusBar.stateAsZfc();
+	var ret = null;
 
-	zfcStatus.load();
+	zfc.load();
 
-	if (zfcStatus.isPresent(FeedItem.KEY_STATUSPANEL))
-		zfiStatus = zfcStatus.get(FeedItem.KEY_STATUSPANEL);
+	if (zfc.isPresent(FeedItem.KEY_STATUSBAR))
+		ret = zfc.get(FeedItem.KEY_STATUSBAR);
 
-	return zfiStatus;
+	return ret;
 }
 
-StatusPanel.update = function(zwc)
+StatusBar.update = function(zwc)
 {
-	var zfiStatus = StatusPanel.getZfi();
+	var zfiStatus = StatusBar.stateAsZfi();
 
 	if (zfiStatus)
 	{
@@ -120,7 +179,7 @@ StatusPanel.update = function(zwc)
 
 	var obj = { alert : '!', error : 'X', insync : 'Y' };
 
-	logger().debug("StatusPanel: update: status: " + obj[status] + " (" + status + ") tooltip: " + tooltip);
+	logger().debug("StatusBar: update: status: " + obj[status] + " (" + status + ") tooltip: " + tooltip);
 
 	if (arguments.length == 0)
 	{
@@ -132,8 +191,8 @@ StatusPanel.update = function(zwc)
 		run: function(win) {
 			for (var x in obj)
 			{
-				win.document.getElementById("zindus-statuspanel-" + x).hidden = (status != x);
-				win.document.getElementById("zindus-statuspanel-" + x).value  = obj[x];
+				win.document.getElementById("zindus-statusbar-" + x).hidden = (status != x);
+				win.document.getElementById("zindus-statusbar-" + x).value  = obj[x];
 			}
 
 			win.document.getElementById("zindus-statusbar-state").tooltipText = tooltip;

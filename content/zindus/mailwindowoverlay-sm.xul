@@ -23,7 +23,7 @@
   
   ***** END LICENSE BLOCK ***** -->
 
-<?xul-overlay href="chrome://zindus/content/statusbar-overlay.xul"?>
+<?xul-overlay href="chrome://zindus/content/statusbaroverlay.xul"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 

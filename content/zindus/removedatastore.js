@@ -88,7 +88,7 @@ RemoveDatastore.removeLogfile = function()
 RemoveDatastore.removeZfcsIfNecessary = function()
 {
 	var data_format_version = null;
-	var zfiStatus  = StatusPanel.getZfi();
+	var zfiStatus  = StatusBar.stateAsZfi();
 	var msg = "";
 	var is_out_of_date = false;
 
@@ -97,7 +97,7 @@ RemoveDatastore.removeZfcsIfNecessary = function()
 
 	msg += "Software works with datastore version: " + APP_VERSION_DATA_CONSISTENT_WITH + " (or newer).  Here: " + data_format_version;
 
-	var is_status_file_exists = StatusPanel.getZfc().nsifile().exists();
+	var is_status_file_exists = StatusBar.stateAsZfc().nsifile().exists();
 
 	if (!zfiStatus && is_status_file_exists)
 		msg += " but the status file exists";

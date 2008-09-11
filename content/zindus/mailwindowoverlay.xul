@@ -39,11 +39,6 @@
 
 		window.addEventListener('unload', function() { window.zindus.onUnLoad(); }, false);
 
-		function zindusConfigSettings() {
-			window.openDialog('chrome://zindus/content/configsettings.xul', '_blank', 'chrome=yes,modal=yes,centerscreen=yes');
-			return true;
-		}
-
 		with (ZindusScopeRegistry.getScope()) { includejs('mailwindowoverlay.js'); }
 	]]> </script>
 
@@ -62,7 +57,7 @@
 		<menuitem label="&zindus.tools.menuitem.label;"
 		          accesskey="&zindus.tools.menuitem.accesskey;"
 		          insertafter="javaScriptConsole"
-				  oncommand="zindusConfigSettings();" />
+				  oncommand="with (ZindusScopeRegistry.getScope()) { ConfigSettings.open(); }" />
 	</menupopup>
 
 </overlay>

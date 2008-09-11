@@ -72,8 +72,8 @@ TimerFunctor.prototype.run = function()
 	else
 	{
 		newLogger().info(getInfoMessage('start', "no accounts configured"));
-		StatusPanel.save(this.m_es, true);
-		StatusPanel.update(this.m_zwc);
+		StatusBar.saveState(this.m_es, true);
+		StatusBar.update(this.m_zwc);
 		zinAssert(!this.m_has_fsm_state_changed); // don't want finish() to unregister the fsm observer
 		this.finish();
 	}
@@ -148,15 +148,15 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 					//
 					if (win.document && win.document.getElementById("zindus-statusbar-progress"))
 					{
-						var el_statuspanel_progress_meter  = win.document.getElementById("zindus-statusbar-progress-meter");
-						var el_statuspanel_progress_label  = win.document.getElementById("zindus-statusbar-progress-text");
-						var el_statuspanel_logo            = win.document.getElementById("zindus-statuspanel-logo");
-						var el_statuspanel_logo_processing = win.document.getElementById("zindus-statuspanel-logo-processing");
+						var el_statusbar_progress_meter  = win.document.getElementById("zindus-statusbar-progress-meter");
+						var el_statusbar_progress_label  = win.document.getElementById("zindus-statusbar-progress-text");
+						var el_statusbar_logo            = win.document.getElementById("zindus-statusbar-logo");
+						var el_statusbar_logo_processing = win.document.getElementById("zindus-statusbar-logo-processing");
 
-						el_statuspanel_progress_meter.setAttribute('value', context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
-						el_statuspanel_progress_label.setAttribute('value', context.m_sfo.progressToString());
-						el_statuspanel_logo.setAttribute('hidden', true);
-						el_statuspanel_logo_processing.setAttribute('hidden', false);
+						el_statusbar_progress_meter.setAttribute('value', context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+						el_statusbar_progress_label.setAttribute('value', context.m_sfo.progressToString());
+						el_statusbar_logo.setAttribute('hidden', true);
+						el_statusbar_logo_processing.setAttribute('hidden', false);
 					}
 				}
 			};
@@ -166,7 +166,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (fsmstate.isFinal())
 		{
-			StatusPanel.save(this.m_es);
+			StatusBar.saveState(this.m_es);
 
 			this.m_sfcd.m_account_index++;
 
@@ -180,15 +180,15 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 						{
 							win.document.getElementById ("zindus-statusbar-progress-text").setAttribute('value', "");
 							win.document.getElementById ('zindus-statusbar-progress').setAttribute('hidden', true);
-							win.document.getElementById ('zindus-statuspanel-logo-processing').setAttribute('hidden', true);
-							win.document.getElementById ('zindus-statuspanel-logo').setAttribute('hidden', false);
+							win.document.getElementById ('zindus-statusbar-logo-processing').setAttribute('hidden', true);
+							win.document.getElementById ('zindus-statusbar-logo').setAttribute('hidden', false);
 						}
 					}
 				};
 
 				this.m_zwc.forEach(functor_hide_progresspanel);
 			
-				StatusPanel.update(this.m_zwc);
+				StatusBar.update(this.m_zwc);
 
 				this.finish(false);
 			}

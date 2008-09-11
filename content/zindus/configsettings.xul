@@ -28,6 +28,7 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
+	id="zindus-config-settings"
 	title="&zindus.cs.title;"
 	buttons="accept,extra2"
 	buttonlabelextra2="&zindus.cs.buttonlabelextra2;"
@@ -42,9 +43,6 @@
 
 	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
-	<script type="application/x-javascript"> <![CDATA[
-		with (ZindusScopeRegistry.getScope()) { includejs('configsettings.js'); }
-	]]> </script>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
