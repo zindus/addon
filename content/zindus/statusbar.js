@@ -76,8 +76,18 @@ StatusBar.prototype.onDblClick = function(event)
 
 StatusBar.prototype.timerStart = function()
 {
-	this.m_is_fsm_running = true;
-	window.setTimeout(this.onTimerFire, 0, this);
+	var msg = "timerStart: ";
+
+	if (!this.m_is_fsm_running)
+	{
+		this.m_is_fsm_running = true;
+		window.setTimeout(this.onTimerFire, 0, this);
+		msg += "fired";
+	}
+	else
+		msg += "fsm is running - do nothing";
+
+	this.m_logger.debug(msg);
 }
 
 StatusBar.prototype.onTimerFire = function(context)
@@ -89,6 +99,9 @@ StatusBar.prototype.onTimerFire = function(context)
 StatusBar.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	this.m_is_fsm_running = Boolean(fsmstate && ! fsmstate.isFinal());
+
+	if (!this.m_is_fsm_running)
+		this.m_timer_functor = null; // don't hold a reference to the functor if the fsm is finished
 
 	ConfigSettings.setAttribute('disabled', this.m_is_fsm_running, "zindus-statusbar-sync-now");
 }
