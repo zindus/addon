@@ -60,36 +60,45 @@ RemoveDatastore.removeZfcs = function(filename)
 	}
 }
 
-// remove the logfile
+// Save the contents of the logfile then truncate it.
+// Often folk have a problem, "reset" to fix it, then email support and without logfile.txt.old we don't know
+// what the original problem was.
+// The reason this is a three step: 1. remove old 2. copy new to old 3. truncate new
+// and not simply "move" is because we hold open filehandles to the logfile (LogAppender) for performance.
 //
 RemoveDatastore.removeLogfile = function()
 {
-	var file = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
+	var file_new = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
+	var file_old = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
+	var name_old = Filesystem.FILENAME_LOGFILE + ".old";
 
-	file.append(Filesystem.FILENAME_LOGFILE);
+	file_new.append(Filesystem.FILENAME_LOGFILE);
+	file_old.append(name_old);
 
-	if (file.exists() && !file.isDirectory())
+	if (file_new.exists() && !file_new.isDirectory())
 	{
-		// Save the old logfile.  Often folk have a problem, "reset" to fix it, then email support and we don't know
-		// what happened because the logfile is gone.
-		//
-		var oldfile = Filesystem.FILENAME_LOGFILE + ".old";
+		try {
+			file_old.remove(false);
+		}
+		catch (ex) {
+		}
 
 		try {
-			file.moveTo(null, oldfile);
+			file_new.copyTo(null, name_old);
 		}
-		catch (ex)
-		{
-			logger().error("RemoveDatastore:removeLogfile: unable to rename: " + file.path + " to: " + oldfile + " error: " + ex);
+		catch (ex) {
+			logger().error("RemoveDatastore:removeLogfile: unable to copy: " + file_new.path + " to: " + name_old + " error: " + ex);
 		}
+
+		Filesystem.writeToFile(file_new, ""); // truncate
 	}
 }
 
 RemoveDatastore.removeZfcsIfNecessary = function()
 {
 	var data_format_version = null;
-	var zfiStatus  = StatusBar.stateAsZfi();
-	var msg = "";
+	var zfiStatus      = StatusBar.stateAsZfi();
+	var msg            = "";
 	var is_out_of_date = false;
 
 	if (zfiStatus)

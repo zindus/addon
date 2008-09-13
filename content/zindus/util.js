@@ -783,6 +783,8 @@ function intMin(a, b)
 
 function dId(id)
 {
+	zinAssert(isPropertyPresent(document, 'getElementById'));
+
 	return document.getElementById(id);
 }
 
@@ -889,7 +891,7 @@ function textToHtml(text)
 	return html;
 }
 
-function logger()      { return Singleton.instance().logger();      }
+function logger(arg)   { return Singleton.instance().logger(arg);   }
 function preferences() { return Singleton.instance().preferences(); }
 
 function googleClientLoginUrl(type)

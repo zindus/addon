@@ -100,13 +100,13 @@ AddressBook.prototype.populateNameToUriMap = function()
 		this.m_map_name_to_uri = new Object();
 		this.forEachAddressBook(functor);
 
-		// this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + aToString(this.m_map_name_to_uri));
+		this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + aToString(this.m_map_name_to_uri));  // TODO comment out
 	}
 }
 
-// returns an array of uris that match the RegExp pat
+// returns an array of AddressBookImportantProperties that match the RegExp pat
 //
-AddressBook.prototype.getAddressBookUrisByPattern = function(pat)
+AddressBook.prototype.getAddressBooksByPattern = function(pat)
 {
 	zinAssert(pat instanceof RegExp);
 
@@ -117,6 +117,8 @@ AddressBook.prototype.getAddressBookUrisByPattern = function(pat)
 	for (var key in this.m_map_name_to_uri)
 		if (pat.test(key))
 			ret[key] = this.m_map_name_to_uri[key];
+
+	this.m_logger.debug("AddressBook.getAddressBooksByPattern: pat: " + pat + " ret: " + aToString(ret)); // TODO comment out
 			
 	return ret;
 }
@@ -379,7 +381,9 @@ AddressBookTb3.prototype.deleteCards = function(uri, aCards)
 
 AddressBook.prototype.addCard = function(uri, properties, attributes)
 {
-	zinAssert(uri != null && properties != null && attributes != null);
+	zinAssert(uri != null);
+	zinAssert(properties != null);
+	zinAssert(attributes != null);
 
 	// this.m_logger.debug("addCard: blah: about to add a card: uri: " + uri + " properties: " + aToString(properties) +
 	//                                                       " attributes: " + aToString(attributes));

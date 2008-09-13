@@ -39,6 +39,12 @@ function GdContact(contact_converter, doc)
 	this.m_container_children = null; // key ==> localName, value is the node - populated by runFunctor and fieldAdd() - saves searching
 }
 
+GdContact.deleted = 'deleted';
+GdContact.edit    = 'edit';
+GdContact.id      = 'id';
+GdContact.self    = 'self';
+GdContact.updated = 'updated';
+
 GdContact.prototype.toStringXml = function()
 {
 	zinAssert(this.m_container);
@@ -59,6 +65,11 @@ GdContact.prototype.toString = function()
 	return msg;
 }
 
+GdContact.prototype.meta = function(key)
+{
+	return this.m_meta[key];
+}
+
 GdContact.prototype.updateFromContainer = function(node)
 {
 	var context = this;
@@ -74,12 +85,13 @@ GdContact.prototype.updateFromContainer = function(node)
 
 			switch (key)
 			{
-				case "id":
-				case "updated":
+				case GdContact.id:
+				case GdContact.updated:
 					context.setProperty(node, null, context.m_meta, key);
 					break;
-				case "edit":
-					context.setProperty(node, "href", context.m_meta, "edit");
+				case GdContact.edit:
+				case GdContact.self:
+					context.setProperty(node, "href", context.m_meta, key);
 					break;
 				case "title":
 				case "content":
@@ -103,8 +115,8 @@ GdContact.prototype.updateFromContainer = function(node)
 					context.setProperty(node, "address", context.m_properties, key);
 					break;
 					break;
-				case "deleted":
-					context.m_meta["deleted"] = "true";
+				case GdContact.deleted:
+					context.m_meta[GdContact.deleted] = "true";
 					break;
 			}
 		}
@@ -124,7 +136,7 @@ GdContact.prototype.set_visited = function(a_visited, key)
 
 GdContact.prototype.runFunctorOnContainer = function(functor)
 {
-	var i, key, child;
+	var i, key, child, rel;
 
 	zinAssert(this.m_container && this.m_container.nodeType == Node.ELEMENT_NODE);
 
@@ -156,11 +168,12 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 							functor.run(child, key);
 							break;
 						case "link":
-							if (child.getAttribute("rel") == "edit")
+							rel = child.getAttribute("rel");
+
+							if (rel == "edit" || rel == "self")
 							{
-								key = "edit";
-								this.set_visited(a_visited, key);
-								functor.run(child, key);
+								this.set_visited(a_visited, rel);
+								functor.run(child, rel);
 							}
 							break;
 					}
@@ -628,7 +641,7 @@ GdContact.prototype.isAnyPostalAddressNotInXml = function()
 
 GdContact.prototype.is_deleted = function()
 {
-	return isPropertyPresent(this.m_meta, 'deleted');
+	return isPropertyPresent(this.m_meta, GdContact.deleted);
 }
 
 // return true when the contact doesn't contain any properties that we care about
@@ -661,7 +674,7 @@ GdContactFunctorToMakeHashFromNodes.prototype.run = function(doc, node)
 	
 	contact.updateFromContainer(node);
 
-	this.m_collection[contact.m_meta.id] = contact;
+	this.m_collection[contact.m_meta[GdContact.id]] = contact;
 }
 
 GdContact.arrayFromXpath = function(contact_converter, doc, xpath_query)

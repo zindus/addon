@@ -52,6 +52,7 @@ FeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this a
 FeedItem.ATTR_PERM = 'perm'; // 
 FeedItem.ATTR_CS   = 'cs';   // checksum
 FeedItem.ATTR_EDIT = 'edit'; // google edit url
+FeedItem.ATTR_SELF = 'self'; // google self url
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
 
@@ -108,7 +109,7 @@ FeedCollection.prototype.length = function()
 
 FeedCollection.prototype.get = function(key)
 {
-	zinAssertAndLog(typeof(key) != 'undefined' && typeof(key) != 'object', "key: " + key);
+	zinAssertAndLog(typeof(key) != 'undefined' && typeof(key) != 'object', key);
 	return (this.isPresent(key) ? this.m_collection[key] : null);
 }
 
@@ -359,8 +360,9 @@ function FeedItem()
 
 FeedItem.prototype.get = function(key)
 {
-	zinAssertAndLog(this.isPresent(key), " key not present: " + key +
-	                                     " key: " + (isPropertyPresent(this.m_properties, 'key') ? this.m_properties['key'] : "undefined"));
+	if (!this.isPresent(key))
+		zinAssert(false, " key not present: " + key +
+	                     " key: " + (isPropertyPresent(this.m_properties, 'key') ? this.m_properties['key'] : "undefined"));
 
 	return this.m_properties[key];
 }

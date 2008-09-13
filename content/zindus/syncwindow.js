@@ -63,7 +63,7 @@ SyncWindow.prototype.onLoad = function()
 
 		this.m_logger.debug("onLoad: blah: sfcd: " + this.m_sfcd.toString());
 
-		newLogger().info(getInfoMessage('start', this.m_sfcd.account_names_as_string()));
+		logger('info').info(getInfoMessage('start', this.m_sfcd.account_names_as_string()));
 
 		window.setTimeout(this.onTimerFire, 0, this);
 	}
@@ -75,7 +75,7 @@ SyncWindow.prototype.onAccept = function()
 {
 	this.m_logger.debug("onAccept: enters");
 
-	newLogger().info(getInfoMessage('finish'));
+	logger('info').info(getInfoMessage('finish'));
 			
 	if (!this.m_payload.m_is_cancelled)
 		Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_SYNCWINDOW);
@@ -149,14 +149,13 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var elDescription = dId('zindus-sw-progress-description');
 			var elHtml        = document.createElementNS(Xpath.NS_XHTML, "p");
 			elHtml.innerHTML  = this.m_sfcd.account().get(Account.username) + "<br/><br/>" + this.m_sfo.progressToString();
-			// stringBundleString("progress.prefix") 
 
 			if (!elDescription.hasChildNodes())
 				elDescription.appendChild(elHtml);
 			else
 				elDescription.replaceChild(elHtml, elDescription.firstChild);
 
-			this.m_logger.debug("ui: " + elHtml.innerHTML);
+			this.m_logger.debug("ui: " + elHtml.innerHTML.replace(/\<.*\>/, " "));
 
 			this.m_zwc.forEach(this.zwc_functor(false));
 		}

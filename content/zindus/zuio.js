@@ -52,7 +52,7 @@ Zuio.prototype.key = function()
 
 Zuio.key = function(id, zid)
 {
-	zinAssertAndLog(id, "id: " + id);
+	zinAssertAndLog(id, id);
 
 	var ret = id + "";
 	

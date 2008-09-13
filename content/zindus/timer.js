@@ -25,7 +25,7 @@ function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg
 {
 	zinAssert(arguments.length == 3);
 
-	this.m_logger                 = newLogger("TimerFunctor");
+	this.m_logger                 = newLogger("TimerFunctor"); // this.m_logger.level(Logger.NONE);
 	this.m_zwc                    = new WindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_id_fsm_functor         = id_fsm_functor;
 	this.m_on_finish_function     = on_finish_function;
@@ -65,13 +65,13 @@ TimerFunctor.prototype.run = function()
 	{
 		this.m_sfcd = new SyncFsmChainData(accounts);
 
-		newLogger().info(getInfoMessage('start', this.m_sfcd.account_names_as_string()));
+		logger('info').info(getInfoMessage('start', this.m_sfcd.account_names_as_string()));
 
 		window.setTimeout(this.onTimerFire, 0, this);
 	}
 	else
 	{
-		newLogger().info(getInfoMessage('start', "no accounts configured"));
+		logger('info').info(getInfoMessage('start', "no accounts configured"));
 		StatusBar.saveState(this.m_es, true);
 		StatusBar.update(this.m_zwc);
 		zinAssert(!this.m_has_fsm_state_changed); // don't want finish() to unregister the fsm observer
@@ -200,12 +200,10 @@ TimerFunctor.prototype.finish = function(is_back_off)
 {
 	this.m_logger.debug("finish: is_back_off: " + is_back_off);
 
-	newLogger().info(getInfoMessage(is_back_off ? 'backoff' : 'finish'));
+	logger('info').info(getInfoMessage(is_back_off ? 'backoff' : 'finish'));
 
 	if (this.m_has_fsm_state_changed)
-	{
 		Maestro.notifyFunctorUnregister(this.m_id_fsm_functor);
-	}
 
 	this.is_running = false;
 

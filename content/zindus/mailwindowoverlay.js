@@ -23,18 +23,13 @@
 
 function ZinMailWindowOverlay()
 {
-	this.m_logappender      = new LogAppenderOpenClose(); // don't hold open a filehandle to the logfile
-	this.m_logger           = new Logger(Singleton.instance().loglevel(), "MailWindowOverlay", this.m_logappender);
-	this.m_logger_no_prefix = new Logger(Singleton.instance().loglevel(), "",                  this.m_logappender);
+	this.m_logger           = newLogger("MailWindowOverlay");
 	this.m_delay_on_repeat  = null;
 	this.m_last_sync_date   = null;
 	this.m_timeoutID        = null;
 	this.m_maestro          = null;
 	this.m_timer_functor    = null;
 	this.m_topic_preference_change = ObserverService.TOPIC_PREFERENCE_CHANGE;
-
-	// don't hold open a filehandle to the logfile
-	Singleton.instance().m_logger = new Logger(Singleton.instance().loglevel(), "global", this.m_logappender);
 }
 
 ZinMailWindowOverlay.prototype.onLoad = function()
@@ -47,7 +42,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 		{
 			Filesystem.createDirectoriesIfRequired();  // this comes first - can't log without a directory for the logfile!
 
-			this.m_logger_no_prefix.info(getInfoMessage('startup'));
+			logger('info').info(getInfoMessage('startup'));
 
 			this.migratePrefs();
 
@@ -97,7 +92,7 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 
 			this.timerShutdown();
 
-			this.m_logger_no_prefix.info(getInfoMessage('shutdown'));
+			logger('info').info(getInfoMessage('shutdown'));
 		}
 	}
 	catch (ex)
@@ -152,7 +147,7 @@ ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 
 	context.m_timeoutID = window.setTimeout(context.onTimerFire, delay, context);
 
-	context.m_logger_no_prefix.info(getInfoMessage('next', delay));
+	logger('info').info(getInfoMessage('next', delay));
 }
 
 ZinMailWindowOverlay.prototype.statusSummary = function()
@@ -343,7 +338,7 @@ ZinMailWindowOverlay.prototype.timerStartup = function()
 
 		this.m_timeoutID = window.setTimeout(this.onTimerFire, delay, this);
 
-		this.m_logger_no_prefix.info(getInfoMessage('next', delay));
+		logger('info').info(getInfoMessage('next', delay));
 	}
 	else
 		this.m_logger.debug("manual sync only - timer not started.");

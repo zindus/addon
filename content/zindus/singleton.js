@@ -25,9 +25,10 @@
 //
 function Singleton()
 {
-	this.m_preferences = new MozillaPreferences();
-	this.m_loglevel    = this.get_loglevel_from_preference();
-	this.m_logger      = new Logger(this.loglevel(), "global");
+	this.m_preferences      = new MozillaPreferences();
+	this.m_loglevel         = this.get_loglevel_from_preference();
+	this.m_logger_global    = new Logger(this.loglevel(), "global");
+	this.m_logger_no_prefix = new Logger(this.loglevel(), "");
 }
 
 Singleton.instance = function()
@@ -38,10 +39,13 @@ Singleton.instance = function()
 	return Singleton.m_instance;
 }
 
-Singleton.prototype.loglevel    = function() { return this.m_loglevel;    }
-Singleton.prototype.logger      = function() { return this.m_logger;      }
 Singleton.prototype.preferences = function() { return this.m_preferences; }
-Singleton.prototype.logappender = function() { return this.m_preferences; }
+Singleton.prototype.loglevel    = function() { return this.m_loglevel;    }
+
+Singleton.prototype.logger = function(type)
+{
+	return (type && type == 'info') ? this.m_logger_no_prefix : this.m_logger_global;
+}
 
 Singleton.prototype.get_loglevel_from_preference = function()
 {

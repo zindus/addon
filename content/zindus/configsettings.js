@@ -48,8 +48,7 @@ function ConfigSettings()
 	this.m_console_listener     = Logger.nsIConsoleListener();
 	this.m_payload              = null;
 	this.m_accounts             = null;
-	this.m_logappender          = new LogAppenderOpenClose(); // don't hold open a filehandle to the logfile
-	this.m_logger               = new Logger(Singleton.instance().loglevel(), "ConfigSettings", this.m_logappender); // this.m_logger.level(Logger.NONE);
+	this.m_logger               = newLogger("ConfigSettings"); // this.m_logger.level(Logger.NONE);
 }
 
 ConfigSettings.prototype.onLoad = function(target)
@@ -214,14 +213,9 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-cs-general-button-reset":
-			logger().appender().close();
-			logger().appender(new LogAppenderOpenClose());
-
 			RemoveDatastore.removeZfcs();
 			RemoveDatastore.removeLogfile();
 			StatusBar.update();
-
-			logger().appender(LogAppenderFactory.new());
 			break;
 
 		case "zindus-cs-general-advanced-button":

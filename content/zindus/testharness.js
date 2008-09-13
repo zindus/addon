@@ -1450,5 +1450,24 @@ TestHarness.prototype.testStringTimes = function()
 		bimap.lookup(FORMAT_TB, null)
 	stopwatch.mark("end");
 
+	stopwatch.reset();
+	stopwatch.mark("start: concat" + count);
+	var str = " gid: 449 loser: 2 gcs: winner: 1 state: win - winner matches gid - no change";
+	msg = ""
+	for (i = 0; i < count; i++)
+		msg += str + "\n";
+	this.m_logger.debug(msg);
+	stopwatch.mark("end");
+
+	stopwatch.reset();
+	stopwatch.mark("start: array" + count);
+	var str = " gid: 449 loser: 2 gcs: winner: 1 state: win - winner matches gid - no change";
+	var a = new Array();
+	msg = ""
+	for (i = 0; i < count; i++)
+		a.push(i);
+	this.m_logger.debug(str + a.toString());
+	stopwatch.mark("end");
+
 	return true;
 }

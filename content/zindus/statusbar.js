@@ -32,13 +32,10 @@
 
 function StatusBar()
 {
-	this.m_logappender = new LogAppenderOpenClose();
-	this.m_logger      = new Logger(Singleton.instance().loglevel(), "StatusBar", this.m_logappender);
-	this.m_logger.debug("constructor");
-
-	this.m_timer_functor   = null;
+	this.m_logger         = newLogger("StatusBar");
+	this.m_timer_functor  = null;
 	this.m_is_fsm_running = false;
-	this.m_maestro = null;
+	this.m_maestro        = null;
 }
 
 StatusBar.prototype.onLoad = function()
