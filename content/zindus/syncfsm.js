@@ -1298,16 +1298,6 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 
 					if (!zfcZm.isPresent(key))
 					{
-						// TODO
-						{
-						this.state.m_logger.debug("AMHERE: l: " + l + " as key: " + Zuio.key(l, change.acct));
-						if (!this.was_in_here)
-							this.state.m_logger.debug("AMHERE: zfcZm: " + zfcZm.toString());
-
-						this.was_in_here = true;
-						}
-
-						// TODO if (SyncFsm.isOfInterest(zfcZm, l))
 						if (SyncFsm.isOfInterest(zfcZm, Zuio.key(l, change.acct)))
 						{
 							fAddToTheQueue = true;
@@ -3329,7 +3319,7 @@ SyncFsm.prototype.updateGidDoChecksums = function(event)
 				foreach_msg += " luid: " + luid + " not relevant to gid\n";
 			else if (zfi.isPresent(FeedItem.ATTR_DEL))
 				foreach_msg += " luid: " + luid + " deleted - ignoring\n";
-			else if (sourceid == SOURCEID_TB && !context.isInScopeTbLuid(luid)) // TODO am here fixing warn msg ..also do fast+slow sync
+			else if (sourceid == SOURCEID_TB && !context.isInScopeTbLuid(luid))
 				foreach_msg += " luid: " + luid + " not in scope - ignoring\n";
 			else if (zfi.type() == FeedItem.TYPE_CN)
 			{
@@ -3448,7 +3438,7 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 				msg += " luid is not of interest - ignoring";
 			else if (!SyncFsm.isRelevantToGid(zfc, luid))
 				msg += " luid is not relevant - ignoring";
-			else if (sourceid == SOURCEID_TB && context.isInScopeTbLuid(luid)) // TODO am here fixing warn msg ..also do fast+slow sync
+			else if (sourceid == SOURCEID_TB && !context.isInScopeTbLuid(luid)) // TODO ... is this right - to be tested
 				msg += " luid is not in scope - ignoring";
 			else
 			{
@@ -7463,20 +7453,10 @@ HttpStateGd.prototype.filterOut = function(str)
 	return str;
 }
 
-// This function has a different number of optional arguments corresponding to where it's called from:
-// - 3 arguments ==> called from timer, load prefsets from preferences
-// - 6 arguments ==> called from either "Test Connection" or "Sync Now"
-// TODO ==> for multiple accounts, this will change to:
-// - one argument:    id_fsm                                     - called from timer
-// - two arguments:   id_fsm and prefset_general                 - called from Sync Now
-// - three arguments: id_fsm and prefset_general and the account - called from "Test Connection"
-//                    and here "account" contains sourceid, url, username and password
-//
 SyncFsm.prototype.initialise = function(id_fsm, sfcd, prefset_general)
 {
 	var account  = sfcd.account();
 	var sourceid = account.sourceid();
-	zinAssert(arguments.length == 3 || arguments.length == 6);
 
 	this.initialiseState(id_fsm, sourceid, sfcd);
 	this.initialiseFsm();
@@ -7489,7 +7469,7 @@ SyncFsm.prototype.initialise = function(id_fsm, sfcd, prefset_general)
 	else if (id_fsm == Maestro.FSM_ID_GD_AUTHONLY)
 		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
 
-	this.state.sources[sourceid][Account.url]         = account.get(Account.url);
+	this.state.sources[sourceid][Account.url]             = account.get(Account.url);
 	this.state.sources[sourceid][Account.username]        = account.get(Account.username);
 	this.state.sources[sourceid][Account.passwordlocator] = account.get(Account.passwordlocator);
  
