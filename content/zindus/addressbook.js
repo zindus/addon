@@ -61,6 +61,11 @@ AddressBook.version = function()
 	return ret;
 }
 
+AddressBook.new = function()
+{
+	return (AddressBook.version() == AddressBook.TB2) ? new AddressBookTb2() : new AddressBookTb3();
+}
+
 AddressBook.prototype.contact_converter = function()
 {
 	if (arguments.length == 1)
@@ -330,6 +335,51 @@ AddressBookTb3.prototype.renameAddressBook = function(uri, name)
 	AddressBook.prototype.renameAddressBook.call(this);
 }
 
+AddressBook.prototype.deleteCardsArray = function(dir, cardsArray)
+{
+	var error_msg  = null;
+	var error_name = null;
+
+	try {
+		dir.deleteCards(cardsArray);
+	}
+	catch (e) {
+		error_name = e.name;
+		error_msg = "deleteCards: failed: exception: " + e;
+	}
+
+	if (error_name == "NS_ERROR_INVALID_POINTER")
+	{
+		// May have encountered a known Thunderbird bug - try a workaround to:
+		// https://bugzilla.mozilla.org/show_bug.cgi?id=451306
+		//
+		var abip = this.newAddressBook("zindus-bug-451306-temporary-addressbook");
+		this.deleteAddressBook(abip.uri());
+
+		error_name = null;
+
+		try {
+			dir.deleteCards(cardsArray);
+		}
+		catch (e) {
+			error_name = e.name;
+			error_msg  += "\n workaround unsuccessful: " + e;
+		}
+
+		if (!error_name)
+			error_msg = "deleteCards: encountered bug #451306 - workaround succeeded";
+	}
+
+	ret = (error_name == null);
+
+	if (error_msg)
+		this.m_logger.debug(error_msg);
+
+	this.m_logger.debug("deleteCards: " + (ret ? "succeeded" : "failed"));
+
+	return ret;
+}
+
 AddressBookTb2.prototype.deleteCards = function(uri, aCards)
 {
 	var dir        = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
@@ -339,26 +389,9 @@ AddressBookTb2.prototype.deleteCards = function(uri, aCards)
 	zinAssert(aCards.length > 0);
 
 	for (var i = 0; i < aCards.length; i++)
-	{
-		this.m_logger.debug("deleteCards: prepare: " + this.nsIAbCardToPrintableVerbose(aCards[i]));
 		cardsArray.AppendElement(aCards[i]);
-	}
 
-	this.m_logger.debug("deleteCards: about to delete: " + cardsArray.Count() + " card(s)");
-
-	// cardsArray = {}; // TODO force excaption
-
-	try {
-		dir.deleteCards(cardsArray);
-	}
-	catch (e) {
-		ret = false;
-		this.m_logger.error("deleteCards: failed: exception: " + e);
-	}
-
-	this.m_logger.debug("deleteCards: " + (ret ? "succeeded" : "failed"));
-
-	return ret;
+	return this.deleteCardsArray(dir, cardsArray);
 }
 
 AddressBookTb3.prototype.deleteCards = function(uri, aCards)
@@ -367,16 +400,9 @@ AddressBookTb3.prototype.deleteCards = function(uri, aCards)
 	var cardsArray = Cc["@mozilla.org/array;1"].createInstance(Ci.nsIMutableArray);
 
 	for (var i = 0; i < aCards.length; i++)
-	{
-		this.m_logger.debug("deleteCards: prepare: " + this.nsIAbCardToPrintableVerbose(aCards[i]));
 		cardsArray.appendElement(aCards[i], false);
-	}
 
-	this.m_logger.debug("deleteCards: about to delete");
-
-	dir.deleteCards(cardsArray);
-
-	this.m_logger.debug("deleteCards: done");
+	return this.deleteCardsArray(dir, cardsArray);
 }
 
 AddressBook.prototype.addCard = function(uri, properties, attributes)

@@ -64,7 +64,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGdContact();
 	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
-	// ret = ret && this.testDeleteCard();
+	ret = ret && this.testDeleteCard();
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
 
@@ -1288,21 +1288,63 @@ TestHarness.prototype.testDeleteCard = function()
 
 	// now we've got a card - try to delete it
 
-	if (true)
+	if (false)
 	try {
 		var cardsArray = { };
 		dir.deleteCards(cardsArray);
-	} catch(ex)
-	{
+	} catch(ex) {
 		// do nothing
+		this.m_logger.debug("Error.name: " + ex.name);
 	}
 	else
 	{
+		// workaround...
+		//
+		if (false)
+		{
+	var stopwatch = new StopWatch("new/delete addressbook");
+
+	stopwatch.mark("start: ");
+		var addressbook;
+		if (AddressBook.version() == AddressBook.TB2)
+			addressbook = new AddressBookTb2();
+		else
+			addressbook = new AddressBookTb3();
+
+		var name = "delete-cards-test-addressbook";
+		var abip = addressbook.newAddressBook(name);
+		addressbook.deleteAddressBook(abip.uri());
+	stopwatch.mark("end: ");
+		}
+
+		var addressbook = AddressBook.new();
+		addressbook.deleteCards(uri, [ mdbCard ]);
+		if (false)
+		{
 		var cardsArray = Cc["@mozilla.org/supports-array;1"].createInstance().QueryInterface(Ci.nsISupportsArray);
 
 		cardsArray.AppendElement(mdbCard);
 
-		dir.deleteCards(cardsArray);
+		var error_name = null;
+		try {
+			dir.deleteCards(cardsArray);
+		} catch(ex) {
+			this.m_logger.debug("Error.name: " + ex.name);
+			error_name = ex.name;
+		}
+
+		if (error_name == "NS_ERROR_INVALID_POINTER")
+		{
+			addressbook = AddressBook.new();
+			var abip = addressbook.newAddressBook("delete-cards-test-addressbook");
+			addressbook.deleteAddressBook(abip.uri());
+
+			dir.deleteCards(cardsArray);
+
+			this.m_logger.debug("Recovered and deleted the card");
+		}
+		}
+
 	}
 
 	return true;
