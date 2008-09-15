@@ -3438,7 +3438,7 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 				msg += " luid is not of interest - ignoring";
 			else if (!SyncFsm.isRelevantToGid(zfc, luid))
 				msg += " luid is not relevant - ignoring";
-			else if (sourceid == SOURCEID_TB && !context.isInScopeTbLuid(luid)) // TODO ... is this right - to be tested
+			else if (sourceid == SOURCEID_TB && !context.isInScopeTbLuid(luid))
 				msg += " luid is not in scope - ignoring";
 			else
 			{

@@ -115,7 +115,7 @@ ConfigSettings.prototype.onCancel = function()
 
 ConfigSettings.prototype.onAccept = function()
 {
-	this.m_logger.debug("onAccept: ");
+	this.m_logger.debug("onAccept: enters");
 
 	this.updatePrefsetsFromDocument();
 
