@@ -32,7 +32,7 @@ MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
 MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME = "system.zm_prefer_soapurl_scheme";
 MozillaPreferences.GD_SCHEME_DATA_TRANSFER  = "system.gd_data_transfer_scheme";
-
+MozillaPreferences.GD_TRASH_EXPIRE_SECONDS  = "system.gd_trash_expire_seconds";
 
 MozillaPreferences.getAllSystemPrefs = function()
 {
@@ -44,7 +44,8 @@ MozillaPreferences.getAllSystemPrefs = function()
 		MozillaPreferences.ZM_SYNC_GAL_IF_FEWER,     'int',
 		MozillaPreferences.ZM_SYNC_GAL_RECHECK,      'int',
 		MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME, 'char',
-		MozillaPreferences.GD_SCHEME_DATA_TRANSFER,  'char' );
+		MozillaPreferences.GD_SCHEME_DATA_TRANSFER,  'char',
+		MozillaPreferences.GD_TRASH_EXPIRE_SECONDS,  'int' );
 }
 
 function MozillaPreferences()
@@ -94,7 +95,7 @@ MozillaPreferences.prototype.defaultbranch = function()
 
 MozillaPreferences.prototype.setIntPref = function(branch, key, value)
 {
-	var intValue = parseInt(value);
+	var intValue = Number(value);
 
 	zinAssert(!isNaN(intValue));
 
@@ -122,7 +123,7 @@ MozillaPreferences.prototype.getPrefReal = function(branch, key, type, mustbepre
 				tmp = branch.getIntPref(key);
 
 				if (!isNaN(tmp))
-					ret = parseInt(tmp);
+					ret = Number(tmp);
 			}
 			else if (type == 'char')
 			{

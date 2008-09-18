@@ -33,6 +33,7 @@
 function StatusBar()
 {
 	this.m_logger         = newLogger("StatusBar");
+	this.m_timer_id       = null;
 	this.m_timer_functor  = null;
 	this.m_is_fsm_running = false;
 	this.m_maestro        = null;
@@ -49,9 +50,9 @@ StatusBar.prototype.onLoad = function()
 		ObserverService.register(this.m_maestro, Maestro.TOPIC);
 	}
 
-	var timer_id = hyphenate('-', Maestro.ID_FUNCTOR_STATUSBAR_TIMER, Date.now());
+	this.m_timer_id = hyphenate('-', Maestro.ID_FUNCTOR_STATUSBAR_TIMER, Date.now());
 
-	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, timer_id, Maestro.FSM_GROUP_SYNC);
+	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, this.m_timer_id, Maestro.FSM_GROUP_SYNC);
 }
 
 StatusBar.prototype.onUnLoad = function()
@@ -64,6 +65,8 @@ StatusBar.prototype.onUnLoad = function()
 		this.m_timer_functor.cancel();
 		this.m_timer_functor = null;
 	}
+
+	Maestro.notifyFunctorUnregister(this.m_timer_id);
 }
 
 StatusBar.prototype.onDblClick = function(event)
@@ -100,7 +103,7 @@ StatusBar.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	if (!this.m_is_fsm_running)
 		this.m_timer_functor = null; // don't hold a reference to the functor if the fsm is finished
 
-	ConfigSettings.setAttribute('disabled', this.m_is_fsm_running, "zindus-statusbar-sync-now");
+	xulSetAttribute('disabled', this.m_is_fsm_running, "zindus-statusbar-sync-now");
 }
 
 // Static methods that interact with status.txt

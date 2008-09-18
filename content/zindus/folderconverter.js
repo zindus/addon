@@ -26,6 +26,11 @@ FolderConverter.PREFIX_CLASS_INTERNAL = 2;
 FolderConverter.PREFIX_CLASS_PRIMARY  = 3;
 FolderConverter.PREFIX_CLASS_SHARED   = 4;
 
+FolderConverter.PREFIX_PRIMARY_ACCOUNT   = APP_NAME + "/";
+FolderConverter.PREFIX_FOREIGN_READONLY  = APP_NAME + "-";
+FolderConverter.PREFIX_FOREIGN_READWRITE = APP_NAME + "+";
+FolderConverter.PREFIX_INTERNAL          = APP_NAME + "_";
+
 function FolderConverter()
 {
 	this.m_bimap_pab = new BiMap(              [FORMAT_TB,           FORMAT_ZM,          FORMAT_GD ],
@@ -34,12 +39,7 @@ function FolderConverter()
 	this.m_bimap_emailed_contacts = new BiMap( [FORMAT_TB,           FORMAT_ZM                  ],
 	                                           [TB_EMAILED_CONTACTS, ZM_FOLDER_EMAILED_CONTACTS ]);
 
-	this.m_prefix_primary_account   = APP_NAME + "/";
-	this.m_prefix_foreign_readonly  = APP_NAME + "-";
-	this.m_prefix_foreign_readwrite = APP_NAME + "+";
-	this.m_prefix_internal          = APP_NAME + "_";
-
-	this.m_prefix_length = this.m_prefix_primary_account.length;  // and we assume that all prefixes have the same length
+	this.m_prefix_length = FolderConverter.PREFIX_PRIMARY_ACCOUNT.length;  // and we assume that all prefixes have the same length
 
 	this.m_localised_pab = null;               // the localised equivalent of "Personal Address Book" eg "Adresses Personnelles"
 	this.m_localised_emailed_contacts = null;  // the localised equivalent of "Emailed Contacts"      eg "Personnes contactées par mail"
@@ -136,7 +136,7 @@ FolderConverter.prototype.convertForPublic = function(format_to, format_from, zf
 		if (ret == TB_PAB)
 			ret = this.m_localised_pab;
 		else if (ret == TB_EMAILED_CONTACTS)
-			ret = this.m_prefix_primary_account +
+			ret = FolderConverter.PREFIX_PRIMARY_ACCOUNT +
 			              (this.m_localised_emailed_contacts ? this.m_localised_emailed_contacts : ZM_FOLDER_EMAILED_CONTACTS);
 	}
 
@@ -232,15 +232,15 @@ FolderConverter.prototype.selectPrefix = function(zfi)
 	                  "can't selectPrefix zfi: " + zfi.toString());
 	
 	if (zfi.type() == FeedItem.TYPE_FL)
-		ret = this.m_prefix_primary_account;
+		ret = FolderConverter.PREFIX_PRIMARY_ACCOUNT;
 	else
 	{
 		var perm = zmPermFromZfi(zfi);
 
 		if (perm & ZM_PERM_WRITE)
-			ret = this.m_prefix_foreign_readwrite;
+			ret = FolderConverter.PREFIX_FOREIGN_READWRITE;
 		else if (perm & ZM_PERM_READ)
-			ret = this.m_prefix_foreign_readonly;
+			ret = FolderConverter.PREFIX_FOREIGN_READONLY;
 		else
 			zinAssertAndLog(false, "unable to selectPrefix zfi: " + zfi.toString());
 	}
@@ -254,10 +254,10 @@ FolderConverter.prototype.prefixClass = function(str)
 	var ret    = FolderConverter.PREFIX_CLASS_NONE;
 	var prefix = str.substring(0, this.m_prefix_length);
 
-	if (prefix == this.m_prefix_primary_account)        ret = FolderConverter.PREFIX_CLASS_PRIMARY;
-	else if (prefix == this.m_prefix_internal)          ret = FolderConverter.PREFIX_CLASS_INTERNAL;
-	else if (prefix == this.m_prefix_foreign_readonly)  ret = FolderConverter.PREFIX_CLASS_SHARED;
-	else if (prefix == this.m_prefix_foreign_readwrite) ret = FolderConverter.PREFIX_CLASS_SHARED;
+	if (prefix == FolderConverter.PREFIX_PRIMARY_ACCOUNT)        ret = FolderConverter.PREFIX_CLASS_PRIMARY;
+	else if (prefix == FolderConverter.PREFIX_INTERNAL)          ret = FolderConverter.PREFIX_CLASS_INTERNAL;
+	else if (prefix == FolderConverter.PREFIX_FOREIGN_READONLY)  ret = FolderConverter.PREFIX_CLASS_SHARED;
+	else if (prefix == FolderConverter.PREFIX_FOREIGN_READWRITE) ret = FolderConverter.PREFIX_CLASS_SHARED;
 
 	// this.m_logger.debug("prefixClass: str: " + str + " prefix: " + prefix + " returns: " + ret);
 

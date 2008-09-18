@@ -36,6 +36,7 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("statusbar.js");
 	ZindusScopeRegistry.includejs("syncfsm.js");
 	ZindusScopeRegistry.includejs("syncfsmexitstatus.js");
+	ZindusScopeRegistry.includejs("syncfsmchaindata.js");
 	ZindusScopeRegistry.includejs("syncfsmobserver.js");
 	ZindusScopeRegistry.includejs("observerservice.js");
 	ZindusScopeRegistry.includejs("maestro.js");
@@ -43,4 +44,5 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("account.js");
 	ZindusScopeRegistry.includejs("removedatastore.js");
 	ZindusScopeRegistry.includejs("configsettings.js");
+	ZindusScopeRegistry.includejs("googleconflict.js");
 }

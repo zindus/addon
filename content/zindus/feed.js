@@ -28,7 +28,7 @@ FeedItem.ITER_ALL                = 3;   //
 FeedItem.ITER_GID_ITEM           = 4;   // don't call functor when key == FeedItem.ATTR_KEY or key == FeedItem.ATTR_VER
 
 FeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the one with the 'next' attribute
-FeedItem.KEY_STATUSBAR         = "2#zindus-housekeeping"; // this key is used in the StatusBar's FeedCollection
+FeedItem.KEY_STATUSBAR           = "2#zindus-housekeeping"; // this key is used in the StatusBar's FeedCollection
 FeedItem.KEY_LASTSYNC_COMMON     = "3#zindus-housekeeping"; // this key is used in lastsync.txt for attributes common to all accounts
 FeedItem.KEYS_RESERVED           = newObject(FeedItem.KEY_AUTO_INCREMENT, null, FeedItem.KEY_STATUSBAR, null,
                                              FeedItem.KEY_LASTSYNC_COMMON, null);
@@ -55,6 +55,8 @@ FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
+
+FeedItem.ATTR_STATUS_GOOGLE_CONFLICT_DONT_ASK_EMTPY = 'google_conflict_dont_ask_empty';
 
 FeedItem.TYPE_CN   = 0x01; // contact
 FeedItem.TYPE_FL   = 0x02; // folder
@@ -498,7 +500,7 @@ FeedItem.prototype.increment = function(key)
 
 	zinAssert(!isNaN(value));
 
-	var ret = parseInt(value);
+	var ret = Number(value);
 
 	this.set(key, ret + 1);
 
@@ -513,7 +515,7 @@ FeedItem.prototype.decrement = function(key)
 
 	zinAssert(!isNaN(value));
 
-	var ret = parseInt(value);
+	var ret = Number(value);
 
 	this.set(key, ret - 1);
 

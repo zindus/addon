@@ -35,8 +35,6 @@ includejs("zuio.js");
 includejs("gcs.js");
 includejs("lso.js");
 includejs("zidbag.js");
-includejs("syncfsmexitstatus.js");
-includejs("syncfsmchaindata.js");
 includejs("passwordmanager.js");
 includejs("stopwatch.js");
 includejs("cookieobserver.js");
@@ -863,7 +861,7 @@ SyncFsm.prototype.isConsistentZfcAutoIncrement = function(zfc)
 {
 	return zfc.isPresent(FeedItem.KEY_AUTO_INCREMENT) &&
 	       zfc.get(FeedItem.KEY_AUTO_INCREMENT).isPresent('next') &&
-		   parseInt(zfc.get(FeedItem.KEY_AUTO_INCREMENT).get('next')) > AUTO_INCREMENT_STARTS_AT;
+		   Number(zfc.get(FeedItem.KEY_AUTO_INCREMENT).get('next')) > AUTO_INCREMENT_STARTS_AT;
 }
 
 SyncFsm.prototype.initialiseZfcLastSync = function(sourceid)
@@ -1764,7 +1762,7 @@ SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 
 		if (this.state.SyncGalEnabled == "if-fewer")
 			nextEvent = (zfcLastSync.get(sourceid_pr).isPresent('SyncGalEnabledRecheck') &&
-			             parseInt(zfcLastSync.get(sourceid_pr).get('SyncGalEnabledRecheck')) > 0) ? 'evSkip' : 'evNext';
+			             Number(zfcLastSync.get(sourceid_pr).get('SyncGalEnabledRecheck')) > 0) ? 'evSkip' : 'evNext';
 		else
 			nextEvent = 'evNext';
 	}
@@ -2007,6 +2005,11 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	//
 	this.state.stopwatch.mark(state + " 1");
 
+	var gd_ab_name_internal = null;
+	var gd_ab_name_public   = null;
+	var passed              = true;
+	var aUri;
+
 	this.state.zfcTbPreMerge = this.zfcTb().clone();           // 1. remember the tb luid's before merge so that we can follow changes
 
 	if (this.formatPr() == FORMAT_ZM)
@@ -2020,24 +2023,14 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	{
 		if (this.is_slow_sync(this.state.sourceid_pr))
 			this.loadTbSetupGdAddressbook();
-	}
 
-	var gd_ab_name_internal = null;
-	var gd_ab_name_public   = null;
-	var passed              = true;
-	var aUri;
-	
-	if (this.formatPr() == FORMAT_GD)
-	{
-		if (this.state.gd_sync_with == 'pab')
+		gd_ab_name_internal = this.gdAddressbookName('internal');
+		gd_ab_name_public   = this.gdAddressbookName('public');
+
+		if (this.state.m_sfcd.first_sourceid_of_format(FORMAT_GD) == this.state.sourceid_pr)
 		{
-			gd_ab_name_internal = TB_PAB;
-			gd_ab_name_public   = this.state.m_addressbook.getPabName();
-		}
-		else
-		{
-			gd_ab_name_internal = this.gdAddressbookName();
-			gd_ab_name_public   = this.gdAddressbookName();
+			var gct = new GoogleConflictTrash(this.state.m_addressbook);
+			gct.expire();
 		}
 	}
 
@@ -2132,14 +2125,17 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 3: passed: " + passed);
 
+	if (this.formatPr() == FORMAT_GD)
+	{
+		passed = passed && this.loadTbTestForGdCardsEmpty();
+		passed = passed && this.loadTbTestForGdCardsUnique();
+	}
+
 	if (this.formatPr() == FORMAT_ZM)
 	{
 		passed = passed && this.testForLegitimateFolderNames(); // test for duplicate folder names, zimbra-reserved names, illegal chars
 		passed = passed && this.testForEmptyContacts();         // test that there are no empty contacts
 	}
-
-	if (this.formatPr() == FORMAT_GD)
-		passed = passed && this.loadTbTestForGdProblems();
 
 	passed = passed && this.testForFolderPresentInZfcTb(TB_PAB);
 
@@ -2173,9 +2169,9 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 					email = GdContact.transformProperty(key, properties[key]);
 
 					if (!isPropertyPresent(this.m_a_email_luid, email))
-						this.m_a_email_luid[email] = Array();
+						this.m_a_email_luid[email] = new Object();
 
-					this.m_a_email_luid[email].push(id);
+					this.m_a_email_luid[email][id] = true;
 				}
 
 			},
@@ -2203,7 +2199,7 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 					}
 
 				if (is_empty)
-					this.m_a_empty_contacts[id] = aToString(properties);
+					this.m_a_empty_contacts[id] = properties;
 			}
 		};
 	else if (this.formatPr() == FORMAT_ZM)
@@ -2239,7 +2235,7 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 //
 SyncFsm.prototype.loadTbSetupGdAddressbook = function()
 {
-	var abName = this.gdAddressbookName();
+	var abName = this.gdAddressbookName('zg');
 	var aUris  = this.state.m_addressbook.getAddressBooksByPattern(new RegExp( "^" + abName + "$" ));
 
 	if (this.state.gd_sync_with == 'pab' && aToLength(aUris) > 0)
@@ -2260,9 +2256,22 @@ SyncFsm.prototype.loadTbSetupGdAddressbook = function()
 	}
 }
 
-SyncFsm.prototype.gdAddressbookName = function()
+SyncFsm.prototype.gdAddressbookName = function(arg)
 {
-	return this.state.m_folder_converter.m_prefix_primary_account + this.state.sources[this.state.sourceid_pr][Account.username];
+	zinAssert(this.state.gd_sync_with == 'zg' || this.state.gd_sync_with == 'pab');
+
+	var name_when_zg = FolderConverter.PREFIX_PRIMARY_ACCOUNT + this.state.sources[this.state.sourceid_pr][Account.username];
+	var ret;
+
+	switch(arg)
+	{
+		case 'public':   ret = this.state.gd_sync_with == 'zg' ? name_when_zg : this.state.m_addressbook.getPabName(); break;
+		case 'internal': ret = this.state.gd_sync_with == 'zg' ? name_when_zg : TB_PAB;                                break;
+		case 'zg':       ret = name_when_zg;                                                                           break;
+		default:         zinAssertAndLog(false, arg)
+	}
+
+	return ret;
 }
 
 SyncFsm.zfiFromName = function(name)
@@ -2474,7 +2483,7 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 		{
 			for (old_translation in this.state.m_folder_converter.m_locale_names_to_migrate)
 			{
-				old_localised_ab = this.state.m_folder_converter.m_prefix_primary_account + old_translation;
+				old_localised_ab = FolderConverter.PREFIX_PRIMARY_ACCOUNT + old_translation;
 
 				uri = this.state.m_addressbook.getAddressBookUriByName(old_localised_ab);
 
@@ -2498,7 +2507,7 @@ SyncFsm.prototype.loadTbDeleteReadOnlySharedAddresbooks = function()
 {
 	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
 
-	var aUris = this.state.m_addressbook.getAddressBooksByPattern(new RegExp(this.state.m_folder_converter.m_prefix_foreign_readonly));
+	var aUris = this.state.m_addressbook.getAddressBooksByPattern(new RegExp(FolderConverter.PREFIX_FOREIGN_READONLY));
 
 	this.state.m_logger.debug("loadTbDeleteReadOnlySharedAddresbooks: about to delete: " + aToString(aUris));
 
@@ -2659,10 +2668,10 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 				// but not commit it to the db until after the remote update is successful.
 				// As things stand though, this warning message appears and everything works ok.
 				//
-				this.state.m_logger.debug("loadTb: card had attribute luid: " + id +
-				                         " that wasn't in the map.  If the previous sync wasn't successful due to a conflict \
-										   around this card then it's normal behaviour and nothing to worry about. \
-										   Attribute removed.  Card: " +
+				this.state.m_logger.debug("loadTbCards: card had attribute luid: " + id +
+				                         " that wasn't in the map.  If the previous sync wasn't successful due to a conflict " +
+										 " around this card then it's normal behaviour and nothing to worry about. " +
+										 " Attribute removed.  Card: " +
 			                                 this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 				this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, 0);  // api doesn't have a "delete"
 			}
@@ -2674,12 +2683,12 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 	for (uri in aUri)
 		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
 
-	this.state.m_logger.debug("loadTb pass 1 - aMailListUri == " + aToString(aMailListUri));
+	this.state.m_logger.debug("loadTbCards pass 1: aUri: " + aToString(aUri) + " aMailListUri: " + aToString(aMailListUri));
 
 	// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
 	//
 	var aCardKeysToExclude = new Object();
-	msg = "aCardKeysToExclude: pass 2: ";
+	msg = "loadTbCards: aCardKeysToExclude: pass 2: ";
 
 	functor_foreach_card = {
 		state: this.state,
@@ -2722,13 +2731,15 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 			                            (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] != uri)))
 					isInTopLevelFolder = true;
 
-			// this.state.m_logger.debug("loadTb pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
-			//                           " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard) +
-			//                           " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
-			//                           " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
-			//                           " attributes: " + aToString(this.state.m_addressbook.getCardAttributes(abCard)) +
-			//                           " checksum: " +
-			// 						     this.contact_converter().crc32(this.state.m_addressbook.getCardProperties(abCard)));
+			if (false)
+			this.state.m_logger.debug("loadTbCards pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
+			                          " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard) +
+			                          " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
+			                          " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
+			                          " attributes: " + aToString(this.state.m_addressbook.getCardAttributes(abCard)) +
+			                          " lastModifiedDate: " + abCard.lastModifiedDate +
+			                          " checksum: " +
+									   context.contact_converter().crc32(this.state.m_addressbook.getCardProperties(abCard)));
 
 			if (isInTopLevelFolder)
 			{
@@ -2736,7 +2747,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 				var properties = this.state.m_addressbook.getCardProperties(abCard);
 				var checksum   = context.contact_converter().crc32(properties);
 
-				// this.state.m_logger.debug("Popularity Index: for card: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + "  is: " + abCard.popularityIndex);
+				// this.state.m_logger.debug("loadTbCards: Popularity Index: for card: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + "  is: " + abCard.popularityIndex);
 
 				if (! (id > AUTO_INCREMENT_STARTS_AT)) // id might be null (not present) or zero (reset after the map was deleted)
 				{
@@ -2811,7 +2822,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 			else if (context.isInScopeTbLuid(zfi.key()))
 			{
 				zfi.set(FeedItem.ATTR_DEL, 1);
-				context.debug("loadTb - marking as deleted: " + zfi.toString());
+				context.debug("loadTbCards: - marking as deleted: " + zfi.toString());
 			}
 
 			return true;
@@ -2910,64 +2921,68 @@ SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 	return ret;
 }
 
-SyncFsm.prototype.loadTbTestForGdProblems = function()
+SyncFsm.prototype.loadTbTestForGdCardsEmpty = function()
 {
-	zinAssert(this.state.stopFailCode == null);
-
-	var a_email_luid     = this.state.foreach_tb_card_functor.m_a_email_luid;
 	var a_empty_contacts = this.state.foreach_tb_card_functor.m_a_empty_contacts;
-	var msg = "";
 
-	this.state.m_logger.debug("loadTbTestForGdProblems:" + " gd_sync_with: " + this.state.gd_sync_with +
-	                                                       " gd_luid_ab_in_tb: " + this.state.gd_luid_ab_in_tb +
-	                                                       "\n zfcTb of gd_sync_with: " + this.zfcTb().get(this.state.gd_luid_ab_in_tb) +
-	                                                       "\n a_email_luid:     " + aToString(a_email_luid) +
-	                                                       "\n a_empty_contacts: " + aToString(a_empty_contacts) );
+	this.state.m_logger.debug("loadTbTestForGdCardsEmpty:" + " gd_sync_with: " + this.state.gd_sync_with +
+	                          " gd_luid_ab_in_tb: " + this.state.gd_luid_ab_in_tb +
+	                          " zfi: " + this.zfcTb().get(this.state.gd_luid_ab_in_tb) + "a_email_luid: " + aToString(a_empty_contacts));
 
 	if (!this.is_slow_sync(this.state.sourceid_pr) && this.zfcTb().get(this.state.gd_luid_ab_in_tb).isPresent(FeedItem.ATTR_DEL))
 		zinAssert(false); // this should get detected and handled earlier
 
-	if (this.state.stopFailCode == null && aToLength(a_empty_contacts) > 0)
+	if (aToLength(a_empty_contacts) > 0)
 	{
-		for (var key in a_empty_contacts)
-			msg += "\n" + a_empty_contacts[key];
-
 		this.state.stopFailCode   = 'failon.gd.conflict.4';
-		this.state.stopFailDetail = "<br/>" + textToHtml(msg) + this.gdConflictTrailer(this.state.stopFailCode);
+		this.state.stopFailGcd = new GoogleConflictDetail();
+		this.state.stopFailGcd.m_empty = new Object();
+		
+		var uri_from = this.state.m_addressbook.getAddressBookUriByName(this.gdAddressbookName('public'));
+
+		for (var luid in a_empty_contacts)
+			this.state.stopFailGcd.m_empty[luid] = new GoogleConflictContactHandle(FORMAT_TB, uri_from, luid, a_empty_contacts[luid]);
 	}
 
-	if (this.state.stopFailCode == null)
+	return this.state.stopFailCode == null;
+}
+
+SyncFsm.prototype.loadTbTestForGdCardsUnique = function()
+{
+	zinAssert(this.state.stopFailCode == null);
+
+	var a_email_luid = this.state.foreach_tb_card_functor.m_a_email_luid;
+	var uri_from     = this.state.m_addressbook.getAddressBookUriByName(this.gdAddressbookName('public'));
+	var gcd          = null;
+	var i, email, luid, gd_properties, tb_properties;
+
+	this.state.m_logger.debug("loadTbTestForGdCardsUnique:" + "a_email_luid: " + aToString(a_email_luid));
+
+	for (email in a_email_luid)
+		if (email != "" && aToLength(a_email_luid[email]) > 1)
+		{
+			if (!gcd)
+			{
+				gcd = new GoogleConflictDetail();
+				gcd.m_unique = new Object();
+			}
+
+			gcd.m_unique[email] = new Array();
+
+			for (luid in a_email_luid[email])
+			{
+				gd_properties = this.getContactFromLuid(this.state.sourceid_tb, luid, FORMAT_GD);
+				GdContact.transformProperties(gd_properties);
+				tb_properties = this.contact_converter().convert(FORMAT_TB, FORMAT_GD, gd_properties);
+
+				gcd.m_unique[email][luid] = new GoogleConflictContactHandle(FORMAT_TB, uri_from, luid, tb_properties);
+			}
+		}
+
+	if (gcd)
 	{
-		var a_duplicates = {};
-		var sourceid_tb  = this.state.sourceid_tb;
-		var count        = 0;
-		var email;
-
-		for (email in a_email_luid)
-			if (email != "" && a_email_luid[email].length > 1)
-				a_duplicates[email] = true;
-
-		for (email in a_duplicates)
-		{
-			count++;
-
-			msg += this.getGdConflictMsg(email, sourceid_tb, a_email_luid[email][0], sourceid_tb, a_email_luid[email][1], null);
-
-			if (count >= GOOGLE_SHOW_CONFLICTS_AT_A_TIME)
-				break;
-		}
-
-		if (msg.length > 0)
-		{
-			this.state.stopFailCode   = 'failon.gd.conflict.1';
-			this.state.stopFailDetail = "<br/><br/>" + stringBundleString("status.failmsg.gd.conflict.cause");
-
-			if (count != aToLength(a_duplicates))
-				this.state.stopFailDetail += " "+stringBundleString("status.failmsg.gd.conflict.progress", [count, aToLength(a_duplicates)])
-
-			this.state.stopFailDetail += ":";
-			this.state.stopFailDetail += textToHtml(msg) + this.gdConflictTrailer(this.state.stopFailCode);
-		}
+		this.state.stopFailCode = 'failon.gd.conflict.1';
+		this.state.stopFailGcd  = gcd;
 	}
 
 	return this.state.stopFailCode == null;
@@ -3044,6 +3059,9 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 }
 
 
+// create a mapping from email address to gid for both tb and gd, then
+// test that for every email address in tb and gd, it points to the same email ;
+//
 SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 {
 	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
@@ -3087,7 +3105,7 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 	var a_email_luid = this.state.foreach_tb_card_functor.m_a_email_luid;
 
 	for (email in a_email_luid)
-		a_tb_email[email] = this.state.aReverseGid[sourceid_tb][a_email_luid[email][0]];
+		a_tb_email[email] = this.state.aReverseGid[sourceid_tb][a_email_luid[email][firstKeyInObject(a_email_luid[email])]];
 	
 	for (email in a_gd_email)
 		if (isPropertyPresent(a_tb_email, email) && a_gd_email[email] != a_tb_email[email])
@@ -3112,7 +3130,7 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 
 			var a_diff = this.getFirstDifferingProperty(sourceid_tb, luid_tb, sourceid_gd, luid_gd);
 
-			msg_conflicting_addresses += this.getGdConflictMsg(email, sourceid_tb, luid_tb, sourceid_gd, luid_gd, a_diff);
+			msg_conflicting_addresses += this.getGoogleConflictMsg(email, sourceid_tb, luid_tb, sourceid_gd, luid_gd, a_diff);
 
 			if (count >= GOOGLE_SHOW_CONFLICTS_AT_A_TIME)
 				break;
@@ -3174,7 +3192,7 @@ SyncFsm.prototype.getFirstDifferingProperty = function(sourceid_a, luid_a, sourc
 	return ret;
 }
 
-SyncFsm.prototype.getGdConflictMsg = function(email, sourceid1, luid1, sourceid2, luid2, a_diff)
+SyncFsm.prototype.getGoogleConflictMsg = function(email, sourceid1, luid1, sourceid2, luid2, a_diff)
 {
 	var context = this;
 	function getSourceName(sourceid) {
@@ -5458,7 +5476,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					                             this.getTbAddressbookNameFromLuid(sourceid_target, luid_target) +
 							    				 " but it didn't exist.  This shouldn't happen.");
 
-						luid_target = null
+						luid_target = null;
 					}
 				}
 
@@ -7548,6 +7566,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	state.stopFailCode        = null;         // if a state continues on evLackIntegrity, this is set for the observer
 	state.stopFailDetail      = null;
+	state.stopFailGcd         = null;         // detail supporting google conflict resolution
 	state.m_bimap_format      = getBimapFormat('short');
 
 	state.is_done_get_contacts_pu  = false;   // have we worked out the contacts to get from the server pre update?
@@ -7555,14 +7574,10 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.remote_update_package    = null;    // maintains state between an server update request and the response
 	state.foreach_tb_card_functor  = null;
 	state.m_folder_converter       = new FolderConverter();
+	state.m_addressbook            = AddressBook.new();
 
 	state.m_contact_converter_vary_none = new ContactConverter();
 	state.m_contact_converter_vary_none.setup(ContactConverter.VARY_NONE);
-
-	if (AddressBook.version() == AddressBook.TB2)
-		state.m_addressbook = new AddressBookTb2();
-	else
-		state.m_addressbook = new AddressBookTb3();
 
 	state.sources = new Object();
 
@@ -8050,26 +8065,6 @@ SyncFsmGd.prototype.gdConflictTrailer = function(fail_code)
 			    stringBundleString("status.failon.gd.conflict.quickstart", [ stringBundleString("ca.pap.gd.syncwith.label") ]) : "";
 
 	return stringBundleString("status.failon.gd.conflict.trailer",
-			[ quickstart,
-			  stringBundleString("status.failmsg.gd.conflict.see.faq", [ this.gdConflictFailCodeToHref(this.state.stopFailCode) ] ) ] );
-}
-
-SyncFsmGd.prototype.gdConflictFailCodeToHref = function(fail_code)
-{
-	var ret, url;
-
-	if (isInArray(fail_code, [ 'failon.gd.conflict.1', 'failon.gd.conflict.2', 'failon.gd.conflict.4' ]))
-	{
-		url = "http://www.zindus.com/faq-thunderbird-google/";
-		ret = '<a href="' + url + '#' + fail_code + '">' + url + '</a>';
-	}
-	else if (isInArray(fail_code, [ 'failon.gd.conflict.3' ]))
-	{
-		url = BUG_REPORT_URI;
-		ret = '<a href="' + url + '">' + url + '</a>';
-	}
-	else
-		zinAssertAndLog(false, "mismatched case: fail_code: " + fail_code);
-
-	return ret;
+			[ quickstart, stringBundleString("status.failmsg.gd.conflict.see.faq",
+			   [ GoogleConflictDetail.failCodeToHref(this.state.stopFailCode) ] ) ] );
 }

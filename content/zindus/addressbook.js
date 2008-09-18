@@ -105,7 +105,7 @@ AddressBook.prototype.populateNameToUriMap = function()
 		this.m_map_name_to_uri = new Object();
 		this.forEachAddressBook(functor);
 
-		this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + aToString(this.m_map_name_to_uri));  // TODO comment out
+		this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + aToString(this.m_map_name_to_uri)); // TODO comment out
 	}
 }
 
@@ -123,7 +123,7 @@ AddressBook.prototype.getAddressBooksByPattern = function(pat)
 		if (pat.test(key))
 			ret[key] = this.m_map_name_to_uri[key];
 
-	this.m_logger.debug("AddressBook.getAddressBooksByPattern: pat: " + pat + " ret: " + aToString(ret)); // TODO comment out
+	// this.m_logger.debug("AddressBook.getAddressBooksByPattern: pat: " + pat + " ret: " + aToString(ret));
 			
 	return ret;
 }
@@ -187,8 +187,10 @@ AddressBookTb3.prototype.forEachCard = function(uri, functor)
 AddressBookTb2.prototype.forEachCard = function(uri, functor)
 {
 	var dir       = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
-	var enm       = dir.childCards;
 	var fContinue = true;
+	var enm;
+
+	try { enm = dir.childCards; } catch (ex) { zinAssertAndLog(false, uri); } // assertion here points to a bad uri
 
 	try { enm.first() } catch(ex) { fContinue = false; }
 
@@ -270,7 +272,7 @@ AddressBookTb2.prototype.newAddressBook = function(name)
 
 AddressBookTb3.prototype.newAddressBook = function(name)
 {
-	var prefkey = this.nsIAbManager().newAddressBook(name, "", kPABDirectory);
+	var prefkey = this.nsIAbManager().newAddressBook(name, "", kPABDirectory); // TODO - what does this do if it fails?
 	var prefs   = new MozillaPreferences("");
 	var uri     = kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
 
@@ -382,9 +384,16 @@ AddressBook.prototype.deleteCardsArray = function(dir, cardsArray)
 
 AddressBookTb2.prototype.deleteCards = function(uri, aCards)
 {
-	var dir        = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
 	var cardsArray = Cc["@mozilla.org/supports-array;1"].createInstance().QueryInterface(Ci.nsISupportsArray);
 	var ret        = true;
+	var dir;
+
+	try {
+		dir = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
+	}
+	catch (ex) {
+		zinAssertAndLog(false, uri); // assertion here points to a programming error passing in a bad uri
+	}
 
 	zinAssert(aCards.length > 0);
 
@@ -411,8 +420,8 @@ AddressBook.prototype.addCard = function(uri, properties, attributes)
 	zinAssert(properties != null);
 	zinAssert(attributes != null);
 
-	// this.m_logger.debug("addCard: blah: about to add a card: uri: " + uri + " properties: " + aToString(properties) +
-	//                                                       " attributes: " + aToString(attributes));
+	if (false)
+		this.m_logger.debug("addCard: uri: " + uri + " properties: " + aToString(properties) + " attributes: " + aToString(attributes));
 
 	var dir          = this.nsIAbDirectory(uri);
 	var abstractCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Ci.nsIAbCard);

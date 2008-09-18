@@ -385,6 +385,12 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 						if (context.state.stopFailDetail)
 							es.m_fail_detail = context.state.stopFailDetail;
+
+						if (context.state.stopFailDetail)
+							es.m_fail_detail = context.state.stopFailDetail;
+
+						if (context.state.stopFailGcd)
+							es.m_fail_gcd = context.state.stopFailGcd;
 					}
 					else
 						es.failcode('failon.unknown');

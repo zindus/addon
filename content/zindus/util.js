@@ -292,7 +292,7 @@ function isPropertyPresent(obj, property)
 	zinAssertAndLog(typeof(obj) == 'object', "argument[0] of this function should be a hash!"); // catch programming errors
 	zinAssertAndLog(arguments.length == 2,   "this function takes two arguments!");
 
-	return (typeof(obj[property]) != 'undefined');
+	return (!isObjectEmpty(obj) && typeof(obj[property]) != 'undefined');
 }
 
 // return true iff the keys in both objects match
@@ -783,7 +783,8 @@ function intMin(a, b)
 
 function dId(id)
 {
-	zinAssert(isPropertyPresent(document, 'getElementById'));
+	if (!isPropertyPresent(document, 'getElementById'))
+		zinAssertAndLog(false, executionStackAsString());
 
 	return document.getElementById(id);
 }
@@ -919,4 +920,43 @@ function getInfoMessage(type, arg1)
 	}
 
 	return ret;
+}
+
+function xulSetAttribute(attribute, flag)
+{
+	var i, el;
+	zinAssert(typeof(flag) == 'boolean' && attribute == 'disabled' || attribute == 'hidden' && arguments.length > 2);
+
+	for (i = 2; i < arguments.length; i++)
+	{
+		el = dId(arguments[i]);
+
+		zinAssertAndLog(el, "id: " + arguments[i]);
+
+		if (flag)
+			switch(attribute) {
+				case 'disabled': el.setAttribute('disabled', true); break;
+				case 'hidden':   el.style.visibility = "hidden";    break;
+			}
+		else
+			switch(attribute) {
+				case 'disabled': el.removeAttribute('disabled');    break;
+				case 'hidden':   el.style.visibility = "visible";   break;
+			}
+	}
+}
+
+function xulSetHtml(id, value)
+{
+	var el = dId(id);
+
+	zinAssertAndLog(el, id);
+
+	var html       = document.createElementNS(Xpath.NS_XHTML, "p");
+	html.innerHTML = value;
+
+	if (!el.hasChildNodes())
+		el.appendChild(html);
+	else
+		el.replaceChild(html, el.firstChild);
 }

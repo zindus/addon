@@ -64,6 +64,14 @@
 <!ENTITY zindus.cs.general.button.gd.advanced.label     "Advanced...">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "v">
 
+<!ENTITY zindus.gd.conflict.title                       "Google Sync Conflict">
+<!ENTITY zindus.gd.conflict.button.accept.label         "Move contacts">
+<!ENTITY zindus.gd.conflict.button.skip.label           "Skip">
+<!ENTITY zindus.gd.conflict.caption.empty.label         "Google conflict - empty contacts">
+<!ENTITY zindus.gd.conflict.column.one.style            "margin-left:15px; max-width:10px">
+<!ENTITY zindus.gd.conflict.more.information.label      "More Information">
+<!ENTITY zindus.gd.conflict.more.information.style      "color:blue; text-decoration:underline">
+
 <!ENTITY zindus.cm.title                                "Zindus Contact Conflict Report">
 
 <!ENTITY zindus.cgd.title                               "Zindus Advanced Configuration Settings">

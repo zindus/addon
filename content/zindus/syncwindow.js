@@ -146,33 +146,53 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			dId('zindus-sw-progress-meter').setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 
-			var elDescription = dId('zindus-sw-progress-description');
-			var elHtml        = document.createElementNS(Xpath.NS_XHTML, "p");
-			elHtml.innerHTML  = this.m_sfcd.account().get(Account.username) + "<br/><br/>" + this.m_sfo.progressToString();
+			var html = this.m_sfcd.account().get(Account.username) + "<br/><br/>" + this.m_sfo.progressToString();
 
-			if (!elDescription.hasChildNodes())
-				elDescription.appendChild(elHtml);
-			else
-				elDescription.replaceChild(elHtml, elDescription.firstChild);
+			xulSetHtml('zindus-sw-progress-description', html);
 
-			this.m_logger.debug("ui: " + elHtml.innerHTML.replace(/\<.*\>/, " "));
+			this.m_logger.debug("ui: " + html.replace(/\<.*\>/, " "));
 
 			this.m_zwc.forEach(this.zwc_functor(false));
 		}
 
 		if (fsmstate.isFinal())
 		{
-			this.m_zwc.forEach(this.zwc_functor(true));
+			var is_repeat = false;
 
-			if (isPropertyPresent(Maestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
+			this.m_logger.debug("functor: es: " + this.m_payload.m_es.toString());
+			this.m_logger.debug("functor: es: failcode" + this.m_payload.m_es.failcode());
+
+			if (isInArray(this.m_payload.m_es.failcode(), GoogleConflictTrash.FAIL_CODES) &&
+			    !this.m_sfcd.sourceid(Account.indexToSourceId(this.m_sfcd.m_account_index), 'is_repeat') &&
+				GoogleConflictTrash.isDontAsk(this.m_payload.m_es.failcode()))
 			{
-				StatusBar.saveState(this.m_payload.m_es);
-				StatusBar.update();
+				// TODO do we want to show something in the progress dialog?
+				// TODO this stuff goes in the timer too
+
+				this.m_logger.debug("functor: fsm failed - moveToTrash and try again");
+
+			    this.m_sfcd.sourceid(Account.indexToSourceId(this.m_sfcd.m_account_index), 'is_repeat', true);
+				is_repeat = true;
+
+				var gct = new GoogleConflictTrash();
+
+				gct.moveToTrash(this.m_payload.m_es.failcode(), this.m_payload.m_es.m_fail_gcd);
 			}
 
-			this.m_sfcd.m_account_index++;
+			if (!is_repeat)
+			{
+				this.m_zwc.forEach(this.zwc_functor(true));
 
-			if (this.m_payload.m_es.m_exit_status == 0 && this.m_sfcd.m_account_index < this.m_sfcd.length())
+				if (isPropertyPresent(Maestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
+				{
+					StatusBar.saveState(this.m_payload.m_es);
+					StatusBar.update();
+				}
+
+				this.m_sfcd.m_account_index++;
+			}
+
+			if (is_repeat || (this.m_payload.m_es.m_exit_status == 0 && this.m_sfcd.m_account_index < this.m_sfcd.length()))
 				window.setTimeout(this.onTimerFire, 0, this);
 			else
 				dId('zindus-sw').acceptDialog();

@@ -26,6 +26,7 @@ function SyncFsmExitStatus()
 	this.m_exit_status      = null;
 	this.m_fail_code        = null; // one of the Fail* codes
 	this.m_fail_detail      = null;
+	this.m_fail_gcd         = null;
 	this.m_fail_soapmethod  = null;
 	this.m_fail_fsmoldstate = null;
 	this.m_count_conflicts  = 0;
@@ -58,10 +59,10 @@ function SyncFsmExitStatus()
 		'failon.no.tbpre'                      : { 'hasdetail' : 0 }, //    
 		'failon.no.pab'                        : { 'hasdetail' : 1 }, //     
 		'failon.multiple.ln'                   : { 'hasdetail' : 1 }, //      
-		'failon.gd.conflict.1'                 : { 'hasdetail' : 1 }, //     
+		'failon.gd.conflict.1'                 : { 'hasdetail' : 0 }, //     
 		'failon.gd.conflict.2'                 : { 'hasdetail' : 1 }, //     
 		'failon.gd.conflict.3'                 : { 'hasdetail' : 1 }, // 
-		'failon.gd.conflict.4'                 : { 'hasdetail' : 1 }, // 30.
+		'failon.gd.conflict.4'                 : { 'hasdetail' : 0 }, // 30.
 		'failon.gd.forbidden'                  : { 'hasdetail' : 0 }, //    
 		'failon.zm.empty.contact'              : { 'hasdetail' : 1 }, //    
 		'failon.gd.syncwith'                   : { 'hasdetail' : 1 }, //     
@@ -81,6 +82,8 @@ SyncFsmExitStatus.prototype.toString = function()
 		ret += " fail_code: "        + this.failcode();
 		ret += " fail_detail: "      + this.m_fail_detail;
 		ret += " fail_fsmoldstate: " + this.m_fail_fsmoldstate;
+		if (this.m_fail_gcd)
+			ret += " fail_gcd: " + this.m_fail_gcd.toString();
 	}
 
 	ret += " count_conflicts: " + this.m_count_conflicts;

@@ -73,7 +73,7 @@ ConfigGd.prototype.updateView = function()
 	ConfigSettings.setPrefsetFromRadio("zindus-cgd-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
 	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS);
 
-	ConfigSettings.setAttribute('hidden', !(this.m_prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS) == "true"),
+	xulSetAttribute('hidden', !(this.m_prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS) == "true"),
 	                                      "zindus-prefs-gd-sync-postal-example");
 }
 

@@ -187,12 +187,28 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 				if (msg != "")
 				{
-					if (isInArray(this.m_payload.m_es.m_fail_code, [ 'failon.gd.conflict.1', 'failon.gd.conflict.2',
-					                                                 'failon.gd.conflict.3', 'failon.gd.conflict.4' ]))
+					var failcode = this.m_payload.m_es.failcode();
+
+					if (isInArray(failcode, [ 'failon.gd.conflict.2', 'failon.gd.conflict.3', ]))
 					{
 						var payload2 = new Payload();
-						payload2.m_args = newObject('fail_code', this.m_payload.m_es.m_fail_code, 'msg', msg);
+						payload2.m_args = newObject('fail_code', failcode, 'msg', msg);
 						window.openDialog("chrome://zindus/content/configmsg.xul",  "_blank", WINDOW_FEATURES, payload2);
+					}
+
+					if (isInArray(failcode, GoogleConflictTrash.FAIL_CODES ))
+					{
+						var payload2 = new Payload();
+						payload2.m_args = newObject('m_es', this.m_payload.m_es);
+
+						var chrome_uri;
+						switch(failcode)
+						{
+							case 'failon.gd.conflict.1': chrome_uri = "chrome://zindus/content/googleconflictunique.xul"; break;
+							case 'failon.gd.conflict.4': chrome_uri = "chrome://zindus/content/googleconflictempty.xul";  break;
+							default: zinAssertAndLog(false, failcode);
+						}
+						window.openDialog(chrome_uri, "_blank", WINDOW_FEATURES, payload2);
 					}
 					else
 						zinAlert('cs.sync.title', msg, window);
@@ -213,6 +229,22 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-cs-general-button-reset":
+			var prefset_current = new PrefSet(PrefSet.DONTASK, PrefSet.DONTASK_PROPERTIES);
+			var prefset_default = new PrefSet(PrefSet.DONTASK, PrefSet.DONTASK_PROPERTIES);
+			var i, key;
+
+			prefset_current.load();
+			prefset_default.load(null, preferences().defaultbranch());
+
+			for (i = 0; i < PrefSet.DONTASK_PROPERTIES.length; i++)
+			{
+				key = PrefSet.DONTASK_PROPERTIES[i];
+				this.m_logger.debug("default value for key: " + key + " is: " + prefset_default.getProperty(key));
+				prefset_current.setProperty(key, prefset_default.getProperty(key));
+			}
+
+			prefset_current.save();
+			
 			RemoveDatastore.removeZfcs();
 			RemoveDatastore.removeLogfile();
 			StatusBar.update();
@@ -383,31 +415,31 @@ ConfigSettings.prototype.updateView = function()
 {
 	if (this.m_is_fsm_running)
 	{
-		ConfigSettings.setAttribute('disabled', true, "zindus-cs-command");
+		xulSetAttribute('disabled', true, "zindus-cs-command");
 	}
 	else if (!this.isServerSettingsComplete())
 	{
 		this.m_logger.debug("updateView: server settings incomplete - disabling buttons");
-		ConfigSettings.setAttribute('disabled', false, "zindus-cs-command");
-		ConfigSettings.setAttribute('disabled', true, "zindus-cs-general-button-run-timer", "zindus-cs-general-button-sync-now");
+		xulSetAttribute('disabled', false, "zindus-cs-command");
+		xulSetAttribute('disabled', true, "zindus-cs-general-button-run-timer", "zindus-cs-general-button-sync-now");
 	}
 	else
 	{
 		this.m_logger.debug("updateView: enabling buttons");
-		ConfigSettings.setAttribute('disabled', false,
+		xulSetAttribute('disabled', false,
 		                  "zindus-cs-command", "zindus-cs-general-button-run-timer", "zindus-cs-general-button-sync-now");
 	}
 
 	var a_google = this.accountsArrayOf(FORMAT_GD);
 	var a_zimbra = this.accountsArrayOf(FORMAT_ZM);
 
-	ConfigSettings.setAttribute('hidden', a_google.length == 0, "zindus-cs-general-advanced-button");
+	xulSetAttribute('hidden', a_google.length == 0, "zindus-cs-general-advanced-button");
 
-	ConfigSettings.setAttribute('disabled', dId("zindus-cs-account-tree").currentIndex < 0,
+	xulSetAttribute('disabled', dId("zindus-cs-account-tree").currentIndex < 0,
 	                                        "zindus-cs-account-edit", "zindus-cs-account-delete");
 
 	if (!this.is_developer_mode) // TODO
-		ConfigSettings.setAttribute('disabled', (this.m_accounts.length >= 1), "zindus-cs-account-add");
+		xulSetAttribute('disabled', (this.m_accounts.length >= 1), "zindus-cs-account-add");
 }
 
 ConfigSettings.prototype.onFsmStateChangeFunctor = function(fsmstate)
@@ -484,30 +516,6 @@ ConfigSettings.prototype.updatePrefsetsFromDocument = function()
 			dId(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked ? "true" : "false" );
 }
 
-ConfigSettings.setAttribute = function(attribute, flag)
-{
-	var i, el;
-	zinAssert(typeof(flag) == 'boolean' && attribute == 'disabled' || attribute == 'hidden' && arguments.length > 2);
-
-	for (i = 2; i < arguments.length; i++)
-	{
-		el = dId(arguments[i]);
-
-		zinAssertAndLog(el, "id: " + arguments[i]);
-
-		if (flag)
-			switch(attribute) {
-				case 'disabled': el.setAttribute('disabled', true); break;
-				case 'hidden':   el.style.visibility = "hidden";    break;
-			}
-		else
-			switch(attribute) {
-				case 'disabled': el.removeAttribute('disabled');    break;
-				case 'hidden':   el.style.visibility = "visible";   break;
-			}
-	}
-}
-
 ConfigSettings.prototype.getDomainFromUrl = function(url)
 {
 	// http://gunblad3.blogspot.com/2008/05/uri-url-parsing.html
@@ -516,6 +524,7 @@ ConfigSettings.prototype.getDomainFromUrl = function(url)
 	//
 	var re = /^((\w+):\/\/\/?)?((\w+):?(\w+)?@)?([^\/\?:]+):?(\d+)?(\/?[^\?#;\|]+)?([;\|])?([^\?#]+)?\??([^#]+)?#?(\w*)/;
 	var a  = re.exec(url);
+	zinAssert(a.length > 6);
 	return a[6];
 }
 

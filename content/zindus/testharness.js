@@ -290,11 +290,11 @@ TestHarness.prototype.testFolderConverterPrefixClass = function()
 	this.m_logger.debug("testFolderConverter: start");
 	var converter = new FolderConverter();
 
-	zinAssert(converter.prefixClass(converter.m_prefix_primary_account)   == FolderConverter.PREFIX_CLASS_PRIMARY);
-	zinAssert(converter.prefixClass(converter.m_prefix_foreign_readonly)  == FolderConverter.PREFIX_CLASS_SHARED);
-	zinAssert(converter.prefixClass(converter.m_prefix_foreign_readwrite) == FolderConverter.PREFIX_CLASS_SHARED);
-	zinAssert(converter.prefixClass(converter.m_prefix_internal)          == FolderConverter.PREFIX_CLASS_INTERNAL);
-	zinAssert(converter.prefixClass("fred")                               == FolderConverter.PREFIX_CLASS_NONE);
+	zinAssert(converter.prefixClass(FolderConverter.PREFIX_PRIMARY_ACCOUNT)   == FolderConverter.PREFIX_CLASS_PRIMARY);
+	zinAssert(converter.prefixClass(FolderConverter.PREFIX_FOREIGN_READONLY)  == FolderConverter.PREFIX_CLASS_SHARED);
+	zinAssert(converter.prefixClass(FolderConverter.PREFIX_FOREIGN_READWRITE) == FolderConverter.PREFIX_CLASS_SHARED);
+	zinAssert(converter.prefixClass(FolderConverter.PREFIX_INTERNAL)          == FolderConverter.PREFIX_CLASS_INTERNAL);
+	zinAssert(converter.prefixClass("fred")                                   == FolderConverter.PREFIX_CLASS_NONE);
 
 	return true;
 }
@@ -306,7 +306,7 @@ TestHarness.prototype.testFolderConverter = function()
 
 	this.testFolderConverterSuiteOne(converter, "convertForMap");
 
-	var addressbook = new AddressBook();
+	var addressbook = AddressBook.new();
 	var pabname = addressbook.getPabName();
 	converter.localised_pab(pabname);
 
@@ -345,10 +345,10 @@ TestHarness.prototype.testFolderConverterSuiteOne = function(converter, method)
 {
 	// test convertForMap
 	//
-	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(""))                 == converter.m_prefix_primary_account);
+	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(""))                 == FolderConverter.PREFIX_PRIMARY_ACCOUNT);
 
 	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName("fred"))             == "fred");
-	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName("x"))                == converter.m_prefix_primary_account + "x");
+	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName("x"))                == FolderConverter.PREFIX_PRIMARY_ACCOUNT + "x");
 	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "fred");
 	zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "zindus/fred");
 
@@ -372,7 +372,7 @@ TestHarness.prototype.testFolderConverterSuiteOne = function(converter, method)
 
 TestHarness.prototype.testFolderConverterSuiteTwo = function(converter, localised_emailed_contacts)
 {
-	var prefix = converter.m_prefix_primary_account;
+	var prefix = FolderConverter.PREFIX_PRIMARY_ACCOUNT;
 
 	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == prefix + localised_emailed_contacts);
 	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == prefix + localised_emailed_contacts);
@@ -600,12 +600,7 @@ TestHarness.prototype.testZuio = function()
 
 TestHarness.prototype.testAddressBook1 = function()
 {
-	var addressbook;
-
-	if (AddressBook.version() == AddressBook.TB2)
-		addressbook = new AddressBookTb2();
-	else
-		addressbook = new AddressBookTb3();
+	var addressbook = AddressBook.new();
 
 	// this.m_logger.debug("testAddressBook: addressbooks: " + addressbook.addressbooksToString());
 
@@ -657,7 +652,7 @@ TestHarness.prototype.testAddressBook2 = function()
 	abCard = dir.addCard(abCard);
 	abCard = dir.modifyCard(abCard);
 
-	var addressbook = new AddressBookTb3();
+	var addressbook = AddressBook.new();
 	this.m_logger.debug("abCard created: "  + addressbook.nsIAbCardToPrintableVerbose(abCard));
 }
 
@@ -672,7 +667,7 @@ TestHarness.prototype.testAddressBookBugzilla432145Uri = function(count)
 
 TestHarness.prototype.testAddressBookBugzilla432145Create = function()
 {
-	var addressbook = this.testAddressBookBugzilla432145Addressbook();
+	var addressbook = AddressBook.new();
 
 	// this.m_logger.debug("testAddressBook: addressbooks: " + addressbook.addressbooksToString());
 
@@ -695,7 +690,7 @@ TestHarness.prototype.testAddressBookBugzilla432145Create = function()
 
 TestHarness.prototype.testAddressBookBugzilla432145Delete = function()
 {
-	var addressbook = this.testAddressBookBugzilla432145Addressbook();
+	var addressbook = AddressBook.new();
 
 	var luid = "1";
 	var attributes, count, abCard;
@@ -715,7 +710,7 @@ TestHarness.prototype.testAddressBookBugzilla432145Delete = function()
 
 TestHarness.prototype.testAddressBookBugzilla432145Compare = function()
 {
-	var addressbook = this.testAddressBookBugzilla432145Addressbook();
+	var addressbook = AddressBook.new();
 
 	var luid = "1";
 	var attributes, count, abCard;
@@ -751,18 +746,6 @@ TestHarness.prototype.testAddressBookBugzilla432145Populate = function(propertie
 		properties[i] = prefix + i + "-" + luid;
 
 	attributes[TBCARD_ATTRIBUTE_LUID] = luid;
-}
-
-TestHarness.prototype.testAddressBookBugzilla432145Addressbook = function()
-{
-	var ret;
-
-	if (AddressBook.version() == AddressBook.TB2)
-		ret = new AddressBookTb2();
-	else
-		ret = new AddressBookTb3();
-
-	return ret;
 }
 
 TestHarness.prototype.testGoogleContacts1 = function()
@@ -1189,6 +1172,7 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 	//
 	var a_prefset = [];
 	a_prefset.push({ parent: PrefSet.GENERAL, properties: PrefSet.GENERAL_PROPERTIES, id: null });
+	a_prefset.push({ parent: PrefSet.DONTASK, properties: PrefSet.DONTASK_PROPERTIES, id: null });
 
 	a_preauth = prefs.getImmediateChildren(prefs.branch(), PrefSet.PREAUTH + '.');
 
@@ -1205,7 +1189,7 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 		for (j = 0; j < a_prefset[i].properties.length; j++)
 		{
 			key = a_prefset[i].properties[j];
-			zinAssertAndLog(prefset.getProperty(key), "key: " + key);
+			zinAssertAndLog(prefset.getProperty(key), "parent: " + a_prefset[i].parent + " key: " + key);
 		}
 	}
 
@@ -1228,7 +1212,7 @@ TestHarness.prototype.testAbCreate1 = function()
 		var ab  = Cc["@mozilla.org/addressbook;1"].createInstance(Ci.nsIAddressBook);
 		ab.newAddressBook(abProps);
 		var uri = abProps.URI;
-		var zab = new AddressBookTb2();
+		var zab = AddressBook.new();
 		zab.populateNameToUriMap();
 		var rdf = Cc["@mozilla.org/rdf/rdf-service;1"].getService(Ci.nsIRDFService);
 		var dir = rdf.GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
@@ -1305,12 +1289,7 @@ TestHarness.prototype.testDeleteCard = function()
 	var stopwatch = new StopWatch("new/delete addressbook");
 
 	stopwatch.mark("start: ");
-		var addressbook;
-		if (AddressBook.version() == AddressBook.TB2)
-			addressbook = new AddressBookTb2();
-		else
-			addressbook = new AddressBookTb3();
-
+		var addressbook = AddressBook.new();
 		var name = "delete-cards-test-addressbook";
 		var abip = addressbook.newAddressBook(name);
 		addressbook.deleteAddressBook(abip.uri());

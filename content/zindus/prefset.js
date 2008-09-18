@@ -57,6 +57,11 @@ PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS = "gd_sync_postal_address";
 PrefSet.GENERAL_PROPERTIES             = [ PrefSet.GENERAL_AUTO_SYNC, PrefSet.GENERAL_VERBOSE_LOGGING,
 										   PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS ];
 
+PrefSet.DONTASK               = "dontask";
+PrefSet.DONTASK_GD_EMPTY      = "gd_empty";
+PrefSet.DONTASK_GD_UNIQUE     = "gd_unique";
+PrefSet.DONTASK_PROPERTIES    = [ PrefSet.DONTASK_GD_EMPTY, PrefSet.DONTASK_GD_UNIQUE ];
+
 // Both id and branch are optional
 // id is optional because there might only be a single subsection under prefprefix
 // branch is optional because
@@ -98,7 +103,7 @@ PrefSet.prototype.save = function()
 		retval = true;
 	}
 	catch (ex) {
-		logger().warn("PrefSet.prototype.save: exception thrown i: " + i);
+		logger().warn("PrefSet.prototype.save: exception thrown i: " + i + " this: " + this.toString() + " " + executionStackAsString());
 	}
 	
 	return retval;

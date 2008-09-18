@@ -60,7 +60,7 @@ ConfigAccount.prototype.onLoad = function(target)
 
 	this.initialiseView();
 
-	ConfigSettings.setAttribute('disabled', !this.m_payload_configsettings.m_is_zm_enabled, "zindus-ca-format-zimbra");
+	xulSetAttribute('disabled', !this.m_payload_configsettings.m_is_zm_enabled, "zindus-ca-format-zimbra");
 
 	zinAssert(ObserverService.isRegistered(Maestro.TOPIC))
 
@@ -186,7 +186,7 @@ ConfigAccount.prototype.onBlur = function(id)
 		if (is_free_fr)
 			ConfigAccount.setRadio("zindus-ca-zm-gal-menulist", this.m_gal_radio_bimap, "no");
 
-		ConfigSettings.setAttribute('disabled', is_free_fr, "zindus-ca-zm-gal-menulist");
+		xulSetAttribute('disabled', is_free_fr, "zindus-ca-zm-gal-menulist");
 	}
 }
 
@@ -247,24 +247,24 @@ ConfigAccount.prototype.updateView = function()
 
 	if (this.m_is_fsm_running)
 	{
-		ConfigSettings.setAttribute('disabled', true, "zindus-ca-command");
+		xulSetAttribute('disabled', true, "zindus-ca-command");
 	}
 	else
 	{
 		this.m_logger.debug("updateView: enabling buttons");
-		ConfigSettings.setAttribute('disabled', false, "zindus-ca-command");
+		xulSetAttribute('disabled', false, "zindus-ca-command");
 	}
 
 	var format_current = this.serverFormat();
 
 	if (format_current == FORMAT_GD)
 	{
-		ConfigSettings.setAttribute('hidden', true,  "zindus-ca-url-description", "zindus-ca-url-row", "zindus-ca-zm-vbox");
+		xulSetAttribute('hidden', true,  "zindus-ca-url-description", "zindus-ca-url-row", "zindus-ca-zm-vbox");
 		dId("zindus-ca-pap-deck").selectedIndex = 0;
 	}
 	else
 	{
-		ConfigSettings.setAttribute('hidden', false, "zindus-ca-url-description", "zindus-ca-url-row", "zindus-ca-zm-vbox");
+		xulSetAttribute('hidden', false, "zindus-ca-url-description", "zindus-ca-url-row", "zindus-ca-zm-vbox");
 		dId("zindus-ca-pap-deck").selectedIndex = 1;
 	}
 
@@ -371,19 +371,3 @@ ConfigAccount.newTempPasswordLocator = function(format_xx)
 
 	return new PasswordLocator("http://temp-password-for-zindus-" + format + "-account.tld", "username");
 }
-
-ConfigSettings.setRadioFromAccount = function(radiogroup_id, bimap, account, property, default_id)
-{
-	var selected_id;
-	var value = account.get(property);
-
-	logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " value: " + value);
-
-	if (value && bimap.isPresent(value, null))
-		selected_id = bimap.lookup(value, null);
-	else
-		selected_id = default_id;
-		
-	dId(radiogroup_id).selectedItem = dId(selected_id);
-}
-

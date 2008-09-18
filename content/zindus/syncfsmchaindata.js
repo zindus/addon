@@ -55,7 +55,7 @@ function SyncFsmChainData(a_accounts)
 	logger().debug("SyncFsmChainData: m_a_sourceid: " + aToString(this.m_a_sourceid)); //TODO
 }
 
-SyncFsmChainData.ITEM_KEYS = { is_slow_sync: false };
+SyncFsmChainData.ITEM_KEYS = { is_slow_sync: false, is_repeat: false };
 
 SyncFsmChainData.prototype.toString = function()
 {
