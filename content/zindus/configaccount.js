@@ -35,12 +35,10 @@ function ConfigAccount()
 	                                           [ "zindus-ca-gd-syncwith-zg", "zindus-ca-gd-syncwith-pab" ] );
 
 	this.m_logger                 = newLogger("ConfigAccount"); // this.m_logger.level(Logger.NONE); // TODO for debugging
-	this.m_preferences            = Singleton.instance().preferences();
 	this.m_payload_configsettings = null;
 	this.m_payload_sw             = null;
 	this.m_maestro                = null;
 	this.m_is_fsm_running         = false;
-	this.m_prefset_general        = null;
 	this.m_format_bimap           = getBimapFormat('long');
 	this.m_format_last            = null;
 	this.a_format_last            = new Object();
@@ -52,7 +50,6 @@ function ConfigAccount()
 ConfigAccount.prototype.onLoad = function(target)
 {
 	this.m_payload_configsettings = window.arguments[0];
-	this.m_prefset_general        = this.m_payload_configsettings.m_prefset_general;
 
 	document.title = this.m_payload_configsettings.m_account ?
 	                            stringBundleString("ca.edit.title", [ this.m_payload_configsettings.m_account.get(Account.username) ] ) :
@@ -121,7 +118,7 @@ ConfigAccount.prototype.onCommand = function(id_target)
 
 			this.m_payload_sw = new Payload();
 			this.m_payload_sw.m_a_accounts      = [ account ];
-			this.m_payload_sw.m_syncfsm_details = newObject('type', "authonly", 'prefset_general', this.m_prefset_general);
+			this.m_payload_sw.m_syncfsm_details = newObject('type', "authonly");
 			this.m_payload_sw.m_es              = new SyncFsmExitStatus();
 
 			logger().debug("ConfigAccount.onCommand: before openDialog: m_es: " + this.m_payload_sw.m_es.toString());
@@ -218,8 +215,8 @@ ConfigAccount.prototype.initialiseView = function()
 
 	// Zimbra
 	//
-	dId("zindus-ca-zm-gal-if-fewer").label = stringBundleString("cs.general.zm.gal.if.fewer",
-	                      [ this.m_preferences.getIntPref(this.m_preferences.branch(), MozillaPreferences.ZM_SYNC_GAL_IF_FEWER ) ]);
+	dId("zindus-ca-zm-gal-if-fewer").label =
+			stringBundleString("cs.general.zm.gal.if.fewer", [ preference(MozillaPreferences.ZM_SYNC_GAL_IF_FEWER, 'int' ) ]);
 
 	this.onBlur("zindus-ca-url");  // test for free.fr
 
@@ -254,6 +251,11 @@ ConfigAccount.prototype.updateView = function()
 		this.m_logger.debug("updateView: enabling buttons");
 		xulSetAttribute('disabled', false, "zindus-ca-command");
 	}
+
+	var is_ok_enabled = (dId("zindus-ca-username").value.length > 0 && dId("zindus-ca-url").value.length > 0 && dId("zindus-ca-password").value.length > 0);
+	this.m_logger.debug("updateView: is_ok_enabled: " + is_ok_enabled);
+
+	dId("zindus-ca-dialog").setAttribute('buttondisabledaccept', !is_ok_enabled);
 
 	var format_current = this.serverFormat();
 
@@ -353,6 +355,11 @@ ConfigAccount.prototype.accountFromDocument = function(format_xx)
 	this.m_logger.debug("accountFromDocument: blah: returns: " + account.toString()); // TODO
 
 	return account;
+}
+
+ConfigAccount.prototype.onInput = function()
+{
+	this.updateView();
 }
 
 ConfigAccount.setRadio = function(radiogroup_id, bimap, value)

@@ -240,8 +240,11 @@ ZmSoapDocument.prototype.CreateContact = function(args)
 	var elCn      = this.doc.createElementNS(Xpath.NS_ZMAIL, "cn");
 	var i, elA;
 
-	zinAssertAndLog(isPropertyPresent(args, 'properties') && isPropertyPresent(args, 'l') && aToLength(args.properties) > 0, 
-	                    "properties: " + aToString(args));
+	// lets allow the creation of completely empty contacts in support of zindus/ToBeDeleted
+	// && aToLength(args.properties) > 0
+	//
+	zinAssertAndLog(isPropertyPresent(args, 'properties') && isPropertyPresent(args, 'l') && aToLength(args.properties) > 0,
+	                        "properties: " + aToString(args));
 
 	elCn.setAttribute("l", args.l);
 

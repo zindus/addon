@@ -358,6 +358,17 @@ function isMatchArrayElementInObject(a, obj)
 	return ret;
 }
 
+function keysForMatchingValues(a1, a2)
+{
+	var ret = new Object();
+
+	for (key in a1)
+		if (isPropertyPresent(a2, key) && a1[key] == a2[key])
+			ret[key] = a1[key];
+
+	return ret;
+}
+
 // takes either:
 // one argument - an array with an even number of elements
 // an even number of arguments
@@ -378,6 +389,16 @@ function newObject()
 
 	for (var i = 0; i < args.length; i+=2)
 		ret[args[i]] = args[i+1];
+
+	return ret;
+}
+
+function newObjectWithKeys()
+{
+	ret = new Object();
+
+	for (var i = 0; i < arguments.length; i++)
+		ret[arguments[i]] = 0;
 
 	return ret;
 }
@@ -894,6 +915,20 @@ function textToHtml(text)
 
 function logger(arg)   { return Singleton.instance().logger(arg);   }
 function preferences() { return Singleton.instance().preferences(); }
+function preference(key, type)
+{
+	var p = Singleton.instance().preferences();
+	var ret;
+
+	switch (type)
+	{
+		case 'char': ret = p.getCharPrefOrNull(p.branch(), key); break;
+		case 'int':  ret = p.getIntPref(p.branch(), key);        break;
+		default: zinAssertAndLog(false, "key: " + key + " type: " + type);
+	}
+
+	return ret;
+}
 
 function googleClientLoginUrl(type)
 {
@@ -951,7 +986,13 @@ function xulSetHtml(id, value)
 	var el = dId(id);
 
 	zinAssertAndLog(el, id);
+	// logger().debug("xulSetHtml: id: " + id + " value: " + value);
 
+	// <noscript> was used here because it's a structural html element that can contain other elements
+	// and we don't need to remove any default styling 
+	// ... but subsequently I found wierd issues on redraw that don't happen when <p> is used - probably because there is
+	// styling associated with <p>.
+	//
 	var html       = document.createElementNS(Xpath.NS_XHTML, "p");
 	html.innerHTML = value;
 
@@ -960,3 +1001,9 @@ function xulSetHtml(id, value)
 	else
 		el.replaceChild(html, el.firstChild);
 }
+
+function gdAdjustHttpHttps(url)
+{
+	return url.replace(/^https?/, preference(MozillaPreferences.GD_SCHEME_DATA_TRANSFER, 'char'));
+}
+

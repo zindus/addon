@@ -33,9 +33,7 @@
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigGd(); } window.wd.onLoad(event.target);"
-	oncommand="window.wd.onCommand(event.target.id);"
 	ondialogaccept="window.wd.onAccept();"
-	ondialogcancel="window.wd.onCancel();"
 	>
 
 	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
@@ -47,18 +45,21 @@
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<groupbox pack="center" >
-		<caption label="&zindus.cgd.postalPostal.label;" />
-		<radiogroup id="zindus-cgd-postal-radiogroup">
-			<radio id="zindus-cgd-postal-false" label="&zindus.cgd.postal.false.label;" />
-			<radio id="zindus-cgd-postal-true"  label="&zindus.cgd.postal.true.label;"  />
+		<caption label="&zindus.cgd.postal.caption.label;" />
+		<radiogroup id="cgd-postal" >
+			<radio id="cgd-postal-false" label="&zindus.cgd.postal.false.label;" />
+			<radio id="cgd-postal-true"  label="&zindus.cgd.postal.true.label;"  />
 		</radiogroup>
 
-		<vbox id="zindus-prefs-gd-sync-postal-example" xmlns:html="http://www.w3.org/1999/xhtml" style="margin-left:20px" >
-			<description style="margin-left:10px;"> &zindus.cgd.postalExample1.value; </description>
-			<hbox style="margin-left:10px; margin-right:10px">
-				<description> &zindus.cgd.postalExample2.value; </description>
-				<description> &zindus.cgd.postalExample3.value; </description>
-			</hbox>
-		</vbox>
+		<description id="cgd-more-information-on-postal" />
+	</groupbox>
+	<groupbox pack="center" >
+		<caption label="&zindus.cgd.conflict.caption.label;" />
+		<radiogroup id="cgd-conflict" >
+			<radio id="cgd-conflict-ask-me"   label="&zindus.cgd.conflict.ask.me.label;"   />
+			<radio id="cgd-conflict-dont-ask" label="&zindus.cgd.conflict.dont.ask.label;" />
+		</radiogroup>
+
+		<description id="cgd-more-information-on-conflicts" />
 	</groupbox>
 </dialog>

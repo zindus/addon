@@ -23,28 +23,26 @@
 
 includejs("payload.js");
 includejs("testharness.js");
-includejs("configgd.js");
 
 const WINDOW_FEATURES = "chrome,centerscreen,modal=yes,dependent=yes";
 
 function ConfigSettings()
 {
-	this.m_checkbox_properties  = [ PrefSet.GENERAL_AUTO_SYNC,     PrefSet.GENERAL_VERBOSE_LOGGING     ];
+	this.m_checkbox_properties  = [ PrefSet.GENERAL_AS_AUTO_SYNC,  PrefSet.GENERAL_AS_VERBOSE_LOGGING  ];
 	this.m_checkbox_ids         = [ "zindus-cs-general-auto-sync", "zindus-cs-general-verbose-logging" ];
 	this.m_checkbox_bimap       = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
 	this.m_gd_sync_with_bimap   = new BiMap( [ "zg",                              "pab"                              ], 
 	                                         [ "zindus-cs-general-gdsyncwith-zg", "zindus-cs-general-gdsyncwith-pab" ] );
 
-	this.m_prefset_general      = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
-	this.m_prefset_general_orig = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
+	this.m_prefset_general      = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_AS_PROPERTIES);
+	this.m_prefset_general_orig = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_AS_PROPERTIES);
 	this.m_format_bimap         = getBimapFormat('long');
 	this.m_timer_timeoutID      = null;
 	this.m_timer_functor        = null;
 	this.m_maestro              = null;
 	this.m_is_fsm_running       = false;
-	this.m_preferences          = Singleton.instance().preferences();
-	this.is_developer_mode      = (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(), "system.developer_mode") == "true");
+	this.is_developer_mode      = (preference("system.developer_mode", 'char') == "true");
 	this.m_console_listener     = Logger.nsIConsoleListener();
 	this.m_payload              = null;
 	this.m_accounts             = null;
@@ -154,7 +152,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			this.m_payload = new Payload();
 			this.m_payload.m_a_accounts      = this.m_accounts;
-			this.m_payload.m_syncfsm_details = newObject('type', "twoway", 'prefset_general', this.m_prefset_general);
+			this.m_payload.m_syncfsm_details = newObject('type', "twoway");
 			this.m_payload.m_es              = new SyncFsmExitStatus();
 			this.m_payload.m_is_cancelled    = false;
 
@@ -183,36 +181,33 @@ ConfigSettings.prototype.onCommand = function(id_target)
 					      stringBundleString("status.failmsg.see.bug.reporting.url")
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
-					msg = this.m_payload.m_es.asMessage("cs.sync.succeeded", "cs.sync.failed");
-
-				if (msg != "")
 				{
 					var failcode = this.m_payload.m_es.failcode();
 
-					if (isInArray(failcode, [ 'failon.gd.conflict.2', 'failon.gd.conflict.3', ]))
+					if (isInArray(failcode, GoogleRuleTrash.FAIL_CODES))
 					{
 						var payload2 = new Payload();
-						payload2.m_args = newObject('fail_code', failcode, 'msg', msg);
-						window.openDialog("chrome://zindus/content/configmsg.xul",  "_blank", WINDOW_FEATURES, payload2);
-					}
+						var chrome_uri;
 
-					if (isInArray(failcode, GoogleConflictTrash.FAIL_CODES ))
-					{
-						var payload2 = new Payload();
 						payload2.m_args = newObject('m_es', this.m_payload.m_es);
 
-						var chrome_uri;
 						switch(failcode)
 						{
-							case 'failon.gd.conflict.1': chrome_uri = "chrome://zindus/content/googleconflictunique.xul"; break;
-							case 'failon.gd.conflict.4': chrome_uri = "chrome://zindus/content/googleconflictempty.xul";  break;
+							case 'failon.gd.conflict.1': 
+							case 'failon.gd.conflict.2': 
+							case 'failon.gd.conflict.3': chrome_uri = "chrome://zindus/content/googleruleunique.xul"; break;
+							case 'failon.gd.conflict.4': chrome_uri = "chrome://zindus/content/googleruleempty.xul";  break;
 							default: zinAssertAndLog(false, failcode);
 						}
+
 						window.openDialog(chrome_uri, "_blank", WINDOW_FEATURES, payload2);
 					}
 					else
-						zinAlert('cs.sync.title', msg, window);
+						msg = this.m_payload.m_es.asMessage("cs.sync.succeeded", "cs.sync.failed");
 				}
+
+				if (msg != "")
+					zinAlert('cs.sync.title', msg, window);
 			}
 
 			this.m_payload = null;
@@ -229,32 +224,13 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 
 		case "zindus-cs-general-button-reset":
-			var prefset_current = new PrefSet(PrefSet.DONTASK, PrefSet.DONTASK_PROPERTIES);
-			var prefset_default = new PrefSet(PrefSet.DONTASK, PrefSet.DONTASK_PROPERTIES);
-			var i, key;
-
-			prefset_current.load();
-			prefset_default.load(null, preferences().defaultbranch());
-
-			for (i = 0; i < PrefSet.DONTASK_PROPERTIES.length; i++)
-			{
-				key = PrefSet.DONTASK_PROPERTIES[i];
-				this.m_logger.debug("default value for key: " + key + " is: " + prefset_default.getProperty(key));
-				prefset_current.setProperty(key, prefset_default.getProperty(key));
-			}
-
-			prefset_current.save();
-			
 			RemoveDatastore.removeZfcs();
 			RemoveDatastore.removeLogfile();
 			StatusBar.update();
 			break;
 
 		case "zindus-cs-general-advanced-button":
-			var payload = new Payload();
-			payload.m_args = this.m_prefset_general;
-			window.openDialog("chrome://zindus/content/configgd.xul", "_blank", WINDOW_FEATURES, payload);
-	        this.m_logger.debug("gd_postal: " + this.m_prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS));
+			window.openDialog("chrome://zindus/content/configgd.xul", "_blank", WINDOW_FEATURES, null);
 			break;
 
 		case "zindus-cs-account-delete":
@@ -282,7 +258,6 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			var payload = new Payload();
 			payload.m_is_zm_enabled = rowid == -1 || this.m_accounts[rowid].format_xx() == FORMAT_ZM || (c_zimbra == 0);
 			payload.m_account = (id_target == "zindus-cs-account-add") ? null : this.m_accounts[rowid];
-			payload.m_prefset_general = this.m_prefset_general;
 
 			window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
@@ -470,8 +445,9 @@ ConfigSettings.getValueFromRadio = function(radiogroup_id, bimap)
 
 ConfigSettings.setPrefsetFromRadio = function(radiogroup_id, bimap, prefset, property)
 {
-	var radio_button = ConfigSettings.getValueFromRadio(radiogroup_id, bimap);
-	prefset.setProperty(property, radio_button);
+	var value = ConfigSettings.getValueFromRadio(radiogroup_id, bimap);
+	prefset.setProperty(property, value);
+	logger().debug("setPrefsetFromRadio: set prefset key: " + property + " value: " + value);
 }
 
 ConfigSettings.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, property, default_id)

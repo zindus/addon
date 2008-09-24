@@ -78,34 +78,33 @@ AddressBook.prototype.contact_converter = function()
 
 AddressBook.prototype.populateNameToUriMap = function()
 {
-	var ret = null;
-	var context = this;
-
-	var functor =
-	{
-		run: function(elem)
-		{
-			var key = elem.dirName;
-			var uri = context.directoryProperty(elem, "URI");
-
-			if (key == context.getPabName())
-				uri = context.getPabURI();
-		
-			if (!isPropertyPresent(context.m_map_name_to_uri, key))
-				context.m_map_name_to_uri[key] = new Array();
-
-			context.m_map_name_to_uri[key].push(new AddressBookImportantProperties(uri, elem.dirPrefId));
-
-			return true;
-		}
-	};
-
 	if (!this.m_map_name_to_uri)
 	{
+		var context = this;
+
+		var functor =
+		{
+			run: function(elem)
+			{
+				var key = elem.dirName;
+				var uri = context.directoryProperty(elem, "URI");
+
+				if (key == context.getPabName())
+					uri = context.getPabURI();
+		
+				if (!isPropertyPresent(context.m_map_name_to_uri, key))
+					context.m_map_name_to_uri[key] = new Array();
+
+				context.m_map_name_to_uri[key].push(new AddressBookImportantProperties(uri, elem.dirPrefId));
+
+				return true;
+			}
+		};
+
 		this.m_map_name_to_uri = new Object();
 		this.forEachAddressBook(functor);
 
-		this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + aToString(this.m_map_name_to_uri)); // TODO comment out
+		// this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + aToString(this.m_map_name_to_uri));
 	}
 }
 
@@ -138,6 +137,25 @@ AddressBook.prototype.getAddressBookUriByName = function(name)
 
 	if (isPropertyPresent(this.m_map_name_to_uri, name) && this.m_map_name_to_uri[name].length == 1)
 		ret = this.m_map_name_to_uri[name][0].uri();
+
+	return ret;
+}
+
+AddressBook.prototype.getAddressBookNameByUri = function(uri)
+{
+	var ret = null;
+
+	this.populateNameToUriMap();
+
+	for (var key in this.m_map_name_to_uri)
+		for (var i = 0; i < this.m_map_name_to_uri[key].length; i++)
+			if (this.m_map_name_to_uri[key][i].uri() == uri)
+			{
+				ret = key;
+				break;
+			}
+
+	this.m_logger.debug("getAddressBookNameByUri: uri: " + uri + " returns: " + ret); // TODO
 
 	return ret;
 }

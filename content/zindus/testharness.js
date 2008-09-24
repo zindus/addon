@@ -64,9 +64,10 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGdContact();
 	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
-	ret = ret && this.testDeleteCard();
+	// ret = ret && this.testDeleteCard();
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
+	ret = ret && this.createGoogleRuleVioliation();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1171,8 +1172,8 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 	// test PrefSet.GENERAL preferences
 	//
 	var a_prefset = [];
-	a_prefset.push({ parent: PrefSet.GENERAL, properties: PrefSet.GENERAL_PROPERTIES, id: null });
-	a_prefset.push({ parent: PrefSet.DONTASK, properties: PrefSet.DONTASK_PROPERTIES, id: null });
+	a_prefset.push({ parent: PrefSet.GENERAL, properties: PrefSet.GENERAL_AS_PROPERTIES, id: null });
+	a_prefset.push({ parent: PrefSet.GENERAL, properties: PrefSet.GENERAL_GD_PROPERTIES, id: null });
 
 	a_preauth = prefs.getImmediateChildren(prefs.branch(), PrefSet.PREAUTH + '.');
 
@@ -1234,7 +1235,7 @@ TestHarness.prototype.testStringBundleContainsContactProperties = function()
 	return true;
 }
 
-TestHarness.prototype.addCardTb2 = function()
+TestHarness.prototype.addCardTb2 = function(properties)
 {
 	this.m_logger.debug("testAddCard");
 
@@ -1242,9 +1243,12 @@ TestHarness.prototype.addCardTb2 = function()
 	var dir    = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService).GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	var abCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Components.interfaces.nsIAbCard);
 	abCard = dir.addCard(abCard);
+
+	if (typeof(properties) == 'undefined')
+		properties = { PrimaryEmail: "111-test@example.com", DisplayName: "111 test" };
 	
-	abCard.setCardValue("PrimaryEmail", "111-test@example.com");
-	abCard.setCardValue("DisplayName", "111 test");
+	for (var key in properties)
+		abCard.setCardValue(key, properties[key]);
 
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 	mdbCard.editCardToDatabase(uri);
@@ -1252,6 +1256,18 @@ TestHarness.prototype.addCardTb2 = function()
 	return mdbCard;
 }
 
+TestHarness.prototype.createGoogleRuleVioliation = function()
+{
+	this.m_logger.debug("createGoogleRule");
+
+//	this.addCardTb2({}); // creates an empty contact
+	this.addCardTb2({ PrimaryEmail: "111-test@example.com", DisplayName: "111 test", Notes: "111-test line one\r\nline two" });
+	this.addCardTb2({ PrimaryEmail: "111-test@example.com", DisplayName: "111 test", Notes: "111-test line one\r\nline two" });
+	this.addCardTb2({ PrimaryEmail: "222-test@example.com", DisplayName: "222 test", Notes: "222-test line one\nline two" });
+	this.addCardTb2({ PrimaryEmail: "222-test@example.com", DisplayName: "222 test", Notes: "222-test line one\nline two" });
+
+	return true;
+}
 TestHarness.prototype.testAddCard = function()
 {
 	this.m_logger.debug("testAddCard");

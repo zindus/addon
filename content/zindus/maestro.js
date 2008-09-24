@@ -56,10 +56,10 @@ Maestro.FSM_ID_ZM_TWOWAY   = "fsm-zm-twoway";
 Maestro.FSM_ID_ZM_AUTHONLY = "fsm-zm-authonly";
 Maestro.FSM_ID_GD_TWOWAY   = "fsm-gd-twoway";
 Maestro.FSM_ID_GD_AUTHONLY = "fsm-gd-authonly";
-Maestro.FSM_GROUP_TWOWAY   = newObject(Maestro.FSM_ID_ZM_TWOWAY,   0, Maestro.FSM_ID_GD_TWOWAY,   0);
-Maestro.FSM_GROUP_AUTHONLY = newObject(Maestro.FSM_ID_ZM_AUTHONLY, 0, Maestro.FSM_ID_GD_AUTHONLY, 0);
-Maestro.FSM_GROUP_SYNC     = newObject(Maestro.FSM_ID_ZM_TWOWAY,   0, Maestro.FSM_ID_ZM_AUTHONLY, 0, 
-                                          Maestro.FSM_ID_GD_TWOWAY,   0, Maestro.FSM_ID_GD_AUTHONLY, 0);
+Maestro.FSM_GROUP_TWOWAY   = newObjectWithKeys(Maestro.FSM_ID_ZM_TWOWAY, Maestro.FSM_ID_GD_TWOWAY);
+Maestro.FSM_GROUP_AUTHONLY = newObjectWithKeys(Maestro.FSM_ID_ZM_AUTHONLY, Maestro.FSM_ID_GD_AUTHONLY);
+Maestro.FSM_GROUP_SYNC     = newObjectWithKeys(Maestro.FSM_ID_ZM_TWOWAY, Maestro.FSM_ID_ZM_AUTHONLY, 
+                                               Maestro.FSM_ID_GD_TWOWAY, Maestro.FSM_ID_GD_AUTHONLY);
 
 // ID_FUNCTOR_* uniquely identifies each functor
 //

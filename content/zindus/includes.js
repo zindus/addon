@@ -44,5 +44,5 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("account.js");
 	ZindusScopeRegistry.includejs("removedatastore.js");
 	ZindusScopeRegistry.includejs("configsettings.js");
-	ZindusScopeRegistry.includejs("googleconflict.js");
+	ZindusScopeRegistry.includejs("googlerule.js");
 }

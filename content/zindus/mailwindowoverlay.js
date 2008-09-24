@@ -227,8 +227,8 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	// delete once confident all users are on version >= 0.6.13
 	// 
 	var a_map = {
-		"general.verboselogging":        { type: 'char', new: "general." + PrefSet.GENERAL_VERBOSE_LOGGING     },
-		"general.verbose_logging":       { type: 'char', new: "general." + PrefSet.GENERAL_VERBOSE_LOGGING     },
+		"general.verboselogging":        { type: 'char', new: "general." + PrefSet.GENERAL_AS_VERBOSE_LOGGING  },
+		"general.verbose_logging":       { type: 'char', new: "general." + PrefSet.GENERAL_AS_VERBOSE_LOGGING  },
 		"general.gdsyncwith":            { type: 'char', new: "general." + PrefSet.GENERAL_GD_SYNC_WITH        },
 		"general.SyncGalEnabled":        { type: 'char', new: "general." + PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED },
 		"system.logfileSizeMax":         { type: 'int',  new: MozillaPreferences.AS_LOGFILE_MAX_SIZE           },
@@ -248,7 +248,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	//
 	var bimap = new BiMap( [ "true", "false" ], [ "false", "true" ] );
 
-	var new_key = "general." + PrefSet.GENERAL_AUTO_SYNC;
+	var new_key = "general." + PrefSet.GENERAL_AS_AUTO_SYNC;
 
 	for (old in { "general.manualsynconly": 0, "general.manual_sync_only": 0 }) 
 	{
@@ -323,7 +323,7 @@ ZinMailWindowOverlay.prototype.timerStartup = function()
 {
 	var prefs = preferences();
 
-	if (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_AUTO_SYNC) != "false")
+	if (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_AS_AUTO_SYNC) != "false")
 	{
 		var delay_on_start     = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_START );
 		this.m_delay_on_repeat = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT );

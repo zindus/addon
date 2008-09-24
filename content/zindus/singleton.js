@@ -50,5 +50,5 @@ Singleton.prototype.logger = function(type)
 Singleton.prototype.get_loglevel_from_preference = function()
 {
 	return (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(),
-	                        "general." + PrefSet.GENERAL_VERBOSE_LOGGING ) == "true") ? Logger.DEBUG : Logger.INFO;
+	                        "general." + PrefSet.GENERAL_AS_VERBOSE_LOGGING ) == "true") ? Logger.DEBUG : Logger.INFO;
 }

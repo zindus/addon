@@ -27,35 +27,44 @@ function RemoveDatastore()
 {
 }
 
-RemoveDatastore.removeZfcs = function(filename)
+RemoveDatastore.removeZfc = function(filename)
 {
-	logger().debug("removeZfcs: " + (filename ? filename : "all files"));
-
-	var file;
 	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
+	var file;
+
+	logger().debug("removeZfc: " + filename);
 
 	// remove files in the data directory
 	//
 	if (directory.exists() && directory.isDirectory())
 	{
-		if (filename)
-		{
-			file = directory;
-			file.append(filename);
+		file = directory;
+		file.append(filename);
 
-			if (file.exists())
-				file.remove(false);
-		}
-		else
-		{
-			var iter = directory.directoryEntries;
- 
-			while (iter.hasMoreElements())
-			{
-				file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+		if (file.exists())
+			file.remove(false);
+	}
+}
 
+RemoveDatastore.removeZfcs = function(a_exclude)
+{
+	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
+	var file;
+
+	logger().debug("removeZfcs: " + (a_exclude ? ("excluding: " + aToString(a_exclude)) : ""));
+
+	// remove files in the data directory
+	//
+	if (directory.exists() && directory.isDirectory())
+	{
+		var iter = directory.directoryEntries;
+
+		while (iter.hasMoreElements())
+		{
+			file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+
+			if (!a_exclude || !isPropertyPresent(a_exclude, file.leafName))
 				file.remove(false);
-			}
 		}
 	}
 }

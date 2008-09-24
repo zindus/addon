@@ -51,16 +51,12 @@ PrefSet.PREAUTH_POST_BODY     = "preauth_post_body";
 PrefSet.PREAUTH_PROPERTIES    = [ PrefSet.PREAUTH_NAME, PrefSet.PREAUTH_REGEXP, PrefSet.PREAUTH_URI_HIER_PART, PrefSet.PREAUTH_POST_BODY ];
 
 PrefSet.GENERAL                        = "general";
-PrefSet.GENERAL_AUTO_SYNC              = "as_auto_sync";
-PrefSet.GENERAL_VERBOSE_LOGGING        = "as_verbose_logging";
+PrefSet.GENERAL_AS_AUTO_SYNC           = "as_auto_sync";
+PrefSet.GENERAL_AS_VERBOSE_LOGGING     = "as_verbose_logging";
 PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS = "gd_sync_postal_address";
-PrefSet.GENERAL_PROPERTIES             = [ PrefSet.GENERAL_AUTO_SYNC, PrefSet.GENERAL_VERBOSE_LOGGING,
-										   PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS ];
-
-PrefSet.DONTASK               = "dontask";
-PrefSet.DONTASK_GD_EMPTY      = "gd_empty";
-PrefSet.DONTASK_GD_UNIQUE     = "gd_unique";
-PrefSet.DONTASK_PROPERTIES    = [ PrefSet.DONTASK_GD_EMPTY, PrefSet.DONTASK_GD_UNIQUE ];
+PrefSet.GENERAL_GD_CONFLICT_DONT_ASK   = "gd_conflict_dont_ask";
+PrefSet.GENERAL_AS_PROPERTIES          = [ PrefSet.GENERAL_AS_AUTO_SYNC,           PrefSet.GENERAL_AS_VERBOSE_LOGGING   ];
+PrefSet.GENERAL_GD_PROPERTIES          = [ PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, PrefSet.GENERAL_GD_CONFLICT_DONT_ASK ];
 
 // Both id and branch are optional
 // id is optional because there might only be a single subsection under prefprefix
@@ -98,13 +94,17 @@ PrefSet.prototype.save = function()
 
 	try {
 		for (i in this.m_properties)
+		{
 			branch.setCharPref(this.makePrefKey(this.m_id, i), this.m_properties[i]);
+			logger().debug("saving preference key: " + i + " value: " + this.m_properties[i]);
+		}
 
 		retval = true;
 	}
 	catch (ex) {
 		logger().warn("PrefSet.prototype.save: exception thrown i: " + i + " this: " + this.toString() + " " + executionStackAsString());
 	}
+
 	
 	return retval;
 }

@@ -23,57 +23,44 @@
 
 function ConfigGd()
 {
-	this.m_payload         = null;
-	this.m_prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
+	this.m_prefset_gd = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_GD_PROPERTIES);
 
-	this.m_gd_sync_postal_address_bimap = new BiMap( [ "true",                       "false"                       ], 
-	                                                 [ "zindus-cgd-postal-true", "zindus-cgd-postal-false" ] );
+	this.m_bimap = new Object();
+	this.m_bimap['postal']    = new BiMap( [ "true",                "false"                 ], 
+	                                       [ "cgd-postal-true",     "cgd-postal-false"      ] );
+	this.m_bimap['conflict']  = new BiMap( [ "ask-me",              "dont-ask"              ], 
+	                                       [ "cgd-conflict-ask-me", "cgd-conflict-dont-ask" ] );
+
+	this.m_map = {
+		0: { group: "cgd-postal",   bimap: 'postal',    prefset_key: PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, default: "cgd-postal-false" },
+		1: { group: "cgd-conflict", bimap: 'conflict',  prefset_key: PrefSet.GENERAL_GD_CONFLICT_DONT_ASK,   default: "ask-me" } };
 }
 
 ConfigGd.prototype.onLoad = function(target)
 {
-	this.m_payload = window.arguments[0];
-
-	this.m_prefset_general.setProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, 
-		this.m_payload.m_args.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS));
+	this.m_prefset_gd.load();
 
 	this.initialiseView();
-	this.updateView();
-}
-
-ConfigGd.prototype.onCancel = function()
-{
 }
 
 ConfigGd.prototype.onAccept = function()
 {
-	this.m_payload.m_args.setProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS,
-	        this.m_prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS));
+	var a = this.m_map;
+	for (var k in a)
+		ConfigSettings.setPrefsetFromRadio(a[k].group, this.m_bimap[a[k].bimap], this.m_prefset_gd, a[k].prefset_key);
+
+	this.m_prefset_gd.save();
 }
 
 ConfigGd.prototype.initialiseView = function()
 {
-	ConfigSettings.setRadioFromPrefset("zindus-cgd-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
-	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, "zindus-cgd-postal-false")
+	xulSetHtml('cgd-more-information-on-postal', stringBundleString("gc.more.information", [
+			    'http://www.zindus.com/blog/2008/06/17/thunderbird-google-postal-address-sync-part-two/' ]) );
+
+	xulSetHtml('cgd-more-information-on-conflicts', stringBundleString("gc.more.information", [
+			    'http://www.zindus.com/faq-thunderbird-google/#toc-thunderbird-and-google-addressbook-differences' ]) );
+
+	var a = this.m_map;
+	for (var k in a)
+		ConfigSettings.setRadioFromPrefset(a[k].group, this.m_bimap[a[k].bimap], this.m_prefset_gd, a[k].prefset_key, a[k].default);
 }
-
-ConfigGd.prototype.onCommand = function(id_target)
-{
-	switch (id_target)
-	{
-		case "zindus-cgd-postal-true":
-		case "zindus-cgd-postal-false":
-			this.updateView();
-			break;
-	}
-}
-
-ConfigGd.prototype.updateView = function()
-{
-	ConfigSettings.setPrefsetFromRadio("zindus-cgd-postal-radiogroup", this.m_gd_sync_postal_address_bimap,
-	                          this.m_prefset_general, PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS);
-
-	xulSetAttribute('hidden', !(this.m_prefset_general.getProperty(PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS) == "true"),
-	                                      "zindus-prefs-gd-sync-postal-example");
-}
-

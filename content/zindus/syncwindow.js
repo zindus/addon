@@ -22,7 +22,6 @@
  * ***** END LICENSE BLOCK *****/
 
 includejs("payload.js");
-includejs("syncfsmchaindata.js");
 
 function SyncWindow()
 {
@@ -35,6 +34,7 @@ function SyncWindow()
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new WindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_sfcd      = null;
+	this.m_gct       = null;
 
 	this.initialise_per_fsm_members();
 
@@ -146,11 +146,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			dId('zindus-sw-progress-meter').setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 
-			var html = this.m_sfcd.account().get(Account.username) + "<br/><br/>" + this.m_sfo.progressToString();
-
-			xulSetHtml('zindus-sw-progress-description', html);
-
-			this.m_logger.debug("ui: " + html.replace(/\<.*\>/, " "));
+			this.updateProgressUi(this.m_sfcd.account().get(Account.username) + "<br/><br/>" + this.m_sfo.progressToString());
 
 			this.m_zwc.forEach(this.zwc_functor(false));
 		}
@@ -159,24 +155,36 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			var is_repeat = false;
 
-			this.m_logger.debug("functor: es: " + this.m_payload.m_es.toString());
-			this.m_logger.debug("functor: es: failcode" + this.m_payload.m_es.failcode());
-
-			if (isInArray(this.m_payload.m_es.failcode(), GoogleConflictTrash.FAIL_CODES) &&
-			    !this.m_sfcd.sourceid(Account.indexToSourceId(this.m_sfcd.m_account_index), 'is_repeat') &&
-				GoogleConflictTrash.isDontAsk(this.m_payload.m_es.failcode()))
+			if (this.m_payload.m_es.m_exit_status != 0)
 			{
-				// TODO do we want to show something in the progress dialog?
+				var failcode         = this.m_payload.m_es.failcode();
+				var a_failcodes_seen = this.m_sfcd.sourceid(Account.indexToSourceId(this.m_sfcd.m_account_index), 'a_failcodes_seen');
+				var is_dont_ask      = GoogleRuleTrash.isDontAsk(failcode);
+				var is_failcode_seen = isPropertyPresent(a_failcodes_seen, failcode);
+				is_repeat            = isInArray(failcode, GoogleRuleTrash.FAIL_CODES) && is_dont_ask && !is_failcode_seen;
+
+				this.m_logger.debug("functor: isFinal: es: " + this.m_payload.m_es.toString() + " failcode" + failcode +
+			                      	" is_repeat: " + is_repeat + " a_failcodes_seen: " + aToString(a_failcodes_seen) );
+
+				if (is_failcode_seen && a_failcodes_seen[failcode] == is_dont_ask)
+					this.m_logger.warn("Something wierd happened - the last time we came through here, is_dont_ask was true!  So why wasn't the conflict auto-resolved??");
+			}
+
+			if (is_repeat)
+			{
+				a_failcodes_seen[failcode] = is_dont_ask;
+
 				// TODO this stuff goes in the timer too
 
-				this.m_logger.debug("functor: fsm failed - moveToTrash and try again");
+				this.m_logger.debug("functor: fsm failed with a conflict. auto-resolve it and try again.");
 
-			    this.m_sfcd.sourceid(Account.indexToSourceId(this.m_sfcd.m_account_index), 'is_repeat', true);
-				is_repeat = true;
+				if (!this.m_gct)
+					this.m_gct = new GoogleRuleTrash();
 
-				var gct = new GoogleConflictTrash();
+				this.m_gct.moveToTrashDontAsk(failcode, this.m_payload.m_es.m_fail_gcd);
 
-				gct.moveToTrash(this.m_payload.m_es.failcode(), this.m_payload.m_es.m_fail_gcd);
+				this.updateProgressUi(this.m_sfcd.account().get(Account.username) + "<br/><br/>" +
+				                        stringBundleString("progress.conflict.resolved.try.again"));
 			}
 
 			if (!is_repeat)
@@ -199,6 +207,14 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		}
 	}
 }
+
+SyncWindow.prototype.updateProgressUi = function(html)
+{
+	xulSetHtml('zindus-sw-progress-description', html);
+
+	this.m_logger.debug("ui: " + html.replace(/\<.*\>/, " "));
+}
+
 
 // this stuff used to be called from onLoad, but wierd things happen on Linux when the cancel button is pressed
 // In using window.setTimeout() this way, the window is guaranteed to be fully loaded before the fsm is started.

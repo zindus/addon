@@ -28,6 +28,7 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
+	id="zindus-ca-dialog"
 	buttons="accept,cancel,extra2"
 	buttonlabelextra2="&zindus.cs.buttonlabelextra2;"
 	flex="1"
@@ -57,7 +58,7 @@
 				</radiogroup>
 		</groupbox>
 		<spacer style="&zindus.spacer.style;" flex="1"/> 
-		<groupbox pack="center" >
+		<groupbox pack="center" oninput="window.wd.onInput();" >
 			<caption label="&zindus.ca.group.login.details.label;" />
 			<grid flex="1" style="&zindus.ca.grid.style;" > 
 				<columns>
@@ -119,8 +120,8 @@
 							<menuitem id="zindus-ca-zm-gal-no"       label="&zindus.ca.zimbra.gal.no.label;" />
 						</menupopup>
 					</menulist>
-				</vbox>
-				<spacer flex="1"/> 
+					</vbox>
+					<spacer flex="1"/> 
 				</hbox>
 			</deck>
 		</groupbox>

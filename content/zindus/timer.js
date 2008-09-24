@@ -122,12 +122,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			this.m_zwc.forEach(functor_unhide_progresspanel);
 
-			var prefset_general = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_PROPERTIES);
-			prefset_general.load();
-
-			var syncfsm_details = newObject('type', "twoway", 'prefset_general', prefset_general);
-
-			this.m_syncfsm = SyncFsm.newSyncFsm(syncfsm_details, this.m_sfcd);
+			this.m_syncfsm = SyncFsm.newSyncFsm({type: "twoway"}, this.m_sfcd);
 
 			this.m_syncfsm.start(window);
 			this.is_running = true;

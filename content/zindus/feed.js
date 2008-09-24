@@ -56,8 +56,6 @@ FeedItem.ATTR_SELF = 'self'; // google self url
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
 
-FeedItem.ATTR_STATUS_GOOGLE_CONFLICT_DONT_ASK_EMTPY = 'google_conflict_dont_ask_empty';
-
 FeedItem.TYPE_CN   = 0x01; // contact
 FeedItem.TYPE_FL   = 0x02; // folder
 FeedItem.TYPE_LN   = 0x04; // link

@@ -60,8 +60,8 @@ function SyncFsmExitStatus()
 		'failon.no.pab'                        : { 'hasdetail' : 1 }, //     
 		'failon.multiple.ln'                   : { 'hasdetail' : 1 }, //      
 		'failon.gd.conflict.1'                 : { 'hasdetail' : 0 }, //     
-		'failon.gd.conflict.2'                 : { 'hasdetail' : 1 }, //     
-		'failon.gd.conflict.3'                 : { 'hasdetail' : 1 }, // 
+		'failon.gd.conflict.2'                 : { 'hasdetail' : 0 }, //     
+		'failon.gd.conflict.3'                 : { 'hasdetail' : 0 }, // 
 		'failon.gd.conflict.4'                 : { 'hasdetail' : 0 }, // 30.
 		'failon.gd.forbidden'                  : { 'hasdetail' : 0 }, //    
 		'failon.zm.empty.contact'              : { 'hasdetail' : 1 }, //    

@@ -11,7 +11,7 @@ pref("extensions.zindus.system.zm_sync_gal_recheck",      2);          // how ma
 pref("extensions.zindus.system.zm_sync_gal_if_fewer",     500);        // sync gal if it contains less than this many contacts
 pref("extensions.zindus.system.zm_prefer_soapurl_scheme", "https");    // the scheme to prefer if multiple <soapURL>'s are recieved
 pref("extensions.zindus.system.gd_data_transfer_scheme",  "https");    // the scheme to use for Google Contacts get+set (auth always https)
-pref("extensions.zindus.system.gd_trash_expire_seconds",  300);         // cards in zindus/ToBeDeleted older than this are deleted
+pref("extensions.zindus.system.gd_trash_expire_seconds",  604800);     // cards in zindus/ToBeDeleted older than this are deleted
 
 pref("extensions.zindus.preauth.0.name",                  "free.fr");
 pref("extensions.zindus.preauth.0.regexp",                "^https?://zimbra\.free\.fr\/?");
@@ -21,6 +21,4 @@ pref("extensions.zindus.preauth.0.preauth_post_body",     "login=%username%&pass
 pref("extensions.zindus.general.as_verbose_logging",      "true");     // 
 pref("extensions.zindus.general.as_auto_sync",            "true");     // 
 pref("extensions.zindus.general.gd_sync_postal_address",  "false");    // 
-
-pref("extensions.zindus.dontask.gd_empty",                "false");    // 
-pref("extensions.zindus.dontask.gd_unique",               "false");    // 
+pref("extensions.zindus.general.gd_conflict_dont_ask",    "ask-me");   // dont-ask
