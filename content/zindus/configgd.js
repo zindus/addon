@@ -54,10 +54,10 @@ ConfigGd.prototype.onAccept = function()
 
 ConfigGd.prototype.initialiseView = function()
 {
-	xulSetHtml('cgd-more-information-on-postal', stringBundleString("gc.more.information", [
+	xulSetHtml('cgd-more-information-on-postal', stringBundleString("gr.more.information", [
 			    'http://www.zindus.com/blog/2008/06/17/thunderbird-google-postal-address-sync-part-two/' ]) );
 
-	xulSetHtml('cgd-more-information-on-conflicts', stringBundleString("gc.more.information", [
+	xulSetHtml('cgd-more-information-on-conflicts', stringBundleString("gr.more.information", [
 			    'http://www.zindus.com/faq-thunderbird-google/#toc-thunderbird-and-google-addressbook-differences' ]) );
 
 	var a = this.m_map;

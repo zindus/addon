@@ -2156,11 +2156,9 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 			m_a_empty_contacts: new Object(),
 			add_email: function(properties, key, id)
 			{
-				var email;
-
 				if (isPropertyPresent(properties, key))
 				{
-					email = GdContact.transformProperty(key, properties[key]);
+					var email = properties[key];
 
 					if (!isPropertyPresent(this.m_a_email_luid, email))
 						this.m_a_email_luid[email] = new Object();
@@ -2171,7 +2169,6 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 			},
 			run: function(card, id, properties)
 			{
-				var key;
 				var gd_properties = context.contact_converter().convert(FORMAT_GD, FORMAT_TB, properties);
 
 				GdContact.transformProperties(gd_properties);
@@ -2181,18 +2178,7 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 				this.add_email(gd_properties, 'PrimaryEmail', id);
 				this.add_email(gd_properties, 'SecondEmail',  id);
 
-				// identify cards that map to Google contacts with no properties
-				//
-				var is_empty = true;
-
-				for (key in gd_properties)
-					if (gd_properties[key] && gd_properties[key].length > 0)
-					{
-						is_empty = false;
-						break;
-					}
-
-				if (is_empty)
+				if (this.is_empty(gd_properties))
 					this.m_a_empty_contacts[id] = properties;
 			}
 		};
@@ -2201,24 +2187,26 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 			m_a_empty_contacts: new Object(),
 			run: function(card, id, properties)
 			{
-				var key;
 				var properties = context.contact_converter().convert(FORMAT_ZM, FORMAT_TB, properties);
 
-				// identify cards with no properties
-				//
-				var is_empty = true;
-
-				for (key in properties)
-					if (properties[key] && properties[key].length > 0)
-					{
-						is_empty = false;
-						break;
-					}
-
-				if (is_empty)
+				if (this.is_empty(properties))
 					this.m_a_empty_contacts[id] = true;
 			}
 		};
+
+	functor.is_empty = function(properties)
+	{
+		var ret = true;
+
+		for (var key in properties)
+			if (properties[key] && properties[key].length > 0)
+			{
+				ret = false;
+				break;
+			}
+
+		return ret;
+	}
 
 	return functor;
 }
@@ -2753,6 +2741,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 					{
 						properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
 						abCard.setCardValue("Notes", properties["Notes"]);
+						mdbCard.editCardToDatabase(uri);
 						checksum = context.contact_converter().crc32(properties);
 						this.state.m_logger.debug("loadTbCards pass 3: found a card with \\r\\n in the notes field - normalising it to \\n as per IRC discussion. luid: " + id);
 					}
@@ -2841,6 +2830,8 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 	var a_empty_folder_names = new Object();
 	var msg_empty = "";
 	var key;
+
+	// this.debug("testForEmptyContacts: a_empty_contacts: " + aToString(a_empty_contacts));
 
 	for (key in a_empty_contacts)
 	{
@@ -2958,7 +2949,7 @@ SyncFsm.prototype.loadTbTestForGdCardsUnique = function()
 	var gcd          = null;
 	var i, email, luid, gd_properties, tb_properties;
 
-	this.state.m_logger.debug("loadTbTestForGdCardsUnique:" + "a_email_luid: " + aToString(a_email_luid));
+	this.state.m_logger.debug("loadTbTestForGdCardsUnique: " + "a_email_luid: " + aToString(a_email_luid));
 
 	for (email in a_email_luid)
 		if (email != "" && aToLength(a_email_luid[email]) > 1)
@@ -3048,10 +3039,8 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 
 			for (var i = 0; i < a_gd_email[email].length; i++)
 			{
-				luid = a_gd_email[email][i];
-
-				tb_properties = this.getContactFromLuidFiltered(this.state.sourceid_pr, luid, FORMAT_TB, GOOGLE_TRANSFORM);
-
+				luid                      = a_gd_email[email][i];
+				tb_properties             = this.getContactPropertiesNormalised(this.state.sourceid_pr, luid);
 				gcd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_GD, luid,null, tb_properties, this.state.a_gd_contact[luid]);
 			}
 		}
@@ -3147,13 +3136,12 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 			// attributes - plus we'd have to parse it out of the xml - currently we only parse out what maps to tb...
 			// If we included all tb and not google, it'd heavily favour selecting tb contacts...
 			//
-			tb_properties = this.getContactFromLuidFiltered(sourceid_tb, luid, FORMAT_TB, GOOGLE_TRANSFORM);
-
+			tb_properties             = this.getContactPropertiesNormalised(sourceid_tb, luid);
 			gcd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_TB, luid, uri_from, tb_properties, null);
 		}
 
 		luid          = zfcGid.get(a_gd_email[email]).get(sourceid_pr);
-		tb_properties = this.getContactFromLuidFiltered(sourceid_pr, luid, FORMAT_TB, GOOGLE_TRANSFORM);
+		tb_properties = this.getContactPropertiesNormalised(sourceid_pr, luid);
 
 		gcd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_GD, luid, null, tb_properties, this.state.a_gd_contact[luid]);
 	}
@@ -3287,15 +3275,13 @@ SyncFsm.prototype.updateGidDoChecksums = function(event)
 				foreach_msg += " luid: " + luid + " not in scope - ignoring\n";
 			else if (zfi.type() == FeedItem.TYPE_CN)
 			{
-				var a = context.getPropertiesAndParentNameFromSource(sourceid, luid, this.state.m_contact_converter_vary_none);
+				var a_properties    = context.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_vary_none);
+				var a_parent_in_map = context.getContactParentInMap(sourceid, luid);
 
-				if (a.properties) // a card with no properties will never be part of a twin so don't bother
+				if (a_properties) // a card with no properties will never be part of a twin so don't bother
 				{
-					if (context.formatPr() == FORMAT_GD)
-						GdContact.transformProperties(a.properties);
-						
-					checksum = context.contact_converter().crc32(a.properties);
-					var key = hyphenate('-', sourceid, a.parent, checksum);
+					checksum = context.contact_converter().crc32(a_properties);
+					var key = hyphenate('-', sourceid, a_parent_in_map, checksum);
 
 					if (!isPropertyPresent(this.state.aHasChecksum, key))
 						this.state.aHasChecksum[key] = new Object();
@@ -3303,8 +3289,8 @@ SyncFsm.prototype.updateGidDoChecksums = function(event)
 					this.state.aHasChecksum[key][luid] = true;
 					this.state.aChecksum[sourceid][luid] = checksum;
 
-					msg += strPadTo(checksum, 11) + " parent: " + a.parent;
-					msg += " PrimaryEmail: " + (a.properties['PrimaryEmail'] ? a.properties['PrimaryEmail'] : "null");
+					msg += strPadTo(checksum, 11) + " parent: " + a_parent_in_map;
+					msg += " PrimaryEmail: " + (a_properties['PrimaryEmail'] ? a_properties['PrimaryEmail'] : "null");
 				}
 			}
 			else if (zfi.type() == FeedItem.TYPE_FL || zfi.type() == FeedItem.TYPE_SF)
@@ -3706,9 +3692,9 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 
 			if (count == 1)
 			{
-				sourceid = a_luid[sourceid_tb] ? sourceid_tb : sourceid_gd;
-				luid     = a_luid[sourceid];
-				var a    = null;
+				sourceid       = a_luid[sourceid_tb] ? sourceid_tb : sourceid_gd;
+				luid           = a_luid[sourceid];
+				var properties = null;
 
 				var do_lookup = true;
 
@@ -3719,14 +3705,10 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 				do_lookup = do_lookup && SyncFsm.isRelevantToGid(context.zfc(sourceid), luid);
 
 				if (do_lookup)
-					a = context.getPropertiesAndParentNameFromSource(sourceid, luid, this.state.m_contact_converter_vary_none);
+					properties = context.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_vary_none);
 
-				if (a && a.properties) // a contact with no properties will never be part of a twin so don't bother
-				{
-					GdContact.transformProperties(a.properties);
-
-					this.add_to_a_checksum(sourceid, luid, a.properties);
-				}
+				if (properties) // a contact with no properties will never be part of a twin so don't bother
+					this.add_to_a_checksum(sourceid, luid, properties);
 			}
 
 			return true;
@@ -3734,8 +3716,6 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 		add_to_a_checksum: function(sourceid, luid, properties)
 		{
 			var checksum = context.contact_converter().crc32(properties);
-
-			context.debug("twiddleMapsToPairNewMatchingContacts: properties: " + aToString(properties) + " crc: " + checksum + " sourceid: " + sourceid + " luid: " + luid); // TODO
 
 			if (!isPropertyPresent(a_checksum, checksum))
 				a_checksum[checksum] = new Object();
@@ -3765,14 +3745,37 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 	this.debug(msg);
 }
 
-SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid, contact_converter)
+SyncFsm.prototype.getContactParentInMap = function(sourceid, luid)
 {
 	var zfc         = this.zfc(sourceid);
 	var zfi         = zfc.get(luid); zinAssert(zfi);
 	var luid_parent = SyncFsm.keyParentRelevantToGid(zfc, zfi.key());
 	var format      = this.state.sources[sourceid]['format'];
+	var ret;
+
+	zinAssert(zfi.type() == FeedItem.TYPE_CN);
+
+	ret = this.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
+
+	return ret;
+}
+
+// This method is mostly used in matching contacts.
+// it filters out properties not common to all formats and normalises PrimaryEmail and SecondEmail to lowercase
+// (via GdContact.transformProperties)
+// So don't use it when updating a target source!
+// 
+SyncFsm.prototype.getContactPropertiesNormalised = function(sourceid, luid, contact_converter)
+{
+	var zfc         = this.zfc(sourceid);
+	var zfi         = zfc.get(luid); zinAssert(zfi);
+	var format      = this.state.sources[sourceid]['format'];
 	var properties, name_parent_map;
 
+	if (typeof(contact_converter) == 'undefined')
+		contact_converter = this.contact_converter();
+
+	zinAssert(arguments.length == 2 || arguments.length == 3);
 	zinAssert(contact_converter);
 	zinAssert(zfi.type() == FeedItem.TYPE_CN);
 
@@ -3780,9 +3783,10 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 	{
 		zinAssert(zfi.isPresent(FeedItem.ATTR_L));
 
+		var luid_parent        = SyncFsm.keyParentRelevantToGid(zfc, zfi.key());
 		var name_parent_public = this.state.m_folder_converter.convertForPublic(FORMAT_TB, format, zfc.get(luid_parent));
-		var uri     = this.state.m_addressbook.getAddressBookUriByName(name_parent_public);
-		var abCard  = uri ? this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid) : null;
+		var uri                = this.state.m_addressbook.getAddressBookUriByName(name_parent_public);
+		var abCard             = uri ? this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid) : null;
 
 		if (abCard)
 			properties = this.state.m_addressbook.getCardProperties(abCard);
@@ -3790,8 +3794,8 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 		{
 			properties = { };
 
-			this.state.m_logger.warn("unable to retrieve properties for card: " + " luid: " + luid + " uri: " + uri +
-			             " name_parent_public: " + name_parent_public + " luid_parent: " + luid_parent + "\n" + executionStackAsString());
+			this.state.m_logger.warn("getContactPropertiesNormalised: unable to retrieve properties for card: luid: " + luid +
+			                         " uri: " + uri + "\n" + executionStackAsString());
 		}
 	}
 	else if (format == FORMAT_ZM)
@@ -3807,41 +3811,40 @@ SyncFsm.prototype.getPropertiesAndParentNameFromSource = function(sourceid, luid
 	else
 		zinAssert(false, "unmatched case: " + format);
 
-	// which is why slow sync doesn't notice differences in _AimScreenName for example ... even though it is synced b/n tb and google
+	// This is why slow sync doesn't notice differences in _AimScreenName for example ... even though it is synced b/n tb and google
 	//
 	contact_converter.removeKeysNotCommonToAllFormats(FORMAT_TB, properties);
 
-	name_parent_map = this.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
+	// This is why Hello.World@example.com in Thunderbird matches hello.world@example.com in google (and vice versa)
+	//
+	if (this.formatPr() == FORMAT_GD)
+		GdContact.transformProperties(properties);
 
-	// this.state.m_logger.debug("getPropertiesAndParentNameFromSource: blah: sourceid: " + sourceid + " luid: " + luid +
-	//                           " returns: name_parent_map: " + name_parent_map + " properties: " + aToString(properties));
+	// this.state.m_logger.debug("getContactPropertiesNormalised: sourceid: " + sourceid + " luid: " + luid +
+	//                           " returns: " properties: " + aToString(properties));
 
-	return newObject('properties', properties, 'parent', name_parent_map);
+	return properties;
 }
 
 // return true iff all the fields (that are common to both data formats) exactly match
 //
 SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b, contact_converter)
 {
-	var a       = this.getPropertiesAndParentNameFromSource(sourceid_a, luid_a, contact_converter);
-	var b       = this.getPropertiesAndParentNameFromSource(sourceid_b, luid_b, contact_converter);
-	var is_twin = (aToLength(a.properties) == aToLength(b.properties));
-	var cMatch  = 0;
+	var a        = this.getContactPropertiesNormalised(sourceid_a, luid_a, contact_converter);
+	var b        = this.getContactPropertiesNormalised(sourceid_b, luid_b, contact_converter);
+	var length_a = aToLength(a);
+	var length_b = aToLength(b);
+	var is_twin  = (length_a == length_b);
+	var cMatch   = 0;
 
 	if (is_twin)
 	{
-		if (this.formatPr() == FORMAT_GD)
-		{
-			GdContact.transformProperties(a.properties);
-			GdContact.transformProperties(b.properties);
-		}
-
-		for (var i in a.properties)
-			if (isPropertyPresent(b.properties, i) && a.properties[i] == b.properties[i])
+		for (var i in a)
+			if (isPropertyPresent(b, i) && a[i] == b[i])
 				cMatch++;
 	}
 
-	is_twin = aToLength(a.properties) == cMatch;
+	is_twin = length_a == cMatch;
 
 	// this.state.m_logger.debug("isTwin: blah: returns: " + is_twin + " sourceid/luid: " + sourceid_a + "/" + luid_a
 	//                                                               + " sourceid/luid: " + sourceid_b + "/" + luid_b);
@@ -6068,14 +6071,12 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				msg           += " about to add contact: ";
 				properties     = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
-				this.debug("AMHERE properties: " + aToString(properties));  // TODO
 				contact = new GdContact(this.contact_converter());
 
 				if (this.state.gd_is_sync_postal_address)
 					properties = contact.addWhitespaceToPostalProperties(properties);
 
 				contact.updateFromProperties(properties);
-				this.debug("AMHERE contact: " + contact.toString());  // TODO
 
 				remote.method  = "POST";
 				remote.url     = this.state.gd_url_base;
@@ -6314,7 +6315,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				zinAssert(remote_update_package.remote.sourceid_winner == this.state.sourceid_tb);
 
 				var luid_tb       = remote_update_package.remote.luid_winner;
-				var tb_properties = this.getContactFromLuidFiltered(this.state.sourceid_tb, luid_tb, FORMAT_TB, GOOGLE_TRANSFORM);
+				var tb_properties = this.getContactPropertiesNormalised(this.state.sourceid_tb, luid_tb);
 				var a_match       = keysForMatchingValues(tb_properties, contact.m_properties);
 
 				if (isPropertyPresent(a_match, 'PrimaryEmail'))
@@ -6408,20 +6409,6 @@ SyncFsm.prototype.getContactPrimaryEmailFromLuid = function(sourceid, luid)
 	return ret;
 }
 
-const GOOGLE_TRANSFORM = 1;
-
-SyncFsm.prototype.getContactFromLuidFiltered = function(sourceid, luid, format_to, filter)
-{
-	zinAssert(format_to == FORMAT_TB);      // hardcode
-	zinAssert(filter == GOOGLE_TRANSFORM);  // hardcode
-
-	var gd_properties = this.getContactFromLuid(sourceid, luid, FORMAT_GD);
-	GdContact.transformProperties(gd_properties);
-	var tb_properties = this.contact_converter().convert(FORMAT_TB, FORMAT_GD, gd_properties);
-
-	return tb_properties;
-}
-
 SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 {
 	var format_from = this.state.sources[sourceid]['format'];
@@ -6442,9 +6429,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 			if (abCard)
 			{
 				ret = this.state.m_addressbook.getCardProperties(abCard);
-				this.debug("AMHERE1: ret: " + aToString(ret));  // TODO
 				ret = this.contact_converter().convert(format_to, FORMAT_TB, ret);
-				this.debug("AMHERE2: ret: " + aToString(ret));  // TODO
 			}
 			else
 				this.state.m_logger.warn("can't find contact for to sourceid: " + sourceid + " and luid: " + luid +

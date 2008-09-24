@@ -248,8 +248,9 @@ ContactConverter.prototype.convert = function(format_to, format_from, properties
 				this.m_gac.convert(properties_to, "postalAddress#" + key.toLowerCase(), a_gd_address_fields[key.toLowerCase()],
 				                     GdAddressConverter.ADDR_TO_XML );
 
-	if (format_to == FORMAT_GD)
-		GdContact.transformProperties(properties_to);
+	// TODO this is wrong - delete me once the refactoring is finished...
+	// if (format_to == FORMAT_GD)
+	// 	GdContact.transformProperties(properties_to);
 		
 	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
 	//                                  " properties_from: "       + aToString(properties_from) +
