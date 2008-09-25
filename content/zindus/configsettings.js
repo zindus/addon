@@ -147,9 +147,6 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			var stopwatch = new StopWatch("Configsettings");
 			stopwatch.mark("start")
 
-			if (!this.is_developer_mode) // TODO
-				zinAssert(this.m_accounts.length == 1);
-
 			this.m_payload = new Payload();
 			this.m_payload.m_a_accounts      = this.m_accounts;
 			this.m_payload.m_syncfsm_details = newObject('type', "twoway");
@@ -412,9 +409,6 @@ ConfigSettings.prototype.updateView = function()
 
 	xulSetAttribute('disabled', dId("zindus-cs-account-tree").currentIndex < 0,
 	                                        "zindus-cs-account-edit", "zindus-cs-account-delete");
-
-	if (!this.is_developer_mode) // TODO
-		xulSetAttribute('disabled', (this.m_accounts.length >= 1), "zindus-cs-account-add");
 }
 
 ConfigSettings.prototype.onFsmStateChangeFunctor = function(fsmstate)

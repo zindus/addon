@@ -51,8 +51,6 @@ function SyncFsmChainData(a_accounts)
 
 		this.m_a_sourceid[Account.indexToSourceId(i)] = true;
 	}
-
-	logger().debug("SyncFsmChainData: m_a_sourceid: " + aToString(this.m_a_sourceid)); //TODO
 }
 
 SyncFsmChainData.ITEM_KEYS = { is_slow_sync: false, a_failcodes_seen: {} };

@@ -704,7 +704,7 @@ GoogleRuleEmpty.prototype.refreshRows = function()
 		}
 
 		if (count == 0)
-			value = stringBundleString("gr.contact.completely.empty");  // TODO test me
+			value = stringBundleString("gr.contact.completely.empty");
 
 		row = document.createElement("row");
 

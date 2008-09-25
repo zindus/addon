@@ -138,21 +138,15 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			var functor_update_progresspanel = {
 				run: function(win) {
-					// the window might have disappeared between when we iterated all open windows and now - so we test that
-					// the element exists just before setting it's attribute...
-					//
-					if (win.document && win.document.getElementById("zindus-statusbar-progress"))
-					{
-						var el_statusbar_progress_meter  = win.document.getElementById("zindus-statusbar-progress-meter");
-						var el_statusbar_progress_label  = win.document.getElementById("zindus-statusbar-progress-text");
-						var el_statusbar_logo            = win.document.getElementById("zindus-statusbar-logo");
-						var el_statusbar_logo_processing = win.document.getElementById("zindus-statusbar-logo-processing");
+					var el_progress_meter  = win.document.getElementById("zindus-statusbar-progress-meter");
+					var el_progress_label  = win.document.getElementById("zindus-statusbar-progress-text");
+					var el_logo            = win.document.getElementById("zindus-statusbar-logo");
+					var el_logo_processing = win.document.getElementById("zindus-statusbar-logo-processing");
 
-						el_statusbar_progress_meter.setAttribute('value', context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
-						el_statusbar_progress_label.setAttribute('value', context.m_sfo.progressToString());
-						el_statusbar_logo.setAttribute('hidden', true);
-						el_statusbar_logo_processing.setAttribute('hidden', false);
-					}
+					el_progress_meter.setAttribute('value', context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+					el_progress_label.setAttribute('value', context.m_sfo.progressToString());
+					el_logo.setAttribute('hidden', true);
+					el_logo_processing.setAttribute('hidden', false);
 				}
 			};
 
@@ -171,13 +165,10 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			{
 				var functor_hide_progresspanel = {
 					run: function(win) {
-						if (win.document && win.document.getElementById ("zindus-statusbar-progress"))
-						{
-							win.document.getElementById ("zindus-statusbar-progress-text").setAttribute('value', "");
-							win.document.getElementById ('zindus-statusbar-progress').setAttribute('hidden', true);
-							win.document.getElementById ('zindus-statusbar-logo-processing').setAttribute('hidden', true);
-							win.document.getElementById ('zindus-statusbar-logo').setAttribute('hidden', false);
-						}
+						win.document.getElementById ("zindus-statusbar-progress-text").setAttribute('value', "");
+						win.document.getElementById ('zindus-statusbar-progress').setAttribute('hidden', true);
+						win.document.getElementById ('zindus-statusbar-logo-processing').setAttribute('hidden', true);
+						win.document.getElementById ('zindus-statusbar-logo').setAttribute('hidden', false);
 					}
 				};
 

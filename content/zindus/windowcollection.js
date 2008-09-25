@@ -45,7 +45,8 @@ WindowCollection.prototype.forEach = function(functor)
 		{
 			var win = this.m_h_a[id][i];
 
-			functor.run(win);
+			if (!win.closed)
+				functor.run(win);
 		}
 }
 
@@ -73,7 +74,7 @@ WindowCollection.prototype.populate = function()
 		var win = enumerator.getNext(); // win is [Object ChromeWindow] (just like window)
 
 		for (var id in this.m_h_a)
-			if (win.document.getElementById(id))
+			if (!win.closed && win.document.getElementById(id))
 			{
 				// logger().debug("found a window with id: " + id + (win.document.title ? win.document.title : "no title"));
 				this.m_h_a[id].push(win);

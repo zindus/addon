@@ -125,7 +125,7 @@ GdContact.prototype.updateFromContainer = function(node)
 	this.runFunctorOnContainer(functor);
 }
 
-GdContact.prototype.set_visited = function(a_visited, key)
+GdContact.set_visited = function(a_visited, key)
 {
 	if (!isPropertyPresent(a_visited, key))
 		a_visited[key] = true;
@@ -164,7 +164,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 						case "updated":
 						case "title":
 						case "content":
-							this.set_visited(a_visited, key);
+							GdContact.set_visited(a_visited, key);
 							functor.run(child, key);
 							break;
 						case "link":
@@ -172,7 +172,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 
 							if (rel == "edit" || rel == "self")
 							{
-								this.set_visited(a_visited, rel);
+								GdContact.set_visited(a_visited, rel);
 								functor.run(child, rel);
 							}
 							break;
@@ -183,7 +183,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 					{
 						case "organization":
 							if (!isPropertyPresent(a_visited, key) && child.getAttribute("rel") == this.ns_gd("work")
-							                                                       && child.hasChildNodes() )
+							                                       && child.hasChildNodes() )
 							{
 								this.m_container_children[child.localName] = child;
 
@@ -196,31 +196,31 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 											case "orgName":
 											case "orgTitle":
 												key = "organization#" + grandchildren[j].localName;
-
-												if (!isPropertyPresent(a_visited, key))
-												{
-													this.set_visited(a_visited, key);
-													functor.run(grandchildren[j], key);
-												}
+												GdContact.visit_first(key, a_visited, functor, grandchildren[j]);
 												break;
 										}
 							}
 							break;
 
 						case "email":
-							// PrimaryEmail == the <email> element with primary="true"
-							// SecondEmail  == the first <element> element without the primary=true attribute
+							// PrimaryEmail == the first  <email> element
+							// SecondEmail  == the second <email> element
 
-							if (child.getAttribute("primary") == "true")
-								key = "PrimaryEmail";
-							else 
+							var is_visited;
+							key = "PrimaryEmail";
+
+							is_visited = GdContact.visit_first(key, a_visited, functor, child);
+
+							if (!is_visited)
+							{
 								key = "SecondEmail";
 
-							if (!isPropertyPresent(a_visited, key))
-							{
-								this.set_visited(a_visited, key);
-								functor.run(child, key);
+								GdContact.visit_first(key, a_visited, functor, child);
 							}
+
+							if (child.getAttribute("primary") == "true" && (key != "PrimaryEmail" || !is_visited))
+								this.m_logger.warn("a contact has an <email> element with a 'primary' attribute that isn't mapped to PrimaryEmail: " + child.getAttribute("address"));
+
 							break;
 
 						case "phoneNumber":
@@ -230,39 +230,40 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 							var key_for_certain = (child.localName == "postalAddress") ? ("postalAddress#" + key) : key;
 
 							if (isPropertyPresent(this.m_contact_converter.gd_certain_keys_converted()[child.localName], key_for_certain))
-							{
-								key = child.localName + "#" + key;
+								GdContact.visit_first(child.localName + "#" + key, a_visited, functor, child);
 
-								if (!isPropertyPresent(a_visited, key))
-								{
-									this.set_visited(a_visited, key);
-									functor.run(child, key);
-								}
-							}
 							break;
 
 						case "im":
 							key = String(child.getAttribute("protocol")).substr(this.m_ns_gd_length);
 
 							if (key == "AIM")
-							{
-								key = "im#" + key;
+								GdContact.visit_first("im#" + key, a_visited, functor, child);
 
-								if (!isPropertyPresent(a_visited, key))
-								{
-									this.set_visited(a_visited, key);
-									functor.run(child, key);
-								}
-							}
 							break;
 
 						case "deleted":
-							this.set_visited(a_visited, key);
+							GdContact.set_visited(a_visited, key);
 							functor.run(child, key);
 							break;
 					}
 			}
 	}
+}
+
+
+GdContact.visit_first = function(key, a_visited, functor, child)
+{
+	var is_visited = false;
+
+	if (!isPropertyPresent(a_visited, key))
+	{
+		GdContact.set_visited(a_visited, key);
+		functor.run(child, key);
+		is_visited = true;
+	}
+
+	return is_visited;
 }
 
 GdContact.prototype.nodeModifyOrMarkForDeletion = function(node, attribute, a_field, key, a_field_used, a_to_be_deleted)
@@ -404,7 +405,7 @@ GdContact.prototype.updateFromProperties = function(properties)
 	// now do DELs (don't do inside loop because deleting elements of an array while iterating over it produces unexpected results)
 	for (key in a_to_be_deleted)
 		try {
-			this.m_logger.debug("updateFromProperties: removeChild: key: " + key);
+			// this.m_logger.debug("updateFromProperties: removeChild: key: " + key);
 			a_to_be_deleted[key].parent.removeChild(a_to_be_deleted[key].child);
 		} catch (ex) {
 			zinAssertAndLog(false, "key: " + key + "ex: " + ex + "ex.stack: " + ex.stack);

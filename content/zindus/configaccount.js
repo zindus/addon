@@ -34,7 +34,7 @@ function ConfigAccount()
 	this.m_gd_sync_with_bimap     = new BiMap( [ "zg",                              "pab"                              ], 
 	                                           [ "zindus-ca-gd-syncwith-zg", "zindus-ca-gd-syncwith-pab" ] );
 
-	this.m_logger                 = newLogger("ConfigAccount"); // this.m_logger.level(Logger.NONE); // TODO for debugging
+	this.m_logger                 = newLogger("ConfigAccount"); // this.m_logger.level(Logger.NONE);
 	this.m_payload_configsettings = null;
 	this.m_payload_sw             = null;
 	this.m_maestro                = null;
@@ -352,7 +352,7 @@ ConfigAccount.prototype.accountFromDocument = function(format_xx)
 	else
 		account.set(Account.zm_sync_gal_enabled, ConfigSettings.getValueFromRadio("zindus-ca-zm-gal-menulist", this.m_gal_radio_bimap));
 		
-	this.m_logger.debug("accountFromDocument: blah: returns: " + account.toString()); // TODO
+	this.m_logger.debug("accountFromDocument: returns: " + account.toString());
 
 	return account;
 }

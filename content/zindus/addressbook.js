@@ -155,7 +155,7 @@ AddressBook.prototype.getAddressBookNameByUri = function(uri)
 				break;
 			}
 
-	this.m_logger.debug("getAddressBookNameByUri: uri: " + uri + " returns: " + ret); // TODO
+	// this.m_logger.debug("getAddressBookNameByUri: uri: " + uri + " returns: " + ret);
 
 	return ret;
 }

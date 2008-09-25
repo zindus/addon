@@ -248,8 +248,8 @@ SyncWindow.prototype.zwc_functor = function(is_showlogo)
 		m_is_showlogo: is_showlogo,
 
 		run: function(win) {
-			win.document.getElementById('zindus-statusbar-logo').setAttribute('hidden', !this.m_is_showlogo);
-			win.document.getElementById('zindus-statusbar-logo-processing').setAttribute('hidden', this.m_is_showlogo);
+				win.document.getElementById('zindus-statusbar-logo').setAttribute('hidden', !this.m_is_showlogo);
+				win.document.getElementById('zindus-statusbar-logo-processing').setAttribute('hidden', this.m_is_showlogo);
 		}
 	};
 

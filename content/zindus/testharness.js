@@ -56,18 +56,18 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
-	// ret = ret && this.testGoogleContacts1();
-	// ret = ret && this.testGoogleContacts2();
-	// ret = ret && this.testGoogleContacts3();
-	// ret = ret && this.testGoogleContacts4();
-	// ret = ret && this.testGdAddressConverter();
-	// ret = ret && this.testGdContact();
+	ret = ret && this.testGoogleContacts1();
+	ret = ret && this.testGoogleContacts2();
+	ret = ret && this.testGoogleContacts3();
+	ret = ret && this.testGoogleContacts4();
+	ret = ret && this.testGdAddressConverter();
+	ret = ret && this.testGdContact();
 	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
 	// ret = ret && this.testDeleteCard();
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
-	ret = ret && this.createGoogleRuleVioliation();
+	// ret = ret && this.createGoogleRuleVioliation();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -755,9 +755,10 @@ TestHarness.prototype.testGoogleContacts1 = function()
 
 	properties = this.sampleGoogleContactProperties();
 
-	meta = newObject("id", "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0",
-	                  "updated", "2008-03-29T20:36:25.343Z",
-					  "edit", "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0/12068229blah"
+	meta = newObject("id",      "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0",
+	                 "self",    "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0",
+					 "updated", "2008-03-29T20:36:25.343Z",
+					 "edit",    "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0/12068229blah"
 					  );
 
 
@@ -777,7 +778,7 @@ TestHarness.prototype.testGoogleContacts1 = function()
 	<gd:email rel='http://schemas.google.com/g/2005#other' address='@@PrimaryEmail@@' primary='true'/>\
 	<gd:email rel='http://schemas.google.com/g/2005#home' address='@@SecondEmail@@'/>\
 	<gd:email rel='http://schemas.google.com/g/2005#home' address='john.smith.home.2@example.com'/>\
-	<gd:email rel='http://schemas.google.com/g/2005#other' address='john.smith.other@example.com'/>\
+	<gd:email rel='http://schemas.google.com/g/2005#other' address='john.smith.other@example.com' />\
 	<gd:email rel='http://schemas.google.com/g/2005#work' address='john.smith.work@example.com'/>\
 	<gd:im address='@@im#AIM@@' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/>\
 	<gd:im address='aim-im-2' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/>\
@@ -837,7 +838,8 @@ TestHarness.prototype.testGoogleContacts1 = function()
 
 	contact.updateFromProperties(properties);
 
-	properties["SecondEmail"]      = "john.smith.home.2@example.com"; // take the next in line...
+	properties["PrimaryEmail"]     = "john.smith.home.2@example.com"; // the first <email> element
+	properties["SecondEmail"]      = "john.smith.other@example.com";  // the second...
 	properties["phoneNumber#home"] = "3-home";
 	properties["im#AIM"]           = "aim-im-2";
 
@@ -846,7 +848,8 @@ TestHarness.prototype.testGoogleContacts1 = function()
 	// 4. test adding all properties to a new contact
 	//
 	properties = this.sampleGoogleContactProperties();
-	contact = new GdContact();
+	var contact_converter = this.newContactConverter();
+	contact = new GdContact(contact_converter);
 	contact.updateFromProperties(properties);
 	this.matchGoogleContact(contact, properties, {});
 
@@ -875,6 +878,8 @@ TestHarness.prototype.testGoogleContacts2 = function()
 	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
 	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + aToLength(a_gd_contact));
 	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
+
+	return true;
 }
 
 TestHarness.prototype.sampleGoogleContactProperties = function()
@@ -905,7 +910,7 @@ TestHarness.prototype.matchGoogleContact = function(contact, properties, meta)
 	// this.m_logger.debug("matchGoogleContact: blah: \n properties: " + aToString(properties) + " \nmeta: " + aToString(meta) + " \ncontact: " + contact.toString());
 
 	for (key in properties)
-		zinAssertAndLog(contact.m_properties[key] == properties[key], "key: " + key);
+		zinAssertAndLog(contact.m_properties[key] == properties[key], "key: " + key + " value in contact: " + contact.m_properties[key] + " expected: " + properties[key]);
 
 	for (key in meta)
 		zinAssertAndLog(contact.m_meta[key] == meta[key], "key: " + key);

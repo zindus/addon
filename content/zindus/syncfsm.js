@@ -2095,6 +2095,10 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 			this.state.gd_luid_ab_in_tb = SyncFsm.zfcFindFirstFolder(this.zfcTb(), gd_ab_name_internal);
 		}
 
+		this.state.gd_ab_uri = this.state.m_addressbook.getAddressBookUriByName(gd_ab_name_public);
+
+		zinAssertAndLog(this.state.gd_ab_uri, gd_ab_name_public);
+
 		if (this.state.gd_sync_with == 'zg')
 		{
 			// Twiddling m_folder_converter here means that we can't use it in a zm sync...
@@ -2727,24 +2731,46 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 			{
 				var id         = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 				var properties = this.state.m_addressbook.getCardProperties(abCard);
-				var checksum   = context.contact_converter().crc32(properties);
 
-				// this.state.m_logger.debug("loadTbCards: Popularity Index: for card: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + "  is: " + abCard.popularityIndex);
+				// first, we do subtle transformations on cards.
+				// 
+
+				// replace \r\n with \n - issue #121 and https://bugzilla.mozilla.org/show_bug.cgi?id=456678
+				// 
+				if (isPropertyPresent(properties, "Notes") && properties["Notes"].match(/\r\n/))
+				{
+					properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
+					abCard.setCardValue("Notes", properties["Notes"]);
+					this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with \\r\\n in the notes field - normalising it to \\n as per IRC discussion. Notes: " + properties["Notes"]);
+
+					mdbCard.editCardToDatabase(uri);
+				}
+
+				// if this addressbook is being synced with google, and SecondEmail is populated and PrimaryEmail isn't,
+				// move SecondEmail to PrimaryEmail
+				//
+				if (uri == this.state.gd_ab_uri &&
+				     (!isPropertyPresent(properties, "PrimaryEmail") || properties["PrimaryEmail"].length == 0) &&
+				     isPropertyPresent(properties, "SecondEmail"))
+				{
+					properties["PrimaryEmail"] = properties["SecondEmail"];
+					properties["SecondEmail"] = "";
+
+					abCard.setCardValue("PrimaryEmail", properties["PrimaryEmail"]);
+					abCard.setCardValue("SecondEmail",  properties["SecondEmail"]);
+
+					this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with a SecondEmail and no PrimaryEmail - swapping: luid: " + id + " PrimaryEmail: " + properties["PrimaryEmail"]);
+
+					mdbCard.editCardToDatabase(uri);
+				}
+
+				var checksum = context.contact_converter().crc32(properties);
 
 				if (! (id > AUTO_INCREMENT_STARTS_AT)) // id might be null (not present) or zero (reset after the map was deleted)
 				{
 					id = zfcTb.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
 
 					this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, id);
-
-					if (isPropertyPresent(properties, "Notes") && properties["Notes"].match(/\r\n/))
-					{
-						properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
-						abCard.setCardValue("Notes", properties["Notes"]);
-						mdbCard.editCardToDatabase(uri);
-						checksum = context.contact_converter().crc32(properties);
-						this.state.m_logger.debug("loadTbCards pass 3: found a card with \\r\\n in the notes field - normalising it to \\n as per IRC discussion. luid: " + id);
-					}
 
 					zfcTb.set(new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, id, FeedItem.ATTR_CS, checksum,
 					                   FeedItem.ATTR_L, aUri[uri]));
@@ -2931,10 +2957,9 @@ SyncFsm.prototype.loadTbTestForGdCardsEmpty = function()
 		this.state.stopFailGcd = new GoogleRuleDetail();
 		this.state.stopFailGcd.m_empty = new Object();
 		
-		var uri_from = this.state.m_addressbook.getAddressBookUriByName(this.gdAddressbookName('public'));
-
 		for (var luid in a_empty_contacts)
-			this.state.stopFailGcd.m_empty[luid] = new GoogleRuleContactHandle(FORMAT_TB, luid, uri_from, a_empty_contacts[luid], null);
+			this.state.stopFailGcd.m_empty[luid] =
+			           new GoogleRuleContactHandle(FORMAT_TB, luid, this.state.gd_ab_uri, a_empty_contacts[luid], null);
 	}
 
 	return this.state.stopFailCode == null;
@@ -2945,7 +2970,6 @@ SyncFsm.prototype.loadTbTestForGdCardsUnique = function()
 	zinAssert(this.state.stopFailCode == null);
 
 	var a_email_luid = this.state.foreach_tb_card_functor.m_a_email_luid;
-	var uri_from     = this.state.m_addressbook.getAddressBookUriByName(this.gdAddressbookName('public'));
 	var gcd          = null;
 	var i, email, luid, gd_properties, tb_properties;
 
@@ -2969,7 +2993,7 @@ SyncFsm.prototype.loadTbTestForGdCardsUnique = function()
 				//
 				tb_properties = this.getContactFromLuid(this.state.sourceid_tb, luid, FORMAT_TB);
 
-				gcd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_TB, luid, uri_from, tb_properties, null);
+				gcd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_TB, luid, this.state.gd_ab_uri, tb_properties, null);
 			}
 		}
 
@@ -3032,7 +3056,6 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 			{
 				gcd      = new GoogleRuleDetail();
 				gcd.m_unique = new Object();
-				var uri_from = this.state.m_addressbook.getAddressBookUriByName(this.gdAddressbookName('public'));
 			}
 
 			gcd.m_unique[email] = new Object();
@@ -3123,7 +3146,6 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 		{
 			gcd = new GoogleRuleDetail();
 			gcd.m_unique = new Object();
-			var uri_from = this.state.m_addressbook.getAddressBookUriByName(this.gdAddressbookName('public'));
 		}
 
 		gcd.m_unique[email] = new Object();
@@ -3137,7 +3159,7 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 			// If we included all tb and not google, it'd heavily favour selecting tb contacts...
 			//
 			tb_properties             = this.getContactPropertiesNormalised(sourceid_tb, luid);
-			gcd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_TB, luid, uri_from, tb_properties, null);
+			gcd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_TB, luid, this.state.gd_ab_uri, tb_properties, null);
 		}
 
 		luid          = zfcGid.get(a_gd_email[email]).get(sourceid_pr);
@@ -4490,14 +4512,15 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
 	var zfc    = this.zfc(sourceid);
 	var format = this.state.sources[sourceid]['format'];
 	var zfi    = zfc.get(luid);
+	var type   = zfi.type();
 	var ret    = "";
 	var key;
 
-	if (zfi.type() == FeedItem.TYPE_FL)
+	if (type == FeedItem.TYPE_FL || type == FeedItem.TYPE_SF)
 		ret += this.state.m_folder_converter.convertForPublic(target_format, format, zfi);
 	else
 	{
-		zinAssert(zfi.type() == FeedItem.TYPE_CN);
+		zinAssertAndLog(type == FeedItem.TYPE_CN, type);
 
 		if (zfi.isPresent(FeedItem.ATTR_DEL))
 			ret += "<deleted>";
@@ -6019,8 +6042,8 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 		this.state.stopFailCode   = 'failon.unable.to.update.server';
 
-		this.state.stopFailDetail = "\n" + stringBundleString("status.failon.unable.to.update.server.detail1");
-		this.state.stopFailDetail += " " + remote_update_package.soap.method + " " + aToString(remote_update_package.soap.arg);
+		this.state.stopFailDetail = "\n" + stringBundleString("status.failon.unable.to.update.server.method",
+								     [ remote_update_package.soap.method + " " + aToString(remote_update_package.soap.arg) ] );
 
 		this.state.is_source_update_problem = true;
 	}
@@ -6308,7 +6331,6 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 				var gcd = new GoogleRuleDetail();
 				gcd.m_unique = new Object();
-				var uri_from = this.state.m_addressbook.getAddressBookUriByName(this.gdAddressbookName('public'));
 
 				// find the email address that caused the conflict
 				//
@@ -6326,7 +6348,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 					zinAssertAndLog(false, "tb_properties: " + aToString(tb_properties) + " google contact: " + contact.toString());
 
 				gcd.m_unique[email] = new Object();
-				gcd.m_unique[email][luid_tb] = new GoogleRuleContactHandle(FORMAT_TB, luid_tb, uri_from, tb_properties, null);
+				gcd.m_unique[email][luid_tb] = new GoogleRuleContactHandle(FORMAT_TB, luid_tb, this.state.gd_ab_uri, tb_properties, null);
 
 				luid = contact.m_meta[GdContact.id];
 				GdContact.transformProperties(contact.m_properties);
@@ -6341,24 +6363,12 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 		else
 		{
 			this.state.stopFailCode   = 'failon.unable.to.update.server';
-			this.state.stopFailDetail = "\n" + stringBundleString("status.failon.unable.to.update.server.detail1") +
-			                            " "  + remote_update_package.remote.method +
-			                            " "  + stringBundleString("status.failon.unable.to.update.server.detail2") +
-			                            " "  + this.state.m_http.m_http_status_code;
-
-			if (this.state.m_http.response('text') && this.state.m_http.response('text').length > 0)
-				this.state.stopFailDetail += "\n" + stringBundleString("status.failon.unable.to.update.server.detail3") +
-				                             " " + this.state.m_http.response('text');
-
-			var zfiGid = this.state.zfcGid.get(suo.gid);
-
-			if (zfiGid.isPresent(suo.sourceid_winner))
-			{
-				var luid_winner = zfiGid.get(suo.sourceid_winner);
-				var properties  = this.getContactFromLuid(suo.sourceid_winner, luid_winner, FORMAT_TB);
-				this.state.stopFailDetail += "\n" + stringBundleString("status.failon.unable.to.update.server.detail4") +
-				                             "\n" + aToString(properties);
-			}
+			this.state.stopFailDetail = "\n" +
+				stringBundleString("status.failon.unable.to.update.server.method", [ remote_update_package.remote.method ] ) + " " +
+				stringBundleString("status.failon.unable.to.update.server.response",
+					[ this.state.m_http.m_http_status_code,
+						((this.state.m_http.response('text') && this.state.m_http.response('text').length > 0) ?
+							this.state.m_http.response('text') : "") ] );
 		}
 	}
 
@@ -7607,6 +7617,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.gd_sync_token                 = null;
 	state.gd_luid_ab_in_gd              = null;         // luid of the parent addressbook in this.zfcPr()
 	state.gd_luid_ab_in_tb              = null;         // luid of the parent addressbook in this.zfcTb()
+	state.gd_ab_uri                     = null;         // uri of the thunderbird addressbook being synced with google
 	state.gd_sync_with                  = null;         // pab or zg
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
@@ -7937,13 +7948,12 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 		this.state.m_logger.debug("entryActionGetContactPuGd: a_gd_contact_to_get: " + this.state.a_gd_contact_to_get.toString());
 	}
 
-	if (this.state.a_gd_contact_to_get.length > 0)
+	if (this.state.a_gd_contact_to_get.length > 0 && !this.state.is_source_update_problem)
 	{
-		// this is the one place where we GET a single contact and use the SELF url for that purpose.
+		// this is one place where we GET a single contact and use the SELF url for that purpose.
 		// According to:
 		// http://groups.google.com/group/google-contacts-api/browse_thread/thread/50e9ba8955b3b18f
-		// id ought to be treated as an opaque string
-		// id doesn't vary by projection (always uses /base) while self does...
+		// id ought to be treated as an opaque string nor does it vary by projection (always uses /base) while self does...
 		//
 		var id  = this.state.a_gd_contact_to_get.pop();
 		var url = gdAdjustHttpHttps(this.zfcPr().get(id).get(FeedItem.ATTR_SELF));
@@ -7966,6 +7976,14 @@ SyncFsmGd.prototype.exitActionGetContactPuGd = function(state, event)
 {
 	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
 		return;
+
+	// a 404 here is conceivable - a contact can get deleted on the server between the earlier GET and now.
+	//
+	if (!this.state.m_http.is_http_status(HTTP_STATUS_2xx))
+	{
+		this.state.stopFailCode = 'failon.gd.get';
+		this.state.is_source_update_problem = true;
+	}
 
 	var a_gd_contact = GdContact.arrayFromXpath(this.contact_converter(), this.state.m_http.response(), "/atom:entry");
 
