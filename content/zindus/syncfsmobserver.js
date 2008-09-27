@@ -404,7 +404,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					zinAssert(false); // ensure that all cases are covered above
 
 				if (es.failcode() == 'failon.unknown')
-					es.m_fail_detail = stringBundleString("status.failmsg.see.bug.reporting.url");
+					es.m_fail_detail = BUG_REPORT_URI;
 
 				if (es.m_exit_status != 0)
 					es.m_fail_fsmoldstate = fsmstate.oldstate;

@@ -40,9 +40,10 @@ function SyncFsmExitStatus()
 		'failon.integrity.zm.bad.credentials'  : { 'hasdetail' : 0 }, //     something dodgy about url, username or password - dont proceed
 		'failon.integrity.gd.bad.credentials'  : { 'hasdetail' : 0 }, //     something dodgy about email address or password - dont proceed
 		'failon.integrity.data.store.in'       : { 'hasdetail' : 0 }, //     something dodgy about the data store that just got loaded
-		'failon.integrity.data.store.out'      : { 'hasdetail' : 0 }, //     internal error - we've created a data store that's dodgy
-		'failon.integrity.accounts.identical'  : { 'hasdetail' : 1 }, //     user has created accounts that are identical
-		'failon.integrity.accounts.one.zimbra' : { 'hasdetail' : 0 }, // 10. user has created more than one zimbra account
+		'failon.integrity.data.store.out'      : { 'hasdetail' : 1 }, //     internal error - we've created a data store that's dodgy
+		'failon.integrity.data.store.map'      : { 'hasdetail' : 1 }, //     internal error - somehow a card acquired the luid of a folder!
+		'failon.integrity.accounts.identical'  : { 'hasdetail' : 1 }, // 10. user has created accounts that are identical
+		'failon.integrity.accounts.one.zimbra' : { 'hasdetail' : 0 }, //     user has created more than one zimbra account
 		'failon.unknown'                       : { 'hasdetail' : 0 }, //     this should never be!
 		'failon.folder.name.empty'             : { 'hasdetail' : 1 }, //    
 		'failon.folder.name.duplicate'         : { 'hasdetail' : 1 }, //    
@@ -51,8 +52,8 @@ function SyncFsmExitStatus()
 		'failon.folder.must.be.present'        : { 'hasdetail' : 1 }, //    
 		'failon.folder.reserved.changed'       : { 'hasdetail' : 1 }, //    
 		'failon.folder.name.clash'             : { 'hasdetail' : 1 }, //     a folder name entered the namespace from both tb and zm sides
-		'failon.folder.source.update'          : { 'hasdetail' : 1 }, //     the source update operations can't be applied with confidence
-		'failon.folder.cant.create.shared'     : { 'hasdetail' : 1 }, // 20.
+		'failon.folder.source.update'          : { 'hasdetail' : 1 }, // 20. the source update operations can't be applied with confidence
+		'failon.folder.cant.create.shared'     : { 'hasdetail' : 1 }, //    
 		'failon.unable.to.update.server'       : { 'hasdetail' : 1 }, //     couldn't make sense of the http/soap response
 		'failon.unable.to.update.thunderbird'  : { 'hasdetail' : 1 }, //     
 		'failon.no.xpath'                      : { 'hasdetail' : 0 }, //    
@@ -61,13 +62,13 @@ function SyncFsmExitStatus()
 		'failon.multiple.ln'                   : { 'hasdetail' : 1 }, //      
 		'failon.gd.conflict.1'                 : { 'hasdetail' : 0 }, //     
 		'failon.gd.conflict.2'                 : { 'hasdetail' : 0 }, //     
-		'failon.gd.conflict.3'                 : { 'hasdetail' : 0 }, // 
-		'failon.gd.conflict.4'                 : { 'hasdetail' : 0 }, // 30.
+		'failon.gd.conflict.3'                 : { 'hasdetail' : 0 }, // 30.
+		'failon.gd.conflict.4'                 : { 'hasdetail' : 0 }, //    
 		'failon.gd.forbidden'                  : { 'hasdetail' : 0 }, //    
 		'failon.gd.syncwith'                   : { 'hasdetail' : 1 }, //     
 		'failon.gd.get'                        : { 'hasdetail' : 0 }, //     
 		'failon.zm.empty.contact'              : { 'hasdetail' : 1 }, //    
-		'failon.unauthorized'                  : { 'hasdetail' : 0 }, // 35. server 401 - did a proxy remove the 'Authorized' header?
+		'failon.unauthorized'                  : { 'hasdetail' : 0 }, //     server 401 - did a proxy remove the 'Authorized' header?
 		'failon.auth'                          : { 'hasdetail' : 1 }  //     Failed to login to Google or Zimbra via preauth
 	};
 }

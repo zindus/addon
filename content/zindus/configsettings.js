@@ -174,8 +174,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
 					logger().debug("ConfigSettings.onCommand: cs.sync.failed.unexpectedly");
-					msg = stringBundleString("cs.sync.failed.unexpectedly") + "\n" +
-					      stringBundleString("status.failmsg.see.bug.reporting.url")
+					msg = stringBundleString("cs.sync.failed.unexpectedly") + "\n" + BUG_REPORT_URI;
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
 				{

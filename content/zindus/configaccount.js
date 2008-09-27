@@ -134,8 +134,7 @@ ConfigAccount.prototype.onCommand = function(id_target)
 				if (this.m_payload_sw.m_es.m_exit_status == null)
 				{
 					logger().debug("ConfigAccount.onCommand: cs.sync.failed.unexpectedly");
-					msg = stringBundleString("cs.sync.failed.unexpectedly") + "\n" +
-					      stringBundleString("status.failmsg.see.bug.reporting.url")
+					msg = stringBundleString("cs.sync.failed.unexpectedly") + "\n" + BUG_REPORT_URI;
 				}
 				else
 					msg = this.m_payload_sw.m_es.asMessage("ca.auth.succeeded", "ca.auth.failed");

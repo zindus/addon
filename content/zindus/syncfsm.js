@@ -317,7 +317,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	else if (!this.state.m_addressbook.getPabName())
 	{
 		this.state.stopFailCode   = 'failon.no.pab';
-		this.state.stopFailDetail = "\n" + stringBundleString("status.failmsg.see.bug.reporting.url");
+		this.state.stopFailDetail = "\n" + BUG_REPORT_URI;
 
 		nextEvent = 'evLackIntegrity';
 		this.state.m_logger.debug("entryActionStart: addressbooks: " + this.state.m_addressbook.addressbooksToString());
@@ -2122,12 +2122,9 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 2");
 
-	if (passed)
-	{
-		this.state.foreach_tb_card_functor = this.get_foreach_card_functor();
+	this.state.foreach_tb_card_functor = this.get_foreach_card_functor();
 
-		this.loadTbCards(aUri);                                 // 5. exclude mailing lists and their cards
-	}
+	passed = passed && this.loadTbCards(aUri);                  // 5. load cards, excluding mailing lists and their cards
 
 	this.state.stopwatch.mark(state + " 3: passed: " + passed);
 
@@ -2653,7 +2650,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
 			var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
 
-			if (id > AUTO_INCREMENT_STARTS_AT && !zfcTb.isPresent(id))
+			if (id > AUTO_INCREMENT_STARTS_AT)
 			{
 				// pass 3 gives the card an luid and commits it to the database
 				// But if we failed to converge (eg because of a conflict when trying to update google)
@@ -2662,196 +2659,216 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 				// but not commit it to the db until after the remote update is successful.
 				// As things stand though, this warning message appears and everything works ok.
 				//
-				this.state.m_logger.debug("loadTbCards: attribute luid: " + id + " is being removed because it's not in the map.  Card: " +
-			                                 this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
-				this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, 0);  // api doesn't have a "delete"
+				if (!zfcTb.isPresent(id))
+				{
+					this.state.m_logger.debug("loadTbCards: attribute luid: " + id +
+					                          " is being removed because it's not in the map.  Card: " +
+			                                  this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
+
+					this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, 0);  // api doesn't have a "delete"
+				}
+				else if (true || zfcTb.get(id).type() != FeedItem.TYPE_CN)
+				{
+					this.state.m_logger.error("card had attribute luid: " + id + " but this luid isn't a contact!  zfi: " +
+					                          zfcTb.get(id).toString() + "Card: " +
+											  this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) +
+											  "uri: " + uri);
+
+					this.state.stopFailCode   = 'failon.integrity.data.store.map';
+					this.state.stopFailDetail = stringBundleString("status.failon.integrity.data.store.detail", [ BUG_REPORT_URI ] );
+				}
 			}
 
-			return true;
+			return this.state.stopFailCode == null;
 		}
 	};
 
 	for (uri in aUri)
 		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
 
-	this.state.m_logger.debug("loadTbCards pass 1: aUri: " + aToString(aUri) + " aMailListUri: " + aToString(aMailListUri));
+	if (this.state.stopFailCode == null)
+	{
+		this.state.m_logger.debug("loadTbCards pass 1: aUri: " + aToString(aUri) + " aMailListUri: " + aToString(aMailListUri));
 
-	// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
-	//
-	var aCardKeysToExclude = new Object();
-	msg = "loadTbCards: aCardKeysToExclude: pass 2: ";
+		// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
+		//
+		var aCardKeysToExclude = new Object();
+		msg = "loadTbCards: aCardKeysToExclude: pass 2: ";
 
-	functor_foreach_card = {
-		state: this.state,
-		run: function(uri, item)
-		{
-			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
-			var abCard  = item.QueryInterface(Ci.nsIAbCard);
-			var key     = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
-
-			aCardKeysToExclude[key] = aMailListUri[uri];
-
-			msg += "\nexcluding card: " + key + " " + aMailListUri[uri] + " " + this.state.m_addressbook.nsIAbCardToPrintable(abCard);
-
-			return true;
-		}
-	};
-
-	for (uri in aMailListUri)
-		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
-
-	this.state.m_logger.debug(msg);
-
-	var context = this;
-
-	// pass 3 - iterate through the cards in the zindus folders excluding mailing list uris and cards with keys in aCardKeysToExclude
-	//
-	functor_foreach_card = {
-		state: this.state,
-
-		run: function(uri, item)
-		{
-			var abCard  = item.QueryInterface(Ci.nsIAbCard);
-			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
-			var key     = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
-			msg         = "loadTb pass 3: uri: " + uri + " card key: " + key;
-
-			var isInTopLevelFolder = false;
-
-			if (!abCard.isMailList && ( !isPropertyPresent(aCardKeysToExclude, key) ||
-			                            (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] != uri)))
-					isInTopLevelFolder = true;
-
-			if (false)
-			this.state.m_logger.debug("loadTbCards pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
-			                          " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard) +
-			                          " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
-			                          " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
-			                          " attributes: " + aToString(this.state.m_addressbook.getCardAttributes(abCard)) +
-			                          " lastModifiedDate: " + abCard.lastModifiedDate +
-			                          " checksum: " +
-									   context.contact_converter().crc32(this.state.m_addressbook.getCardProperties(abCard)));
-
-			if (isInTopLevelFolder)
+		functor_foreach_card = {
+			state: this.state,
+			run: function(uri, item)
 			{
-				var id         = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
-				var properties = this.state.m_addressbook.getCardProperties(abCard);
+				var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
+				var abCard  = item.QueryInterface(Ci.nsIAbCard);
+				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
 
-				// first, we do subtle transformations on cards.
-				// 
+				aCardKeysToExclude[key] = aMailListUri[uri];
 
-				// replace \r\n with \n - issue #121 and https://bugzilla.mozilla.org/show_bug.cgi?id=456678
-				// 
-				if (isPropertyPresent(properties, "Notes") && properties["Notes"].match(/\r\n/))
+				msg += "\nexcluding card: " + key + " " + aMailListUri[uri] + " " + this.state.m_addressbook.nsIAbCardToPrintable(abCard);
+
+				return true;
+			}
+		};
+
+		for (uri in aMailListUri)
+			this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
+
+		this.state.m_logger.debug(msg);
+
+		var context = this;
+
+		// pass 3 - iterate through the cards in the zindus folders excluding mailing list uris and cards with keys in aCardKeysToExclude
+		//
+		functor_foreach_card = {
+			state: this.state,
+
+			run: function(uri, item)
+			{
+				var abCard  = item.QueryInterface(Ci.nsIAbCard);
+				var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
+				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
+				msg         = "loadTb pass 3: uri: " + uri + " card key: " + key;
+
+				var isInTopLevelFolder = false;
+
+				if (!abCard.isMailList && ( !isPropertyPresent(aCardKeysToExclude, key) ||
+				                            (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] != uri)))
+						isInTopLevelFolder = true;
+
+				if (false)
+				this.state.m_logger.debug("loadTbCards pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
+				                          " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard) +
+				                          " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
+				                          " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
+				                          " attributes: " + aToString(this.state.m_addressbook.getCardAttributes(abCard)) +
+				                          " lastModifiedDate: " + abCard.lastModifiedDate +
+				                          " checksum: " +
+										   context.contact_converter().crc32(this.state.m_addressbook.getCardProperties(abCard)));
+
+				if (isInTopLevelFolder)
 				{
-					properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
-					abCard.setCardValue("Notes", properties["Notes"]);
-					this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with \\r\\n in the notes field - normalising it to \\n as per IRC discussion. Notes: " + properties["Notes"]);
+					var id         = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+					var properties = this.state.m_addressbook.getCardProperties(abCard);
 
-					mdbCard.editCardToDatabase(uri);
-				}
+					// first, we do subtle transformations on cards.
+					// 
 
-				// if this addressbook is being synced with google, and SecondEmail is populated and PrimaryEmail isn't,
-				// move SecondEmail to PrimaryEmail
-				//
-				if (uri == this.state.gd_ab_uri &&
-				     (!isPropertyPresent(properties, "PrimaryEmail") || properties["PrimaryEmail"].length == 0) &&
-				     isPropertyPresent(properties, "SecondEmail"))
-				{
-					properties["PrimaryEmail"] = properties["SecondEmail"];
-					properties["SecondEmail"] = "";
-
-					abCard.setCardValue("PrimaryEmail", properties["PrimaryEmail"]);
-					abCard.setCardValue("SecondEmail",  properties["SecondEmail"]);
-
-					this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with a SecondEmail and no PrimaryEmail - swapping: luid: " + id + " PrimaryEmail: " + properties["PrimaryEmail"]);
-
-					mdbCard.editCardToDatabase(uri);
-				}
-
-				var checksum = context.contact_converter().crc32(properties);
-
-				if (! (id > AUTO_INCREMENT_STARTS_AT)) // id might be null (not present) or zero (reset after the map was deleted)
-				{
-					id = zfcTb.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
-
-					this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, id);
-
-					zfcTb.set(new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, id, FeedItem.ATTR_CS, checksum,
-					                   FeedItem.ATTR_L, aUri[uri]));
-
-					msg += " added:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfcTb.get(id).toString();
-				}
-				else
-				{
-					zinAssert(zfcTb.isPresent(id)); // See the validity checking in pass 1 above
-
-					var zfi = zfcTb.get(id);
-
-					// if things have changed, update the map...
-					//
-					var keyParent = zfi.keyParent();
-
-					if (keyParent != aUri[uri] || zfi.get(FeedItem.ATTR_CS) != checksum)
+					// replace \r\n with \n - issue #121 and https://bugzilla.mozilla.org/show_bug.cgi?id=456678
+					// 
+					if (isPropertyPresent(properties, "Notes") && properties["Notes"].match(/\r\n/))
 					{
-						var reason = " reason: ";
-						if (keyParent != aUri[uri])
-							reason += " parent folder changed: l:" + keyParent + " aUri[uri]: " + aUri[uri];
-						if (zfi.get(FeedItem.ATTR_CS) != checksum)
-							reason += " checksum changed: ATTR_CS: " + zfi.get(FeedItem.ATTR_CS) + " checksum: " + checksum;
+						properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
+						abCard.setCardValue("Notes", properties["Notes"]);
+						this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with \\r\\n in the notes field - normalising it to \\n as per IRC discussion. Notes: " + properties["Notes"]);
 
-						zfi.set(FeedItem.ATTR_CS, checksum);
-						zfi.set(FeedItem.ATTR_L, aUri[uri]);
+						mdbCard.editCardToDatabase(uri);
+					}
 
-						msg += " changed: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
-						msg += reason;
+					// if this addressbook is being synced with google, and SecondEmail is populated and PrimaryEmail isn't,
+					// move SecondEmail to PrimaryEmail
+					//
+					if (uri == this.state.gd_ab_uri &&
+					     (!isPropertyPresent(properties, "PrimaryEmail") || properties["PrimaryEmail"].length == 0) &&
+					     isPropertyPresent(properties, "SecondEmail"))
+					{
+						properties["PrimaryEmail"] = properties["SecondEmail"];
+						properties["SecondEmail"] = "";
+
+						abCard.setCardValue("PrimaryEmail", properties["PrimaryEmail"]);
+						abCard.setCardValue("SecondEmail",  properties["SecondEmail"]);
+
+						this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with a SecondEmail and no PrimaryEmail - swapping: luid: " + id + " PrimaryEmail: " + properties["PrimaryEmail"]);
+
+						mdbCard.editCardToDatabase(uri);
+					}
+
+					var checksum = context.contact_converter().crc32(properties);
+
+					if (! (id > AUTO_INCREMENT_STARTS_AT)) // id might be null (not present) or zero (reset after the map was deleted)
+					{
+						id = zfcTb.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
+
+						this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, id);
+
+						zfcTb.set(new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, id, FeedItem.ATTR_CS, checksum,
+						                   FeedItem.ATTR_L, aUri[uri]));
+
+						msg += " added:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfcTb.get(id).toString();
 					}
 					else
-						msg += " found:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
+					{
+						zinAssert(zfcTb.isPresent(id)); // See the validity checking in pass 1 above
+
+						var zfi = zfcTb.get(id);
+
+						// if things have changed, update the map...
+						//
+						var keyParent = zfi.keyParent();
+
+						if (keyParent != aUri[uri] || zfi.get(FeedItem.ATTR_CS) != checksum)
+						{
+							var reason = " reason: ";
+							if (keyParent != aUri[uri])
+								reason += " parent folder changed: l:" + keyParent + " aUri[uri]: " + aUri[uri];
+							if (zfi.get(FeedItem.ATTR_CS) != checksum)
+								reason += " checksum changed: ATTR_CS: " + zfi.get(FeedItem.ATTR_CS) + " checksum: " + checksum;
+
+							zfi.set(FeedItem.ATTR_CS, checksum);
+							zfi.set(FeedItem.ATTR_L, aUri[uri]);
+
+							msg += " changed: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
+							msg += reason;
+						}
+						else
+							msg += " found:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
+					}
+
+					zfcTb.get(id).set(FeedItem.ATTR_PRES, '1');
+
+					if (this.state.foreach_tb_card_functor && context.isInScopeTbLuid(id))
+						this.state.foreach_tb_card_functor.run(abCard, id, properties);
+				}
+				else
+					msg += " - ignored";
+
+				this.state.m_logger.debug(msg);
+
+				return true;
+			}
+		};
+
+		for (uri in aUri)
+			this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
+
+		// deletion detection works as follows.
+		// 1. a FeedItem.ATTR_PRES attribute was added in pass 3 above
+		// 2. iterate through the map
+		//    - an item without a FeedItem.ATTR_PRES attribute is marked as deleted
+		//    - remove the FeedItem.ATTR_PRES attribute so that it's not saved
+		// 
+
+		var functor_mark_deleted = {
+			run: function(zfi)
+			{
+				if (zfi.isPresent(FeedItem.ATTR_DEL))
+					; // do nothing
+				else if (zfi.isPresent(FeedItem.ATTR_PRES))
+					zfi.del(FeedItem.ATTR_PRES);
+				else if (context.isInScopeTbLuid(zfi.key()))
+				{
+					zfi.set(FeedItem.ATTR_DEL, 1);
+					context.debug("loadTbCards: - marking as deleted: " + zfi.toString());
 				}
 
-				zfcTb.get(id).set(FeedItem.ATTR_PRES, '1');
-
-				if (this.state.foreach_tb_card_functor && context.isInScopeTbLuid(id))
-					this.state.foreach_tb_card_functor.run(abCard, id, properties);
+				return true;
 			}
-			else
-				msg += " - ignored";
+		};
 
-			this.state.m_logger.debug(msg);
+		this.zfcTb().forEach(functor_mark_deleted, FeedCollection.ITER_NON_RESERVED);
+	}
 
-			return true;
-		}
-	};
-
-	for (uri in aUri)
-		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
-
-	// deletion detection works as follows.
-	// 1. a FeedItem.ATTR_PRES attribute was added in pass 3 above
-	// 2. iterate through the map
-	//    - an item without a FeedItem.ATTR_PRES attribute is marked as deleted
-	//    - remove the FeedItem.ATTR_PRES attribute so that it's not saved
-	// 
-
-	var functor_mark_deleted = {
-		run: function(zfi)
-		{
-			if (zfi.isPresent(FeedItem.ATTR_DEL))
-				; // do nothing
-			else if (zfi.isPresent(FeedItem.ATTR_PRES))
-				zfi.del(FeedItem.ATTR_PRES);
-			else if (context.isInScopeTbLuid(zfi.key()))
-			{
-				zfi.set(FeedItem.ATTR_DEL, 1);
-				context.debug("loadTbCards: - marking as deleted: " + zfi.toString());
-			}
-
-			return true;
-		}
-	};
-
-	this.zfcTb().forEach(functor_mark_deleted, FeedCollection.ITER_NON_RESERVED);
+	return this.state.stopFailCode == null;
 }
 
 
@@ -6598,7 +6615,10 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		this.state.stopwatch.mark(state + " 5");
 
 		if (!this.isConsistentDataStore())
-			this.state.stopFailCode = 'failon.integrity.data.store.out'; // this indicates a bug in our code
+		{
+			this.state.stopFailCode   = 'failon.integrity.data.store.out'; // this indicates a bug in our code
+			this.state.stopFailDetail = stringBundleString("status.failon.integrity.data.store.detail", [ BUG_REPORT_URI ] );
+		}
 	}
 
 	if (this.state.stopFailCode != null)

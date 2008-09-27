@@ -67,6 +67,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testDeleteCard();
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
+	// ret = ret && this.tweakLuidOnCard();
 	ret = ret && this.createGoogleRuleVioliation();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
@@ -1513,3 +1514,31 @@ TestHarness.prototype.testStringTimes = function()
 
 	return true;
 }
+
+TestHarness.prototype.tweakLuidOnCard = function()
+{
+	var addressbook = AddressBook.new();
+	var contact_converter = this.newContactConverter();
+	addressbook.contact_converter(contact_converter);
+
+	var uri  = "moz-abmdbdirectory://abook-10.mab";
+	var luid = "501"; // aa@example.com
+	var newluid = "260";
+
+	var abCard = addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
+
+	zinAssert(abCard);
+
+	this.m_logger.debug("abCard before: "  + addressbook.nsIAbCardToPrintableVerbose(abCard));
+
+	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
+
+	addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, newluid);
+
+	mdbCard.editCardToDatabase(uri);
+
+	this.m_logger.debug("abCard after: "  + addressbook.nsIAbCardToPrintableVerbose(abCard));
+
+	return true;
+}
+
