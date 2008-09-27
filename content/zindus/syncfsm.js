@@ -279,12 +279,13 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 1");
 
-	this.state.m_logger.debug("system details: " + " cookieEnabled: " + navigator.cookieEnabled +
-	                                               " online: " + navigator.onLine +
-											       " oscpu: " + navigator.oscpu +
-											       " platform: " + navigator.platform +
-												   " userAgent: " + navigator.userAgent +
-												   " zindus version: " + APP_VERSION_NUMBER);
+	this.state.m_logger.debug("start: " + " account: " + this.state.m_sfcd.account().get(Account.username) +
+										  " zindus version: " + APP_VERSION_NUMBER +
+	                                      " cookieEnabled: " + navigator.cookieEnabled +
+	                                      " online: " + navigator.onLine +
+										  " oscpu: " + navigator.oscpu +
+										  " platform: " + navigator.platform +
+										  " userAgent: " + navigator.userAgent );
 
 	// The first call to .getPabName() iterates through the thunderbird addressbooks, and the first load of the Mork addressbooks
 	// can take *ages* (easily 5-6 seconds).
@@ -1231,6 +1232,13 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 						msg += " new: need to do another <SyncRequest>";
 					}
 
+					if (!isPropertyPresent(attribute, "ms"))
+					{
+						// see issue #126
+						msg += " WARNING: folder didn't have an 'ms' attribute - giving it a fake one";
+						attribute["ms"] = 1;
+					}
+
 					zfcZm.set(new FeedItem(type, attribute));
 					msg += " adding to map";
 
@@ -1457,7 +1465,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 		//   - contacts that are in the parent folders of interest, and
 		//   - contacts whose content has changed (indicated by the rev attribute being bumped)
 		//
-		msg = "entryActionSyncResponse: aContact:";
+		msg = "entryActionSyncResponse: aContact: length: " + this.state.aContact.length + " zuios: ";
 		for (var i = 0; i < this.state.aContact.length; i++)
 			msg += " " + i + ": " + this.state.aContact[i].toString();
 		this.state.m_logger.debug(msg);
@@ -2654,10 +2662,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 				// but not commit it to the db until after the remote update is successful.
 				// As things stand though, this warning message appears and everything works ok.
 				//
-				this.state.m_logger.debug("loadTbCards: card had attribute luid: " + id +
-				                         " that wasn't in the map.  If the previous sync wasn't successful due to a conflict " +
-										 " around this card then it's normal behaviour and nothing to worry about. " +
-										 " Attribute removed.  Card: " +
+				this.state.m_logger.debug("loadTbCards: attribute luid: " + id + " is being removed because it's not in the map.  Card: " +
 			                                 this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 				this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, 0);  // api doesn't have a "delete"
 			}
@@ -3704,7 +3709,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 					zfc  = context.zfc(sourceid);
 					luid = zfi.get(sourceid);
 
-					if (zfc.get(luid).type() == FeedItem.TYPE_CN)
+					if (zfc.get(luid).type() == FeedItem.TYPE_CN && !zfc.get(luid).isPresent(FeedItem.ATTR_DEL))
 					{
 						count++;
 						a_luid[sourceid] = luid;
@@ -6059,12 +6064,13 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 {
-	var remote = new Object();
-	var bucket  = null;
-	var msg = "";
-	var indexSuo = null;
-	var sourceid, sourceid_winner, sourceid_target, suo, luid_winner, properties, contact, zfcTarget, zfiTarget, zfiGid;
+	var remote    = new Object();
+	var bucket    = null;
+	var indexSuo  = null;
 	var nextEvent = 'evNext';
+	var msg       = "";
+	var is_noop   = false;
+	var sourceid, sourceid_winner, sourceid_target, suo, luid_winner, properties, contact, zfcTarget, zfiTarget, zfiGid;
 
 	this.state.stopwatch.mark(state);
 
@@ -6132,10 +6138,11 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				if (isMatchObjects(properties_pre_update, contact.m_properties))
 				{
 					zfiTarget  = zfcTarget.get(luid_target);
-					msg       += " the local mod doesn't affect the remote contact - skip remote update";
+					msg       += " the local mod doesn't affect the remote contact - skip remote update: " + aToString(properties_pre_update);
 					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
 					delete this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo];
 					nextEvent = 'evRepeat';
+					is_noop   = true;
 				}
 				else
 				{
@@ -6166,7 +6173,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				zinAssertAndLog(false, "unmatched case: " + ORDER_SOURCE_UPDATE[i]);
 		}
 
-		if (bucket)
+		if (bucket || is_noop)
 			break;
 	}
 
@@ -6175,7 +6182,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 	this.state.remote_update_package = null;
 
-	if (bucket)
+	if (bucket && !is_noop)
 	{
 		this.state.remote_update_package = newObject('sourceid', sourceid, 'bucket', bucket, 'indexSuo', indexSuo, 'remote', remote);
 
@@ -7945,7 +7952,7 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 
 		this.state.is_done_get_contacts_pu = true;
 
-		this.state.m_logger.debug("entryActionGetContactPuGd: a_gd_contact_to_get: " + this.state.a_gd_contact_to_get.toString());
+		this.debug("entryActionGetContactPuGd: a_gd_contact_to_get: " + this.state.a_gd_contact_to_get.toString());
 	}
 
 	if (this.state.a_gd_contact_to_get.length > 0 && !this.state.is_source_update_problem)

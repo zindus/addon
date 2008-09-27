@@ -64,7 +64,7 @@
 <!ENTITY zindus.cs.general.button.gd.advanced.label     "Advanced Google Settings">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "v">
 
-<!ENTITY zindus.gr.title                                "Google Sync Conflict">
+<!ENTITY zindus.gr.title                                "Google Contacts rule violation">
 <!ENTITY zindus.gr.button.accept.label                  "Confirm">
 <!ENTITY zindus.gr.button.skip.label                    "Skip">
 <!ENTITY zindus.gr.column.one.style                     "margin-left:15px; max-width:10px">
@@ -73,15 +73,13 @@
 <!ENTITY zindus.gr.column.email.label                   "Email">
 <!ENTITY zindus.gr.column.summary.label                 "Differences">
 
-<!ENTITY zindus.cm.title                                "Zindus Contact Conflict Report">
-
 <!ENTITY zindus.cgd.title                               "Zindus Advanced Google Settings">
 <!ENTITY zindus.cgd.postal.caption.label                "Postal Address Fields">
 <!ENTITY zindus.cgd.postal.false.label                  "Not synced (recommended)">
 <!ENTITY zindus.cgd.postal.true.label                   "Thunderbird fields are represented as xml in Google">
-<!ENTITY zindus.cgd.conflict.caption.label              "How Google rule violations are handled">
+<!ENTITY zindus.cgd.conflict.caption.label              "How Google Contacts rule violations are handled">
 <!ENTITY zindus.cgd.conflict.ask.me.label               "Ask me">
-<!ENTITY zindus.cgd.conflict.dont.ask.label             "Dont Ask - choose the best and delete the rest">
+<!ENTITY zindus.cgd.conflict.dont.ask.label             "Dont ask me - delete contacts to fix rule violations">
 
 <!-- Sync Window -->
 

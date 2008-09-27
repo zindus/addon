@@ -34,7 +34,7 @@ function SyncWindow()
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 	this.m_zwc       = new WindowCollection(SHOW_STATUS_PANEL_IN);
 	this.m_sfcd      = null;
-	this.m_gct       = null;
+	this.m_grr       = new GoogleRuleRepeater();
 
 	this.initialise_per_fsm_members();
 
@@ -154,35 +154,13 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		if (fsmstate.isFinal())
 		{
 			var is_repeat = false;
-
-			if (this.m_payload.m_es.m_exit_status != 0)
-			{
-				var failcode         = this.m_payload.m_es.failcode();
-				var a_failcodes_seen = this.m_sfcd.sourceid(Account.indexToSourceId(this.m_sfcd.m_account_index), 'a_failcodes_seen');
-				var is_dont_ask      = GoogleRuleTrash.isDontAsk(failcode);
-				var is_failcode_seen = isPropertyPresent(a_failcodes_seen, failcode);
-				is_repeat            = isInArray(failcode, GoogleRuleTrash.FAIL_CODES) && is_dont_ask && !is_failcode_seen;
-
-				this.m_logger.debug("functor: isFinal: es: " + this.m_payload.m_es.toString() + " failcode" + failcode +
-			                      	" is_repeat: " + is_repeat + " a_failcodes_seen: " + aToString(a_failcodes_seen) );
-
-				if (is_failcode_seen && a_failcodes_seen[failcode] == is_dont_ask)
-					this.m_logger.warn("Something wierd happened - the last time we came through here, is_dont_ask was true!  So why wasn't the conflict auto-resolved??");
-			}
+			
+			if (this.m_sfcd.account().format_xx() == FORMAT_GD)
+				is_repeat = this.m_grr.resolve_if_appropriate(this.m_logger, this.m_payload.m_es, this.m_sfcd);
 
 			if (is_repeat)
 			{
-				a_failcodes_seen[failcode] = is_dont_ask;
-
-				// TODO this stuff goes in the timer too
-
-				this.m_logger.debug("functor: fsm failed with a conflict. auto-resolve it and try again.");
-
-				if (!this.m_gct)
-					this.m_gct = new GoogleRuleTrash();
-
-				this.m_gct.moveToTrashDontAsk(failcode, this.m_payload.m_es.m_fail_gcd);
-
+				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().get(Account.username)));
 				this.updateProgressUi(this.m_sfcd.account().get(Account.username) + "<br/><br/>" +
 				                        stringBundleString("progress.conflict.resolved.try.again"));
 			}
@@ -248,8 +226,8 @@ SyncWindow.prototype.zwc_functor = function(is_showlogo)
 		m_is_showlogo: is_showlogo,
 
 		run: function(win) {
-				win.document.getElementById('zindus-statusbar-logo').setAttribute('hidden', !this.m_is_showlogo);
-				win.document.getElementById('zindus-statusbar-logo-processing').setAttribute('hidden', this.m_is_showlogo);
+				dId(win, 'zindus-statusbar-logo').setAttribute('hidden', !this.m_is_showlogo);
+				dId(win, 'zindus-statusbar-logo-processing').setAttribute('hidden', this.m_is_showlogo);
 		}
 	};
 

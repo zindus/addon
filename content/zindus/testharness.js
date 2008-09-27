@@ -56,18 +56,18 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
-	ret = ret && this.testGoogleContacts1();
-	ret = ret && this.testGoogleContacts2();
-	ret = ret && this.testGoogleContacts3();
-	ret = ret && this.testGoogleContacts4();
-	ret = ret && this.testGdAddressConverter();
-	ret = ret && this.testGdContact();
+	// ret = ret && this.testGoogleContacts1();
+	// ret = ret && this.testGoogleContacts2();
+	// ret = ret && this.testGoogleContacts3();
+	// ret = ret && this.testGoogleContacts4();
+	// ret = ret && this.testGdAddressConverter();
+	// ret = ret && this.testGdContact();
 	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
 	// ret = ret && this.testDeleteCard();
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
-	// ret = ret && this.createGoogleRuleVioliation();
+	ret = ret && this.createGoogleRuleVioliation();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }

@@ -80,7 +80,6 @@ StatusBar.prototype.timerStart = function()
 
 	if (!this.m_is_fsm_running)
 	{
-		this.m_is_fsm_running = true;
 		window.setTimeout(this.onTimerFire, 0, this);
 		msg += "fired";
 	}
@@ -92,6 +91,7 @@ StatusBar.prototype.timerStart = function()
 
 StatusBar.prototype.onTimerFire = function(context)
 {
+	context.m_logger.debug("onTimerFire: about to run timer");
 	context.m_timer_functor = new TimerFunctor(Maestro.ID_FUNCTOR_STATUSBAR_TIMER, null, null);
 	context.m_timer_functor.run();
 }
@@ -204,12 +204,12 @@ StatusBar.update = function(zwc)
 		run: function(win) {
 			for (var x in obj)
 			{
-				win.document.getElementById("zindus-statusbar-" + x).hidden = (status != x);
-				win.document.getElementById("zindus-statusbar-" + x).value  = obj[x];
+				dId(win, "zindus-statusbar-" + x).hidden = (status != x);
+				dId(win, "zindus-statusbar-" + x).value  = obj[x];
 			}
 
-			win.document.getElementById("zindus-statusbar-state").tooltipText = tooltip;
-			win.document.getElementById("zindus-statusbar-state").hidden = false;
+			dId(win, "zindus-statusbar-state").tooltipText = tooltip;
+			dId(win, "zindus-statusbar-state").hidden = false;
 		}
 	};
 

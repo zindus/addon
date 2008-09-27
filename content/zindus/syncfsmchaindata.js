@@ -44,7 +44,7 @@ function SyncFsmChainData(a_accounts)
 		this.m_a_item[i] = newObject("account", account);
 
 		for (var j in SyncFsmChainData.ITEM_KEYS)
-			this.m_a_item[i][j] = SyncFsmChainData.ITEM_KEYS[j];
+			this.m_a_item[i][j] = SyncFsmChainData.ITEM_KEYS[j]();
 
 		if (!isPropertyPresent(this.m_a_first_of_format, account.format_xx()))
 			this.m_a_first_of_format[account.format_xx()] = i;
@@ -53,7 +53,10 @@ function SyncFsmChainData(a_accounts)
 	}
 }
 
-SyncFsmChainData.ITEM_KEYS = { is_slow_sync: false, a_failcodes_seen: {} };
+SyncFsmChainData.ITEM_KEYS = {
+	is_slow_sync:     function() { return false;        },
+	a_failcodes_seen: function() { return new Object(); }
+};
 
 SyncFsmChainData.prototype.toString = function()
 {
@@ -63,10 +66,15 @@ SyncFsmChainData.prototype.toString = function()
 		      " a_first_of_format: " + aToString(this.m_a_first_of_format);
 
 	for (var i = 0; i < this.m_a_item.length; i++)
-		ret += "\n account: "      + this.account(i).toString() +
-		         " is_slow_sync: " + this.sourceid(Account.indexToSourceId(i), 'is_slow_sync');
+	{
+		ret += "\n account: "      + this.account(i).toString();
 
-		         // " zfc: "          + (this.sourceid(Account.indexToSourceId(i), 'zfc') ? "" : "null");
+		for (var j in SyncFsmChainData.ITEM_KEYS)
+			if (typeof(this.sourceid(Account.indexToSourceId(i), j)) == 'object')
+				ret += " " + j + ": " + aToString(this.sourceid(Account.indexToSourceId(i), j));
+			else
+				ret += " " + j + ": " + this.sourceid(Account.indexToSourceId(i), j);
+	}
 
 	return ret;
 }

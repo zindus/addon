@@ -143,6 +143,8 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 
 				this.functorNotifyAll(id_fsm);
 
+				zinAssertAndLog(isPropertyPresent(this.m_a_fsmstate, id_fsm), id_fsm);
+
 				if (this.m_a_fsmstate[id_fsm].isFinal())
 				{
 					delete this.m_a_fsmstate[id_fsm];

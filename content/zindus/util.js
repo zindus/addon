@@ -802,12 +802,27 @@ function intMin(a, b)
 	return a < b ? a : b;
 }
 
-function dId(id)
+function dId() // variable arguments: either: (win, id) or (id)
 {
-	if (!isPropertyPresent(document, 'getElementById'))
+	var doc, id;
+
+	if (arguments.length == 1)
+	{
+		doc = document;
+		id  = arguments[0];
+	}
+	else if (arguments.length == 2)
+	{
+		doc = arguments[0].document;
+		id = arguments[1];
+	}
+	else
+		zinAssert(false); // programming error
+
+	if (!isPropertyPresent(doc, 'getElementById'))
 		zinAssertAndLog(false, executionStackAsString());
 
-	return document.getElementById(id);
+	return doc.getElementById(id);
 }
 
 function includejs(url, scope_id)
@@ -949,6 +964,7 @@ function getInfoMessage(type, arg1)
 		case 'finish':   ret = "sync finish:  " + getFriendlyTimeString();                                             break;
 		case 'backoff':  ret = "sync backoff: " + getFriendlyTimeString();                                             break;
 		case 'next':     ret = "sync next:    " + getFriendlyTimeString(arg1);                                         break;
+		case 'repeat':   ret = "sync repeat:  " + getFriendlyTimeString() + " account: " + arg1;                       break;
 		case 'startup':  ret = "startup:      " + getFriendlyTimeString() + " " + APP_NAME + " " + APP_VERSION_NUMBER; break;
 		case 'shutdown': ret = "shutdown:     " + getFriendlyTimeString() + " " + APP_NAME + " " + APP_VERSION_NUMBER; break;
 		default:         zinAssertAndLog(false, type);

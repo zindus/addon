@@ -389,11 +389,12 @@ GoogleRuleTrash.prototype.expire = function(type)
 
 				if (expired_on > 0)
 				{
-					context.m_logger.debug("GoogleRuleTrash.expire: now: " + now + " expire_seconds: " + expire_seconds + " expired_on: " + expired_on + " difference: " + (now - expired_on) + " card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
+					// context.m_logger.debug("GoogleRuleTrash.expire: now: " + now + " expire_seconds: " + expire_seconds + " expired_on: " + expired_on + " difference: " + (now - expired_on) + " card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 
 					if (now - expired_on > expire_seconds)
 					{
-						context.m_logger.debug("GoogleRuleTrash.expire: pushed card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
+						context.m_logger.debug("GoogleRuleTrash.expire: now: " + now + " expire_seconds: " + expire_seconds + " expired_on: " + expired_on + " difference: " + (now - expired_on) + " card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
+						context.m_logger.debug("GoogleRuleTrash.expire: about to expire card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 						a_cards_to_be_deleted.push(abCard);
 					}
 				}
@@ -771,7 +772,6 @@ GoogleRuleUnique.prototype.updateView = function()
 
 	var value = stringBundleString("gr.description.unique.value",
 			      [ this.m_a_email[this.m_index],                    // email
-			        GoogleRuleTrash.getTrashName('localised'),   // trash addressbook
 			        stringBundleString("gr.more.information", [ GoogleRuleTrash.failCodeToHref(this.m_es.failcode()) ]) ]);
 
 	xulSetHtml('gr-description', value);
@@ -977,4 +977,43 @@ GoogleRuleUnique.prototype.onAccept = function()
 	this.m_logger.debug("onAccept: m_index: " + this.m_index + " of: " + this.m_a_email.length + " returns: " + ret);
 
 	return ret;
+}
+
+function GoogleRuleRepeater()
+{
+	this.m_gct = null;
+}
+
+GoogleRuleRepeater.prototype.resolve_if_appropriate = function(logger, es, sfcd)
+{
+	var is_repeat = false;
+
+	if (es.m_exit_status != 0)
+	{
+		var failcode         = es.failcode();
+		var a_failcodes_seen = sfcd.sourceid(Account.indexToSourceId(sfcd.m_account_index), 'a_failcodes_seen');
+		var is_dont_ask      = GoogleRuleTrash.isDontAsk(failcode);
+		var is_failcode_seen = isPropertyPresent(a_failcodes_seen, failcode);
+		is_repeat            = isInArray(failcode, GoogleRuleTrash.FAIL_CODES) && is_dont_ask && !is_failcode_seen;
+
+		logger.debug("resolve_if_appropriate: isFinal: es: " + es.toString() + " failcode" + failcode +
+	                      	" is_repeat: " + is_repeat + " a_failcodes_seen: " + aToString(a_failcodes_seen) );
+
+		if (is_failcode_seen && a_failcodes_seen[failcode] == is_dont_ask)
+			logger.warn("The last time a sync finished, is_dont_ask was true!  So why wasn't the conflict resolved?");
+	}
+
+	if (is_repeat)
+	{
+		a_failcodes_seen[failcode] = is_dont_ask;
+
+		logger.debug("resolve_if_appropriate: fsm failed with a conflict. auto-resolve it and try again.");
+
+		if (!this.m_gct)
+			this.m_gct = new GoogleRuleTrash();
+
+		this.m_gct.moveToTrashDontAsk(failcode, es.m_fail_gcd);
+	}
+
+	return is_repeat;
 }

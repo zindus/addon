@@ -27,10 +27,12 @@ function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg
 
 	this.m_logger                 = newLogger("TimerFunctor"); // this.m_logger.level(Logger.NONE);
 	this.m_zwc                    = new WindowCollection(SHOW_STATUS_PANEL_IN);
+	this.m_a_zwc_functor          = new Object();
 	this.m_id_fsm_functor         = id_fsm_functor;
 	this.m_on_finish_function     = on_finish_function;
 	this.m_on_finish_function_arg = on_finish_function_arg;
 	this.m_sfcd                   = null;
+	this.m_grr                    = new GoogleRuleRepeater();
 
 	this.initialise_per_fsm_members();
 }
@@ -111,16 +113,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
 		
 			this.m_zwc.populate();
-
-			var functor_unhide_progresspanel = {
-				run: function(win) {
-					win.document.getElementById('zindus-statusbar-progress').setAttribute('hidden', false);
-					win.document.getElementById('zindus-statusbar-progress-leftmost').value = 
-						stringBundleString("progress.prefix") + " " + context.m_sfcd.account().get(Account.username);
-				}
-			};
-
-			this.m_zwc.forEach(functor_unhide_progresspanel);
+			this.m_zwc.forEach(this.zwc_functor('unhide'));
 
 			this.m_syncfsm = SyncFsm.newSyncFsm({type: "twoway"}, this.m_sfcd);
 
@@ -136,43 +129,34 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (is_window_update_required)
 		{
-			var functor_update_progresspanel = {
-				run: function(win) {
-					var el_progress_meter  = win.document.getElementById("zindus-statusbar-progress-meter");
-					var el_progress_label  = win.document.getElementById("zindus-statusbar-progress-text");
-					var el_logo            = win.document.getElementById("zindus-statusbar-logo");
-					var el_logo_processing = win.document.getElementById("zindus-statusbar-logo-processing");
-
-					el_progress_meter.setAttribute('value', context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
-					el_progress_label.setAttribute('value', context.m_sfo.progressToString());
-					el_logo.setAttribute('hidden', true);
-					el_logo_processing.setAttribute('hidden', false);
-				}
-			};
-
-			this.m_zwc.forEach(functor_update_progresspanel);
+			this.m_zwc.forEach(this.zwc_functor('update'));
 		}
 
 		if (fsmstate.isFinal())
 		{
-			StatusBar.saveState(this.m_es);
+			var is_repeat = false;
+			
+			if (this.m_sfcd.account().format_xx() == FORMAT_GD)
+				is_repeat = this.m_grr.resolve_if_appropriate(this.m_logger, this.m_es, this.m_sfcd);
 
-			this.m_sfcd.m_account_index++;
+			if (is_repeat)
+			{
+				// don't bother putting anything in the UI here - it flies by too fast for the user to see it
+				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().get(Account.username)));
+			}
 
-			if (this.m_es.m_exit_status == 0 && this.m_sfcd.m_account_index < this.m_sfcd.length())
+			if (!is_repeat)
+			{
+				StatusBar.saveState(this.m_es);
+
+				this.m_sfcd.m_account_index++;
+			}
+
+			if (is_repeat || (this.m_es.m_exit_status == 0 && this.m_sfcd.m_account_index < this.m_sfcd.length()))
 				window.setTimeout(this.onTimerFire, 0, this);
 			else
 			{
-				var functor_hide_progresspanel = {
-					run: function(win) {
-						win.document.getElementById ("zindus-statusbar-progress-text").setAttribute('value', "");
-						win.document.getElementById ('zindus-statusbar-progress').setAttribute('hidden', true);
-						win.document.getElementById ('zindus-statusbar-logo-processing').setAttribute('hidden', true);
-						win.document.getElementById ('zindus-statusbar-logo').setAttribute('hidden', false);
-					}
-				};
-
-				this.m_zwc.forEach(functor_hide_progresspanel);
+				this.m_zwc.forEach(this.zwc_functor('hide'));
 			
 				StatusBar.update(this.m_zwc);
 
@@ -206,4 +190,53 @@ TimerFunctor.prototype.finish = function(is_back_off)
 		else
 			this.m_on_finish_function(this.m_on_finish_function_arg);
 	}
+}
+
+TimerFunctor.prototype.zwc_functor = function(name)
+{
+	if (!isPropertyPresent(this.m_a_zwc_functor, name))
+	{
+		switch(name)
+		{
+			case 'hide':
+				this.m_a_zwc_functor[name] = {
+					run: function(win) {
+						dId(win, "zindus-statusbar-progress-text").setAttribute('value', "");
+						dId(win, 'zindus-statusbar-progress').setAttribute('hidden', true);
+						dId(win, 'zindus-statusbar-logo-processing').setAttribute('hidden', true);
+						dId(win, 'zindus-statusbar-logo').setAttribute('hidden', false);
+					}
+				};
+				break;
+
+			case 'unhide':
+				this.m_a_zwc_functor[name] = {
+					run: function(win) {
+						dId(win, 'zindus-statusbar-progress').setAttribute('hidden', false);
+						dId(win, 'zindus-statusbar-progress-leftmost').value = 
+							stringBundleString("progress.prefix") + " " + this.context.m_sfcd.account().get(Account.username);
+					}
+				};
+				break;
+
+			case 'update':
+				this.m_a_zwc_functor[name] = {
+					run: function(win) {
+						dId(win, "zindus-statusbar-progress-meter").setAttribute('value',
+						                                             this.context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+						dId(win, "zindus-statusbar-progress-text").setAttribute('value', this.context.m_sfo.progressToString());
+						dId(win, "zindus-statusbar-logo").setAttribute('hidden', true);
+						dId(win, "zindus-statusbar-logo-processing").setAttribute('hidden', false);
+					}
+				};
+				break;
+
+			default:
+				zinAssert(false, name);
+		}
+
+		this.m_a_zwc_functor[name].context = this;
+	}
+
+	return this.m_a_zwc_functor[name];
 }
