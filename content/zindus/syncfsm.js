@@ -317,7 +317,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	else if (!this.state.m_addressbook.getPabName())
 	{
 		this.state.stopFailCode   = 'failon.no.pab';
-		this.state.stopFailDetail = "\n" + BUG_REPORT_URI;
+		this.state.stopFailDetail = stringBundleString("status.failmsg.file.bug", [ BUG_REPORT_URI ])
 
 		nextEvent = 'evLackIntegrity';
 		this.state.m_logger.debug("entryActionStart: addressbooks: " + this.state.m_addressbook.addressbooksToString());
@@ -2667,7 +2667,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 
 					this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, 0);  // api doesn't have a "delete"
 				}
-				else if (true || zfcTb.get(id).type() != FeedItem.TYPE_CN)
+				else if (zfcTb.get(id).type() != FeedItem.TYPE_CN)
 				{
 					this.state.m_logger.error("card had attribute luid: " + id + " but this luid isn't a contact!  zfi: " +
 					                          zfcTb.get(id).toString() + "Card: " +
@@ -2675,7 +2675,8 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 											  "uri: " + uri);
 
 					this.state.stopFailCode   = 'failon.integrity.data.store.map';
-					this.state.stopFailDetail = stringBundleString("status.failon.integrity.data.store.detail", [ BUG_REPORT_URI ] );
+					this.state.stopFailDetail = stringBundleString("status.failmsg.file.bug", [ BUG_REPORT_URI ]) +
+					                            stringBundleString("status.failon.integrity.data.store.detail");
 				}
 			}
 
@@ -6617,7 +6618,8 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		if (!this.isConsistentDataStore())
 		{
 			this.state.stopFailCode   = 'failon.integrity.data.store.out'; // this indicates a bug in our code
-			this.state.stopFailDetail = stringBundleString("status.failon.integrity.data.store.detail", [ BUG_REPORT_URI ] );
+			this.state.stopFailDetail = stringBundleString("status.failmsg.file.bug", [ BUG_REPORT_URI ]) +
+			                            stringBundleString("status.failon.integrity.data.store.detail");
 		}
 	}
 
