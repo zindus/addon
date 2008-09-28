@@ -45,7 +45,7 @@ function zinAssert(expr)
 			}
 
 			if (typeof zinAlert == 'function')
-				zinAlert('msg.alert.title', ex.message + " stack: \n" + executionStackFilter(ex.stack));
+				zinAlert('status.failmsg.alert.title', ex.message + " stack: \n" + executionStackFilter(ex.stack));
 			else
 				print(ex.message + " stack: \n" + executionStackFilter(ex.stack));
 

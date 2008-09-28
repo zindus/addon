@@ -29,11 +29,11 @@ const WINDOW_FEATURES = "chrome,centerscreen,modal=yes,dependent=yes";
 function ConfigSettings()
 {
 	this.m_checkbox_properties  = [ PrefSet.GENERAL_AS_AUTO_SYNC,  PrefSet.GENERAL_AS_VERBOSE_LOGGING  ];
-	this.m_checkbox_ids         = [ "zindus-cs-general-auto-sync", "zindus-cs-general-verbose-logging" ];
+	this.m_checkbox_ids         = [ "cs-auto-sync", "cs-verbose-logging" ];
 	this.m_checkbox_bimap       = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
 	this.m_gd_sync_with_bimap   = new BiMap( [ "zg",                              "pab"                              ], 
-	                                         [ "zindus-cs-general-gdsyncwith-zg", "zindus-cs-general-gdsyncwith-pab" ] );
+	                                         [ "cs-gdsyncwith-zg", "cs-gdsyncwith-pab" ] );
 
 	this.m_prefset_general      = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_AS_PROPERTIES);
 	this.m_prefset_general_orig = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_AS_PROPERTIES);
@@ -47,14 +47,15 @@ function ConfigSettings()
 	this.m_payload              = null;
 	this.m_accounts             = null;
 	this.m_logger               = newLogger("ConfigSettings"); // this.m_logger.level(Logger.NONE);
+	this.m_addressbook          = AddressBook.new();
 }
 
 ConfigSettings.prototype.onLoad = function(target)
 {
 	if (this.is_developer_mode)
 	{
-		document.getElementById("zindus-cs-general-button-test-harness").removeAttribute('hidden');
-		document.getElementById("zindus-cs-general-button-run-timer").removeAttribute('hidden');
+		document.getElementById("cs-button-test-harness").removeAttribute('hidden');
+		document.getElementById("cs-button-run-timer").removeAttribute('hidden');
 	}
 
 	this.m_prefset_general.load();
@@ -142,7 +143,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 	switch (id_target)
 	{
-		case "zindus-cs-general-button-sync-now":
+		case "cs-button-sync-now":
 			this.updatePrefsetsFromDocument();
 			var stopwatch = new StopWatch("Configsettings");
 			stopwatch.mark("start")
@@ -210,28 +211,28 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			this.m_payload = null;
 			break;
 
-		case "zindus-cs-general-button-test-harness":
+		case "cs-button-test-harness":
 			var testharness = new TestHarness();
 			testharness.run();
 			break;
 
-		case "zindus-cs-general-button-run-timer":
+		case "cs-button-run-timer":
 			this.m_timer_timeoutID = window.setTimeout(this.onTimerFire, 0, this);
 			this.m_is_fsm_running = true;
 			break;
 
-		case "zindus-cs-general-button-reset":
+		case "cs-button-reset":
 			RemoveDatastore.removeZfcs();
 			RemoveDatastore.removeLogfile();
 			StatusBar.update();
 			break;
 
-		case "zindus-cs-general-advanced-button":
+		case "cs-button-advanced":
 			window.openDialog("chrome://zindus/content/configgd.xul", "_blank", WINDOW_FEATURES, null);
 			break;
 
-		case "zindus-cs-account-delete":
-			rowid           = dId("zindus-cs-account-tree").currentIndex;
+		case "cs-account-delete":
+			rowid           = dId("cs-account-tree").currentIndex;
 			var old_account = this.m_accounts[rowid];
 
 			this.m_logger.debug("account-delete: rowid: " + rowid + " username: " + old_account.get(Account.username));
@@ -244,17 +245,17 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			is_accounts_changed = true;
 			break;
 
-		case "zindus-cs-account-add":
-		case "zindus-cs-account-edit":
+		case "cs-account-add":
+		case "cs-account-edit":
 			var c_zimbra = this.accountsArrayOf(FORMAT_ZM).length;
 
 			this.updatePrefsetsFromDocument(); // because prefset_general gets passed through to SyncWindow
 
-			rowid = dId("zindus-cs-account-tree").currentIndex;
+			rowid = dId("cs-account-tree").currentIndex;
 
 			var payload = new Payload();
 			payload.m_is_zm_enabled = rowid == -1 || this.m_accounts[rowid].format_xx() == FORMAT_ZM || (c_zimbra == 0);
-			payload.m_account = (id_target == "zindus-cs-account-add") ? null : this.m_accounts[rowid];
+			payload.m_account = (id_target == "cs-account-add") ? null : this.m_accounts[rowid];
 
 			window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
@@ -262,7 +263,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			{
 				var account = new Account(payload.m_result); // bring the Account object into the scope of the current window.
 
-				if (id_target == "zindus-cs-account-add")
+				if (id_target == "cs-account-add")
 				{
 					this.m_accounts.push(account);
 
@@ -273,7 +274,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				}
 				else
 				{
-					zinAssert(id_target == "zindus-cs-account-edit");
+					zinAssert(id_target == "cs-account-edit");
 
 					var old_account = this.m_accounts[rowid];
 
@@ -298,8 +299,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			break;
 
-		case "zindus-cs-general-auto-sync":
-		case "zindus-cs-general-verbose-logging":
+		case "cs-auto-sync":
+		case "cs-verbose-logging":
 			this.updatePrefsetsFromDocument();
 			this.m_prefset_general.save();
 
@@ -321,7 +322,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		this.m_logger.debug("blah: 2.");
 
-		if (id_target == "zindus-cs-account-delete")
+		if (id_target == "cs-account-delete")
 		{
 			// remove the last account from preferences because it has shifted up...
 			//
@@ -345,11 +346,11 @@ ConfigSettings.prototype.onCommand = function(id_target)
 		// this.m_logger.debug("blah: selecting rowid: " + rowid);
 
 		if (rowid != null)
-			dId("zindus-cs-account-tree").view.selection.select(rowid);
+			dId("cs-account-tree").view.selection.select(rowid);
 
 		this.updateView();
 
-		if (isInArray(id_target, [ "zindus-cs-account-add", "zindus-cs-account-edit", "zindus-cs-account-delete" ]))
+		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete" ]))
 			this.m_logger.debug("blah: id_target: " + id_target + " m_accounts is: " + Account.arrayToString(this.m_accounts));
 	}
 }
@@ -374,7 +375,7 @@ ConfigSettings.prototype.initialiseView = function()
 	this.accountsTreeRefresh();
 
 	if (this.m_accounts.length > 0)
-		dId("zindus-cs-account-tree").view.selection.select(0);
+		dId("cs-account-tree").view.selection.select(0);
 
 	// general tab - checkbox elements
 	//
@@ -387,28 +388,28 @@ ConfigSettings.prototype.updateView = function()
 {
 	if (this.m_is_fsm_running)
 	{
-		xulSetAttribute('disabled', true, "zindus-cs-command");
+		xulSetAttribute('disabled', true, "cs-command");
 	}
 	else if (!this.isServerSettingsComplete())
 	{
 		this.m_logger.debug("updateView: server settings incomplete - disabling buttons");
-		xulSetAttribute('disabled', false, "zindus-cs-command");
-		xulSetAttribute('disabled', true, "zindus-cs-general-button-run-timer", "zindus-cs-general-button-sync-now");
+		xulSetAttribute('disabled', false, "cs-command");
+		xulSetAttribute('disabled', true, "cs-button-run-timer", "cs-button-sync-now");
 	}
 	else
 	{
 		this.m_logger.debug("updateView: enabling buttons");
 		xulSetAttribute('disabled', false,
-		                  "zindus-cs-command", "zindus-cs-general-button-run-timer", "zindus-cs-general-button-sync-now");
+		                  "cs-command", "cs-button-run-timer", "cs-button-sync-now");
 	}
 
 	var a_google = this.accountsArrayOf(FORMAT_GD);
 	var a_zimbra = this.accountsArrayOf(FORMAT_ZM);
 
-	xulSetAttribute('hidden', a_google.length == 0, "zindus-cs-general-advanced-button");
+	xulSetAttribute('hidden', a_google.length == 0, "cs-button-advanced");
 
-	xulSetAttribute('disabled', dId("zindus-cs-account-tree").currentIndex < 0,
-	                                        "zindus-cs-account-edit", "zindus-cs-account-delete");
+	xulSetAttribute('disabled', dId("cs-account-tree").currentIndex < 0,
+	                                        "cs-account-edit", "cs-account-delete");
 }
 
 ConfigSettings.prototype.onFsmStateChangeFunctor = function(fsmstate)
@@ -500,9 +501,9 @@ ConfigSettings.prototype.getDomainFromUrl = function(url)
 
 ConfigSettings.prototype.accountsTreeRefresh = function()
 {
-	var account, rowid, treeitem, treerow, treecell;
+	var account, rowid, treeitem, treerow, treecell, value;
 
-	var treechildren = dId("zindus-cs-account-treechildren");
+	var treechildren = dId("cs-account-treechildren");
 
 	// delete the tree
 	//
@@ -526,14 +527,18 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 
 		treeitem.id = this.accountsTreeItemId(rowid);
 
-		treecell = document.createElement("treecell");
-		treecell.setAttribute("label", account.get(Account.username));
-		treerow.appendChild(treecell);
+		// Email
+		//
+		this.appendCell(treerow, account.get(Account.username));
 
-		treecell = document.createElement("treecell");
-		treecell.setAttribute("label", account.format_xx() == FORMAT_GD ? stringBundleString("format.google") : 
-		                               this.getDomainFromUrl(account.get(Account.url)));
-		treerow.appendChild(treecell);
+		// Addressbook
+		//
+		if (account.format_xx() == FORMAT_GD)
+			value = account.get(Account.gd_sync_with) == 'zg' ? FolderConverter.PREFIX_PRIMARY_ACCOUNT : this.m_addressbook.getPabName();
+		else
+			value = "      *";
+
+		this.appendCell(treerow, value);
 
 		this.m_logger.debug("accountsTreeRefresh: treeitem at rowid: " + rowid + " account: " + account.get(Account.username) + " " + account.get('format'));
 
@@ -543,9 +548,19 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 	}
 }
 
+
+ConfigSettings.prototype.appendCell = function(treerow, value)
+{
+	var treecell = document.createElement("treecell");
+
+	treecell.setAttribute("label", value);
+
+	treerow.appendChild(treecell);
+}
+
 ConfigSettings.prototype.accountsTreeItemId = function(rowid)
 {
-	return "zindus-cs-account-treeitem-" + rowid;
+	return "cs-account-treeitem-" + rowid;
 }
 
 ConfigSettings.prototype.deletePasswordWhenRequired = function(account)
@@ -633,7 +648,7 @@ ConfigSettings.open = function()
 {
 	var is_already_open = false;
 
-	var id = 'zindus-config-settings';
+	var id = 'zindus-cs-dialog';
 	var zwc = new WindowCollection([ id ]);
 	zwc.populate();
 

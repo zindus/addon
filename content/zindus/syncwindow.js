@@ -161,8 +161,6 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			if (is_repeat)
 			{
 				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().get(Account.username)));
-				this.updateProgressUi(this.m_sfcd.account().get(Account.username) + "<br/><br/>" +
-				                        stringBundleString("progress.conflict.resolved.try.again"));
 			}
 
 			if (!is_repeat)

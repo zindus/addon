@@ -28,7 +28,7 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
-	id="zindus-config-settings"
+	id="zindus-cs-dialog"
 	title="&zindus.cs.title;"
 	buttons="accept,extra2"
 	buttonlabelextra2="&zindus.cs.buttonlabelextra2;"
@@ -46,30 +46,28 @@
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<command id="zindus-cs-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
+	<command id="cs-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
 
 	<vbox flex="1" style="&zindus.enclosing.vbox.style;" >
 		<groupbox>
 			<caption label="Accounts" />
 			<vbox flex="1" >
-				<tree id="zindus-cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5"
-				         style="&zindus.accounts.tree.style;" ondblclick="document.getElementById('zindus-cs-account-edit').doCommand();" >
+				<tree id="cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5"
+				         style="&zindus.accounts.tree.style;" ondblclick="document.getElementById('cs-account-edit').doCommand();" >
 					<treecols>
-						<treecol id="zindus-cs-account-email" label="&zindus.cs.account.email.label;"
-									persist="width ordinal hidden" flex="2" />
+						<treecol id="cs-col-1" label="Email" persist="width ordinal hidden" flex="4" />
 						<splitter class="tree-splitter"/>
-						<treecol id="zindus-cs-account-type" label="&zindus.cs.account.type.label;"
-									persist="width ordinal hidden" flex="1" />
+						<treecol id="cs-col-2" label="Addressbook" persist="width ordinal hidden" flex="1" />
 					</treecols>
-					<treechildren id="zindus-cs-account-treechildren" flex="9" />
+					<treechildren id="cs-account-treechildren" flex="9" />
 				</tree>
 				<spacer style="&zindus.spacer.style;" flex="1"/> 
 				<hbox>
-					<button id="zindus-cs-account-add"    label="&zindus.cs.account.add.label;"
+					<button id="cs-account-add"    label="&zindus.cs.account.add.label;"
 					                                  accesskey="&zindus.cs.account.add.accesskey;" />
-					<button id="zindus-cs-account-edit"   label="&zindus.cs.account.edit.label;"
+					<button id="cs-account-edit"   label="&zindus.cs.account.edit.label;"
 					                                  accesskey="&zindus.cs.account.edit.accesskey;" />
-					<button id="zindus-cs-account-delete" label="&zindus.cs.account.delete.label;"
+					<button id="cs-account-delete" label="&zindus.cs.account.delete.label;"
 					                                  accesskey="&zindus.cs.account.delete.accesskey;" />
 				</hbox>
 			</vbox>
@@ -79,12 +77,12 @@
 			<caption label="&zindus.cs.general.settings.label;"/>
 			<hbox>
 				<vbox align="left" >
-					<checkbox id="zindus-cs-general-auto-sync"       label="&zindus.cs.general.auto.sync.label;"       />
-					<checkbox id="zindus-cs-general-verbose-logging" label="&zindus.cs.general.verbose.logging.label;" />
+					<checkbox id="cs-auto-sync"       label="&zindus.cs.general.auto.sync.label;"       />
+					<checkbox id="cs-verbose-logging" label="&zindus.cs.general.verbose.logging.label;" />
 				</vbox>
 				<spacer flex="1"/>
 				<vbox pack="end" >
-					<button id="zindus-cs-general-advanced-button" label="&zindus.cs.general.button.gd.advanced.label;"
+					<button id="cs-button-advanced" label="&zindus.cs.general.button.gd.advanced.label;"
 					             accesskey="&zindus.cs.general.button.gd.advanced.accesskey;" />
 				</vbox>
 			</hbox>
@@ -95,16 +93,16 @@
 		<groupbox pack="center" >
 		    	<caption label="&zindus.cs.general.actions.label;"/>
 			<hbox align="right" >
-				<button id="zindus-cs-general-button-test-harness" hidden="true"
-			        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.test.harness.label;" />
-				<button id="zindus-cs-general-button-run-timer" hidden="true"
-			        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.timer.label;" />
-				<button id="zindus-cs-general-button-reset"
-			        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.reset.label;"
+				<button id="cs-button-test-harness" hidden="true"
+			        	align="center" command="cs-command" label="&zindus.cs.general.button.test.harness.label;" />
+				<button id="cs-button-run-timer" hidden="true"
+			        	align="center" command="cs-command" label="&zindus.cs.general.button.timer.label;" />
+				<button id="cs-button-reset"
+			        	align="center" command="cs-command" label="&zindus.cs.general.button.reset.label;"
 						accesskey="&zindus.cs.general.button.reset.accesskey;" />
 				<spacer flex="1"/> 
-				<button id="zindus-cs-general-button-sync-now"
-			        	align="center" command="zindus-cs-command" label="&zindus.cs.general.button.sync.now.label;"
+				<button id="cs-button-sync-now"
+			        	align="center" command="cs-command" label="&zindus.cs.general.button.sync.now.label;"
 						accesskey="&zindus.cs.general.button.sync.now.accesskey;" />
 			</hbox>
 		</groupbox>

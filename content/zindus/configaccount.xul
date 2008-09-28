@@ -49,12 +49,12 @@
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<vbox flex="1" style="&zindus.enclosing.vbox.style;" pack="center" >
-		<command id="zindus-ca-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
+		<command id="ca-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
 		<groupbox pack="center" >
 			<caption label="&zindus.cs.account.type.label;" />
-				<radiogroup id="zindus-ca-format-radiogroup" orient="horizontal" >
-					<radio id="zindus-ca-format-google" selected="true" />
-					<radio id="zindus-ca-format-zimbra" />
+				<radiogroup id="ca-format-radiogroup" orient="horizontal" >
+					<radio id="ca-format-google" selected="true" />
+					<radio id="ca-format-zimbra" />
 				</radiogroup>
 		</groupbox>
 		<spacer style="&zindus.spacer.style;" flex="1"/> 
@@ -66,27 +66,27 @@
 					<column flex="1" />
 				</columns>
 				<rows>
-					<description id="zindus-ca-url-description" xmlns:html="http://www.w3.org/1999/xhtml"
+					<description id="ca-url-description" xmlns:html="http://www.w3.org/1999/xhtml"
 					             style="margin-bottom:10px;" >
 						&zindus.ca.url.description.value;
 					</description>
-					<row id="zindus-ca-url-row" >
+					<row id="ca-url-row" >
 						<label value="&zindus.ca.url.label;" />
-						<textbox id="zindus-ca-url" onblur="window.wd.onBlur('zindus-ca-url');" />
+						<textbox id="ca-url" onblur="window.wd.onBlur('ca-url');" />
 					</row>
 					<description value="&zindus.ca.username.description.value;" style="&zindus.description.style;" />
 					<row>
 						<label value="&zindus.ca.username.label;" />
-						<textbox id="zindus-ca-username" onblur="window.wd.onBlur('zindus-ca-username');" />
+						<textbox id="ca-username" onblur="window.wd.onBlur('ca-username');" />
 					</row>
 					<spacer style="&zindus.spacer.style;" />
 					<row>
 						<label value="&zindus.ca.password.label;" />
-						<textbox id="zindus-ca-password" type="password" />
+						<textbox id="ca-password" type="password" />
 					</row>
 					<spacer style="&zindus.spacer.style;" /> 
 					<hbox align="left" style="margin-left:20px" >
-						<button id="zindus-ca-button-authonly" command="zindus-ca-command" flex="1"
+						<button id="ca-button-authonly" command="ca-command" flex="1"
 					        	align="center" label="&zindus.ca.test.connection.label;"
 								accesskey="&zindus.ca.test.connection.accesskey;" />
 					</hbox>
@@ -99,25 +99,25 @@
 
 		<groupbox pack="center" >
 			<caption label="&zindus.ca.group.pap.label;" />
-			<deck id="zindus-ca-pap-deck" >
+			<deck id="ca-pap-deck" >
 				<hbox>
-					<vbox id="zindus-ca-gd-vbox" pack="center" >
-						<label id="zindus-ca-gd-syncwith-label" />
-						<radiogroup id="zindus-ca-gd-syncwith-radiogroup" >
-							<radio id="zindus-ca-gd-syncwith-pab" label="&zindus.ca.google.sync.with.pab.label;" selected="true" />
-							<radio id="zindus-ca-gd-syncwith-zg" />
+					<vbox id="ca-gd-vbox" pack="center" >
+						<label id="ca-gd-syncwith-label" />
+						<radiogroup id="ca-gd-syncwith-radiogroup" >
+							<radio id="ca-gd-syncwith-pab" label="&zindus.ca.google.sync.with.pab.label;" selected="true" />
+							<radio id="ca-gd-syncwith-zg" />
 						</radiogroup>
 					</vbox>
 					<spacer flex="1"/> 
 				</hbox>
 				<hbox>
-					<vbox id="zindus-ca-zm-vbox" > <!-- pack="center" hbox pack="baseline" -->
+					<vbox id="ca-zm-vbox" > <!-- pack="center" hbox pack="baseline" -->
 					<label value="&zindus.ca.zimbra.gal.label;" />
-					<menulist id="zindus-ca-zm-gal-menulist" >
+					<menulist id="ca-zm-gal-menulist" >
 						<menupopup>
-							<menuitem id="zindus-ca-zm-gal-yes"      label="&zindus.ca.zimbra.gal.yes.label;" />
-							<menuitem id="zindus-ca-zm-gal-if-fewer" label="" /> <!-- selected in initialiseView after label is set -->
-							<menuitem id="zindus-ca-zm-gal-no"       label="&zindus.ca.zimbra.gal.no.label;" />
+							<menuitem id="ca-zm-gal-yes"      label="&zindus.ca.zimbra.gal.yes.label;" />
+							<menuitem id="ca-zm-gal-if-fewer" label="" /> <!-- selected in initialiseView after label is set -->
+							<menuitem id="ca-zm-gal-no"       label="&zindus.ca.zimbra.gal.no.label;" />
 						</menupopup>
 					</menulist>
 					</vbox>

@@ -24,15 +24,15 @@
 function ConfigAccount()
 {
 	this.m_server_format_values   = [ FORMAT_GD,                  FORMAT_ZM                 ];
-	this.m_server_format_ids      = [ "zindus-ca-format-google",  "zindus-ca-format-zimbra" ];
+	this.m_server_format_ids      = [ "ca-format-google",  "ca-format-zimbra" ];
 	this.m_server_format_bimap    = new BiMap( this.m_server_format_values, this.m_server_format_ids );
 
 	this.m_gal_radio_values       = [ "yes",                       "if-fewer",                       "no"                       ];
-	this.m_gal_radio_ids          = [ "zindus-ca-zm-gal-yes", "zindus-ca-zm-gal-if-fewer", "zindus-ca-zm-gal-no" ];
+	this.m_gal_radio_ids          = [ "ca-zm-gal-yes", "ca-zm-gal-if-fewer", "ca-zm-gal-no" ];
 	this.m_gal_radio_bimap        = new BiMap(this.m_gal_radio_values, this.m_gal_radio_ids);
 
 	this.m_gd_sync_with_bimap     = new BiMap( [ "zg",                              "pab"                              ], 
-	                                           [ "zindus-ca-gd-syncwith-zg", "zindus-ca-gd-syncwith-pab" ] );
+	                                           [ "ca-gd-syncwith-zg", "ca-gd-syncwith-pab" ] );
 
 	this.m_logger                 = newLogger("ConfigAccount"); // this.m_logger.level(Logger.NONE);
 	this.m_payload_configsettings = null;
@@ -57,7 +57,7 @@ ConfigAccount.prototype.onLoad = function(target)
 
 	this.initialiseView();
 
-	xulSetAttribute('disabled', !this.m_payload_configsettings.m_is_zm_enabled, "zindus-ca-format-zimbra");
+	xulSetAttribute('disabled', !this.m_payload_configsettings.m_is_zm_enabled, "ca-format-zimbra");
 
 	zinAssert(ObserverService.isRegistered(Maestro.TOPIC))
 
@@ -107,13 +107,13 @@ ConfigAccount.prototype.onCommand = function(id_target)
 {
 	switch (id_target)
 	{
-		case "zindus-ca-format-google":
-		case "zindus-ca-format-zimbra":
+		case "format-google":
+		case "ca-format-zimbra":
 			this.updateView();
 			this.setFocusForFormat();
 			break;
 
-		case "zindus-ca-button-authonly":
+		case "ca-button-authonly":
 			var account = this.accountFromDocument();
 
 			this.m_payload_sw = new Payload();
@@ -157,17 +157,17 @@ ConfigAccount.prototype.onBlur = function(id)
 {
 	// this.m_logger.debug("onBlur: id: " + id);
 
-	if (id == "zindus-ca-username" && this.serverFormat() == FORMAT_GD)
+	if (id == "ca-username" && this.serverFormat() == FORMAT_GD)
 	{
 		var username = dId(id).value;
 
-		dId("zindus-ca-gd-syncwith-zg").label = stringBundleString("cs.general.gd.syncwith.prefix") +
+		dId("ca-gd-syncwith-zg").label = stringBundleString("cs.general.gd.syncwith.prefix") +
 		                                               (username.length ? username : stringBundleString("cs.general.gd.syncwith.suffix"));
 	}
 	
 	// free.fr
 	//
-	if (id == "zindus-ca-url" && this.serverFormat() == FORMAT_ZM)
+	if (id == "ca-url" && this.serverFormat() == FORMAT_ZM)
 	{
 		var url        = dId(id).value;
 		var is_free_fr = false;
@@ -181,17 +181,17 @@ ConfigAccount.prototype.onBlur = function(id)
 		}
 
 		if (is_free_fr)
-			ConfigAccount.setRadio("zindus-ca-zm-gal-menulist", this.m_gal_radio_bimap, "no");
+			ConfigAccount.setRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap, "no");
 
-		xulSetAttribute('disabled', is_free_fr, "zindus-ca-zm-gal-menulist");
+		xulSetAttribute('disabled', is_free_fr, "ca-zm-gal-menulist");
 	}
 }
 
 ConfigAccount.prototype.initialiseView = function()
 {
-	dId("zindus-ca-format-google").label     = stringBundleString("format.google");
-	dId("zindus-ca-format-zimbra").label     = stringBundleString("format.zimbra");
-	dId("zindus-ca-gd-syncwith-label").value = stringBundleString("ca.pap.gd.syncwith.label");
+	dId("ca-format-google").label     = stringBundleString("format.google");
+	dId("ca-format-zimbra").label     = stringBundleString("format.zimbra");
+	dId("ca-gd-syncwith-label").value = stringBundleString("ca.pap.gd.syncwith.label");
 
 	var account = this.m_payload_configsettings.m_account;
 
@@ -200,34 +200,34 @@ ConfigAccount.prototype.initialiseView = function()
 		this.m_logger.debug("account: " + account.toString());
 		this.m_logger.debug("account.format_xx: " + account.format_xx());
 
-		ConfigAccount.setRadio("zindus-ca-format-radiogroup", this.m_server_format_bimap, account.format_xx());
+		ConfigAccount.setRadio("ca-format-radiogroup", this.m_server_format_bimap, account.format_xx());
 		                                                      // this.m_format_bimap.lookup(null, account.get('format')));
 
-		dId("zindus-ca-username").value = account.get(Account.username);
-		dId("zindus-ca-password").value = account.get(Account.passwordlocator).getPassword();
+		dId("ca-username").value = account.get(Account.username);
+		dId("ca-password").value = account.get(Account.passwordlocator).getPassword();
 
 		if (this.serverFormat() == FORMAT_GD)
 		{
 			if (account.get(Account.gd_sync_with))
-				ConfigAccount.setRadio("zindus-ca-gd-syncwith-radiogroup", this.m_gd_sync_with_bimap, account.get(Account.gd_sync_with));
+				ConfigAccount.setRadio("ca-gd-syncwith-radiogroup", this.m_gd_sync_with_bimap, account.get(Account.gd_sync_with));
 		}
 	}
 
 	// Zimbra
 	//
-	dId("zindus-ca-zm-gal-if-fewer").label =
+	dId("ca-zm-gal-if-fewer").label =
 			stringBundleString("cs.general.zm.gal.if.fewer", [ preference(MozillaPreferences.ZM_SYNC_GAL_IF_FEWER, 'int' ) ]);
 
-	this.onBlur("zindus-ca-url");  // test for free.fr
+	this.onBlur("ca-url");  // test for free.fr
 
-	ConfigAccount.setRadio("zindus-ca-zm-gal-menulist", this.m_gal_radio_bimap,
+	ConfigAccount.setRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap,
 		(account && account.get(Account.zm_sync_gal_enabled)) ? account.get(Account.zm_sync_gal_enabled) : 'if-fewer');
 
 	// Google
 	//
-	this.onBlur("zindus-ca-username");
+	this.onBlur("ca-username");
 
-	dId("zindus-ca-url").value = (this.serverFormat() == FORMAT_GD) ? googleClientLoginUrl('use-password') :
+	dId("ca-url").value = (this.serverFormat() == FORMAT_GD) ? googleClientLoginUrl('use-password') :
 	                                                                  (account ? account.get(Account.url) : "");
 
 	// remember the current settings to support the user switching back+forth b/n Account formats
@@ -244,15 +244,15 @@ ConfigAccount.prototype.updateView = function()
 
 	if (this.m_is_fsm_running)
 	{
-		xulSetAttribute('disabled', true, "zindus-ca-command");
+		xulSetAttribute('disabled', true, "command");
 	}
 	else
 	{
 		this.m_logger.debug("updateView: enabling buttons");
-		xulSetAttribute('disabled', false, "zindus-ca-command");
+		xulSetAttribute('disabled', false, "ca-command");
 	}
 
-	var is_ok_enabled = (dId("zindus-ca-username").value.length > 0 && dId("zindus-ca-url").value.length > 0 && dId("zindus-ca-password").value.length > 0);
+	var is_ok_enabled = (dId("ca-username").value.length > 0 && dId("ca-url").value.length > 0 && dId("ca-password").value.length > 0);
 	this.m_logger.debug("updateView: is_ok_enabled: " + is_ok_enabled);
 
 	dId("zindus-ca-dialog").setAttribute('buttondisabledaccept', !is_ok_enabled);
@@ -261,13 +261,13 @@ ConfigAccount.prototype.updateView = function()
 
 	if (format_current == FORMAT_GD)
 	{
-		xulSetAttribute('hidden', true,  "zindus-ca-url-description", "zindus-ca-url-row", "zindus-ca-zm-vbox");
-		dId("zindus-ca-pap-deck").selectedIndex = 0;
+		xulSetAttribute('hidden', true,  "ca-url-description", "ca-url-row", "ca-zm-vbox");
+		dId("ca-pap-deck").selectedIndex = 0;
 	}
 	else
 	{
-		xulSetAttribute('hidden', false, "zindus-ca-url-description", "zindus-ca-url-row", "zindus-ca-zm-vbox");
-		dId("zindus-ca-pap-deck").selectedIndex = 1;
+		xulSetAttribute('hidden', false, "ca-url-description", "ca-url-row", "ca-zm-vbox");
+		dId("ca-pap-deck").selectedIndex = 1;
 	}
 
 	if (this.m_format_last != format_current)
@@ -278,9 +278,9 @@ ConfigAccount.prototype.updateView = function()
 
 		if (this.a_format_last[format_current])
 		{
-			dId("zindus-ca-username").value = this.a_format_last[format_current].get(Account.username);
-			dId("zindus-ca-url").value      = this.a_format_last[format_current].get(Account.url);
-			dId("zindus-ca-password").value = this.a_format_last[format_current].get(Account.passwordlocator).getPassword();
+			dId("ca-username").value = this.a_format_last[format_current].get(Account.username);
+			dId("ca-url").value      = this.a_format_last[format_current].get(Account.url);
+			dId("ca-password").value = this.a_format_last[format_current].get(Account.passwordlocator).getPassword();
 		}
 		else
 			this.serverFormatDetailsReset();
@@ -292,9 +292,9 @@ ConfigAccount.prototype.updateView = function()
 ConfigAccount.prototype.setFocusForFormat = function()
 {
 	if (this.serverFormat() == FORMAT_GD)
-		dId("zindus-ca-username").focus();
+		dId("ca-username").focus();
 	else
-		dId("zindus-ca-url").focus();
+		dId("ca-url").focus();
 }
 
 ConfigAccount.prototype.onFsmStateChangeFunctor = function(fsmstate)
@@ -311,9 +311,9 @@ ConfigAccount.prototype.serverFormat = function()
 {
 	var ret = null;
 
-	if (dId("zindus-ca-format-radiogroup").selectedItem      == dId("zindus-ca-format-google"))
+	if (dId("ca-format-radiogroup").selectedItem      == dId("ca-format-google"))
 		ret = FORMAT_GD;
-	else if (dId("zindus-ca-format-radiogroup").selectedItem == dId("zindus-ca-format-zimbra"))
+	else if (dId("ca-format-radiogroup").selectedItem == dId("ca-format-zimbra"))
 		ret = FORMAT_ZM;
 	else
 		zinAssertAndLog(false, "mismatched case: ");
@@ -324,12 +324,12 @@ ConfigAccount.prototype.serverFormat = function()
 ConfigAccount.prototype.serverFormatDetailsReset = function()
 {
 	if (this.serverFormat() == FORMAT_GD)
-		dId("zindus-ca-url").value = googleClientLoginUrl('use-password');
+		dId("ca-url").value = googleClientLoginUrl('use-password');
 	else
-		dId("zindus-ca-url").value = "";
+		dId("ca-url").value = "";
 
-	dId("zindus-ca-username").value = "";
-	dId("zindus-ca-password").value = "";
+	dId("ca-username").value = "";
+	dId("ca-password").value = "";
 }
 
 ConfigAccount.prototype.accountFromDocument = function(format_xx)
@@ -339,18 +339,18 @@ ConfigAccount.prototype.accountFromDocument = function(format_xx)
 	if (format_xx)
 		account.set('format', this.m_format_bimap.lookup(format_xx, null));
 	else
-		account.set('format', this.m_format_bimap.lookup(ConfigSettings.getValueFromRadio("zindus-ca-format-radiogroup",
+		account.set('format', this.m_format_bimap.lookup(ConfigSettings.getValueFromRadio("ca-format-radiogroup",
 	                                                                                    this.m_server_format_bimap), null));
 
-	account.set(Account.url,      dId("zindus-ca-url").value      ? zinTrim(dId("zindus-ca-url").value)      : "" );
-	account.set(Account.username, dId("zindus-ca-username").value ? zinTrim(dId("zindus-ca-username").value) : "" );
+	account.set(Account.url,      dId("ca-url").value      ? zinTrim(dId("ca-url").value)      : "" );
+	account.set(Account.username, dId("ca-username").value ? zinTrim(dId("ca-username").value) : "" );
 	account.set(Account.passwordlocator, ConfigAccount.newTempPasswordLocator(account.format_xx()))
-	account.get(Account.passwordlocator).setPassword(zinTrim(dId("zindus-ca-password").value));
+	account.get(Account.passwordlocator).setPassword(zinTrim(dId("ca-password").value));
 
 	if (account.format_xx() == FORMAT_GD)
-		account.set(Account.gd_sync_with, ConfigSettings.getValueFromRadio("zindus-ca-gd-syncwith-radiogroup", this.m_gd_sync_with_bimap));
+		account.set(Account.gd_sync_with, ConfigSettings.getValueFromRadio("ca-gd-syncwith-radiogroup", this.m_gd_sync_with_bimap));
 	else
-		account.set(Account.zm_sync_gal_enabled, ConfigSettings.getValueFromRadio("zindus-ca-zm-gal-menulist", this.m_gal_radio_bimap));
+		account.set(Account.zm_sync_gal_enabled, ConfigSettings.getValueFromRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap));
 		
 	this.m_logger.debug("accountFromDocument: returns: " + account.toString());
 
