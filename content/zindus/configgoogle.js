@@ -57,8 +57,8 @@ ConfigGd.prototype.initialiseView = function()
 	xulSetHtml('cgd-more-information-on-postal', stringBundleString("gr.more.information", [
 			    'http://www.zindus.com/blog/2008/06/17/thunderbird-google-postal-address-sync-part-two/' ]) );
 
-	xulSetHtml('cgd-more-information-on-conflicts', stringBundleString("gr.more.information", [
-			    'http://www.zindus.com/faq-thunderbird-google/#toc-thunderbird-and-google-addressbook-differences' ]) );
+	xulSetHtml('cgd-more-information-on-rules', stringBundleString("gr.more.information", [
+			    'http://www.zindus.com/blog/2008/09/30/google-contacts-rules-made-to-be-broken' ]) );
 
 	var a = this.m_map;
 	for (var k in a)

@@ -28,7 +28,7 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
-	title="&zindus.cgd.title;"
+	title="&zindus.cg.title;"
 	buttons="accept,cancel"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
@@ -45,21 +45,21 @@
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<groupbox pack="center" >
-		<caption label="&zindus.cgd.postal.caption.label;" />
+		<caption label="&zindus.cg.postal.caption.label;" />
 		<radiogroup id="cgd-postal" >
-			<radio id="cgd-postal-false" label="&zindus.cgd.postal.false.label;" />
-			<radio id="cgd-postal-true"  label="&zindus.cgd.postal.true.label;"  />
+			<radio id="cgd-postal-false" label="&zindus.cg.postal.false.label;" />
+			<radio id="cgd-postal-true"  label="&zindus.cg.postal.true.label;"  />
 		</radiogroup>
 
 		<description id="cgd-more-information-on-postal" />
 	</groupbox>
 	<groupbox pack="center" >
-		<caption label="&zindus.cgd.conflict.caption.label;" />
+		<caption label="&zindus.cg.rule.caption.label;" />
 		<radiogroup id="cgd-conflict" >
-			<radio id="cgd-conflict-ask-me"   label="&zindus.cgd.conflict.ask.me.label;"   />
-			<radio id="cgd-conflict-dont-ask" label="&zindus.cgd.conflict.dont.ask.label;" />
+			<radio id="cgd-conflict-ask-me"   label="&zindus.cg.rule.ask.me.label;"   />
+			<radio id="cgd-conflict-dont-ask" label="&zindus.cg.rule.dont.ask.label;" />
 		</radiogroup>
 
-		<description id="cgd-more-information-on-conflicts" />
+		<description id="cgd-more-information-on-rules" />
 	</groupbox>
 </dialog>
