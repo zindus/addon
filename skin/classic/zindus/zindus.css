@@ -5,13 +5,3 @@
 toolbar[iconsize="small"] #zindus-toolbarbutton {
 	list-style-image: url("chrome://zindus/skin/zindus16x16.gif");
 }
-
-# the css here works fine ... it matches the treecell's that whose property attribute == makeItCenter
-# see: http://developer.mozilla.org/en/XUL_Tutorial/Styling_a_Tree
-# the problem is that -moz-tree-cell-text doesn't support the text-align property
-#
-# treechildren::-moz-tree-cell-text(makeItCenter)
-# {
-#	text-align: center;
-#	color: green;
-# }
