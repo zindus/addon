@@ -68,7 +68,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
 	// ret = ret && this.tweakLuidOnCard();
-	ret = ret && this.createGoogleRuleVioliation();
+	ret = ret && this.createGoogleRuleViolation();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -556,8 +556,8 @@ TestHarness.prototype.testXmlHttpRequest = function()
 	var xhrCallback = function()
 	{
 		if (xhr.readyState==4) {
-			zinAlert('status.failmsg.alert.title', xhr.status);
-			zinAlert('status.failmsg.alert.title', xhr.responseText);
+			zinAlert('text.alert.title', xhr.status);
+			zinAlert('text.alert.title', xhr.responseText);
 		}
 	};
 
@@ -1262,11 +1262,11 @@ TestHarness.prototype.addCardTb2 = function(properties)
 	return mdbCard;
 }
 
-TestHarness.prototype.createGoogleRuleVioliation = function()
+TestHarness.prototype.createGoogleRuleViolation = function()
 {
 	this.m_logger.debug("createGoogleRule");
 
-//	this.addCardTb2({}); // creates an empty contact
+	this.addCardTb2({ FirstName: "John", LastName: "Smith" }); // creates an contact that's empty in Google's eyes
 	this.addCardTb2({ PrimaryEmail: "111-test@example.com", DisplayName: "111 test", Notes: "111-test line one\r\nline two" });
 	this.addCardTb2({ PrimaryEmail: "111-test@example.com", DisplayName: "111 test", Notes: "111-test line one\r\nline two" });
 	this.addCardTb2({ PrimaryEmail: "222-test@example.com", DisplayName: "222 test", Notes: "222-test line one\nline two" });

@@ -16,14 +16,11 @@
 <!ENTITY zindus.description.style                       "margin-top:5px; margin-bottom:10px; padding:5px ">
 <!ENTITY zindus.accounts.tree.style                     "min-width:30em">
 
-<!ENTITY zindus.google.label                            "Google">
-<!ENTITY zindus.zimbra.label                            "Zimbra">
-
 <!-- Account Configuration -->
 
+<!ENTITY zindus.ca.grid.style                           "margin-left:10px; margin-right:20px; margin-top:10px ">
 <!ENTITY zindus.ca.group.login.details.label            "Login Details">
 <!ENTITY zindus.ca.group.pap.label                      "For this account">
-<!ENTITY zindus.ca.grid.style                           "margin-left:10px; margin-right:20px; margin-top:10px ">
 <!ENTITY zindus.ca.url.description.value                "Type the url you use to log on to the server.
                                                          <html:br/>example: https://mymail.example.com">
 <!ENTITY zindus.ca.url.label                            "Server Url:">
@@ -62,7 +59,7 @@
 <!ENTITY zindus.cs.general.button.timer.label           "Run Timer">
 <!ENTITY zindus.cs.general.button.test.harness.label    "Test Harness">
 <!ENTITY zindus.cs.general.button.gd.advanced.label     "Advanced Google Settings">
-<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "v">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 
 <!ENTITY zindus.gr.title                                "Google Contacts rule violation">
 <!ENTITY zindus.gr.button.accept.label                  "Confirm">
@@ -73,13 +70,13 @@
 <!ENTITY zindus.gr.column.email.label                   "Email">
 <!ENTITY zindus.gr.column.summary.label                 "Differences">
 
-<!ENTITY zindus.cgd.title                               "Zindus Advanced Google Settings">
-<!ENTITY zindus.cgd.postal.caption.label                "Postal Address Fields">
-<!ENTITY zindus.cgd.postal.false.label                  "Not synced (recommended)">
-<!ENTITY zindus.cgd.postal.true.label                   "Thunderbird fields are represented as xml in Google">
-<!ENTITY zindus.cgd.conflict.caption.label              "How Google Contacts rule violations are handled">
-<!ENTITY zindus.cgd.conflict.ask.me.label               "Ask me">
-<!ENTITY zindus.cgd.conflict.dont.ask.label             "Dont ask me - delete contacts to fix rule violations">
+<!ENTITY zindus.cg.title                                "Zindus Advanced Google Settings">
+<!ENTITY zindus.cg.postal.caption.label                 "Postal Address Fields">
+<!ENTITY zindus.cg.postal.false.label                   "Not synced (recommended)">
+<!ENTITY zindus.cg.postal.true.label                    "Thunderbird fields are represented as xml in Google">
+<!ENTITY zindus.cg.rule.caption.label                   "How Google Contacts rule violations are handled">
+<!ENTITY zindus.cg.rule.ask.me.label                    "Ask me">
+<!ENTITY zindus.cg.rule.dont.ask.label                  "Dont ask me - delete contacts to fix rule violations">
 
 <!-- Sync Window -->
 

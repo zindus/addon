@@ -174,9 +174,9 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				                                              this.m_payload.m_is_cancelled + " m_es: " + this.m_payload.m_es.toString());
 				if (this.m_payload.m_es.m_exit_status == null)
 				{
-					logger().debug("ConfigSettings.onCommand: cs.sync.failed.unexpectedly");
-					msg = stringBundleString("cs.sync.failed.unexpectedly") +
-					      stringBundleString("status.failmsg.file.bug", [ BUG_REPORT_URI ]);
+					logger().debug("ConfigSettings.onCommand: status.failon.unexpected");
+					msg = stringBundleString("status.failon.unexpected") +
+					      stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
 				{
@@ -228,7 +228,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 
 		case "cs-button-advanced":
-			window.openDialog("chrome://zindus/content/configgd.xul", "_blank", WINDOW_FEATURES, null);
+			window.openDialog("chrome://zindus/content/configgoogle.xul", "_blank", WINDOW_FEATURES, null);
 			break;
 
 		case "cs-account-delete":
@@ -256,6 +256,12 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			var payload = new Payload();
 			payload.m_is_zm_enabled = rowid == -1 || this.m_accounts[rowid].format_xx() == FORMAT_ZM || (c_zimbra == 0);
 			payload.m_account = (id_target == "cs-account-add") ? null : this.m_accounts[rowid];
+			payload.m_account_keys = new Object();
+
+			for (var i = 0; i < this.m_accounts.length; i++)
+				if (i != rowid)
+					payload.m_account_keys[hyphenate(':', this.m_accounts[i].format_xx(), this.m_accounts[i].get(Account.url),
+					                                      this.m_accounts[i].get(Account.username))] = true;
 
 			window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
@@ -263,27 +269,26 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			{
 				var account = new Account(payload.m_result); // bring the Account object into the scope of the current window.
 
-				if (id_target == "cs-account-add")
-				{
-					this.m_accounts.push(account);
+				switch (id_target) {
+					case "cs-account-add":
+						this.m_accounts.push(account);
 
-					if (account.format_xx() == FORMAT_ZM)
-						rowid = c_zimbra; // Zimbra accounts appear above Google accounts
-					else
-						rowid = this.m_accounts.length - 1;
-				}
-				else
-				{
-					zinAssert(id_target == "cs-account-edit");
+						if (account.format_xx() == FORMAT_ZM)
+							rowid = c_zimbra; // Zimbra accounts appear above Google accounts
+						else
+							rowid = this.m_accounts.length - 1;
+						break;
 
-					var old_account = this.m_accounts[rowid];
+					case "cs-account-edit":
+						var old_account = this.m_accounts[rowid];
 
-					this.m_accounts[rowid] = account;
+						this.m_accounts[rowid] = account;
 
-					// TODO
-					// if (account.get(Account.url)      != old_account.get(Account.url) ||
-					//    account.get(Account.username) != old_account.get(Account.username))
-					this.deletePasswordWhenRequired(old_account);
+						this.deletePasswordWhenRequired(old_account);
+						break;
+
+					default:
+						zinAssert(false);
 				}
 
 				var old_pl = new PasswordLocator(account.get(Account.passwordlocator));
@@ -460,24 +465,6 @@ ConfigSettings.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, pro
 	dId(radiogroup_id).selectedItem = dId(selected_id);
 }
 
-ConfigSettings.prototype.gdSyncWithLabel = function()
-{
-	var a_rowid = this.accountsArrayOf(FORMAT_GD);
-	var ret     = stringBundleString("cs.general.gd.syncwith.prefix");
-
-	if (a_rowid.length == 0)
-		ret += stringBundleString("cs.general.gd.syncwith.suffix");
-	else
-	{
-		ret += this.m_accounts[a_rowid[0]].get(Account.username);
-
-		if (a_rowid.length > 1)
-			ret += " " + stringBundleString("cs.general.gd.syncwith.etc");
-	}
-
-	return ret;
-}
-
 ConfigSettings.prototype.updatePrefsetsFromDocument = function()
 {
 	// general tab - checkbox elements
@@ -485,18 +472,6 @@ ConfigSettings.prototype.updatePrefsetsFromDocument = function()
 	for (var i = 0; i < this.m_checkbox_properties.length; i++)
 		this.m_prefset_general.setProperty(this.m_checkbox_properties[i],
 			dId(this.m_checkbox_bimap.lookup(this.m_checkbox_properties[i], null)).checked ? "true" : "false" );
-}
-
-ConfigSettings.prototype.getDomainFromUrl = function(url)
-{
-	// http://gunblad3.blogspot.com/2008/05/uri-url-parsing.html
-	// 0  ==> url,      2  ==> protocol,    4  ==> username, 5 ==> password, 6 ==> host, 7 ==> port, 8 ==> pathname, 9 ==> urlparamseparator
-	// 10 ==> urlparam, 11 ==> querystring, 12 ==> fragment
-	//
-	var re = /^((\w+):\/\/\/?)?((\w+):?(\w+)?@)?([^\/\?:]+):?(\d+)?(\/?[^\?#;\|]+)?([;\|])?([^\?#]+)?\??([^#]+)?#?(\w*)/;
-	var a  = re.exec(url);
-	zinAssert(a.length > 6);
-	return a[6];
 }
 
 ConfigSettings.prototype.accountsTreeRefresh = function()
@@ -536,7 +511,7 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 		if (account.format_xx() == FORMAT_GD)
 			value = account.get(Account.gd_sync_with) == 'zg' ? FolderConverter.PREFIX_PRIMARY_ACCOUNT : this.m_addressbook.getPabName();
 		else
-			value = "      *";
+			value = "        *";
 
 		this.appendCell(treerow, value);
 
@@ -549,11 +524,14 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 }
 
 
-ConfigSettings.prototype.appendCell = function(treerow, value)
+ConfigSettings.prototype.appendCell = function(treerow, value, properties)
 {
 	var treecell = document.createElement("treecell");
 
 	treecell.setAttribute("label", value);
+
+	if (properties)
+		treecell.setAttribute("properties", properties);
 
 	treerow.appendChild(treecell);
 }

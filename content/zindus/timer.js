@@ -130,6 +130,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		if (is_window_update_required)
 		{
 			this.m_zwc.forEach(this.zwc_functor('update'));
+			this.m_logger.debug("ui: " + this.m_sfcd.account().get(Account.username) + ": " + this.m_sfo.progressToString());
 		}
 
 		if (fsmstate.isFinal())
@@ -214,7 +215,7 @@ TimerFunctor.prototype.zwc_functor = function(name)
 					run: function(win) {
 						dId(win, 'zindus-statusbar-progress').setAttribute('hidden', false);
 						dId(win, 'zindus-statusbar-progress-leftmost').value = 
-							stringBundleString("progress.prefix") + " " + this.context.m_sfcd.account().get(Account.username);
+							stringBundleString("brand.zindus") + ": " + this.context.m_sfcd.account().get(Account.username);
 					}
 				};
 				break;

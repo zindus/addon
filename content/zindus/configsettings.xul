@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 
+
 <!-- ***** BEGIN LICENSE BLOCK *****
   
   "The contents of this file are subject to the Mozilla Public License
@@ -53,7 +54,8 @@
 			<caption label="Accounts" />
 			<vbox flex="1" >
 				<tree id="cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5"
-				         style="&zindus.accounts.tree.style;" ondblclick="document.getElementById('cs-account-edit').doCommand();" >
+				         style="&zindus.accounts.tree.style;"
+						 ondblclick="document.getElementById('cs-account-edit').doCommand();" >
 					<treecols>
 						<treecol id="cs-col-1" label="Email" persist="width ordinal hidden" flex="4" />
 						<splitter class="tree-splitter"/>

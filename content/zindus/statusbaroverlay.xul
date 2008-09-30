@@ -23,8 +23,6 @@
   
   ***** END LICENSE BLOCK ***** -->
 
-<?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
-
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >

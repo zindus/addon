@@ -57,7 +57,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 	}
 	catch (ex)
 	{
-		zinAlert('status.failmsg.alert.title', APP_NAME + " ZinMailWindowOverlay onLoad() : " + ex);
+		zinAlert('text.alert.title', APP_NAME + " ZinMailWindowOverlay onLoad() : " + ex);
 	}
 }
 
@@ -97,7 +97,7 @@ ZinMailWindowOverlay.prototype.onUnLoad = function()
 	}
 	catch (ex)
 	{
-		zinAlert('status.failmsg.alert.title', APP_NAME + " ZinMailWindowOverlay onUnLoad() : " + ex);
+		zinAlert('text.alert.title', APP_NAME + " ZinMailWindowOverlay onUnLoad() : " + ex);
 	}
 }
 

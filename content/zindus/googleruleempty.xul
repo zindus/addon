@@ -46,7 +46,7 @@
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<groupbox pack="center" >
-		<caption id="gr-caption" />
+		<caption id="gr-top-caption" />
 			<vbox style="margin-left:10px; margin-right:20px;" >
 				<description id='gr-description' xmlns:html="http://www.w3.org/1999/xhtml" />
 				<grid flex="1" style="&zindus.ca.grid.style;" > 

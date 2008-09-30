@@ -39,7 +39,7 @@
 	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
 	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
 	<script type="application/x-javascript"> <![CDATA[
-		with (ZindusScopeRegistry.getScope()) { includejs('configgd.js'); }
+		with (ZindusScopeRegistry.getScope()) { includejs('configgoogle.js'); }
 	]]> </script>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>

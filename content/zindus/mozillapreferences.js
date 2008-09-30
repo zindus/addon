@@ -69,7 +69,7 @@ MozillaPreferences.prototype.branch = function()
 			this.m_branch = instance.getBranch(this.m_prefix);
 		}
 		catch(ex) {
-			zinAlert('status.failmsg.alert.title', "MozillaPreferences::branch : " + ex);
+			zinAlert('text.alert.title', "MozillaPreferences::branch : " + ex);
 		}
 	}
 
@@ -86,7 +86,7 @@ MozillaPreferences.prototype.defaultbranch = function()
 			this.m_defaultbranch = instance.getDefaultBranch(this.m_prefix);
 		}
 		catch(ex) {
-			zinAlert('status.failmsg.alert.title', "MozillaPreferences::defaultbranch : " + ex);
+			zinAlert('text.alert.title', "MozillaPreferences::defaultbranch : " + ex);
 		}
 	}
 
@@ -153,7 +153,7 @@ MozillaPreferences.prototype.getIntPrefOrNull  = function(branch, key) { return 
 MozillaPreferences.prototype.reportCatch = function(ex, key)
 {
 	if (typeof zinAlert == 'function')
-		zinAlert('status.failmsg.alert.title', ex.message + " with key " + key + " stack: \n" + ex.stack);
+		zinAlert('text.alert.title', ex.message + " with key " + key + " stack: \n" + ex.stack);
 	else
 		print(ex.message + " with key " + key + " stack: \n" + ex.stack);
 }

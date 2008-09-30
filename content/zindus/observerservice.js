@@ -48,7 +48,7 @@ ObserverService.isRegistered = function(topic)
 			count++;
 		}
 		catch (e) {
-			zinAlert('status.failmsg.alert.title', "exception while enumerating: e: " + e);
+			zinAlert('text.alert.title', "exception while enumerating: e: " + e);
 		}
 	}
 

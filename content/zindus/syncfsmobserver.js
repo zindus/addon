@@ -79,8 +79,8 @@ SyncFsmObserver.prototype.buildOp = function(sourceid, stringid)
 
 SyncFsmObserver.prototype.sourceName = function(sourceid)
 {
-	return this.state.sources[sourceid]['format'] == FORMAT_TB ? stringBundleString("format.thunderbird").toLowerCase() :
-	                                                             stringBundleString("format.server").toLowerCase();
+	return this.state.sources[sourceid]['format'] == FORMAT_TB ? stringBundleString("brand.thunderbird").toLowerCase() :
+	                                                             stringBundleString("brand.server").toLowerCase();
 }
 
 SyncFsmObserver.prototype.tweakStringId = function(stringid)
@@ -234,9 +234,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stSelectSoapUrl':
 				if (context.state.suggestedSoapURL && !context.is_a_zm_tested_soapurl(context.state.suggestedSoapURL))
 				{
-					this.progressReportOnSource(context.state.sourceid_pr, "select.soapurl");
+					this.progressReportOnSource(context.state.sourceid_pr, "soapurl");
 					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP) + " " + context.state.suggestedSoapURL + "<br/>"
-					                                      + stringBundleString(this.tweakStringId("select.soapurl2")));
+					                                      + stringBundleString(this.tweakStringId("soapurl2")));
 				}
 				else
 					ret = false; // no need to update the UI
@@ -390,11 +390,11 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 						if (context.state.stopFailDetail)
 							es.m_fail_detail = context.state.stopFailDetail;
 
-						if (context.state.stopFailGcd)
-							es.m_fail_gcd = context.state.stopFailGcd;
+						if (context.state.stopFailGrd)
+							es.m_fail_grd = context.state.stopFailGrd;
 					}
 					else
-						es.failcode('failon.unknown');
+						es.failcode('failon.unexpected');
 				}
 				else if (context.state.authToken && isPropertyPresent(Maestro.FSM_GROUP_AUTHONLY, context.state.id_fsm))
 					es.m_exit_status = 0;
@@ -403,8 +403,8 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				else
 					zinAssert(false); // ensure that all cases are covered above
 
-				if (es.failcode() == 'failon.unknown')
-					es.m_fail_detail = BUG_REPORT_URI;
+				if (es.failcode() == 'failon.unexpected')
+					es.m_fail_detail = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 
 				if (es.m_exit_status != 0)
 					es.m_fail_fsmoldstate = fsmstate.oldstate;

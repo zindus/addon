@@ -23,15 +23,15 @@
 
 function ConfigAccount()
 {
-	this.m_server_format_values   = [ FORMAT_GD,                  FORMAT_ZM                 ];
+	this.m_server_format_values   = [ FORMAT_GD,           FORMAT_ZM          ];
 	this.m_server_format_ids      = [ "ca-format-google",  "ca-format-zimbra" ];
 	this.m_server_format_bimap    = new BiMap( this.m_server_format_values, this.m_server_format_ids );
 
-	this.m_gal_radio_values       = [ "yes",                       "if-fewer",                       "no"                       ];
+	this.m_gal_radio_values       = [ "yes",           "if-fewer",           "no"           ];
 	this.m_gal_radio_ids          = [ "ca-zm-gal-yes", "ca-zm-gal-if-fewer", "ca-zm-gal-no" ];
 	this.m_gal_radio_bimap        = new BiMap(this.m_gal_radio_values, this.m_gal_radio_ids);
 
-	this.m_gd_sync_with_bimap     = new BiMap( [ "zg",                              "pab"                              ], 
+	this.m_gd_sync_with_bimap     = new BiMap( [ "zg",                "pab"                ], 
 	                                           [ "ca-gd-syncwith-zg", "ca-gd-syncwith-pab" ] );
 
 	this.m_logger                 = newLogger("ConfigAccount"); // this.m_logger.level(Logger.NONE);
@@ -107,7 +107,7 @@ ConfigAccount.prototype.onCommand = function(id_target)
 {
 	switch (id_target)
 	{
-		case "format-google":
+		case "ca-format-google":
 		case "ca-format-zimbra":
 			this.updateView();
 			this.setFocusForFormat();
@@ -133,9 +133,9 @@ ConfigAccount.prototype.onCommand = function(id_target)
 
 				if (this.m_payload_sw.m_es.m_exit_status == null)
 				{
-					logger().debug("ConfigAccount.onCommand: cs.sync.failed.unexpectedly");
-					msg = stringBundleString("cs.sync.failed.unexpectedly") +
-					      stringBundleString("status.failmsg.file.bug", [ BUG_REPORT_URI ]);
+					logger().debug("ConfigAccount.onCommand: status.failon.unexpected");
+					msg = stringBundleString("status.failon.unexpected") +
+					      stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 				}
 				else
 					msg = this.m_payload_sw.m_es.asMessage("ca.auth.succeeded", "ca.auth.failed");
@@ -162,7 +162,7 @@ ConfigAccount.prototype.onBlur = function(id)
 		var username = dId(id).value;
 
 		dId("ca-gd-syncwith-zg").label = stringBundleString("cs.general.gd.syncwith.prefix") +
-		                                               (username.length ? username : stringBundleString("cs.general.gd.syncwith.suffix"));
+		                                 (username.length ? username : stringBundleString("cs.general.gd.syncwith.suffix"));
 	}
 	
 	// free.fr
@@ -189,8 +189,8 @@ ConfigAccount.prototype.onBlur = function(id)
 
 ConfigAccount.prototype.initialiseView = function()
 {
-	dId("ca-format-google").label     = stringBundleString("format.google");
-	dId("ca-format-zimbra").label     = stringBundleString("format.zimbra");
+	dId("ca-format-google").label     = stringBundleString("brand.google");
+	dId("ca-format-zimbra").label     = stringBundleString("brand.zimbra");
 	dId("ca-gd-syncwith-label").value = stringBundleString("ca.pap.gd.syncwith.label");
 
 	var account = this.m_payload_configsettings.m_account;
@@ -201,7 +201,6 @@ ConfigAccount.prototype.initialiseView = function()
 		this.m_logger.debug("account.format_xx: " + account.format_xx());
 
 		ConfigAccount.setRadio("ca-format-radiogroup", this.m_server_format_bimap, account.format_xx());
-		                                                      // this.m_format_bimap.lookup(null, account.get('format')));
 
 		dId("ca-username").value = account.get(Account.username);
 		dId("ca-password").value = account.get(Account.passwordlocator).getPassword();
@@ -244,7 +243,7 @@ ConfigAccount.prototype.updateView = function()
 
 	if (this.m_is_fsm_running)
 	{
-		xulSetAttribute('disabled', true, "command");
+		xulSetAttribute('disabled', true, "ca-command");
 	}
 	else
 	{
@@ -252,12 +251,17 @@ ConfigAccount.prototype.updateView = function()
 		xulSetAttribute('disabled', false, "ca-command");
 	}
 
-	var is_ok_enabled = (dId("ca-username").value.length > 0 && dId("ca-url").value.length > 0 && dId("ca-password").value.length > 0);
+	var format_current = this.serverFormat();
+
+	// OK is enabled if url, username and password are set and not identical to another account
+	//
+	var is_ok_enabled = (dId("ca-username").value.length > 0 && dId("ca-url").value.length > 0 && dId("ca-password").value.length > 0) &&
+	                    (!isPropertyPresent(this.m_payload_configsettings.m_account_keys,
+						   hyphenate(':', format_current, dId("ca-url").value, dId("ca-username").value)));
+
 	this.m_logger.debug("updateView: is_ok_enabled: " + is_ok_enabled);
 
 	dId("zindus-ca-dialog").setAttribute('buttondisabledaccept', !is_ok_enabled);
-
-	var format_current = this.serverFormat();
 
 	if (format_current == FORMAT_GD)
 	{

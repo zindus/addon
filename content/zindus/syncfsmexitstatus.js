@@ -26,7 +26,7 @@ function SyncFsmExitStatus()
 	this.m_exit_status      = null;
 	this.m_fail_code        = null; // one of the Fail* codes
 	this.m_fail_detail      = null;
-	this.m_fail_gcd         = null;
+	this.m_fail_grd         = null;
 	this.m_fail_soapmethod  = null;
 	this.m_fail_fsmoldstate = null;
 	this.m_count_conflicts  = 0;
@@ -39,12 +39,10 @@ function SyncFsmExitStatus()
 		'failon.cancel'                        : { 'hasdetail' : 0 }, //     user cancelled
 		'failon.integrity.zm.bad.credentials'  : { 'hasdetail' : 0 }, //     something dodgy about url, username or password - dont proceed
 		'failon.integrity.gd.bad.credentials'  : { 'hasdetail' : 0 }, //     something dodgy about email address or password - dont proceed
-		'failon.integrity.data.store.in'       : { 'hasdetail' : 0 }, //     something dodgy about the data store that just got loaded
+		'failon.integrity.data.store.in'       : { 'hasdetail' : 1 }, //     something dodgy about the data store that just got loaded
 		'failon.integrity.data.store.out'      : { 'hasdetail' : 1 }, //     internal error - we've created a data store that's dodgy
 		'failon.integrity.data.store.map'      : { 'hasdetail' : 1 }, //     internal error - somehow a card acquired the luid of a folder!
-		'failon.integrity.accounts.identical'  : { 'hasdetail' : 1 }, // 10. user has created accounts that are identical
-		'failon.integrity.accounts.one.zimbra' : { 'hasdetail' : 0 }, //     user has created more than one zimbra account
-		'failon.unknown'                       : { 'hasdetail' : 0 }, //     this should never be!
+		'failon.unexpected'                    : { 'hasdetail' : 1 }, //     some sort of integrity failure
 		'failon.folder.name.empty'             : { 'hasdetail' : 1 }, //    
 		'failon.folder.name.duplicate'         : { 'hasdetail' : 1 }, //    
 		'failon.folder.name.reserved'          : { 'hasdetail' : 1 }, //    
@@ -84,8 +82,7 @@ SyncFsmExitStatus.prototype.toString = function()
 		ret += " fail_code: "        + this.failcode();
 		ret += " fail_detail: "      + this.m_fail_detail;
 		ret += " fail_fsmoldstate: " + this.m_fail_fsmoldstate;
-		if (this.m_fail_gcd)
-			ret += " fail_gcd: " + this.m_fail_gcd.toString();
+		ret += " fail_grd: "         + (this.m_fail_grd ? this.m_fail_grd.toString('summary') : "null");
 	}
 
 	ret += " count_conflicts: " + this.m_count_conflicts;
@@ -133,7 +130,7 @@ SyncFsmExitStatus.prototype.asMessage = function(sbsSuccess, sbsFailure)
 			if (this.failcode() == 'failon.fault')
 			{
 				msg += "\n" + this.m_fail_detail;
-				msg += "\n" + stringBundleString("status.failmsg.zm.soap.method") + " " + this.m_fail_soapmethod;
+				msg += "\n" + stringBundleString("text.zm.soap.method") + " " + this.m_fail_soapmethod;
 			}
 			else if (this.failcode() == 'failon.cancel')
 				msg += "\n" + stringBundleString("status.failon.cancel.detail");

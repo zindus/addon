@@ -41,7 +41,7 @@ function GoogleRuleTrash(addressbook)
 
 GoogleRuleTrash.FAIL_CODES = [ 'failon.gd.conflict.1', 'failon.gd.conflict.2', 'failon.gd.conflict.3', 'failon.gd.conflict.4' ];
 
-GoogleRuleTrash.prototype.moveToTrashDontAsk = function(failcode, gcd)
+GoogleRuleTrash.prototype.moveToTrashDontAsk = function(failcode, grd)
 {
 	zinAssertAndLog(isInArray(failcode, GoogleRuleTrash.FAIL_CODES), failcode);
 
@@ -49,24 +49,24 @@ GoogleRuleTrash.prototype.moveToTrashDontAsk = function(failcode, gcd)
 	{
 		var a_email = new Array(); // index the email addresses via an array so that we can iterate through them in a guaranteed order
 
-		for (var email in gcd.m_unique)
+		for (var email in grd.m_unique)
 			a_email.push(email);
 
-		this.moveToTrashRuleUnique(failcode, gcd, a_email, 0, {});
+		this.moveToTrashRuleUnique(failcode, grd, a_email, 0, {});
 		this.moveToTrashRuleUniqueFinalise();
 	}
 	else if (failcode == 'failon.gd.conflict.4')
-		this.moveToTrashCardsTb(gcd.m_empty);
+		this.moveToTrashCardsTb(grd.m_empty);
 }
 
-GoogleRuleTrash.prototype.moveToTrashRuleUnique = function(failcode, gcd, a_email, start, a_luids_deleted)
+GoogleRuleTrash.prototype.moveToTrashRuleUnique = function(failcode, grd, a_email, start, a_luids_deleted)
 {
 	var a_gcch, a_gcch_to_move, index, luid, luid_keep, ret;
 
 	for (index = start; index < a_email.length; )
 	{
 		email          = a_email[index];
-		a_gcch         = gcd.m_unique[email];
+		a_gcch         = grd.m_unique[email];
 		a_gcch_to_move = new Object();
 		luid_leep      = this.selectContactHandle(a_gcch);
 
@@ -81,7 +81,7 @@ GoogleRuleTrash.prototype.moveToTrashRuleUnique = function(failcode, gcd, a_emai
 
 		this.moveToTrashCards(a_gcch_to_move);
 
-		index = this.advanceToNextUnique(gcd, a_email, index, a_luids_deleted);
+		index = this.advanceToNextUnique(grd, a_email, index, a_luids_deleted);
 	}
 }
 
@@ -90,7 +90,7 @@ GoogleRuleTrash.prototype.moveToTrashRuleUnique = function(failcode, gcd, a_emai
 // The first thing done after advancing to the next conflict is to remove any contacts deleted upstream.
 // Downstream conflicts may get entirely resolved by upstream contact deletions.
 //
-GoogleRuleTrash.prototype.advanceToNextUnique = function(gcd, a_email, index, a_luids_deleted)
+GoogleRuleTrash.prototype.advanceToNextUnique = function(grd, a_email, index, a_luids_deleted)
 {
 	var i, email, a_gcch, luid;
 
@@ -99,7 +99,7 @@ GoogleRuleTrash.prototype.advanceToNextUnique = function(gcd, a_email, index, a_
 		index++;
 
 		email  = a_email[index];
-		a_gcch = gcd.m_unique[email];
+		a_gcch = grd.m_unique[email];
 
 		var a_delete_from_gcch = new Array();
 
@@ -303,7 +303,7 @@ GoogleRuleTrash.prototype.moveToTrashCardsTb = function(a_gcch)
 
 GoogleRuleTrash.prototype.moveToTrashCardsGd = function(a_gcch)
 {
-	var abCardTo, uri_from, luid, attributes, properties, is_deleted;
+	var abCardTo, uri_from, luid, attributes, properties, is_deleted, gcch;
 
 	zinAssert(arguments.length == 1 && a_gcch);
 
@@ -324,7 +324,7 @@ GoogleRuleTrash.prototype.moveToTrashCardsGd = function(a_gcch)
 
 			if (abCardTo)
 			{
-				this.a_gd_uris_to_delete[a_gcch[key].m_gd_contact.m_meta[GdContact.edit]] = true;
+				this.a_gd_uris_to_delete[a_gcch[key].m_gd_contact.m_meta[GdContact.edit]] = a_gcch[key].m_gd_username;
 				is_deleted = true;
 			}
 			else
@@ -336,16 +336,24 @@ GoogleRuleTrash.prototype.moveToTrashRuleUniqueFinalise = function()
 {
 	if (!isObjectEmpty(this.a_gd_uris_to_delete))
 	{
-		var zfc = new FeedCollection();
-		var uri, zfi;
+		var zfc   = new FeedCollection();
+		var a_zfi = new Object();
+		var uri, username;
 
 		zfc.filename(Filesystem.FILENAME_GD_TO_BE_DELETED);
 
 		for (uri in this.a_gd_uris_to_delete)
 		{
-			zfi = new FeedItem(null, FeedItem.ATTR_KEY, uri);
-			zfc.set(zfi);
+			username = this.a_gd_uris_to_delete[uri];
+
+			if (!isPropertyPresent(a_zfi, username))
+				a_zfi[username] = new FeedItem(null, FeedItem.ATTR_KEY, username);
+
+			a_zfi[username].set(uri, '1');
 		}
+
+		for (username in a_zfi)
+			zfc.set(a_zfi[username]);
 
 		zfc.save();
 
@@ -466,59 +474,106 @@ GoogleRuleTrash.isDontAsk = function(failcode)
 
 GoogleRuleTrash.failCodeToHref = function(failcode)
 {
-	zinAssertAndLog(isInArray(failcode, GoogleRuleTrash.FAIL_CODES), failcode);
+	var ret;
 
-	return "http://www.zindus.com/faq-thunderbird-google/" + '#' + failcode;
+	switch (failcode)
+	{
+		case 'failon.gd.conflict.1':
+		case 'failon.gd.conflict.2':
+		case 'failon.gd.conflict.3':
+			ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-google-requires-unique-email-addresses';
+			break;
+		case 'failon.gd.conflict.4':
+			ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-no-empty-contacts';
+			break;
+		default:
+			zinAssertAndLog(false, failcode);
+	}
+
+	return ret;
 }
 
-function GoogleRuleContactHandle(format, luid, uri, properties, gd_contact)
+// bag contains: FORMAT_TB: uri, FORMAT_GD: contact, username
+//
+function GoogleRuleContactHandle(format, luid, properties, bag)
 {
 	this.m_format     = format;
 	this.m_luid       = luid;
-	this.m_uri        = uri;
 	this.m_properties = properties;
-	this.m_gd_contact = gd_contact;
+
+	switch (format) {
+		case FORMAT_TB:
+			this.m_uri = bag.uri;
+			break;
+		case FORMAT_GD:
+			this.m_gd_contact  = bag.contact;
+			this.m_gd_username = bag.username;
+			break;
+		default:
+			zinAssertAndLog(false,format);
+	}
 }
 
 GoogleRuleContactHandle.prototype.toString = function()
 {
-	return "gcch: format: " + this.m_format +
-	              " luid: " + this.m_luid +
-	               " uri: " + this.m_uri +
-	        " properties: " + aToString(this.m_properties) +
-	        " gd_contact: " + (this.m_gd_contact ? this.m_gd_contact.toString() : "null");
+	return "gcch: format: "  + this.m_format +
+	              " luid: "  + this.m_luid +
+	        " properties: "  + aToString(this.m_properties) +
+	               " uri: "  + this.m_uri +
+	        " gd_username: " + this.m_gd_username +
+	        " gd_contact: "  + (this.m_gd_contact ? this.m_gd_contact.toString() : "null");
 }
 
-function GoogleRuleDetail()
+function GoogleRuleDetail(username)
 {
-	this.m_empty  = null; // an associative array where key is a tb luid and value is a GoogleRuleContactHandle
-	this.m_unique = null; // an associative array where key is a email address and value is an array of GoogleRuleContactHandle
+	this.m_username = username;
+	this.m_empty    = null; // an associative array where key is a tb luid and value is a GoogleRuleContactHandle
+	this.m_unique   = null; // an associative array where key is a email address and value is an array of GoogleRuleContactHandle
 }
 
-GoogleRuleDetail.prototype.toString = function()
+GoogleRuleDetail.prototype.toString = function(arg)
 {
 	var msg = "";
 	var key;
 
-	if (this.m_empty)
-	{
-		msg += " empty: ";
-		for (key in this.m_empty)
-			msg += key + ": " + aToString(this.m_empty[key]);
-		msg += "\n";
-	}
+	arg = arg ? arg : 'full';
 
-	if (this.m_unique)
+	msg += "username: " + this.m_username;
+
+	if (arg == 'summary')
 	{
-		var luid;
-		msg += " unique: ";
-		for (key in this.m_unique)
+		if (this.m_empty)
+			msg += " " + keysToString(this.m_empty)
+
+		if (this.m_unique)
+			msg += " " + keysToString(this.m_unique)
+	}
+	else
+	{
+		if (this.m_empty)
 		{
-			msg += "\n" + key + ": ";
-			for (luid in this.m_unique[key])
-				msg += "\n  luid: " + luid + ": " + this.m_unique[key][luid].toString();
+			msg += " empty: ";
+
+			for (key in this.m_empty)
+				msg += key + ": " + aToString(this.m_empty[key]);
+
+			msg += "\n";
 		}
-		msg += "\n";
+
+		if (this.m_unique)
+		{
+			var luid;
+			msg += " unique: ";
+
+			for (key in this.m_unique)
+			{
+				msg += "\n" + key + ": ";
+				for (luid in this.m_unique[key])
+					msg += "\n  luid: " + luid + ": " + this.m_unique[key][luid].toString();
+			}
+
+			msg += "\n";
+		}
 	}
 
 	return msg;
@@ -527,16 +582,16 @@ GoogleRuleDetail.prototype.toString = function()
 function GoogleRuleDialog()
 {
 	this.m_es     = null;
-	this.m_gcd    = null;
+	this.m_grd    = null;
 }
 
 GoogleRuleDialog.prototype.onLoad = function()
 {
 	var payload = window.arguments[0];
 	this.m_es   = payload.m_args.m_es;
-	this.m_gcd  = payload.m_args.m_es.m_fail_gcd;
+	this.m_grd  = payload.m_args.m_es.m_fail_grd;
 
-	this.m_logger.debug("m_gcd: " + this.m_gcd.toString());
+	this.m_logger.debug("m_grd: " + this.m_grd.toString());
 }
 
 GoogleRuleDialog.prototype.onCancel = function()
@@ -559,7 +614,7 @@ GoogleRuleEmpty.prototype.onLoad = function()
 {
 	GoogleRuleDialog.prototype.onLoad.call(this);
 
-	dId("gr-caption").label  = stringBundleString("gr.caption.empty.label");
+	dId("gr-top-caption").label  = stringBundleString("gr.caption.empty.label");
 	dId("gr-dont-ask").label = stringBundleString("gr.dont.ask.empty.label");
 
 	xulSetHtml('gr-description',
@@ -598,7 +653,7 @@ GoogleRuleDialog.prototype.setDontAsk = function()
 
 GoogleRuleEmpty.prototype.onAccept = function()
 {
-	var a_gcch         = this.m_gcd.m_empty;
+	var a_gcch         = this.m_grd.m_empty;
 	var a_gcch_to_move = new Object();
 	var ret;
 	var checkbox;
@@ -658,7 +713,7 @@ GoogleRuleEmpty.prototype.updateView = function()
 	//
 	var is_any_checked = false;
 
-	for (luid in this.m_gcd.m_empty)
+	for (luid in this.m_grd.m_empty)
 	{
 		checkbox = dId(luid);
 
@@ -675,7 +730,7 @@ GoogleRuleEmpty.prototype.updateView = function()
 GoogleRuleEmpty.prototype.refreshRows = function()
 {
 	var rows           = dId('gr-empty-rows');
-	var a_gcch         = this.m_gcd.m_empty;
+	var a_gcch         = this.m_grd.m_empty;
 	var max_attributes = 3;
 	var count, is_first, key, value, luid, row;
 
@@ -738,7 +793,7 @@ GoogleRuleUnique.prototype.onLoad = function()
 {
 	GoogleRuleDialog.prototype.onLoad.call(this);
 
-	for (var email in this.m_gcd.m_unique)
+	for (var email in this.m_grd.m_unique)
 		this.m_a_email.push(email);
 
 	this.updateView();
@@ -748,7 +803,7 @@ GoogleRuleUnique.prototype.onExtra1 = function()
 {
 	this.m_logger.debug("onExtra1: enters");
 
-	this.m_index = this.m_gct.advanceToNextUnique(this.m_gcd, this.m_a_email, this.m_index, this.m_a_luids_deleted);
+	this.m_index = this.m_gct.advanceToNextUnique(this.m_grd, this.m_a_email, this.m_index, this.m_a_luids_deleted);
 
 	var is_finished = (this.m_index >= this.m_a_email.length);
 
@@ -767,8 +822,11 @@ GoogleRuleUnique.prototype.updateView = function()
 {
 	zinAssert(this.m_index < this.m_a_email.length);
 
-	dId("gr-caption").label = stringBundleString("gr.caption.unique.label", [ (this.m_index + 1), this.m_a_email.length ]);
+	dId("gr-top-caption").label = stringBundleString("gr.caption.syncing.with.label", [ this.m_grd.m_username ]);
+	dId("gr-tree-caption").label = stringBundleString("gr.caption.unique.label", [ (this.m_index + 1), this.m_a_email.length ]);
 	dId("gr-dont-ask").label = stringBundleString("gr.dont.ask.unique.label");
+
+	this.m_logger.debug("updateView: progress: " + (this.m_index + 1) + " of " + this.m_a_email.length);
 
 	var value = stringBundleString("gr.description.unique.value",
 			      [ this.m_a_email[this.m_index],                    // email
@@ -790,7 +848,7 @@ GoogleRuleUnique.prototype.refreshRows = function()
 {
 	var treechildren   = dId("gr-treechildren");
 	var email          = this.m_a_email[this.m_index];
-	var a_gcch         = this.m_gcd.m_unique[email];
+	var a_gcch         = this.m_grd.m_unique[email];
 	var max_attributes = 2;
 	var a_columns      = ['Location', 'DisplayName', 'Email', 'Summary', ];
 	var a_email_keys   = { PrimaryEmail: 0, SecondEmail: 0 };
@@ -829,7 +887,7 @@ GoogleRuleUnique.prototype.refreshRows = function()
 		// Location
 		//
 		value = (a_gcch[luid].m_format == FORMAT_TB) ? this.m_gct.m_addressbook.getAddressBookNameByUri(a_gcch[luid].m_uri) :
-		                                               stringBundleString("format.google");
+		                                               stringBundleString("brand.google");
 		a_cell['Location'].setAttribute('label', value);
 
 		// DisplayName
@@ -921,7 +979,7 @@ GoogleRuleUnique.prototype.populateDifferingProperties = function(a_gcch, a_excl
 GoogleRuleUnique.prototype.onAccept = function()
 {
 	var email          = this.m_a_email[this.m_index];
-	var a_gcch         = this.m_gcd.m_unique[email];
+	var a_gcch         = this.m_grd.m_unique[email];
 	var a_gcch_to_move = new Object();
 	var luid_leep      = this.m_treeitem_to_luid[dId("gr-tree").currentIndex];
 	var i, luid, ret;
@@ -957,13 +1015,13 @@ GoogleRuleUnique.prototype.onAccept = function()
 		if (is_dont_ask && is_dont_ask_confirmed)
 		{
 			this.setDontAsk();
-			this.m_gct.moveToTrashRuleUnique(this.m_es.failcode(), this.m_gcd, this.m_a_email, this.m_index + 1, this.m_a_luids_deleted);
+			this.m_gct.moveToTrashRuleUnique(this.m_es.failcode(), this.m_grd, this.m_a_email, this.m_index + 1, this.m_a_luids_deleted);
 			this.m_index = this.m_a_email.length;
 			ret = true; // we're leaving...
 		}
 		else
 		{
-			this.m_index = this.m_gct.advanceToNextUnique(this.m_gcd, this.m_a_email, this.m_index, this.m_a_luids_deleted);
+			this.m_index = this.m_gct.advanceToNextUnique(this.m_grd, this.m_a_email, this.m_index, this.m_a_luids_deleted);
 			ret = (this.m_index >= this.m_a_email.length);
 
 			if (!ret)
@@ -1012,7 +1070,7 @@ GoogleRuleRepeater.prototype.resolve_if_appropriate = function(logger, es, sfcd)
 		if (!this.m_gct)
 			this.m_gct = new GoogleRuleTrash();
 
-		this.m_gct.moveToTrashDontAsk(failcode, es.m_fail_gcd);
+		this.m_gct.moveToTrashDontAsk(failcode, es.m_fail_grd);
 	}
 
 	return is_repeat;

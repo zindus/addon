@@ -101,7 +101,7 @@ Filesystem.createDirectoryIfRequired = function(code)
 		catch (e) {
 			var msg1 = stringBundleString("filesystem.create.directory.failed");
 			var msg2 = stringBundleString("filesystem.create.directory.failedSuggest");
-			zinAlert('status.failmsg.alert.title', msg1 + "\n" + nsifile.path + "\n" + msg2 + "\n" + e);
+			zinAlert('text.alert.title', msg1 + "\n" + nsifile.path + "\n" + msg2 + "\n" + e);
 		}
 }
 
@@ -134,7 +134,7 @@ Filesystem.writeToFile = function(file, content)
 	}
 	catch (e) 
 	{
-		zinAlert('status.failmsg.alert.title', e);
+		zinAlert('text.alert.title', e);
 	}
 
 	return retval;

@@ -46,7 +46,7 @@
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<groupbox pack="center" style="min-width:50em" >
-		<caption id="gr-caption" />
+		<caption id="gr-top-caption" />
 
 		<description id='gr-description' />
 	</groupbox>
@@ -54,6 +54,7 @@
 	<spacer style="&zindus.spacer.style;" flex="1"/>
 
 	<groupbox>
+		<caption id="gr-tree-caption" />
 		<tree id="gr-tree" seltype="single" rows="5" enableColumnDrag="true" hidecolumnpicker="true" style="&zindus.enclosing.vbox.style;" >
 			<treecols flex="1" >
 				<treecol id="gr-column-1" persist="width ordinal hidden" flex="1" label="&zindus.gr.column.location.label;" />

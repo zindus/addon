@@ -45,7 +45,7 @@ function zinAssert(expr)
 			}
 
 			if (typeof zinAlert == 'function')
-				zinAlert('status.failmsg.alert.title', ex.message + " stack: \n" + executionStackFilter(ex.stack));
+				zinAlert('text.alert.title', ex.message + " stack: \n" + executionStackFilter(ex.stack));
 			else
 				print(ex.message + " stack: \n" + executionStackFilter(ex.stack));
 
@@ -521,8 +521,8 @@ function format_xx_to_localisable_string(format_xx)
 
 	switch(format_xx)
 	{
-		case FORMAT_GD: ret = stringBundleString("format.google"); break;
-		case FORMAT_ZM: ret = stringBundleString("format.zimbra"); break;
+		case FORMAT_GD: ret = stringBundleString("brand.google"); break;
+		case FORMAT_ZM: ret = stringBundleString("brand.zimbra"); break;
 		default:        zinAssertAndLog(false, "mismatched: format_xx: " + format_xx);
 	}
 
