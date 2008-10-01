@@ -21,4 +21,4 @@ pref("extensions.zindus.preauth.0.preauth_post_body",     "login=%username%&pass
 pref("extensions.zindus.general.as_verbose_logging",      "true");     // 
 pref("extensions.zindus.general.as_auto_sync",            "true");     // 
 pref("extensions.zindus.general.gd_sync_postal_address",  "false");    // 
-pref("extensions.zindus.general.gd_conflict_dont_ask",    "ask-me");   // dont-ask
+pref("extensions.zindus.general.gd_rule_dont_ask",        "ask-me");   // dont-ask

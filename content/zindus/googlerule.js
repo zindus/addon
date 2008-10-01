@@ -461,10 +461,10 @@ GoogleRuleTrash.isDontAsk = function(failcode)
 
 	if (isInArray(failcode, GoogleRuleTrash.FAIL_CODES))
 	{
-		var prefset = new PrefSet(PrefSet.GENERAL, [ PrefSet.GENERAL_GD_CONFLICT_DONT_ASK ]);
+		var prefset = new PrefSet(PrefSet.GENERAL, [ PrefSet.GENERAL_GD_RULE_DONT_ASK ]);
 		prefset.load();
 
-		ret = (prefset.getProperty(PrefSet.GENERAL_GD_CONFLICT_DONT_ASK) == "dont-ask");
+		ret = (prefset.getProperty(PrefSet.GENERAL_GD_RULE_DONT_ASK) == "dont-ask");
 	}
 
 	logger().debug("GoogleRuleTrash.isDontAsk: failcode: " + failcode + " returns: " + ret);
@@ -645,7 +645,7 @@ GoogleRuleDialog.prototype.setDontAsk = function()
 {
 	var prefset = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_GD_PROPERTIES);
 	prefset.load();
-	prefset.setProperty(PrefSet.GENERAL_GD_CONFLICT_DONT_ASK, "dont-ask");
+	prefset.setProperty(PrefSet.GENERAL_GD_RULE_DONT_ASK, "dont-ask");
 	prefset.save();
 
 	this.m_logger.debug("setDontAsk: set to dont-ask");

@@ -33,7 +33,7 @@ function ConfigGd()
 
 	this.m_map = {
 		0: { group: "cgd-postal",   bimap: 'postal',    prefset_key: PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, default: "cgd-postal-false" },
-		1: { group: "cgd-conflict", bimap: 'conflict',  prefset_key: PrefSet.GENERAL_GD_CONFLICT_DONT_ASK,   default: "ask-me" } };
+		1: { group: "cgd-conflict", bimap: 'conflict',  prefset_key: PrefSet.GENERAL_GD_RULE_DONT_ASK,       default: "ask-me"         } };
 }
 
 ConfigGd.prototype.onLoad = function(target)

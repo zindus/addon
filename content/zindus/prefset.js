@@ -54,9 +54,9 @@ PrefSet.GENERAL                        = "general";
 PrefSet.GENERAL_AS_AUTO_SYNC           = "as_auto_sync";
 PrefSet.GENERAL_AS_VERBOSE_LOGGING     = "as_verbose_logging";
 PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS = "gd_sync_postal_address";
-PrefSet.GENERAL_GD_CONFLICT_DONT_ASK   = "gd_conflict_dont_ask";
-PrefSet.GENERAL_AS_PROPERTIES          = [ PrefSet.GENERAL_AS_AUTO_SYNC,           PrefSet.GENERAL_AS_VERBOSE_LOGGING   ];
-PrefSet.GENERAL_GD_PROPERTIES          = [ PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, PrefSet.GENERAL_GD_CONFLICT_DONT_ASK ];
+PrefSet.GENERAL_GD_RULE_DONT_ASK       = "gd_rule_dont_ask";
+PrefSet.GENERAL_AS_PROPERTIES          = [ PrefSet.GENERAL_AS_AUTO_SYNC,           PrefSet.GENERAL_AS_VERBOSE_LOGGING ];
+PrefSet.GENERAL_GD_PROPERTIES          = [ PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS, PrefSet.GENERAL_GD_RULE_DONT_ASK   ];
 
 // Both id and branch are optional
 // id is optional because there might only be a single subsection under prefprefix

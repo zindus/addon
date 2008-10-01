@@ -75,6 +75,7 @@ TimerFunctor.prototype.run = function()
 	{
 		logger('info').info(getInfoMessage('start', "no accounts configured"));
 		StatusBar.saveState(this.m_es, true);
+		this.m_zwc.populate();
 		StatusBar.update(this.m_zwc);
 		zinAssert(!this.m_has_fsm_state_changed); // don't want finish() to unregister the fsm observer
 		this.finish();

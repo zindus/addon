@@ -288,16 +288,23 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	// 0.7.11 - move gd_sync_with and zm_sync_gal_enabled from zindus.general to zindus.account.2 (they are now per-account preferences)
 	//
 
+	logger().debug("AMHERE 1: "); // TODO
+
 	if (prefs.getCharPrefOrNull(prefs.branch(), "account.2.url"))
 	{
 	    var format = prefs.getCharPrefOrNull(prefs.branch(), "account.2.format");
+
+		logger().debug("AMHERE 2: format: " + format); // TODO
 
 		if (format == Account.Google)
 		{
 			value = prefs.getCharPrefOrNull(prefs.branch(), "general.gd_sync_with");
 
+			logger().debug("AMHERE 3: value: " + value); // TODO
+
 			if (value)
 			{
+				logger().debug("AMHERE 4: value: " + value); // TODO
 				prefs.setCharPref(prefs.branch(), "account.2.gd_sync_with", value);
 				this.m_logger.debug("migrated general.gd_sync_with to account.2.gd_sync_with: " + value);
 			}

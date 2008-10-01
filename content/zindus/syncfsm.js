@@ -796,7 +796,7 @@ SyncFsm.prototype.isConsistentGidParse = function(aReverseOut)
 
 	this.state.zfcGid.forEach(functor_foreach_gid);
 
-	this.debug("isConsistentGidParse: is_consistent: " + is_consistent + " aReverse: " + aToString(aReverse));
+	this.debug("isConsistentGidParse: is_consistent: " + is_consistent);
 
 	return is_consistent;
 }
@@ -3682,6 +3682,9 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddress = function()
 					else
 					{
 						msg += " different from tb and no email address so backdating gd to force it to lose";
+
+						// context.debug("blah: gd contact: " + contact.toString() + " tb properties: " + 
+						//                      aToString(context.getContactFromLuid(sourceid_tb, luid_tb, FORMAT_TB)));
 
 						context.backdateZfcForcingItToLose(sourceid_gd, luid_gd);
 					}

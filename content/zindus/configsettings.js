@@ -312,6 +312,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			this.m_logger.level(Singleton.instance().get_loglevel_from_preference());
 			Singleton.instance().logger().level(Singleton.instance().get_loglevel_from_preference());
 
+			ObserverService.notify(ObserverService.TOPIC_PREFERENCE_CHANGE, null, null);
+
 			break;
 
 		default:

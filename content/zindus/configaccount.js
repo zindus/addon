@@ -27,11 +27,11 @@ function ConfigAccount()
 	this.m_server_format_ids      = [ "ca-format-google",  "ca-format-zimbra" ];
 	this.m_server_format_bimap    = new BiMap( this.m_server_format_values, this.m_server_format_ids );
 
-	this.m_gal_radio_values       = [ "yes",           "if-fewer",           "no"           ];
+	this.m_gal_radio_values       = [ 'yes',           'if-fewer',           'no'           ];
 	this.m_gal_radio_ids          = [ "ca-zm-gal-yes", "ca-zm-gal-if-fewer", "ca-zm-gal-no" ];
 	this.m_gal_radio_bimap        = new BiMap(this.m_gal_radio_values, this.m_gal_radio_ids);
 
-	this.m_gd_sync_with_bimap     = new BiMap( [ "zg",                "pab"                ], 
+	this.m_gd_sync_with_bimap     = new BiMap( [ 'zg',                'pab'                ], 
 	                                           [ "ca-gd-syncwith-zg", "ca-gd-syncwith-pab" ] );
 
 	this.m_logger                 = newLogger("ConfigAccount"); // this.m_logger.level(Logger.NONE);

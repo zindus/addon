@@ -39,7 +39,7 @@
 
 	<menupopup id="zindus-statusbar-menu">
 		<menuitem label="&zindus.sb.settings.label;" default="true"
-		          oncommand="with (ZindusScopeRegistry.getScope()) {ConfigSettings.open();};"/>
+		          oncommand="with (ZindusScopeRegistry.getScope()) { ConfigSettings.open(); };"/>
 		<menuitem id="zindus-statusbar-sync-now"
 		          label="&zindus.cs.general.button.sync.now.label;" oncommand="window.zindus_statusbar.timerStart();"/>
 	</menupopup>
