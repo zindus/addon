@@ -2,21 +2,21 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Seq RDF:about="rdf:#$IEjs8">
+    <RDF:li RDF:resource="rdf:#$JEjs8"/>
+  </RDF:Seq>
   <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAEAFKvmUE9w+N7MC3ActC6m7oygC1rJTb7GD6wlEoqkHAa4t8QYo49Yg9QJj4y2SIOTh1JIiy5ocZuAZZQZZemidmF8RAFzkDGNaL5KJDgAVC/vmN7NFlZ5pXTFxdo8beryoyK3eaqTy0M3jqmJ/C/JJafsOcs729OXdXQF19hta">
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAJhGbGldbsNR6wqdD81JIPvo3q7zrSBvqcr+vlYW2DRFwsQFm3uK0wMvUw1w9OXkkfmNH4WPQDipJED6wdSdEGlwugHaE28c2GnL4KnZsoKaVdXvRPEeMoTMrnNPwrNPiJXLGiOMPpr7nxy+EHRhDmrZah45TtExQoTBW3NLLcQV">
     <em:updates RDF:resource="rdf:#$IEjs8"/>
   </RDF:Description>
   <RDF:Description RDF:about="rdf:#$JEjs8"
-                   em:version="0.7.10.20081001.114205">
+                   em:version="0.7.10.20081002.081043">
     <em:targetApplication RDF:resource="rdf:#$MEjs8"/>
   </RDF:Description>
   <RDF:Description RDF:about="rdf:#$MEjs8"
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:minVersion="2.0b2"
                    em:maxVersion="3.0a2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.10.20081001.114205-tb.xpi"
-                   em:updateHash="sha256:5ecb2ad5b0ae13a82f2bfbe1c6652b663d5e7cbd3bc558d7adc5808360335119" />
-  <RDF:Seq RDF:about="rdf:#$IEjs8">
-    <RDF:li RDF:resource="rdf:#$JEjs8"/>
-  </RDF:Seq>
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.7.10.20081002.081043-tb.xpi"
+                   em:updateHash="sha256:164517ae0aae720c1104e2b19aa9fda7b3a885b963406625c5a6db0bb93f65c4" />
 </RDF:RDF>

@@ -27,7 +27,7 @@
 <!ENTITY zindus.ca.username.description.value           "Type the email address and password you use to log on.">
 <!ENTITY zindus.ca.username.label                       "Email Address:">
 <!ENTITY zindus.ca.password.label                       "Password:">
-<!ENTITY zindus.ca.test.connection.label                "Test Connection to Server">
+<!ENTITY zindus.ca.test.connection.label                "Test Connection">
 <!ENTITY zindus.ca.test.connection.accesskey            "T">
 <!ENTITY zindus.ca.google.sync.with.pab.label           "Personal Address Book">
 <!ENTITY zindus.ca.zimbra.gal.label                     "Global Address List (GAL): ">

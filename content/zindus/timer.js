@@ -179,11 +179,11 @@ TimerFunctor.prototype.finish = function(is_back_off)
 
 	this.is_running = false;
 
-	// This next line is needed!  My guess is that it drives garbage collection of the fsm.
+	// This next line is needed!  My guess is that it affects reference-counted xpcom objects held by the fsm.
 	// If it isn't present, everything seemingly works fine under windows.
-	// But under Linux, the behaviour is exceedingly wierd:
+	// But under Linux, the behaviour is exceedingly wierd: when a sync is started from the preferences window,
 	// this.nsIAddressBook().getAbDatabaseFromURI(uri) in AddressBookTb2:lookupCard() throws an NS_ERROR_FILE_ACCESS_DENIED
-	// exception and subsequently either crashes tb or display an alert: unable to load addressbook file abook.mab
+	// exception and subsequently either crashes tb or display an alert: unable to load addressbook file abook.mab.
 	// blech! leni - Wed Oct  1 15:20:31 AUSEST 2008
 	//
 	this.initialise_per_fsm_members();
