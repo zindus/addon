@@ -288,37 +288,34 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	// 0.7.11 - move gd_sync_with and zm_sync_gal_enabled from zindus.general to zindus.account.2 (they are now per-account preferences)
 	//
 
-	logger().debug("AMHERE 1: "); // TODO
-
 	if (prefs.getCharPrefOrNull(prefs.branch(), "account.2.url"))
 	{
 	    var format = prefs.getCharPrefOrNull(prefs.branch(), "account.2.format");
 
-		logger().debug("AMHERE 2: format: " + format); // TODO
-
-		if (format == Account.Google)
-		{
-			value = prefs.getCharPrefOrNull(prefs.branch(), "general.gd_sync_with");
-
-			logger().debug("AMHERE 3: value: " + value); // TODO
+		function migrate_old(p, log, oldkey, newkey, default_value) {
+			var value = p.getCharPrefOrNull(p.branch(), oldkey);
 
 			if (value)
 			{
-				logger().debug("AMHERE 4: value: " + value); // TODO
-				prefs.setCharPref(prefs.branch(), "account.2.gd_sync_with", value);
-				this.m_logger.debug("migrated general.gd_sync_with to account.2.gd_sync_with: " + value);
+				log.debug("migrated " + oldkey + "to " + newkey + " value: " + value);
+				p.setCharPref(p.branch(), newkey, value);
 			}
+
+			if (!p.getCharPrefOrNull(p.branch(), newkey))
+			{
+				log.debug("set " + newkey + " value: " + default_value);
+				p.setCharPref(p.branch(), newkey,  default_value);
+			}
+		}
+
+		if (format == Account.Google)
+		{
+			migrate_old(prefs, this.m_logger, "general.gd_sync_with", "account.2.gd_sync_with", 'pab');
 		}
 
 		if (format == Account.Zimbra)
 		{
-			value = prefs.getCharPrefOrNull(prefs.branch(), "general.zm_sync_gal_enabled");
-
-			if (value)
-			{
-				prefs.setCharPref(prefs.branch(), "account.2.zm_sync_gal_enabled", value);
-				this.m_logger.debug("migrated general.zm_sync_gal_enabled to account.2.zm_sync_gal_enabled: " + value);
-			}
+			migrate_old(prefs, this.m_logger, "general.zm_sync_gal_enabled", "account.2.zm_sync_gal_enabled", 'pab');
 		}
 
 		prefs.branch().deleteBranch("general.gd_sync_with");
