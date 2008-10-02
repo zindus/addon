@@ -356,7 +356,7 @@ SyncFsmZm.prototype.entryActionAuthSelect = function(state, event, continuation)
 	var username    = this.username();
 	var password    = this.state.sources[sourceid_pr][Account.passwordlocator].getPassword();
 
-	if (url && /^https?:\/\//.test(url) && username.length > 0 && password.length > 0 && isValidUrl(url))
+	if (url && /^https?:\/\//.test(url) && username.length > 0 && password && password.length > 0 && isValidUrl(url))
 	{
 		zinAssert(this.state.zidbag.isPrimaryUser());
 
