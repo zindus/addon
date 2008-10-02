@@ -30,7 +30,8 @@ function GdContact(contact_converter, doc)
 	else
 		this.m_document = document.implementation.createDocument("","",null);
 		
-	this.m_logger             = newLogger("GdContact");
+	// causes assertion failure on OSX: this.m_logger             = newLogger("GdContact");
+	// use this instead I guess:  this.m_logger = logger();
 	this.m_contact_converter  = contact_converter;
 	this.m_container          = null;
 	this.m_properties         = null;
@@ -81,7 +82,7 @@ GdContact.prototype.updateFromContainer = function(node)
 	var functor = {
 		run: function(node, key)
 		{
-			// context.m_logger.debug("updateFromContainer: functor: key: " + key);
+			// context.m_logger.debug("GdContact: updateFromContainer: functor: key: " + key);
 
 			switch (key)
 			{
@@ -219,7 +220,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 							}
 
 							if (child.getAttribute("primary") == "true" && (key != "PrimaryEmail" || !is_visited))
-								this.m_logger.warn("a contact has an <email> element with a 'primary' attribute that isn't mapped to PrimaryEmail: " + child.getAttribute("address"));
+								logger().warn("GdContact: a contact has an <email> element with a 'primary' attribute that isn't mapped to PrimaryEmail: " + child.getAttribute("address"));
 
 							break;
 
@@ -311,7 +312,7 @@ GdContact.prototype.updateFromProperties = function(properties)
 	var context = this;
 	var key;
 
-	// this.m_logger.debug("updateFromProperties: properties: " + aToString(properties));
+	// this.m_logger.debug("GdContact: updateFromProperties: properties: " + aToString(properties));
 
 	var functor = {
 		run: function(node, key)
@@ -366,8 +367,6 @@ GdContact.prototype.updateFromProperties = function(properties)
 					else
 						a_new_field = a_field;
 
-					context.m_logger.debug("blah: key: " + key + " a_new_field: " + aToString(a_new_field));
-
 					context.nodeModifyOrMarkForDeletion(node, null, a_new_field, key, a_field_used, a_to_be_deleted);
 					break;
 
@@ -405,7 +404,7 @@ GdContact.prototype.updateFromProperties = function(properties)
 	// now do DELs (don't do inside loop because deleting elements of an array while iterating over it produces unexpected results)
 	for (key in a_to_be_deleted)
 		try {
-			// this.m_logger.debug("updateFromProperties: removeChild: key: " + key);
+			// this.m_logger.debug("GdContact: updateFromProperties: removeChild: key: " + key);
 			a_to_be_deleted[key].parent.removeChild(a_to_be_deleted[key].child);
 		} catch (ex) {
 			zinAssertAndLog(false, "key: " + key + "ex: " + ex + "ex.stack: " + ex.stack);
@@ -459,7 +458,7 @@ GdContact.prototype.fieldAdd = function(key, a_field)
 	switch(key)
 	{
 		case "title":
-			logger().error("fieldAdd: shouldn't be here: key: " + key);
+			logger().error("GdContact: fieldAdd: shouldn't be here: key: " + key);
 			break;
 		case "content":
 			element = this.m_document.createElementNS(Xpath.NS_ATOM, "content");
@@ -529,7 +528,7 @@ GdContact.prototype.setProperty = function(node, attribute, collection, key, fil
 	else if (node.hasChildNodes())
 		value = node.firstChild.nodeValue;
 
-	// this.m_logger.debug("setProperty: blah: key: " + key + " value: " + value);
+	// this.m_logger.debug("GdContact: setProperty: blah: key: " + key + " value: " + value);
 
 	if (typeof(filter) == 'function' && value.length > 0)
 		value = filter(value);

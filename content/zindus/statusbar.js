@@ -103,7 +103,13 @@ StatusBar.prototype.onFsmStateChangeFunctor = function(fsmstate)
 	if (!this.m_is_fsm_running)
 		this.m_timer_functor = null; // don't hold a reference to the functor if the fsm is finished
 
-	xulSetAttribute('disabled', this.m_is_fsm_running, "zindus-statusbar-sync-now");
+	// for a reason that I don't understand, the dId of the menuitem returns null at onLoad() time on OSX
+	// so we test for it...
+	//
+	var sync_now = dId("zindus-statusbar-sync-now");
+
+	if (sync_now)
+		sync_now.setAttribute('disabled', this.m_is_fsm_running);
 }
 
 // Static methods that interact with status.txt
@@ -113,11 +119,11 @@ StatusBar.saveState = function(es, is_never_synced)
 	var zfc = StatusBar.stateAsZfc();
 	var now = new Date();
 	var zfi = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSBAR,
-								  'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
-								  'exitstatus', es.m_exit_status,
-								  'conflicts', es.m_count_conflicts,
-								  'is_never_synced', (is_never_synced ? "true" : "false"),
-								  'appversion', APP_VERSION_NUMBER );
+	                             'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
+	                             'exitstatus', es.m_exit_status,
+	                             'conflicts', es.m_count_conflicts,
+	                             'is_never_synced', (is_never_synced ? "true" : "false"),
+	                             'appversion', APP_VERSION_NUMBER );
 
 	zfc.set(zfi);
 	zfc.save();

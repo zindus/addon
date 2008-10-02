@@ -65,4 +65,5 @@
 		<label id="zindus-statusbar-error"             hidden="true" value="X" />
 		<label id="zindus-statusbar-insync"            hidden="true" value="Y" />
 	</statusbarpanel>
+
 </overlay>

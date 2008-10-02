@@ -210,8 +210,10 @@ LogAppender.prototype.fileOpen = function()
 
 LogAppender.prototype.reportError = function(msg, ex)
 {
+	msg += "\nstack: " + executionStackAsString();
+
 	dump(msg + "\n");
-	dump(ex.message + " stack: \n" + ex.stack);
+	dump(ex + "\n");
 
 	if (typeof(Components) == 'object')
 	{
