@@ -315,7 +315,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 
 		if (format == Account.Zimbra)
 		{
-			migrate_old(prefs, this.m_logger, "general.zm_sync_gal_enabled", "account.2.zm_sync_gal_enabled", 'pab');
+			migrate_old(prefs, this.m_logger, "general.zm_sync_gal_enabled", "account.2.zm_sync_gal_enabled", 'if-fewer');
 		}
 
 		prefs.branch().deleteBranch("general.gd_sync_with");
