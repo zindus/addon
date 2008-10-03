@@ -2254,7 +2254,6 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 }
 
 // if slow sync then...
-//   if gd_sync_with == 'pab' and there's a zindus/<email-address> folder, rename it to <email-address> <date>
 //   if gd_sync_with == 'zg'  and there's no zindus/<email-address> folder, create it
 //
 SyncFsm.prototype.loadTbSetupGdAddressbook = function()
@@ -2262,15 +2261,9 @@ SyncFsm.prototype.loadTbSetupGdAddressbook = function()
 	var abName = this.gdAddressbookName('zg');
 	var aUris  = this.state.m_addressbook.getAddressBooksByPattern(new RegExp( "^" + abName + "$" ));
 
-	if (this.state.gd_sync_with == 'pab' && !isObjectEmpty(aUris))
-	{
-		this.state.m_logger.debug("loadTbSetupGdAddressbook: about to rename out of the way: " + aToString(aUris));
+	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
 
-		for (var key in aUris)
-			for (var i = 0; i < aUris[key].length; i++)
-				this.state.m_addressbook.renameAddressBook(aUris[key][i].uri(), this.username() + " " + (new Date()).toUTCString());
-	}
-	else if (this.state.gd_sync_with == 'zg' && isObjectEmpty(aUris))
+	if (this.state.gd_sync_with == 'zg' && isObjectEmpty(aUris))
 	{
 		var abip = this.state.m_addressbook.newAddressBook(abName);
 
@@ -3470,9 +3463,6 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 			zinAssertAndLog(!isPropertyPresent(reverse[sourceid], luid), luid);
 			zinAssert(sourceid != SOURCEID_TB);
 
-			if (sourceid == SOURCEID_TB)
-				context.debug("AMHERE: isInScopeTbLuid() for luid=" + luid + " is: " + context.isInScopeTbLuid(luid)); // TODO
-
 			if (!SyncFsm.isOfInterest(zfc, luid))
 				msg += " luid is not of interest - ignoring";
 			else if (!SyncFsm.isRelevantToGid(zfc, luid))
@@ -4306,173 +4296,137 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	for (sourceid in this.state.sources)
 		aSuoResult[sourceid] = new Object();
 
-	var functor = {
-		state: this.state,
-		run: function(sourceid, luid)
-		{
-			if (sourceid != aGcs[gid].sourceid) // only look at losers
-				a_sourceid[sourceid] = true;
-
-			return true;
-		}
-	};
 
 	for (var gid in aGcs)
-	{
-		a_sourceid = new Object(); // the union of the sourceids in the gid and the sourceids of the current sync, excluding the winner
-
 		for (sourceid in this.state.sources)
 			if (sourceid != aGcs[gid].sourceid) // only look at losers
 				if (this.isInScopeGid(gid))
-					a_sourceid[sourceid] = true;
+	{
+		suo = null;
+		msg = "";
 
-		zfcGid.get(gid).forEach(functor, FeedItem.ITER_GID_ITEM);
-
-		for (sourceid in a_sourceid)
+		switch (aGcs[gid].state)
 		{
-			suo = null;
-			msg = "";
-
-			switch (aGcs[gid].state)
+			case Gcs.WIN:
+			case Gcs.CONFLICT:
 			{
-				case Gcs.WIN:
-				case Gcs.CONFLICT:
+				var sourceid_winner = aGcs[gid].sourceid;
+				var zfcWinner       = this.zfc(sourceid_winner);
+				var luid_winner     = zfcGid.get(gid).get(sourceid_winner);
+				var zfiWinner       = zfcWinner.get(luid_winner);
+				var zfcTarget       = this.zfc(sourceid);
+				var zfiTarget       = zfcGid.get(gid).isPresent(sourceid) ? zfcTarget.get(zfcGid.get(gid).get(sourceid)) : null;
+				var is_delete_pair  = false;
+
+				if (!zfcGid.get(gid).isPresent(sourceid))
 				{
-					var sourceid_winner = aGcs[gid].sourceid;
-					var zfcWinner       = this.zfc(sourceid_winner);
-					var luid_winner     = zfcGid.get(gid).get(sourceid_winner);
-					var zfiWinner       = zfcWinner.get(luid_winner);
-
-					if (!isPropertyPresent(this.state.sources, sourceid))
-					{
-						// if the gid has a triple (tb, zm, gd) and we're syncing (tb, gd) and a contact was deleted
-						// then we need to leave a DEL attribute in the zm contacts' FeedItem
-						// otherwise when we come to sync (tb, zm) it'll appear as if the contact were added by zm!
-						//
-
-						if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
-						{
-							msg = " source in gid but not being synced";
-							suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
-						}
-					}
+					// We implement delete for Zimbra as a move to Trash.
+					// When zimbra's Trash is emptied, we see the deletes, by which time the item is long gone from
+					// the original source.
+					// So here, we only add items to the gid if the winner is of interest (and not deleted)
+					//
+					if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+						msg = " winner is deleted - no change";
+					else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
+						msg = " winner isn't of interest - no change";
+					else if (zfiWinner.type() == FeedItem.TYPE_CN &&
+					         this.isParentBeingDeletedInTarget(sourceid_winner, luid_winner, sourceid))
+						msg = " new contact's parent folder was deleted in target - don't add";
 					else
 					{
-						var zfcTarget      = this.zfc(sourceid);
-						var zfiTarget      = zfcGid.get(gid).isPresent(sourceid) ? zfcTarget.get(zfcGid.get(gid).get(sourceid)) : null;
-						var is_delete_pair = false;
-
-						if (!zfcGid.get(gid).isPresent(sourceid))
-						{
-							// We implement delete for Zimbra as a move to Trash.
-							// When zimbra's Trash is emptied, we see the deletes, by which time the item is long gone from
-							// the original source.
-							// So here, we only add items to the gid if the winner is of interest (and not deleted)
-							//
-							if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
-								msg = " winner is deleted - no change";
-							else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
-								msg = " winner isn't of interest - no change";
-							else if (zfiWinner.type() == FeedItem.TYPE_CN &&
-							         this.isParentBeingDeletedInTarget(sourceid_winner, luid_winner, sourceid))
-								msg = " new contact's parent folder was deleted in target - don't add";
-							else
-							{
-								msg = " source not in gid";
-								suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
-							}
-						}
-						else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
-						{
-							if (!isPropertyPresent(a_winner_matches_gid, sourceid))
-								a_winner_matches_gid[sourceid] = new Array();
-
-							a_winner_matches_gid[sourceid].push(gid); // msg = " winner matches gid - no change";
-						}
-						else if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
-						{
-							if (!zfiTarget.isPresent(FeedItem.ATTR_DEL))
-								suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
-							else
-							{
-								is_delete_pair = true;
-								msg = " both winner and loser deleted - no change";
-							}
-						}
-						else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
-							suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
-						else if (zfiTarget.isPresent(FeedItem.ATTR_DEL))
-						{
-							msg = " winner modified but loser had been deleted - ";
-							suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
-						}
-						else
-							suo = new Suo(gid, sourceid_winner, sourceid, Suo.MOD);
-
-						if (aGcs[gid].state == Gcs.CONFLICT && !is_delete_pair)
-						{
-							zinAssert(suo);
-
-							var context = this;
-							function getSourceName(sourceid) {
-								return context.state.sources[sourceid]['format'] == FORMAT_TB ?
-						           		stringBundleString("brand.thunderbird").toLowerCase() :
-						           		stringBundleString("brand.server").toLowerCase();
-							};
-
-							var conflict_msg       = "";
-							var source_name_winner = getSourceName(sourceid_winner);
-							var source_name_loser  = getSourceName(sourceid);
-							var format_winner      = this.state.sources[sourceid_winner]['format'];
-							var item               = (zfiWinner.type() == FeedItem.TYPE_CN ? "contact" : "addressbook");
-							var short_label_winner = this.shortLabelForLuid(sourceid_winner, luid_winner, FORMAT_TB);
-
-							conflict_msg += "conflict: " + item + ": " + short_label_winner +
-											" on " + source_name_winner +
-											" wins and " + item + " on " + source_name_loser +
-											" is " + Suo.opcodeAsStringPastTense(suo.opcode);
-
-							this.state.aConflicts.push(conflict_msg);
-
-							// sanity check that PAB and it's counterpart is invariant
-							//
-							if (zfiWinner.type() == FeedItem.TYPE_FL)
-							{
-								var luid_loser         = zfcGid.get(gid).get(sourceid);
-								var short_label_loser  = this.shortLabelForLuid(sourceid, luid_loser, FORMAT_TB);
-
-								zinAssert(short_label_winner != TB_PAB && short_label_loser != TB_PAB);
-							}
-						}
+						msg = " source not in gid";
+						suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
 					}
-
-					break;
 				}
-				default:
-					zinAssert(false);
-			}
+				else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
+				{
+					if (!isPropertyPresent(a_winner_matches_gid, sourceid))
+						a_winner_matches_gid[sourceid] = new Array();
 
-			if (suo != null)
-			{
-				var bucket = this.suoOpcode(suo);
-
-				if (!isPropertyPresent(aSuoResult, sourceid))
-					aSuoResult[sourceid] = new Object();
-
-				if (!isPropertyPresent(aSuoResult[sourceid], bucket))
-					aSuoResult[sourceid][bucket] = new Object();
-
-				if (suo.opcode == Suo.ADD)
-					aSuoResult[sourceid][bucket][indexSuo++] = suo;
+					a_winner_matches_gid[sourceid].push(gid); // msg = " winner matches gid - no change";
+				}
+				else if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+				{
+					if (!zfiTarget.isPresent(FeedItem.ATTR_DEL))
+						suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
+					else
+					{
+						is_delete_pair = true;
+						msg = " both winner and loser deleted - no change";
+					}
+				}
+				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
+					suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
+				else if (zfiTarget.isPresent(FeedItem.ATTR_DEL))
+				{
+					msg = " winner modified but loser had been deleted - ";
+					suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
+				}
 				else
-					aSuoResult[sourceid][bucket][this.state.zfcGid.get(gid).get(sourceid)] = suo;
+					suo = new Suo(gid, sourceid_winner, sourceid, Suo.MOD);
 
-				msg += " added suo: " + suo.toString();
+				if (aGcs[gid].state == Gcs.CONFLICT && !is_delete_pair)
+				{
+					zinAssert(suo);
+
+					var context = this;
+					function getSourceName(sourceid) {
+						return context.state.sources[sourceid]['format'] == FORMAT_TB ?
+				           		stringBundleString("brand.thunderbird").toLowerCase() :
+				           		stringBundleString("brand.server").toLowerCase();
+					};
+
+					var conflict_msg       = "";
+					var source_name_winner = getSourceName(sourceid_winner);
+					var source_name_loser  = getSourceName(sourceid);
+					var format_winner      = this.state.sources[sourceid_winner]['format'];
+					var item               = (zfiWinner.type() == FeedItem.TYPE_CN ? "contact" : "addressbook");
+					var short_label_winner = this.shortLabelForLuid(sourceid_winner, luid_winner, FORMAT_TB);
+
+					conflict_msg += "conflict: " + item + ": " + short_label_winner +
+									" on " + source_name_winner +
+									" wins and " + item + " on " + source_name_loser +
+									" is " + Suo.opcodeAsStringPastTense(suo.opcode);
+
+					this.state.aConflicts.push(conflict_msg);
+
+					// sanity check that PAB and it's counterpart is invariant
+					//
+					if (zfiWinner.type() == FeedItem.TYPE_FL)
+					{
+						var luid_loser         = zfcGid.get(gid).get(sourceid);
+						var short_label_loser  = this.shortLabelForLuid(sourceid, luid_loser, FORMAT_TB);
+
+						zinAssert(short_label_winner != TB_PAB && short_label_loser != TB_PAB);
+					}
+				}
+
+				break;
 			}
-
-			if (msg.length > 0)
-				big_msg += "\n gid=" + gid + " loser: " + sourceid + " gcs: " + aGcs[gid].toString() + " -" + msg;
+			default:
+				zinAssert(false);
 		}
+
+		if (suo != null)
+		{
+			var bucket = this.suoOpcode(suo);
+
+			if (!isPropertyPresent(aSuoResult, sourceid))
+				aSuoResult[sourceid] = new Object();
+
+			if (!isPropertyPresent(aSuoResult[sourceid], bucket))
+				aSuoResult[sourceid][bucket] = new Object();
+
+			if (suo.opcode == Suo.ADD)
+				aSuoResult[sourceid][bucket][indexSuo++] = suo;
+			else
+				aSuoResult[sourceid][bucket][this.state.zfcGid.get(gid).get(sourceid)] = suo;
+
+			msg += " added suo: " + suo.toString();
+		}
+
+		if (msg.length > 0)
+			big_msg += "\n gid=" + gid + " loser: " + sourceid + " gcs: " + aGcs[gid].toString() + " -" + msg;
 	}
 
 	for (sourceid in a_winner_matches_gid)
@@ -4488,10 +4442,14 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 
 // Background: ORDER_SOURCE_UPDATE specifies that contact delete is processed before folder delete.
 // The main reason to remove Suo's that delete contacts when there is already a Suo to delete the parent folder is:
-// 1. When we move the folder to Trash, the contacts remain in the parent folder in the trash
-//    If we deleted the contacts first, we'd lose the parent-child relationship between contact and folder in the trash
-//    Similar problems would apply to shared folders and their contacts.
+// - When we move the folder to Trash, the contacts remain in the parent folder in the trash
+//   If we deleted the contacts first, we'd lose the parent-child relationship between contact and folder in the Zimbra Trash.
+// Similar reasoning applies to shared folders and their contacts.
 // It's also a performance optimisation.
+// There's matching code in UpdateTb that mark the contacts whose DEL suo's have been removed as deleted
+// UpdateZm doesn't have analoguos code because with Tb, when the folder is deleted, the contacts are really deleted,
+// whereas with Zimbra, the contacts aren't deleted, they're in the Trash and get removed from the source map + gid because
+// they're no longer of interest.
 //
 SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 {
@@ -4501,9 +4459,10 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 	var aBuckets = [Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF];
 	var aBucket;
 
+	this.state.a_folders_deleted = new Object();
+
 	for (var sourceid in this.state.sources)
 	{
-		aFoldersBeingDeleted = new Object();
 		aOperationsToRemove  = new Object();
 
 		for (i = 0; i < aBuckets.length; i++)
@@ -4513,7 +4472,7 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 			for (indexSuo in aBucket)
 			{
 				suo = aBucket[indexSuo];
-				aFoldersBeingDeleted[suo.gid] = null;
+				this.state.a_folders_deleted[suo.gid] = new Array();
 			}
 		}
 
@@ -4524,19 +4483,27 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 			l_target    = SyncFsm.keyParentRelevantToGid(this.zfc(sourceid), luid_target);
 			gid_l_target = this.state.aReverseGid[sourceid][l_target];
 
-			if (isPropertyPresent(aFoldersBeingDeleted, gid_l_target))
+			if (isPropertyPresent(this.state.a_folders_deleted, gid_l_target))
+			{
 				aOperationsToRemove[indexSuo] = null;
+				this.state.a_folders_deleted[gid_l_target].push(suo);
+			}
 		}
-
-		if (!isObjectEmpty(aFoldersBeingDeleted))
-			this.state.m_logger.debug("removeContactDeletesWhenFolderIsBeingDeleted: sourceid: " + sourceid +
-			                             " folders being deleted (gids): " +
-			                             aToString(aFoldersBeingDeleted) + " and contacts deletes being removed: " +
-										 aToString(aOperationsToRemove));
 
 		for (indexSuo in aOperationsToRemove)
 			delete this.state.aSuo[sourceid][Suo.DEL | FeedItem.TYPE_CN][indexSuo];
 	}
+
+	if (!isObjectEmpty(this.state.a_folders_deleted))
+	{
+		var msg = "removeContactDeletesWhenFolderIsBeingDeleted: ";
+
+		for (var gid in this.state.a_folders_deleted)
+			msg += " \nfolder being deleted gid=" + gid + " suos of child contacts: " + this.state.a_folders_deleted[gid].toString();
+
+		this.debug(msg);
+	}
+
 }
 
 // Test that no folder names have both an ADD and DEL operation
@@ -5596,10 +5563,31 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 					this.state.m_addressbook.deleteAddressBook(uri);
 					zfcTarget.get(luid_target).set(FeedItem.ATTR_DEL, 1);
+
+					// partner with removeContactDeletesWhenFolderIsBeingDeleted...
+					// mark as deleted any contacts that are children of the deleted addressbook
+					// and leave the map as if the contacts were actually deleted (which they are!)
+					//
+					zinAssertAndLog(isPropertyPresent(this.state.a_folders_deleted, gid), gid);
+
+					var a_suo = this.state.a_folders_deleted[gid];
+					var zfi_gid_cn, luid_cn;
+
+					if (a_suo.length > 0)
+						msg += " setting DEL attribute on contact luids: ";
+
+					for (var j = 0; j < a_suo.length; j++)
+					{
+						zfi_gid_cn = zfcGid.get(a_suo[j].gid);
+						luid_cn    = zfi_gid_cn.get(a_suo[j].sourceid_target);
+						zfcTarget.get(luid_cn).set(FeedItem.ATTR_DEL, 1);
+						SyncFsm.setLsoToGid(zfi_gid_cn, zfcTarget.get(luid_cn)); 
+						msg += " =" + luid_cn;
+					}
 				}
 				else
 				{
-					this.state.m_logger.warn("Can't find addressbook to delete in the addressbook: luid="+ luid_target + " - this shouldn't happen.");
+					this.state.m_logger.warn("Can't find addressbook to delete: luid=" + luid_target + " - this shouldn't happen.");
 
 					luid_target = null;
 				}
@@ -6011,26 +5999,6 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 					zfiRelevantToGid = zfiTarget;
 
 				SyncFsm.setLsoToGid(this.state.zfcGid.get(suo.gid), zfiRelevantToGid);
-
-				if (remote_update_package.bucket == Suo.DEL | FeedItem.TYPE_FL)
-				{
-					// iterate through aSuo, and remove operations that delete child contacts of this folder (now in Trash)
-					//
-					var aSuoDelContacts = this.state.aSuo[suo.sourceid_target][Suo.DEL | FeedItem.TYPE_CN];
-
-					for (var indexSuo in aSuoDelContacts)
-					{
-						suo         = aSuoDelContacts[indexSuo];
-						luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
-						l_target    = SyncFsm.keyParentRelevantToGid(zfcTarget, luid_target);
-
-						if (key == l_target)
-						{
-							msg += " - removing operation to delete child contact: " + indexSuo;
-							delete aSuoDelContacts[indexSuo]; // no need to update maps - the contacts haven't changed
-						}
-					}
-				}
 
 				msg += " - luid map updated - new zfi: " + zfcTarget.get(luid_target);
 			}
@@ -7639,6 +7607,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.stopFailGrd         = null;         // detail supporting google conflict resolution
 	state.m_bimap_format      = getBimapFormat('short');
 
+	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
 	state.is_done_get_contacts_pu  = false;   // have we worked out the contacts to get from the server pre update?
 	state.is_source_update_problem = false;   // true iff an update operation on a source had a problem (eg soap response 404)
 	state.remote_update_package    = null;    // maintains state between an server update request and the response
