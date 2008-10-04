@@ -361,8 +361,7 @@ function FeedItem()
 FeedItem.prototype.get = function(key)
 {
 	if (!this.isPresent(key))
-		zinAssert(false, " key not present: " + key +
-	                     " key: " + (isPropertyPresent(this.m_properties, 'key') ? this.m_properties['key'] : "undefined"));
+		zinAssertAndLog(false, " key: " + key + " this: " + this.toString());
 
 	return this.m_properties[key];
 }
