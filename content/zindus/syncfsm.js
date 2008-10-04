@@ -4528,12 +4528,11 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 
 	this.state.m_logger.debug("testForConflictingUpdateOperations: both added and deleted (failed if anything >= 2): " + aToString(aName));
 
-	for (var i in aName)
-		if (aName[i] >= 2)
+	for (var name in aName)
+		if (aName[name] >= 2)
 		{
 			this.state.stopFailCode   = 'failon.folder.source.update';
-			this.state.stopFailDetail = ": " + this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(i))
-					                         + stringBundleString("text.suggest.reset");
+			this.state.stopFailDetail = ": " + name + stringBundleString("text.suggest.reset");
 			break;
 		}
 
@@ -4542,22 +4541,27 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 
 SyncFsm.prototype.testForConflictingUpdateOperationsHelper = function(aName, op)
 {
-	var suo, zfcWinner, luid_winner, zfiWinner, name;
+	var suo, sourceid, format, zfc, luid, zfi, name;
 
 	if (isPropertyPresent(this.state.aSuo[this.state.sourceid_tb], op))
 		for (var indexSuo in this.state.aSuo[this.state.sourceid_tb][op])
-	{
-		suo = this.state.aSuo[this.state.sourceid_tb][op][indexSuo];
-		zfcWinner   = this.zfc(suo.sourceid_winner);
-		luid_winner = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
-		zfiWinner   = zfcWinner.get(luid_winner);
-		name        = zfiWinner.name();
+		{
+			// - if it's an ADD, then use winner, but if it's a del, then use target because the winner's name might have changed
+			//   eg when a zimbra folder gets moved into trash it may also get renamed to avoid clashes.
+			// - names are normalised into thunderbird's namespace so that we match zimbra: fred with thunderbird: zindus/fred
+			//
+			suo      = this.state.aSuo[this.state.sourceid_tb][op][indexSuo];
+			sourceid = (op & Suo.ADD) ? suo.sourceid_winner : sourceid = suo.sourceid_target;
+			format   = this.state.sources[sourceid]['format'];
+			zfc      = this.zfc(sourceid);
+			luid     = this.state.zfcGid.get(suo.gid).get(sourceid);
+			name     = this.state.m_folder_converter.convertForPublic(FORMAT_TB, format, zfc.get(luid));
 
-		if (isPropertyPresent(aName, name))
-			aName[name]++;
-		else
-			aName[name]=1;
-	}
+			if (isPropertyPresent(aName, name))
+				aName[name]++;
+			else
+				aName[name]=1;
+		}
 }
 
 SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid, target_format)
