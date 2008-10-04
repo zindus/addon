@@ -278,18 +278,36 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
-						this.m_gd_contact_length = aToLength(context.state.a_gd_contact);
-						this.progressReportOnSource(context.state.sourceid_pr, "get.many", this.m_gd_contact_length);
+						function count_non_deleted(a) {
+							var ret = 0;
+							for (var id in a) {
+								if (!a[id].is_deleted())
+									ret++;
+							}
+							return ret;
+						}
+
+						// internally, the running total and chunking counts <entry> elements
+						// externally, the display shows "contacts" ie non-deleted <entry>s
+						//
+						this.m_gd_length_non_deleted = count_non_deleted(context.state.a_gd_contact);
+						this.m_gd_length_entry       = aToLength(context.state.a_gd_contact);
+
+						this.progressReportOnSource(context.state.sourceid_pr, "get.many", this.m_gd_length_non_deleted);
+					}
+
+					function scale_to(x, y, z) {
+						return parseInt(x*z/y); 
 					}
 
 					var lo = context.state.a_gd_contact_iterator.m_zindus_contact_count;
-					var hi = intMin(this.m_gd_contact_length, this.state.a_gd_contact_iterator.m_zindus_contact_count +
-					                                          this.state.a_gd_contact_iterator.m_zindus_contact_chunk - 1); 
+					var hi = intMin(this.m_gd_length_entry, this.state.a_gd_contact_iterator.m_zindus_contact_count +
+					                                        this.state.a_gd_contact_iterator.m_zindus_contact_chunk - 1); 
 
-					if (lo == hi)
-						this.set(SyncFsmObserver.PROG_CNT, lo);
-					else
-						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
+					this.set(SyncFsmObserver.PROG_CNT, (lo == hi) ?
+					                                     (scale_to(lo, this.m_gd_length_entry, this.m_gd_length_non_deleted) + 1) :
+						                   hyphenate('-', scale_to(lo, this.m_gd_length_entry, this.m_gd_length_non_deleted) + 1,
+						                                  scale_to(hi, this.m_gd_length_entry, this.m_gd_length_non_deleted)));
 				}
 				else
 					ret = false; // no need to update the UI
