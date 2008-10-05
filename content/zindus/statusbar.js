@@ -29,7 +29,17 @@
 // - TWOWAY:   next sync: when scheduled - currently you have to grep the logfile to find out
 // - AUTHONLY: last auth: (time, success/fail and optional failure reason)
 //
-
+// known bugs:
+// - deslecting the "verbose logging" preference in configsettings window doesn't affect this scope.
+//   That's easily fixed - by duplicating the preference-listening code that's in mailwindowoverlay.js here...
+//   But the underlying approach is wrong - logging should run in one shared scope - just like this:
+//   http://wiki.mozilla.org/Labs/JS_Modules#Logging  (Gecko 1.9).
+//   That module would hold the loglevel - currently we have to share loglevel state changes between scopes.
+//   Ideally the fix here would be delayed until Tb2 is no longer supported, which
+//   would mean that entire logging framework could be refactored to use the "Javascript module" approach.
+//   Then the verbose-logging-state-change-notification code could be removed altogether.
+//   Otherwise, we could bite the bullet, create a service and put logging in that.
+//   
 function StatusBar()
 {
 	this.m_logger         = newLogger("StatusBar");

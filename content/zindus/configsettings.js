@@ -323,11 +323,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 	if (is_accounts_changed)
 	{
-		this.m_logger.debug("blah: accounts have changed.");
-
 		this.m_accounts = this.accountsSortAndSave(this.m_accounts);
-
-		this.m_logger.debug("blah: 2.");
 
 		if (id_target == "cs-account-delete")
 		{
@@ -350,15 +346,13 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		this.accountsTreeRefresh();
 
-		// this.m_logger.debug("blah: selecting rowid: " + rowid);
-
 		if (rowid != null)
 			dId("cs-account-tree").view.selection.select(rowid);
 
 		this.updateView();
 
 		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete" ]))
-			this.m_logger.debug("blah: id_target: " + id_target + " m_accounts is: " + Account.arrayToString(this.m_accounts));
+			this.m_logger.debug("id_target: " + id_target + " m_accounts is: " + Account.arrayToString(this.m_accounts));
 	}
 }
 

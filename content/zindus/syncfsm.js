@@ -687,7 +687,7 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	this.state.stopwatch.mark(state + " 8");
 
 	// for (filename in a_zfc)
-	// 	this.debug("entryActionLoad: blah: filename: " + filename + " zfc: " + a_zfc[filename].toString());
+	// 	this.debug("entryActionLoad: filename: " + filename + " zfc: " + a_zfc[filename].toString());
 
 	continuation(nextEvent);
 }
@@ -1418,8 +1418,6 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 				var parent_folder_attribute = attributesFromNode(node.parentNode);
 				var parent_folder_key       = Zuio.key(parent_folder_attribute['id'], change.acct);
 
-				// this.state.m_logger.debug("blah: parent_folder_key: " + parent_folder_key);
-
 				if (SyncFsm.isOfInterest(zfcZm, parent_folder_key))
 					for each (var id in attribute['ids'].split(','))
 						this.ids[id] = true;
@@ -1729,11 +1727,9 @@ SyncFsm.prototype.exitActionGetContactZm = function(state, event)
 					functor.a[i].attribute[FeedItem.ATTR_KEY] = key;
 
 					if (this.zfcPr().isPresent(key))
-						this.zfcPr().get(key).set(functor.a[i].attribute);                               // update existing item
+						this.zfcPr().get(key).set(functor.a[i].attribute);                         // update existing item
 					else
 						this.zfcPr().set(new FeedItem(FeedItem.TYPE_CN, functor.a[i].attribute));  // add new item
-
-					// this.state.m_logger.debug("exitActionGetContactZm: blah: added aSyncContact[" + key +"]: " + this.state.aSyncContact[key]);
 				}
 			}
 			else
@@ -2075,7 +2071,7 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 		//
 		var a_match = this.state.m_addressbook.getAddressBooksByPattern(new RegExp( "^" + gd_ab_name_public + "$" ));
 
-		this.debug("loadTb: blah: gd_ab_name_public: " + gd_ab_name_public + " a_match: " + aToString(a_match));
+		this.debug("loadTb: gd_ab_name_public: " + gd_ab_name_public + " a_match: " + aToString(a_match));
 
 		if (!isPropertyPresent(a_match, gd_ab_name_public))
 		{
@@ -2409,7 +2405,7 @@ SyncFsm.zfcFindFirstFolder = function(zfc, name)
 
 	var ret = zfc.findFirst(f, name);
 
-	// logger().debug("zfcFindFirstFolder: blah: name: " + name + " returns: " + ret);
+	// logger().debug("zfcFindFirstFolder: name: " + name + " returns: " + ret);
 
 	return ret;
 }
@@ -2422,7 +2418,7 @@ SyncFsm.zfcFindFirstSharedFolder = function(zfc, key)
 
 	var ret = zfc.findFirst(f, key);
 
-	// logger().debug("zfcFindFirstSharedFolder: blah: key: " + key + " returns: " + ret);
+	// logger().debug("zfcFindFirstSharedFolder: key: " + key + " returns: " + ret);
 
 	return ret;
 }
@@ -2438,7 +2434,7 @@ SyncFsm.zfcFindFirstLink = function(zfc, key)
 
 	var ret = zfc.findFirst(f);
 
-	// logger().debug("lookupInZfc: blah: zfcFindFirstLink: key: " + key + " returns: " + ret);
+	// logger().debug("lookupInZfc: zfcFindFirstLink: key: " + key + " returns: " + ret);
 
 	return ret;
 }
@@ -2452,7 +2448,7 @@ SyncFsm.isZmFolderReservedName = function(name)
 	var reReservedFolderNames = /^\s*(inbox|trash|junk|sent|drafts|tags|calendar|notebook|chats)\s*$/i;
 	var ret = name.match(reReservedFolderNames) != null;
 
-	// logger().debug("isZmFolderReservedName: blah: name: " + name + " returns: " + ret);
+	// logger().debug("isZmFolderReservedName: name: " + name + " returns: " + ret);
 
 	return ret;
 }
@@ -2462,7 +2458,7 @@ SyncFsm.isZmFolderContainsInvalidCharacter = function(name)
 	var reInvalidCharacter = /[:/\"\t\r\n]/;
 	var ret = name.match(reInvalidCharacter) != null;
 
-	// logger().debug("isZmFolderContainsInvalidCharacter: blah: name: " + name + " returns: " + ret);
+	// logger().debug("isZmFolderContainsInvalidCharacter: name: " + name + " returns: " + ret);
 
 	return ret;
 }
@@ -5445,9 +5441,8 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					properties   = this.state.m_addressbook.getCardProperties(abCard);
 					var checksum = this.contact_converter().crc32(properties);
 					zfcTarget.set(new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, luid_target,
-					                       FeedItem.ATTR_CS, checksum, FeedItem.ATTR_L, l_target));
-
-					this.state.m_logger.debug("MOD: blah: issue #53: new checksum stored in map: " + checksum + " where properties: " + aToString(properties));
+					                                             FeedItem.ATTR_CS,  checksum,
+					                                             FeedItem.ATTR_L,   l_target));
 				}
 				else if (is_noop_modification)
 					; // do nothing - but luid_target must remain set because the gid's ver and the target's lso gets updated below
@@ -7588,7 +7583,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.sourceid_pr         = sourceid;
 	state.m_sfcd              = sfcd;
 	state.m_logappender       = new LogAppenderHoldOpen(); // holds an output stream open - must be closed explicitly
-	state.m_logger            = new Logger(Singleton.instance().loglevel(), "SyncFsm", state.m_logappender);
+	state.m_logger            = new Logger(Singleton.instance().logger().level(), "SyncFsm", state.m_logappender);
 	state.m_debug_filter_out  = new RegExp('https?' + GOOGLE_URL_HIER_PART + '|' + GOOGLE_PROJECTION, "mg");
 	state.m_http              = null;
 	state.cCallsToHttp        = 0;                       // handy for debugging the closure passed to soapCall.asyncInvoke()

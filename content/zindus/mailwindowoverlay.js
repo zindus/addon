@@ -48,7 +48,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 			RemoveDatastore.removeZfcsIfNecessary();
 
-			ObserverService.register(this, ObserverService.TOPIC_PREFERENCE_CHANGE);
+			ObserverService.register(this, this.m_topic_preference_change);
 
 			this.timerStartup();
 

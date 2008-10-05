@@ -405,7 +405,7 @@ function newObjectWithKeys()
 
 function newLogger(prefix)
 {
-	return new Logger(Singleton.instance().loglevel(), prefix);
+	return new Logger(Singleton.instance().logger().level(), prefix);
 }
 
 function isObjectEmpty(obj)
@@ -792,8 +792,6 @@ function convertCER(str, dirn)
 		else // (dirn & CER_TO_ENTITY)
 			ret = ret.replace(convertCER.a_regexp[a_char[i]], a_entity[i]);
 
-	// logger().debug("convertCER: blah: input: " + str + " and returns: " + ret);
-
 	return ret;
 }
 
@@ -878,8 +876,6 @@ function migratePrefValue(a_key, bimap)
 
 		if (value != null && bimap.isPresent(value, null))
 		{
-			logger().debug("blah: key: " + key + " value: " + value);
-
 			preferences().setCharPref(preferences().branch(), key, bimap.lookup(value, null) );
 
 			logger().debug("migrated pref key: " + key + " old value: " + value + " to new value: " + bimap.lookup(value, null));
@@ -910,12 +906,12 @@ function zinAlert(title_string_id, msg, win)
 	if (!win)
 		win = null;
 
-	logger().debug("zinAlert: blah: title_string_id: " + title_string_id + " msg: " + msg);
+	logger().debug("zinAlert: title_string_id: " + title_string_id + " msg: " + msg);
 
 	var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
 	prompts.alert(win, stringBundleString(title_string_id), msg);
 
-	logger().debug("zinAlert: blah: done");
+	logger().debug("zinAlert: done");
 }
 
 function textToHtml(text)

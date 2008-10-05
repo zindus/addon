@@ -1354,7 +1354,7 @@ TestHarness.prototype.testDeleteCard = function()
 TestHarness.prototype.testFileLoggingTimes = function()
 {
 	var log_appender = new LogAppenderHoldOpen();
-	var logger       = new Logger(Singleton.instance().loglevel(), "TestHarnessTimer", log_appender);
+	var logger       = new Logger(Singleton.instance().logger().level(), "TestHarnessTimer", log_appender);
 	var msg          = " 123456789 123456789 123456789 123456789 123456789 123456789";
 	var lines        = 8683;
 	var i, a;
