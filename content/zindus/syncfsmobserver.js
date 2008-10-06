@@ -382,11 +382,11 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 						if (typeof(context.state.m_http.faultLoadFromXml) == 'function')  // for some reason instanceof doesn't work here
 						{
 							if (context.state.m_http.m_faultstring)
-								es.m_fail_detail = context.state.m_http.m_faultstring;
+								es.m_fail_trailer = context.state.m_http.m_faultstring + "\n\n";
 							else if (context.state.m_http.m_faultcode)
-								es.m_fail_detail = context.state.m_http.m_faultcode;
+								es.m_fail_trailer = context.state.m_http.m_faultcode + "\n\n";
 
-							es.m_fail_soapmethod = context.state.m_http.m_method;
+							es.m_fail_trailer += stringBundleString("text.zm.soap.method", [ context.state.m_http.m_method ]);
 						}
 					}
 					else
@@ -402,14 +402,8 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					{
 						es.failcode(context.state.stopFailCode);
 
-						if (context.state.stopFailDetail)
-							es.m_fail_detail = context.state.stopFailDetail;
-
-						if (context.state.stopFailDetail)
-							es.m_fail_detail = context.state.stopFailDetail;
-
-						if (context.state.stopFailGrd)
-							es.m_fail_grd = context.state.stopFailGrd;
+						if (context.state.stopFailTrailer)
+							es.m_fail_trailer = context.state.stopFailTrailer;
 					}
 					else
 						es.failcode('failon.unexpected');
@@ -421,8 +415,20 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				else
 					zinAssert(false); // ensure that all cases are covered above
 
+				if (context.state.stopFailArg)
+					es.m_fail_arg = context.state.stopFailArg;
+
 				if (es.failcode() == 'failon.unexpected')
-					es.m_fail_detail = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+				{
+					if (context.state.stopFailTrailer)
+						es.m_fail_trailer = context.state.stopFailTrailer;
+					else
+						es.m_fail_trailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+				}
+				else if (es.failcode() == 'failon.service')
+					es.m_fail_trailer = stringBundleString("status.failon.service.detail");
+				else if (es.failcode() == 'failon.cancel')
+					es.m_fail_trailer = stringBundleString("status.failon.cancel.detail");
 
 				if (es.m_exit_status != 0)
 					es.m_fail_fsmoldstate = fsmstate.oldstate;

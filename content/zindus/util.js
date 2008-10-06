@@ -124,7 +124,7 @@ function stringBundleString(id_string, args)
 
 	zinAssert(arguments.length == 1 || arguments.length == 2);
 	zinAssertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
-	zinAssert(typeof(args) == 'undefined' || args instanceof Array);
+	zinAssert(typeof(args) == 'undefined' || args instanceof Array || typeof(args.length) == 'number');
 
 	if (stringbundle == null)
 	{

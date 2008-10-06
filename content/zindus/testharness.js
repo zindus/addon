@@ -68,7 +68,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
 	// ret = ret && this.tweakLuidOnCard();
-	ret = ret && this.createGoogleRuleViolation();
+	// ret = ret && this.createGoogleRuleViolation();
+	ret = ret && this.testExitStatusMessages();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1542,3 +1543,63 @@ TestHarness.prototype.tweakLuidOnCard = function()
 	return true;
 }
 
+TestHarness.prototype.testExitStatusMessages = function()
+{
+	var data_store_map = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) +
+	                     stringBundleString("status.failon.integrity.data.store.detail") +
+	                     stringBundleString("text.suggest.reset");
+
+	var a = {
+		'failon.service'                      : { 'trailer': stringBundleString("status.failon.service.detail")    },
+		'failon.fault'                        : { 'trailer': stringBundleString("text.zm.soap.method", [ "Auth" ]) },
+		'failon.cancel'                       : { 'trailer': stringBundleString("status.failon.cancel.detail")     },
+		'failon.integrity.zm.bad.credentials' : {},
+		'failon.integrity.gd.bad.credentials' : {},
+		'failon.integrity.data.store.in'      : { 'trailer': stringBundleString("text.suggest.reset")              },
+		'failon.integrity.data.store.out'     : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) },
+		'failon.integrity.data.store.map'     : { 'trailer': data_store_map },
+		'failon.unexpected'                   : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) },
+		'failon.folder.name.empty'            : { },
+		'failon.folder.name.duplicate'        : { 'arg':    [ 'fred' ] },
+		'failon.folder.name.reserved'         : { 'arg':    [ 'fred' ] },
+		'failon.folder.name.invalid'          : { 'arg':    [ 'fred' ] },
+		'failon.folder.must.be.present'       : { 'arg':    [ 'fred' ] },
+		'failon.folder.reserved.changed'      : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },
+		'failon.folder.name.clash'            : { 'arg':    [ 'fred' ] },
+		'failon.folder.source.update'         : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },
+		'failon.folder.cant.create.shared'    : { 'arg':    [ 'fred' ] },
+		'failon.unable.to.update.server'      : { 'trailer': stringBundleString("status.failon.unable.to.update.server.method",
+		                                                     [ "Auth: some args" ]) },
+		'failon.unable.to.update.thunderbird' : { 'trailer': stringBundleString("status.failon.unable.to.update.thunderbird.detail1",
+		                                                     [ 'fred' ]) },
+		'failon.no.xpath'                     : {},
+		'failon.no.tbpre'                     : {},
+		'failon.no.pab'                       : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) },
+		'failon.multiple.ln'                  : { 'trailer': 'address book names go here' },
+		'failon.gd.forbidden'                 : {},
+		'failon.gd.syncwith'                  : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },
+		'failon.zm.empty.contact'             : { 'arg':    [ 'fred' ] },
+		'failon.unauthorized'                 : { },
+		'failon.auth':  { 'trailer': stringBundleString("text.http.status.code", [ 403 ])     },
+		'': {}
+	};
+
+	var es = new SyncFsmExitStatus();
+
+	for (var failcode in a)
+		if (failcode.length > 0)
+		{
+			es.failcode(failcode);
+
+			if (isPropertyPresent(a[failcode], 'trailer'))
+				es.m_fail_trailer = a[failcode].trailer;
+
+			if (isPropertyPresent(a[failcode], 'arg'))
+				es.m_fail_arg = a[failcode].arg;
+
+			this.m_logger.debug("testExitStatusMessages: failcode: " + failcode + " message:\n" +
+		                     	es.asMessage("cs.sync.succeeded", "cs.sync.failed"));
+		}
+		
+	return true;
+}

@@ -36,7 +36,7 @@
 			<toolbarbutton id="zindus-toolbarbutton"
 			               class="toolbarbutton-1"
 			               label="&zindus.tools.menuitem.label;"
-						   tooltiptext="&zindus.toolbar.button.tooltip;"
+						   tooltiptext="&zindus.cs.title;"
 			               oncommand="with (ZindusScopeRegistry.getScope()) { ConfigSettings.open(); };" />
 		</toolbarpalette>
 	</toolbox>	

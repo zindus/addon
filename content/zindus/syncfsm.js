@@ -316,8 +316,8 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	}
 	else if (!this.state.m_addressbook.getPabName())
 	{
-		this.state.stopFailCode   = 'failon.no.pab';
-		this.state.stopFailDetail = stringBundleString("text.file.bug", [ BUG_REPORT_URI ])
+		this.state.stopFailCode    = 'failon.no.pab';
+		this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 
 		nextEvent = 'evLackIntegrity';
 		this.state.m_logger.debug("entryActionStart: addressbooks: " + this.state.m_addressbook.addressbooksToString());
@@ -680,8 +680,8 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	else
 	{
 		nextEvent = 'evLackIntegrity';
-		this.state.stopFailCode = 'failon.integrity.data.store.in';
-		this.state.stopFailDetail = stringBundleString("text.suggest.reset");
+		this.state.stopFailCode    = 'failon.integrity.data.store.in';
+		this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 	}
 
 	this.state.stopwatch.mark(state + " 8");
@@ -2075,15 +2075,16 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 		if (!isPropertyPresent(a_match, gd_ab_name_public))
 		{
-			this.state.stopFailCode   = 'failon.gd.syncwith';
-			this.state.stopFailDetail = " " + gd_ab_name_public + stringBundleString("text.suggest.reset");
+			this.state.stopFailCode    = 'failon.gd.syncwith';
+			this.state.stopFailArg     = [ gd_ab_name_public ];
+			this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 			this.debug("loadTb: no folders named: " + gd_ab_name_public);
 		}
 
 		if (!this.state.stopFailCode && a_match[gd_ab_name_public].length > 1)
 		{
-			this.state.stopFailCode   = 'failon.folder.name.duplicate';
-			this.state.stopFailDetail = ": " + gd_ab_name_public;
+			this.state.stopFailCode = 'failon.folder.name.duplicate';
+			this.state.stopFailArg  = [ gd_ab_name_public ];
 			this.debug("loadTb: multiple folders named: " + gd_ab_name_public);
 		}
 
@@ -2299,8 +2300,8 @@ SyncFsm.prototype.testForFolderPresentInZfcTb = function(name)
 
 	if (!key || this.zfcTb().get(key).isPresent(FeedItem.ATTR_DEL))
 	{
-		this.state.stopFailCode   = 'failon.folder.must.be.present';
-		this.state.stopFailDetail = ": " + this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(name));
+		this.state.stopFailCode = 'failon.folder.must.be.present';
+		this.state.stopFailArg  = [ this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(name)) ];
 	}
 
 	ret = (this.state.stopFailCode == null);
@@ -2329,8 +2330,9 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 
 	if (!post_id || pre_prefid != post_prefid)    // no folder by this name or it changed since last sync
 	{
-		this.state.stopFailCode   = 'failon.folder.reserved.changed';
-		this.state.stopFailDetail = ": " + name + stringBundleString("text.suggest.reset");
+		this.state.stopFailCode    = 'failon.folder.reserved.changed';
+		this.state.stopFailArg     = [ name ];  // FIXME - this name is internal-facing ie zindus_pab
+		this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 	}
 
 	ret = (this.state.stopFailCode == null);
@@ -2370,19 +2372,19 @@ SyncFsm.prototype.testForAccountsIntegrity = function()
 
 	if (cZimbra > 1)
 	{
-		this.state.stopFailCode = 'failon.unexpected';
-		this.state.stopFailDetail = "\n\nSyncing with more than one Zimbra account isn't supported." +
-		                            "  Suggest you remove all but one of the Zimbra accounts and try again." +
-		                            stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+		this.state.stopFailCode    = 'failon.unexpected';
+		this.state.stopFailTrailer = "Syncing with more than one Zimbra account isn't supported." +
+		                             "  Suggest you remove all but one of the Zimbra accounts and try again." +
+		                             "\n\n" + stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 	}
 	else if (index_identical)
 	{
 		account = sfcd.account(index_identical);
 
-		this.state.stopFailCode = 'failon.unexpected';
-		this.state.stopFailDetail = "\n\nYou have configured two accounts with identical details.  This isn't supported." +
-		                            "  Suggest you delete one of these accounts and try again:" +
-		                            "\n\n" + format_xx_to_localisable_string(account.format_xx()) + ": ";
+		this.state.stopFailCode    = 'failon.unexpected';
+		this.state.stopFailTrailer = "You have configured two accounts with identical details.  This isn't supported." +
+		                             "  Suggest you delete one of these accounts and try again:" +
+		                             "\n\n" + format_xx_to_localisable_string(account.format_xx()) + ": ";
 
 		if (account.format_xx() == FORMAT_ZM)
 			this.state.stopFailDetail += " " + account.get(Account.url);
@@ -2702,10 +2704,10 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 											  this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) +
 											  "uri: " + uri);
 
-					this.state.stopFailCode   = 'failon.integrity.data.store.map';
-					this.state.stopFailDetail = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) +
-					                            stringBundleString("status.failon.integrity.data.store.detail") +
-					                            stringBundleString("text.suggest.reset");
+					this.state.stopFailCode    = 'failon.integrity.data.store.map';
+					this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) +
+					                             stringBundleString("status.failon.integrity.data.store.detail") +
+					                             stringBundleString("text.suggest.reset");
 				}
 			}
 
@@ -2920,11 +2922,8 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 
 	if (!isObjectEmpty(a_empty_folder_names))
 	{
-		for (key in a_empty_folder_names)
-			msg_empty += "\n        " + key;
-
-		this.state.stopFailCode   = 'failon.zm.empty.contact';
-		this.state.stopFailDetail = "\n" + msg_empty;
+		this.state.stopFailCode = 'failon.zm.empty.contact';
+		this.state.stopFailArg  = [ keysToString(a_empty_folder_names) ];
 	}
 
 	return this.state.stopFailCode == null;
@@ -2982,7 +2981,7 @@ SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 	{
 		var name = firstKeyInObject(functor.a_folder_violation);
 		this.state.stopFailCode   = functor.a_folder_violation[name];
-		this.state.stopFailDetail = ": " + name;
+		this.state.stopFailArg    = [ name ];
 	}
 
 	var ret = this.state.stopFailCode == null;
@@ -3005,13 +3004,14 @@ SyncFsm.prototype.loadTbTestForGdCardsEmpty = function()
 
 	if (!isObjectEmpty(a_empty_contacts))
 	{
-		this.state.stopFailCode   = 'failon.gd.conflict.4';
-		this.state.stopFailGrd = new GoogleRuleDetail(this.username());
-		this.state.stopFailGrd.m_empty = new Object();
+		var grd                 = new GoogleRuleDetail(this.username());
+		this.state.stopFailCode = 'failon.gd.conflict.4';
+		this.state.stopFailArg  = [ grd ];
+
+		grd.m_empty = new Object();
 		
 		for (var luid in a_empty_contacts)
-			this.state.stopFailGrd.m_empty[luid] =
-		           new GoogleRuleContactHandle(FORMAT_TB, luid, a_empty_contacts[luid], { uri: this.state.gd_ab_uri } );
+			grd.m_empty[luid] = new GoogleRuleContactHandle(FORMAT_TB, luid, a_empty_contacts[luid], { uri: this.state.gd_ab_uri } );
 	}
 
 	return this.state.stopFailCode == null;
@@ -3052,7 +3052,7 @@ SyncFsm.prototype.loadTbTestForGdCardsUnique = function()
 	if (grd)
 	{
 		this.state.stopFailCode = 'failon.gd.conflict.1';
-		this.state.stopFailGrd  = grd;
+		this.state.stopFailArg  = [ grd ];
 	}
 
 	return this.state.stopFailCode == null;
@@ -3124,7 +3124,7 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 	if (grd)
 	{
 		this.state.stopFailCode = 'failon.gd.conflict.3';
-		this.state.stopFailGrd  = grd;
+		this.state.stopFailArg  = [ grd ];
 	}
 
 	return this.state.stopFailCode == null;
@@ -3224,7 +3224,7 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 	if (grd)
 	{
 		this.state.stopFailCode = 'failon.gd.conflict.2';
-		this.state.stopFailGrd  = grd;
+		this.state.stopFailArg  = [ grd ];
 	}
 
 	return this.state.stopFailCode == null;
@@ -4527,8 +4527,9 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 	for (var name in aName)
 		if (aName[name] >= 2)
 		{
-			this.state.stopFailCode   = 'failon.folder.source.update';
-			this.state.stopFailDetail = ": " + name + stringBundleString("text.suggest.reset");
+			this.state.stopFailCode    = 'failon.folder.source.update';
+			this.state.stopFailArg     = name;
+			this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 			break;
 		}
 
@@ -4640,8 +4641,8 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 
 			if (isPropertyPresent(aFolderName, name))
 			{
-				this.state.stopFailCode   = 'failon.folder.name.clash';
-				this.state.stopFailDetail = ": " + name;
+				this.state.stopFailCode = 'failon.folder.name.clash';
+				this.state.stopFailArg  = [ name ]; // FIXME - this is an internal facing name ie zindus_pab
 				break;
 			}
 			else
@@ -4750,7 +4751,7 @@ SyncFsm.prototype.testForCreateSharedAddressbook = function()
 		if (!isPropertyPresent(a_name[this.state.sourceid_pr], name))
 		{
 			this.state.stopFailCode   = 'failon.folder.cant.create.shared';
-			this.state.stopFailDetail = ": " + name;
+			this.state.stopFailArg    = [ name ];
 			break;
 		}
 
@@ -4937,17 +4938,17 @@ SyncFsm.prototype.sharedFoldersUpdateZm = function()
 		{
 			passed = false;
 
-			this.state.stopFailCode   = 'failon.multiple.ln';
-			this.state.stopFailDetail = ": ";
+			this.state.stopFailCode    = 'failon.multiple.ln';
+			this.state.stopFailTrailer = "";
 
 			for (var i = 0; i < functor_pass_1.a_key_fl[key].length; i++)
 			{
-				this.state.stopFailDetail += "\n";
+				this.state.stopFailTrailer += "\n";
 
-				this.state.stopFailDetail += zfcZm.get(functor_pass_1.a_key_fl[key][i]).get(FeedItem.ATTR_NAME);
+				this.state.stopFailTrailer += zfcZm.get(functor_pass_1.a_key_fl[key][i]).get(FeedItem.ATTR_NAME);
 			}
 
-			msg += " about to fail: stopFailCode: " + this.state.stopFailCode + " stopFailDetail: " + this.state.stopFailDetail;
+			msg += " about to fail: stopFailCode: " + this.state.stopFailCode + " stopFailTrailer: " + this.state.stopFailTrailer;
 
 			break;
 		}
@@ -5314,9 +5315,8 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					if (!abip.m_uri || abip.m_uri.length < 1 || !abip.m_prefid || abip.m_prefid.length < 1) // re: issue #38
 					{
 						this.state.m_logger.error("bad uri or tpi after creating a tb addressbook: " + msg + " abip: " + abip.toString());
-						this.state.stopFailCode   = 'failon.unable.to.update.thunderbird';
-						this.state.stopFailDetail = "\n" + stringBundleString("status.failon.unable.to.update.thunderbird.detail1")
-						                                 + " " + abName;
+						this.state.stopFailCode    = 'failon.unable.to.update.thunderbird';
+						this.state.stopFailTrailer = stringBundleString("status.failon.unable.to.update.thunderbird.detail1", [ abName ]);
 						this.state.is_source_update_problem = true;
 						break bigloop;
 					}
@@ -5538,11 +5538,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					this.state.m_logger.error(error_msg)
 
 					this.state.stopFailCode   = 'failon.unable.to.update.thunderbird';
-
-					if (!is_deleted)
-						this.state.stopFailDetail = stringBundleString("status.failon.unable.to.update.thunderbird.detail2")
-					else
-						this.state.stopFailDetail = "\n";
+					this.state.stopFailTrailer = !is_deleted ? stringBundleString("status.failon.unable.to.update.thunderbird.detail2"): "";
 						
 					this.state.is_source_update_problem = true;
 					break bigloop;
@@ -6093,9 +6089,8 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 	{
 		msg += " - soap response didn't match xpath query: " + xpath_query;
 
-		this.state.stopFailCode   = 'failon.unable.to.update.server';
-
-		this.state.stopFailDetail = "\n" + stringBundleString("status.failon.unable.to.update.server.method",
+		this.state.stopFailCode    = 'failon.unable.to.update.server';
+		this.state.stopFailTrailer = stringBundleString("status.failon.unable.to.update.server.method",
 								     [ remote_update_package.soap.method + " " + aToString(remote_update_package.soap.arg) ] );
 
 		this.state.is_source_update_problem = true;
@@ -6412,7 +6407,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				grd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_GD, luid, tb_properties, { contact: contact, username: this.username() } );
 
 				this.state.stopFailCode = 'failon.gd.conflict.2';
-				this.state.stopFailGrd  = grd;
+				this.state.stopFailArg  = [ grd ];
 			}
 		}
 		else
@@ -6636,8 +6631,8 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 
 		if (!this.isConsistentDataStore())
 		{
-			this.state.stopFailCode   = 'failon.integrity.data.store.out'; // this indicates a bug in our code
-			this.state.stopFailDetail = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+			this.state.stopFailCode    = 'failon.integrity.data.store.out'; // this indicates a bug in our code
+			this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 		}
 	}
 
@@ -7222,7 +7217,7 @@ HttpState.prototype.is_http_status = function(arg)
 	else if (typeof(arg) == 'object' && arg instanceof Array && arg.length == 2)
 		ret = this.m_http_status_code >= arg[0] && this.m_http_status_code <= arg[1];
 	else
-		zinAssert(false, "mismatched case: " + arg);
+		zinAssertAndLog(false, arg);
 
 	return ret;
 }
@@ -7339,17 +7334,18 @@ HttpStateZm.prototype.toStringFiltered = function()
 
 HttpStateZm.prototype.handleResponse = function()
 {
+	var msg      = "HttpStateZm:";
+	var response = this.response();
 	var nextEvent;
-	var msg = "HttpStateZm:";
 
-	if (this.response())
-		msg += " response: " + xmlDocumentToString(this.response());
+	if (response)
+		msg += " response: " + xmlDocumentToString(response);
 	else
 		msg += " response: " + "empty";
 
-	if (this.response())
+	if (response)
 	{
-		var nodelist = this.response().getElementsByTagNameNS(Xpath.NS_SOAP_ENVELOPE, "Fault");
+		var nodelist = response.getElementsByTagNameNS(Xpath.NS_SOAP_ENVELOPE, "Fault");
 
 		if (nodelist.length > 0)
 			this.faultLoadFromXml();
@@ -7366,10 +7362,10 @@ HttpStateZm.prototype.handleResponse = function()
 		nextEvent = 'evNext';
 	else if (this.m_method == "FakeHead")
 		nextEvent = 'evNext';
-	else if (this.response() && !this.m_fault_element_xml)
+	else if (response && !this.m_fault_element_xml)
 	{
 		var method = (this.m_method == "ForeignContactDelete") ? "Batch" : this.m_method;
-		var node = Xpath.getOneNode(Xpath.queryFromMethod(method), this.response(), this.response());
+		var node = Xpath.getOneNode(Xpath.queryFromMethod(method), response, response);
 
 		if (node)
 			nextEvent = 'evNext'; // we found a BlahResponse element - all is well
@@ -7603,7 +7599,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	state.stopFailCode        = null;         // if a state continues on evLackIntegrity, this is set for the observer
 	state.stopFailDetail      = null;
-	state.stopFailGrd         = null;         // detail supporting google conflict resolution
+	state.stopFailArg         = null;
 	state.m_bimap_format      = getBimapFormat('short');
 
 	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
@@ -7754,8 +7750,7 @@ SyncFsm.prototype.entryActionAuthCheck = function(state, event, continuation)
 	if (!this.state.authToken)
 	{
 		this.state.stopFailCode   = 'failon.auth';
-		this.state.stopFailDetail = "\n" + stringBundleString("text.http.status.code") + ": " +
-		                                      this.state.m_http.m_http_status_code;
+		this.state.stopFailTrailer = stringBundleString("text.http.status.code", [ this.state.m_http.m_http_status_code ]);
 
 		nextEvent = 'evLackIntegrity';  // this isn't really a lack of integrity, but it's processed in the same way
 	}

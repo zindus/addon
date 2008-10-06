@@ -4,7 +4,6 @@
 
 <!ENTITY zindus.tools.menuitem.label                    "Zindus">
 <!ENTITY zindus.tools.menuitem.accesskey                "z">
-<!ENTITY zindus.toolbar.button.tooltip                  "Zindus Preferences">
 
 <!ENTITY zindus.statusbar.progress.leftmost.style       "width: 15em">
 <!ENTITY zindus.statusbar.progress.meter.style          "width: 15em; opacity: .20">

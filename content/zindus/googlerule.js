@@ -536,7 +536,7 @@ GoogleRuleDetail.prototype.toString = function(arg)
 	var msg = "";
 	var key;
 
-	arg = arg ? arg : 'full';
+	arg = arg ? arg : 'summary'; // or 'full'
 
 	msg += "username: " + this.m_username;
 
@@ -589,9 +589,9 @@ GoogleRuleDialog.prototype.onLoad = function()
 {
 	var payload = window.arguments[0];
 	this.m_es   = payload.m_args.m_es;
-	this.m_grd  = payload.m_args.m_es.m_fail_grd;
+	this.m_grd  = payload.m_args.m_es.m_fail_arg[0];
 
-	this.m_logger.debug("m_grd: " + this.m_grd.toString());
+	this.m_logger.debug("m_grd: " + this.m_grd.toString('full'));
 }
 
 GoogleRuleDialog.prototype.onCancel = function()

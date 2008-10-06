@@ -134,7 +134,7 @@ ConfigAccount.prototype.onCommand = function(id_target)
 				if (this.m_payload_sw.m_es.m_exit_status == null)
 				{
 					logger().debug("ConfigAccount.onCommand: status.failon.unexpected");
-					msg = stringBundleString("status.failon.unexpected") +
+					msg = stringBundleString("status.failon.unexpected") + "\n\n" +
 					      stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 				}
 				else

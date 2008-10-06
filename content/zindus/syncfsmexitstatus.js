@@ -25,49 +25,48 @@ function SyncFsmExitStatus()
 {
 	this.m_exit_status      = null;
 	this.m_fail_code        = null; // one of the Fail* codes
-	this.m_fail_detail      = null;
-	this.m_fail_grd         = null;
-	this.m_fail_soapmethod  = null;
+	this.m_fail_arg         = null;
+	this.m_fail_trailer     = null;
 	this.m_fail_fsmoldstate = null;
 	this.m_count_conflicts  = 0;
 	this.m_logger           = newLogger("SyncFsmExitStatus");
 
 	this.m_a_valid_code = {
-		'failon.service'                       : { 'hasdetail' : 0 }, // 1.  some sort of service failure
-		'failon.fault'                         : { 'hasdetail' : 0 }, //     recieved a soap fault
-		'failon.mismatched.response'           : { 'hasdetail' : 0 }, //     sent ARequest and received BResponse (expected AResponse)
-		'failon.cancel'                        : { 'hasdetail' : 0 }, //     user cancelled
-		'failon.integrity.zm.bad.credentials'  : { 'hasdetail' : 0 }, //     something dodgy about url, username or password - dont proceed
-		'failon.integrity.gd.bad.credentials'  : { 'hasdetail' : 0 }, //     something dodgy about email address or password - dont proceed
-		'failon.integrity.data.store.in'       : { 'hasdetail' : 1 }, //     something dodgy about the data store that just got loaded
-		'failon.integrity.data.store.out'      : { 'hasdetail' : 1 }, //     internal error - we've created a data store that's dodgy
-		'failon.integrity.data.store.map'      : { 'hasdetail' : 1 }, //     internal error - somehow a card acquired the luid of a folder!
-		'failon.unexpected'                    : { 'hasdetail' : 1 }, //     some sort of integrity failure
-		'failon.folder.name.empty'             : { 'hasdetail' : 1 }, //    
-		'failon.folder.name.duplicate'         : { 'hasdetail' : 1 }, //    
-		'failon.folder.name.reserved'          : { 'hasdetail' : 1 }, //    
-		'failon.folder.name.invalid'           : { 'hasdetail' : 1 }, //    
-		'failon.folder.must.be.present'        : { 'hasdetail' : 1 }, //    
-		'failon.folder.reserved.changed'       : { 'hasdetail' : 1 }, //    
-		'failon.folder.name.clash'             : { 'hasdetail' : 1 }, //     a folder name entered the namespace from both tb and zm sides
-		'failon.folder.source.update'          : { 'hasdetail' : 1 }, // 20. the source update operations can't be applied with confidence
-		'failon.folder.cant.create.shared'     : { 'hasdetail' : 1 }, //    
-		'failon.unable.to.update.server'       : { 'hasdetail' : 1 }, //     couldn't make sense of the http/soap response
-		'failon.unable.to.update.thunderbird'  : { 'hasdetail' : 1 }, //     
-		'failon.no.xpath'                      : { 'hasdetail' : 0 }, //    
-		'failon.no.tbpre'                      : { 'hasdetail' : 0 }, //    
-		'failon.no.pab'                        : { 'hasdetail' : 1 }, //     
-		'failon.multiple.ln'                   : { 'hasdetail' : 1 }, //      
-		'failon.gd.conflict.1'                 : { 'hasdetail' : 0 }, //     
-		'failon.gd.conflict.2'                 : { 'hasdetail' : 0 }, //     
-		'failon.gd.conflict.3'                 : { 'hasdetail' : 0 }, // 30.
-		'failon.gd.conflict.4'                 : { 'hasdetail' : 0 }, //    
-		'failon.gd.forbidden'                  : { 'hasdetail' : 0 }, //    
-		'failon.gd.syncwith'                   : { 'hasdetail' : 1 }, //     
-		'failon.gd.get'                        : { 'hasdetail' : 0 }, //     
-		'failon.zm.empty.contact'              : { 'hasdetail' : 1 }, //    
-		'failon.unauthorized'                  : { 'hasdetail' : 0 }, //     server 401 - did a proxy remove the 'Authorized' header?
-		'failon.auth'                          : { 'hasdetail' : 1 }  //     Failed to login to Google or Zimbra via preauth
+	'failon.service'                       : { 'trailer' : 1, 'arglength': 0 }, // 1.  some sort of service failure
+	'failon.fault'                         : { 'trailer' : 1, 'arglength': 0 }, //     recieved a soap fault
+	'failon.mismatched.response'           : { 'trailer' : 0, 'arglength': 0 }, //     sent ARequest and rcvd BResponse (expected AResponse)
+	'failon.cancel'                        : { 'trailer' : 1, 'arglength': 0 }, //     user cancelled
+	'failon.integrity.zm.bad.credentials'  : { 'trailer' : 0, 'arglength': 0 }, //     something dodgy about url, username or password
+	'failon.integrity.gd.bad.credentials'  : { 'trailer' : 0, 'arglength': 0 }, //     something dodgy about email address or password
+	'failon.integrity.data.store.in'       : { 'trailer' : 1, 'arglength': 0 }, //     something dodgy about the data store that just loaded
+	'failon.integrity.data.store.out'      : { 'trailer' : 1, 'arglength': 0 }, //     internal error - we created a data store that's dodgy
+	'failon.integrity.data.store.map'      : { 'trailer' : 1, 'arglength': 0 }, //     somehow a card acquired the luid of a folder!
+	'failon.unexpected'                    : { 'trailer' : 1, 'arglength': 0 }, //     some sort of integrity failure
+	'failon.folder.name.empty'             : { 'trailer' : 0, 'arglength': 0 }, //    
+	'failon.folder.name.duplicate'         : { 'trailer' : 0, 'arglength': 1 }, //    
+	'failon.folder.name.reserved'          : { 'trailer' : 0, 'arglength': 1 }, //    
+	'failon.folder.name.invalid'           : { 'trailer' : 0, 'arglength': 1 }, //    
+	'failon.folder.must.be.present'        : { 'trailer' : 0, 'arglength': 1 }, //    
+	'failon.folder.reserved.changed'       : { 'trailer' : 1, 'arglength': 1 }, //    
+	'failon.folder.name.clash'             : { 'trailer' : 0, 'arglength': 1 }, //     a folder name entered from both tb and zm sides
+	'failon.folder.source.update'          : { 'trailer' : 1, 'arglength': 1 }, //     the source update operations can't be applied
+	'failon.folder.cant.create.shared'     : { 'trailer' : 0, 'arglength': 1 }, //    
+	'failon.unable.to.update.server'       : { 'trailer' : 1, 'arglength': 0 }, // 20. couldn't make sense of the http/soap response
+	'failon.unable.to.update.thunderbird'  : { 'trailer' : 1, 'arglength': 0 }, //     
+	'failon.no.xpath'                      : { 'trailer' : 0, 'arglength': 0 }, //    
+	'failon.no.tbpre'                      : { 'trailer' : 0, 'arglength': 0 }, //    
+	'failon.no.pab'                        : { 'trailer' : 1, 'arglength': 0 }, //     
+	'failon.multiple.ln'                   : { 'trailer' : 1, 'arglength': 0 }, //      
+	'failon.gd.conflict.1'                 : { 'trailer' : 0, 'arglength': 0 }, //     
+	'failon.gd.conflict.2'                 : { 'trailer' : 0, 'arglength': 0 }, //     
+	'failon.gd.conflict.3'                 : { 'trailer' : 0, 'arglength': 0 }, //    
+	'failon.gd.conflict.4'                 : { 'trailer' : 0, 'arglength': 0 }, //    
+	'failon.gd.forbidden'                  : { 'trailer' : 0, 'arglength': 0 }, //    
+	'failon.gd.syncwith'                   : { 'trailer' : 1, 'arglength': 1 }, //     
+	'failon.gd.get'                        : { 'trailer' : 0, 'arglength': 0 }, //     
+	'failon.zm.empty.contact'              : { 'trailer' : 0, 'arglength': 1 }, //    
+	'failon.unauthorized'                  : { 'trailer' : 0, 'arglength': 0 }, //     server 401 - did a proxy remove the 'Authorized' hdr?
+	'failon.auth'                          : { 'trailer' : 1, 'arglength': 0 }  //     Login attempt failed
 	};
 }
 
@@ -80,9 +79,9 @@ SyncFsmExitStatus.prototype.toString = function()
 	if (this.m_exit_status)
 	{
 		ret += " fail_code: "        + this.failcode();
-		ret += " fail_detail: "      + this.m_fail_detail;
+		ret += " fail_arg: "         + (this.m_fail_arg ? ("length: " + this.m_fail_arg.length +": "+ this.m_fail_arg.toString()) : "null");
+		ret += " fail_trailer: "     + this.m_fail_trailer;
 		ret += " fail_fsmoldstate: " + this.m_fail_fsmoldstate;
-		ret += " fail_grd: "         + (this.m_fail_grd ? this.m_fail_grd.toString('summary') : "null");
 	}
 
 	ret += " count_conflicts: " + this.m_count_conflicts;
@@ -102,15 +101,10 @@ SyncFsmExitStatus.prototype.failcode = function()
 	if (arguments.length == 1)
 	{
 		this.m_fail_code = arguments[0];
-		zinAssertAndLog(isPropertyPresent(this.m_a_valid_code, this.m_fail_code), "unmatched code: " + this.m_fail_code);
+		zinAssertAndLog(isPropertyPresent(this.m_a_valid_code, this.m_fail_code), this.m_fail_code);
 	}
 
 	return this.m_fail_code;
-}
-
-SyncFsmExitStatus.prototype.hasDetail = function()
-{
-	return this.m_a_valid_code[this.failcode()]['hasdetail'] == 1;
 }
 
 SyncFsmExitStatus.prototype.asMessage = function(sbsSuccess, sbsFailure)
@@ -124,20 +118,25 @@ SyncFsmExitStatus.prototype.asMessage = function(sbsSuccess, sbsFailure)
 			msg += stringBundleString(sbsSuccess);
 		else
 		{
-			msg += stringBundleString(sbsFailure);
-			msg += "\n" + stringBundleString(this.failCodeStringId());
-
-			if (this.failcode() == 'failon.fault')
+			msg += stringBundleString(sbsFailure) + "\n\n";
+			var arglength = this.m_a_valid_code[this.failcode()]['arglength'];
+			
+			if (arglength > 0)
 			{
-				msg += "\n" + this.m_fail_detail;
-				msg += "\n" + stringBundleString("text.zm.soap.method") + " " + this.m_fail_soapmethod;
+				if (arglength != this.m_fail_arg.length)
+					zinAssertAndLog(false, "this: " + this.toString());
+
+				msg += stringBundleString(this.failCodeStringId(), this.m_fail_arg);
 			}
-			else if (this.failcode() == 'failon.cancel')
-				msg += "\n" + stringBundleString("status.failon.cancel.detail");
-			else if (this.failcode() == 'failon.service')
-				msg += "\n" + stringBundleString("status.failon.service.detail");
-			else if (this.hasDetail())
-				msg += this.m_fail_detail;
+			else
+				msg += stringBundleString(this.failCodeStringId());
+
+			if (this.m_a_valid_code[this.failcode()]['trailer'])
+				msg += "\n\n" + this.m_fail_trailer;
+
+			msg += "\n \n";
+			logger().debug("AMHERE: trailer: " + this.m_a_valid_code[this.failcode()]['trailer'] + " msg: " + msg); // TODO
+
 		}
 	} catch (ex) {
 		dump("asMessage: exception: " + ex.message + "\n");

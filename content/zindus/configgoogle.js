@@ -58,7 +58,7 @@ ConfigGd.prototype.initialiseView = function()
 			    'http://www.zindus.com/blog/2008/06/17/thunderbird-google-postal-address-sync-part-two/' ]) );
 
 	xulSetHtml('cgd-more-information-on-rules', stringBundleString("gr.more.information", [
-			    'http://www.zindus.com/blog/2008/09/30/google-contacts-rules-made-to-be-broken' ]) );
+			    'http://www.zindus.com/blog/2008/10/06/the-google-thunderbird-address-book-staying-in-sync' ]) );
 
 	var a = this.m_map;
 	for (var k in a)
