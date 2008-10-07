@@ -93,6 +93,7 @@ SyncFsmExitStatus.prototype.failCodeStringId = function()
 {
 	var map = {
 		'failon.integrity.data.store.out' : 'failon.integrity.data.store.in',
+		'failon.integrity.data.store.map' : 'failon.integrity.data.store.in',
 		'failon.fault'                    : 'failon.mismatched.response',
 		'': null
 	};
