@@ -1019,3 +1019,14 @@ function gdAdjustHttpHttps(url)
 	return url.replace(/^https?/, preference(MozillaPreferences.GD_SCHEME_DATA_TRANSFER, 'char'));
 }
 
+function url(key)
+{
+	switch(key)
+	{
+		case 'what-is-soapURL': ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
+		case 'faq-thunderbird': ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
+		default: zinAssertAndLog(false, key);
+	}
+
+	return ret;
+}

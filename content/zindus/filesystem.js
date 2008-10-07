@@ -99,9 +99,8 @@ Filesystem.createDirectoryIfRequired = function(code)
 			nsifile.create(Ci.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRWXU);
 		}
 		catch (e) {
-			var msg1 = stringBundleString("filesystem.create.directory.failed");
-			var msg2 = stringBundleString("filesystem.create.directory.failedSuggest");
-			zinAlert('text.alert.title', msg1 + "\n" + nsifile.path + "\n" + msg2 + "\n" + e);
+			var msg = stringBundleString("text.filesystem.create.directory.failed", [ nsifile.path, e ] );
+			zinAlert('text.alert.title', msg);
 		}
 }
 

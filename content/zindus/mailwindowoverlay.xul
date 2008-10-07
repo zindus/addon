@@ -54,10 +54,8 @@
 	</stringbundleset>
 
 	<menupopup id="taskPopup">
-		<menuitem label="&zindus.tools.menuitem.label;"
-		          accesskey="&zindus.tools.menuitem.accesskey;"
-		          insertafter="javaScriptConsole"
-				  oncommand="with (ZindusScopeRegistry.getScope()) { ConfigSettings.open(); }" />
+		<menuitem label="&zindus.mo.menuitem.label;" accesskey="&zindus.mo.menuitem.accesskey;"
+		          insertafter="javaScriptConsole" oncommand="with (ZindusScopeRegistry.getScope()) { ConfigSettings.open(); }" />
 	</menupopup>
 
 </overlay>

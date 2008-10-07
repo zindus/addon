@@ -235,8 +235,8 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				if (context.state.suggestedSoapURL && !context.is_a_zm_tested_soapurl(context.state.suggestedSoapURL))
 				{
 					this.progressReportOnSource(context.state.sourceid_pr, "soapurl");
-					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP) + " " + context.state.suggestedSoapURL + "<br/>"
-					                                      + stringBundleString(this.tweakStringId("soapurl2")));
+					this.set(SyncFsmObserver.OP, this.get(SyncFsmObserver.OP) + " " + context.state.suggestedSoapURL + "<br/>" +
+					                             stringBundleString(this.tweakStringId("soapurl2"), [ url('what-is-soapURL') ] ));
 				}
 				else
 					ret = false; // no need to update the UI

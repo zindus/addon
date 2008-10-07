@@ -34,7 +34,7 @@ function SyncFsmExitStatus()
 	this.m_a_valid_code = {
 	'failon.service'                       : { 'trailer' : 1, 'arglength': 0 }, // 1.  some sort of service failure
 	'failon.fault'                         : { 'trailer' : 1, 'arglength': 0 }, //     recieved a soap fault
-	'failon.mismatched.response'           : { 'trailer' : 0, 'arglength': 0 }, //     sent ARequest and rcvd BResponse (expected AResponse)
+	'failon.mismatched.response'           : { 'trailer' : 1, 'arglength': 0 }, //     sent ARequest and rcvd BResponse (expected AResponse)
 	'failon.cancel'                        : { 'trailer' : 1, 'arglength': 0 }, //     user cancelled
 	'failon.integrity.zm.bad.credentials'  : { 'trailer' : 0, 'arglength': 0 }, //     something dodgy about url, username or password
 	'failon.integrity.gd.bad.credentials'  : { 'trailer' : 0, 'arglength': 0 }, //     something dodgy about email address or password
@@ -54,7 +54,7 @@ function SyncFsmExitStatus()
 	'failon.unable.to.update.server'       : { 'trailer' : 1, 'arglength': 0 }, // 20. couldn't make sense of the http/soap response
 	'failon.unable.to.update.thunderbird'  : { 'trailer' : 1, 'arglength': 0 }, //     
 	'failon.no.xpath'                      : { 'trailer' : 0, 'arglength': 0 }, //    
-	'failon.no.tbpre'                      : { 'trailer' : 0, 'arglength': 0 }, //    
+	'failon.no.tbpre'                      : { 'trailer' : 0, 'arglength': 1 }, //    
 	'failon.no.pab'                        : { 'trailer' : 1, 'arglength': 0 }, //     
 	'failon.multiple.ln'                   : { 'trailer' : 1, 'arglength': 0 }, //      
 	'failon.gd.conflict.1'                 : { 'trailer' : 0, 'arglength': 0 }, //     
@@ -91,7 +91,18 @@ SyncFsmExitStatus.prototype.toString = function()
 
 SyncFsmExitStatus.prototype.failCodeStringId = function()
 {
-	var stringid = 'status.' + this.failcode();
+	var map = {
+		'failon.integrity.data.store.out' : 'failon.integrity.data.store.in',
+		'failon.fault'                    : 'failon.mismatched.response',
+		'': null
+	};
+
+	var failcode = this.failcode();
+
+	if (isPropertyPresent(map, failcode))
+		failcode = map[failcode];
+
+	var stringid = 'status.' + failcode;
 
 	return stringid;
 }
@@ -135,8 +146,6 @@ SyncFsmExitStatus.prototype.asMessage = function(sbsSuccess, sbsFailure)
 				msg += "\n\n" + this.m_fail_trailer;
 
 			msg += "\n \n";
-			logger().debug("AMHERE: trailer: " + this.m_a_valid_code[this.failcode()]['trailer'] + " msg: " + msg); // TODO
-
 		}
 	} catch (ex) {
 		dump("asMessage: exception: " + ex.message + "\n");

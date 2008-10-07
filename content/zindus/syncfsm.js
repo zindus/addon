@@ -308,6 +308,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	else if (String(navigator.userAgent).match(/pre$/))
 	{
 		this.state.stopFailCode = 'failon.no.tbpre';
+		this.state.stopFailArg  = [ url('faq-thunderbird') ];
 		nextEvent = 'evLackIntegrity';
 	}
 	else if (this.state.m_sfcd.is_first_in_chain() && this.testForAccountsIntegrity())
@@ -6090,7 +6091,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 		msg += " - soap response didn't match xpath query: " + xpath_query;
 
 		this.state.stopFailCode    = 'failon.unable.to.update.server';
-		this.state.stopFailTrailer = stringBundleString("status.failon.unable.to.update.server.method",
+		this.state.stopFailTrailer = stringBundleString("text.zm.soap.method",
 								     [ remote_update_package.soap.method + " " + aToString(remote_update_package.soap.arg) ] );
 
 		this.state.is_source_update_problem = true;

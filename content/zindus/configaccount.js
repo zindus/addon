@@ -161,7 +161,7 @@ ConfigAccount.prototype.onBlur = function(id)
 	{
 		var username = dId(id).value;
 
-		dId("ca-gd-syncwith-zg").label = stringBundleString("cs.general.gd.syncwith.prefix") +
+		dId("ca-gd-syncwith-zg").label = stringBundleString("brand.zindus") + "/" +
 		                                 (username.length ? username : stringBundleString("cs.general.gd.syncwith.suffix"));
 	}
 	

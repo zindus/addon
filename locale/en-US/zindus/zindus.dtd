@@ -1,22 +1,14 @@
-<!-- Naming scheme adapted from: http://books.mozdev.org/html/mozilla-chp-11-sect-4.html -->
+<!-- Mail Window Overlay -->
+<!ENTITY zindus.mo.menuitem.label                       "Zindus">
+<!ENTITY zindus.mo.menuitem.accesskey                   "z">
 
-<!-- Localisation note: properties in ContactConverter are exposed via Google conflict reporting -->
+<!-- Status Bar Overlay -->
+<!ENTITY zindus.sb.settings.label                       "Settings">
+<!ENTITY zindus.sb.progress.width.style                 "width: 15em;">
+<!ENTITY zindus.sb.progress.meter.style                 "opacity: .20">
+<!ENTITY zindus.sb.progress.text.crop                   "end">
 
-<!ENTITY zindus.tools.menuitem.label                    "Zindus">
-<!ENTITY zindus.tools.menuitem.accesskey                "z">
-
-<!ENTITY zindus.statusbar.progress.leftmost.style       "width: 15em">
-<!ENTITY zindus.statusbar.progress.meter.style          "width: 15em; opacity: .20">
-<!ENTITY zindus.statusbar.progress.text.style           "width: 15em">
-<!ENTITY zindus.statusbar.progress.text.crop            "end">
-
-<!ENTITY zindus.spacer.style                            "height:15px">
-<!ENTITY zindus.enclosing.vbox.style                    "margin:10px">
-<!ENTITY zindus.description.style                       "margin-top:5px; margin-bottom:10px; padding:5px ">
-<!ENTITY zindus.accounts.tree.style                     "min-width:30em">
-
-<!-- Account Configuration -->
-
+<!-- Configuration of an Account -->
 <!ENTITY zindus.ca.grid.style                           "margin-left:10px; margin-right:20px; margin-top:10px ">
 <!ENTITY zindus.ca.group.login.details.label            "Login Details">
 <!ENTITY zindus.ca.group.pap.label                      "For this account">
@@ -34,9 +26,9 @@
 <!ENTITY zindus.ca.zimbra.gal.no.label                  "No">
 
 <!-- Configuration Settings -->
-
 <!ENTITY zindus.cs.title                                "Zindus Configuration Settings">
 <!ENTITY zindus.cs.buttonlabelextra2                    "Help">
+<!ENTITY zindus.cs.tree.style                           "min-width:30em">
 
 <!ENTITY zindus.cs.account.add.label                    "Add">
 <!ENTITY zindus.cs.account.add.accesskey                "A">
@@ -60,6 +52,7 @@
 <!ENTITY zindus.cs.general.button.gd.advanced.label     "Advanced Google Settings">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 
+<!-- Google Contacts Rule Violation -->
 <!ENTITY zindus.gr.title                                "Google Contacts rule violation">
 <!ENTITY zindus.gr.button.accept.label                  "Confirm">
 <!ENTITY zindus.gr.button.skip.label                    "Skip">
@@ -69,6 +62,7 @@
 <!ENTITY zindus.gr.column.email.label                   "Email">
 <!ENTITY zindus.gr.column.summary.label                 "Differences">
 
+<!-- Google Advanced -->
 <!ENTITY zindus.cg.title                                "Zindus Advanced Google Settings">
 <!ENTITY zindus.cg.postal.caption.label                 "Postal Address Fields">
 <!ENTITY zindus.cg.postal.false.label                   "Not synced (recommended)">
@@ -78,10 +72,11 @@
 <!ENTITY zindus.cg.rule.dont.ask.label                  "Dont ask me - delete contacts to fix rule violations">
 
 <!-- Sync Window -->
-
 <!ENTITY zindus.sw.title                                "Zindus Sync">
 <!ENTITY zindus.sw.progress.meter.style                 "width:35em">
 <!ENTITY zindus.sw.progress.description.style           "width:30em;height:4em;">
 
-<!-- Status Bar -->
-<!ENTITY zindus.sb.settings.label                       "Settings">
+<!-- Used throughout -->
+<!ENTITY zindus.spacer.style                            "height:15px">
+<!ENTITY zindus.enclosing.vbox.style                    "margin:10px">
+<!ENTITY zindus.description.style                       "margin-top:5px; margin-bottom:10px; padding:5px ">

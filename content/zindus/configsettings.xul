@@ -53,8 +53,7 @@
 		<groupbox>
 			<caption label="Accounts" />
 			<vbox flex="1" >
-				<tree id="cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5"
-				         style="&zindus.accounts.tree.style;"
+				<tree id="cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5" style="&zindus.cs.tree.style;"
 						 ondblclick="document.getElementById('cs-account-edit').doCommand();" >
 					<treecols>
 						<treecol id="cs-col-1" label="Email" persist="width ordinal hidden" flex="4" />
@@ -66,11 +65,11 @@
 				<spacer style="&zindus.spacer.style;" flex="1"/> 
 				<hbox>
 					<button id="cs-account-add"    label="&zindus.cs.account.add.label;"
-					                                  accesskey="&zindus.cs.account.add.accesskey;" />
+					                           accesskey="&zindus.cs.account.add.accesskey;" />
 					<button id="cs-account-edit"   label="&zindus.cs.account.edit.label;"
-					                                  accesskey="&zindus.cs.account.edit.accesskey;" />
+					                           accesskey="&zindus.cs.account.edit.accesskey;" />
 					<button id="cs-account-delete" label="&zindus.cs.account.delete.label;"
-					                                  accesskey="&zindus.cs.account.delete.accesskey;" />
+					                           accesskey="&zindus.cs.account.delete.accesskey;" />
 				</hbox>
 			</vbox>
 		</groupbox>
@@ -85,7 +84,7 @@
 				<spacer flex="1"/>
 				<vbox pack="end" >
 					<button id="cs-button-advanced" label="&zindus.cs.general.button.gd.advanced.label;"
-					             accesskey="&zindus.cs.general.button.gd.advanced.accesskey;" />
+					                            accesskey="&zindus.cs.general.button.gd.advanced.accesskey;" />
 				</vbox>
 			</hbox>
 		</groupbox>
@@ -101,11 +100,11 @@
 			        	align="center" command="cs-command" label="&zindus.cs.general.button.timer.label;" />
 				<button id="cs-button-reset"
 			        	align="center" command="cs-command" label="&zindus.cs.general.button.reset.label;"
-						accesskey="&zindus.cs.general.button.reset.accesskey;" />
+						                                accesskey="&zindus.cs.general.button.reset.accesskey;" />
 				<spacer flex="1"/> 
 				<button id="cs-button-sync-now"
 			        	align="center" command="cs-command" label="&zindus.cs.general.button.sync.now.label;"
-						accesskey="&zindus.cs.general.button.sync.now.accesskey;" />
+						                                accesskey="&zindus.cs.general.button.sync.now.accesskey;" />
 			</hbox>
 		</groupbox>
 	</vbox>
