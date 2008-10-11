@@ -2030,11 +2030,18 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	continuation('evNext');
 }
 
+// Notes:
+// - A big decision in simplifying the loading of the tb addressbook and cards was the decision to give up convergence.
+//   If there's a problem, the sync just aborts and the user has to fix it.
+// - LoadTb1 and LoadTb2 aren't split for performance reasons.  They're split because LoadTb1 potentially renames an
+//   addressbook (Zimbra Emailed Contacts to it's localised equivalent) and Thunderbird has some sort of race condition such that
+//   *sometimes* after renaming the addressbook it subsequently loads fine but when the sync is finished there's no addressbook in the UI!
+//   My guess is that this tb behaviour is related to it being unable to propagation some sort of (preference?) notification.  
+//   Putting an fsm state change between the 'rename' and the 'iteration over all addressbooks' seems to
+//   give the tb ab time to sort itself out.  Blech!
+//
 SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 {
-	// A big decision in simplifying this code was the decision to give up convergence
-	// Now, if there's a problem, the sync just aborts and the user has to fix it.
-	//
 	this.state.stopwatch.mark(state + " 1");
 
 	var gd_ab_name_internal = null;
@@ -2044,6 +2051,11 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.zfcTbPreMerge = this.zfcTb().clone();           // 1. remember the tb luid's before merge so that we can follow changes
 
+	// we do this when syncing non-zimbra accounts because without the correct mapping of zindus_emailed_contacts to the
+	// localised name, when the localised name is encountered in loadTbAddressBooks() it'll think that the address book has
+	// changed it's name
+	// An alternative approach would be for loadTbAddressBooks to only mess with zindus/blah@gmail.com and pab.
+	//
 	if (this.formatPr() == FORMAT_ZM)
 	{
 		this.loadTbLocaliseEmailedContacts();                  // 2. ensure that emailed contacts is in the current locale
@@ -2271,7 +2283,7 @@ SyncFsm.prototype.loadTbSetupGdAddressbook = function()
 
 SyncFsm.prototype.gdAddressbookName = function(arg)
 {
-	zinAssert(this.state.gd_sync_with == 'zg' || this.state.gd_sync_with == 'pab');
+	zinAssertAndLog(this.state.gd_sync_with == 'zg' || this.state.gd_sync_with == 'pab', this.state.gd_sync_with);
 
 	var name_when_zg = FolderConverter.PREFIX_PRIMARY_ACCOUNT + this.username();
 	var ret;
@@ -2477,6 +2489,8 @@ SyncFsm.prototype.getAbNameNormalised = function(elem)
 	else 
 		ret = elem.dirName;
 
+	logger().debug("getAbNameNormalised: elem.dirName: " + elem.dirName + " returns: " + ret);
+
 	return ret;
 }
 
@@ -2509,11 +2523,16 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 
 				uri = this.state.m_addressbook.getAddressBookUriByName(old_localised_ab);
 
+				msg += " testing for: " + old_localised_ab + " uri: " + uri; // TODO for debugging
+
 				if (uri)
 				{
-					msg += " renaming " + old_localised_ab + " to " + ab_localised + " uri: " + uri;
+					msg += " found: " + old_localised_ab + " uri: " + uri;
 
 					this.state.m_addressbook.renameAddressBook(uri, ab_localised);
+
+					msg += " renamed to " + ab_localised + " uri: " + this.state.m_addressbook.getAddressBookUriByName(ab_localised);
+
 					break;
 				}
 			}
@@ -2538,11 +2557,16 @@ SyncFsm.prototype.loadTbDeleteReadOnlySharedAddresbooks = function()
 			this.state.m_addressbook.deleteAddressBook(aUris[key][i].uri());
 }
 
+// When syncing with Google, only look at the gd_ab_name_public addressbook because then we don't need to have previously
+// set up zimbra's Emailed Contacts mapping or refer to zfcLastSync's zm_localised_emailed_contacts key
+//
 SyncFsm.prototype.loadTbAddressBooks = function()
 {
-	var sourceid = this.state.sourceid_tb;
-	var zfcTb    = this.zfcTb();
-	var context  = this;
+	var sourceid          = this.state.sourceid_tb;
+	var zfcTb             = this.zfcTb();
+	var context           = this;
+	var format            = this.state.sources[this.state.sourceid_pr]['format'];
+	var gd_ab_name_public = (format == FORMAT_GD ? this.gdAddressbookName('public') : null);
 	var uri, functor_foreach_card, functor_foreach_addressbook;
 
 	var stopwatch = this.state.stopwatch;
@@ -2555,8 +2579,8 @@ SyncFsm.prototype.loadTbAddressBooks = function()
 
 	this.debug("loadTbAddressBooks: mapTbFolderTpiToId == " + aToString(mapTbFolderTpiToId));
 
-	// identify the zimbra addressbooks
-	// PAB is identified by isElemPab() and then regardless of its localised name, the zfc's ATTR_NAME attribute is set to TB_PAB
+	// do change detection for addressbooks
+	// Personal Address Book is identified by isElemPab() and regardless of its localised name, the zfi's ATTR_NAME is set to TB_PAB
 	//
 	functor_foreach_addressbook =
 	{
@@ -2569,6 +2593,13 @@ SyncFsm.prototype.loadTbAddressBooks = function()
 			var uri         = this.m_addressbook.directoryProperty(elem, "URI");
 			var dirname     = elem.dirName;
 			var prefid      = elem.dirPrefId;
+			var is_process  = is_elem_pab;
+
+			if (format == FORMAT_ZM)
+				is_process = is_elem_pab || (this.m_folder_converter.prefixClass(dirname) != FolderConverter.PREFIX_CLASS_NONE &&
+				                                dirname.indexOf("/", this.m_folder_converter.m_prefix_length) == -1);
+			else
+				is_process = dirname == gd_ab_name_public;
 
 			var msg = "addressbook:" +
 			          " dirName: "              + dirname +
@@ -2576,13 +2607,13 @@ SyncFsm.prototype.loadTbAddressBooks = function()
 				      " URI: "                  + uri +
 			          " isElemPab(elem): "      + (is_elem_pab ? "yes" : "no") +
 			          " description: "          + elem.description +
-			          " supportsMailingLists: " + elem.supportsMailingLists;
+			          " supportsMailingLists: " + elem.supportsMailingLists +
+			          " is_process: "           + is_process;
 
 			// look for zindus/<folder-name> and don't permit '/'es in <folder-name> because:
 			// - we only support addressbook folders that are immediate children of the root folder - note the l='1' below.
 
-			if ((this.m_folder_converter.prefixClass(dirname) != FolderConverter.PREFIX_CLASS_NONE &&
-			        dirname.indexOf("/", this.m_folder_converter.m_prefix_length) == -1) || is_elem_pab)
+			if (is_process)
 			{
 				var key;
 

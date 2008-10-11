@@ -68,8 +68,9 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
 	// ret = ret && this.tweakLuidOnCard();
-	// ret = ret && this.createGoogleRuleViolation();
-	ret = ret && this.testExitStatusMessages();
+	// ret = ret && this.testExitStatusMessages();
+	// ret = ret && this.testRenameAddressBook();
+	ret = ret && this.createGoogleRuleViolation();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1600,5 +1601,25 @@ TestHarness.prototype.testExitStatusMessages = function()
 		                     	es.asMessage("cs.sync.succeeded", "cs.sync.failed"));
 		}
 		
+	return true;
+}
+
+
+TestHarness.prototype.testRenameAddressBook = function()
+{
+	var addressbook = AddressBook.new();
+	var abName      = "test-rename-1";
+	var abNameNew   = "test-rename-1-new";
+
+	// var abip = addressbook.newAddressBook(abName);
+	// uri = abip.m_uri
+	// this.m_logger.debug("testRenameAddressBook: abName: " + abName + " uri: " + uri);
+
+	uri = addressbook.getAddressBookUriByName(abName)
+	addressbook.renameAddressBook(uri, abNameNew);
+	uri = addressbook.getAddressBookUriByName(abNameNew)
+
+	this.m_logger.debug("testRenameAddressBook: abNameNew: " + abNameNew + " uri: " + uri);
+
 	return true;
 }

@@ -44,19 +44,29 @@ GoogleRuleTrash.FAIL_CODES = [ 'failon.gd.conflict.1', 'failon.gd.conflict.2', '
 GoogleRuleTrash.prototype.moveToTrashDontAsk = function(failcode, grd)
 {
 	zinAssertAndLog(isInArray(failcode, GoogleRuleTrash.FAIL_CODES), failcode);
+	zinAssertAndLog(grd, failcode);
 
-	if (failcode == 'failon.gd.conflict.1' || failcode == 'failon.gd.conflict.2' || failcode == 'failon.gd.conflict.3' )
+	this.m_logger.debug("moveToTrashDontAsk: failcode: " + failcode + " grd: " + grd.toString());
+
+	switch (failcode)
 	{
-		var a_email = new Array(); // index the email addresses via an array so that we can iterate through them in a guaranteed order
+		case 'failon.gd.conflict.1':
+		case 'failon.gd.conflict.2':
+		case 'failon.gd.conflict.3':
+			var a_email = new Array(); // index the email addresses via an array so that we can iterate through them in a guaranteed order
 
-		for (var email in grd.m_unique)
-			a_email.push(email);
+			for (var email in grd.m_unique)
+				a_email.push(email);
 
-		this.moveToTrashRuleUnique(failcode, grd, a_email, 0, {});
-		this.moveToTrashRuleUniqueFinalise();
+			this.moveToTrashRuleUnique(failcode, grd, a_email, 0, {});
+			this.moveToTrashRuleUniqueFinalise();
+			break;
+		case 'failon.gd.conflict.4':
+			this.moveToTrashCardsTb(grd.m_empty);
+			break;
+		default:
+			zinAssertAndLog(false, failcode);
 	}
-	else if (failcode == 'failon.gd.conflict.4')
-		this.moveToTrashCardsTb(grd.m_empty);
 }
 
 GoogleRuleTrash.prototype.moveToTrashRuleUnique = function(failcode, grd, a_email, start, a_luids_deleted)
@@ -379,7 +389,10 @@ GoogleRuleTrash.prototype.expire = function(type)
 	}
 
 	var context = this;
-	var uri     = this.getUri(GoogleRuleTrash.getTrashName(type));
+	var abName  = GoogleRuleTrash.getTrashName(type);
+	var uri     = this.getUri(abName);
+
+	context.m_logger.debug("abName: " + abName + " type: " + type + " uri: " + uri);
 
 	if (uri)
 	{
@@ -397,12 +410,13 @@ GoogleRuleTrash.prototype.expire = function(type)
 
 				if (expired_on > 0)
 				{
-					// context.m_logger.debug("GoogleRuleTrash.expire: now: " + now + " expire_seconds: " + expire_seconds + " expired_on: " + expired_on + " difference: " + (now - expired_on) + " card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
+					// context.m_logger.debug("expire: now: " + now + " expire_seconds: " + expire_seconds + " expired_on: " + expired_on + " difference: " + (now - expired_on) + " card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 
 					if (now - expired_on > expire_seconds)
 					{
-						context.m_logger.debug("GoogleRuleTrash.expire: now: " + now + " expire_seconds: " + expire_seconds + " expired_on: " + expired_on + " difference: " + (now - expired_on) + " card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
-						context.m_logger.debug("GoogleRuleTrash.expire: about to expire card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
+						context.m_logger.debug("expire: now: " + now + " expire_seconds: " + expire_seconds +
+						                       " expired_on: " + expired_on + " difference: " + (now - expired_on) +
+											   " about to expire card: " + context.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 						a_cards_to_be_deleted.push(abCard);
 					}
 				}
@@ -426,7 +440,7 @@ GoogleRuleTrash.prototype.expire = function(type)
 
 		if (count_cards == 0 || count_cards == a_cards_to_be_deleted.length)
 		{
-			this.m_logger.debug("GoogleRuleTrash.expire: about to delete addressbook: " + uri);
+			this.m_logger.debug("expire: about to delete addressbook: abName: " + abName + " uri: " + uri);
 			this.m_addressbook.deleteAddressBook(uri);
 		}
 		else if (a_cards_to_be_deleted.length > 0)
@@ -533,27 +547,23 @@ function GoogleRuleDetail(username)
 
 GoogleRuleDetail.prototype.toString = function(arg)
 {
-	var msg = "";
+	var msg = "username: " + this.m_username + (this.m_empty  ? " empty: " : "") + (this.m_unique ? " unique: " : "");
 	var key;
 
 	arg = arg ? arg : 'summary'; // or 'full'
 
-	msg += "username: " + this.m_username;
-
 	if (arg == 'summary')
 	{
 		if (this.m_empty)
-			msg += " " + keysToString(this.m_empty)
+			msg += keysToString(this.m_empty)
 
 		if (this.m_unique)
-			msg += " " + keysToString(this.m_unique)
+			msg += keysToString(this.m_unique)
 	}
 	else
 	{
 		if (this.m_empty)
 		{
-			msg += " empty: ";
-
 			for (key in this.m_empty)
 				msg += key + ": " + aToString(this.m_empty[key]);
 
@@ -563,7 +573,6 @@ GoogleRuleDetail.prototype.toString = function(arg)
 		if (this.m_unique)
 		{
 			var luid;
-			msg += " unique: ";
 
 			for (key in this.m_unique)
 			{
@@ -1054,11 +1063,12 @@ GoogleRuleRepeater.prototype.resolve_if_appropriate = function(logger, es, sfcd)
 		var is_failcode_seen = isPropertyPresent(a_failcodes_seen, failcode);
 		is_repeat            = isInArray(failcode, GoogleRuleTrash.FAIL_CODES) && is_dont_ask && !is_failcode_seen;
 
-		logger.debug("resolve_if_appropriate: isFinal: es: " + es.toString() + " failcode" + failcode +
+		logger.debug("resolve_if_appropriate: isFinal: es: " + es.toString() + " failcode: " + failcode +
 	                      	" is_repeat: " + is_repeat + " a_failcodes_seen: " + aToString(a_failcodes_seen) );
 
 		if (is_failcode_seen && a_failcodes_seen[failcode] == is_dont_ask)
-			logger.warn("The last time a sync finished, is_dont_ask was true!  So why wasn't the conflict resolved?");
+			logger.warn("The last time a sync finished and exited on failcode: " + failcode +
+			            ", is_dont_ask was true!  So why wasn't the conflict resolved?");
 	}
 
 	if (is_repeat)
@@ -1070,7 +1080,7 @@ GoogleRuleRepeater.prototype.resolve_if_appropriate = function(logger, es, sfcd)
 		if (!this.m_gct)
 			this.m_gct = new GoogleRuleTrash();
 
-		this.m_gct.moveToTrashDontAsk(failcode, es.m_fail_grd);
+		this.m_gct.moveToTrashDontAsk(failcode, es.m_fail_arg[0]);
 	}
 
 	return is_repeat;

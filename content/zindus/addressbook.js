@@ -104,8 +104,21 @@ AddressBook.prototype.populateNameToUriMap = function()
 		this.m_map_name_to_uri = new Object();
 		this.forEachAddressBook(functor);
 
-		// this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + aToString(this.m_map_name_to_uri));
+		// this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + this.getNameToUriMapAsString());
 	}
+}
+
+AddressBook.prototype.getNameToUriMapAsString = function()
+{
+	var ret = " m_map_name_to_uri: ";
+
+	for (var key in this.m_map_name_to_uri)
+		ret += "\n " +
+			   " length: " + this.m_map_name_to_uri[key].length +
+		       " key: "    + strPadTo(key, 40) +
+		       " values: " + this.m_map_name_to_uri[key].toString();
+
+	return ret;
 }
 
 // returns an array of AddressBookImportantProperties that match the RegExp pat
@@ -137,6 +150,8 @@ AddressBook.prototype.getAddressBookUriByName = function(name)
 
 	if (isPropertyPresent(this.m_map_name_to_uri, name) && this.m_map_name_to_uri[name].length == 1)
 		ret = this.m_map_name_to_uri[name][0].uri();
+
+	// this.m_logger.debug("getAddressBookUriByName: returns: " + ret + " when: " + this.getNameToUriMapAsString());
 
 	return ret;
 }
@@ -340,8 +355,14 @@ AddressBookTb2.prototype.renameAddressBook = function(uri, name)
 	var dir  = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
 	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Ci.nsIAbDirectory);
 	var ds   = this.nsIRDFService().GetDataSource("rdf:addressdirectory");
+	var abp  = this.newAbDirectoryProperties(name);
 
-	this.nsIAddressBook().modifyAddressBook(ds, root, dir, this.newAbDirectoryProperties(name));
+	// even though it's not changing, nsIAbDirectoryProperties.URI still has to be set, otherwise dragons may come...
+	// see issue #135
+	//
+	abp.URI = uri;
+
+	this.nsIAddressBook().modifyAddressBook(ds, root, dir, abp);
 
 	AddressBook.prototype.renameAddressBook.call(this);
 }
