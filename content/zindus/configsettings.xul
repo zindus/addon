@@ -25,6 +25,7 @@
   ***** END LICENSE BLOCK ***** -->
 
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
@@ -49,11 +50,11 @@
 
 	<command id="cs-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
 
-	<vbox flex="1" style="&zindus.enclosing.vbox.style;" >
+	<vbox flex="1" class="zindus-enclosing-vbox" >
 		<groupbox>
 			<caption label="Accounts" />
 			<vbox flex="1" >
-				<tree id="cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5" style="&zindus.cs.tree.style;"
+				<tree id="cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5" style="min-width:30em;"
 						 ondblclick="document.getElementById('cs-account-edit').doCommand();" >
 					<treecols>
 						<treecol id="cs-col-1" label="Email" persist="width ordinal hidden" flex="4" />
@@ -62,7 +63,7 @@
 					</treecols>
 					<treechildren id="cs-account-treechildren" flex="9" />
 				</tree>
-				<spacer style="&zindus.spacer.style;" flex="1"/> 
+				<spacer class="zindus-spacer" flex="1"/> 
 				<hbox>
 					<button id="cs-account-add"    label="&zindus.cs.account.add.label;"
 					                           accesskey="&zindus.cs.account.add.accesskey;" />
@@ -89,7 +90,7 @@
 			</hbox>
 		</groupbox>
 
-		<spacer style="&zindus.spacer.style;" flex="1"/> 
+		<spacer class="zindus-spacer" flex="1"/> 
 
 		<groupbox pack="center" >
 		    	<caption label="&zindus.cs.general.actions.label;"/>

@@ -52,10 +52,10 @@ function Suo(gid, sourceid_winner, sourceid_target, opcode)
 
 Suo.prototype.toString = function()
 {
-	return      "gid: " + this.gid +
-			" winner: " + this.sourceid_winner +
-			" target: " + this.sourceid_target +
-			" opcode: " + Suo.opcodeAsString(this.opcode);
+	return      "gid: =" + this.gid +
+			" winner: "  + this.sourceid_winner +
+			" target: "  + this.sourceid_target +
+			" opcode: "  + Suo.opcodeAsString(this.opcode);
 }
 
 Suo.opcodeAsString = function(opcode)

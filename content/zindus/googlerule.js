@@ -379,20 +379,25 @@ GoogleRuleTrash.prototype.moveToTrashRuleUniqueFinalise = function()
 // with a card in a regular addressbook.  But I guess that's no big deal - we could always check for this and delete if it became an issue.
 // 
 // 
-GoogleRuleTrash.prototype.expire = function(type)
+GoogleRuleTrash.prototype.expire = function(abName)
 {
-	if (!type)
+	if (!abName)
 	{
-		this.expire('hardcoded');
-		this.expire('localised');
+		abName = GoogleRuleTrash.getTrashName('hardcoded');
+		this.expire(abName);
+
+		var abNameLocalised = GoogleRuleTrash.getTrashName('localised');
+
+		if (abName != abNameLocalised)
+			this.expire(abNameLocalised);
+
 		return;
 	}
 
 	var context = this;
-	var abName  = GoogleRuleTrash.getTrashName(type);
 	var uri     = this.getUri(abName);
 
-	context.m_logger.debug("abName: " + abName + " type: " + type + " uri: " + uri);
+	context.m_logger.debug("abName: " + abName + " uri: " + uri);
 
 	if (uri)
 	{

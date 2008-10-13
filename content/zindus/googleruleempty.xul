@@ -24,6 +24,7 @@
   ***** END LICENSE BLOCK ***** -->
 
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
@@ -49,7 +50,7 @@
 		<caption id="gr-top-caption" />
 			<vbox style="margin-left:10px; margin-right:20px;" >
 				<description id='gr-description' xmlns:html="http://www.w3.org/1999/xhtml" />
-				<grid flex="1" style="&zindus.ca.grid.style;" > 
+				<grid flex="1" class="zindus-grid" > 
 					<columns>
 						<column flex="1" />
 					</columns>

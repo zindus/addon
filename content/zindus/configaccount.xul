@@ -24,6 +24,7 @@
   ***** END LICENSE BLOCK ***** -->
 
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
@@ -48,7 +49,7 @@
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<vbox flex="1" style="&zindus.enclosing.vbox.style;" pack="center" >
+	<vbox flex="1" class="zindus-enclosing-vbox" pack="center" >
 		<command id="ca-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
 		<groupbox pack="center" >
 			<caption label="&zindus.cs.account.type.label;" />
@@ -57,10 +58,10 @@
 					<radio id="ca-format-zimbra" />
 				</radiogroup>
 		</groupbox>
-		<spacer style="&zindus.spacer.style;" flex="1"/> 
+		<spacer class="zindus-spacer" flex="1"/> 
 		<groupbox pack="center" oninput="window.wd.onInput();" >
 			<caption label="&zindus.ca.group.login.details.label;" />
-			<grid flex="1" style="&zindus.ca.grid.style;" > 
+			<grid flex="1" class="zindus-grid" > 
 				<columns>
 					<column style="margin-left:15px" />
 					<column flex="1" />
@@ -74,27 +75,27 @@
 						<label value="&zindus.ca.url.label;" />
 						<textbox id="ca-url" onblur="window.wd.onBlur('ca-url');" />
 					</row>
-					<description value="&zindus.ca.username.description.value;" style="&zindus.description.style;" />
+					<description value="&zindus.ca.username.description.value;" style="margin-top:5px; margin-bottom:10px; padding:5px;" />
 					<row>
 						<label value="&zindus.ca.username.label;" />
 						<textbox id="ca-username" onblur="window.wd.onBlur('ca-username');" />
 					</row>
-					<spacer style="&zindus.spacer.style;" />
+					<spacer class="zindus-spacer" />
 					<row>
 						<label value="&zindus.ca.password.label;" />
 						<textbox id="ca-password" type="password" />
 					</row>
-					<spacer style="&zindus.spacer.style;" /> 
+					<spacer class="zindus-spacer" /> 
 					<hbox align="left" style="margin-left:20px" >
 						<button id="ca-button-authonly" command="ca-command" flex="1"
 					        	align="center" label="&zindus.ca.test.connection.label;"
 								accesskey="&zindus.ca.test.connection.accesskey;" />
 					</hbox>
-					<spacer style="&zindus.spacer.style;" flex="1"/> 
+					<spacer class="zindus-spacer" flex="1"/> 
 				</rows>
 			</grid>
 		</groupbox>
-		<spacer style="&zindus.spacer.style;" flex="1"/> 
+		<spacer class="zindus-spacer" flex="1"/> 
 		<!-- pap == per account preferences -->
 
 		<groupbox pack="center" >
@@ -125,7 +126,7 @@
 				</hbox>
 			</deck>
 		</groupbox>
-		<spacer style="&zindus.spacer.style;" flex="1"/> 
+		<spacer class="zindus-spacer" flex="1"/> 
 	</vbox>
 
 </dialog>

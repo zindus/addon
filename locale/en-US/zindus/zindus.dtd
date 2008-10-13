@@ -4,16 +4,11 @@
 
 <!-- Status Bar Overlay -->
 <!ENTITY zindus.sb.settings.label                       "Settings">
-<!ENTITY zindus.sb.progress.width.style                 "width: 15em;">
-<!ENTITY zindus.sb.progress.meter.style                 "opacity: .20">
-<!ENTITY zindus.sb.progress.text.crop                   "end">
 
 <!-- Configuration of an Account -->
-<!ENTITY zindus.ca.grid.style                           "margin-left:10px; margin-right:20px; margin-top:10px ">
 <!ENTITY zindus.ca.group.login.details.label            "Login Details">
 <!ENTITY zindus.ca.group.pap.label                      "For this account">
-<!ENTITY zindus.ca.url.description.value                "Type the url you use to log on to the server.
-                                                         <html:br/>example: https://mymail.example.com">
+<!ENTITY zindus.ca.url.description.value                "Type the url you use to log on to the server.<html:br/>example: https://mymail.example.com">
 <!ENTITY zindus.ca.url.label                            "Server Url:">
 <!ENTITY zindus.ca.username.description.value           "Type the email address and password you use to log on.">
 <!ENTITY zindus.ca.username.label                       "Email Address:">
@@ -28,7 +23,6 @@
 <!-- Configuration Settings -->
 <!ENTITY zindus.cs.title                                "Zindus Configuration Settings">
 <!ENTITY zindus.cs.buttonlabelextra2                    "Help">
-<!ENTITY zindus.cs.tree.style                           "min-width:30em">
 
 <!ENTITY zindus.cs.account.add.label                    "Add">
 <!ENTITY zindus.cs.account.add.accesskey                "A">
@@ -56,7 +50,6 @@
 <!ENTITY zindus.gr.title                                "Google Contacts rule violation">
 <!ENTITY zindus.gr.button.accept.label                  "Confirm">
 <!ENTITY zindus.gr.button.skip.label                    "Skip">
-<!ENTITY zindus.gr.column.one.style                     "margin-left:15px; max-width:10px">
 <!ENTITY zindus.gr.column.location.label                "Location">
 <!ENTITY zindus.gr.column.displayname.label             "DisplayName">
 <!ENTITY zindus.gr.column.email.label                   "Email">
@@ -73,10 +66,3 @@
 
 <!-- Sync Window -->
 <!ENTITY zindus.sw.title                                "Zindus Sync">
-<!ENTITY zindus.sw.progress.meter.style                 "width:35em">
-<!ENTITY zindus.sw.progress.description.style           "width:30em;height:4em;">
-
-<!-- Used throughout -->
-<!ENTITY zindus.spacer.style                            "height:15px">
-<!ENTITY zindus.enclosing.vbox.style                    "margin:10px">
-<!ENTITY zindus.description.style                       "margin-top:5px; margin-bottom:10px; padding:5px ">

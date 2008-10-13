@@ -45,13 +45,11 @@
 	</menupopup>
 
 	<statusbarpanel id="zindus-statusbar-progress" >
-		<label id="zindus-statusbar-progress-leftmost" style="&zindus.sb.progress.width.style;"
-		                                                crop="&zindus.sb.progress.text.crop;" value="" />
+		<label id="zindus-statusbar-progress-leftmost" class="zindus-statusbar-width" crop="end" value="" />
 		<stack>
-			<progressmeter id="zindus-statusbar-progress-meter" style="&zindus.sb.progress.width.style;&zindus.sb.progress.meter.style;"
+			<progressmeter id="zindus-statusbar-progress-meter" class="zindus-statusbar-width zindus-statusbar-opacity" 
 			               value="50%" mode="normal" />
-			<label         id="zindus-statusbar-progress-text"  style="&zindus.sb.progress.width.style;"
-			               value="" crop="&zindus.sb.progress.text.crop;" />
+			<label         id="zindus-statusbar-progress-text"  class="zindus-statusbar-width" value="" crop="end" />
 		</stack>
 	</statusbarpanel>
 

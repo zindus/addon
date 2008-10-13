@@ -2070,12 +2070,6 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 		gd_ab_name_internal = this.gdAddressbookName('internal');
 		gd_ab_name_public   = this.gdAddressbookName('public');
-
-		if (this.state.m_sfcd.first_sourceid_of_format(FORMAT_GD) == this.state.sourceid_pr)
-		{
-			var gct = new GoogleRuleTrash(this.state.m_addressbook);
-			gct.expire();
-		}
 	}
 
 	if (this.formatPr() == FORMAT_GD && !this.is_slow_sync(this.state.sourceid_pr))
@@ -2523,7 +2517,7 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 
 				uri = this.state.m_addressbook.getAddressBookUriByName(old_localised_ab);
 
-				msg += " testing for: " + old_localised_ab + " uri: " + uri; // TODO for debugging
+				msg += " testing for: " + old_localised_ab + " uri: " + uri;
 
 				if (uri)
 				{
@@ -4540,46 +4534,58 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 // we apply the operations in a fixed order, namely ADD followed by DEL, and almost certainly the user did DEL followed by ADD.
 // Yes, this is ugly.  The right thing to do here would be to rewrite the aSuo code into an container that can be re-ordered
 // to suit it's contents.
-// Giving up consistency is easier - and after all, how often are users going to do: DEL addressbook X/flush trash/ADD addressbook X
+// Giving up consistency is easier given the limitation, and after all, how often are:
+// - zimbra users going to do: DEL addressbook X/flush trash/ADD addressbook X
+// - tb users going to do: DEL addressbook X/ADD addressbook X
 //
+
 SyncFsm.prototype.testForConflictingUpdateOperations = function()
 {
 	var aName = new Object();
+	var sourceid_loser;
 
-	this.testForConflictingUpdateOperationsHelper(aName, Suo.ADD | FeedItem.TYPE_FL);
-	this.testForConflictingUpdateOperationsHelper(aName, Suo.ADD | FeedItem.TYPE_SF);
+	for (sourceid_loser in this.state.sources)
+	{
+		this.testForConflictingUpdateOperationsHelper(aName, sourceid_loser, Suo.ADD | FeedItem.TYPE_FL);
+		this.testForConflictingUpdateOperationsHelper(aName, sourceid_loser, Suo.ADD | FeedItem.TYPE_SF);
 
-	this.state.m_logger.debug("testForConflictingUpdateOperations: folders being added: " + aToString(aName));
+		this.state.m_logger.debug("testForConflictingUpdateOperations: sourceid_loser: " + sourceid_loser +
+		                          " folders being added: " + aToString(aName));
 
-	this.testForConflictingUpdateOperationsHelper(aName, Suo.DEL | FeedItem.TYPE_SF);
-	this.testForConflictingUpdateOperationsHelper(aName, Suo.DEL | FeedItem.TYPE_FL);
+		this.testForConflictingUpdateOperationsHelper(aName, sourceid_loser, Suo.DEL | FeedItem.TYPE_SF);
+		this.testForConflictingUpdateOperationsHelper(aName, sourceid_loser, Suo.DEL | FeedItem.TYPE_FL);
 
-	this.state.m_logger.debug("testForConflictingUpdateOperations: both added and deleted (failed if anything >= 2): " + aToString(aName));
+		this.state.m_logger.debug("testForConflictingUpdateOperations: sourceid_loser: " + sourceid_loser +
+		                          " both added and deleted (failed if anything >= 2): " + aToString(aName));
 
-	for (var name in aName)
-		if (aName[name] >= 2)
-		{
-			this.state.stopFailCode    = 'failon.folder.source.update';
-			this.state.stopFailArg     = name;
-			this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
+		for (var name in aName)
+			if (aName[name] >= 2)
+			{
+				this.state.stopFailCode    = 'failon.folder.source.update';
+				this.state.stopFailArg     = [ name ];
+				this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
+				break;
+			}
+
+		if (this.state.stopFailCode)
 			break;
-		}
+	}
 
 	return this.state.stopFailCode == null;
 }
 
-SyncFsm.prototype.testForConflictingUpdateOperationsHelper = function(aName, op)
+SyncFsm.prototype.testForConflictingUpdateOperationsHelper = function(aName, sourceid_loser, op)
 {
 	var suo, sourceid, format, zfc, luid, zfi, name;
 
-	if (isPropertyPresent(this.state.aSuo[this.state.sourceid_tb], op))
-		for (var indexSuo in this.state.aSuo[this.state.sourceid_tb][op])
+	if (isPropertyPresent(this.state.aSuo[sourceid_loser], op))
+		for (var indexSuo in this.state.aSuo[sourceid_loser][op])
 		{
 			// - if it's an ADD, then use winner, but if it's a del, then use target because the winner's name might have changed
 			//   eg when a zimbra folder gets moved into trash it may also get renamed to avoid clashes.
 			// - names are normalised into thunderbird's namespace so that we match zimbra: fred with thunderbird: zindus/fred
 			//
-			suo      = this.state.aSuo[this.state.sourceid_tb][op][indexSuo];
+			suo      = this.state.aSuo[sourceid_loser][op][indexSuo];
 			sourceid = (op & Suo.ADD) ? suo.sourceid_winner : sourceid = suo.sourceid_target;
 			format   = this.state.sources[sourceid]['format'];
 			zfc      = this.zfc(sourceid);
@@ -5301,7 +5307,7 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 				// add to thunderbird addressbook
 				// add the luid in the source map (zfc)
 				// update the gid with the new luid
-				// update the reverse array 
+				// update the reverse map 
 
 				luid_target = zfcTarget.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
 
@@ -6714,6 +6720,17 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 	if (sfcd.is_last_in_chain())
 	{
 		RemoveDatastore.removeZfc(Filesystem.FILENAME_GD_TO_BE_DELETED);
+	}
+
+	if (this.formatPr() == FORMAT_GD && this.state.m_sfcd.last_sourceid_of_format(FORMAT_GD) == this.state.sourceid_pr)
+	{
+		// Consider expiring the ToBeDeleted addressbook on the last successful sync with Google.
+		// Doing it then ensures that the 'fix google rule violation' code isn't going to re-create ToBeDeleted immediately after this sync.
+		// This avoids deleting+creating the addressbook between two successive syncs, which isn't currently supported,
+		// see: failon.folder.source.update
+		//
+		var gct = new GoogleRuleTrash(this.state.m_addressbook);
+		gct.expire();
 	}
 
 	zfcLastSync.get(sourceid_pr).set(Account.url,   this.state.sources[sourceid_pr][Account.url]);

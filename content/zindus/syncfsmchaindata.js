@@ -34,6 +34,7 @@ function SyncFsmChainData(a_accounts)
 	this.m_is_reset          = false;
 	this.m_a_item            = new Array(a_accounts.length);
 	this.m_a_first_of_format = new Object();
+	this.m_a_last_of_format  = new Object();
 	this.m_a_sourceid        = new Object();
 	this.m_zfcTb             = null;
 
@@ -49,6 +50,8 @@ function SyncFsmChainData(a_accounts)
 		if (!isPropertyPresent(this.m_a_first_of_format, account.format_xx()))
 			this.m_a_first_of_format[account.format_xx()] = i;
 
+		this.m_a_last_of_format[account.format_xx()] = i;
+
 		this.m_a_sourceid[Account.indexToSourceId(i)] = true;
 	}
 }
@@ -63,7 +66,8 @@ SyncFsmChainData.prototype.toString = function()
 	var ret = "SyncFsmChainData:" + "\n" +
 	          " account_index: " + this.m_account_index +
 	          " is_reset: " + this.m_is_reset +
-		      " a_first_of_format: " + aToString(this.m_a_first_of_format);
+		      " a_first_of_format: " + aToString(this.m_a_first_of_format) +
+		      " a_last_of_format: "  + aToString(this.m_a_last_of_format);
 
 	for (var i = 0; i < this.m_a_item.length; i++)
 	{
@@ -109,6 +113,15 @@ SyncFsmChainData.prototype.first_sourceid_of_format = function(format_xx)
 	zinAssert(format_xx);
 
 	var index = this.m_a_first_of_format[format_xx];
+
+	return typeof(index) == 'undefined' ? index : Account.indexToSourceId(index);
+}
+
+SyncFsmChainData.prototype.last_sourceid_of_format = function(format_xx)
+{
+	zinAssert(format_xx);
+
+	var index = this.m_a_last_of_format[format_xx];
 
 	return typeof(index) == 'undefined' ? index : Account.indexToSourceId(index);
 }

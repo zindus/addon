@@ -24,6 +24,7 @@
   ***** END LICENSE BLOCK ***** -->
 
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
@@ -51,11 +52,11 @@
 		<description id='gr-description' />
 	</groupbox>
 
-	<spacer style="&zindus.spacer.style;" flex="1"/>
+	<spacer class="zindus-spacer" flex="1"/>
 
 	<groupbox>
 		<caption id="gr-tree-caption" />
-		<tree id="gr-tree" seltype="single" rows="5" enableColumnDrag="true" hidecolumnpicker="true" style="&zindus.enclosing.vbox.style;" >
+		<tree id="gr-tree" seltype="single" rows="5" enableColumnDrag="true" hidecolumnpicker="true" class="zindus-enclosing-vbox" >
 			<treecols flex="1" >
 				<treecol id="gr-column-1" persist="width ordinal hidden" flex="1" label="&zindus.gr.column.location.label;" />
 				<splitter class="tree-splitter"/>
@@ -68,9 +69,9 @@
 			<treechildren id="gr-treechildren" />
 		</tree>
 	</groupbox>
-	<spacer style="&zindus.spacer.style;" flex="1"/>
+	<spacer class="zindus-spacer" flex="1"/>
 	<hbox >
 		<checkbox id="gr-dont-ask" style="margin-left:20px" />
 	</hbox>
-	<spacer style="&zindus.spacer.style;" flex="1"/>
+	<spacer class="zindus-spacer" flex="1"/>
 </dialog>

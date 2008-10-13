@@ -1005,8 +1005,15 @@ function xulSetHtml(id, value)
 	// ... but subsequently I found wierd issues on redraw that don't happen when <p> is used - probably because there is
 	// styling associated with <p>.
 	//
-	var html       = document.createElementNS(Xpath.NS_XHTML, "p");
-	html.innerHTML = value;
+	var html = document.createElementNS(Xpath.NS_XHTML, "p");
+
+	try {
+		html.innerHTML = value;
+	}
+	catch (ex) {
+		logger().error("xulSetHtml: something dodgy about the value eg malformed html: id: " + id + " value: " + value);
+		zinAssertAndLog(false, "" + ex);
+	}
 
 	if (!el.hasChildNodes())
 		el.appendChild(html);

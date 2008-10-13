@@ -5,3 +5,25 @@
 toolbar[iconsize="small"] #zindus-toolbarbutton {
 	list-style-image: url("chrome://zindus/skin/zindus16x16.gif");
 }
+
+.zindus-statusbar-width {
+	width: 15em;
+}
+
+.zindus-statusbar-opacity {
+	opacity: .20;
+}
+
+.zindus-grid {
+	margin-left:10px;
+	margin-right:20px;
+	margin-top:10px;
+}
+
+.zindus-spacer {
+	height:15px;
+}
+
+.zindus-enclosing-vbox {
+	margin: 10px;
+}

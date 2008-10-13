@@ -68,7 +68,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
 	// ret = ret && this.tweakLuidOnCard();
-	// ret = ret && this.testExitStatusMessages();
+	ret = ret && this.testExitStatusMessages();
 	// ret = ret && this.testRenameAddressBook();
 	ret = ret && this.createGoogleRuleViolation();
 

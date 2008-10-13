@@ -24,6 +24,7 @@
   ***** END LICENSE BLOCK ***** -->
 
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
+<?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
@@ -46,10 +47,10 @@
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<vbox align="center" style="margin:20px" >
-		<progressmeter id="zindus-sw-progress-meter" value="0%" style="&zindus.sw.progress.meter.style;" />
-		<spacer style="&zindus.spacer.style;" flex="1" /> 
-		<description  id="zindus-sw-progress-description" style="&zindus.sw.progress.description.style;" />
-		<spacer style="&zindus.spacer.style;" flex="1" /> 
+		<progressmeter id="zindus-sw-progress-meter" value="0%" style="width:35em;" />
+		<spacer class="zindus-spacer" flex="1" /> 
+		<description  id="zindus-sw-progress-description" style="width:30em;height:4em;" />
+		<spacer class="zindus-spacer" flex="1" /> 
 		<button dlgtype="cancel" align="center" />
 	</vbox>
 </dialog>

@@ -1,7 +1,7 @@
-// The interval and timer values below are in seconds. Common values are: week:604800 day:86400 hour:3600 min:60
+// The .general preferences can be edited via the zindus preferences UI
+// The other    preferences aren't editable via the zindus UI. To play with them, see Tools/Options/Advanced/General/Config Editor.
 //
-// .general preferences can be edited via the zindus preferences UI
-// .system  preferences aren't editable via the zindus UI - if you want to play with them, see Tools/Options/Advanced/General/Config Editor
+// Interval and timer values below are in seconds. Common values are: week:604800 day:86400 hour:3600 min:60
 //
 pref("extensions.zindus.system.as_logfile_max_size",      10000000);   // logfile is truncated when it gets bigger than this
 pref("extensions.zindus.system.as_timer_delay_on_start",  3600);       // how long before the sync timer fires after startup
@@ -22,3 +22,5 @@ pref("extensions.zindus.general.as_verbose_logging",      "true");     //
 pref("extensions.zindus.general.as_auto_sync",            "true");     // 
 pref("extensions.zindus.general.gd_sync_postal_address",  "false");    // 
 pref("extensions.zindus.general.gd_rule_dont_ask",        "ask-me");   // dont-ask
+
+pref("extensions.{ad7d8a66-253b-11dc-977c-000c29a3126e}.description", "chrome://zindus/locale/zindus.properties");
