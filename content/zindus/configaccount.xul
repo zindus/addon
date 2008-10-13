@@ -52,7 +52,7 @@
 	<vbox flex="1" class="zindus-enclosing-vbox" pack="center" >
 		<command id="ca-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
 		<groupbox pack="center" >
-			<caption label="&zindus.cs.account.type.label;" />
+			<caption label="&zindus.ca.account.type.label;" />
 				<radiogroup id="ca-format-radiogroup" orient="horizontal" >
 					<radio id="ca-format-google" selected="true" />
 					<radio id="ca-format-zimbra" />

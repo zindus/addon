@@ -6,6 +6,7 @@
 <!ENTITY zindus.sb.settings.label                       "Settings">
 
 <!-- Configuration of an Account -->
+<!ENTITY zindus.ca.account.type.label                   "Sync With">
 <!ENTITY zindus.ca.group.login.details.label            "Login Details">
 <!ENTITY zindus.ca.group.pap.label                      "For this account">
 <!ENTITY zindus.ca.url.description.value                "Type the url you use to log on to the server.<html:br/>example: https://mymail.example.com">
@@ -31,7 +32,7 @@
 <!ENTITY zindus.cs.account.delete.label                 "Delete">
 <!ENTITY zindus.cs.account.delete.accesskey             "D">
 <!ENTITY zindus.cs.account.email.label                  "Email Address">
-<!ENTITY zindus.cs.account.type.label                   "Sync With">
+<!ENTITY zindus.cs.account.addressbook.label            "Address Book">
 
 <!ENTITY zindus.cs.general.settings.label               "Settings">
 <!ENTITY zindus.cs.general.actions.label                "Actions">

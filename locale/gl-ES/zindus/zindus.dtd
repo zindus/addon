@@ -1,6 +1,7 @@
 <!ENTITY zindus.mo.menuitem.label "Zindus">
 <!ENTITY zindus.mo.menuitem.accesskey "z">
 <!ENTITY zindus.sb.settings.label "Configuracións">
+<!ENTITY zindus.ca.account.type.label "Sincronizar con">
 <!ENTITY zindus.ca.group.login.details.label "Detalles de Acceso">
 <!ENTITY zindus.ca.group.pap.label "Para esta conta">
 <!ENTITY zindus.ca.url.description.value "Tipo de url a empregar para acceder ó servidor
@@ -24,7 +25,7 @@
 <!ENTITY zindus.cs.account.delete.label "Eliminar">
 <!ENTITY zindus.cs.account.delete.accesskey "D">
 <!ENTITY zindus.cs.account.email.label "Dirección de Email">
-<!ENTITY zindus.cs.account.type.label "Sincronizar con">
+<!ENTITY zindus.cs.account.addressbook.label "Axenda de Direccións">
 <!ENTITY zindus.cs.general.settings.label "Configuracións">
 <!ENTITY zindus.cs.general.actions.label "Accións">
 <!ENTITY zindus.cs.general.auto.sync.label "Auto Sincronizar">

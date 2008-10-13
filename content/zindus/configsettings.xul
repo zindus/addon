@@ -57,9 +57,9 @@
 				<tree id="cs-account-tree" seltype="single" enableColumnDrag="true" flex="9" rows="5" style="min-width:30em;"
 						 ondblclick="document.getElementById('cs-account-edit').doCommand();" >
 					<treecols>
-						<treecol id="cs-col-1" label="Email" persist="width ordinal hidden" flex="4" />
+						<treecol id="cs-col-1" label="&zindus.cs.account.email.label;" persist="width ordinal hidden" flex="4" />
 						<splitter class="tree-splitter"/>
-						<treecol id="cs-col-2" label="Addressbook" persist="width ordinal hidden" flex="1" />
+						<treecol id="cs-col-2" label="&zindus.cs.account.addressbook.label;" persist="width ordinal hidden" flex="1" />
 					</treecols>
 					<treechildren id="cs-account-treechildren" flex="9" />
 				</tree>
