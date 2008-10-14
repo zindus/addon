@@ -2121,8 +2121,8 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 			if (tpi != prefid)
 			{
-				this.state.stopFailCode   = 'failon.gd.syncwith';
-				this.state.stopFailDetail = " " + gd_ab_name_public;
+				this.state.stopFailCode    = 'failon.gd.syncwith';
+				this.state.stopFailTrailer = " " + gd_ab_name_public;
 				this.debug("loadTb: tpi on folder changed: " + gd_ab_name_public + " now: " + prefid + " was: " + tpi);
 			}
 		}
@@ -2394,9 +2394,9 @@ SyncFsm.prototype.testForAccountsIntegrity = function()
 		                             "\n\n" + format_xx_to_localisable_string(account.format_xx()) + ": ";
 
 		if (account.format_xx() == FORMAT_ZM)
-			this.state.stopFailDetail += " " + account.get(Account.url);
+			this.state.stopFailTrailer += " " + account.get(Account.url);
 
-		this.state.stopFailDetail += " " + account.get(Account.username);
+		this.state.stopFailTrailer += " " + account.get(Account.username);
 	}
 
 	ret = (this.state.stopFailCode != null);
@@ -5495,9 +5495,9 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 					this.state.stopFailCode   = 'failon.unable.to.update.thunderbird';
 
 					if (is_delete_failed)
-						this.state.stopFailDetail = stringBundleString("status.failon.unable.to.update.thunderbird.detail2")
+						this.state.stopFailTrailer = stringBundleString("status.failon.unable.to.update.thunderbird.detail2")
 					else
-						this.state.stopFailDetail = "\n";
+						this.state.stopFailTrailer = "\n";
 						
 					this.state.is_source_update_problem = true;
 					break bigloop;
@@ -6450,13 +6450,12 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 		}
 		else
 		{
-			this.state.stopFailCode   = 'failon.unable.to.update.server';
-			this.state.stopFailDetail = "\n" +
-				stringBundleString("status.failon.unable.to.update.server.method", [ remote_update_package.remote.method ] ) + " " +
-				stringBundleString("status.failon.unable.to.update.server.response",
-					[ this.state.m_http.m_http_status_code,
-						((this.state.m_http.response('text') && this.state.m_http.response('text').length > 0) ?
-							this.state.m_http.response('text') : "") ] );
+			this.state.stopFailCode    = 'failon.unable.to.update.server';
+			this.state.stopFailTrailer = stringBundleString("text.zm.soap.method", [ remote_update_package.remote.method ] ) + " " +
+				                         stringBundleString("status.failon.unable.to.update.server.response",
+					                        [ this.state.m_http.m_http_status_code,
+						                      ((this.state.m_http.response('text') && this.state.m_http.response('text').length > 0) ?
+							                    this.state.m_http.response('text') : "") ] );
 		}
 	}
 
@@ -7647,7 +7646,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.aSuo                = null;         // container for source update operations - populated in Converge
 	state.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	state.stopFailCode        = null;         // if a state continues on evLackIntegrity, this is set for the observer
-	state.stopFailDetail      = null;
+	state.stopFailTrailer     = null;
 	state.stopFailArg         = null;
 	state.m_bimap_format      = getBimapFormat('short');
 
