@@ -48,7 +48,7 @@ function SyncFsmExitStatus()
 	'failon.folder.name.invalid'           : { 'trailer' : 0, 'arglength': 1 }, //    
 	'failon.folder.must.be.present'        : { 'trailer' : 0, 'arglength': 1 }, //    
 	'failon.folder.reserved.changed'       : { 'trailer' : 1, 'arglength': 1 }, //    
-	'failon.folder.name.clash'             : { 'trailer' : 0, 'arglength': 1 }, //     a folder name entered from both tb and zm sides
+	'failon.folder.name.clash'             : { 'trailer' : 1, 'arglength': 1 }, //     a folder name entered from both tb and zm sides
 	'failon.folder.source.update'          : { 'trailer' : 1, 'arglength': 1 }, //     the source update operations can't be applied
 	'failon.folder.cant.create.shared'     : { 'trailer' : 0, 'arglength': 1 }, //    
 	'failon.unable.to.update.server'       : { 'trailer' : 1, 'arglength': 0 }, // 20. couldn't make sense of the http/soap response

@@ -410,8 +410,8 @@ GoogleRuleTrash.prototype.expire = function(abName)
 			run: function(uri, item)
 			{
 				var abCard  = item.QueryInterface(Ci.nsIAbCard);
-				var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
-				var expired_on = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_EXPIRED_ON);
+				var attributes = context.m_addressbook.getCardAttributes(abCard);
+				var expired_on = attributes[TBCARD_ATTRIBUTE_EXPIRED_ON];
 
 				if (expired_on > 0)
 				{
@@ -426,7 +426,7 @@ GoogleRuleTrash.prototype.expire = function(abName)
 					}
 				}
 				else
-					context.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_EXPIRED_ON, now);
+					context.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_EXPIRED_ON, now));
 
 				count_cards++;
 

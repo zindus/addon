@@ -30,6 +30,8 @@ AddressBookTb3.prototype = new AddressBook();
 const kPABDirectory           = 2;                               // dirType ==> mork address book
 const kMDBDirectoryRoot       = "moz-abmdbdirectory://";         // see: nsIAbMDBDirectory.idl
 const kPersonalAddressbookURI = kMDBDirectoryRoot + "abook.mab"; // see: resources/content/abCommon.js
+const a_card_attributes       = [ TBCARD_ATTRIBUTE_LUID, TBCARD_ATTRIBUTE_CHECKSUM, TBCARD_ATTRIBUTE_EXPIRED_ON,
+                                  TBCARD_ATTRIBUTE_LUID_ITER ];
 
 function AddressBook()
 {
@@ -39,7 +41,7 @@ function AddressBook()
 
 	this.m_nsIRDFService = null;
 	this.m_map_name_to_uri = null;
-
+	
 	// used to construct m_logger here but since this constructor is called at .js file load time
 	// and we don't want to hold open a reference to the logfile, better to delay the logger construction
 	// until it's needed (ie. when the derived class get constructed).
@@ -473,27 +475,28 @@ AddressBook.prototype.addCard = function(uri, properties, attributes)
 
 AddressBook.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
-	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	var a_field_used = new Object();
 	var key;
 
 	// this.m_logger.debug("updateCard: blah: " + " \n properties: " + aToString(properties) +
 	//                                            "\n card properties: " + aToString(this.getCardProperties(abCard)));
 
+	this.setCardProperties(abCard, uri, properties);
+
 	for (key in properties)
-	{
-		abCard.setCardValue(key, properties[key]);
 		a_field_used[key] = true;
-	}
 
 	// now do deletes...
 	//
+	var a_deletes = {};
+
 	for (key in this.contact_converter().m_common_to[FORMAT_TB][format])
 		if (!isPropertyPresent(a_field_used, key))
-			abCard.setCardValue(key, "");
+			a_deletes[key] = "";
 
-	for (key in attributes)
-		mdbCard.setStringAttribute(key, attributes[key]);
+	this.setCardProperties(abCard, uri, a_deletes);
+
+	this.setCardAttributes(abCard, uri, attributes)
 
 	return abCard;
 }
@@ -510,14 +513,10 @@ AddressBookTb2.prototype.updateCard = function(abCard, uri, properties, attribut
 
 AddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
-	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	var database = this.nsIAddrDatabase(uri);
-
-	mdbCard.setAbDatabase(database);
 
 	AddressBook.prototype.updateCard.call(this, abCard, uri, properties, attributes, format);
 
-	database.editCard(mdbCard, false, null); // see editCard comment above
 	var dir = this.nsIAbDirectory(uri);
 	dir.modifyCard(abCard);
 
@@ -526,13 +525,15 @@ AddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attribut
 
 AddressBook.prototype.getCardProperties = function(abCard)
 {
-	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	var ret     = new Object();
 	var i, j, key, value;
 
 	for (i in this.m_contact_converter.m_map[FORMAT_TB])
 	{
-		value = abCard.getCardValue(i);
+		if (AddressBook.version() == AddressBook.TB2)
+			value = abCard.getCardValue(i);
+		else
+			value = abCard.getProperty(i, null);
 
 		// this.m_logger.debug("AddressBook.getCardProperties: i: " + i + " value: " + value);
 
@@ -545,43 +546,71 @@ AddressBook.prototype.getCardProperties = function(abCard)
 	return ret;
 }
 
-AddressBook.prototype.getCardAttributes = function(abCard)
+AddressBookTb2.prototype.getCardAttributes = function(abCard)
 {
 	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	var ret     = new Object();
 	var i, value;
 
-	var attributes = [ TBCARD_ATTRIBUTE_LUID, TBCARD_ATTRIBUTE_CHECKSUM ];
-
-	for (i = 0; i < attributes.length; i++)
+	for (i = 0; i < a_card_attributes.length; i++)
 	{
-		value = mdbCard.getStringAttribute(attributes[i]);
+		value = mdbCard.getStringAttribute(a_card_attributes[i]);
 
 		if (value)
-			ret[attributes[i]] = value;
+			ret[a_card_attributes[i]] = value;
 	}
 
 	return ret;
 }
 
-AddressBookTb2.prototype.setCardAttribute = function(mdbCard, uri, key, value)
+AddressBookTb3.prototype.getCardAttributes = function(abCard)
 {
+	var ret = new Object();
+	var i, value;
+
+	for (i = 0; i < a_card_attributes.length; i++)
+	{
+		value = abCard.getProperty(a_card_attributes[i], null);
+
+		if (value)
+			ret[a_card_attributes[i]] = value;
+	}
+
+	return ret;
+}
+
+AddressBookTb2.prototype.setCardAttributes = function(abCard, uri, collection)
+{
+	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	zinAssert(typeof mdbCard.editCardToDatabase == 'function');
-	mdbCard.setStringAttribute(key, value);
+
+	for (key in collection)
+		mdbCard.setStringAttribute(key, collection[key]);
+
 	mdbCard.editCardToDatabase(uri);
 }
 
-AddressBookTb3.prototype.setCardAttribute = function(mdbCard, uri, key, value)
+AddressBookTb3.prototype.setCardAttributes = function(abCard, uri, collection)
 {
-	var database = this.nsIAddrDatabase(uri);
+	this.setCardProperties(abCard, uri, collection);
+}
 
-	mdbCard.setAbDatabase(database);
-	mdbCard.setStringAttribute(key, value);
-
-	database.editCard(mdbCard, false, null); // Tb3a3 added the third param here.  null means that listeners aren't notified of change, see http://mxr.mozilla.org/mozilla/source/mailnews/addrbook/public/nsIAddrDatabase.idl
+AddressBookTb3.prototype.setCardProperties = function(abCard, uri, properties)
+{
+	for (key in properties)
+		abCard.setProperty(key, properties[key]);
 
 	var dir = this.nsIAbDirectory(uri);
-	dir.modifyCard(mdbCard);
+	dir.modifyCard(abCard);
+}
+
+AddressBookTb2.prototype.setCardProperties = function(abCard, uri, properties)
+{
+	for (key in properties)
+		abCard.setCardValue(key, properties[key]);
+
+	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
+	mdbCard.editCardToDatabase(uri);
 }
 
 AddressBookTb2.prototype.lookupCard = function(uri, key, value)
@@ -731,11 +760,22 @@ AddressBook.prototype.nsIAbCardToPrintableVerbose = function(abCard)
 	return ret;
 }
 
-AddressBook.prototype.nsIAbMDBCardToKey = function(mdbCard)
+AddressBookTb2.prototype.nsIAbMDBCardToKey = function(abCard)
 {
-	zinAssert(typeof(mdbCard) == 'object' && mdbCard != null);
+	zinAssert(typeof(abCard) == 'object' && abCard != null);
+	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 
 	return hyphenate('-', mdbCard.dbTableID, mdbCard.dbRowID, mdbCard.key);
+}
+
+AddressBookTb3.prototype.nsIAbMDBCardToKey = function(abCard)
+{
+	zinAssert(typeof(abCard) == 'object' && abCard != null);
+
+	var attributes = this.getCardAttributes(abCard);
+	zinAssert(isPropertyPresent(attributes, TBCARD_ATTRIBUTE_LUID_ITER));
+
+	return attributes[TBCARD_ATTRIBUTE_LUID_ITER];
 }
 
 AddressBookTb2.prototype.directoryProperty = function(elem, property)

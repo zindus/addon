@@ -976,12 +976,12 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 		state: this.state,
 		run: function(uri, item)
 		{
-			var abCard  = item.QueryInterface(Ci.nsIAbCard);
-			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
-			var luid    = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+			var abCard     = item.QueryInterface(Ci.nsIAbCard);
+			var attributes = this.state.m_addressbook.getCardAttributes(abCard);
+			var luid       = attributes[TBCARD_ATTRIBUTE_LUID];
 
 			if (luid && (luid > 0 || luid.length > 0)) // the TBCARD_ATTRIBUTE_LUID for GAL cards is an ldap dn hence the test for length>0
-				this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, 0);  // api doesn't have a "delete"
+				this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID, 0));  // api doesn't have "delete"
 
 			return true;
 		}
@@ -1963,10 +1963,10 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 				run: function(uri, item)
 				{
-					var abCard   = item.QueryInterface(Ci.nsIAbCard);
-					var mdbCard  = item.QueryInterface(Ci.nsIAbMDBCard);
-					var id       = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
-					var index    = this.state.mapIdSyncGalContact[id];
+					var abCard     = item.QueryInterface(Ci.nsIAbCard);
+					var attributes = this.state.m_addressbook.getCardAttributes(abCard);
+					var id         = attributes[TBCARD_ATTRIBUTE_LUID];
+					var index      = this.state.mapIdSyncGalContact[id];
 
 					if (id != null && typeof index != 'undefined')
 					{
@@ -2483,8 +2483,6 @@ SyncFsm.prototype.getAbNameNormalised = function(elem)
 	else 
 		ret = elem.dirName;
 
-	logger().debug("getAbNameNormalised: elem.dirName: " + elem.dirName + " returns: " + ret);
-
 	return ret;
 }
 
@@ -2696,6 +2694,8 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 		{
 			var abCard = item.QueryInterface(Ci.nsIAbCard);
 
+			this.luid_iter++;
+
 			if (abCard.isMailList)
 				aMailListUri[abCard.mailListURI] = uri;
 
@@ -2703,8 +2703,20 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 			// we might end up with a card with an luid attribute but without the luid being in the map
 			// Here, we remove any such attributes...
 
-			var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
-			var id = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+			var attributes = this.state.m_addressbook.getCardAttributes(abCard);
+			var id = attributes[TBCARD_ATTRIBUTE_LUID];
+			var luid_iter = attributes[TBCARD_ATTRIBUTE_LUID_ITER];
+
+			if (AddressBook.version() == AddressBook.TB3)
+				if (!isPropertyPresent(attributes, TBCARD_ATTRIBUTE_LUID_ITER))
+				{
+					if (!isPropertyPresent(this, "luid_iter"))
+						this.luid_iter = 1;
+					else
+						this.luid_iter++;
+
+					this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID_ITER, this.luid_iter));
+				}
 
 			if (id > AUTO_INCREMENT_STARTS_AT)
 			{
@@ -2721,7 +2733,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 					                          " is being removed because it's not in the map.  Card: " +
 			                                  this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 
-					this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, 0);  // api doesn't have a "delete"
+					this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID, 0));// api doesnt have "delete"
 				}
 				else if (zfcTb.get(id).type() != FeedItem.TYPE_CN)
 				{
@@ -2757,9 +2769,8 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 			state: this.state,
 			run: function(uri, item)
 			{
-				var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
 				var abCard  = item.QueryInterface(Ci.nsIAbCard);
-				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
+				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(abCard);
 
 				aCardKeysToExclude[key] = aMailListUri[uri];
 
@@ -2784,8 +2795,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 			run: function(uri, item)
 			{
 				var abCard  = item.QueryInterface(Ci.nsIAbCard);
-				var mdbCard = item.QueryInterface(Ci.nsIAbMDBCard);
-				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard);
+				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(abCard);
 				msg         = "loadTb pass 3: uri: " + uri + " card key: " + key;
 
 				var isInTopLevelFolder = false;
@@ -2796,7 +2806,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 
 				if (false)
 				this.state.m_logger.debug("loadTbCards pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
-				                          " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(mdbCard) +
+				                          " key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) +
 				                          " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
 				                          " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
 				                          " attributes: " + aToString(this.state.m_addressbook.getCardAttributes(abCard)) +
@@ -2806,7 +2816,8 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 
 				if (isInTopLevelFolder)
 				{
-					var id         = mdbCard.getStringAttribute(TBCARD_ATTRIBUTE_LUID);
+					var attributes = this.state.m_addressbook.getCardAttributes(abCard);
+					var id         = attributes[TBCARD_ATTRIBUTE_LUID];
 					var properties = this.state.m_addressbook.getCardProperties(abCard);
 
 					// first, we do subtle transformations on cards.
@@ -2817,10 +2828,9 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 					if (isPropertyPresent(properties, "Notes") && properties["Notes"].match(/\r\n/))
 					{
 						properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
-						abCard.setCardValue("Notes", properties["Notes"]);
+						this.state.m_addressbook.setCardProperties(abCard, uri, { Notes: properties["Notes"] } );
 						this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with \\r\\n in the notes field - normalising it to \\n as per IRC discussion. Notes: " + properties["Notes"]);
 
-						mdbCard.editCardToDatabase(uri);
 					}
 
 					// if this addressbook is being synced with google, and SecondEmail is populated and PrimaryEmail isn't,
@@ -2833,12 +2843,9 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 						properties["PrimaryEmail"] = properties["SecondEmail"];
 						properties["SecondEmail"] = "";
 
-						abCard.setCardValue("PrimaryEmail", properties["PrimaryEmail"]);
-						abCard.setCardValue("SecondEmail",  properties["SecondEmail"]);
+						this.state.m_addressbook.setCardProperties(abCard, uri, { PrimaryEmail: properties["PrimaryEmail"], SecondEmail: properties["SecondEmail"] } );
 
 						this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with a SecondEmail and no PrimaryEmail - swapping: luid=" + id + " PrimaryEmail: " + properties["PrimaryEmail"]);
-
-						mdbCard.editCardToDatabase(uri);
 					}
 
 					var checksum = context.contact_converter().crc32(properties);
@@ -2847,7 +2854,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 					{
 						id = zfcTb.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
 
-						this.state.m_addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, id);
+						this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID, id));
 
 						zfcTb.set(new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, id, FeedItem.ATTR_CS, checksum,
 						                   FeedItem.ATTR_L, aUri[uri]));
@@ -4679,8 +4686,9 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 
 			if (isPropertyPresent(aFolderName, name))
 			{
-				this.state.stopFailCode = 'failon.folder.name.clash';
+				this.state.stopFailCode    = 'failon.folder.name.clash';
 				this.state.stopFailArg  = [ name ]; // FIXME - this is an internal facing name ie zindus_pab
+				this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 				break;
 			}
 			else
@@ -4692,7 +4700,8 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 
 	if (!ret)
 		this.state.m_logger.debug("testForFolderNameDuplicate:" + " returns: " + ret + " name: " + name +
-						          " aFolderName: " + aToString(aFolderName) + " stopFailCode: " + this.state.stopFailCode);
+						          " aFolderName: " + aToString(aFolderName) + " stopFailCode: " + this.state.stopFailCode +
+								  " has gids: =" + gid + " and =" + aFolderName[name]);
 
 	return ret;
 }

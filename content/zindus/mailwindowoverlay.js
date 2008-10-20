@@ -23,6 +23,8 @@
 
 function ZinMailWindowOverlay()
 {
+	Filesystem.createDirectoriesIfRequired();  // this comes first - can't log without a directory for the logfile!
+
 	this.m_logger           = newLogger("MailWindowOverlay");
 	this.m_delay_on_repeat  = null;
 	this.m_last_sync_date   = null;
@@ -40,8 +42,6 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 		if (messengerWindow)
 		{
-			Filesystem.createDirectoriesIfRequired();  // this comes first - can't log without a directory for the logfile!
-
 			logger('info').info(getInfoMessage('startup'));
 
 			this.migratePrefs();

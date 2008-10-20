@@ -1535,7 +1535,7 @@ TestHarness.prototype.tweakLuidOnCard = function()
 
 	var mdbCard = abCard.QueryInterface(Components.interfaces.nsIAbMDBCard);
 
-	addressbook.setCardAttribute(mdbCard, uri, TBCARD_ATTRIBUTE_LUID, newluid);
+	addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID, newluid));
 
 	mdbCard.editCardToDatabase(uri);
 
