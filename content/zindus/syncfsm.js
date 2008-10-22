@@ -2177,13 +2177,14 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 		passed = passed && this.testForEmptyContacts();         // test that there are no empty contacts
 	}
 
-	passed = passed && this.testForFolderPresentInZfcTb(TB_PAB);
-
-	this.state.stopwatch.mark(state + " 4: passed: " + passed);
-
-	if (!this.is_reset())
+	if (this.formatPr() == FORMAT_ZM || (this.formatPr() == FORMAT_GD && this.state.gd_sync_with == 'pab'))
 	{
-		passed = passed && this.testForReservedFolderInvariant(TB_PAB);
+		passed = passed && this.testForFolderPresentInZfcTb(TB_PAB);
+
+		if (!this.is_reset())
+		{
+			passed = passed && this.testForReservedFolderInvariant(TB_PAB);
+		}
 	}
 
 	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
