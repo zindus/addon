@@ -3166,7 +3166,7 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 
 
 // create a mapping from email address to gid for both tb and gd, then
-// test that for every email address in tb and gd, it points to the same email ;
+// test that for every email address in tb and gd, it points to the same gid
 //
 SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 {

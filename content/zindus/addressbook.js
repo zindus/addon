@@ -525,8 +525,8 @@ AddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attribut
 
 AddressBook.prototype.getCardProperties = function(abCard)
 {
-	var ret     = new Object();
-	var i, j, key, value;
+	var ret = new Object();
+	var i, value;
 
 	for (i in this.m_contact_converter.m_map[FORMAT_TB])
 	{
@@ -584,7 +584,7 @@ AddressBookTb2.prototype.setCardAttributes = function(abCard, uri, collection)
 	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	zinAssert(typeof mdbCard.editCardToDatabase == 'function');
 
-	for (key in collection)
+	for (var key in collection)
 		mdbCard.setStringAttribute(key, collection[key]);
 
 	mdbCard.editCardToDatabase(uri);
@@ -597,7 +597,7 @@ AddressBookTb3.prototype.setCardAttributes = function(abCard, uri, collection)
 
 AddressBookTb3.prototype.setCardProperties = function(abCard, uri, properties)
 {
-	for (key in properties)
+	for (var key in properties)
 		abCard.setProperty(key, properties[key]);
 
 	var dir = this.nsIAbDirectory(uri);
@@ -606,7 +606,7 @@ AddressBookTb3.prototype.setCardProperties = function(abCard, uri, properties)
 
 AddressBookTb2.prototype.setCardProperties = function(abCard, uri, properties)
 {
-	for (key in properties)
+	for (var key in properties)
 		abCard.setCardValue(key, properties[key]);
 
 	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
