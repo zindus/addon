@@ -6307,9 +6307,10 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 	var response  = this.state.m_http.response();
 	var msg       = "exitActionUpdateGd: ";
 
-	this.state.m_logger.debug("exitActionUpdateGd: " + remote_update_package.remote.method + " " + remote_update_package.remote.url);
+	this.debug("exitActionUpdateGd: " + remote_update_package.remote.method + " " + remote_update_package.remote.url);
 
-	if (this.state.m_http.is_http_status(HTTP_STATUS_2xx))
+	if (this.state.m_http.is_http_status(HTTP_STATUS_2xx) ||
+	    (remote_update_package.bucket == (Suo.DEL | FeedItem.TYPE_CN) && this.state.m_http.is_http_status(HTTP_STATUS_404_NOT_FOUND)))
 		switch (remote_update_package.bucket)
 		{
 			case Suo.ADD | FeedItem.TYPE_CN:
@@ -6370,8 +6371,12 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				break;
 
 			case Suo.DEL | FeedItem.TYPE_CN:
-				if (this.state.m_http.is_http_status(HTTP_STATUS_200_OK))
+				if (this.state.m_http.is_http_status(HTTP_STATUS_200_OK) ||
+				    this.state.m_http.is_http_status(HTTP_STATUS_404_NOT_FOUND))
 				{
+					if (this.state.m_http.is_http_status(HTTP_STATUS_404_NOT_FOUND))
+						this.state.m_logger.warn("exitActionUpdateGd: Tried to delete a contact at Google and Google responded with a 404.  It's conceivable that this is correct but it's more likely to be a bug at Google, see http://groups.google.com/group/google-contacts-api/browse_thread/thread/d8fe64dc4e7dfe35");
+						
 					var luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 					var zfiTarget   = zfcTarget.get(luid_target);
 
