@@ -26,6 +26,7 @@
 <!ENTITY zindus.cs.account.delete.accesskey "S">
 <!ENTITY zindus.cs.account.email.label "Adresse électronique">
 <!ENTITY zindus.cs.account.addressbook.label "Carnet d&apos;adresses">
+<!ENTITY zindus.cs.accounts.label "Comptes">
 <!ENTITY zindus.cs.general.settings.label "Paramètres">
 <!ENTITY zindus.cs.general.actions.label "Actions">
 <!ENTITY zindus.cs.general.auto.sync.label "Auto synchronisation">

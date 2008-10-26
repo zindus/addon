@@ -33,6 +33,7 @@
 <!ENTITY zindus.cs.account.delete.accesskey             "D">
 <!ENTITY zindus.cs.account.email.label                  "Email Address">
 <!ENTITY zindus.cs.account.addressbook.label            "Address Book">
+<!ENTITY zindus.cs.accounts.label                       "Accounts">
 
 <!ENTITY zindus.cs.general.settings.label               "Settings">
 <!ENTITY zindus.cs.general.actions.label                "Actions">
