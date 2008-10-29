@@ -68,9 +68,10 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFileLoggingTimes();
 	// ret = ret && this.testStringTimes();
 	// ret = ret && this.tweakLuidOnCard();
-	ret = ret && this.testExitStatusMessages();
+	// ret = ret && this.testExitStatusMessages();
 	// ret = ret && this.testRenameAddressBook();
-	ret = ret && this.createGoogleRuleViolation();
+	// ret = ret && this.createGoogleRuleViolation();
+	ret = ret && this.testGoogleContactWithe4x();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1044,7 +1045,7 @@ TestHarness.prototype.setupFixtureGdPostalAddress = function()
 	this.m_entry_as_xml_char = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/username%40@gmail.com/base/7ae485588d2b6b50</id><updated>2008-04-26T01:58:35.904Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>77</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50/1209175115904000'/> \
 		<gd:email rel='http://schemas.google.com/g/2005#other' address='77@example.com' primary='true'/>\
 		<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>@@postal@@</gd:postalAddress>\
-		</entry>"
+		</entry>";
 
 	this.m_street1 = "Apartment 2";
 	this.m_street2 = "123 Collins st";
@@ -1604,7 +1605,6 @@ TestHarness.prototype.testExitStatusMessages = function()
 	return true;
 }
 
-
 TestHarness.prototype.testRenameAddressBook = function()
 {
 	var addressbook = AddressBook.new();
@@ -1620,6 +1620,16 @@ TestHarness.prototype.testRenameAddressBook = function()
 	uri = addressbook.getAddressBookUriByName(abNameNew)
 
 	this.m_logger.debug("testRenameAddressBook: abNameNew: " + abNameNew + " uri: " + uri);
+
+	return true;
+}
+
+TestHarness.prototype.testGoogleContactWithe4x = function()
+{
+	this.setupFixtureGdPostalAddress();
+
+	this.m_logger.debug("is_email_address_in_entry: returns: " +
+	                       GdContact.is_email_address_in_entry('77@example.com', this.m_entry_as_xml_char));
 
 	return true;
 }

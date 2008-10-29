@@ -36,6 +36,7 @@ function GdContact(contact_converter, doc)
 	this.m_container          = null;
 	this.m_properties         = null;
 	this.m_meta               = null;
+	this.m_a_email            = new Array();
 	this.m_ns_gd_length       = this.ns_gd("").length;
 	this.m_container_children = null; // key ==> localName, value is the node - populated by runFunctor and fieldAdd() - saves searching
 }
@@ -62,6 +63,8 @@ GdContact.prototype.toString = function()
 		msg += " meta:     " + key + ": " + this.m_meta[key] + "\n";
 	for (key in this.m_properties)
 		msg += " property: " + key + ": " + this.m_properties[key] + "\n";
+
+	msg += " a_email: " + this.m_a_email.toString() + "\n";
 
 	return msg;
 }
@@ -115,6 +118,9 @@ GdContact.prototype.updateFromContainer = function(node)
 				case "im#AIM":
 					context.setProperty(node, "address", context.m_properties, key);
 					break;
+					break;
+				case "AnEmail":
+					context.m_a_email.push(node.getAttribute("address"));
 					break;
 				case GdContact.deleted:
 					context.m_meta[GdContact.deleted] = "true";
@@ -183,8 +189,8 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 					switch(child.localName)
 					{
 						case "organization":
-							if (!isPropertyPresent(a_visited, key) && child.getAttribute("rel") == this.ns_gd("work")
-							                                       && child.hasChildNodes() )
+							if (!isPropertyPresent(a_visited, key) && child.hasChildNodes() &&
+							    (child.getAttribute("rel") == this.ns_gd("work") || child.getAttribute("rel") == this.ns_gd("other")) )
 							{
 								this.m_container_children[child.localName] = child;
 
@@ -206,6 +212,8 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 						case "email":
 							// PrimaryEmail == the first  <email> element
 							// SecondEmail  == the second <email> element
+
+							functor.run(child, "AnEmail");
 
 							var is_visited;
 							key = "PrimaryEmail";

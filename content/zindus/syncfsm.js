@@ -3107,16 +3107,18 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 
 		add_email: function(luid)
 		{
-			for (key in { 'PrimaryEmail' : null, 'SecondEmail' : null })
-				if (isPropertyPresent(this.state.a_gd_contact[luid].m_properties, key))
-				{
-					email = GdContact.transformProperty(key, this.state.a_gd_contact[luid].m_properties[key]);
+			var contact = this.state.a_gd_contact[luid];
+			var i, email;
 
-					if (!isPropertyPresent(a_gd_email, email))
-						a_gd_email[email] = new Array();
+			for (i = 0; i < contact.m_a_email.length; i++)
+			{
+				email = GdContact.transformProperty('PrimaryEmail', contact.m_a_email[i]);
 
-					a_gd_email[email].push(luid);
-				}
+				if (!isPropertyPresent(a_gd_email, email))
+					a_gd_email[email] = new Array();
+
+				a_gd_email[email].push(luid);
+			}
 		},
 		run: function(zfi)
 		{
@@ -3164,7 +3166,6 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 	return this.state.stopFailCode == null;
 }
 
-
 // create a mapping from email address to gid for both tb and gd, then
 // test that for every email address in tb and gd, it points to the same gid
 //
@@ -3186,9 +3187,10 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 
 		add_email: function(luid, gid)
 		{
-			for (key in this.m_email_keys)
-				if (isPropertyPresent(this.state.a_gd_contact[luid].m_properties, key))
-					a_gd_email[GdContact.transformProperty(key, this.state.a_gd_contact[luid].m_properties[key])] = gid;
+			var contact = this.state.a_gd_contact[luid];
+
+			for (var i = 0; i < contact.m_a_email.length; i++)
+				a_gd_email[GdContact.transformProperty('PrimaryEmail', contact.m_a_email[i])] = gid;
 		},
 		run: function(zfi)
 		{
@@ -6441,14 +6443,15 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 				var luid_tb       = remote_update_package.remote.luid_winner;
 				var tb_properties = this.getContactPropertiesNormalised(this.state.sourceid_tb, luid_tb);
-				var a_match       = keysForMatchingValues(tb_properties, contact.m_properties);
+				var email         = null;
 
-				if (isPropertyPresent(a_match, 'PrimaryEmail'))
-					email = a_match['PrimaryEmail'];
-				else if (isPropertyPresent(a_match, 'SecondEmail'))
-					email = a_match['SecondEmail'];
-				else
-					zinAssertAndLog(false, "tb_properties: " + aToString(tb_properties) + " google contact: " + contact.toString());
+				if (isPropertyPresent(tb_properties, 'PrimaryEmail') && contact.m_a_email.indexOf(tb_properties['PrimaryEmail']) != -1)
+					email = tb_properties['PrimaryEmail'];
+
+				if (isPropertyPresent(tb_properties, 'SecondEmail') && contact.m_a_email.indexOf(tb_properties['SecondEmail']) != -1)
+					email = tb_properties['SecondEmail'];
+
+				zinAssertAndLog(email, "tb_properties: " + aToString(tb_properties) + " google contact: " + contact.toString());
 
 				grd.m_unique[email] = new Object();
 				grd.m_unique[email][luid_tb] = new GoogleRuleContactHandle(FORMAT_TB, luid_tb, tb_properties, { uri: this.state.gd_ab_uri});
