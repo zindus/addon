@@ -165,7 +165,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stAuthCheck:       { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
 		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',                                         evLackIntegrity: 'final'     },
 		stLoadTb:          { evCancel: 'final', evNext: 'stDelContactGd',                                   evLackIntegrity: 'final'     },
-		stDelContactGd:    { evCancel: 'final', evNext: 'stGetContactGd1',  evHttpRequest: 'stHttpRequest', evRepeat: 'stDelContactGd'   },
+		stDelContactGd:    { evCancel: 'final', evSkip: 'stGetContactGd1',  evHttpRequest: 'stHttpRequest', evNext: 'stDelContactGd'     },
 		stGetContactGd1:   { evCancel: 'final', evNext: 'stGetContactGd2',  evHttpRequest: 'stHttpRequest',                              },
 		stGetContactGd2:   { evCancel: 'final', evNext: 'stGetContactGd3',                                  evLackIntegrity: 'final'     },
 		stGetContactGd3:   { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge1',   evRepeat: 'stGetContactGd3', },
@@ -7868,8 +7868,13 @@ SyncFsmGd.prototype.entryActionDelContactGd = function(state, event, continuatio
 	{
 		var url = gdAdjustHttpHttps(this.state.a_gd_contact_to_del.pop());
 
-		this.setupHttpGd(state, 'evRepeat', "POST", url, { "X-HTTP-Method-Override" : "DELETE"}, null,
-		                  HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
+		// evNext on error here means that we ignore any errors arising from trying to delete a contact at google
+		// which means later on, the user will end up in conflict resolution again (which is what we want).
+		// that's also why we use 'evNext' to mean "repeat this state" and 'evSkip' to mean 'next state' - it'd be more natural
+		// to use evRepeat and evNext
+		//
+		this.setupHttpGd(state, 'evNext', "POST", url, { "X-HTTP-Method-Override" : "DELETE"}, null,
+		                  HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_YES);
 		
 		nextEvent = 'evHttpRequest'
 	}
@@ -7877,12 +7882,11 @@ SyncFsmGd.prototype.entryActionDelContactGd = function(state, event, continuatio
 	{
 		this.state.m_http = null;
 
-		nextEvent = 'evNext'
+		nextEvent = 'evSkip';
 	}
 
 	continuation(nextEvent);
 }
-
 
 SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuation)
 {

@@ -397,8 +397,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					es.m_exit_status = 1;
 
 					if (isInArray(fsmstate.oldstate,
-					               [ 'start', 'stAuth', 'stGetContactGd2', 'stAuthSelect', 'stGetContactGd2', 'stLoad', 'stAuthCheck',
-								     'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9', 'stUpdateCleanup' ]))
+					               [ 'start', 'stAuth', 'stGetContactGd2', 'stAuthSelect', 'stGetContactGd2',
+								     'stLoad', 'stAuthCheck', 'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9',
+									 'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);
 
