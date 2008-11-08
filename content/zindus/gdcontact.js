@@ -36,7 +36,7 @@ function GdContact(contact_converter, doc)
 	this.m_container          = null;
 	this.m_properties         = null;
 	this.m_meta               = null;
-	this.m_a_email            = new Array();
+	this.m_a_email            = new Array();  // all email addresses, transformed (ie normalised)
 	this.m_ns_gd_length       = this.ns_gd("").length;
 	this.m_container_children = null; // key ==> localName, value is the node - populated by runFunctor and fieldAdd() - saves searching
 }
@@ -120,7 +120,7 @@ GdContact.prototype.updateFromContainer = function(node)
 					break;
 					break;
 				case "AnEmail":
-					context.m_a_email.push(node.getAttribute("address"));
+					context.m_a_email.push(GdContact.transformProperty('PrimaryEmail', node.getAttribute("address")));
 					break;
 				case GdContact.deleted:
 					context.m_meta[GdContact.deleted] = "true";

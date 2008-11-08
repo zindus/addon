@@ -3117,7 +3117,8 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 				if (!isPropertyPresent(a_gd_email, email))
 					a_gd_email[email] = new Array();
 
-				a_gd_email[email].push(luid);
+				if (!isInArray(luid, a_gd_email[email])) // it's acceptable for one contact to reference an email address multiple times
+					a_gd_email[email].push(luid);
 			}
 		},
 		run: function(zfi)
@@ -6445,11 +6446,20 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				var tb_properties = this.getContactPropertiesNormalised(this.state.sourceid_tb, luid_tb);
 				var email         = null;
 
-				if (isPropertyPresent(tb_properties, 'PrimaryEmail') && contact.m_a_email.indexOf(tb_properties['PrimaryEmail']) != -1)
-					email = tb_properties['PrimaryEmail'];
+				function assign_if_match(properties, key, contact) {
+					var ret = null;
+					if (isPropertyPresent(properties, key)) {
+						var tb_email = GdContact.transformProperty(key, properties[key]);
 
-				if (isPropertyPresent(tb_properties, 'SecondEmail') && contact.m_a_email.indexOf(tb_properties['SecondEmail']) != -1)
-					email = tb_properties['SecondEmail'];
+						if (contact.m_a_email.indexOf(tb_email) != -1)
+							ret = tb_email;
+					}
+
+					return ret;
+				}
+
+				if (!email) email = assign_if_match(tb_properties, 'PrimaryEmail', contact);
+				if (!email) email = assign_if_match(tb_properties, 'SecondEmail',  contact);
 
 				zinAssertAndLog(email, "tb_properties: " + aToString(tb_properties) + " google contact: " + contact.toString());
 
@@ -7303,7 +7313,7 @@ HttpState.prototype.response = function(style)
 		ret = this.m_xhr.responseText;
 	else
 		zinAssertAndLog(false, "style: " + style);
-		
+
 	return ret;
 }
 
