@@ -8,7 +8,7 @@
 
 // Editable Items Begin
 var displayName         = "Zindus"; // The name displayed to the user (don't include the version)
-var version             = "0.8.4.20081109.083112";
+var version             = "0.8.4.20081116.082622";
 var name                = "zindus"; // The leafname of the JAR file (without the .jar part)
 
 // The following three sets of variables tell this installer script how your

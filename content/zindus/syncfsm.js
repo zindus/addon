@@ -713,9 +713,9 @@ SyncFsm.prototype.isConsistentDataStore = function(aReverse)
 	if (this.formatPr() == FORMAT_ZM)
 	{
 		ret = ret && this.isConsistentZfcAutoIncrement(this.zfcPr());
-	this.state.stopwatch.mark("isConsistentDataStore: " + " 6");
+		this.state.stopwatch.mark("isConsistentDataStore: " + " 6");
 		ret = ret && this.isConsistentSharedFolderReferences();
-	this.state.stopwatch.mark("isConsistentDataStore: " + " 7");
+		this.state.stopwatch.mark("isConsistentDataStore: " + " 7");
 	}
 	return ret;
 }
@@ -725,21 +725,37 @@ SyncFsm.prototype.isConsistentDataStore = function(aReverse)
 SyncFsm.prototype.isConsistentGid = function(aReverse)
 {
 	var is_consistent = true;
-	var sourceid;
+	var luid, sourceid, zfc;
+
+	this.state.stopwatch.mark("isConsistentGid: " + " 1");
 
 	is_consistent = this.isConsistentGidParse(aReverse);
+
+	this.state.stopwatch.mark("isConsistentGid: " + " 2");
 
 	if (is_consistent)
 		bigloop:
 			for (sourceid in this.state.aReverseGid)
-				for (var luid in this.state.aReverseGid[sourceid])
-					if (!isPropertyPresent(this.state.sources, sourceid) || !this.zfc(sourceid).isPresent(luid) || 
-				    	(sourceid != SOURCEID_TB && !isPropertyPresent(this.state.m_sfcd.m_a_sourceid, sourceid)))
+			{
+				if (sourceid != SOURCEID_TB && !isPropertyPresent(this.state.m_sfcd.m_a_sourceid, sourceid))
+				{
+					this.debug("isConsistentGid: inconsistency: sourceid: " + sourceid + " not in sfcd ");
+					is_consistent = false;
+					break bigloop;
+				}
+
+				zfc = this.zfc(sourceid);
+
+				for (luid in this.state.aReverseGid[sourceid])
+					if (!isPropertyPresent(this.state.sources, sourceid) || !zfc.isPresent(luid))
 					{
 						this.debug("isConsistentGid: inconsistency: sourceid: " + sourceid + " luid: " + luid);
 						is_consistent = false;
 						break bigloop;
 					}
+			}
+
+	this.state.stopwatch.mark("isConsistentGid: " + " 3");
 
 	this.debug("isConsistentGid: " + is_consistent);
 
@@ -847,8 +863,10 @@ SyncFsm.prototype.isConsistentSources = function()
 
 	for (var sourceid in this.state.sources)
 	{
+		this.state.stopwatch.mark("isConsistentSources sourceid: " + sourceid + " starts");
 		zfc = this.zfc(sourceid);
 		zfc.forEach(functor_foreach_luid);
+		this.state.stopwatch.mark("isConsistentSources sourceid: " + sourceid + " ends");
 	}
 
 	this.debug("isConsistentSources: " + is_consistent + " " + error_msg);
@@ -2218,7 +2236,7 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 			{
 				var gd_properties = context.contact_converter().convert(FORMAT_GD, FORMAT_TB, properties);
 
-				GdContact.transformProperties(gd_properties);
+				GdContact.transformProperties(GdContact.TRANSFORM_ALL, gd_properties);
 
 				// remember the luid(s) for each (primary and secondary) email addresses
 				//
@@ -3112,7 +3130,7 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 
 			for (i = 0; i < contact.m_a_email.length; i++)
 			{
-				email = GdContact.transformProperty('PrimaryEmail', contact.m_a_email[i]);
+				email = GdContact.transformPropertyTo(GdContact.TRANSFORM_EMAIL, contact.m_a_email[i]);
 
 				if (!isPropertyPresent(a_gd_email, email))
 					a_gd_email[email] = new Array();
@@ -3191,7 +3209,7 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 			var contact = this.state.a_gd_contact[luid];
 
 			for (var i = 0; i < contact.m_a_email.length; i++)
-				a_gd_email[GdContact.transformProperty('PrimaryEmail', contact.m_a_email[i])] = gid;
+				a_gd_email[GdContact.transformPropertyTo(GdContact.TRANSFORM_EMAIL, contact.m_a_email[i])] = gid;
 		},
 		run: function(zfi)
 		{
@@ -3946,7 +3964,7 @@ SyncFsm.prototype.getContactPropertiesNormalised = function(sourceid, luid, cont
 	// This is why Hello.World@example.com in Thunderbird matches hello.world@example.com in google (and vice versa)
 	//
 	if (this.formatPr() == FORMAT_GD)
-		GdContact.transformProperties(properties);
+		GdContact.transformProperties(GdContact.TRANSFORM_ALL, properties);
 
 	// this.state.m_logger.debug("getContactPropertiesNormalised: sourceid: " + sourceid + " luid=" + luid +
 	//                           " returns: " properties: " + aToString(properties));
@@ -6449,7 +6467,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				function assign_if_match(properties, key, contact) {
 					var ret = null;
 					if (isPropertyPresent(properties, key)) {
-						var tb_email = GdContact.transformProperty(key, properties[key]);
+						var tb_email = GdContact.transformProperty(GdContact.TRANSFORM_EMAIL, key, properties[key]);
 
 						if (contact.m_a_email.indexOf(tb_email) != -1)
 							ret = tb_email;
@@ -6467,7 +6485,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				grd.m_unique[email][luid_tb] = new GoogleRuleContactHandle(FORMAT_TB, luid_tb, tb_properties, { uri: this.state.gd_ab_uri});
 
 				luid = contact.m_meta[GdContact.id];
-				GdContact.transformProperties(contact.m_properties);
+				GdContact.transformProperties(GdContact.TRANSFORM_ALL, contact.m_properties);
 				tb_properties = this.contact_converter().convert(FORMAT_TB, FORMAT_GD, contact.m_properties);
 
 				grd.m_unique[email][luid] = new GoogleRuleContactHandle(FORMAT_GD, luid, tb_properties, { contact: contact, username: this.username() } );

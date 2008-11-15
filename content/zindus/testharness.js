@@ -71,7 +71,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testExitStatusMessages();
 	// ret = ret && this.testRenameAddressBook();
 	// ret = ret && this.createGoogleRuleViolation();
-	ret = ret && this.testGoogleContactWithe4x();
+	// ret = ret && this.testGoogleContactWithe4x();
+	ret = ret && this.createLotsOfContacts();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1630,6 +1631,16 @@ TestHarness.prototype.testGoogleContactWithe4x = function()
 
 	this.m_logger.debug("is_email_address_in_entry: returns: " +
 	                       GdContact.is_email_address_in_entry('77@example.com', this.m_entry_as_xml_char));
+
+	return true;
+}
+
+TestHarness.prototype.createLotsOfContacts = function()
+{
+	this.m_logger.debug("createLotsOfContacts");
+
+	for (var i = 1000; i<=6000; i++)
+		this.addCardTb2({ PrimaryEmail: i + "-test@example.com", DisplayName: i + " test", Notes: i + "-test line one" });
 
 	return true;
 }

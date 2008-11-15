@@ -120,7 +120,7 @@ GdContact.prototype.updateFromContainer = function(node)
 					break;
 					break;
 				case "AnEmail":
-					context.m_a_email.push(GdContact.transformProperty('PrimaryEmail', node.getAttribute("address")));
+					context.m_a_email.push(GdContact.transformPropertyTo(GdContact.TRANSFORM_EMAIL, node.getAttribute("address")));
 					break;
 				case GdContact.deleted:
 					context.m_meta[GdContact.deleted] = "true";
@@ -293,21 +293,44 @@ GdContact.prototype.nodeModifyOrMarkForDeletion = function(node, attribute, a_fi
 
 // Google applies transformations to a contact when they are created or updated at Google:
 // - trim leading and trailing whitespace.
+// Also, Google's email uniqueness test is case-insensitive, which is here implemented by:
 // - lowercase email addresses
 // We apply these transformation before sending to Google so that we can do common-case error detection locally and avoid network latency.
 //
-GdContact.transformProperties = function(properties)
+
+GdContact.TRANSFORM_EMAIL      = 0x01;
+GdContact.TRANSFORM_WHITESPACE = 0x02;
+GdContact.TRANSFORM_ALL        = GdContact.TRANSFORM_EMAIL | GdContact.TRANSFORM_WHITESPACE;
+
+GdContact.transformProperties = function(transform, properties)
 {
 	for (key in properties)
-		properties[key] = GdContact.transformProperty(key, properties[key]);
+		properties[key] = GdContact.transformProperty(transform, key, properties[key]);
 }
 
-GdContact.transformProperty = function(key, value)
+GdContact.transformProperty = function(transform, key, value)
 {
-	var ret = zinTrim(value);
+	var ret = value;
 
-	if (key == "PrimaryEmail" || key == "SecondEmail")
-		ret = ret.toLowerCase();
+	if (transform | GdContact.TRANSFORM_WHITESPACE)
+		ret = GdContact.transformPropertyTo(GdContact.TRANSFORM_WHITESPACE, ret);
+
+	if (transform | GdContact.TRANSFORM_EMAIL && (key == "PrimaryEmail" || key == "SecondEmail"))
+		ret = GdContact.transformPropertyTo(GdContact.TRANSFORM_EMAIL, ret);
+
+	return ret;
+}
+
+GdContact.transformPropertyTo = function(transform, value)
+{
+	var ret;
+
+	switch(transform)
+	{
+		case GdContact.TRANSFORM_EMAIL:      ret = value.toLowerCase(); break;
+		case GdContact.TRANSFORM_WHITESPACE: ret = zinTrim(value);      break;
+		default: zinAssert(false, transform);
+	}
 
 	return ret;
 }
@@ -319,6 +342,8 @@ GdContact.prototype.updateFromProperties = function(properties)
 	var a_to_be_deleted = new Object();
 	var context = this;
 	var key;
+
+	GdContact.transformProperties(GdContact.TRANSFORM_WHITESPACE, a_field);
 
 	// this.m_logger.debug("GdContact: updateFromProperties: properties: " + aToString(properties));
 
