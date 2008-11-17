@@ -2793,7 +2793,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 
 				aCardKeysToExclude[key] = aMailListUri[uri];
 
-				msg += "\nexcluding card: " + key + " " + aMailListUri[uri] + " " + this.state.m_addressbook.nsIAbCardToPrintable(abCard);
+				msg += "\nexcluding card: " + key + " " + aMailListUri[uri] + " " + uri + " " + this.state.m_addressbook.nsIAbCardToPrintable(abCard);
 
 				return true;
 			}
