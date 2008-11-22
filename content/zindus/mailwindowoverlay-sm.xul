@@ -30,7 +30,9 @@
 	<statusbar id="status-bar" >
 		<statusbarpanel id="zindus-statusbar-progress" hidden="true" insertbefore="unreadMessageCount" />
 		<statusbarpanel id="zindus-statusbar-state"    hidden="true" insertbefore="unreadMessageCount"
-		                tooltiptext="" class="statusbarpanel-iconic" />
+		                tooltiptext="" class="statusbarpanel-iconic">
+			<menupopup id="zindus-statusbar-menu"/>
+		</statusbarpanel>
 	</statusbar>
 
 </overlay>
