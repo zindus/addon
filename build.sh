@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.14 2008-05-08 05:11:35 cvsuser Exp $
+# $Id: build.sh,v 1.15 2008-11-22 05:02:50 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -133,12 +133,8 @@ else
 	exit 1
 fi
 
-# install.js
-#
-sed -i -r "s#var version *= \"(.*)\";#var version             = \"$APP_VERSION_NUMBER\";#" install.js
-
 # Copy other files to the root of future XPI.
-for ROOT_FILE in $ROOT_FILES install.rdf chrome.manifest install.js; do
+for ROOT_FILE in $ROOT_FILES install.rdf chrome.manifest; do
   cp --verbose $ROOT_FILE $TMP_DIR
   if [ -f $ROOT_FILE ]; then
     echo $ROOT_FILE >> files
