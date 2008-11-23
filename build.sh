@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.16 2008-11-23 05:09:30 cvsuser Exp $
+# $Id: build.sh,v 1.17 2008-11-23 05:18:11 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -102,7 +102,6 @@ for DIR in $ROOT_DIRS; do
   cp --verbose --parents $FILES $TMP_DIR
 done
 
-
 # update.rdf
 #
 set -x
@@ -111,19 +110,15 @@ MAXVERSION_TB=`sed -r "s#<em:maxVersion>(.*)</em:maxVersion>.*tb#fredfred \1#" <
 MINVERSION_SM=`sed -r "s#<em:minVersion>(.*)</em:minVersion>.*sm#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
 MAXVERSION_SM=`sed -r "s#<em:maxVersion>(.*)</em:maxVersion>.*sm#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
 DOWNLOAD_DIR=http://www.zindus.com/download/xpi
-# TODO put me back set +x
+set +x
 sed -i -r "s#em:version=\"(.*)\"#em:version=\"$APP_VERSION_NUMBER\"#" update.rdf
 sed -i -r "s#em:updateLink=\"(.*)\"#em:updateLink=\"$DOWNLOAD_DIR/$XPI_FILE_NAME\"#" update.rdf
 
 sed -i -r "s#em:id=\"\{3550f703-e582-4d05-9a08-453d09bdfdc6\}\"#em:id=\"\{3550f703-e582-4d05-9a08-453d09bdfdc6\}\" em:maxVersion=\"$MAXVERSION_TB\" em:minVersion=\"$MINVERSION_TB\"#" update.rdf
 sed -i -r "s#em:id=\"\{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a\}\"#em:id=\"\{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a\}\" em:maxVersion=\"$MAXVERSION_SM\" em:minVersion=\"$MINVERSION_SM\"#" update.rdf
 
-cp update.rdf /tmp/update.rdf.1
-
 sed -i -r "/  em:maxVersion/d#" update.rdf
 sed -i -r "/  em:minVersion/d#" update.rdf
-
-cp update.rdf /tmp/update.rdf.2
 
 # install.rdf
 #
