@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-test-version.sh,v 1.9 2008-03-19 22:05:10 cvsuser Exp $
+# $Id: deploy-test-version.sh,v 1.10 2008-11-23 05:46:57 cvsuser Exp $
 
 . deploy-common.sh
 
@@ -13,8 +13,9 @@ is_signed="y"
 if [ "$is_signed" == "y" ]; then
 
 	APPVERSION=`get_appversion`
+	PLATFORM_ID=`get_platform_id`
 
-	generate_and_copy_rdfs $APPVERSION 'testing'
+	generate_and_copy_rdfs $APPVERSION $PLATFORM_ID 'testing'
 
 	cvs commit -m ""
 

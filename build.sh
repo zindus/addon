@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.17 2008-11-23 05:18:11 cvsuser Exp $
+# $Id: build.sh,v 1.18 2008-11-23 05:46:57 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -56,7 +56,7 @@ fi
 
 XPI_FILE_NAME=$APP_NAME-$APP_VERSION_NUMBER-$PLATFORM_ID.xpi
 
-export APP_NAME APP_VERSION_NUMBER XPI_FILE_NAME APP_VERSION_RELTYPE # BEFORE_BUILD or AFTER_BUILD might use these...
+export APP_NAME APP_VERSION_NUMBER XPI_FILE_NAME APP_VERSION_RELTYPE PLATFORM_ID # BEFORE_BUILD or AFTER_BUILD might use these...
 
 if [ -z $APP_NAME ]; then
   echo "You need to create build config file first!"

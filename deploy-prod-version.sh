@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-prod-version.sh,v 1.6 2007-12-13 20:55:08 cvsuser Exp $
+# $Id: deploy-prod-version.sh,v 1.7 2008-11-23 05:46:57 cvsuser Exp $
 
 . deploy-common.sh
 
@@ -17,8 +17,9 @@ if [ "$is_version_updated" == "y" ]; then
 	if [ "$is_signed" == "y" ]; then
 
 		APPVERSION=`get_appversion`
+		PLATFORM_ID=`get_platform_id`
 
-		generate_and_copy_rdfs $APPVERSION 'prod'
+		generate_and_copy_rdfs $APPVERSION $PLATFORM_ID 'prod'
 
 		RELEASE_TAG=`echo $APPVERSION | sed 's/\./_/g'`
 		RELEASE_TAG="release-"$RELEASE_TAG

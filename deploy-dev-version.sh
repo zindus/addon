@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-dev-version.sh,v 1.1 2007-12-31 04:24:42 cvsuser Exp $
+# $Id: deploy-dev-version.sh,v 1.2 2008-11-23 05:46:57 cvsuser Exp $
 
 . deploy-common.sh
 
@@ -13,8 +13,11 @@ is_signed="y"
 if [ "$is_signed" == "y" ]; then
 
 	APPVERSION=`get_appversion`
+	PLATFORM_ID=`get_platform_id`
 
-	generate_and_copy_rdfs $APPVERSION 'dev'
+	echo PLATFORM_ID is $PLATFORM_ID
+
+	generate_and_copy_rdfs $APPVERSION $PLATFORM_ID 'dev'
 
 else
 	echo Aborted
