@@ -6,14 +6,14 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.8.4.20081122.155015</em:version>  <!-- version populated by build script -->
+    <em:version>0.8.4.20081123.155652</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <Description>
         <!-- Thunderbird -->
         <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id>
-        <em:minVersion>2.0b2</em:minVersion>
-        <em:maxVersion>3.0a3</em:maxVersion> <!-- 3.0a1 2.0.0.* -->
+        <em:minVersion>2.0b2</em:minVersion> <!-- tb -->
+        <em:maxVersion>3.0a3</em:maxVersion> <!-- tb --> <!-- 3.0a1 2.0.0.* -->
       </Description>
     </em:targetApplication>
 
@@ -21,8 +21,8 @@
       <Description>
         <!-- Seamonkey -->
         <em:id>{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}</em:id>
-        <em:minVersion>2.0a1</em:minVersion>
-        <em:maxVersion>2.0a2</em:maxVersion> <!-- 2.0a2 -->
+        <em:minVersion>2.0a1</em:minVersion> <!-- sm -->
+        <em:maxVersion>2.0a2</em:maxVersion> <!-- sm --> <!-- 2.0a2 -->
       </Description>
     </em:targetApplication>
 
