@@ -2838,18 +2838,43 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 					var attributes = this.state.m_addressbook.getCardAttributes(abCard);
 					var id         = attributes[TBCARD_ATTRIBUTE_LUID];
 					var properties = this.state.m_addressbook.getCardProperties(abCard);
+					var is_new_card = (! (id > AUTO_INCREMENT_STARTS_AT)); // id might be null ==> not present or
+					                                                       // zero ==> reset after the map was deleted
 
 					// first, we do subtle transformations on cards.
 					// 
 
-					// replace \r\n with \n - issue #121 and https://bugzilla.mozilla.org/show_bug.cgi?id=456678
-					// 
-					if (isPropertyPresent(properties, "Notes") && properties["Notes"].match(/\r\n/))
+					if (is_new_card)
 					{
-						properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
-						this.state.m_addressbook.setCardProperties(abCard, uri, { Notes: properties["Notes"] } );
-						this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with \\r\\n in the notes field - normalising it to \\n as per IRC discussion. Notes: " + properties["Notes"]);
+						// these problems only arise when cards are imported - they can't be created via the tb UI.
+						// so if we've seen this card before, no need to test.
+						// 
 
+						// replace \r\n with \n - issue #121 and https://bugzilla.mozilla.org/show_bug.cgi?id=456678
+						// 
+						if (isPropertyPresent(properties, "Notes") && properties["Notes"].match(/\r\n/))
+						{
+							properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
+							this.state.m_addressbook.setCardProperties(abCard, uri, { Notes: properties["Notes"] } );
+							this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with \\r\\n in the notes field - normalising it to \\n as per IRC discussion. Notes: " + properties["Notes"]);
+						}
+
+						// strip characters out of the notes field that aren't XML
+						// issue #151 and https://bugzilla.mozilla.org/show_bug.cgi?id=466545
+						// this really should get done on all fields but it's mostly the Notes field that has the problem.
+						//
+						if (isPropertyPresent(properties, "Notes") && properties["Notes"].length > 0)
+						{
+							var newstr = stripInvalidXMLCharsFromString(properties["Notes"]);
+
+							if (newstr != properties["Notes"])
+							{
+								properties["Notes"] = newstr;
+								this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with invalid XML characters - removed: " + properties["Notes"]);
+
+								this.state.m_addressbook.setCardProperties(abCard, uri, { Notes: properties["Notes"] } );
+							}
+						}
 					}
 
 					// if this addressbook is being synced with google, and SecondEmail is populated and PrimaryEmail isn't,
@@ -2869,7 +2894,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 
 					var checksum = context.contact_converter().crc32(properties);
 
-					if (! (id > AUTO_INCREMENT_STARTS_AT)) // id might be null (not present) or zero (reset after the map was deleted)
+					if (is_new_card)
 					{
 						id = zfcTb.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
 

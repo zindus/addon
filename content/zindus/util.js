@@ -1037,3 +1037,27 @@ function url(key)
 
 	return ret;
 }
+
+// Not all Unicode characters are valid XML Characters - some characters are excluded.  See
+// From: http://www.w3.org/TR/2000/REC-xml-20001006#NT-Char
+// 	Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
+// This function returns a new string with the excluded characters removed
+//
+function stripInvalidXMLCharsFromString(str)
+{
+	zinAssert(str && str.length > 0);
+
+	var c;
+	var ret = "";
+
+	for (var i = 0; i < str.length; i++)
+	{
+		c = str.charCodeAt(i);
+
+		if ((c == 0x9) || (c == 0xA) || (c == 0xD) ||
+		    ((c >= 0x20) && (c <= 0xD7FF)) || ((c >= 0xE000) && (c <= 0xFFFD)) || ((c >= 0x10000) && (c <= 0x10FFFF)))
+			ret += str.charAt(i);
+	}
+
+	return ret;
+}
