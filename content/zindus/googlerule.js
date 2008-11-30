@@ -853,7 +853,7 @@ GoogleRuleUnique.prototype.updateView = function()
 	this.m_logger.debug("updateView: progress: " + (this.m_index + 1) + " of " + this.m_a_email.length);
 
 	var value = stringBundleString("gr.description.unique.value",
-			      [ this.m_a_email[this.m_index],                    // email
+			      [ convertCER(String(this.m_a_email[this.m_index]), CER_TO_ENTITY),
 			        stringBundleString("gr.more.information", [ GoogleRuleTrash.failCodeToHref(this.m_es.failcode()) ]) ]);
 
 	xulSetHtml('gr-description', value);

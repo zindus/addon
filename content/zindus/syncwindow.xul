@@ -38,9 +38,9 @@
 	buttons="cancel"
 	>
 
-	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
-	<script type="application/x-javascript"> <![CDATA[
+	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/scoperegistry.js"/>
+	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/includes.js"/>
+	<script type="application/x-javascript;version=1.7"> <![CDATA[
 		with (ZindusScopeRegistry.getScope()) { includejs('syncwindow.js'); }
 	]]> </script>
 
@@ -51,6 +51,10 @@
 		<spacer class="zindus-spacer" flex="1" /> 
 		<description  id="zindus-sw-progress-description" style="width:30em;height:4em;" />
 		<spacer class="zindus-spacer" flex="1" /> 
+		<hbox>
 		<button dlgtype="cancel" align="center" />
+		<spacer flex="1" /> 
+		<image align="right" src="chrome://zindus/content/zindus-processing-bw.gif" />
+		</hbox>
 	</vbox>
 </dialog>

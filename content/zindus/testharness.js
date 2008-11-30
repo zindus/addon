@@ -56,7 +56,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
-	// ret = ret && this.testGoogleContacts1();
+	ret = ret && this.testGoogleContacts1();
 	// ret = ret && this.testGoogleContacts2();
 	// ret = ret && this.testGoogleContacts3();
 	// ret = ret && this.testGoogleContacts4();
@@ -72,7 +72,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testRenameAddressBook();
 	// ret = ret && this.createGoogleRuleViolation();
 	// ret = ret && this.testGoogleContactWithe4x();
-	ret = ret && this.createLotsOfContacts();
+	// ret = ret && this.createLotsOfContacts();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -870,6 +870,13 @@ TestHarness.prototype.testGoogleContacts1 = function()
 	contact.updateFromProperties(properties);
 	delete properties["title"];
 	this.matchGoogleContact(contact, properties, {});
+
+	// test that we can find openSearch
+	//
+	var warn_msg = "<openSearch> element is missing from <feed>!";
+	var openSearch = { totalResults: 0 };
+	Xpath.setConditionalFromSingleElement(openSearch, 'totalResults', "//atom:feed/openSearch:totalResults", response, warn_msg);
+	this.m_logger.debug("entryActionGetContactGd1: openSearch totalResults: " + openSearch.totalResults);
 
 	return true;
 }

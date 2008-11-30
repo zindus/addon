@@ -36,9 +36,9 @@
 	ondialogaccept="window.wd.onAccept();"
 	>
 
-	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
-	<script type="application/x-javascript"> <![CDATA[
+	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/scoperegistry.js"/>
+	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/includes.js"/>
+	<script type="application/x-javascript;version=1.7"> <![CDATA[
 		with (ZindusScopeRegistry.getScope()) { includejs('configgoogle.js'); }
 	]]> </script>
 

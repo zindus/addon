@@ -795,7 +795,7 @@ function convertCER(str, dirn)
 	return ret;
 }
 
-function intMin(a, b)
+function ZinMin(a, b)
 {
 	return a < b ? a : b;
 }

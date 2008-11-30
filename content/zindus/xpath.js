@@ -68,7 +68,7 @@ Xpath.setConditional = function(object, property, xpath_query, doc, warning_msg)
 	if (node && node.nodeValue)
 		object[property] = node.nodeValue;
 	else if (warning_msg != null)
-		Xpath.logger.warn("Xpath: " + warning_msg);
+		logger().warn("Xpath: " + warning_msg);
 }
 
 Xpath.getOneNode = function(xpath_query, doc, contextNode)
@@ -108,7 +108,7 @@ Xpath.setConditionalFromSingleElement = function(object, property, xpath_query, 
 	if (functor.a.length == 1)
 		object[property] = String(functor.a[0]);
 	else if (warning_msg != null)
-		Xpath.logger.warn("Xpath: " + warning_msg);
+		logger().warn("Xpath: " + warning_msg);
 }
 
 Xpath.runFunctor = function(functor, xpath_query, doc, xpathResultType)
@@ -136,10 +136,48 @@ Xpath.runFunctor = function(functor, xpath_query, doc, xpathResultType)
 
 }
 
+Xpath.runFunctorGenerator = function(functor, xpath_query, doc, yield_count, xpathResultType)
+{
+	zinAssert(arguments.length == 4 || arguments.length == 5); // catch programming errors
+	zinAssert(typeof(doc.evaluate) == 'function');
+
+	if (arguments.length == 4)
+		xpathResultType = XPathResult.UNORDERED_NODE_ITERATOR_TYPE; // this used to be ANY_UNORDERED_NODE_ITERATOR_TYPE - why did that work?
+
+	var xpathResult = doc.evaluate(xpath_query, doc, Xpath.nsResolver, xpathResultType, null);
+	var count = 0;
+
+	try {
+		var node = xpathResult.iterateNext();
+
+		while (node)
+		{
+			functor.run(doc, node);
+			node = xpathResult.iterateNext();
+
+			logger().debug("AMHERE6: count: " + count + " yield_count: " + yield_count);
+
+			if (yield_count > 0)
+			{
+				if (++count % yield_count == 0)
+				{
+					logger().debug("AMHERE6: yield: count: " + count);
+					yield true;
+				}
+			}
+		}
+	}
+	catch(ex) {
+		Xpath.reportException(ex);
+	}
+
+	yield false;
+}
+
 Xpath.reportException = function(ex)
 {
-	Xpath.logger.error("Xpath: " + "Exception: " + ex);
-	Xpath.logger.error("Xpath: " + "Stack: " + ex.stack);
+	logger().error("Xpath: " + "Exception: " + ex);
+	logger().error("Xpath: " + "Stack: " + ex.stack);
 }
 
 Xpath.queryFromMethod = function(method)

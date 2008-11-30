@@ -27,7 +27,7 @@
 
 <overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
 
-	<script type="application/x-javascript"> <![CDATA[
+	<script type="application/x-javascript;version=1.7"> <![CDATA[
 		window.addEventListener('load',
 			function() {
 				with (ZindusScopeRegistry.getScope()) { window.zindus_statusbar = new StatusBar(); }

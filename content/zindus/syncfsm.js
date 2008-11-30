@@ -54,6 +54,8 @@ const AB_GAL                          = "GAL";
 const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/contacts/";
 const GOOGLE_PROJECTION               = "/thin";  // use 'thin' to avoid gd:extendedProperty elements
 const GOOGLE_SHOW_CONFLICTS_AT_A_TIME = 5;
+const GENERATOR_CHUNK_SIZE_FEED       = 500;
+const GENERATOR_CHUNK_SIZE_CARDS      = 1000;
 
 function SyncFsm()
 {
@@ -74,8 +76,8 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stAuthLogin:       { evCancel: 'final', evNext: 'stLoad',           evHttpRequest: 'stHttpRequest'                               },
 		stAuthPreAuth:     { evCancel: 'final', evNext: 'stAuthCheck',      evHttpRequest: 'stHttpRequest',                              },
 		stAuthCheck:       { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
-		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',                                         evLackIntegrity: 'final'     },
-		stLoadTb:          { evCancel: 'final', evNext: 'stGetAccountInfo',                                 evLackIntegrity: 'final'     },
+		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evRepeat:      'stLoad',        evLackIntegrity: 'final'     },
+		stLoadTb:          { evCancel: 'final', evNext: 'stGetAccountInfo', evRepeat:      'stLoadTb',      evLackIntegrity: 'final'     },
 		stGetAccountInfo:  { evCancel: 'final', evNext: 'stSelectSoapUrl',  evHttpRequest: 'stHttpRequest'                               },
 		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stSync',           evHttpRequest: 'stHttpRequest',                              },
 		stSync:            { evCancel: 'final', evNext: 'stSyncResponse',   evHttpRequest: 'stHttpRequest'                               },
@@ -83,20 +85,12 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stGetContactZm:    { evCancel: 'final', evNext: 'stGalConsider',    evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactZm'   },
 		stGalConsider:     { evCancel: 'final', evNext: 'stGalSync',        evSkip:        'stGalCommit'                                 },
 		stGalSync:         { evCancel: 'final', evNext: 'stGalCommit',      evHttpRequest: 'stHttpRequest'                               },
-		stGalCommit:       { evCancel: 'final', evNext: 'stConverge1'                                                                    },
-		stConverge1:       { evCancel: 'final', evNext: 'stConverge2',                                      evLackIntegrity: 'final'     },
-		stConverge2:       { evCancel: 'final', evNext: 'stConverge3',      evRepeat:      'stConverge2'                                 },
-		stConverge3:       { evCancel: 'final', evNext: 'stConverge4',      evRepeat:      'stConverge3'                                 },
-		stConverge4:       { evCancel: 'final', evNext: 'stConverge5',                                                                   },
-		stConverge5:       { evCancel: 'final', evNext: 'stConverge6',                                                                   },
-		stConverge6:       { evCancel: 'final', evNext: 'stConverge7',                                                                   },
-		stConverge7:       { evCancel: 'final', evNext: 'stConverge8',                                      evLackIntegrity: 'final'     },
-		stConverge8:       { evCancel: 'final', evNext: 'stConverge9',                                                                   },
-		stConverge9:       { evCancel: 'final', evNext: 'stGetContactPuZm',                                 evLackIntegrity: 'final'     },
+		stGalCommit:       { evCancel: 'final', evNext: 'stConverge'                                                                     },
+		stConverge:        { evCancel: 'final', evNext: 'stGetContactPuZm', evRepeat:      'stConverge',   evLackIntegrity: 'final'      },
 		stGetContactPuZm:  { evCancel: 'final', evNext: 'stUpdateTb',       evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactPuZm' },
-		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateZm'                                                                     },
+		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateZm',       evRepeat:      'stUpdateTb'                                  },
 		stUpdateZm:        { evCancel: 'final', evNext: 'stUpdateCleanup',  evHttpRequest: 'stHttpRequest', evRepeat: 'stUpdateZm'       },
-		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',                                         evLackIntegrity: 'final'     },
+		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',         evRepeat:    'stUpdateCleanup', evLackIntegrity: 'final'     },
 
 		stHttpRequest:     { evCancel: 'final', evNext: 'stHttpResponse'                                                                 },
 		stHttpResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
@@ -122,15 +116,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stGalConsider:          this.entryActionGalConsider,
 		stGalSync:              this.entryActionGalSync,
 		stGalCommit:            this.entryActionGalCommit,
-		stConverge1:            this.entryActionConverge1,
-		stConverge2:            this.entryActionConverge2,
-		stConverge3:            this.entryActionConverge3,
-		stConverge4:            this.entryActionConverge4,
-		stConverge5:            this.entryActionConverge5,
-		stConverge6:            this.entryActionConverge6,
-		stConverge7:            this.entryActionConverge7,
-		stConverge8:            this.entryActionConverge8,
-		stConverge9:            this.entryActionConverge9,
+		stConverge:             this.entryActionConverge,
 		stUpdateTb:             this.entryActionUpdateTb,
 		stUpdateZm:             this.entryActionUpdateZm,
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
@@ -163,26 +149,18 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		start:             { evCancel: 'final', evNext: 'stAuth',           evSkip: 'stAuthCheck',          evLackIntegrity: 'final'     },
 		stAuth:            { evCancel: 'final', evNext: 'stAuthCheck',      evHttpRequest: 'stHttpRequest', evLackIntegrity: 'final'     },
 		stAuthCheck:       { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
-		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',                                         evLackIntegrity: 'final'     },
-		stLoadTb:          { evCancel: 'final', evNext: 'stDelContactGd',                                   evLackIntegrity: 'final'     },
+		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evRepeat:      'stLoad',        evLackIntegrity: 'final'     },
+		stLoadTb:          { evCancel: 'final', evNext: 'stDelContactGd',   evRepeat:      'stLoadTb',      evLackIntegrity: 'final'     },
 		stDelContactGd:    { evCancel: 'final', evSkip: 'stGetContactGd1',  evHttpRequest: 'stHttpRequest', evNext: 'stDelContactGd'     },
 		stGetContactGd1:   { evCancel: 'final', evNext: 'stGetContactGd2',  evHttpRequest: 'stHttpRequest',                              },
 		stGetContactGd2:   { evCancel: 'final', evNext: 'stGetContactGd3',                                  evLackIntegrity: 'final'     },
-		stGetContactGd3:   { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge1',   evRepeat: 'stGetContactGd3', },
-		stDeXmlifyAddrGd:  { evCancel: 'final', evNext: 'stConverge1',      evHttpRequest: 'stHttpRequest', evRepeat: 'stDeXmlifyAddrGd' },
-		stConverge1:       { evCancel: 'final', evNext: 'stConverge2',                                      evLackIntegrity: 'final'     },
-		stConverge2:       { evCancel: 'final', evNext: 'stConverge3',      evRepeat:      'stConverge2'                                 },
-		stConverge3:       { evCancel: 'final', evNext: 'stConverge4',      evRepeat:      'stConverge3'                                 },
-		stConverge4:       { evCancel: 'final', evNext: 'stConverge5'                                                                    },
-		stConverge5:       { evCancel: 'final', evNext: 'stConverge6',                                                                   },
-		stConverge6:       { evCancel: 'final', evNext: 'stConverge7',                                                                   },
-		stConverge7:       { evCancel: 'final', evNext: 'stConverge8',                                      evLackIntegrity: 'final'     },
-		stConverge8:       { evCancel: 'final', evNext: 'stConverge9',                                                                   },
-		stConverge9:       { evCancel: 'final', evNext: 'stGetContactPuGd',                                 evLackIntegrity: 'final'     },
+		stGetContactGd3:   { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge',    evRepeat: 'stGetContactGd3', },
+		stDeXmlifyAddrGd:  { evCancel: 'final', evNext: 'stConverge',       evHttpRequest: 'stHttpRequest', evRepeat: 'stDeXmlifyAddrGd' },
+		stConverge:        { evCancel: 'final', evNext: 'stGetContactPuGd', evRepeat:      'stConverge',    evLackIntegrity: 'final'     },
 		stGetContactPuGd:  { evCancel: 'final', evNext: 'stUpdateGd',       evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactPuGd' },
 		stUpdateGd:        { evCancel: 'final', evNext: 'stUpdateTb',       evHttpRequest: 'stHttpRequest', evRepeat: 'stUpdateGd'       },
-		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateCleanup'                                                                },
-		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',                                         evLackIntegrity: 'final'     },
+		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateCleanup',  evRepeat:      'stUpdateTb'                                  },
+		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',         evRepeat:    'stUpdateCleanup', evLackIntegrity: 'final'     },
 
 		stHttpRequest:     { evCancel: 'final', evNext: 'stHttpResponse'                                                                 },
 		stHttpResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
@@ -202,15 +180,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stGetContactGd2:        this.entryActionGetContactGd2,
 		stGetContactGd3:        this.entryActionGetContactGd3,
 		stDeXmlifyAddrGd:       this.entryActionDeXmlifyAddrGd,
-		stConverge1:            this.entryActionConverge1,
-		stConverge2:            this.entryActionConverge2,
-		stConverge3:            this.entryActionConverge3,
-		stConverge4:            this.entryActionConverge4,
-		stConverge5:            this.entryActionConverge5,
-		stConverge6:            this.entryActionConverge6,
-		stConverge7:            this.entryActionConverge7,
-		stConverge8:            this.entryActionConverge8,
-		stConverge9:            this.entryActionConverge9,
+		stConverge:             this.entryActionConverge,
 		stGetContactPuGd:       this.entryActionGetContactPuGd,
 		stUpdateGd:             this.entryActionUpdateGd,
 		stUpdateTb:             this.entryActionUpdateTb,
@@ -468,15 +438,35 @@ SyncFsm.prototype.zfcFileNameFromSourceid = function(sourceid)
 	return hyphenate("-", sourceid) + ".txt";
 }
 
+SyncFsm.prototype.runEntryActionGenerator = function(state, event, generator_factory_fn)
+{
+	var nextEvent;
+
+	if (event != 'evRepeat')
+		this.state.m_generator = generator_factory_fn.call(this, state);
+
+	nextEvent = this.state.m_generator.next() ? 'evRepeat' : 'evNext';
+
+	if (this.state.stopFailCode != null)
+		nextEvent = 'evLackIntegrity';
+
+	return nextEvent;
+}
+
+SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
+{
+	continuation(this.runEntryActionGenerator(state, event, this.entryActionLoadGenerator));
+}
+
 // reset
 // - test:
 //   - when: is_first_in_chain() is true
 //   - cond: it's a reset (or first install) when any of lastsync.txt, gid.txt, or 1-tb.txt don't exist
 //   - cond: the account_signature in lastsync.txt has changed
 // - do: 
-//   - set sfcd.is_reset(true); ... indicates that this chain of syncfsm's started with a reset
 //   - remove all data stores - this forces a slow sync of the account
 //   - initialise lastsync.txt, gid.txt, zfcTb, tb addressbook
+//   - do a slow sync
 // slow sync
 // - test:
 //   - when: every fsm
@@ -492,7 +482,7 @@ SyncFsm.prototype.zfcFileNameFromSourceid = function(sourceid)
 // as far as integrity is concerned they are a single unit.
 //
 
-SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
+SyncFsm.prototype.entryActionLoadGenerator = function(state)
 {
 	this.state.stopwatch.mark(state + " 1");
 
@@ -569,15 +559,13 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		}
 
 		this.debug("entryActionLoad: " + (is_reset ? msg_reset : "is_reset: false"));
-
-		sfcd.is_reset(is_reset);
 	}
 
 	this.state.stopwatch.mark(state + " 4");
 
 	// load (or reset) the account-independent data files
 	//
-	if (sfcd.is_first_in_chain() && sfcd.is_reset())
+	if (sfcd.is_first_in_chain() && is_reset)
 	{
 		this.debug("entryActionLoad: forcing a reset - removing data files and initialising maps and tb attributes...");
 
@@ -586,7 +574,11 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 		this.initialiseZfcLastSync();
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
 		this.initialiseZfcAutoIncrement(this.zfcTb());
-		this.initialiseTbAddressbook();
+
+		generator = this.initialiseTbAddressbookGenerator();
+
+		while (generator.next())
+			yield true;
 	}
 	else
 	{
@@ -663,7 +655,13 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 7");
 
-	if (this.isConsistentDataStore(this.state.aReverseGid))
+	var result    = { is_consistent: true };
+	var generator = this.isConsistentDataStoreGenerator(result, this.state.aReverseGid);
+
+	while (generator.next())
+		yield true;
+
+	if (result.is_consistent)
 	{
 		nextEvent = 'evNext';
 
@@ -690,34 +688,41 @@ SyncFsm.prototype.entryActionLoad = function(state, event, continuation)
 	// for (filename in a_zfc)
 	// 	this.debug("entryActionLoad: filename: " + filename + " zfc: " + a_zfc[filename].toString());
 
-	continuation(nextEvent);
+	yield false;
 }
 
 // Could also (but don't) test that:
 // - 'ver' attributes make sense
 
-SyncFsm.prototype.isConsistentDataStore = function(aReverse)
+SyncFsm.prototype.isConsistentDataStoreGenerator = function(result, aReverse)
 {
-	var ret = true;
-
 	this.state.stopwatch.mark("isConsistentDataStore: " + " 1");
-	ret = ret && this.isConsistentZfcAutoIncrement(this.state.zfcGid);
+	result.is_consistent = result.is_consistent && this.isConsistentZfcAutoIncrement(this.state.zfcGid);
 	this.state.stopwatch.mark("isConsistentDataStore: " + " 2");
-	ret = ret && this.isConsistentZfcAutoIncrement(this.zfcTb());
+	result.is_consistent = result.is_consistent && this.isConsistentZfcAutoIncrement(this.zfcTb());
 	this.state.stopwatch.mark("isConsistentDataStore: " + " 3");
-	ret = ret && this.isConsistentGid(aReverse);
+	result.is_consistent = result.is_consistent && this.isConsistentGid(aReverse);
 	this.state.stopwatch.mark("isConsistentDataStore: " + " 4");
-	ret = ret && this.isConsistentSources();
+
+	if (result.is_consistent)
+	{
+		var generator = this.isConsistentSourcesGenerator(result);
+
+		while (generator.next())
+			yield true;
+	}
+
 	this.state.stopwatch.mark("isConsistentDataStore: " + " 5");
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
-		ret = ret && this.isConsistentZfcAutoIncrement(this.zfcPr());
+		result.is_consistent = result.is_consistent && this.isConsistentZfcAutoIncrement(this.zfcPr());
 		this.state.stopwatch.mark("isConsistentDataStore: " + " 6");
-		ret = ret && this.isConsistentSharedFolderReferences();
+		result.is_consistent = result.is_consistent && this.isConsistentSharedFolderReferences();
 		this.state.stopwatch.mark("isConsistentDataStore: " + " 7");
 	}
-	return ret;
+
+	yield false;
 }
 
 // every (sourceid, luid) in the gid must be in the corresponding source (tested by reference to aReverseGid)
@@ -818,12 +823,14 @@ SyncFsm.prototype.isConsistentGidParse = function(aReverseOut)
 	return is_consistent;
 }
 
-SyncFsm.prototype.isConsistentSources = function()
+SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 {
-	var is_consistent   = true;
 	var a_not_persisted = [ FeedItem.ATTR_KEEP, FeedItem.ATTR_PRES ];
 	var error_msg       = "";
 	var context         = this;
+	var sourceid;
+
+	zinAssert(result.is_consistent);
 
 	var functor_foreach_luid = {
 		state: this.state,
@@ -834,44 +841,49 @@ SyncFsm.prototype.isConsistentSources = function()
 
 			// all items in a source must be of interest (which basically tests that the 'l' attribute is correct)
 			//
-			if (is_consistent && !SyncFsm.isOfInterest(zfc, luid))
+			if (result.is_consistent && !SyncFsm.isOfInterest(zfc, luid))
 			{
 				error_msg += "inconsistency: item not of interest: sourceid: " + sourceid + " luid: " + luid + " zfi: " + zfi.toString();
-				is_consistent = false;
+				result.is_consistent = false;
 			}
 
 			// all items in a source must be in the gid (tested via reference to aReverse)
 			//
-			if (is_consistent && SyncFsm.isRelevantToGid(zfc, luid) && !isPropertyPresent(this.state.aReverseGid[sourceid], luid))
+			if (result.is_consistent && SyncFsm.isRelevantToGid(zfc, luid) && !isPropertyPresent(this.state.aReverseGid[sourceid], luid))
 			{
 				error_msg += "inconsistency vs gid: sourceid: " + sourceid + " luid: " + luid;
-				is_consistent = false;
+				result.is_consistent = false;
 			}
 
-			if (is_consistent)
+			if (result.is_consistent)
 				for (var i = 0; i < a_not_persisted.length; i++)
 					if (zfi.isPresent(a_not_persisted[i]))
 					{
 						error_msg += "inconsistency re: " + a_not_persisted[i] + ": sourceid: " + sourceid + " luid: " + luid;
-						is_consistent = false;
+						result.is_consistent = false;
 						break;
 					}
 
-			return is_consistent;
+			return result.is_consistent;
 		}
 	};
 
-	for (var sourceid in this.state.sources)
+	for (sourceid in this.state.sources)
 	{
 		this.state.stopwatch.mark("isConsistentSources sourceid: " + sourceid + " starts");
 		zfc = this.zfc(sourceid);
 		zfc.forEach(functor_foreach_luid);
 		this.state.stopwatch.mark("isConsistentSources sourceid: " + sourceid + " ends");
+
+		if (!result.is_consistent)
+			break;
+		else
+			yield true;
 	}
 
-	this.debug("isConsistentSources: " + is_consistent + " " + error_msg);
+	this.debug("isConsistentSources: " + result.is_consistent + " " + error_msg);
 
-	return is_consistent;
+	yield false;
 }
 
 SyncFsmZm.prototype.isConsistentSharedFolderReferences = function()
@@ -988,8 +1000,10 @@ SyncFsm.prototype.initialiseZfcGdFakeContactsFolder = function(zfc)
 
 // remove any luid attributes in the addressbook
 //
-SyncFsm.prototype.initialiseTbAddressbook = function()
+SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 {
+	var aUri = new Object();
+
  	var functor_foreach_card = {
 		state: this.state,
 		run: function(uri, item)
@@ -1007,16 +1021,27 @@ SyncFsm.prototype.initialiseTbAddressbook = function()
 
 	var functor_foreach_addressbook = {
 		state: this.state,
-
 		run: function(elem)
 		{
-			this.state.m_addressbook.forEachCard(this.state.m_addressbook.directoryProperty(elem, "URI"), functor_foreach_card);
+			aUri[this.state.m_addressbook.directoryProperty(elem, "URI")] = true;;
 
 			return true;
 		}
 	};
 
 	this.state.m_addressbook.forEachAddressBook(functor_foreach_addressbook);
+
+	var uri, generator;
+
+	for (uri in aUri)
+	{
+		generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, GENERATOR_CHUNK_SIZE_CARDS);
+
+		while (generator.next())
+			yield true;
+	}
+
+	yield false;
 }
 
 SyncFsm.prototype.removeSourceIdFromGid = function(sourceid)
@@ -2048,17 +2073,16 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	continuation('evNext');
 }
 
+SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
+{
+	continuation(this.runEntryActionGenerator(state, event, this.entryActionLoadTbGenerator));
+}
+
 // Notes:
 // - A big decision in simplifying the loading of the tb addressbook and cards was the decision to give up convergence.
 //   If there's a problem, the sync just aborts and the user has to fix it.
-// - LoadTb1 and LoadTb2 aren't split for performance reasons.  They're split because LoadTb1 potentially renames an
-//   addressbook (Zimbra Emailed Contacts to it's localised equivalent) and Thunderbird has some sort of race condition such that
-//   *sometimes* after renaming the addressbook it subsequently loads fine but when the sync is finished there's no addressbook in the UI!
-//   My guess is that this tb behaviour is related to it being unable to propagation some sort of (preference?) notification.  
-//   Putting an fsm state change between the 'rename' and the 'iteration over all addressbooks' seems to
-//   give the tb ab time to sort itself out.  Blech!
 //
-SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
+SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 {
 	this.state.stopwatch.mark(state + " 1");
 
@@ -2088,6 +2112,8 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 		gd_ab_name_internal = this.gdAddressbookName('internal');
 		gd_ab_name_public   = this.gdAddressbookName('public');
+
+		this.debug("loadTb: gd_ab_name_public: " + gd_ab_name_public + " gd_ab_name_internal: " + gd_ab_name_internal);
 	}
 
 	if (this.formatPr() == FORMAT_GD && !this.is_slow_sync(this.state.sourceid_pr))
@@ -2179,7 +2205,12 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 
 	this.state.foreach_tb_card_functor = this.get_foreach_card_functor();
 
-	passed = passed && this.loadTbCards(aUri);                  // 5. load cards, excluding mailing lists and their cards
+	var generator = this.loadTbCardsGenerator(aUri);  // 5. load cards, excluding mailing lists and their cards
+
+	while (generator.next())
+		yield true;
+
+	passed = (this.state.stopFailCode == null);
 
 	this.state.stopwatch.mark(state + " 3: passed: " + passed);
 
@@ -2199,15 +2230,13 @@ SyncFsm.prototype.entryActionLoadTb = function(state, event, continuation)
 	{
 		passed = passed && this.testForFolderPresentInZfcTb(TB_PAB);
 
-		if (!this.is_reset())
+		if (!this.is_slow_sync(this.state.sourceid_pr))
 		{
 			passed = passed && this.testForReservedFolderInvariant(TB_PAB);
 		}
 	}
 
-	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
-
-	continuation(nextEvent);
+	yield false;
 }
 
 SyncFsm.prototype.get_foreach_card_functor = function()
@@ -2343,7 +2372,7 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 	var zfcTbPost = this.zfcTb();
 	var ret;
 
-	zinAssert(!this.state.stopFailCode && !this.is_reset());
+	zinAssert(!this.state.stopFailCode && !this.is_slow_sync(this.state.sourceid_pr));
 
 	var pre_id  = SyncFsm.zfcFindFirstFolder(zfcTbPre, name);
 	var post_id = SyncFsm.zfcFindFirstFolder(zfcTbPost, name);
@@ -2507,7 +2536,7 @@ SyncFsm.prototype.getAbNameNormalised = function(elem)
 
 SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 {
-	var msg = "LocaliseEmailedContacts: is_reset: " + this.is_reset();
+	var msg = "LocaliseEmailedContacts: ";
 
 	if (this.state.m_sfcd.first_sourceid_of_format(FORMAT_ZM) == this.state.sourceid_pr)
 	{
@@ -2685,7 +2714,7 @@ SyncFsm.prototype.loadTbAddressBooks = function()
 	return aUri;
 }
 
-SyncFsm.prototype.loadTbCards = function(aUri)
+SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 {
 	// when you iterate through cards in an addressbook, you also see cards that are members of mailing lists
 	// and the only way I know of identifying such cards is to iterate to them via a mailing list uri.
@@ -2705,7 +2734,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 	//
 	var aMailListUri = new Object();
 	var zfcTb        = this.zfcTb();
-	var msg, functor_foreach_card;
+	var msg, functor_foreach_card, generator;
 
 	functor_foreach_card = {
 		state: this.state,
@@ -2773,7 +2802,12 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 	};
 
 	for (uri in aUri)
-		this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
+	{
+		generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, GENERATOR_CHUNK_SIZE_CARDS);
+
+		while (generator.next())
+			yield true;
+	}
 
 	if (this.state.stopFailCode == null)
 	{
@@ -2800,7 +2834,12 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 		};
 
 		for (uri in aMailListUri)
-			this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
+		{
+			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, GENERATOR_CHUNK_SIZE_CARDS);
+
+			while (generator.next())
+				yield true;
+		}
 
 		this.state.m_logger.debug(msg);
 
@@ -2948,7 +2987,12 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 		};
 
 		for (uri in aUri)
-			this.state.m_addressbook.forEachCard(uri, functor_foreach_card);
+		{
+			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, GENERATOR_CHUNK_SIZE_CARDS);
+
+			while (generator.next())
+				yield true;
+		}
 
 		// deletion detection works as follows.
 		// 1. a FeedItem.ATTR_PRES attribute was added in pass 3 above
@@ -2977,7 +3021,7 @@ SyncFsm.prototype.loadTbCards = function(aUri)
 		this.zfcTb().forEach(functor_mark_deleted, FeedCollection.ITER_NON_RESERVED);
 	}
 
-	return this.state.stopFailCode == null;
+	yield false;
 }
 
 
@@ -3405,9 +3449,10 @@ SyncFsm.prototype.twiddleMapsForZmImmutable = function(luid_zm)
 	}
 }
 
-SyncFsm.prototype.updateGidDoChecksums = function(event)
+SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 {
 	var context = this;
+	var sourceid, zfc, foreach_msg, generator, event;
 
 	var functor_foreach_luid_do_checksum = {
 		state: this.state,
@@ -3462,39 +3507,38 @@ SyncFsm.prototype.updateGidDoChecksums = function(event)
 		}
 	};
 
-	if (event == 'evNext')
+	for (sourceid in this.state.sources)
 	{
-		this.state.itSource = Iterator(this.state.sources, true);
-		this.state.itSource.m_is_finished = false;
-	}
+		zfc         = this.zfc(sourceid);
+		foreach_msg = "about to run do_checksum functor for sourceid: " + sourceid + "\n";
+		generator   = zfc.forEachGenerator(functor_foreach_luid_do_checksum, GENERATOR_CHUNK_SIZE_FEED);
 
-	try {
-		var sourceid    = this.state.itSource.next();
-		var zfc         = this.zfc(sourceid);
-		var foreach_msg = "about to run do_checksum functor for sourceid: " + sourceid + "\n";
-
-		zfc.forEach(functor_foreach_luid_do_checksum);
+		while (generator.next())
+			yield true;
 
 		this.state.m_logger.debug(foreach_msg);
 	}
-	catch(ex if ex instanceof StopIteration) {
-		this.state.itSource.m_is_finished = true;
+
+	if (true) // TODO ==> false
+	{
+		let msg = "updateGidDoChecksums: aHasChecksum: ";
+		for (var key in this.state.aHasChecksum)
+			msg += "aHasChecksum  key: " + key + ": " + this.state.aHasChecksum[key];
+		for (sourceid in this.state.sources)
+			for (var luid in this.state.aChecksum[sourceid])
+				msg += "aChecksum sourceid: " + sourceid + " luid=" + luid + ": " + this.state.aChecksum[sourceid][luid];
+		this.debug(msg);
 	}
 
-	// this.state.m_logger.debug("updateGidDoChecksums: aHasChecksum: ");
-	// for (var key in this.state.aHasChecksum)
-	// 	this.state.m_logger.debug("aHasChecksum  key: " + key + ": " + this.state.aHasChecksum[key]);
-	// for (sourceid in this.state.sources)
-	//	for (var luid in this.state.aChecksum[sourceid])
-	// 		this.state.m_logger.debug("aChecksum sourceid: " + sourceid + " luid=" + luid + ": " + this.state.aChecksum[sourceid][luid]);
+	yield false;
 }
 
-SyncFsm.prototype.updateGidFromSources = function(event)
+SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 {
 	var zfcGid  = this.state.zfcGid;
 	var reverse = this.state.aReverseGid; // bring it into the local namespace
 	var context = this;
-	var sourceid, zfc, format, foreach_msg;
+	var sourceid, zfc, format, foreach_msg, event, generator;
 
 	var functor_foreach_luid_fast_sync = {
 		state: this.state,
@@ -3580,7 +3624,7 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 					if (isPropertyPresent(this.state.aHasChecksum, key) && !isObjectEmpty(this.state.aHasChecksum[key]))
 						for (var luid_possible in this.state.aHasChecksum[key])
 							if (this.state.aHasChecksum[key][luid_possible] &&
-							    context.isTwin(sourceid_tb, sourceid, luid_possible, luid, context.state.m_contact_converter_vary_none))
+						    	context.isTwin(sourceid_tb, sourceid, luid_possible, luid, context.state.m_contact_converter_vary_none))
 							{
 								luid_tb = luid_possible;
 								break;
@@ -3608,46 +3652,25 @@ SyncFsm.prototype.updateGidFromSources = function(event)
 		}
 	};
 
-	if (event == 'evNext')
+	for (sourceid in this.state.sources)
 	{
-		this.state.itSource = Iterator(this.state.sources, true);
-		this.state.itSource.m_is_finished = false;
-	}
-
-	try {
-		if ((event == 'evNext') || (this.state.itCollection == null) || this.state.itCollection.m_is_finished)
-			this.state.itSource.m_sourceid = this.state.itSource.next();
-
-		sourceid    = this.state.itSource.m_sourceid;
 		zfc         = this.zfc(sourceid);
 		format      = this.state.sources[sourceid]['format'];
 		foreach_msg = "";
-
-		if (event == 'evNext')
-			zinAssert(format == FORMAT_TB); // the first time through the format has to be TB
+		event       = 'evRepeat';
 
 		if ((format == FORMAT_TB) || !this.is_slow_sync(sourceid))
-			zfc.forEach(functor_foreach_luid_fast_sync);
+			generator = zfc.forEachGenerator(functor_foreach_luid_fast_sync, GENERATOR_CHUNK_SIZE_FEED);
 		else
-		{
-			if (this.state.itCollection == null || this.state.itCollection.m_is_finished)
-			{
-				this.state.itCollection = Iterator(zfc.m_collection, true);
-				this.state.itCollection.m_is_finished = false;
-				this.state.itCollection.m_count       = 0;
-				this.state.itCollection.m_chunk       = 400;
-			}
+			generator = zfc.forEachGenerator(functor_foreach_luid_slow_sync, GENERATOR_CHUNK_SIZE_FEED);
 
-			zfc.forEachIterator(functor_foreach_luid_slow_sync, this.state.itCollection);
-		}
+		while (generator.next())
+			yield true;
 
 		this.debug(foreach_msg);
-		// if (zfc.length() < 400)
-		// this.debug("slow_sync: and fast_sync: debugging suppressed because it's too large: sourceid: " + sourceid);
 	}
-	catch(ex if ex instanceof StopIteration) {
-		this.state.itSource.m_is_finished = true;
-	}
+
+	yield false;
 }
 
 SyncFsm.prototype.updateGidFromSourcesSanityCheck = function()
@@ -4023,7 +4046,7 @@ SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b, cont
 	return is_twin;
 }
 
-SyncFsm.prototype.buildGcs = function()
+SyncFsm.prototype.buildGcsGenerator = function()
 {
 	var aGcs          = new Object();  // an associative array where the key is a gid and the value is a Gcs object
 	var aZfcCandidate = new Object();  // a copy of the luid maps updated as per this sync
@@ -4031,6 +4054,7 @@ SyncFsm.prototype.buildGcs = function()
 	var zfcGid        = this.state.zfcGid;
 	var reverse       = this.state.aReverseGid; // bring it into the local namespace
 	var context       = this;
+	var sourceid, generator;
 
 	for (var i in this.state.sources)
 		aZfcCandidate[i] = this.zfc(i).clone(); // cloned because items get deleted out of this during merge
@@ -4209,12 +4233,19 @@ SyncFsm.prototype.buildGcs = function()
 	};
 
 	for (sourceid in this.state.sources)
-		aZfcCandidate[sourceid].forEach(functor_foreach_candidate);
-	
+	{
+		generator = aZfcCandidate[sourceid].forEachGenerator(functor_foreach_candidate, GENERATOR_CHUNK_SIZE_FEED);
+
+		while (generator.next())
+			yield true;
+	}
+
+	yield true;
+
 	var a_winner_tb_state_win = new Array();
 	var msg = "";
 
-	for (var gid in aGcs)
+	for (let gid in aGcs)
 	{
 		if (aGcs[gid].sourceid == SOURCEID_TB && aGcs[gid].state == Gcs.WIN)
 			a_winner_tb_state_win.push(gid);
@@ -4226,7 +4257,9 @@ SyncFsm.prototype.buildGcs = function()
 	      (a_winner_tb_state_win.length > 0 ?
 		  	("\n " + aGcs[a_winner_tb_state_win[0]].toString() + ": " + a_winner_tb_state_win.toString()) : ""));
 
-	return aGcs;
+	this.state.aGcs = aGcs;
+
+	yield false;
 }
 
 SyncFsm.prototype.isInScopeGid = function(gid)
@@ -5149,121 +5182,126 @@ SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
 	continuation(nextEvent);
 }
 
-SyncFsm.prototype.entryActionConverge2 = function(state, event, continuation)
+SyncFsm.prototype.entryActionConverge = function(state, event, continuation)
 {
-	var nextEvent;
-
-	this.state.stopwatch.mark(state + " 1");
-
-	if (this.is_slow_sync(this.state.sourceid_pr))
-	{
-		this.updateGidDoChecksums(event);
-
-		nextEvent = (this.state.itSource.m_is_finished ? 'evNext' : 'evRepeat');
-	}
-	else
-		nextEvent = 'evNext';
-
-	continuation(nextEvent);
+	continuation(this.runEntryActionGenerator(state, event, this.entryActionConvergeGenerator));
 }
 
-SyncFsm.prototype.entryActionConverge3 = function(state, event, continuation)
+SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 {
-	this.state.stopwatch.mark(state + " 1");
-
-	this.updateGidFromSources(event);                    // 1. map all luids into a single namespace (the gid)
-
-	continuation(this.state.itSource.m_is_finished ? 'evNext' : 'evRepeat');
-}
-
-SyncFsm.prototype.entryActionConverge4 = function(state, event, continuation)
-{
-	this.state.stopwatch.mark(state + " 1");
-
-	this.updateGidFromSourcesSanityCheck();              // 2. sanity check
-
-	continuation('evNext');
-}
-
-SyncFsm.prototype.entryActionConverge5 = function(state, event, continuation)
-{
-	this.state.stopwatch.mark(state + " 1");
-
-	if (this.formatPr() == FORMAT_GD)
-	{
-		if (this.is_slow_sync(this.state.sourceid_pr) && this.state.gd_is_sync_postal_address)
-			this.twiddleMapsForGdPostalAddress();
-
-		if (!this.is_slow_sync(this.state.sourceid_pr))
-			this.twiddleMapsToPairNewMatchingContacts();
-	}
-	else if (this.formatPr() == FORMAT_ZM)
-	{
-		this.twiddleMapsForZmImmutables();
-	}
-
-	continuation('evNext');
-}
-
-SyncFsm.prototype.entryActionConverge6 = function(state, event, continuation)
-{
-	this.state.stopwatch.mark(state + " 1");
-
-	this.state.aGcs = this.buildGcs();                   // 3. reconcile the sources (via the gid) into a single truth
-	                                                     //    winners and conflicts are identified here
-	this.state.stopwatch.mark(state + " 2");
-
-	this.buildPreUpdateWinners(this.state.aGcs);         // 4. save winner state before winner update to distinguish ms vs md update
-
-	continuation('evNext');
-}
-
-SyncFsm.prototype.entryActionConverge7 = function(state, event, continuation)
-{
-	this.state.stopwatch.mark(state + " 1");
-
 	var passed = true;
-	
+	var nextEvent, generator;
+
+	this.state.m_progress_count = 0;  // syncfsmobserver reckons there are 6 subdivisions here
+
+	this.state.stopwatch.mark(state + " Converge: enters: ");
+
+	this.debug("entryActionConverge: zfcTb:\n" + this.zfcTb().toString());
+	this.debug("entryActionConverge: zfcPr:\n" + this.zfcPr().toString());
+
+	if (this.formatPr() == FORMAT_ZM)
+	{
+		passed = passed && this.sharedFoldersUpdateZm();
+
+		if (passed)
+			this.fakeDelOnUninterestingContacts();
+
+		passed = passed && this.testForEmailedContactsMatch();
+
+		passed = passed && this.testForCreateSharedAddressbook();
+	}
+	else if (this.formatPr() == FORMAT_GD && this.is_slow_sync(this.state.sourceid_pr))
+		passed = passed && this.testForGdServerConstraints();
+
+	this.state.stopwatch.mark(state + " Converge: updateGidDoChecksums: " + this.state.m_progress_count++);
+
+	if (passed)
+	{
+		yield true;
+
+		if (this.is_slow_sync(this.state.sourceid_pr))
+		{
+			generator = this.updateGidDoChecksumsGenerator();
+
+			while (generator.next())
+				yield true;
+		}
+
+		this.state.stopwatch.mark(state + " Converge: updateGidFromSources: " + this.state.m_progress_count++);
+		yield true;
+
+		generator = this.updateGidFromSourcesGenerator(); // 1. map all luids into a single namespace (the gid)
+
+		while (generator.next())
+			yield true;
+
+		this.state.stopwatch.mark(state + " Converge: updateGidFromSourcesSanityCheck: " + this.state.m_progress_count++);
+		yield true;
+
+		this.updateGidFromSourcesSanityCheck();              // 2. sanity check
+
+		this.state.stopwatch.mark(state + " Converge: twiddle: " + this.state.m_progress_count++);
+		yield true;
+
+		if (this.formatPr() == FORMAT_GD)
+		{
+			if (this.is_slow_sync(this.state.sourceid_pr) && this.state.gd_is_sync_postal_address)
+				this.twiddleMapsForGdPostalAddress();
+
+			if (!this.is_slow_sync(this.state.sourceid_pr))
+				this.twiddleMapsToPairNewMatchingContacts();
+		}
+		else if (this.formatPr() == FORMAT_ZM)
+		{
+			this.twiddleMapsForZmImmutables();
+		}
+
+		this.state.stopwatch.mark(state + " Converge: buildGcs: " + this.state.m_progress_count++);
+		yield true;
+
+		generator = this.buildGcsGenerator();                // 3. reconcile the sources (via the gid) into a single truth
+	                                                     //    winners and conflicts are identified here
+		while (generator.next())
+			yield true;
+
+		this.state.stopwatch.mark(state + " Converge: buildPreUpdateWinners: " + this.state.m_progress_count++);
+		yield true;
+
+		this.buildPreUpdateWinners(this.state.aGcs);         // 4. save winner state before winner update to distinguish ms vs md update
+	}
+
+	this.state.stopwatch.mark(state + " Converge: conflict detection: " + this.state.m_progress_count++);
+	yield true;
+
 	passed = passed && this.testForFolderNameDuplicate(this.state.aGcs); // 4. a bit of conflict detection
 
 	if (this.formatPr() == FORMAT_GD && this.is_slow_sync(this.state.sourceid_pr))
 		passed = passed && this.testForGdRemoteConflictOnSlowSync();
 
-	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
+	if (passed)
+	{
+		this.state.stopwatch.mark(state + " Converge: build and run winners: " + this.state.m_progress_count++);
+		yield true;
 
-	continuation(nextEvent);
-}
+		let aSuoWinners = this.suoBuildWinners(this.state.aGcs);   // 6.  generate operations required to bring meta-data for winners up to date
 
-SyncFsm.prototype.entryActionConverge8 = function(state, event, continuation)
-{
-	var aSuoWinners;
+		this.suoRunWinners(aSuoWinners);                       // 7.  run the operations that update winner meta-data
 
-	this.state.stopwatch.mark(state + " 1");
+		this.state.stopwatch.mark(state + " Converge: suoBuildLosers: " + this.state.m_progress_count++);
+		yield true;
 
-	aSuoWinners = this.suoBuildWinners(this.state.aGcs);   // 6.  generate operations required to bring meta-data for winners up to date
+		this.state.aSuo = this.suoBuildLosers(this.state.aGcs);// 8.  generate the operations required to bring the losing sources up to date
 
-	this.suoRunWinners(aSuoWinners);                       // 7.  run the operations that update winner meta-data
+		this.state.stopwatch.mark(state + " Converge: removeContactDeletesWhenFolderIsBeingDeleted: " + this.state.m_progress_count++);
 
-	continuation('evNext');
-}
+		this.removeContactDeletesWhenFolderIsBeingDeleted();   // 9. remove contact deletes when folder is being deleted
 
-SyncFsm.prototype.entryActionConverge9 = function(state, event, continuation)
-{
-	this.state.stopwatch.mark(state + " 1");
+		passed = this.testForConflictingUpdateOperations();    // 10. abort if any update operations could lead to potential inconsistency
+	}
 
-	this.state.aSuo = this.suoBuildLosers(this.state.aGcs);// 8.  generate the operations required to bring the losing sources up to date
+	this.state.stopwatch.mark(state + " Converge: done: " + this.state.m_progress_count++)
 
-	this.state.stopwatch.mark(state + " 2");
-
-	this.removeContactDeletesWhenFolderIsBeingDeleted();   // 9. remove contact deletes when folder is being deleted
-
-	passed = this.testForConflictingUpdateOperations();    // 10. abort if any update operations could lead to potential inconsistency
-
-	this.state.stopwatch.mark(state + " 3");
-
-	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
-
-	continuation(nextEvent);
+	yield false;
 }
 
 // Add the ATTR_KEEP attribute to deleted tb mapitems when the gid has references to sources that aren't being synced.
@@ -5321,8 +5359,14 @@ SyncFsm.prototype.keepCertainDeletedTbMapItems = function()
 
 SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 {
+	continuation(this.runEntryActionGenerator(state, event, this.entryActionUpdateTbGenerator));
+}
+
+SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
+{
 	var i, gid, id, type, sourceid_target, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
 	var zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg;
+	var count = 0;
 
 	this.state.stopwatch.mark(state);
 
@@ -5691,9 +5735,12 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 			SyncFsm.setLsoToGid(zfiGid, zfcTarget.get(luid_target));
 
 		this.state.m_logger.debug("entryActionUpdateTb: " + msg);
+
+		if (++count > GENERATOR_CHUNK_SIZE_CARDS)
+			yield true;
 	}
 
-	continuation('evNext');
+	yield false;
 }
 
 // case Suo.ADD:
@@ -6613,6 +6660,11 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 
 SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation)
 {
+	continuation(this.runEntryActionGenerator(state, event, this.entryActionUpdateCleanupGenerator));
+}
+
+SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
+{
 	var nextEvent = 'evNext';
 	var context = this;
 
@@ -6633,6 +6685,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		this.debug("UpdateCleanup: zfcGid: " + this.state.zfcGid.toString());
 
 		this.state.stopwatch.mark(state + " 3");
+		yield true;
 
 		//  delete the luid item if it has a DEL attribute (or zimbra: it's not of interest)
 		//  delete the mapping between a gid and an luid when the luid is not of interest
@@ -6737,7 +6790,13 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 		this.debug(msg);
 		this.state.stopwatch.mark(state + " 5");
 
-		if (!this.isConsistentDataStore())
+		var result    = { is_consistent: true };
+		var generator = this.isConsistentDataStoreGenerator(result);
+
+		while (generator.next())
+			yield true;
+
+		if (!result.is_consistent)
 		{
 			this.state.stopFailCode    = 'failon.integrity.data.store.out'; // this indicates a bug in our code
 			this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
@@ -6747,7 +6806,7 @@ SyncFsm.prototype.entryActionUpdateCleanup = function(state, event, continuation
 	if (this.state.stopFailCode != null)
 		nextEvent = 'evLackIntegrity';
 
-	continuation(nextEvent);
+	yield false;
 }
 
 SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
@@ -6846,7 +6905,6 @@ SyncFsm.prototype.username     = function()         { return this.state.sources[
 SyncFsm.prototype.getIntPref   = function(key)      { var p = preferences(); return p.getIntPref(  p.branch(), key);       }
 SyncFsm.prototype.getCharPref  = function(key)      { var p = preferences(); return p.getCharPref( p.branch(), key);       }
 SyncFsm.prototype.is_slow_sync = function(sourceid) { return this.state.m_sfcd.sourceid(sourceid, 'is_slow_sync');         }
-SyncFsm.prototype.is_reset     = function(sourceid) { return this.state.m_sfcd.is_reset();                                 }
 
 SyncFsm.prototype.zfc = function(sourceid)
 {
@@ -7700,6 +7758,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.m_logappender       = new LogAppenderHoldOpen(); // holds an output stream open - must be closed explicitly
 	state.m_logger            = new Logger(Singleton.instance().logger().level(), "SyncFsm", state.m_logappender);
 	state.m_debug_filter_out  = new RegExp('https?' + GOOGLE_URL_HIER_PART + '|' + GOOGLE_PROJECTION, "mg");
+	state.m_generator         = null;
 	state.m_http              = null;
 	state.cCallsToHttp        = 0;                       // handy for debugging the closure passed to soapCall.asyncInvoke()
 	state.zfcLastSync         = null;                    // FeedCollection - maintains state re: last sync (anchors, success/fail)
@@ -7710,8 +7769,6 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.authToken           = null;
 	state.aReverseGid         = new Object(); // reverse lookups for the gid, ie given (sourceid, luid) find the gid.
 	state.aGcs                = null;         // array of Global Converged State - passed between the phases of Converge
-	state.itSource            = null;         // iterator across sourceids
-	state.itCollection        = null;         // iterator across a FeedCollection
 	state.aHasChecksum        = new Object(); // used in slow sync: aHasChecksum[key][luid]   = true;
 	state.aChecksum           = new Object(); // used in slow sync: aChecksum[sourceid][luid] = checksum;
 	state.aSuo                = null;         // container for source update operations - populated in Converge
@@ -7720,6 +7777,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.stopFailTrailer     = null;
 	state.stopFailArg         = null;
 	state.m_bimap_format      = getBimapFormat('short');
+	state.m_progress_count    = 0;
 
 	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
 	state.is_done_get_contacts_pu  = false;   // have we worked out the contacts to get from the server pre update?
@@ -7778,6 +7836,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.a_gd_contact_to_get           = new Array();
 	state.a_gd_contact_to_del           = null;
 	state.a_gd_contact_dexmlify_ids     = null;         // set to a Array() when it's in use
+	state.m_gd_contact_length           = 0;
 	state.gd_url_base                   = null;
 	state.gd_is_dexmlify_postal_address = false;
 	state.gd_sync_token                 = null;
@@ -7947,14 +8006,15 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 	                         encodeURIComponent(this.username()) + GOOGLE_PROJECTION;
 
 	var SyncToken = this.state.zfcLastSync.get(this.state.sourceid_pr).getOrNull('SyncToken');
-	var url       = this.state.gd_url_base + "?showdeleted=true";
+	var url       = this.state.gd_url_base + "?max-results=10000";
 
-	this.state.stopwatch.mark(state);
+	if (!this.is_slow_sync(this.state.sourceid_pr))
+		url += "&showdeleted=true";
 
 	if (SyncToken)
 		url += "&updated-min=" + SyncToken;
 
-	url += "&max-results=10000";
+	this.state.stopwatch.mark(state);
 
 	this.state.m_logger.debug("entryActionGetContactGd1: url: " + url);
 
@@ -7987,23 +8047,23 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 	{
 		response = this.state.m_http.response();
 
+		this.state.gd_is_dexmlify_postal_address = this.is_slow_sync(this.state.sourceid_pr) && !this.state.gd_is_sync_postal_address;
+
 		// set the sync token
 		//
 		var warn_msg = "<updated> element is missing from <feed>!";
 		Xpath.setConditionalFromSingleElement(this.state, 'gd_sync_token', "//atom:feed/atom:updated", response, warn_msg);
-		this.debug("entryActionGetContactGd2: gd_sync_token: " + this.state.gd_sync_token);
+		this.debug("entryActionGetContactGd1: gd_sync_token: " + this.state.gd_sync_token);
 
-		this.state.a_gd_contact = GdContact.arrayFromXpath(this.contact_converter(), response, "/atom:feed/atom:entry");
-		this.state.a_gd_contact_iterator = Iterator(this.state.a_gd_contact, true);
-		this.state.a_gd_contact_iterator.m_zindus_contact_count = 1; // used to show progress
-		this.state.a_gd_contact_iterator.a_zindus_contact_count = newObject('regular', 0, 'deleted', 0, 'empty', 0);
-		this.state.a_gd_contact_iterator.m_zindus_contact_chunk = 100;
+		// get the total number of contact (including deleted and empty ones) to support progress observer
+		//
+		var warn_msg = "<openSearch> element is missing from <feed>!";
+		Xpath.setConditionalFromSingleElement(this.state, 'm_gd_contact_length', "//atom:feed/openSearch:totalResults", response, warn_msg);
 
-		this.state.gd_is_dexmlify_postal_address = this.is_slow_sync(this.state.sourceid_pr) && !this.state.gd_is_sync_postal_address;
+		this.debug("entryActionGetContactGd2: openSearch.totalResults: " + this.state.m_gd_contact_length);
 
-		if (this.state.gd_is_dexmlify_postal_address)
-			this.state.a_gd_contact_dexmlify = GdContact.arrayFromXpath(this.state.m_contact_converter_vary_gd_postal,
-		                                                                response, "/atom:feed/atom:entry");
+		this.state.m_gd_contact_count = 0;
+
 		nextEvent = 'evNext';
 	}
 	else
@@ -8012,47 +8072,57 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 	continuation(nextEvent);
 }
 
-SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuation)
+SyncFsm.prototype.entryActionGetContactGd3 = function(state, event, continuation)
+{
+	var nextEvent = this.runEntryActionGenerator(state, event, this.entryActionGetContactGd3Generator);
+
+	if (nextEvent != 'evRepeat')
+		nextEvent = this.state.gd_is_dexmlify_postal_address ? 'evNext' : 'evSkip';
+
+	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 {
 	var is_finished = false;
 	var count       = 0;
-	var msg         = "";
-	var contact, id;
+	var msg         = "entryActionGetContactGd3:\n";
+	var response    = this.state.m_http.response();
+	var context     = this;
+	var a_zindus_contact_count = newObject('regular', 0, 'deleted', 0, 'empty', 0);
+	var contact, id, generator, functor;
 
 	this.state.stopwatch.mark(state);
 
-	msg += "entryActionGetContactGd3:\n";
-
-	try {
-		while (count < this.state.a_gd_contact_iterator.m_zindus_contact_chunk)
+	var functor = {
+		run: function(doc, node)
 		{
-			id = this.state.a_gd_contact_iterator.next();
-
+			var contact             = new GdContact(context.contact_converter(), doc); contact.updateFromContainer(node);
+			var id                  = contact.m_meta[GdContact.id];
 			var zfi                 = null;
-			var contact             = this.state.a_gd_contact[id];
 			var rev                 = contact.m_meta[GdContact.updated];
 			var edit_url            = contact.m_meta[GdContact.edit];
 			var self_url            = contact.m_meta[GdContact.self];
 			var is_deleted_or_empty = contact.is_deleted() || contact.is_empty();
 
-			count++;                                                   // count the contacts processed this iteration
-			this.state.a_gd_contact_iterator.m_zindus_contact_count++; // count the contacts processed in total
+			context.state.a_gd_contact[id] = contact;
+			context.state.m_gd_contact_count++;  // count the contacts processed in total
 
-			if (contact.is_deleted())                                  // count the contacts by breakdown to match against gmail UI
-				this.state.a_gd_contact_iterator.a_zindus_contact_count['deleted']++;
+			if (contact.is_deleted())                      // count the contacts by breakdown to match against gmail UI
+				a_zindus_contact_count['deleted']++;
 			else if (contact.is_empty())
-				this.state.a_gd_contact_iterator.a_zindus_contact_count['empty']++;
+				a_zindus_contact_count['empty']++;
 			else
-				this.state.a_gd_contact_iterator.a_zindus_contact_count['regular']++;
+				a_zindus_contact_count['regular']++;
 
 			msg += "id=" + id;
-			
+	
 			if (!is_deleted_or_empty)
 				msg += " properties: " + contact.toString();
 
-			if (this.zfcPr().isPresent(id))
+			if (context.zfcPr().isPresent(id))
 			{
-				zfi = this.zfcPr().get(id);
+				zfi = context.zfcPr().get(id);
 
 				zfi.set(FeedItem.ATTR_REV,  rev);
 				zfi.set(FeedItem.ATTR_EDIT, edit_url);
@@ -8062,7 +8132,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 
 				if (is_deleted_or_empty)
 				{
-					this.zfcPr().get(id).set(FeedItem.ATTR_DEL, '1');
+					context.zfcPr().get(id).set(FeedItem.ATTR_DEL, '1');
 
 					msg += " marked as deleted" + (contact.is_deleted() ? "" : " (because it is empty)") + ": ";
 				}
@@ -8071,43 +8141,51 @@ SyncFsmGd.prototype.entryActionGetContactGd3 = function(state, event, continuati
 			}
 			else if (!is_deleted_or_empty)
 			{
-				zfi = this.newZfiCnGd(id, rev, edit_url, self_url, this.state.gd_luid_ab_in_gd);
-				this.zfcPr().set(zfi); // add new
+				zfi = context.newZfiCnGd(id, rev, edit_url, self_url, context.state.gd_luid_ab_in_gd);
+				context.zfcPr().set(zfi); // add new
 				msg += " added: " + zfi.toString();
 			}
 			else
 				msg += " ignored " + (contact.is_deleted() ? "deleted" : "empty") + " contact";
 
 			msg += "\n";
-		}
-	}
-	catch (ex if ex instanceof StopIteration) {
-		is_finished = true;
 
-	} catch (ex) {
-		this.state.m_logger.error(ex);
-		zinAssert(false);
+			return;
+		}
+	};
+
+	this.state.a_gd_contact = new Object();
+	generator = Xpath.runFunctorGenerator(functor, "/atom:feed/atom:entry", response, 50); // TODO: GENERATOR_CHUNK_SIZE_FEED
+
+	while (generator.next())
+	{
+		this.debug("AMHERE5: yield when m_gd_contact_count: " + this.state.m_gd_contact_count);
+
+		yield true;
+	}
+
+	if (this.state.gd_is_dexmlify_postal_address)
+	{
+		this.state.a_gd_contact_dexmlify = new Object();
+		functor   = new GdContactFunctorToMakeHashFromNodes(this.state.m_contact_converter_vary_gd_postal);
+		generator = Xpath.runFunctorGenerator(functor, "/atom:feed/atom:entry", response, GENERATOR_CHUNK_SIZE_FEED);
+
+		while (generator.next())
+			yield true;
+
+		this.state.a_gd_contact_dexmlify = functor.m_collection;
 	}
 
 	this.debug(msg);
 
 	if (is_finished)
 		this.debug("entryActionGetContactGd3: contacts processed: " +
-			" regular: " + this.state.a_gd_contact_iterator.a_zindus_contact_count['regular'] +
-			" empty: "   + this.state.a_gd_contact_iterator.a_zindus_contact_count['empty'] +
-			" deleted: " + this.state.a_gd_contact_iterator.a_zindus_contact_count['deleted'] +
+			" regular: " + a_zindus_contact_count['regular'] +
+			" empty: "   + a_zindus_contact_count['empty'] +
+			" deleted: " + a_zindus_contact_count['deleted'] +
 			" gmail ui should match (regular + empty) after a slow sync");
 		
-	var nextEvent;
-
-	if (!is_finished)
-		nextEvent = 'evRepeat';
-	else if (this.state.gd_is_dexmlify_postal_address)
-		nextEvent = 'evNext';
-	else
-		nextEvent = 'evSkip';
-
-	continuation(nextEvent);
+	yield false;
 }
 
 SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, self_url, gd_luid_ab_in_gd)

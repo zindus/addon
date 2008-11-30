@@ -31,7 +31,6 @@ function SyncFsmChainData(a_accounts)
 	zinAssert(a_accounts);
 
 	this.m_account_index     = 0;
-	this.m_is_reset          = false;
 	this.m_a_item            = new Array(a_accounts.length);
 	this.m_a_first_of_format = new Object();
 	this.m_a_last_of_format  = new Object();
@@ -65,7 +64,6 @@ SyncFsmChainData.prototype.toString = function()
 {
 	var ret = "SyncFsmChainData:" + "\n" +
 	          " account_index: " + this.m_account_index +
-	          " is_reset: " + this.m_is_reset +
 		      " a_first_of_format: " + aToString(this.m_a_first_of_format) +
 		      " a_last_of_format: "  + aToString(this.m_a_last_of_format);
 
@@ -124,14 +122,6 @@ SyncFsmChainData.prototype.last_sourceid_of_format = function(format_xx)
 	var index = this.m_a_last_of_format[format_xx];
 
 	return typeof(index) == 'undefined' ? index : Account.indexToSourceId(index);
-}
-
-SyncFsmChainData.prototype.is_reset = function()
-{
-	if (arguments.length == 1)
-		this.m_is_reset = arguments[0];
-
-	return this.m_is_reset;;
 }
 
 SyncFsmChainData.prototype.zfcTb = function()

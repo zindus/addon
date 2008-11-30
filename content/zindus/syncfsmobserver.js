@@ -35,6 +35,7 @@ function SyncFsmObserver(es)
 	this.m_properties = new Object();
 
 	this.m_high_water_percentage_complete = 0;
+	this.m_a_states_seen = new Object();
 
 	this.set(SyncFsmObserver.OP,       "");
 	this.set(SyncFsmObserver.PROG_MAX, 0);
@@ -44,6 +45,7 @@ function SyncFsmObserver(es)
 SyncFsmObserver.OP                  = 'op'; // eg: server put
 SyncFsmObserver.PROG_CNT            = 'pc'; // eg: 3 of
 SyncFsmObserver.PROG_MAX            = 'pm'; // eg: 6    (counts progress through an iteration of one or two states)
+SyncFsmObserver.PROG_AS_PERCENT     = 'pt'; // eg: false ==> show 3 of 6, true ==> show 50%
 SyncFsmObserver.PERCENTAGE_COMPLETE = 'pp'; // eg: 70%  (counts how far we are through all observed states)
 
 SyncFsmObserver.prototype.set = function(key, value)
@@ -95,9 +97,12 @@ SyncFsmObserver.prototype.progressToString = function()
 	ret += this.get(SyncFsmObserver.OP);
 
 	if (this.get(SyncFsmObserver.PROG_MAX) > 0)
-		ret += " " + this.get(SyncFsmObserver.PROG_CNT) +
-		       " " + stringBundleString(this.tweakStringId("of")) +
-		       " " + this.get(SyncFsmObserver.PROG_MAX);
+		if (this.get(SyncFsmObserver.PROG_AS_PERCENT))
+			ret += " " + parseInt(this.get(SyncFsmObserver.PROG_CNT) / this.get(SyncFsmObserver.PROG_MAX) * 100) + " %";
+		else
+			ret += " " + this.get(SyncFsmObserver.PROG_CNT) +
+			       " " + stringBundleString(this.tweakStringId("of")) +
+			       " " + this.get(SyncFsmObserver.PROG_MAX);
 
 	return ret;
 }
@@ -130,7 +135,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGetContactGd1:  { count: 1 },
 		stGetContactGd2:  { count: 1 },
 		stGetContactGd3:  { count: 1 },
-		stDeXmlifyAddrGd: { count: 1 },
+		stDeXmlifyAddrGd: { },
 		stGetContactPuGd: { count: 1 },
 		stUpdateGd:       { count: 1 },
 	};
@@ -139,15 +144,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		start:            { count: 1 },
 		stLoad:           { count: 1 },
 		stLoadTb:         { count: 1 },
-		stConverge1:      { count: 1 },
-		stConverge2:      { count: 1 },
-		stConverge3:      {          },
-		stConverge4:      { count: 1 },
-		stConverge5:      { count: 1 },
-		stConverge6:      { },
-		stConverge7:      { count: 1 },
-		stConverge8:      { count: 1 },
-		stConverge9:      { count: 1 },
+		stConverge:       { count: 5 },
 		stUpdateTb:       { count: 1 },
 		stUpdateCleanup:  { count: 1 },
 		stHttpRequest:    { },
@@ -184,21 +181,36 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 {
 	var ret = false;
+	var progress_count;
+	var percentage_progress_big_hand = 0;
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
 	var context = fsmstate.context; // SyncFsm
 	this.state = context.state;
+	this.set(SyncFsmObserver.PROG_AS_PERCENT, false);
 
 	// this.m_logger.debug("updateState: blah: a_states: " +      aToString(a_states));
 	// this.m_logger.debug("updateState: blah: m_transitions: " + aToString(context.fsm.m_transitions));
 
 	zinAssert(isMatchObjectKeys(a_states, context.fsm.m_transitions));
 
-	var c = 0;
+	this.m_a_states_seen[fsmstate.newstate] = true;
+	var count_states_seen = 0;
+	var count_states_all = 0;
 
 	for (var key in a_states)
 		if (isPropertyPresent(a_states[key], 'count'))
-			a_states[key]['count'] = c++;
+		{
+			if (isPropertyPresent(this.m_a_states_seen, key))
+				count_states_seen += a_states[key]['count'];
+
+			count_states_all += a_states[key]['count'];
+		}
+
+	if (false)
+	this.m_logger.debug("a_states: "      + aToString(a_states) + "\n" +
+	                    "a_states_seen: " + aToString(this.m_a_states_seen) + "\n" +
+	                    " count_states_seen: " + count_states_seen + " count_states_all: " + count_states_all ); // TODO
 
 	if (fsmstate.newstate && isPropertyPresent(a_states[fsmstate.newstate], 'count')) // fsmstate.newstate == null when oldstate == 'final'
 	{
@@ -206,30 +218,41 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 		switch(fsmstate.newstate)
 		{
-			case 'start':            this.progressReportOn("load.thunderbird");                             break;
+			case 'start':            this.progressReportOn("load.thunderbird");                              break;
 			case 'stAuthSelect':
 			case 'stAuthLogin':
 			case 'stAuthPreAuth':
 			case 'stAuth':           this.progressReportOnSource(context.state.sourceid_pr, "remote.auth");  break;
-			case 'stLoad':           this.progressReportOn("load");                                         break;
+			case 'stLoad':           this.progressReportOn("load");                                          break;
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "account.info"); break;
 			case 'stSync':          
 			case 'stSyncResponse':
 			case 'stGetContactGd1':
-			case 'stGetContactGd2':
-			case 'stDeXmlifyAddrGd': this.progressReportOnSource(context.state.sourceid_pr, "remote.sync");  break;
+			case 'stGetContactGd2': this.progressReportOnSource(context.state.sourceid_pr, "remote.sync");  break;
 			case 'stGalSync':        
 			case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "get.gal");      break;
-			case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "load");        break;
-			case 'stConverge1':     
-			case 'stConverge2':     
-			case 'stConverge4':     
-			case 'stConverge5':     
-			case 'stConverge7':     
-			case 'stConverge8':     
-			case 'stConverge9':      this.progressReportOn("converge");                                     break;
+			case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "load");         break;
 			case 'stUpdateTb':       this.progressReportOnSource(context.state.sourceid_tb, "put.one");      break;
-			case 'stUpdateCleanup':  this.progressReportOn("saving");                                       break;
+			case 'stUpdateCleanup':  this.progressReportOn("saving");                                        break;
+
+			case 'stConverge':
+			{
+				let progress_max = 10;
+
+				if (fsmstate.event != 'evRepeat')
+				{
+					this.set(SyncFsmObserver.OP, stringBundleString(this.tweakStringId("converge")) );
+					this.set(SyncFsmObserver.PROG_MAX, progress_max);
+					progress_count = 1;
+				}
+				else
+					progress_count = context.state.m_progress_count;
+
+				this.set(SyncFsmObserver.PROG_CNT, progress_count);
+				this.set(SyncFsmObserver.PROG_AS_PERCENT, true);
+				percentage_progress_big_hand = progress_count / progress_max;
+				break;
+			}
 
 			case 'stSelectSoapUrl':
 				if (context.state.suggestedSoapURL && !context.is_a_zm_tested_soapurl(context.state.suggestedSoapURL))
@@ -258,13 +281,14 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					var aGetContactRequest = SyncFsm.GetContactZmNextBatch(context.state.aContact);
 
 					var lo = this.m_zm_get_contact_count;
-					var hi = intMin(this.m_zm_get_contact_count + aGetContactRequest.length - 1, this.m_zm_get_contact_max);
+					var hi = ZinMin(this.m_zm_get_contact_count + aGetContactRequest.length - 1, this.m_zm_get_contact_max);
 
 					if (lo == hi)
 						this.set(SyncFsmObserver.PROG_CNT, lo);
 					else
 						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
 
+					percentage_progress_big_hand = lo / this.m_zm_get_contact_max;
 					this.m_zm_get_contact_count += aGetContactRequest.length;
 				}
 				else
@@ -272,42 +296,19 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				break;
 
 			case 'stGetContactGd3':
-				if (aToLength(context.state.a_gd_contact) > 0)
+				if (context.state.m_gd_contact_length > 0)
 				{
-					var op = this.buildOp(context.state.sourceid_pr, "get.many");
-
-					if (this.get(SyncFsmObserver.OP) != op)
+					if (fsmstate.event != 'evRepeat')
 					{
-						function count_non_deleted(a) {
-							var ret = 0;
-							for (var id in a) {
-								if (!a[id].is_deleted())
-									ret++;
-							}
-							return ret;
-						}
-
-						// internally, the running total and chunking counts <entry> elements
-						// externally, the display shows "contacts" ie non-deleted <entry>s
-						//
-						this.m_gd_length_non_deleted = count_non_deleted(context.state.a_gd_contact);
-						this.m_gd_length_entry       = aToLength(context.state.a_gd_contact);
-
-						this.progressReportOnSource(context.state.sourceid_pr, "get.many", this.m_gd_length_non_deleted);
+						this.set(SyncFsmObserver.OP, stringBundleString(this.tweakStringId("get.many")) );
+						this.set(SyncFsmObserver.PROG_MAX, context.state.m_gd_contact_length);
 					}
 
-					function scale_to(x, y, z) {
-						return parseInt(x*z/y); 
-					}
+					progress_count = context.state.m_gd_contact_count;
 
-					var lo = context.state.a_gd_contact_iterator.m_zindus_contact_count;
-					var hi = intMin(this.m_gd_length_entry, this.state.a_gd_contact_iterator.m_zindus_contact_count +
-					                                        this.state.a_gd_contact_iterator.m_zindus_contact_chunk - 1); 
-
-					this.set(SyncFsmObserver.PROG_CNT, (lo == hi) ?
-					                                     (scale_to(lo, this.m_gd_length_entry, this.m_gd_length_non_deleted) + 1) :
-						                   hyphenate('-', scale_to(lo, this.m_gd_length_entry, this.m_gd_length_non_deleted) + 1,
-						                                  scale_to(hi, this.m_gd_length_entry, this.m_gd_length_non_deleted)));
+					this.set(SyncFsmObserver.PROG_CNT, progress_count);
+					this.set(SyncFsmObserver.PROG_AS_PERCENT, true);
+					percentage_progress_big_hand = progress_count / context.state.m_gd_contact_length;
 				}
 				else
 					ret = false; // no need to update the UI
@@ -324,7 +325,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 					}
 
-					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
+					progress_count = this.get(SyncFsmObserver.PROG_CNT) + 1;
+					this.set(SyncFsmObserver.PROG_CNT, progress_count);
+					percentage_progress_big_hand = progress_count / context.state.a_gd_contact_to_get.length;
 				}
 				else
 					ret = false; // no need to update the UI
@@ -357,7 +360,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 					}
 
-					this.set(SyncFsmObserver.PROG_CNT, this.get(SyncFsmObserver.PROG_CNT) + 1);
+					progress_count = this.get(SyncFsmObserver.PROG_CNT) + 1;
+					this.set(SyncFsmObserver.PROG_CNT, progress_count);
+					percentage_progress_big_hand = progress_count / context.state.a_gd_contact_to_get.length;
 				}
 				else
 					this.progressReportOnSource(context.state.sourceid_pr, "put.one");
@@ -398,7 +403,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 					if (isInArray(fsmstate.oldstate,
 					               [ 'start', 'stAuth', 'stGetContactGd2', 'stAuthSelect', 'stGetContactGd2',
-								     'stLoad', 'stAuthCheck', 'stLoadTb', 'stConverge1', 'stConverge7', 'stConverge9',
+								     'stLoad', 'stAuthCheck', 'stLoadTb', 'stConverge', 'stConverge7', 'stConverge9',
 									 'stUpdateCleanup' ]))
 					{
 						es.failcode(context.state.stopFailCode);
@@ -447,13 +452,24 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				zinAssertAndLog(false, "missing case statement for: " + fsmstate.newstate);
 		}
 
-		var percentage_complete = a_states[fsmstate.newstate]['count'] / a_states['final']['count'];
+		var percentage_complete = count_states_seen / count_states_all;
 
-		if (this.get(SyncFsmObserver.PROG_MAX) > 0)
-			percentage_complete += this.get(SyncFsmObserver.PROG_CNT) / (this.get(SyncFsmObserver.PROG_MAX) * a_states['final']['count']);
+		if (false)
+		this.m_logger.debug("BLAH 3: " +
+				" percentage_complete: " + percentage_complete +
+		        " percentage_progress_big_hand: " + percentage_progress_big_hand +
+		        " percentage_progress_big_hand corrected: " + percentage_progress_big_hand / count_states_all );
+
+		if (percentage_progress_big_hand)
+			zinAssert(this.get(SyncFsmObserver.PROG_MAX) > 0);
+
+		percentage_progress_big_hand = ZinMin(percentage_progress_big_hand, 0.99);
+
+		percentage_complete += percentage_progress_big_hand / count_states_all;
 
 		// With shared addressbooks, we jump from Sync back to Getaccount.info
 		// The progress indicator jumping backwards isn't a good look - this holds it steady.
+		// Going backwards means we lose the "percentage_progress_big_hand" value too.
 		// It'd be better to show incremental progress but we don't know at the outset
 		// how many contacts there are going to be in each of the shared addressbooks so it'd be tricky.
 		//

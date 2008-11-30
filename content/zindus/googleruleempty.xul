@@ -41,8 +41,8 @@
 	ondialogcancel="return window.wd.onCancel();"
 	>
 
-	<script type="application/x-javascript" src="chrome://zindus/content/scoperegistry.js"/>
-	<script type="application/x-javascript" src="chrome://zindus/content/includes.js"/>
+	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/scoperegistry.js"/>
+	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/includes.js"/>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 

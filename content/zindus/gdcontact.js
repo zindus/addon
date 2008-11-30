@@ -31,7 +31,7 @@ function GdContact(contact_converter, doc)
 		this.m_document = document.implementation.createDocument("","",null);
 		
 	// causes assertion failure on OSX: this.m_logger             = newLogger("GdContact");
-	// use this instead I guess:  this.m_logger = logger();
+	this.m_logger = logger(); // TODO comment me out when finished debugging sm - also see below
 	this.m_contact_converter  = contact_converter;
 	this.m_container          = null;
 	this.m_properties         = null;
@@ -130,6 +130,8 @@ GdContact.prototype.updateFromContainer = function(node)
 	};
 
 	this.runFunctorOnContainer(functor);
+
+	logger().debug("GdContact.updateFromContainer: sets contact to: " + this.toString()); // TODO
 }
 
 GdContact.set_visited = function(a_visited, key)
@@ -162,7 +164,7 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 				key = child.localName;
 				is_run_functor = false;
 
-				// this.m_logger.debug("GdContact: runFunctorOnContainer: i: " + i + ": " + this.nodeAsString(child));
+				this.m_logger.debug("GdContact: runFunctorOnContainer: i: " + i + ": " + this.nodeAsString(child)); // TODO
 
 				if (child.namespaceURI == Xpath.nsResolver("atom"))
 					switch(child.localName)
@@ -350,7 +352,7 @@ GdContact.prototype.updateFromProperties = function(properties)
 	var functor = {
 		run: function(node, key)
 		{
-			// context.m_logger.debug("GdContact: updateFromProperties: node: " + context.nodeAsString(node));
+			context.m_logger.debug("GdContact: updateFromProperties: node: " + context.nodeAsString(node));
 
 			switch (key)
 			{
@@ -368,6 +370,7 @@ GdContact.prototype.updateFromProperties = function(properties)
 				case "phoneNumber#work":
 				case "phoneNumber#work_fax":
 					context.nodeModifyOrMarkForDeletion(node, null, a_field, key, a_field_used, a_to_be_deleted);
+					context.m_logger.debug("GdContact: updateFromProperties: AMHERE: key: " + key + " value: " + a_field[key]); // TODO
 					break;
 				case "postalAddress#home":
 				case "postalAddress#work":
@@ -556,15 +559,32 @@ GdContact.prototype.setProperty = function(node, attribute, collection, key, fil
 {
 	var value = "";
 
-	if (attribute)
-		value = node.getAttribute(attribute);
-	else if (node.hasChildNodes())
-		value = node.firstChild.nodeValue;
+	var msg = "GdContact: setProperty: blah: key: " + key;
 
-	// this.m_logger.debug("GdContact: setProperty: blah: key: " + key + " value: " + value);
+	if (attribute)
+	{
+		value = node.getAttribute(attribute);
+		msg += " an attribute, value: " + value;
+	}
+	else if (node.hasChildNodes())
+	{
+		value = node.firstChild.nodeValue;
+		value = node.textContent;
+		msg += " a node, value: " + value;
+	}
+
+	if (node.nodeType == Node.ELEMENT_NODE)
+	{
+		msg += " an ELEMENT_NODE, textContent: " + node.textContent;
+	}
 
 	if (typeof(filter) == 'function' && value.length > 0)
+	{
 		value = filter(value);
+		msg += " after filter, value: " + value;
+	}
+
+	this.m_logger.debug(msg);
 
 	if (value.length > 0)
 		collection[key] = value;
@@ -707,7 +727,11 @@ GdContactFunctorToMakeHashFromNodes.prototype.run = function(doc, node)
 	
 	contact.updateFromContainer(node);
 
-	this.m_collection[contact.m_meta[GdContact.id]] = contact;
+	var id = contact.m_meta[GdContact.id];
+
+	logger().debug("AMHERE2: setting m_collection for id: " + id); // TODO
+
+	this.m_collection[id] = contact;
 }
 
 GdContact.arrayFromXpath = function(contact_converter, doc, xpath_query)

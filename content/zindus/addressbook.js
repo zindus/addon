@@ -203,11 +203,20 @@ AddressBook.prototype.forEachAddressBook = function(functor)
 	}
 }
 
-AddressBookTb3.prototype.forEachCard = function(uri, functor)
+AddressBook.prototype.forEachCard = function(uri, functor)
+{
+	var generator = this.forEachCardGenerator(uri, functor, 0);
+
+	while (generator.next())
+		;
+}
+
+AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_count)
 {
 	var dir       = this.nsIAbDirectory(uri);
 	var enm       = dir.childCards;
 	var fContinue = true;
+	var count     = 0;
 
 	while (fContinue && enm.hasMoreElements())
 	{
@@ -216,13 +225,22 @@ AddressBookTb3.prototype.forEachCard = function(uri, functor)
 		fContinue = functor.run(uri, item);
 
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+
+		if (yield_count > 0)
+		{
+			if (++count % yield_count == 0)
+				yield true;
+		}
 	}
+
+	yield false;
 }
 
-AddressBookTb2.prototype.forEachCard = function(uri, functor)
+AddressBookTb2.prototype.forEachCardGenerator = function(uri, functor, yield_count)
 {
 	var dir       = this.nsIRDFService().GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
 	var fContinue = true;
+	var count     = 0;
 	var enm;
 
 	try { enm = dir.childCards; } catch (ex) { zinAssertAndLog(false, uri); } // assertion here points to a bad uri
@@ -238,7 +256,12 @@ AddressBookTb2.prototype.forEachCard = function(uri, functor)
 		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
 		try { enm.next(); } catch(ex) { fContinue = false; }
+
+		if (++count % yield_count == 0)
+			yield true;
 	}
+
+	yield false;
 }
 
 AddressBookTb2.prototype.nsIAddressBook = function()

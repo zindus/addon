@@ -164,6 +164,27 @@ FeedCollection.prototype.forEachIterator = function(functor, itCollection)
 	}
 }
 
+FeedCollection.prototype.forEachGenerator = function(functor, yield_count) // don't support flavour
+{
+	var fContinue;
+	var count = 0;
+
+	flavour = FeedCollection.ITER_NON_RESERVED;
+
+	for (var key in this.m_collection)
+	{
+		fContinue = this.forEachDoOne(functor, key, flavour);
+
+		if (!fContinue)
+			break;
+
+		if (++count % yield_count == 0)
+			yield true;
+	}
+
+	yield false;
+}
+
 FeedCollection.prototype.forEach = function(functor, flavour)
 {
 	var fContinue;
