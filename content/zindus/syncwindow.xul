@@ -36,6 +36,7 @@
 	ondialogcancel="return window.wd.onCancel();"
 	ondialogaccept="return window.wd.onAccept();"
 	buttons="cancel"
+	style="width:35em"
 	>
 
 	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/scoperegistry.js"/>
@@ -46,15 +47,23 @@
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<vbox align="center" style="margin:20px" >
-		<progressmeter id="zindus-sw-progress-meter" value="0%" style="width:35em;" />
+	<vbox style="margin:20px" >
+		<progressmeter id="zindus-sw-progress-meter" value="0%" />
 		<spacer class="zindus-spacer" flex="1" /> 
-		<description  id="zindus-sw-progress-description" style="width:30em;height:4em;" />
+		<description  id="zindus-sw-progress-description" style="height:4em" />
 		<spacer class="zindus-spacer" flex="1" /> 
-		<hbox>
-		<button dlgtype="cancel" align="center" />
-		<spacer flex="1" /> 
-		<image align="right" src="chrome://zindus/content/zindus-processing-bw.gif" />
-		</hbox>
+		<stack>
+		<vbox align="center">
+			<hbox flex="0" >
+				<button dlgtype="cancel" />
+			</hbox>
+		</vbox>
+
+		<vbox pack="center">
+	<hbox align="right" >
+			<image src="chrome://zindus/content/zindus-processing-bw.gif" />
+	</hbox>
+	</vbox>
+		</stack>
 	</vbox>
 </dialog>
