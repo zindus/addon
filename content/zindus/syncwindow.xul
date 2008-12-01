@@ -53,17 +53,16 @@
 		<description  id="zindus-sw-progress-description" style="height:4em" />
 		<spacer class="zindus-spacer" flex="1" /> 
 		<stack>
-		<vbox align="center">
-			<hbox flex="0" >
-				<button dlgtype="cancel" />
-			</hbox>
-		</vbox>
-
-		<vbox pack="center">
-	<hbox align="right" >
-			<image src="chrome://zindus/content/zindus-processing-bw.gif" />
-	</hbox>
-	</vbox>
+			<vbox pack="center">
+				<hbox align="right" >
+					<image src="chrome://zindus/content/zindus-processing-bw.gif" />
+				</hbox>
+			</vbox>
+			<vbox align="center">
+				<hbox flex="0" >
+					<button dlgtype="cancel" />
+				</hbox>
+			</vbox>
 		</stack>
 	</vbox>
 </dialog>
