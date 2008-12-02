@@ -55,7 +55,7 @@ const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/contacts/";
 const GOOGLE_PROJECTION               = "/thin";  // use 'thin' to avoid gd:extendedProperty elements
 const GOOGLE_SHOW_CONFLICTS_AT_A_TIME = 5;
 const GENERATOR_CHUNK_SIZE_FEED       = 500;
-const GENERATOR_CHUNK_SIZE_CARDS      = 1000;
+const GENERATOR_CHUNK_SIZE_CARDS      = 200;
 
 function SyncFsm()
 {
@@ -7265,7 +7265,8 @@ SyncFsm.prototype.entryActionHttpRequest = function(state, event, continuation)
 
 	this.state.cCallsToHttp++;
 
-	this.state.m_logger.debug("http request: #" + this.state.cCallsToHttp + ": " + http.toStringFiltered());
+	// TODO ##
+	this.state.m_logger.debug("http request: ##" + this.state.cCallsToHttp + ": " + http.toStringFiltered());
 
 	http.m_xhr = new XMLHttpRequest();
 	http.m_xhr.onreadystatechange = closureToHandleXmlHttpResponse(context, continuation);
@@ -7617,8 +7618,10 @@ HttpStateGd.AUTH_REGEXP_PATTERN = /Auth=(.+?)(\s|$)/;
 
 HttpStateGd.prototype.toStringFiltered = function()
 {
-	return this.m_http_method + " " + this.m_url;
-	// for debugging: return this.m_http_method + " " + this.m_url + this.httpBody();;
+	// TODO enabled verbose debugging for issue #156 return this.m_http_method + " " + this.m_url;
+	return this.m_http_method + " " + this.m_url
+					          + " " + ((this.m_url != googleClientLoginUrl('use-password') &&
+							            this.m_url != googleClientLoginUrl('use-authtoken')) ? this.httpBody() : "");
 }
 
 HttpStateGd.prototype.httpBody = function()
@@ -8158,11 +8161,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 	generator = Xpath.runFunctorGenerator(functor, "/atom:feed/atom:entry", response, 50); // TODO: GENERATOR_CHUNK_SIZE_FEED
 
 	while (generator.next())
-	{
-		this.debug("AMHERE5: yield when m_gd_contact_count: " + this.state.m_gd_contact_count);
-
 		yield true;
-	}
 
 	if (this.state.gd_is_dexmlify_postal_address)
 	{

@@ -53,7 +53,7 @@
 		<description  id="zindus-sw-progress-description" style="height:4em" />
 		<spacer class="zindus-spacer" flex="1" /> 
 		<stack>
-			<vbox pack="center">
+			<vbox pack="center" hidden="true" >
 				<hbox align="right" >
 					<image src="chrome://zindus/content/zindus-processing-bw.gif" />
 				</hbox>

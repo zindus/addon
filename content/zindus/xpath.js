@@ -155,16 +155,9 @@ Xpath.runFunctorGenerator = function(functor, xpath_query, doc, yield_count, xpa
 			functor.run(doc, node);
 			node = xpathResult.iterateNext();
 
-			logger().debug("AMHERE6: count: " + count + " yield_count: " + yield_count);
-
 			if (yield_count > 0)
-			{
 				if (++count % yield_count == 0)
-				{
-					logger().debug("AMHERE6: yield: count: " + count);
 					yield true;
-				}
-			}
 		}
 	}
 	catch(ex) {
