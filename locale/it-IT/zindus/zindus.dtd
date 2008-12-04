@@ -1,0 +1,55 @@
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.mo.menuitem.accesskey "z">
+<!ENTITY zindus.sb.settings.label "Impostazioni">
+<!ENTITY zindus.ca.account.type.label "Sincronizzazione con">
+<!ENTITY zindus.ca.group.login.details.label "Dati di accesso">
+<!ENTITY zindus.ca.group.pap.label "Per questo indirizzo">
+<!ENTITY zindus.ca.url.description.value "Inserire l&apos;indirizzo della pagina di accesso al server.<html:br/>esempio: https://mymail.esempio.com">
+<!ENTITY zindus.ca.url.label "Indirizzo del server:">
+<!ENTITY zindus.ca.username.description.value "Inserire indirizzo email e password da usare per l&apos;accesso.">
+<!ENTITY zindus.ca.username.label "Indirizzo email:">
+<!ENTITY zindus.ca.password.label "Password:">
+<!ENTITY zindus.ca.test.connection.label "Prova connessione">
+<!ENTITY zindus.ca.test.connection.accesskey "P">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Rubrica personale">
+<!ENTITY zindus.ca.zimbra.gal.label "Global Address List (GAL):">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Sì">
+<!ENTITY zindus.ca.zimbra.gal.no.label "No">
+<!ENTITY zindus.cs.title "Zindus - Impostazioni di configurazione">
+<!ENTITY zindus.cs.buttonlabelextra2 "Aiuto">
+<!ENTITY zindus.cs.account.add.label "Aggiungi">
+<!ENTITY zindus.cs.account.add.accesskey "A">
+<!ENTITY zindus.cs.account.edit.label "Modifica">
+<!ENTITY zindus.cs.account.edit.accesskey "M">
+<!ENTITY zindus.cs.account.delete.label "Cancella">
+<!ENTITY zindus.cs.account.delete.accesskey "C">
+<!ENTITY zindus.cs.account.email.label "Indirizzo email">
+<!ENTITY zindus.cs.account.addressbook.label "Rubrica">
+<!ENTITY zindus.cs.accounts.label "Accounts">
+<!ENTITY zindus.cs.general.settings.label "Impostazioni">
+<!ENTITY zindus.cs.general.actions.label "Azioni">
+<!ENTITY zindus.cs.general.auto.sync.label "Sincronizza automaticamente">
+<!ENTITY zindus.cs.general.verbose.logging.label "Crea resoconto dettagliato">
+<!ENTITY zindus.cs.general.button.sync.now.label "Sincr. ora">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.reset.label "Reset">
+<!ENTITY zindus.cs.general.button.reset.accesskey "R">
+<!ENTITY zindus.cs.general.button.timer.label "Avvia timer">
+<!ENTITY zindus.cs.general.button.test.harness.label "Archivio di test">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Impostazioni avanzate per Google">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.gr.title "Violazione della regola per i contatti di Google">
+<!ENTITY zindus.gr.button.accept.label "Conferma">
+<!ENTITY zindus.gr.button.skip.label "Salta">
+<!ENTITY zindus.gr.column.location.label "Posizione">
+<!ENTITY zindus.gr.column.displayname.label "Nome visualizzato">
+<!ENTITY zindus.gr.column.email.label "Email">
+<!ENTITY zindus.gr.column.summary.label "Differenze">
+<!ENTITY zindus.cg.title "Zindus - Impostazioni avanzate per Google">
+<!ENTITY zindus.cg.postal.caption.label "Dati indirizzo postale">
+<!ENTITY zindus.cg.postal.false.label "Non sincronizzare (raccomandato)">
+<!ENTITY zindus.cg.postal.true.label "Rappresenta i dati di Thunderbird come xml in Google">
+<!ENTITY zindus.cg.rule.caption.label "Gestione delle violazioni della regola per i contatti di Google">
+<!ENTITY zindus.cg.rule.ask.me.label "Chiedi">
+<!ENTITY zindus.cg.rule.dont.ask.label "Non chiedere - cancella i contatti per risolvere le violazioni">
+<!ENTITY zindus.sw.title "Zindus - Sincronizzazione">

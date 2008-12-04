@@ -56,7 +56,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
-	ret = ret && this.testGoogleContacts1();
+	// ret = ret && this.testGoogleContacts1();
 	// ret = ret && this.testGoogleContacts2();
 	// ret = ret && this.testGoogleContacts3();
 	// ret = ret && this.testGoogleContacts4();
@@ -72,7 +72,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testRenameAddressBook();
 	// ret = ret && this.createGoogleRuleViolation();
 	// ret = ret && this.testGoogleContactWithe4x();
-	// ret = ret && this.createLotsOfContacts();
+	// ret = ret && this.createBigAddressbooks();
+	ret = ret && this.testCardLookupPerformance();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1252,11 +1253,13 @@ TestHarness.prototype.testStringBundleContainsContactProperties = function()
 	return true;
 }
 
-TestHarness.prototype.addCardTb2 = function(properties)
+TestHarness.prototype.addCardTb2 = function(properties, uri)
 {
-	this.m_logger.debug("testAddCard");
+	// this.m_logger.debug("testAddCard");
 
-	var uri    = "moz-abmdbdirectory://abook.mab";
+	if (!uri)
+		uri = "moz-abmdbdirectory://abook.mab";
+
 	var dir    = Components.classes["@mozilla.org/rdf/rdf-service;1"].getService(Components.interfaces.nsIRDFService).GetResource(uri).QueryInterface(Components.interfaces.nsIAbDirectory);
 	var abCard = Components.classes["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Components.interfaces.nsIAbCard);
 	abCard = dir.addCard(abCard);
@@ -1642,12 +1645,86 @@ TestHarness.prototype.testGoogleContactWithe4x = function()
 	return true;
 }
 
-TestHarness.prototype.createLotsOfContacts = function()
-{
-	this.m_logger.debug("createLotsOfContacts");
+// var a_books = [100, 200, 300, 400, 500];
+var a_books = [1000, 2000, 3000, 4000, 5000];
 
-	for (var i = 1000; i<=6000; i++)
-		this.addCardTb2({ PrimaryEmail: i + "-test@example.com", DisplayName: i + " test", Notes: i + "-test line one" });
+TestHarness.prototype.createBigAddressbooks = function()
+{
+	var name, abip, i;
+	var addressbook = AddressBook.new();
+
+	this.m_logger.debug("createBigAddressbooks");
+
+	for (i = 0; i < a_books.length; i++)
+	{
+		name = "test-" + a_books[i];
+		abip = addressbook.newAddressBook(name);
+
+		this.createLotsOfContacts(abip.uri(), a_books[i]);
+	}
+
+	return true;
+}
+
+TestHarness.prototype.testCardLookupPerformance = function()
+{
+	var addressbook = AddressBook.new();
+	var contact_converter = this.newContactConverter();
+	addressbook.contact_converter(contact_converter);
+	var aUri = new Object();
+	var stopwatch = new StopWatch("testCardLookupPerformance");
+	var i, j, count, uri, generator, key, value, abCard;
+
+	this.m_logger.debug("testCardLookupPerformance");
+
+	for (j = 0; j < a_books.length; j++)
+	{
+		name = "test-" + a_books[j];
+		aUri[name] = addressbook.getAddressBookUriByName(name);
+		uri       = aUri[name];
+		count     = 0;
+
+		stopwatch.reset();
+		stopwatch.mark("name: " + name + " starts");
+		this.m_logger.debug("testCardLookupPerformance: name: " + name + " uri: " + uri);
+		key    = 'Notes';
+
+		for (i = 1000; i<= 1000+a_books[j]; i++)
+		{
+			// value  = i + "-test@example.com"; // PrimaryEmail
+
+			value  = i + "-test-line-one";    // Notes
+			abCard = addressbook.lookupCard(uri, key, value);
+
+			value = addressbook.nsIAbCardToPrintableVerbose(abCard);
+
+			this.m_logger.debug("value: "  + value);
+
+			count++;
+
+			zinAssertAndLog(abCard, i);
+		}
+
+		stopwatch.mark("name: " + name + " ends count: " + count);
+	}
+
+	return true;
+}
+
+TestHarness.prototype.createLotsOfContacts = function(uri, num)
+{
+	var properties = { };
+
+	this.m_logger.debug("createLotsOfContacts: uri: " + uri + " num: " + num);
+
+	for (var i = 1000; i<= 1000+num; i++)
+	{
+		properties['PrimaryEmail'] = i + "-test@example.com";
+		properties['DisplayName'] = i + "-test-display";
+		properties['Notes'] = i + "-test-line-one";
+
+		this.addCardTb2(properties, uri);
+	}
 
 	return true;
 }

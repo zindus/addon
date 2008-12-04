@@ -33,10 +33,10 @@ function StopWatch(prefix)
 
 StopWatch.prototype.mark = function(marker)
 {
-	this.m_logger.debug(this.m_prefix + ": " + marker + ": " + this.elapsedToString());
+	this.m_logger.debug(this.m_prefix + ": " + marker + ": " + this.elapsed());
 }
 
-StopWatch.prototype.elapsedToString = function()
+StopWatch.prototype.elapsed = function()
 {
 	return (new Date(Date.now()) - this.m_start);
 }
