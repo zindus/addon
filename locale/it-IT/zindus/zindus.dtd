@@ -4,7 +4,7 @@
 <!ENTITY zindus.ca.account.type.label "Sincronizzazione con">
 <!ENTITY zindus.ca.group.login.details.label "Dati di accesso">
 <!ENTITY zindus.ca.group.pap.label "Per questo indirizzo">
-<!ENTITY zindus.ca.url.description.value "Inserire l&apos;indirizzo della pagina di accesso al server.<html:br/>esempio: https://mymail.esempio.com">
+<!ENTITY zindus.ca.url.description.value "Inserire l&apos;indirizzo per accedere al server.<html:br/>esempio: https://mymail.esempio.com">
 <!ENTITY zindus.ca.url.label "Indirizzo del server:">
 <!ENTITY zindus.ca.username.description.value "Inserire indirizzo email e password da usare per l&apos;accesso.">
 <!ENTITY zindus.ca.username.label "Indirizzo email:">
@@ -25,7 +25,7 @@
 <!ENTITY zindus.cs.account.delete.accesskey "C">
 <!ENTITY zindus.cs.account.email.label "Indirizzo email">
 <!ENTITY zindus.cs.account.addressbook.label "Rubrica">
-<!ENTITY zindus.cs.accounts.label "Accounts">
+<!ENTITY zindus.cs.accounts.label "Utenza">
 <!ENTITY zindus.cs.general.settings.label "Impostazioni">
 <!ENTITY zindus.cs.general.actions.label "Azioni">
 <!ENTITY zindus.cs.general.auto.sync.label "Sincronizza automaticamente">
@@ -36,7 +36,7 @@
 <!ENTITY zindus.cs.general.button.reset.accesskey "R">
 <!ENTITY zindus.cs.general.button.timer.label "Avvia timer">
 <!ENTITY zindus.cs.general.button.test.harness.label "Archivio di test">
-<!ENTITY zindus.cs.general.button.gd.advanced.label "Impostazioni avanzate per Google">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Impost. avanzate Google">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 <!ENTITY zindus.gr.title "Violazione della regola per i contatti di Google">
 <!ENTITY zindus.gr.button.accept.label "Conferma">
