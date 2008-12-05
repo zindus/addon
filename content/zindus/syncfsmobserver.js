@@ -40,6 +40,10 @@ function SyncFsmObserver(es)
 	this.set(SyncFsmObserver.OP,       "");
 	this.set(SyncFsmObserver.PROG_MAX, 0);
 	this.set(SyncFsmObserver.PROG_CNT, 0);
+
+	this.m_perf = newObject(
+		'm_stopwatch',     new StopWatch("SyncFsmObserver"),
+		'm_a_per_state',   new Array());  // of { name, elapsed_time }
 }
 
 SyncFsmObserver.OP                  = 'op'; // eg: server put
@@ -183,7 +187,10 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	var ret = false;
 	var progress_count;
 	var percentage_progress_big_hand = 0;
+
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
+
+	this.m_perf.m_a_per_state.push(newObject(fsmstate.newstate + '-' + fsmstate.event, this.m_perf.m_stopwatch.elapsed()));
 
 	var context = fsmstate.context; // SyncFsm
 	this.state = context.state;
@@ -445,6 +452,24 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				es.m_count_conflicts = context.state.aConflicts.length;
 
 				this.m_logger.debug("exit status: " + es.toString());
+
+				if (this.m_perf)
+				{
+					let msg = "m_perf: ";
+					let obj = null;
+					let key = null;
+					let prev = 0;
+
+					for (let i = 0; i < this.m_perf.m_a_per_state.length; i++)
+					{
+						obj = this.m_perf.m_a_per_state[i];
+						key = firstKeyInObject(obj);
+						msg += "\n " + strPadTo(key, 30) + "  " + obj[key] + " " + (obj[key] - prev);
+						prev = obj[key];
+					}
+
+					this.m_logger.debug(msg);
+				}
 
 				break;
 

@@ -25,18 +25,18 @@
 <!ENTITY zindus.cs.account.delete.accesskey "C">
 <!ENTITY zindus.cs.account.email.label "Indirizzo email">
 <!ENTITY zindus.cs.account.addressbook.label "Rubrica">
-<!ENTITY zindus.cs.accounts.label "Utenza">
+<!ENTITY zindus.cs.accounts.label "Account">
 <!ENTITY zindus.cs.general.settings.label "Impostazioni">
 <!ENTITY zindus.cs.general.actions.label "Azioni">
 <!ENTITY zindus.cs.general.auto.sync.label "Sincronizza automaticamente">
 <!ENTITY zindus.cs.general.verbose.logging.label "Crea resoconto dettagliato">
-<!ENTITY zindus.cs.general.button.sync.now.label "Sincr. ora">
+<!ENTITY zindus.cs.general.button.sync.now.label "Sincronizza ora">
 <!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
 <!ENTITY zindus.cs.general.button.reset.label "Reset">
 <!ENTITY zindus.cs.general.button.reset.accesskey "R">
 <!ENTITY zindus.cs.general.button.timer.label "Avvia timer">
 <!ENTITY zindus.cs.general.button.test.harness.label "Archivio di test">
-<!ENTITY zindus.cs.general.button.gd.advanced.label "Impost. avanzate Google">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Impostazioni avanzate Google">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 <!ENTITY zindus.gr.title "Violazione della regola per i contatti di Google">
 <!ENTITY zindus.gr.button.accept.label "Conferma">

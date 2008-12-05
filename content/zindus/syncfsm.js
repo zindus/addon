@@ -6870,7 +6870,7 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 	                                      " SyncToken: " + zfcLastSync.get(sourceid_pr).get('SyncToken') +
 	                              " account_signature: " + sfcd.signature());
 
-	// TODO - remove me
+	if (false)
 	this.state.m_logger.debug("entryActionCommit: stopwatch: " +
 		" SyncFsm.isOfInterest: " +
 		" count: "   + SyncFsm.isOfInterest._count +
@@ -7125,6 +7125,8 @@ SyncFsm.isOfInterest = function(zfc, key)
 	zinAssert(zfc);
 	zinAssert(key);
 
+	if (false)
+	{
 	if (!SyncFsm.isOfInterest._stopwatch)
 	{
 		SyncFsm.isOfInterest._stopwatch = new StopWatch("isOfInterest");
@@ -7135,6 +7137,7 @@ SyncFsm.isOfInterest = function(zfc, key)
 	{
 		SyncFsm.isOfInterest._stopwatch.reset();
 		SyncFsm.isOfInterest._count++;
+	}
 	}
 
 	var ret = null;
@@ -7189,7 +7192,7 @@ SyncFsm.isOfInterest = function(zfc, key)
 		}
 	}
 
-	SyncFsm.isOfInterest._elapsed += SyncFsm.isOfInterest._stopwatch.elapsed();
+	// SyncFsm.isOfInterest._elapsed += SyncFsm.isOfInterest._stopwatch.elapsed();
 
 	// logger().debug("SyncFsm.isOfInterest: blah: key: " + key + " returns: " + ret);
 
