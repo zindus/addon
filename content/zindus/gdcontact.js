@@ -145,7 +145,7 @@ GdContact.set_visited = function(a_visited, key)
 
 GdContact.prototype.runFunctorOnContainer = function(functor)
 {
-	var i, key, child, rel;
+	var i, key, child, rel, children;
 
 	zinAssert(this.m_container && this.m_container.nodeType == Node.ELEMENT_NODE);
 
@@ -155,14 +155,13 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 
 	if (this.m_container.hasChildNodes())
 	{
-		var children = this.m_container.childNodes;
+		children = this.m_container.childNodes;
 
 		for (i = 0; i < children.length; i++)
 			if (children[i].nodeType == Node.ELEMENT_NODE)
 			{
 				child = children[i];
 				key = child.localName;
-				is_run_functor = false;
 
 				// logger().debug("GdContact: runFunctorOnContainer: i: " + i + ": " + this.nodeAsString(child));
 
@@ -240,6 +239,13 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 
 							var key_for_certain = (child.localName == "postalAddress") ? ("postalAddress#" + key) : key;
 
+							if (false)
+							logger().debug("GdContact: runFunctorOnContainer: postalAddress: key_for_certain: " + key_for_certain 
+								+ " child.localName: " + child.localName
+								+ " gd_certain_keys_converted: " + aToString(this.m_contact_converter.gd_certain_keys_converted()));
+
+							// if postal address conversion is turned off (in the contact converter) the postalAddress'es aren't visited
+							//
 							if (isPropertyPresent(this.m_contact_converter.gd_certain_keys_converted()[child.localName], key_for_certain))
 								GdContact.visit_first(child.localName + "#" + key, a_visited, functor, child);
 
@@ -262,10 +268,11 @@ GdContact.prototype.runFunctorOnContainer = function(functor)
 	}
 }
 
-
 GdContact.visit_first = function(key, a_visited, functor, child)
 {
 	var is_visited = false;
+
+	// logger().debug("GdContact: visit_first: key: " + key);
 
 	if (!isPropertyPresent(a_visited, key))
 	{
@@ -695,6 +702,39 @@ GdContact.prototype.is_empty = function()
 
 	return ret;
 }
+
+GdContact.prototype.removeEmptyPostalElements = function()
+{
+	var a_to_be_deleted = new Array();
+	var i, child, children;
+
+	zinAssert(this.m_container && this.m_container.nodeType == Node.ELEMENT_NODE);
+
+	if (this.m_container.hasChildNodes())
+	{
+		children = this.m_container.childNodes;
+
+		for (i = 0; i < children.length; i++)
+			if (children[i].nodeType == Node.ELEMENT_NODE)
+			{
+				child = children[i];
+
+				if (child.namespaceURI == Xpath.nsResolver("gd"))
+					switch(child.localName)
+					{
+						case "postalAddress":
+							if (child.textContent.length == 0)
+								a_to_be_deleted.push(child);
+
+							break;
+					}
+			}
+
+		for (i = 0; i < a_to_be_deleted.length; i++)
+			this.m_container.removeChild(a_to_be_deleted[i]);
+	}
+}
+
 
 function GdContactFunctorToMakeHashFromNodes(contact_converter)
 {

@@ -60,6 +60,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContacts2();
 	// ret = ret && this.testGoogleContacts3();
 	// ret = ret && this.testGoogleContacts4();
+	ret = ret && this.testGoogleContacts5();
 	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testGdContact();
 	// ret = ret && this.testStringBundleContainsContactProperties();
@@ -73,7 +74,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.createGoogleRuleViolation();
 	// ret = ret && this.testGoogleContactWithe4x();
 	// ret = ret && this.createBigAddressbooks();
-	ret = ret && this.testCardLookupPerformance();
+	// ret = ret && this.testCardLookupPerformance();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -952,7 +953,6 @@ TestHarness.prototype.testGoogleContacts3 = function()
 	return true;
 }
 
-
 // this looks at a google contact whereby the corresponding thunderbird contact has no properties
 //
 TestHarness.prototype.testGoogleContacts4 = function()
@@ -975,6 +975,32 @@ TestHarness.prototype.testGoogleContacts4 = function()
 	return true;
 }
 
+// a google contact with an empty gd:postalAddress element
+//
+TestHarness.prototype.testGoogleContacts5 = function()
+{
+	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96</id><updated>2008-05-05T21:13:38.158Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>rr rr</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96/1210022018158000'/><gd:email rel='http://schemas.google.com/g/2005#home' address='rr.rr.rr.rr@example.com' primary='true'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>111111</gd:phoneNumber><gd:postalAddress rel='http://schemas.google.com/g/2005#work'></gd:postalAddress></entry>";
+
+	var domparser = new DOMParser();
+	var response = domparser.parseFromString(xmlString, "text/xml");
+	var contact_converter = this.newContactConverter();
+	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
+
+	var contact = a_gd_contact[firstKeyInObject(a_gd_contact)];
+
+	this.m_logger.debug("testGoogleContacts5 1: contact: " + contact.toString());
+	this.m_logger.debug("testGoogleContacts5 2: contact: " + contact.toStringXml());
+
+	// properties = newObject("PrimaryEmail", "blah@example.com");
+	// contact.updateFromProperties(properties);
+
+	contact.removeEmptyPostalElements();
+
+	this.m_logger.debug("testGoogleContacts5 3: contact: " + contact.toString());
+	this.m_logger.debug("testGoogleContacts5 4: contact: " + contact.toStringXml());
+
+	return true;
+}
 
 TestHarness.prototype.testGdAddressConverter = function()
 {

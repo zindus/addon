@@ -6351,6 +6351,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					properties = contact.addWhitespaceToPostalProperties(properties);
 
 				contact.updateFromProperties(properties);
+				contact.removeEmptyPostalElements(); // see issue #160removeEmptyPostalElements(); // see issue #160
 
 				if (isMatchObjects(properties_pre_update, contact.m_properties))
 				{
