@@ -408,18 +408,13 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				{
 					es.m_exit_status = 1;
 
-					if (isInArray(fsmstate.oldstate,
-					               [ 'start', 'stAuth', 'stGetContactGd2', 'stAuthSelect', 'stGetContactGd2',
-								     'stLoad', 'stAuthCheck', 'stLoadTb', 'stConverge', 'stConverge7', 'stConverge9',
-									 'stUpdateCleanup' ]))
-					{
+					if (context.state.stopFailCode)
 						es.failcode(context.state.stopFailCode);
-
-						if (context.state.stopFailTrailer)
-							es.m_fail_trailer = context.state.stopFailTrailer;
-					}
 					else
 						es.failcode('failon.unexpected');
+
+					if (context.state.stopFailTrailer)
+						es.m_fail_trailer = context.state.stopFailTrailer;
 				}
 				else if (context.state.authToken && isPropertyPresent(Maestro.FSM_GROUP_AUTHONLY, context.state.id_fsm))
 					es.m_exit_status = 0;
