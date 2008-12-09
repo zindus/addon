@@ -34,6 +34,7 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("singleton.js");
 	ZindusScopeRegistry.includejs("windowcollection.js");
 	ZindusScopeRegistry.includejs("statusbar.js");
+	ZindusScopeRegistry.includejs("bigstring.js");
 	ZindusScopeRegistry.includejs("syncfsm.js");
 	ZindusScopeRegistry.includejs("syncfsmexitstatus.js");
 	ZindusScopeRegistry.includejs("syncfsmchaindata.js");

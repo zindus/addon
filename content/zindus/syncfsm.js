@@ -54,7 +54,7 @@ const AB_GAL                          = "GAL";
 const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/contacts/";
 const GOOGLE_PROJECTION               = "/thin";  // use 'thin' to avoid gd:extendedProperty elements
 const GOOGLE_SHOW_CONFLICTS_AT_A_TIME = 5;
-const GENERATOR_CHUNK_SIZE_FEED       = 500;
+const GENERATOR_CHUNK_SIZE_FEED       = 400;
 const GENERATOR_CHUNK_SIZE_CARDS      = 200;
 
 function SyncFsm()
@@ -2646,7 +2646,7 @@ SyncFsm.prototype.loadTbAddressBooks = function()
 			else
 				is_process = dirname == gd_ab_name_public;
 
-			var msg = "addressbook:" +
+			let msg = "addressbook:" +
 			          " dirName: "              + dirname +
 			          " dirPrefId: "            + prefid +
 				      " URI: "                  + uri +
@@ -5189,39 +5189,6 @@ SyncFsm.sharedFoldersUpdateAttributes = function(zfc, luid_link)
 // - mozilla's failsafe stop/continue javascript dialog is less likely to pop up
 // - the user sees a little of movement in the progress bar between each state
 //
-SyncFsm.prototype.entryActionConverge1 = function(state, event, continuation)
-{
-	var passed = true;
-
-	this.state.stopwatch.mark(state + " 1");
-
-	this.debug("entryActionConverge1: zfcTb:\n" + this.zfcTb().toString());
-	this.debug("entryActionConverge1: zfcPr:\n" + this.zfcPr().toString());
-
-	if (this.formatPr() == FORMAT_ZM)
-	{
-		passed = passed && this.sharedFoldersUpdateZm();
-
-		this.state.stopwatch.mark(state + " 2");
-
-		if (passed)
-			this.fakeDelOnUninterestingContacts();
-
-		this.state.stopwatch.mark(state + " 3");
-
-		passed = passed && this.testForEmailedContactsMatch();
-
-		this.state.stopwatch.mark(state + " 4");
-
-		passed = passed && this.testForCreateSharedAddressbook();
-	}
-	else if (this.formatPr() == FORMAT_GD && this.is_slow_sync(this.state.sourceid_pr))
-		passed = passed && this.testForGdServerConstraints();
-
-	var nextEvent = passed ? 'evNext' : 'evLackIntegrity';
-
-	continuation(nextEvent);
-}
 
 SyncFsm.prototype.entryActionConverge = function(state, event, continuation)
 {
@@ -5238,7 +5205,22 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	this.state.stopwatch.mark(state + " Converge: enters: ");
 
 	this.debug("entryActionConverge: zfcTb:\n" + this.zfcTb().toString());
+
+	yield true;
+
 	this.debug("entryActionConverge: zfcPr:\n" + this.zfcPr().toString());
+
+	yield true;
+
+	if (false) // TODO
+	{
+	let msg  = newObject('ret', "");
+
+	msg.ret += "\nzfcTb:\n"; generator = this.zfcTb().toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED);while (generator.next()) yield true;
+	msg.ret += "\nzfcPr:\n"; generator = this.zfcPr().toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED);while (generator.next()) yield true;
+
+	this.debug("entryActionConverge: " + msg.ret);
+	}
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
@@ -6719,9 +6701,15 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 
 		this.state.stopwatch.mark(state + " 2");
 
-		this.debug("UpdateCleanup: zfcTb:\n" + this.zfcTb().toString());
-		this.debug("UpdateCleanup: zfcPr:\n" + this.zfcPr().toString());
-		this.debug("UpdateCleanup: zfcGid: " + this.state.zfcGid.toString());
+		{
+			let msg  = newObject('ret', "");
+
+			msg.ret += "\nzfcTb:\n";  generator = this.zfcTb().toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED); while (generator.next()) yield true;
+			msg.ret += "\nzfcPr:\n";  generator = this.zfcPr().toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED); while (generator.next()) yield true;
+			msg.ret += "\nzfcGid:\n"; generator = this.state.zfcGid.toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED); while (generator.next()) yield true;
+
+			this.debug("UpdateCleanup: " + msg.ret);
+		}
 
 		this.state.stopwatch.mark(state + " 3");
 		yield true;
@@ -8163,9 +8151,10 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 {
 	var is_finished = false;
 	var count       = 0;
-	var msg         = "entryActionGetContactGd3:\n";
+	var big_msg     = new BigString(); big_msg.concat("entryActionGetContactGd3:\n");
 	var context     = this;
 	var a_zindus_contact_count = newObject('regular', 0, 'deleted', 0, 'empty', 0);
+	var zfcPr       = this.zfcPr();
 	var contact, id, generator, functor, i, response;
 
 	this.state.stopwatch.mark(state);
@@ -8180,6 +8169,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 			var edit_url            = contact.m_meta[GdContact.edit];
 			var self_url            = contact.m_meta[GdContact.self];
 			var is_deleted_or_empty = contact.is_deleted() || contact.is_empty();
+			let msg = "";
 
 			context.state.a_gd_contact[id] = contact;
 			context.state.m_gd_contact_count++;  // count the contacts processed in total
@@ -8196,9 +8186,9 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 			if (!is_deleted_or_empty)
 				msg += " properties: " + contact.toString();
 
-			if (context.zfcPr().isPresent(id))
+			if (zfcPr.isPresent(id))
 			{
-				zfi = context.zfcPr().get(id);
+				zfi = zfcPr.get(id);
 
 				zfi.set(FeedItem.ATTR_REV,  rev);
 				zfi.set(FeedItem.ATTR_EDIT, edit_url);
@@ -8208,7 +8198,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 
 				if (is_deleted_or_empty)
 				{
-					context.zfcPr().get(id).set(FeedItem.ATTR_DEL, '1');
+					zfi.set(FeedItem.ATTR_DEL, '1');
 
 					msg += " marked as deleted" + (contact.is_deleted() ? "" : " (because it is empty)") + ": ";
 				}
@@ -8218,13 +8208,15 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 			else if (!is_deleted_or_empty)
 			{
 				zfi = context.newZfiCnGd(id, rev, edit_url, self_url, context.state.gd_luid_ab_in_gd);
-				context.zfcPr().set(zfi); // add new
+				zfcPr.set(zfi); // add new
 				msg += " added: " + zfi.toString();
 			}
 			else
 				msg += " ignored " + (contact.is_deleted() ? "deleted" : "empty") + " contact";
 
 			msg += "\n";
+
+			big_msg.concat(msg);
 
 			return;
 		}
@@ -8256,7 +8248,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 		this.state.a_gd_contact_dexmlify = functor.m_collection;
 	}
 
-	this.debug(msg);
+	this.debug(big_msg.toString());
 
 	if (is_finished)
 		this.debug("entryActionGetContactGd3: contacts processed: " +
@@ -8354,10 +8346,13 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 	var sourceid_pr = this.state.sourceid_pr;
 	var key, contact, is_modified, new_properties;
 	var nextEvent = null;
+	var bigmsg = new BigString();
 
 	if (!this.state.a_gd_contact_dexmlify_ids)
 	{
 		this.state.a_gd_contact_dexmlify_ids = new Array();
+
+		bigmsg.concat("DeXmlifyAddrGd: ");
 
 		for (var id in this.state.a_gd_contact_dexmlify)
 		{
@@ -8365,14 +8360,14 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 			is_modified    = false;
 			new_properties = cloneObject(contact.m_properties);
 
-			msg = "DeXmlifyAddrGd: testing id=" + id;
+			bigmsg.concat("\n testing id=" + id);
 
 			for (var key in this.state.m_contact_converter_vary_gd_postal.gd_certain_keys_converted()["postalAddress"])
 				if (isPropertyPresent(new_properties, key))
 				{
 					var otheraddr = contact.postalAddressOtherAddr(key);
 
-					msg + " key=" + key + " otheraddr: " + otheraddr;
+					bigmsg.concat(" key=" + key + " otheraddr: " + otheraddr);
 
 					if (otheraddr != null)
 					{
@@ -8386,9 +8381,9 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 				this.state.a_gd_contact_dexmlify[id].updateFromProperties(new_properties);
 				this.state.a_gd_contact_dexmlify_ids.push(id);
 			}
-
-			this.debug(msg);
 		}
+
+		this.debug(bigmsg.toString());
 
 		this.state.m_logger.debug("entryActionDeXmlifyAddrGd: a_gd_contact_dexmlify_ids: "+this.state.a_gd_contact_dexmlify_ids.toString());
 	}

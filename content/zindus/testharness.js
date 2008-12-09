@@ -60,7 +60,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContacts2();
 	// ret = ret && this.testGoogleContacts3();
 	// ret = ret && this.testGoogleContacts4();
-	ret = ret && this.testGoogleContacts5();
+	// ret = ret && this.testGoogleContacts5();
 	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testGdContact();
 	// ret = ret && this.testStringBundleContainsContactProperties();
@@ -74,7 +74,9 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.createGoogleRuleViolation();
 	// ret = ret && this.testGoogleContactWithe4x();
 	// ret = ret && this.createBigAddressbooks();
-	// ret = ret && this.testCardLookupPerformance();
+	// ret = ret && this.testPerformanceCardLookup();
+	ret = ret && this.testPerformanceStringConcat();
+	// ret = ret && this.testPerformanceZfcSet();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1692,16 +1694,16 @@ TestHarness.prototype.createBigAddressbooks = function()
 	return true;
 }
 
-TestHarness.prototype.testCardLookupPerformance = function()
+TestHarness.prototype.testPerformanceCardLookup = function()
 {
 	var addressbook = AddressBook.new();
 	var contact_converter = this.newContactConverter();
 	addressbook.contact_converter(contact_converter);
 	var aUri = new Object();
-	var stopwatch = new StopWatch("testCardLookupPerformance");
+	var stopwatch = new StopWatch("testPerformanceCardLookup");
 	var i, j, count, uri, generator, key, value, abCard;
 
-	this.m_logger.debug("testCardLookupPerformance");
+	this.m_logger.debug("testPerformanceCardLookup");
 
 	for (j = 0; j < a_books.length; j++)
 	{
@@ -1712,7 +1714,7 @@ TestHarness.prototype.testCardLookupPerformance = function()
 
 		stopwatch.reset();
 		stopwatch.mark("name: " + name + " starts");
-		this.m_logger.debug("testCardLookupPerformance: name: " + name + " uri: " + uri);
+		this.m_logger.debug("testPerformanceCardLookup: name: " + name + " uri: " + uri);
 		key    = 'Notes';
 
 		for (i = 1000; i<= 1000+a_books[j]; i++)
@@ -1751,6 +1753,79 @@ TestHarness.prototype.createLotsOfContacts = function(uri, num)
 
 		this.addCardTb2(properties, uri);
 	}
+
+	return true;
+}
+
+TestHarness.prototype.testPerformanceZfcSet = function()
+{
+	var stopwatch = new StopWatch("testPerformanceZfcSet");
+	var max = 12000;
+	var msg = "";
+	var last = 0;
+	var i;
+
+	var zfc = new FeedCollection();
+	var zfi;
+
+	for (i = 0; i < max; i++)
+	{
+		zfi = new FeedItem();
+		zfi.set(FeedItem.ATTR_KEY, i);
+		zfi.set('name1', "value1");
+
+		zfc.set(zfi);
+
+		if (zfc.isPresent(i))
+			; // do nothing
+
+		if (i % 1000 == 0)
+		{
+			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
+			last = stopwatch.elapsed();
+		}
+	}
+
+	return true;
+}
+
+TestHarness.prototype.testPerformanceStringConcat = function()
+{
+	var stopwatch = new StopWatch("testPerformanceStringConcat");
+	var max = 10000;
+	var msg = "";
+	var snippet = " hello world lets make this a whole string hello world lets make this a whole string hello world lets make this a whole string hello world lets make this a whole string hello world lets make this a whole string hello world lets make this a whole string ";
+	var i, last;
+
+	last = 0;
+
+	for (i = 0; i < max; i++)
+	{
+		msg += snippet;
+		
+		if (i % 1000 == 0)
+		{
+			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
+			last = stopwatch.elapsed();
+		}
+	}
+
+	last = 0;
+	stopwatch.reset();
+	var bs = new BigString();
+
+	for (i = 0; i < max; i++)
+	{
+		bs.concat(snippet);
+		
+		if (i % 1000 == 0)
+		{
+			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
+			last = stopwatch.elapsed();
+		}
+	}
+
+	this.m_logger.debug("testPerformanceStringConcat: msg.length: " + msg.length + " bs.length: " + bs.toString().length);
 
 	return true;
 }

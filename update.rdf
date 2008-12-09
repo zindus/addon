@@ -2,28 +2,28 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAH5xCv/fcp6WdtEkVv7E9DRbT5GIMstbW+ZFI5xqiAMHBNmUbh6wYEXW9eCkgRI/nF2Gmqxwxd/BtddFTNb+ySxntPUImYWTJJyaexPo0uNsmYvxGU720rBfNC83oEh/UDQ7rhxZuSf529oNtaW4Fe+WrbEiyOdSHIPf6XrB6t+r">
-    <em:updates RDF:resource="rdf:#$qjjRS2"/>
-  </RDF:Description>
-  <RDF:Description RDF:about="rdf:#$BjjRS2"
-                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
-                   em:maxVersion="3.0a3"
-                   em:minVersion="2.0b2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.4.20081209.084022-tb+sm.xpi"
-                   em:updateHash="sha256:0834eef5e67c0d9ee4f4b585c7357c1bcf70478e54f3193732dea40bffd89b5f" />
-  <RDF:Description RDF:about="rdf:#$ujjRS2"
-                   em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
-                   em:maxVersion="2.0a2"
-                   em:minVersion="2.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.4.20081209.084022-tb+sm.xpi"
-                   em:updateHash="sha256:0834eef5e67c0d9ee4f4b585c7357c1bcf70478e54f3193732dea40bffd89b5f" />
   <RDF:Description RDF:about="rdf:#$rjjRS2"
-                   em:version="0.8.4.20081209.084022">
+                   em:version="0.8.4.20081209.170805">
     <em:targetApplication RDF:resource="rdf:#$ujjRS2"/>
     <em:targetApplication RDF:resource="rdf:#$BjjRS2"/>
   </RDF:Description>
   <RDF:Seq RDF:about="rdf:#$qjjRS2">
     <RDF:li RDF:resource="rdf:#$rjjRS2"/>
   </RDF:Seq>
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAFiW8iEBbf5cMnqHktHEvWT92rT19Sc9DNCVJUgNwqmlKDezQqSFxOPsqWhsVBZVMXizZs6QPLj6mVxNyqY7z9lD1QTsWrX7rFc6E5tf0kcFPQt8ZD33LeMjKxDTtQmC2OUfO1kQ0cVsVlEBTRPDhAKZ7IocdRvIj/drkieid/Zj">
+    <em:updates RDF:resource="rdf:#$qjjRS2"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$BjjRS2"
+                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
+                   em:maxVersion="3.0a3"
+                   em:minVersion="2.0b2"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.4.20081209.170805-tb+sm.xpi"
+                   em:updateHash="sha256:a5c2e7f6a5ba2dad9502a76fab7fadb73d72598c900fd0cd84ac606248436faf" />
+  <RDF:Description RDF:about="rdf:#$ujjRS2"
+                   em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
+                   em:maxVersion="2.0a2"
+                   em:minVersion="2.0a1"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.4.20081209.170805-tb+sm.xpi"
+                   em:updateHash="sha256:a5c2e7f6a5ba2dad9502a76fab7fadb73d72598c900fd0cd84ac606248436faf" />
 </RDF:RDF>

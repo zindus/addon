@@ -417,8 +417,8 @@ ConfigSettings.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
 	this.m_is_fsm_running = (fsmstate && ! fsmstate.isFinal());
 
-	this.m_logger.debug("onFsmStateChangeFunctor: fsmstate: " + (fsmstate ? fsmstate.toString() : "null") +
-	                                    " m_is_fsm_running: " + this.m_is_fsm_running);
+	// this.m_logger.debug("onFsmStateChangeFunctor: fsmstate: " + (fsmstate ? fsmstate.toString() : "null") +
+	//                                    " m_is_fsm_running: " + this.m_is_fsm_running);
 
 	this.updateView();
 }

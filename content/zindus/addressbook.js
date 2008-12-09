@@ -546,6 +546,9 @@ AddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attribut
 	return abCard;
 }
 
+AddressBookTb2.prototype.getCardProperty = function(abCard, key) { return abCard.getCardValue(key);      }
+AddressBookTb3.prototype.getCardProperty = function(abCard, key) { return abCard.getProperty(key, null); }
+
 AddressBook.prototype.getCardProperties = function(abCard)
 {
 	var ret = new Object();
@@ -553,10 +556,7 @@ AddressBook.prototype.getCardProperties = function(abCard)
 
 	for (i in this.m_contact_converter.m_map[FORMAT_TB])
 	{
-		if (AddressBook.version() == AddressBook.TB2)
-			value = abCard.getCardValue(i);
-		else
-			value = abCard.getProperty(i, null);
+		value = this.getCardProperty(abCard, i);
 
 		// this.m_logger.debug("AddressBook.getCardProperties: i: " + i + " value: " + value);
 
@@ -761,7 +761,7 @@ AddressBook.prototype.isElemPab = function(elem)
 
 AddressBook.prototype.nsIAbCardToPrintable = function(abCard)
 {
-	return (abCard.isMailList ? abCard.mailListURI : abCard.getCardValue("PrimaryEmail"));
+	return (abCard.isMailList ? abCard.mailListURI : this.getCardProperty(abCard, "PrimaryEmail"));
 }
 
 AddressBook.prototype.nsIAbCardToPrintableVerbose = function(abCard)

@@ -295,9 +295,73 @@ FeedCollection.prototype.save = function()
 // - by zid
 // - by ascending key
 //
+FeedCollection.prototype.toStringGenerator = function(out, yield_count, eol_char_arg) // don't support eol_char_arg
+{
+	var i, key,zid;
+	var count = 0;
+	var a_key = new Object();
+	var a_sort_order = [ null,
+						 FeedItem.typeAsString(FeedItem.TYPE_FL),
+						 FeedItem.typeAsString(FeedItem.TYPE_LN),
+	                     FeedItem.typeAsString(FeedItem.TYPE_SF),
+						 FeedItem.typeAsString(FeedItem.TYPE_CN) ];
+
+	for (i = 0; i < a_sort_order.length; i++)
+		a_key[a_sort_order[i]] = new Object();
+
+	for (key in this.m_collection)
+	{
+		zfi = this.get(key);
+
+		if (zfi.isPresent(FeedItem.ATTR_TYPE))
+			type = zfi.get(FeedItem.ATTR_TYPE);
+		else
+			type = null;
+
+		zuio = new Zuio(zfi.get(FeedItem.ATTR_KEY));
+
+		if (!isPropertyPresent(a_key[type], zuio.zid()))
+			a_key[type][zuio.zid()] = new Array();
+
+		a_key[type][zuio.zid()].push(isNaN(zuio.id()) ? zuio.id() : Number(zuio.id()));
+
+		if (yield_count > 0 && ++count % yield_count == 0)
+			yield true;
+	}
+
+	for (i = 0; i < a_sort_order.length; i++)
+		for (zid in a_key[a_sort_order[i]])
+		{
+			a_sorted_ids = a_key[a_sort_order[i]][zid];
+			a_sorted_ids.sort(numeric_compare);
+
+			for (j = 0; j < a_sorted_ids.length; j++)
+			{
+				out.ret += this.m_collection[Zuio.key(a_sorted_ids[j], zid)].toString(eol_char_arg)+"\n";
+
+				if (yield_count > 0 && ++count % yield_count == 0)
+					yield true;
+			}
+		}
+
+	yield false;
+}
+
+// FeedCollection.prototype.toString = function(eol_char_arg)
+// {
+// 	var out       = newObject('ret', "");
+// 	var generator = this.toStringGenerator(out, 0, eol_char_arg);
+// 
+// 	while (generator.next())
+// 		;
+// 
+// 	return out.ret;
+// }
+
+
 FeedCollection.prototype.toString = function(eol_char_arg)
 {
-	var ret = "";
+	var ret = new BigString();
 	var i, key,zid;
 
 	var a_key = new Object();
@@ -335,11 +399,12 @@ FeedCollection.prototype.toString = function(eol_char_arg)
 			a_sorted_ids.sort(numeric_compare);
 
 			for (j = 0; j < a_sorted_ids.length; j++)
-				ret += this.m_collection[Zuio.key(a_sorted_ids[j], zid)].toString(eol_char_arg)+"\n";
+				ret.concat(this.m_collection[Zuio.key(a_sorted_ids[j], zid)].toString(eol_char_arg)+"\n");
 		}
 
-	return ret;
+	return ret.toString();
 }
+
 
 // The constructor takes one of three styles of arguments:
 // - 0 arguments
