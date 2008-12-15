@@ -249,6 +249,8 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 1");
 
+	logger().debug("AMHERE 1\n");  // TODO
+
 	this.state.m_logger.debug("start: " + " account: "        + this.username() +
 										  " zindus version: " + APP_VERSION_NUMBER +
 	                                      " cookieEnabled: "  + navigator.cookieEnabled +
@@ -7669,6 +7671,8 @@ HttpStateZm.prototype.failCode = function()
 
 	if (ret == 'failon.unexpected')
 		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
+
+	logger().debug("AMHERE: ret: " + ret); // TODO
 
 	return ret;
 }
