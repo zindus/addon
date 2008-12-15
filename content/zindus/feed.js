@@ -33,6 +33,13 @@ FeedItem.KEY_LASTSYNC_COMMON     = "3#zindus-housekeeping"; // this key is used 
 FeedItem.KEYS_RESERVED           = newObject(FeedItem.KEY_AUTO_INCREMENT, null, FeedItem.KEY_STATUSBAR, null,
                                              FeedItem.KEY_LASTSYNC_COMMON, null);
 
+FeedItem.TOSTRING_EOL_NL         = 0x01;
+FeedItem.TOSTRING_EOL_SP         = 0x02;
+FeedItem.TOSTRING_RET_ALL        = 0x10;
+FeedItem.TOSTRING_RET_FIRST_ONLY = 0x20;
+FeedItem.TOSTRING_ALL            = (FeedItem.TOSTRING_EOL_NL | FeedItem.TOSTRING_EOL_SP |
+                                    FeedItem.TOSTRING_RET_ALL | FeedItem.TOSTRING_RET_FIRST_ONLY);
+
 FeedItem.ATTR_KEY  = 'key';
 FeedItem.ATTR_MS   = 'ms';
 FeedItem.ATTR_LS   = 'ls';   // last sync - concatenation of gid version, ms, DEL etc eg. 1#-134217729### or 1##1801#1801#
@@ -55,12 +62,17 @@ FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
+FeedItem.ATTR_TBPA = 'tbpa'; // temporary (not persisted) - thunderbird contact has data in a postal field
 
 FeedItem.TYPE_CN   = 0x01; // contact
 FeedItem.TYPE_FL   = 0x02; // folder
 FeedItem.TYPE_LN   = 0x04; // link
 FeedItem.TYPE_SF   = 0x08; // link-folder - a hybrid of <link> and remote <folder> managed by zindus
 FeedItem.TYPE_MASK = (FeedItem.TYPE_CN | FeedItem.TYPE_FL | FeedItem.TYPE_LN | FeedItem.TYPE_SF);
+
+FeedItem.DO_FIRST                = newObject(FeedItem.ATTR_TYPE, 0, FeedItem.ATTR_KEY, 0, FeedItem.ATTR_ID, 0, FeedItem.ATTR_L, 0,
+                                             FeedItem.ATTR_NAME, 0, FeedItem.ATTR_LS, 0,  FeedItem.ATTR_MS, 0, FeedItem.ATTR_REV, 0);
+
 
 FeedItem.TYPE_BIMAP = new BiMap(
 		[FeedItem.TYPE_CN, FeedItem.TYPE_FL, FeedItem.TYPE_LN, FeedItem.TYPE_SF],
@@ -70,6 +82,7 @@ function FeedCollection()
 {
 	this.m_collection = new Object();
 	this.m_filename   = null; // this is a string containing the filename (like "fred.txt"), not an nsIFile
+	this.m_format     = null; // FORMAT_TB etc.  format is a member of this class to support keyParentRelevantToGid
 }
 
 FeedCollection.prototype.clone = function()
@@ -78,6 +91,7 @@ FeedCollection.prototype.clone = function()
 
 	ret.m_collection = cloneObject(this.m_collection);
 	ret.m_filename   = cloneObject(this.m_filename);
+	ret.m_format     = this.m_format;
 
 	return ret;
 }
@@ -89,6 +103,16 @@ FeedCollection.prototype.filename = function()
 
 	// logger().debug("FeedCollection: filename: " + this.m_filename);
 	return this.m_filename;
+}
+
+FeedCollection.prototype.format = function()
+{
+	if (arguments.length == 1)
+		this.m_format = arguments[0];
+
+	zinAssert(this.m_format); // if this fails, m_format was uninittialised
+
+	return this.m_format;
 }
 
 FeedCollection.prototype.nsifile = function()
@@ -277,7 +301,7 @@ FeedCollection.prototype.load = function()
 
 FeedCollection.prototype.save = function()
 {
-	var content = this.toString("\n");
+	var content = this.toString(FeedItem.TOSTRING_EOL_NL);
 
 	// put an addtional newline at the end of the file because nsILineInputStream.readLine doesn't return TRUE 
 	// on the very last newline so the functor used in load() doesn't get called.
@@ -295,7 +319,7 @@ FeedCollection.prototype.save = function()
 // - by zid
 // - by ascending key
 //
-FeedCollection.prototype.toStringGenerator = function(out, yield_count, eol_char_arg) // don't support eol_char_arg
+FeedCollection.prototype.generateZfis = function(yield_count)
 {
 	var i, key,zid;
 	var count = 0;
@@ -324,9 +348,6 @@ FeedCollection.prototype.toStringGenerator = function(out, yield_count, eol_char
 			a_key[type][zuio.zid()] = new Array();
 
 		a_key[type][zuio.zid()].push(isNaN(zuio.id()) ? zuio.id() : Number(zuio.id()));
-
-		if (yield_count > 0 && ++count % yield_count == 0)
-			yield true;
 	}
 
 	for (i = 0; i < a_sort_order.length; i++)
@@ -337,74 +358,24 @@ FeedCollection.prototype.toStringGenerator = function(out, yield_count, eol_char
 
 			for (j = 0; j < a_sorted_ids.length; j++)
 			{
-				out.ret += this.m_collection[Zuio.key(a_sorted_ids[j], zid)].toString(eol_char_arg)+"\n";
-
-				if (yield_count > 0 && ++count % yield_count == 0)
-					yield true;
+				yield this.get(Zuio.key(a_sorted_ids[j], zid));
 			}
 		}
 
 	yield false;
 }
 
-// FeedCollection.prototype.toString = function(eol_char_arg)
-// {
-// 	var out       = newObject('ret', "");
-// 	var generator = this.toStringGenerator(out, 0, eol_char_arg);
-// 
-// 	while (generator.next())
-// 		;
-// 
-// 	return out.ret;
-// }
-
-
-FeedCollection.prototype.toString = function(eol_char_arg)
+FeedCollection.prototype.toString = function(arg)
 {
-	var ret = new BigString();
-	var i, key,zid;
+	var generator = this.generateZfis();
+	var ret       = new BigString();
+	var zfi;
 
-	var a_key = new Object();
-
-	var a_sort_order = [ null,
-						 FeedItem.typeAsString(FeedItem.TYPE_FL),
-						 FeedItem.typeAsString(FeedItem.TYPE_LN),
-	                     FeedItem.typeAsString(FeedItem.TYPE_SF),
-						 FeedItem.typeAsString(FeedItem.TYPE_CN) ];
-
-	for (i = 0; i < a_sort_order.length; i++)
-		a_key[a_sort_order[i]] = new Object();
-
-	for (key in this.m_collection)
-	{
-		zfi = this.get(key);
-
-		if (zfi.isPresent(FeedItem.ATTR_TYPE))
-			type = zfi.get(FeedItem.ATTR_TYPE);
-		else
-			type = null;
-
-		zuio = new Zuio(zfi.get(FeedItem.ATTR_KEY));
-
-		if (!isPropertyPresent(a_key[type], zuio.zid()))
-			a_key[type][zuio.zid()] = new Array();
-
-		a_key[type][zuio.zid()].push(isNaN(zuio.id()) ? zuio.id() : Number(zuio.id()));
-	}
-
-	for (i = 0; i < a_sort_order.length; i++)
-		for (zid in a_key[a_sort_order[i]])
-		{
-			a_sorted_ids = a_key[a_sort_order[i]][zid];
-			a_sorted_ids.sort(numeric_compare);
-
-			for (j = 0; j < a_sorted_ids.length; j++)
-				ret.concat(this.m_collection[Zuio.key(a_sorted_ids[j], zid)].toString(eol_char_arg)+"\n");
-		}
+	while (zfi = generator.next())
+		ret.concat(zfi.toString(arg) + "\n");
 
 	return ret.toString();
 }
-
 
 // The constructor takes one of three styles of arguments:
 // - 0 arguments
@@ -516,7 +487,7 @@ FeedItem.prototype.key = function()
 
 FeedItem.prototype.keyParent = function()
 {
-	var zuio = new Zuio(this.get(FeedItem.ATTR_KEY));
+	let zuio = new Zuio(this.get(FeedItem.ATTR_KEY));
 
 	return Zuio.key(this.get(FeedItem.ATTR_L), zuio.zid());
 }
@@ -558,19 +529,21 @@ FeedItem.prototype.forEach = function(functor, flavour)
 	}
 }
 
-FeedItem.prototype.toString = function(eol_char_arg)
+FeedItem.prototype.toString = function(arg)
 {
-	var ret = "";
-	var do_first = { type: null, key: null, id: null, l: null, name: null, ms: null, rev: null };
-	var name;
+	var ret           = "";
+	var is_first_only = (arg && (arg & FeedItem.TOSTRING_RET_FIRST_ONLY));
+	var eol_char      = (arg && (arg & FeedItem.TOSTRING_EOL_NL)) ? "\n" : " ";
+	var key;
 
-	for (name in do_first)
-		if (isPropertyPresent(this.m_properties, name))
-			ret += name + "=" + this.m_properties[name] + ((arguments.length == 0 || typeof(eol_char_arg) != 'string') ? " " :eol_char_arg);
+	for (key in this.m_properties)
+		if (key in FeedItem.DO_FIRST)
+			ret += key + "=" + this.m_properties[key] + eol_char;
 
-	for (name in this.m_properties)
-		if (!isPropertyPresent(do_first, name))
-			ret += name + "=" + this.m_properties[name] + ((arguments.length == 0 || typeof(eol_char_arg) != 'string') ? " " :eol_char_arg);
+	if (!is_first_only)
+		for (key in this.m_properties)
+			if (!(key in FeedItem.DO_FIRST))
+				ret += key + "=" + this.m_properties[key] + eol_char;
 
 	return ret;
 }

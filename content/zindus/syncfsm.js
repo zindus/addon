@@ -54,8 +54,6 @@ const AB_GAL                          = "GAL";
 const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/contacts/";
 const GOOGLE_PROJECTION               = "/thin";  // use 'thin' to avoid gd:extendedProperty elements
 const GOOGLE_SHOW_CONFLICTS_AT_A_TIME = 5;
-const GENERATOR_CHUNK_SIZE_FEED       = 400;
-const GENERATOR_CHUNK_SIZE_CARDS      = 200;
 
 function SyncFsm()
 {
@@ -277,7 +275,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		this.state.stopFailCode = 'failon.no.xpath';
 		nextEvent = 'evLackIntegrity';
 	}
-	else if (String(navigator.userAgent).match(/pre$/))
+	else if (!preference(MozillaPreferences.AS_ALLOW_PRE_RELEASE, 'bool') && String(navigator.userAgent).match(/pre$/))
 	{
 		this.state.stopFailCode = 'failon.no.tbpre';
 		this.state.stopFailArg  = [ url('faq-thunderbird') ];
@@ -511,6 +509,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 		filename = this.zfcFileNameFromSourceid(sourceid);
 		a_zfc[filename] = this.state.sources[sourceid]['zfcLuid'] = new FeedCollection();
 		a_zfc[filename].filename(filename);
+		a_zfc[filename].format(this.state.sources[sourceid]['format']);
 	}
 
 	this.debug("entryActionLoad: is_first_in_chain: " + sfcd.is_first_in_chain());
@@ -518,8 +517,6 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	// Work out whether the user forced a reset, or whether we are going to force one
 	//
 	var msg_reset = "forcing a reset because: ";
-
-	this.state.stopwatch.mark(state + " 2");
 
 	if (sfcd.is_first_in_chain())
 		for (filename in a_account_independent_filenames)
@@ -529,8 +526,6 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 				msg_reset += "a file is missing: " + filename;
 				break;
 			}
-
-	this.state.stopwatch.mark(state + " 3");
 
 	a_zfc[Filesystem.FILENAME_LASTSYNC].load();
 
@@ -566,7 +561,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 		this.debug("entryActionLoad: " + (is_reset ? msg_reset : "is_reset: false"));
 	}
 
-	this.state.stopwatch.mark(state + " 4");
+	this.state.stopwatch.mark(state + " 2");
 
 	// load (or reset) the account-independent data files
 	//
@@ -591,7 +586,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 		a_zfc[this.zfcFileNameFromSourceid(SOURCEID_TB)].load();
 	}
 
-	this.state.stopwatch.mark(state + " 5");
+	this.state.stopwatch.mark(state + " 3");
 
 	// Work out whether we're doing a slow sync
 	//
@@ -638,8 +633,6 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	sfcd.sourceid(sourceid_pr, 'is_slow_sync', is_slow_sync);
 
-	this.state.stopwatch.mark(state + " 6");
-
 	if (is_slow_sync)
 	{
 		RemoveDatastore.removeZfc(filename_pr);
@@ -658,7 +651,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	this.state.aReverseGid = new Object();
 
-	this.state.stopwatch.mark(state + " 7");
+	this.state.stopwatch.mark(state + " 4");
 
 	var result    = { is_consistent: true };
 	var generator = this.isConsistentDataStoreGenerator(result, this.state.aReverseGid);
@@ -747,7 +740,7 @@ SyncFsm.prototype.isConsistentGid = function(aReverse)
 		bigloop:
 			for (sourceid in this.state.aReverseGid)
 			{
-				if (sourceid != SOURCEID_TB && !isPropertyPresent(this.state.m_sfcd.m_a_sourceid, sourceid))
+				if (sourceid != SOURCEID_TB && !(sourceid in this.state.m_sfcd.m_a_sourceid))
 				{
 					this.debug("isConsistentGid: inconsistency: sourceid: " + sourceid + " not in sfcd ");
 					is_consistent = false;
@@ -757,7 +750,7 @@ SyncFsm.prototype.isConsistentGid = function(aReverse)
 				zfc = this.zfc(sourceid);
 
 				for (luid in this.state.aReverseGid[sourceid])
-					if (!isPropertyPresent(this.state.sources, sourceid) || !zfc.isPresent(luid))
+					if (!(sourceid in this.state.sources) || !zfc.isPresent(luid))
 					{
 						this.debug("isConsistentGid: inconsistency: sourceid: " + sourceid + " luid: " + luid);
 						is_consistent = false;
@@ -796,8 +789,8 @@ SyncFsm.prototype.isConsistentGidParse = function(aReverseOut)
 	var functor_each_gid_mapitem = {
 		run: function(sourceid, luid)
 		{
-			if (isPropertyPresent(context.state.sources, sourceid))
-				if (isPropertyPresent(aReverse[sourceid], luid))
+			if (sourceid in context.state.sources)
+				if (luid in aReverse[sourceid])
 				{
 					context.debug("isConsistentGidParse: sourceid/luid " + sourceid + "/" + luid +
 					              " appears in the gid twice! in this gid: " + gid + " and this gid: " + aReverse[sourceid][luid]);
@@ -830,7 +823,7 @@ SyncFsm.prototype.isConsistentGidParse = function(aReverseOut)
 
 SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 {
-	var a_not_persisted = [ FeedItem.ATTR_KEEP, FeedItem.ATTR_PRES ];
+	var a_not_persisted = [ FeedItem.ATTR_KEEP, FeedItem.ATTR_PRES, FeedItem.ATTR_TBPA ];
 	var error_msg       = "";
 	var context         = this;
 	var sourceid;
@@ -877,13 +870,16 @@ SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 	{
 		this.state.stopwatch.mark("isConsistentSources sourceid: " + sourceid + " starts");
 		zfc = this.zfc(sourceid);
-		zfc.forEach(functor_foreach_luid);
+
+		let generator = zfc.forEachGenerator(functor_foreach_luid, chunk_size('feed'));
+
+		while (generator.next())
+			yield true;
+
 		this.state.stopwatch.mark("isConsistentSources sourceid: " + sourceid + " ends");
 
 		if (!result.is_consistent)
 			break;
-		else
-			yield true;
 	}
 
 	this.debug("isConsistentSources: " + result.is_consistent + " " + error_msg);
@@ -1040,7 +1036,7 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 
 	for (uri in aUri)
 	{
-		generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, GENERATOR_CHUNK_SIZE_CARDS);
+		generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards'));
 
 		while (generator.next())
 			yield true;
@@ -2808,7 +2804,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 
 	for (uri in aUri)
 	{
-		generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, GENERATOR_CHUNK_SIZE_CARDS);
+		generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards', 3));
 
 		while (generator.next())
 			yield true;
@@ -2840,7 +2836,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 
 		for (uri in aMailListUri)
 		{
-			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, GENERATOR_CHUNK_SIZE_CARDS);
+			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards', 3));
 
 			while (generator.next())
 				yield true;
@@ -2884,6 +2880,9 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 					var properties = this.state.m_addressbook.getCardProperties(abCard);
 					var is_new_card = (! (id > AUTO_INCREMENT_STARTS_AT)); // id might be null ==> not present or
 					                                                       // zero ==> reset after the map was deleted
+					var zfi;
+
+					this.state.m_tb_card_count++;
 
 					// first, we do subtle transformations on cards.
 					// 
@@ -2921,19 +2920,22 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 						}
 					}
 
-					// if this addressbook is being synced with google, and SecondEmail is populated and PrimaryEmail isn't,
-					// move SecondEmail to PrimaryEmail
+					// if this addressbook is being synced with google...
 					//
-					if (uri == this.state.gd_ab_uri &&
-					     (!isPropertyPresent(properties, "PrimaryEmail") || properties["PrimaryEmail"].length == 0) &&
-					     isPropertyPresent(properties, "SecondEmail"))
-					{
-						properties["PrimaryEmail"] = properties["SecondEmail"];
-						properties["SecondEmail"] = "";
+					if (uri == this.state.gd_ab_uri)
+					{ 
+						// If SecondEmail is populated and PrimaryEmail isn't, move SecondEmail to PrimaryEmail
+						//
+						if ((!isPropertyPresent(properties, "PrimaryEmail") || properties["PrimaryEmail"].length == 0) &&
+					          isPropertyPresent(properties, "SecondEmail"))
+						{
+							properties["PrimaryEmail"] = properties["SecondEmail"];
+							properties["SecondEmail"] = "";
 
-						this.state.m_addressbook.setCardProperties(abCard, uri, { PrimaryEmail: properties["PrimaryEmail"], SecondEmail: properties["SecondEmail"] } );
+							this.state.m_addressbook.setCardProperties(abCard, uri, { PrimaryEmail: properties["PrimaryEmail"], SecondEmail: properties["SecondEmail"] } );
 
-						this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with a SecondEmail and no PrimaryEmail - swapping: luid=" + id + " PrimaryEmail: " + properties["PrimaryEmail"]);
+							this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with a SecondEmail and no PrimaryEmail - swapping: luid=" + id + " PrimaryEmail: " + properties["PrimaryEmail"]);
+						}
 					}
 
 					var checksum = context.contact_converter().crc32(properties);
@@ -2944,16 +2946,16 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 
 						this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID, id));
 
-						zfcTb.set(new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, id, FeedItem.ATTR_CS, checksum,
-						                   FeedItem.ATTR_L, aUri[uri]));
+						zfi = new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, id, FeedItem.ATTR_CS, checksum, FeedItem.ATTR_L, aUri[uri]);
+						zfcTb.set(zfi);
 
-						msg += " added:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfcTb.get(id).toString();
+						msg += " added:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
 					}
 					else
 					{
 						zinAssert(zfcTb.isPresent(id)); // See the validity checking in pass 1 above
 
-						var zfi = zfcTb.get(id);
+						zfi = zfcTb.get(id);
 
 						// if things have changed, update the map...
 						//
@@ -2977,7 +2979,29 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 							msg += " found:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
 					}
 
-					zfcTb.get(id).set(FeedItem.ATTR_PRES, '1');
+					// if we're syncing with google, then while we've got the properties, work out whether the contact
+					// has a postal address field populated - avoids lookup and retrieval a second time (during twiddle)
+					//
+					if (uri == this.state.gd_ab_uri && context.is_slow_sync(this.state.sourceid_pr) && this.state.gd_is_sync_postal_address)
+					{
+						function is_tb_contact_have_an_address_field(properties) {
+							var ret = false;
+							var key;
+
+							for (key in context.state.m_contact_converter_vary_gd_postal.gd_certain_keys_converted()["postalAddress"])
+								if (isPropertyPresent(properties, key))
+								{
+									ret = true;
+									break;
+								}
+
+							return ret;
+						}
+
+						zfi.set(FeedItem.ATTR_TBPA, is_tb_contact_have_an_address_field(properties) ? '1' : '0');
+					}
+
+					zfi.set(FeedItem.ATTR_PRES, '1');
 
 					if (this.state.foreach_tb_card_functor && context.isInScopeTbLuid(id))
 						this.state.foreach_tb_card_functor.run(abCard, id, properties);
@@ -2993,7 +3017,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 
 		for (uri in aUri)
 		{
-			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, GENERATOR_CHUNK_SIZE_CARDS);
+			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards'));
 
 			while (generator.next())
 				yield true;
@@ -3226,7 +3250,9 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 
 	this.zfcPr().forEach(functor);
 
-	this.debug("testForGdServerConstraints: a_gd_email: " + aToString(a_gd_email));
+	for (email in a_gd_email)
+		if (a_gd_email[email].length > 1)
+			this.debug("testForGdServerConstraints: a_gd_email: " + a_gd_email[email].toString());
 
 	var grd = null;
 
@@ -3262,7 +3288,7 @@ SyncFsm.prototype.testForGdServerConstraints = function()
 // create a mapping from email address to gid for both tb and gd, then
 // test that for every email address in tb and gd, it points to the same gid
 //
-SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
+SyncFsm.prototype.testForGdRemoteConflictOnSlowSyncGenerator = function()
 {
 	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
 
@@ -3302,7 +3328,10 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 		}
 	};
 
-	this.zfcPr().forEach(functor);
+	let generator = this.zfcPr().forEachGenerator(functor, chunk_size('feed'));
+
+	while (generator.next())
+		yield true;
 
 	var a_email_luid = this.state.foreach_tb_card_functor.m_a_email_luid;
 	var a_luid;
@@ -3313,13 +3342,28 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 		a_tb_email[email] = this.state.aReverseGid[sourceid_tb][firstKeyInObject(a_luid)];
 	}
 	
-	for (email in a_gd_email)
-		if (isPropertyPresent(a_tb_email, email) && a_gd_email[email] != a_tb_email[email])
-			a_conflict[email] = true;
+	var chunk_size_here = chunk_size('strcmp');
+	var count = 0;
 
-	this.debug("testForGdRemoteConflictOnSlowSync:\n a_conflict: " + aToString(a_conflict) + "\n a_gd_email: " + aToString(a_gd_email) +
-	                                                                                         "\n a_tb_email: " + aToString(a_tb_email) +
-	                                                                                         "\n a_email_luid: " + aToString(a_email_luid));
+	for (email in a_gd_email)
+	{
+		if ((email in a_tb_email) && a_gd_email[email] != a_tb_email[email])
+			a_conflict[email] = true;
+		
+		if (++count % chunk_size_here == 0)
+			yield true;
+	}
+
+	let msg;
+
+	if (count > 2000)
+		msg = "suppressed - too big";
+	else
+		msg = "\n a_gd_email: " + aToString(a_gd_email) + "\n a_tb_email: " + aToString(a_tb_email) +
+	                                                      "\n a_email_luid: " + aToString(a_email_luid);
+
+	this.debug("testForGdRemoteConflictOnSlowSync:\n a_conflict: " + aToString(a_conflict) + msg);
+
 	var grd = null;
 
 	for (email in a_conflict)
@@ -3356,7 +3400,8 @@ SyncFsm.prototype.testForGdRemoteConflictOnSlowSync = function()
 		this.state.stopFailArg  = [ grd ];
 	}
 
-	return this.state.stopFailCode == null;
+	// caller looks at stopFailCode
+	yield false;
 }
 
 SyncFsm.addToGid = function(zfcGid, sourceid, luid, reverse)
@@ -3493,26 +3538,26 @@ SyncFsm.prototype.twiddleMapsForImmutableGd = function(luid_pr)
 SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 {
 	var context = this;
-	var sourceid, zfc, foreach_msg, generator, event;
+	var sourceid, zfc, generator, event;
 
 	var functor_foreach_luid_do_checksum = {
 		state: this.state,
 
 		run: function(zfi)
 		{
-			var luid     = zfi.key();
-			var checksum = null;
-			var luid_parent;
-			var msg = "";
+			let luid     = zfi.key();
+			let checksum = null;
+			let luid_parent;
+			let msg = "";
 
 			if (!SyncFsm.isOfInterest(zfc, luid))
-				foreach_msg += " luid=" + luid + " not of interest\n";
+				msg = " not of interest";
 			else if (!SyncFsm.isRelevantToGid(zfc, luid))
-				foreach_msg += " luid=" + luid + " not relevant to gid\n";
+				msg = " not relevant to gid";
 			else if (zfi.isPresent(FeedItem.ATTR_DEL))
-				foreach_msg += " luid=" + luid + " deleted - ignoring\n";
+				msg = " deleted - ignoring";
 			else if (sourceid == SOURCEID_TB && !context.isInScopeTbLuid(luid))
-				foreach_msg += " luid=" + luid + " not in scope - ignoring\n";
+				msg = " not in scope - ignoring";
 			else if (zfi.type() == FeedItem.TYPE_CN)
 			{
 				var a_properties    = context.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_vary_none);
@@ -3529,8 +3574,8 @@ SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 					this.state.aHasChecksum[key][luid] = true;
 					this.state.aChecksum[sourceid][luid] = checksum;
 
-					msg += strPadTo(checksum, 11) + " parent: " + a_parent_in_map;
-					msg += " PrimaryEmail: " + (a_properties['PrimaryEmail'] ? a_properties['PrimaryEmail'] : "null");
+					msg += "checksum: " + strPadTo(checksum, 11) + " parent: " + a_parent_in_map +
+					        " PrimaryEmail: " + (a_properties['PrimaryEmail'] ? a_properties['PrimaryEmail'] : "null");
 				}
 			}
 			else if (zfi.type() == FeedItem.TYPE_FL || zfi.type() == FeedItem.TYPE_SF)
@@ -3542,7 +3587,7 @@ SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 			else
 				x = strPadTo(x.substr(0,17) + "..." + x.substr(x.length-17), 40);
 
-			foreach_msg += " luid: " + x + " checksum: " + msg + "\n";
+			context.debug_continue(" luid: =" + x + msg);
 
 			return true;
 		}
@@ -3551,13 +3596,10 @@ SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 	for (sourceid in this.state.sources)
 	{
 		zfc         = this.zfc(sourceid);
-		foreach_msg = "about to run do_checksum functor for sourceid: " + sourceid + "\n";
-		generator   = zfc.forEachGenerator(functor_foreach_luid_do_checksum, GENERATOR_CHUNK_SIZE_FEED);
+		generator   = zfc.forEachGenerator(functor_foreach_luid_do_checksum, chunk_size('feed'));
 
 		while (generator.next())
 			yield true;
-
-		this.state.m_logger.debug(foreach_msg);
 	}
 
 	if (false)
@@ -3579,15 +3621,15 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 	var zfcGid  = this.state.zfcGid;
 	var reverse = this.state.aReverseGid; // bring it into the local namespace
 	var context = this;
-	var sourceid, zfc, format, foreach_msg, event, generator;
+	var sourceid, zfc, format, event, generator;
 
 	var functor_foreach_luid_fast_sync = {
 		state: this.state,
 
 		run: function(zfi)
 		{
-			var luid = zfi.key();
-			var msg  = "fast_sync: " + sourceid + "/=" + luid;
+			let luid = zfi.key();
+			let msg  = "fast_sync: " + sourceid + "/=" + luid;
 
 			if (isPropertyPresent(reverse[sourceid], luid))
 			{
@@ -3596,14 +3638,14 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 			}
 			else if (SyncFsm.isOfInterest(zfc, luid) && SyncFsm.isRelevantToGid(zfc, luid))
 			{
-				var gid = SyncFsm.addToGid(zfcGid, sourceid, luid, reverse);
+				let gid = SyncFsm.addToGid(zfcGid, sourceid, luid, reverse);
 
 				msg += " added to gid=" + gid;
 			}
 			else
 				msg += " not of interest - ignoring";
 
-			foreach_msg += "\n  " + msg;
+			context.state.m_logger.debug_continue(msg);
 
 			return true;
 		}
@@ -3612,17 +3654,21 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 	var functor_foreach_luid_slow_sync = {
 		mapTbFolderNameToId: SyncFsm.getTopLevelFolderHash(this.zfcTb(), FeedItem.ATTR_NAME, FeedItem.ATTR_KEY),
 		state: this.state,
+		a_name_parent : new Object(),
+		m_perf : newObject('a_mark', new Object(), 'a_start', new Object()),
 
 		run: function(zfi)
 		{
-			var luid        = zfi.key();
-			var msg         = "slow_sync: " + sourceid + "/=" + luid;
-			var sourceid_tb = this.state.sourceid_tb;
-			var luid_tb     = null;
-			var gid;
+			let luid        = zfi.key();
+			let msg         = "slow_sync: " + sourceid + "/=" + luid;
+			let sourceid_tb = this.state.sourceid_tb;
+			let luid_tb     = null;
+			let gid;
 
 			zinAssertAndLog(!isPropertyPresent(reverse[sourceid], luid), luid);
 			zinAssert(sourceid != SOURCEID_TB);
+
+			this.perf('a', 'mark');
 
 			if (!SyncFsm.isOfInterest(zfc, luid))
 				msg += " luid is not of interest - ignoring";
@@ -3632,6 +3678,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 			{
 				if (zfi.type() == FeedItem.TYPE_FL || zfi.type() == FeedItem.TYPE_SF)
 				{
+					this.perf('b', 'mark');
 					zinAssertAndLog((zfi.type() != FeedItem.TYPE_FL) || !zfi.isForeign(), "foreign folder? zfi: " + zfi.toString());
 
 					var abName = context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
@@ -3649,17 +3696,20 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 						var gid = SyncFsm.addToGid(zfcGid, sourceid, luid, reverse);
 						msg += " added to gid=" + gid;
 					}
+					this.perf('b', 'copy');
 				}
 				else
 				{
+					this.perf('c', 'mark');
+
 					zinAssert(zfi.type() == FeedItem.TYPE_CN);
 					zinAssert(isPropertyPresent(this.state.aChecksum, sourceid) && isPropertyPresent(this.state.aChecksum[sourceid], luid));
 
+					this.perf('d', 'mark');
 					var checksum    = this.state.aChecksum[sourceid][luid];
-					var luid_parent = SyncFsm.keyParentRelevantToGid(zfc, zfi.key());
-					var name_parent = context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
+					var luid_parent = SyncFsm.keyParentRelevantToGid(zfc, luid);
 
-					var key = hyphenate('-', sourceid_tb, name_parent, checksum);
+					var key = hyphenate('-', sourceid_tb, this.name_parent(luid_parent), checksum);
 					// this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: testing twin key: " + key);
 
 					if (isPropertyPresent(this.state.aHasChecksum, key) && !isObjectEmpty(this.state.aHasChecksum[key]))
@@ -3670,7 +3720,9 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 								luid_tb = luid_possible;
 								break;
 							}
+					this.perf('d', 'copy');
 
+					this.perf('e', 'mark');
 					if (luid_tb)
 					{
 						gid = context.setTwin(sourceid, luid, sourceid_tb, luid_tb, reverse);
@@ -3684,12 +3736,43 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 						var gid = SyncFsm.addToGid(zfcGid, sourceid, luid, reverse);
 						msg += " added to gid=" + gid;
 					}
+					this.perf('e', 'copy');
+					this.perf('c', 'copy');
 				}
 			}
 
-			foreach_msg += "\n  " + msg;
+			this.perf('a', 'copy');
+
+			context.debug_continue(msg);
 
 			return true;
+		},
+		perf: function(key, action)
+		{
+			return false; // turn this off except for debugging
+
+			let elapsed = context.state.stopwatch.elapsed();
+
+			if (action == 'copy')
+			{
+				if (!isPropertyPresent(this.m_perf.a_mark, key))
+					this.m_perf.a_mark[key] = 0;
+
+				this.m_perf.a_mark[key] += elapsed - this.m_perf.a_start[key];
+			}
+			else // action == 'mark'
+				this.m_perf.a_start[key] = elapsed;
+		},
+		name_parent: function(luid_parent)
+		{
+			if (!isPropertyPresent(this.a_name_parent, luid_parent))
+				this.a_name_parent[luid_parent] = context.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
+
+			return this.a_name_parent[luid_parent];
+		},
+		reset : function()
+		{
+			this.a_name_parent = new Object();
 		}
 	};
 
@@ -3697,19 +3780,31 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 	{
 		zfc         = this.zfc(sourceid);
 		format      = this.state.sources[sourceid]['format'];
-		foreach_msg = "";
 		event       = 'evRepeat';
 
+		functor_foreach_luid_slow_sync.reset();
+
 		if ((format == FORMAT_TB) || !this.is_slow_sync(sourceid))
-			generator = zfc.forEachGenerator(functor_foreach_luid_fast_sync, GENERATOR_CHUNK_SIZE_FEED);
+			generator = zfc.forEachGenerator(functor_foreach_luid_fast_sync, chunk_size('feed'));
 		else
-			generator = zfc.forEachGenerator(functor_foreach_luid_slow_sync, GENERATOR_CHUNK_SIZE_FEED);
+		{
+			// we chunk it up more finely when there's more contacts
+			// FIXME: the isTwin code can be made more effcient by working out per-field checksums earlier
+			// when the sources are loaded/parsed.  Something like { field-name-1, checksum, field-name-2, checksum ...}
+			//
+			let rate = (this.state.m_tb_card_count < 1000) ? 1 : 
+			           (this.state.m_tb_card_count < 5000) ? .75 : .5;
+
+			this.m_logger.debug("updateGidFromSourcesGenerator: generator rate: " + rate + " m_tb_card_count: "+this.state.m_tb_card_count);
+
+			generator = zfc.forEachGenerator(functor_foreach_luid_slow_sync, chunk_size('feed', rate));
+		}
 
 		while (generator.next())
 			yield true;
-
-		this.debug(foreach_msg);
 	}
+
+	// this.debug("updateGidFromSourcesGenerator: slow_sync perf: " + aToString(functor_foreach_luid_slow_sync.m_perf));
 
 	yield false;
 }
@@ -3731,6 +3826,7 @@ SyncFsm.prototype.updateGidFromSourcesSanityCheck = function()
 			return true;
 		}
 	};
+
 
 	this.state.zfcGid.forEach(functor_foreach_gid);
 
@@ -3755,12 +3851,13 @@ SyncFsm.prototype.updateGidFromSourcesSanityCheck = function()
 //       tick google backwards to let tb win
 //
 
-SyncFsm.prototype.twiddleMapsForGdPostalAddress = function()
+SyncFsm.prototype.twiddleMapsForGdPostalAddressGenerator = function()
 {
 	var sourceid_tb = this.state.sourceid_tb;
 	var sourceid_gd = this.state.sourceid_pr;
-	var msg         = "twiddleMapsForGdPostalAddress:\n";
 	var context     = this;
+
+	this.debug("twiddleMapsForGdPostalAddress:");
 
 	zinAssert(this.is_slow_sync(sourceid_gd));
 
@@ -3772,12 +3869,12 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddress = function()
 			{
 				// Thunderbird and Google contact are twins
 				//
-				var luid_gd = zfi.get(sourceid_gd);
-				var luid_tb = zfi.get(sourceid_tb);
-				var contact = context.state.a_gd_contact[luid_gd];
-				msg        += " zfi: " + zfi.toString();
+				let luid_gd = zfi.get(sourceid_gd);
+				let luid_tb = zfi.get(sourceid_tb);
+				let contact = context.state.a_gd_contact[luid_gd];
+				let msg = " zfi: " + zfi.toString();
 
-				zinAssertAndLog(isPropertyPresent(context.state.a_gd_contact, luid_gd), "luid_gd=" + luid_gd);
+				zinAssertAndLog(isPropertyPresent(context.state.a_gd_contact, luid_gd), function() { return "luid_gd=" + luid_gd; } );
 
 				if (!contact.isAnyPostalAddressInXml())
 				{
@@ -3822,32 +3919,25 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddress = function()
 					}
 				}
 
-				msg += "\n";
+				context.debug_continue(msg);
 			}
 
 			return true;
 		},
 		is_tb_contact_have_an_address_field: function(luid_tb)
 		{
-			var ret        = false;
-			var properties = context.getContactFromLuid(sourceid_tb, luid_tb, FORMAT_GD);
-
-			for (var key in context.state.m_contact_converter_vary_gd_postal.gd_certain_keys_converted()["postalAddress"])
-				if (isPropertyPresent(properties, key))
-				{
-					ret = true;
-					break;
-				}
-
-			return ret;
+			return context.zfcTb().get(luid_tb).get(FeedItem.ATTR_TBPA) == '1';
 		}
 	};
 
-	this.state.zfcGid.forEach(functor_foreach_gid);
+	var generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
 
-	context.debug(msg);
+	while (generator.next())
+		yield true;
 
 	this.debug("twiddleMapsForGdPostalAddress: zfcGid: " + this.state.zfcGid.toString());
+
+	yield false;
 }
 
 SyncFsm.prototype.backdateZfcForcingItToLose = function(sourceid, luid)
@@ -4007,11 +4097,10 @@ SyncFsm.prototype.getContactPropertiesNormalised = function(sourceid, luid, cont
 	var format      = this.state.sources[sourceid]['format'];
 	var properties, name_parent_map;
 
-	if (typeof(contact_converter) == 'undefined')
+	if (!contact_converter)
 		contact_converter = this.contact_converter();
 
 	zinAssert(arguments.length == 2 || arguments.length == 3);
-	zinAssert(contact_converter);
 	zinAssert(zfi.type() == FeedItem.TYPE_CN);
 
 	if (format == FORMAT_TB)
@@ -4095,7 +4184,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 	var zfcGid        = this.state.zfcGid;
 	var reverse       = this.state.aReverseGid; // bring it into the local namespace
 	var context       = this;
-	var sourceid, generator;
+	var sourceid, generator, buildgcs_msg;
 
 	for (var i in this.state.sources)
 		aZfcCandidate[i] = this.zfc(i).clone(); // cloned because items get deleted out of this during merge
@@ -4112,17 +4201,17 @@ SyncFsm.prototype.buildGcsGenerator = function()
 		}
 	};
 
-	var buildgcs_msg;
 	var functor_foreach_candidate = {
 		state:   this.state,
 
 		run: function(zfi)
 		{
-			var zfc = context.zfc(sourceid);
+			var zfc  = context.zfc(sourceid);
 			var luid = zfi.key();
+			var gid;
 
 			buildgcs_msg = "";
-			skip_msg = null;
+			skip_msg     = null;
 
 			if (sourceid == this.state.sourceid_tb && !context.isInScopeTbLuid(luid))
 				skip_msg = "not in scope";
@@ -4134,7 +4223,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 			{
 				zinAssert(isPropertyPresent(reverse, sourceid) && isPropertyPresent(reverse[sourceid], luid));
 
-				var gid = reverse[sourceid][luid];
+				gid = reverse[sourceid][luid];
 
 				buildgcs_msg += " gid=" + gid;
 				
@@ -4173,7 +4262,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 						return true;
 
 					var zfi = aZfcCandidate[sourceid].get(luid);
-					var msg = "  compare:  sourceid: " + sourceid + " zfi: " + zfi.toString();
+					var msg = "  compare:  sourceid: " + sourceid + " zfi: " + zfi.toString(FeedItem.TOSTRING_RET_FIRST_ONLY);
 
 					if (!zfi.isPresent(FeedItem.ATTR_LS))
 					{
@@ -4231,12 +4320,13 @@ SyncFsm.prototype.buildGcsGenerator = function()
 			       " aVerMatchesGid: " + keysToString(aVerMatchesGid) +
 			       " aChangeOfNote: "  + keysToString(aChangeOfNote);
 
-			zinAssertAndLog(cNeverSynced == 0 || cNeverSynced == 1, "gid=" + gid + " cNeverSynced: " + cNeverSynced + " " +
-			                                                   buildgcs_msg + "\n" + msg);
+			zinAssertAndLog(cNeverSynced == 0 || cNeverSynced == 1,
+			    function() { return "gid=" + gid + " cNeverSynced: " + cNeverSynced + " " + buildgcs_msg + "\n" + msg; } );
 
 			if (cNeverSynced == 1)
 			{
-				zinAssertAndLog(cVerMatchesGid == 0 && cChangeOfNote == 0, "gid=" + gid + " " + buildgcs_msg + "\n" + msg);
+				zinAssertAndLog(cVerMatchesGid == 0 && cChangeOfNote == 0,
+				      function() { return "gid=" + gid + " " + buildgcs_msg + "\n" + msg; } );
 
 				ret = new Gcs(firstKeyInObject(aNeverSynced), Gcs.WIN);
 			}
@@ -4248,7 +4338,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 				{
 					// if this assertion fails, you want to look elsewhere for the cause eg issue #85
 					//
-					zinAssertAndLog(isPropertyPresent(aVerMatchesGid, sourceid_tb), buildgcs_msg + "\n" + msg);
+					zinAssertAndLog(isPropertyPresent(aVerMatchesGid, sourceid_tb), function() { return buildgcs_msg + "\n" + msg; } );
 					ret = new Gcs(sourceid_tb, Gcs.WIN);
 				}
 			}
@@ -4265,9 +4355,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 				ret = new Gcs(lowest_sourceid, Gcs.CONFLICT);
 			}
 
-			msg = "  compare: gid=" + gid + " returns: " + ret.toString() + msg;
-
-			buildgcs_msg += "\n" + msg;
+			buildgcs_msg += "\n  compare: gid=" + gid + " returns: " + ret.toString() + msg;
 
 			return ret;
 		}
@@ -4275,7 +4363,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 
 	for (sourceid in this.state.sources)
 	{
-		generator = aZfcCandidate[sourceid].forEachGenerator(functor_foreach_candidate, GENERATOR_CHUNK_SIZE_FEED);
+		generator = aZfcCandidate[sourceid].forEachGenerator(functor_foreach_candidate, chunk_size('feed'));
 
 		while (generator.next())
 			yield true;
@@ -4284,17 +4372,17 @@ SyncFsm.prototype.buildGcsGenerator = function()
 	yield true;
 
 	var a_winner_tb_state_win = new Array();
-	var msg = "";
+	var big_msg = new BigString();
 
 	for (let gid in aGcs)
 	{
 		if (aGcs[gid].sourceid == SOURCEID_TB && aGcs[gid].state == Gcs.WIN)
 			a_winner_tb_state_win.push(gid);
 		else
-			msg += "\n gid=" + gid + ": " + aGcs[gid].toString();
+			big_msg.concat("\n gid=" + gid + ": " + aGcs[gid].toString());
 	}
 
-	this.state.m_logger.debug("buildGcs: aGcs:" + msg +
+	this.state.m_logger.debug("buildGcs: aGcs:" + big_msg.toString() +
 	      (a_winner_tb_state_win.length > 0 ?
 		  	("\n " + aGcs[a_winner_tb_state_win[0]].toString() + ": " + a_winner_tb_state_win.toString()) : ""));
 
@@ -4439,9 +4527,9 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	var zfcGid     = this.state.zfcGid;
 	var aSuoResult = new Object();
 	var indexSuo   = 0;
-	var big_msg    = "";
+	var big_msg    = new BigString();
 	var a_winner_matches_gid = new Object();
-	var msg, suo, a_sourceid;;
+	var suo, a_sourceid;;
 
 	for (sourceid in this.state.sources)
 		aSuoResult[sourceid] = new Object();
@@ -4452,8 +4540,8 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 			if (sourceid != aGcs[gid].sourceid) // only look at losers
 				if (this.isInScopeGid(gid))
 	{
+		let msg = "";
 		suo = null;
-		msg = "";
 
 		switch (aGcs[gid].state)
 		{
@@ -4576,15 +4664,15 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 		}
 
 		if (msg.length > 0)
-			big_msg += "\n gid=" + gid + " loser: " + sourceid + " gcs: " + aGcs[gid].toString() + " -" + msg;
+			big_msg.concat("\n gid=" + gid + " loser: " + sourceid + " gcs: " + aGcs[gid].toString() + " -" + msg);
 	}
 
 	for (sourceid in a_winner_matches_gid)
 		if (a_winner_matches_gid[sourceid].length > 0)
-			big_msg += "\n loser: " + sourceid + " gcs: " + aGcs[a_winner_matches_gid[sourceid][0]].toString() +
-			           ": gids: " + a_winner_matches_gid[sourceid].toString();
+			big_msg.concat("\n loser: " + sourceid + " gcs: " + aGcs[a_winner_matches_gid[sourceid][0]].toString() +
+			           ": gids: " + a_winner_matches_gid[sourceid].toString());
 
-	this.state.m_logger.debug("suoBuildLosers: " + big_msg);
+	this.state.m_logger.debug("suoBuildLosers: " + big_msg.toString());
 
 
 	return aSuoResult;
@@ -4608,6 +4696,8 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 	var i, suo, indexSuo, luid_target, l_target, gid_l_target, msg;
 	var aBuckets = [Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF];
 	var aBucket;
+
+	zinAssert(this.formatPr() == FORMAT_ZM);
 
 	this.state.a_folders_deleted = new Object();
 
@@ -4671,6 +4761,8 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 {
 	var aName = new Object();
 	var sourceid_loser;
+
+	zinAssert(this.formatPr() == FORMAT_ZM);
 
 	for (sourceid_loser in this.state.sources)
 	{
@@ -5200,27 +5292,19 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	var passed = true;
 	var nextEvent, generator;
 
-	this.state.m_progress_count = 0;  // syncfsmobserver reckons there are 6 subdivisions here
+	this.state.m_progress_count = 0;  // syncfsmobserver reckons there are 12 subdivisions here
 
-	this.state.stopwatch.mark(state + " Converge: enters: ");
+	this.state.stopwatch.mark(state + " Converge: enters: " + this.state.m_progress_count++);
 
 	this.debug("entryActionConverge: zfcTb:\n" + this.zfcTb().toString());
-
+	this.state.m_progress_yield_text = "zfcPr.toString";
 	yield true;
 
-	this.debug("entryActionConverge: zfcPr:\n" + this.zfcPr().toString());
+	this.logZfc(this.zfcPr(), "entryActionConverge: zfcPr:\n");
 
+	this.state.stopwatch.mark(state + " Converge: after zfcPr.toString: " + this.state.m_progress_count++);
+	this.state.m_progress_yield_text = "constraints";
 	yield true;
-
-	if (false) // TODO
-	{
-	let msg  = newObject('ret', "");
-
-	msg.ret += "\nzfcTb:\n"; generator = this.zfcTb().toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED);while (generator.next()) yield true;
-	msg.ret += "\nzfcPr:\n"; generator = this.zfcPr().toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED);while (generator.next()) yield true;
-
-	this.debug("entryActionConverge: " + msg.ret);
-	}
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
@@ -5240,68 +5324,92 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 	if (passed)
 	{
-		yield true;
 
 		if (this.is_slow_sync(this.state.sourceid_pr))
 		{
+			this.state.m_progress_yield_text = "checksums";
+
 			generator = this.updateGidDoChecksumsGenerator();
 
-			while (generator.next())
-				yield true;
+			do { yield true; } while (generator.next());
 		}
 
 		this.state.stopwatch.mark(state + " Converge: updateGidFromSources: " + this.state.m_progress_count++);
-		yield true;
 
 		generator = this.updateGidFromSourcesGenerator(); // 1. map all luids into a single namespace (the gid)
 
-		while (generator.next())
+		do {
+			this.state.m_progress_yield_text = "gid-from-sources";
 			yield true;
+		} while (generator.next());
 
 		this.state.stopwatch.mark(state + " Converge: updateGidFromSourcesSanityCheck: " + this.state.m_progress_count++);
+		this.state.m_progress_yield_text = "sanity-check";
 		yield true;
 
 		this.updateGidFromSourcesSanityCheck();              // 2. sanity check
 
 		this.state.stopwatch.mark(state + " Converge: twiddle: " + this.state.m_progress_count++);
+		this.state.m_progress_yield_text = "twiddle";
 		yield true;
 
 		if (this.formatPr() == FORMAT_GD)
 		{
-			if (this.is_slow_sync(this.state.sourceid_pr) && this.state.gd_is_sync_postal_address)
-				this.twiddleMapsForGdPostalAddress();
+			this.state.stopwatch.mark(state + " before twiddleMapsForGdPostalAddress: ");
 
+			if (this.is_slow_sync(this.state.sourceid_pr) && this.state.gd_is_sync_postal_address)
+			{
+				generator = this.twiddleMapsForGdPostalAddressGenerator();
+
+				do { yield true; } while (generator.next());
+			}
+
+			this.state.stopwatch.mark(state + " before twiddleMapsToPairNewMatchingContacts: ");
 			if (!this.is_slow_sync(this.state.sourceid_pr))
 				this.twiddleMapsToPairNewMatchingContacts();
 		}
 
 		this.twiddleMapsForImmutables();
 
-		this.state.stopwatch.mark(state + " Converge: buildGcs: " + this.state.m_progress_count++);
+		this.state.stopwatch.mark(state + " buildGcs: " + this.state.m_progress_count++);
+		this.state.m_progress_yield_text = "buildGcs";
 		yield true;
 
 		generator = this.buildGcsGenerator();                // 3. reconcile the sources (via the gid) into a single truth
-	                                                     //    winners and conflicts are identified here
+	                                                         //    winners and conflicts are identified here
 		while (generator.next())
 			yield true;
 
 		this.state.stopwatch.mark(state + " Converge: buildPreUpdateWinners: " + this.state.m_progress_count++);
+		this.state.m_progress_yield_text = "pre-update-winners";
 		yield true;
 
 		this.buildPreUpdateWinners(this.state.aGcs);         // 4. save winner state before winner update to distinguish ms vs md update
 	}
 
 	this.state.stopwatch.mark(state + " Converge: conflict detection: " + this.state.m_progress_count++);
+	this.state.m_progress_yield_text = "conflicts";
 	yield true;
 
+	this.state.stopwatch.mark(state + " Converge: before testForFolderNameDuplicate: ");
 	passed = passed && this.testForFolderNameDuplicate(this.state.aGcs); // 4. a bit of conflict detection
 
-	if (this.formatPr() == FORMAT_GD && this.is_slow_sync(this.state.sourceid_pr))
-		passed = passed && this.testForGdRemoteConflictOnSlowSync();
+	if (passed && this.formatPr() == FORMAT_GD && this.is_slow_sync(this.state.sourceid_pr))
+	{
+		this.state.stopwatch.mark(state + " Converge: before testForGdRemoteConflictOnSlowSync: ");
+		generator = this.testForGdRemoteConflictOnSlowSyncGenerator();
+
+		while (generator.next())
+			yield true;
+
+		passed = (this.state.stopFailCode == null);
+		this.state.stopwatch.mark(state + " Converge: after testForGdRemoteConflictOnSlowSync: ");
+	}
 
 	if (passed)
 	{
 		this.state.stopwatch.mark(state + " Converge: build and run winners: " + this.state.m_progress_count++);
+		this.state.m_progress_yield_text = "winners";
 		yield true;
 
 		let aSuoWinners = this.suoBuildWinners(this.state.aGcs);   // 6.  generate operations required to bring meta-data for winners up to date
@@ -5309,15 +5417,22 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		this.suoRunWinners(aSuoWinners);                       // 7.  run the operations that update winner meta-data
 
 		this.state.stopwatch.mark(state + " Converge: suoBuildLosers: " + this.state.m_progress_count++);
+		this.state.m_progress_yield_text = "losers";
 		yield true;
 
+		this.state.m_progress_yield_text = null;
+
 		this.state.aSuo = this.suoBuildLosers(this.state.aGcs);// 8.  generate the operations required to bring the losing sources up to date
+		if (this.formatPr() == FORMAT_ZM)
+		{
+			this.state.stopwatch.mark(state + " Converge: removeContactDeletesWhenFolderIsBeingDeleted: " + this.state.m_progress_count++);
+			this.state.m_progress_yield_text = "prepare-to-update";
+			yield true;
 
-		this.state.stopwatch.mark(state + " Converge: removeContactDeletesWhenFolderIsBeingDeleted: " + this.state.m_progress_count++);
+			this.removeContactDeletesWhenFolderIsBeingDeleted(); // 9. remove contact deletes when folder is being deleted
 
-		this.removeContactDeletesWhenFolderIsBeingDeleted();   // 9. remove contact deletes when folder is being deleted
-
-		passed = this.testForConflictingUpdateOperations();    // 10. abort if any update operations could lead to potential inconsistency
+			passed = this.testForConflictingUpdateOperations();  // 10. abort if any update operations could lead to potential inconsistency
+		}
 	}
 
 	this.state.stopwatch.mark(state + " Converge: done: " + this.state.m_progress_count++)
@@ -5388,6 +5503,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 	var i, gid, id, type, sourceid_target, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
 	var zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg;
 	var count = 0;
+	var chunk_size_cards = chunk_size('cards');
 
 	this.state.stopwatch.mark(state);
 
@@ -5753,7 +5869,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 
 		this.state.m_logger.debug("entryActionUpdateTb: " + msg);
 
-		if (++count > GENERATOR_CHUNK_SIZE_CARDS)
+		if ((++count % chunk_size_cards) == 0)
 			yield true;
 	}
 
@@ -6693,26 +6809,20 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 
 	if (!this.state.stopFailCode)
 	{
-		var gid;
 		var aGidsToDelete = new Array();
-		var msg = "UpdateCleanup: ";
 
 		this.keepCertainDeletedTbMapItems();
 
 		this.state.stopwatch.mark(state + " 2");
 
-		{
-			let msg  = newObject('ret', "");
-
-			msg.ret += "\nzfcTb:\n";  generator = this.zfcTb().toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED); while (generator.next()) yield true;
-			msg.ret += "\nzfcPr:\n";  generator = this.zfcPr().toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED); while (generator.next()) yield true;
-			msg.ret += "\nzfcGid:\n"; generator = this.state.zfcGid.toStringGenerator(msg, GENERATOR_CHUNK_SIZE_FEED); while (generator.next()) yield true;
-
-			this.debug("UpdateCleanup: " + msg.ret);
-		}
-
-		this.state.stopwatch.mark(state + " 3");
+		this.debug("UpdateCleanup: ");
+		this.debug("zfcTb:\n" + this.zfcTb().toString());
+		this.state.m_progress_yield_text = "zfcPr.toString";
 		yield true;
+		this.logZfc(this.zfcPr(), "zfcPr:\n");
+		this.state.m_progress_yield_text = "zfcGid.toString";
+		yield true;
+		this.debug("zfcGid:\n" + this.state.zfcGid.toString());
 
 		//  delete the luid item if it has a DEL attribute (or zimbra: it's not of interest)
 		//  delete the mapping between a gid and an luid when the luid is not of interest
@@ -6721,10 +6831,18 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 			state: this.state,
 			run: function(zfi)
 			{
-				var luid = zfi.key();
-				var zfc  = context.zfc(sourceid);
-				gid      = isPropertyPresent(this.state.aReverseGid[sourceid], luid) ? this.state.aReverseGid[sourceid][luid] : null;
-				msg     += "\n gid=" + gid + " " + sourceid + "/=" + luid;
+				let luid = zfi.key();
+				let zfc  = context.zfc(sourceid);
+				let gid  = isPropertyPresent(this.state.aReverseGid[sourceid], luid) ? this.state.aReverseGid[sourceid][luid] : null;
+				let msg  = " gid=" + gid + " " + sourceid + "/=" + luid;
+
+				if (context.formatPr() == FORMAT_GD && context.is_slow_sync(this.state.sourceid_pr)
+				                                    && context.state.gd_is_sync_postal_address
+					                                && sourceid == this.state.sourceid_tb 
+													&& zfi.isPresent(FeedItem.ATTR_TBPA))
+				{
+					zfi.del(FeedItem.ATTR_TBPA); // ATTR_TBPA won't be present if the zfi is the folder or if it was added by UpdateTb
+				}
 
 				if (zfi.isPresent(FeedItem.ATTR_KEEP))
 				{
@@ -6768,17 +6886,25 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 					}
 				}
 
+				context.debug_continue(msg);
+
 				return true;
 			}
 		};
 
 		for (sourceid in this.state.sources)
-			this.zfc(sourceid).forEach(functor_foreach_luid);
+		{
+			this.state.stopwatch.mark(state + " 3: sourceid: " + sourceid);
+			this.state.m_progress_yield_text = "for-source-" + sourceid;
+			yield true;
 
-		context.debug(msg);
-		this.state.stopwatch.mark(state + " 4");
+			let generator = this.zfc(sourceid).forEachGenerator(functor_foreach_luid, chunk_size('feed'));
 
-		msg = "UpdateCleanup: ";
+			while (generator.next())
+				yield true;
+		}
+			
+		this.state.stopwatch.mark(state + " 5");
 
 		// delete the gid when all the mapitems source maps have a FeedItem.ATTR_DEL attribute
 		//
@@ -6800,7 +6926,7 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 
 				zfi.forEach(functor_count_luids_in_gid, FeedItem.ITER_GID_ITEM);
 
-				msg += "\n gid: " + zfi.toString() + " count: " + functor_count_luids_in_gid.count;
+				let msg = " gid: " + zfi.toString() + " count: " + functor_count_luids_in_gid.count;
 
 				if (functor_count_luids_in_gid.count == 0)
 				{
@@ -6808,20 +6934,23 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 					this.state.zfcGid.del(zfi.key());
 				}
 
+				context.debug_continue(msg);
+
 				return true;
 			}
 		};
 
 		this.state.zfcGid.forEach(functor_foreach_gid, FeedCollection.ITER_NON_RESERVED);
 
-		this.debug(msg);
 		this.state.stopwatch.mark(state + " 5");
 
 		var result    = { is_consistent: true };
 		var generator = this.isConsistentDataStoreGenerator(result);
 
-		while (generator.next())
+		do {
+			this.state.m_progress_yield_text = "consistent";
 			yield true;
+		} while (generator.next())
 
 		if (!result.is_consistent)
 		{
@@ -6946,14 +7075,18 @@ SyncFsm.prototype.zfc = function(sourceid)
 	return this.state.sources[sourceid]['zfcLuid'];
 }
 
-SyncFsm.prototype.debug = function(str)
-{
-	zinAssert(arguments.length == 1);
+SyncFsm.prototype.debug          = function(str) { zinAssert(arguments.length == 1); this.debug_do(str, false); }
+SyncFsm.prototype.debug_continue = function(str) { zinAssert(arguments.length == 1); this.debug_do(str, true);  }
 
+SyncFsm.prototype.debug_do = function(str, is_continue)
+{
 	if (this.state.m_debug_filter_out)
 		str = str.replace(this.state.m_debug_filter_out, "~");
 
-	this.state.m_logger.debug(str);
+	if (is_continue)
+		this.state.m_logger.debug_continue(str);
+	else
+		this.state.m_logger.debug(str);
 }
 
 SyncFsm.prototype.contact_converter = function()
@@ -7085,24 +7218,46 @@ SyncFsm.prototype.isParentBeingDeletedInTarget = function(sourceid_winner, luid_
 	return ret;
 }
 
+SyncFsm.prototype.logZfc = function(zfc, text)
+{
+	var generator  = zfc.generateZfis();
+	var format     = zfc.format();
+	var zfi;
+
+	this.debug(text);
+
+	while (zfi = generator.next())
+		this.debug_continue(zfi.toString(FeedItem.TOSTRING_RET_FIRST_ONLY));
+}
+
+
 SyncFsm.keyParentRelevantToGid = function(zfc, key)
 {
-	zinAssert(zfc.get(key).type() == FeedItem.TYPE_CN);
+	var format = zfc.format();
+	var zfi = zfc.get(key);
+	var ret;
 
-	var ret = zfc.get(key).keyParent();
+	zinAssert(zfi && zfi.type() == FeedItem.TYPE_CN);
 
-	if (zfc.isPresent(ret))
+	if (format == FORMAT_ZM)
 	{
-		var zfi = zfc.get(ret);
+		ret = zfi.keyParent();
 
-		if (zfi.isForeign())
+		if (zfc.isPresent(ret))
 		{
-			if (zfi.type() == FeedItem.TYPE_FL)
-				ret = zfi.get(FeedItem.ATTR_SKEY);
-			else
-				zinAssertAndLog(false, function () { return "something is wrong: zfi: " + zfi.toString() + " key: " + key; });
+			zfi = zfc.get(ret);
+
+			if (zfi.isForeign())
+			{
+				if (zfi.type() == FeedItem.TYPE_FL)
+					ret = zfi.get(FeedItem.ATTR_SKEY);
+				else
+					zinAssertAndLog(false, function () { return "something is wrong: zfi: " + zfi.toString() + " key: " + key; });
+			}
 		}
 	}
+	else
+		ret = zfi.get(FeedItem.ATTR_L);
 
 	// logger().debug("keyParentRelevantToGid: blah: key: " + key + " returns: " + ret + " isPresent: " + zfc.isPresent(ret));
 
@@ -7152,21 +7307,6 @@ SyncFsm.isOfInterest = function(zfc, key)
 	zinAssert(zfc);
 	zinAssert(key);
 
-	if (false)
-	{
-	if (!SyncFsm.isOfInterest._stopwatch)
-	{
-		SyncFsm.isOfInterest._stopwatch = new StopWatch("isOfInterest");
-		SyncFsm.isOfInterest._count = 0;
-		SyncFsm.isOfInterest._elapsed = 0;
-	}
-	else
-	{
-		SyncFsm.isOfInterest._stopwatch.reset();
-		SyncFsm.isOfInterest._count++;
-	}
-	}
-
 	var ret = null;
 
 	if (!zfc.isPresent(key))
@@ -7210,7 +7350,6 @@ SyncFsm.isOfInterest = function(zfc, key)
 
 			case FeedItem.TYPE_CN:
 				// not sure how a contact could end up at the very top level but it might be possible!
-				zinAssert(zfc.isPresent(key));
 				ret = (zfi.get(FeedItem.ATTR_L) == 1) ? false : SyncFsm.isOfInterest(zfc, SyncFsm.keyParentRelevantToGid(zfc, key));
 				break;
 
@@ -7218,8 +7357,6 @@ SyncFsm.isOfInterest = function(zfc, key)
 				zinAssertAndLog(false, "unmatched case: " + zfi.type());
 		}
 	}
-
-	// SyncFsm.isOfInterest._elapsed += SyncFsm.isOfInterest._stopwatch.elapsed();
 
 	// logger().debug("SyncFsm.isOfInterest: blah: key: " + key + " returns: " + ret);
 
@@ -7359,14 +7496,26 @@ SyncFsm.prototype.handleXmlHttpResponse = function (continuation, context)
 	}
 	else
 	{
+		let is_failed = false;
+
 		try {
+			// when the server is down:
+			// in Tb2, an exception is thrown when m_xhr.status is referenced
+			// in Tb3, m_xhr.status is set to zero
+			//
 			http.m_http_status_code = http.m_xhr.status;
-			msg += " http status: " + http.m_http_status_code;
+
+			is_failed = (http.m_http_status_code == 0);
 		}
 		catch(e) {
-			http.m_http_status_code = HTTP_STATUS_ON_SERVICE_FAILURE;
-			msg += " http status faked: " + http.m_http_status_code + " after http.m_xhr.status threw an exception: " + e;
+			is_failed = true;
+			msg += " http.m_xhr.status threw an exception: " + e;
 		}
+
+		if (is_failed)
+			http.m_http_status_code = HTTP_STATUS_ON_SERVICE_FAILURE;
+			
+		msg += " http status: " + http.m_http_status_code;
 
 		nextEvent = 'evNext';
 	}
@@ -7667,7 +7816,7 @@ HttpStateGd.AUTH_REGEXP_PATTERN = /Auth=(.+?)(\s|$)/;
 
 HttpStateGd.prototype.toStringFiltered = function()
 {
-	// TODO enabled verbose debugging for issue #156 return this.m_http_method + " " + this.m_url;
+	// enabled verbose debugging for issue #156 // return this.m_http_method + " " + this.m_url;
 	return this.m_http_method + " " + this.m_url
 					          + " " + ((this.m_url != googleClientLoginUrl('use-password') &&
 							            this.m_url != googleClientLoginUrl('use-authtoken')) ? this.httpBody() : "");
@@ -7809,7 +7958,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.m_sfcd              = sfcd;
 	state.m_logappender       = new LogAppenderHoldOpen(); // holds an output stream open - must be closed explicitly
 	state.m_logger            = new Logger(Singleton.instance().logger().level(), "SyncFsm", state.m_logappender);
-	state.m_debug_filter_out  = new RegExp('https?' + GOOGLE_URL_HIER_PART + '|' + GOOGLE_PROJECTION, "mg");
+	state.m_debug_filter_out  = new RegExp('https?' + GOOGLE_URL_HIER_PART + '.*?' + '(base|thin)/' , "mg");
 	state.m_generator         = null;
 	state.m_http              = null;
 	state.cCallsToHttp        = 0;                       // handy for debugging the closure passed to soapCall.asyncInvoke()
@@ -7829,7 +7978,9 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.stopFailTrailer     = null;
 	state.stopFailArg         = null;
 	state.m_bimap_format      = getBimapFormat('short');
+	state.m_tb_card_count     = 0;
 	state.m_progress_count    = 0;
+	state.m_progress_yield_text = null;
 
 	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
 	state.is_done_get_contacts_pu  = false;   // have we worked out the contacts to get from the server pre update?
@@ -8151,13 +8302,12 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 {
 	var is_finished = false;
 	var count       = 0;
-	var big_msg     = new BigString(); big_msg.concat("entryActionGetContactGd3:\n");
 	var context     = this;
 	var a_zindus_contact_count = newObject('regular', 0, 'deleted', 0, 'empty', 0);
 	var zfcPr       = this.zfcPr();
 	var contact, id, generator, functor, i, response;
 
-	this.state.stopwatch.mark(state);
+	this.state.stopwatch.mark(state + "enters");
 
 	var functor = {
 		run: function(doc, node)
@@ -8214,9 +8364,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 			else
 				msg += " ignored " + (contact.is_deleted() ? "deleted" : "empty") + " contact";
 
-			msg += "\n";
-
-			big_msg.concat(msg);
+			context.debug(msg);
 
 			return;
 		}
@@ -8226,12 +8374,19 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 
 	for (i = 0; i < this.state.a_gd_response.length; i++)
 	{
-		generator = Xpath.runFunctorGenerator(functor, "/atom:feed/atom:entry", this.state.a_gd_response[i], GENERATOR_CHUNK_SIZE_FEED);
+		generator = Xpath.runFunctorGenerator(functor, "/atom:feed/atom:entry", this.state.a_gd_response[i], chunk_size('feed'));
 
 		while (generator.next())
+		{
+			this.state.m_progress_yield_text = "parsing-google-xml";
 			yield true;
+		}
 	}
 
+	this.state.stopwatch.mark(state + "parsed a_gd_contact");
+
+	// FIXME: having to reparse the XML here illustrates why the GdContact class should rewritten without contact converter
+	//
 	if (this.state.gd_is_dexmlify_postal_address)
 	{
 		this.state.a_gd_contact_dexmlify = new Object();
@@ -8239,7 +8394,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 
 		for (i = 0; i < this.state.a_gd_response.length; i++)
 		{
-			generator = Xpath.runFunctorGenerator(functor, "/atom:feed/atom:entry", this.state.a_gd_response[i], GENERATOR_CHUNK_SIZE_FEED);
+			generator = Xpath.runFunctorGenerator(functor, "/atom:feed/atom:entry", this.state.a_gd_response[i], chunk_size('feed'));
 
 			while (generator.next())
 				yield true;
@@ -8248,14 +8403,13 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 		this.state.a_gd_contact_dexmlify = functor.m_collection;
 	}
 
-	this.debug(big_msg.toString());
+	this.state.stopwatch.mark(state + "parsed a_gd_contact_dexmlify");
 
-	if (is_finished)
-		this.debug("entryActionGetContactGd3: contacts processed: " +
-			" regular: " + a_zindus_contact_count['regular'] +
-			" empty: "   + a_zindus_contact_count['empty'] +
-			" deleted: " + a_zindus_contact_count['deleted'] +
-			" gmail ui should match (regular + empty) after a slow sync");
+	this.debug("entryActionGetContactGd3: contacts processed: " +
+		" regular: " + a_zindus_contact_count['regular'] +
+		" empty: "   + a_zindus_contact_count['empty'] +
+		" deleted: " + a_zindus_contact_count['deleted'] +
+		" gmail ui should match (regular + empty) after a slow sync");
 		
 	yield false;
 }

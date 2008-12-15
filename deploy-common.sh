@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-common.sh,v 1.3 2008-11-23 05:46:57 cvsuser Exp $
+# $Id: deploy-common.sh,v 1.4 2008-12-15 04:34:44 cvsuser Exp $
 
 get_appversion()
 {
@@ -9,6 +9,12 @@ get_appversion()
 get_platform_id()
 {
 	appv=`get_appversion`
+
+	if [ -z "$appv" ]; then
+		echo ERROR: unable to parse version out of install.rdf
+		exit 1;
+	fi
+
 	echo *$appv* | sed -r "s#$appv(.*)\.xpi#fredfred \1#" | awk '/fredfred/ { print $2; }'
 }
 

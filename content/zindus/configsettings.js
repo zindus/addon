@@ -42,7 +42,7 @@ function ConfigSettings()
 	this.m_timer_functor        = null;
 	this.m_maestro              = null;
 	this.m_is_fsm_running       = false;
-	this.is_developer_mode      = (preference("system.developer_mode", 'char') == "true");
+	this.is_developer_mode      = preference("system.as_developer_mode", 'bool');
 	this.m_console_listener     = Logger.nsIConsoleListener();
 	this.m_payload              = null;
 	this.m_accounts             = null;

@@ -27,6 +27,7 @@
 MozillaPreferences.AS_LOGFILE_MAX_SIZE      = "system.as_logfile_max_size";
 MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT = "system.as_timer_delay_on_repeat";
 MozillaPreferences.AS_TIMER_DELAY_ON_START  = "system.as_timer_delay_on_start";
+MozillaPreferences.AS_ALLOW_PRE_RELEASE     = "system.as_allow_pre_release";
 MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
 MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
@@ -113,23 +114,26 @@ MozillaPreferences.prototype.getPrefReal = function(branch, key, type, mustbepre
 {
 	var ret = null;
 	var tmp;
-	zinAssert(type == 'int' || type == 'char');
 
 	if (branch)
 	{
 		try {
-			if (type == 'int')
-			{
-				tmp = branch.getIntPref(key);
+			switch(type) {
+				case 'int':
+					tmp = branch.getIntPref(key);
 
-				if (!isNaN(tmp))
-					ret = Number(tmp);
-			}
-			else if (type == 'char')
-			{
-				tmp = branch.getCharPref(key);
+					if (!isNaN(tmp))
+						ret = Number(tmp);
 
-				ret = String(tmp);
+					break;
+				case 'char':
+					ret = String(branch.getCharPref(key));
+					break;
+				case 'bool':
+					ret = Boolean(branch.getBoolPref(key));
+					break;
+				default:
+					zinAssert(false, type);
 			}
 		}
 		catch(ex) {
@@ -149,6 +153,8 @@ MozillaPreferences.prototype.getCharPref       = function(branch, key) { return 
 MozillaPreferences.prototype.getCharPrefOrNull = function(branch, key) { return this.getPrefReal(branch, key, 'char', false); }
 MozillaPreferences.prototype.getIntPref        = function(branch, key) { return this.getPrefReal(branch, key, 'int',  true);  }
 MozillaPreferences.prototype.getIntPrefOrNull  = function(branch, key) { return this.getPrefReal(branch, key, 'int',  false); }
+MozillaPreferences.prototype.getBoolPref       = function(branch, key) { return this.getPrefReal(branch, key, 'bool', true);  }
+MozillaPreferences.prototype.getBoolPrefOrNull = function(branch, key) { return this.getPrefReal(branch, key, 'bool', false); }
 
 MozillaPreferences.prototype.reportCatch = function(ex, key)
 {

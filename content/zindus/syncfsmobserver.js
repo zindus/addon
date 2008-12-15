@@ -42,6 +42,7 @@ function SyncFsmObserver(es)
 	this.set(SyncFsmObserver.PROG_CNT, 0);
 
 	this.m_perf = newObject(
+		'm_last_state',    null,
 		'm_stopwatch',     new StopWatch("SyncFsmObserver"),
 		'm_a_per_state',   new Array());  // of { name, elapsed_time }
 }
@@ -187,12 +188,12 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	var ret = false;
 	var progress_count;
 	var percentage_progress_big_hand = 0;
+	var key;
 
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
-	this.m_perf.m_a_per_state.push(newObject(fsmstate.newstate + '-' + fsmstate.event, this.m_perf.m_stopwatch.elapsed()));
-
 	var context = fsmstate.context; // SyncFsm
+
 	this.state = context.state;
 	this.set(SyncFsmObserver.PROG_AS_PERCENT, false);
 
@@ -205,7 +206,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	var count_states_seen = 0;
 	var count_states_all = 0;
 
-	for (var key in a_states)
+	for (key in a_states)
 		if (isPropertyPresent(a_states[key], 'count'))
 		{
 			if (isPropertyPresent(this.m_a_states_seen, key))
@@ -217,11 +218,18 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	if (false)
 	this.m_logger.debug("a_states: "      + aToString(a_states) + "\n" +
 	                    "a_states_seen: " + aToString(this.m_a_states_seen) + "\n" +
-	                    " count_states_seen: " + count_states_seen + " count_states_all: " + count_states_all ); // TODO
+	                    " count_states_seen: " + count_states_seen + " count_states_all: " + count_states_all );
 
 	if (fsmstate.newstate && isPropertyPresent(a_states[fsmstate.newstate], 'count')) // fsmstate.newstate == null when oldstate == 'final'
 	{
 		ret = true;
+		
+		key = context.state.m_progress_yield_text && this.m_perf.m_last_state == fsmstate.newstate ?
+		          hyphenate('-', fsmstate.newstate, fsmstate.event, context.state.m_progress_yield_text) :
+		          hyphenate('-', fsmstate.newstate, fsmstate.event);
+
+		this.m_perf.m_a_per_state.push(newObject(key, this.m_perf.m_stopwatch.elapsed()));
+		this.m_perf.m_last_state = fsmstate.newstate;
 
 		switch(fsmstate.newstate)
 		{
@@ -244,20 +252,17 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 			case 'stConverge':
 			{
-				let progress_max = 10;
+				let progress_max = 12;
 
 				if (fsmstate.event != 'evRepeat')
 				{
 					this.set(SyncFsmObserver.OP, stringBundleString(this.tweakStringId("converge")) );
 					this.set(SyncFsmObserver.PROG_MAX, progress_max);
-					progress_count = 1;
 				}
-				else
-					progress_count = context.state.m_progress_count;
 
-				this.set(SyncFsmObserver.PROG_CNT, progress_count);
+				this.set(SyncFsmObserver.PROG_CNT, context.state.m_progress_count);
 				this.set(SyncFsmObserver.PROG_AS_PERCENT, true);
-				percentage_progress_big_hand = progress_count / progress_max;
+				percentage_progress_big_hand = context.state.m_progress_count / progress_max;
 				break;
 			}
 
@@ -459,7 +464,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					{
 						obj = this.m_perf.m_a_per_state[i];
 						key = firstKeyInObject(obj);
-						msg += "\n " + strPadTo(key, 30) + "  " + obj[key] + " " + (obj[key] - prev);
+						msg += "\n " + strPadTo(key, 40) + "  " + obj[key] + " " + (obj[key] - prev);
 						prev = obj[key];
 					}
 

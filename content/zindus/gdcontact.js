@@ -31,7 +31,7 @@ function GdContact(contact_converter, doc)
 		this.m_document = document.implementation.createDocument("","",null);
 		
 	// causes assertion failure on OSX: this.m_logger             = newLogger("GdContact");
-	// this.m_logger = logger(); // TODO comment me out when finished debugging sm - also see below
+	// this.m_logger = logger();
 	this.m_contact_converter  = contact_converter;
 	this.m_container          = null;
 	this.m_properties         = null;
@@ -607,13 +607,17 @@ GdContact.prototype.nodeAsString = function(node)
 
 GdContact.prototype.postalAddressOtherAddr = function(key)
 {
-	var str = this.m_properties[key];
-	var ret = "";
-	var a_in  = newObject('x', str);
-	var a_out = new Object();
+	var is_parsed = isPropertyPresent(this.m_properties, key);
+
+	if (is_parsed)
+	{
+		var str = this.m_properties[key];
+		var ret = "";
+		var a_in  = newObject('x', str);
+		var a_out = new Object();
 	
-	var is_parsed = isPropertyPresent(this.m_properties, key) &&
-	                this.m_contact_converter.m_gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
+		is_parsed = is_parse && this.m_contact_converter.m_gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
+	}
 
 	if (!is_parsed)                                 // it wasn't xml
 		ret = null;

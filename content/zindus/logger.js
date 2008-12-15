@@ -30,6 +30,8 @@ Logger.WARN  = 3;
 Logger.INFO  = 2;
 Logger.DEBUG = 1;
 
+Logger.NO_PREFIX = 0x01;
+
 function Logger(level, prefix, appender)
 {
 	this.m_level    = level;
@@ -76,10 +78,16 @@ Logger.prototype.info  = function(msg) { var l = Logger.INFO;  if (this.level() 
 Logger.prototype.warn  = function(msg) { var l = Logger.WARN;  if (this.level() <= l) this.log(l, msg); }
 Logger.prototype.error = function(msg) { var l = Logger.ERROR; if (this.level() <= l) this.log(l, msg); }
 Logger.prototype.fatal = function(msg) { var l = Logger.FATAL; if (this.level() <= l) this.log(l, msg); }
+Logger.prototype.debug_continue = function(msg) {
+	var l = Logger.DEBUG;
+	if (this.level() <= l) { 
+		this.log(l, msg, Logger.NO_PREFIX);
+	}
+}
 
-Logger.prototype.log = function(l, msg)
+Logger.prototype.log = function(l, msg, np)
 {
-	this.m_appender.log(l, this.m_prefix, msg);
+	this.m_appender.log(l, this.m_prefix, msg, np);
 }
 
 function LogAppenderOpenClose()
@@ -90,11 +98,20 @@ function LogAppenderOpenClose()
 function LogAppenderHoldOpen()
 {
 	LogAppender.call(this);
-	this.m_os = this.fileOpen();
+	this.m_os = null;
+}
+
+function LogAppenderHoldOpenAndBuffer()
+{
+	LogAppenderHoldOpen.call(this);
+
+	this.m_buffer        = new Array();
+	this.m_buffer_length = 0;
 }
 
 LogAppenderOpenClose.prototype = new LogAppender();
 LogAppenderHoldOpen.prototype  = new LogAppender();
+LogAppenderHoldOpenAndBuffer.prototype  = new LogAppenderHoldOpen();
 
 function LogAppender()
 {
@@ -104,48 +121,87 @@ function LogAppender()
 	this.m_logfile           = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // an nsIFile object
 	this.m_max_level_length  = 7;
 	this.m_max_prefix_length = 15;
-	// this.m_buffer            = null;
-	// this.m_buffer_length     = 10;
 
 	this.m_logfile.append(Filesystem.FILENAME_LOGFILE);
 
-	this.bimap_LEVEL = new BiMap(
-		[Logger.NONE, Logger.FATAL, Logger.ERROR, Logger.WARN, Logger.INFO, Logger.DEBUG],
-		['none',      'fatal',      'error',      'warn',      'info',      'debug'     ]);
+	this.a_level = [Logger.NONE, Logger.FATAL, Logger.ERROR, Logger.WARN, Logger.INFO, Logger.DEBUG];
+	this.a_word  = ['none',      'fatal',      'error',      'warn',      'info',      'debug'     ];
+	this.bimap_LEVEL = new BiMap(this.a_level, this.a_word);
+
+	this.m_buffer_prefix = new Object();
+
+	for (let i = 0; i < this.a_level.length; i++)
+		this.m_buffer_prefix[this.a_level[i]] = new Object();
 }
 
-LogAppender.prototype.log = function(level, prefix, msg)
+LogAppender.prototype.log = function(level, prefix, msg, np)
 {
-	var message = new String(this.bimap_LEVEL.lookup(level, null) + ":   ").substr(0, this.m_max_level_length).concat(
-		(prefix ? (new String(prefix.substr(0, this.m_max_prefix_length) +
-		                      ":                ").substr(0, this.m_max_prefix_length + 1) + " ") : ""), msg, "\n");
+	var message = this.make_log_message(level, prefix, msg, np);
 
-//	if (!this.m_buffer)
-//		this.m_buffer = new Array();
+	if (message)
+		this.log_output(level, message);
+}
 
-//	this.m_buffer.push(message);
+LogAppender.prototype.log_output = function(level, msg)
+{
+	if (this.isLoud(level))
+		dump(msg);
+
+	this.logToFile(msg);
 
 	if (this.isLoud(level))
-		dump(message);
+		this.logToConsoleService(level, msg);
+}
 
-	this.logToFile(message);
+LogAppender.prototype.make_log_message = function(level, prefix, msg, np)
+{
+	var ret;
 
-	if (this.isLoud(level))
-		this.logToConsoleService(level, message);
+	if (np == Logger.NO_PREFIX)
+		ret = msg + "\n";
+	else
+	{
+		if (!isPropertyPresent(this.m_buffer_prefix[level], prefix))
+			this.m_buffer_prefix[level][prefix] = new String(this.bimap_LEVEL.lookup(level, null) + ":   ")
+	                .substr(0, this.m_max_level_length)
+					.concat( (prefix ? (new String(prefix.substr(0, this.m_max_prefix_length) + ":                ")
+					                     .substr(0, this.m_max_prefix_length + 1) + " ") : ""));
 
-//	if (this.m_buffer.length >= this.m_buffer_length || this.isLoud(level))
-//	{
-//		var big_message = String.prototype.concat.apply("", this.m_buffer);
-//		this.m_buffer = null;
-//
-//		if (this.isLoud(level))
-//			dump(big_message);
-//
-//		this.logToFile(big_message);
-//
-//		if (this.isLoud(level))
-//			this.logToConsoleService(level, big_message);
-//	}
+		ret = new String(this.m_buffer_prefix[level][prefix]).concat(msg, "\n");
+	}
+
+	return ret;
+}
+
+LogAppenderHoldOpenAndBuffer.prototype.make_log_message = function(level, prefix, msg, np)
+{
+	var ret = LogAppender.prototype.make_log_message.call(this, level, prefix, msg, np);
+	const CHUNK_BUFFER = 5000;
+
+	this.m_buffer.push(ret);
+	this.m_buffer_length += ret.length;
+
+	if (this.m_buffer_length >= CHUNK_BUFFER || this.isLoud(level))
+	{
+		ret = String.prototype.concat.apply("", this.m_buffer);
+		this.m_buffer = new Array();
+		this.m_buffer_length = 0;
+		this.log_output(level, ret);
+	}
+	else
+	{
+		ret = null;
+	}
+
+	return ret;
+}
+
+LogAppenderHoldOpen.prototype.log = function(level, prefix, msg, np)
+{
+	if (!this.m_os)
+		this.m_os = this.fileOpen();
+
+	LogAppender.prototype.log.call(this, level, prefix, msg, np);
 }
 
 LogAppender.prototype.isLoud = function(level)

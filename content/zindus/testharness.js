@@ -50,7 +50,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testAddressBookBugzilla432145Create();
 	// ret = ret && this.testAddressBookBugzilla432145Compare();
 	// ret = ret && this.testAddressBookBugzilla432145Delete();
-	// ret = ret && this.testFeedCollection();
+	ret = ret && this.testFeedCollection();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
@@ -75,8 +75,9 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContactWithe4x();
 	// ret = ret && this.createBigAddressbooks();
 	// ret = ret && this.testPerformanceCardLookup();
-	ret = ret && this.testPerformanceStringConcat();
 	// ret = ret && this.testPerformanceZfcSet();
+	// ret = ret && this.testPerformanceStringConcat();
+	// ret = ret && this.testPerformanceLoggingStyles();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -110,29 +111,32 @@ TestHarness.prototype.newContactConverter = function(arg)
 TestHarness.prototype.testFeedCollection = function()
 {
 	var zfc = new FeedCollection();
-	var zfi;
+	var key, zfi;
 
+	key = 1;
 	zfi = new FeedItem();
-	zfi.set(FeedItem.ATTR_KEY, 0);
+	zfi.set(FeedItem.ATTR_KEY, key);
 	zfi.set('name1', "value1");
 
 	zfc.set(zfi);
 
-	var zfi = zfc.get(0);
-	zfi.set('fred', 1);
+	var zfi = zfc.get(key);
+	zfi.set('fred', 11);
 
+	key = 2;
 	zfi = new FeedItem();
-	zfi.set(FeedItem.ATTR_KEY, 1);
+	zfi.set(FeedItem.ATTR_KEY, key);
 	zfi.set('name2', "value2");
 	zfi.set('name3', "value3");
 
 	zfc.set(zfi);
 
-	this.m_logger.debug("3233: zfc.toString() == \n" + zfc.toString());
+	this.m_logger.debug("zfi.toString() == " + zfi.toString(FeedItem.TOSTRING_RET_FIRST_ONLY));
+	this.m_logger.debug("zfc.toString() == \n" + zfc.toString());
 
-	zfc.del(1);
+	zfc.del(key);
 
-	this.m_logger.debug("3233: zfc.toString() after del(1) == \n" + zfc.toString());
+	this.m_logger.debug("zfc.toString() after del(" + key + ") == \n" + zfc.toString());
 
 	zfi = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSBAR , 'appversion', 1234 );
 
@@ -1826,6 +1830,85 @@ TestHarness.prototype.testPerformanceStringConcat = function()
 	}
 
 	this.m_logger.debug("testPerformanceStringConcat: msg.length: " + msg.length + " bs.length: " + bs.toString().length);
+
+	last = 0;
+	stopwatch.reset();
+	var a = new Array();
+	msg = "";
+
+	for (i = 0; i <= max; i++)
+	{
+		a.push(snippet);
+		
+		if (i % 1000 == 0)
+		{
+			msg += String.prototype.concat.apply("", a);
+			a = new Array();
+			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
+			last = stopwatch.elapsed();
+		}
+	}
+
+	this.m_logger.debug("testPerformanceStringConcat: msg.length: " + msg.length);
+
+	return true;
+}
+
+TestHarness.prototype.testPerformanceLoggingStyles = function()
+{
+	var max = 40000; // 250 chars in snippet * 40000 == 10Mb
+	var msg = "";
+	var snippet = " hello world lets make this a whole string hello world lets make this a whole string hello world lets make this a whole string hello world lets make this a whole string hello world lets make this a whole string hello world lets make this a whole string ";
+	var i, last, stopwatch;
+
+	if (false)
+	{
+	stopwatch = new StopWatch("test #1");
+	stopwatch.mark("starts: make one big string then log it: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
+	let bs = new BigString();
+	last = 0;
+
+	for (i = 0; i <= max; i++)
+	{
+		bs.concat(snippet);
+		
+		if (i % 1000 == 0)
+		{
+			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
+			last = stopwatch.elapsed();
+		}
+	}
+
+	stopwatch.mark("before logger.debug: " + (stopwatch.elapsed() - last));
+	let str = bs.toString();
+	this.m_logger.debug(str);
+	stopwatch.mark("ends: after logger.debug: " + (stopwatch.elapsed() - last));
+	}
+
+	// test #2
+	//
+	stopwatch = new StopWatch("test #2");
+	stopwatch.mark("starts: log via LogAppenderHoldOpenAndBuffer: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
+	last = 0;
+
+	var appender = new LogAppenderHoldOpenAndBuffer()
+	// var appender = new LogAppenderHoldOpen()
+	var buflogger = new Logger(Singleton.instance().logger().level(), "testPerformanceLoggingStyles", appender);
+
+	stopwatch.mark("before loop with buflogger: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
+
+	for (i = 0; i <= max; i++)
+	{
+		buflogger.debug(snippet);
+		
+		if (i % 1000 == 0)
+		{
+			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
+			last = stopwatch.elapsed();
+		}
+	}
+
+	stopwatch.mark("ends: after loop with buflogger: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
 
 	return true;
 }

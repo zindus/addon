@@ -200,45 +200,45 @@ function attributesFromNode(node)
 //
 function aToString(obj)
 {
-	var ret = "";
+	var ret = new BigString();
 	var first = true;
 
 	if (obj == null)
-		ret = "Null";
+		ret.concat("Null");
 	else if (typeof(obj) == 'function' && typeof(obj.QueryInterface) == 'function')
-		ret += "xpcom object";
+		ret.concat("xpcom object");
 	else
 		for (var x in obj)
 		{
 			if (!first)
-				ret += ", ";
+				ret.concat(", ");
 			else
 				first = false;
 
-			ret += x + ": ";
+			ret.concat(x + ": ");
 
 			var was_exception_thrown = false;
 
 			if (obj[x] == null)
-				ret += "Null";
+				ret.concat("Null");
 			else if (typeof(obj[x]) == 'object')
 				try {
-					ret += "{ " + aToString(obj[x]) + " }";
+					ret.concat("{ " + aToString(obj[x]) + " }");
 				} catch (e)
 				{
 					dump("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
 					logger().error("Too much recursion: typeof e.stack: " + typeof e.stack + " last 2000: " + e.stack.substr(-2000));
-					logger().error("ret: " + ret);
+					logger().error("ret: " + ret.toString());
 				}
 			else if (typeof(obj[x]) == 'function')
-				ret += "Function";
+				ret.concat("Function");
 			else
-				ret += obj[x];
+				ret.concat(obj[x]);
 
 			zinAssert(!was_exception_thrown);
 		}
 
-	return ret;
+	return ret.toString();
 }
 
 function keysIn()
@@ -935,7 +935,8 @@ function preference(key, type)
 	{
 		case 'char': ret = p.getCharPrefOrNull(p.branch(), key); break;
 		case 'int':  ret = p.getIntPref(p.branch(), key);        break;
-		default: zinAssertAndLog(false, "key: " + key + " type: " + type);
+		case 'bool': ret = p.getBoolPrefOrNull(p.branch(), key); break;
+		default: zinAssertAndLog(false, function() { return "key: " + key + " type: " + type; } );
 	}
 
 	return ret;
@@ -1060,4 +1061,21 @@ function stripInvalidXMLCharsFromString(str)
 	}
 
 	return ret;
+}
+
+function chunk_size(name, flex)
+{
+	const a_chunk = { 'cards'     : 500,
+	                  'feed'      : 500,
+	                  'bigstring' : 500,
+	                  'strcmp'    : 5000 };
+
+	zinAssertAndLog(name in a_chunk, name);
+
+	if (!flex)
+		flex = 1;
+	else
+		zinAssert(flex > 0);
+
+	return a_chunk[name] * flex;
 }
