@@ -249,8 +249,6 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 1");
 
-	logger().debug("AMHERE 1\n");  // TODO
-
 	this.state.m_logger.debug("start: " + " account: "        + this.username() +
 										  " zindus version: " + APP_VERSION_NUMBER +
 	                                      " cookieEnabled: "  + navigator.cookieEnabled +
@@ -2990,7 +2988,8 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 							var ret = false;
 							var key;
 
-							for (key in context.state.m_contact_converter_vary_gd_postal.gd_certain_keys_converted()["postalAddress"])
+							// for (key in context.state.m_contact_converter_vary_gd_postal.gd_certain_keys_converted()["postalAddress"])
+							for (key in context.state.m_contact_converter_vary_gd_postal.m_gd_address_field[FORMAT_TB])
 								if (isPropertyPresent(properties, key))
 								{
 									ret = true;
@@ -3797,7 +3796,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 			let rate = (this.state.m_tb_card_count < 1000) ? 1 : 
 			           (this.state.m_tb_card_count < 5000) ? .75 : .5;
 
-			this.m_logger.debug("updateGidFromSourcesGenerator: generator rate: " + rate + " m_tb_card_count: "+this.state.m_tb_card_count);
+			this.state.m_logger.debug("updateGidFromSourcesGenerator: generator rate: " + rate + " m_tb_card_count: "+this.state.m_tb_card_count);
 
 			generator = zfc.forEachGenerator(functor_foreach_luid_slow_sync, chunk_size('feed', rate));
 		}
@@ -7224,12 +7223,15 @@ SyncFsm.prototype.logZfc = function(zfc, text)
 {
 	var generator  = zfc.generateZfis();
 	var format     = zfc.format();
-	var zfi;
+	var line, zfi;
 
 	this.debug(text);
 
 	while (zfi = generator.next())
-		this.debug_continue(zfi.toString(FeedItem.TOSTRING_RET_FIRST_ONLY));
+		if (format == FORMAT_ZM)
+			this.debug_continue(zfi.toString());
+		else
+			this.debug_continue(zfi.toString(FeedItem.TOSTRING_RET_FIRST_ONLY));
 }
 
 
@@ -7671,8 +7673,6 @@ HttpStateZm.prototype.failCode = function()
 
 	if (ret == 'failon.unexpected')
 		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
-
-	logger().debug("AMHERE: ret: " + ret); // TODO
 
 	return ret;
 }

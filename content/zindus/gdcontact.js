@@ -616,7 +616,7 @@ GdContact.prototype.postalAddressOtherAddr = function(key)
 		var a_in  = newObject('x', str);
 		var a_out = new Object();
 	
-		is_parsed = is_parse && this.m_contact_converter.m_gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
+		is_parsed = is_parsed && this.m_contact_converter.m_gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
 	}
 
 	if (!is_parsed)                                 // it wasn't xml

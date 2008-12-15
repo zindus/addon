@@ -346,12 +346,13 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				break;
 
 			case 'stUpdateZm':
-			case 'stUpdateGd':
-				var sourceid = null;
+			case 'stUpdateGd': {
+				let y, z;
+				let sourceid = null;
 
 				bigloop:
-					for (y in context.state.aSuo[this.state.sourceid_pr])
-						for (var z in context.state.aSuo[this.state.sourceid_pr][y])
+					for (y in context.state.aSuo[context.state.sourceid_pr])
+						for (z in context.state.aSuo[context.state.sourceid_pr][y])
 						{
 							sourceid = this.state.sourceid_pr;
 							break bigloop;
@@ -363,9 +364,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
-						var cTotal = 0; // aSuo definitely needs an iterator!
+						let cTotal = 0; // aSuo definitely needs an iterator!
 						for (y in context.state.aSuo[sourceid])
-							for (var z in context.state.aSuo[sourceid][y])
+							for (z in context.state.aSuo[sourceid][y])
 								cTotal++;
 
 						this.progressReportOnSource(sourceid, "put.many", cTotal);
@@ -373,12 +374,15 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					}
 
 					progress_count = this.get(SyncFsmObserver.PROG_CNT) + 1;
+
 					this.set(SyncFsmObserver.PROG_CNT, progress_count);
-					percentage_progress_big_hand = progress_count / context.state.a_gd_contact_to_get.length;
+					percentage_progress_big_hand = progress_count / this.get(SyncFsmObserver.PROG_MAX);
+
 				}
 				else
 					this.progressReportOnSource(context.state.sourceid_pr, "put.one");
 				break;
+				}
 
 			case 'final':
 				if (fsmstate.event == 'evCancel')

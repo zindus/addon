@@ -101,6 +101,9 @@ function LogAppenderHoldOpen()
 	this.m_os = null;
 }
 
+// unresolved issue with using this class - how the syncfsm flushes it
+// when it cancels (because the fsm doesn't enter final state).
+//
 function LogAppenderHoldOpenAndBuffer()
 {
 	LogAppenderHoldOpen.call(this);

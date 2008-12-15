@@ -529,6 +529,8 @@ ContactConverter.prototype.addSuffix = function(prefix, properties_to, propertie
 ContactConverter.prototype.keysCommonToThatMatch = function(regexp, replace_with, format_from, format_to)
 {
 	var ret = new Object();
+	var key;
+
 	zinAssert(arguments.length == 4);
 
 	for (key in this.m_common_to[format_from][format_to])
