@@ -110,6 +110,16 @@ TestHarness.prototype.newContactConverter = function(arg)
 
 TestHarness.prototype.testFeedCollection = function()
 {
+	var a_reason = new Object();
+
+	a_reason['a'] = true;
+	// a_reason['b'] = false;
+
+	this.m_logger.debug("isAnyValue true: " + isAnyValue(a_reason, true));
+	this.m_logger.debug("isAnyValue false: " + isAnyValue(a_reason, false));
+
+	return; // TODO
+
 	var zfc = new FeedCollection();
 	var key, zfi;
 

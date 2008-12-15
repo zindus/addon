@@ -595,7 +595,6 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	var is_file_exists_pr = a_zfc[filename_pr].nsifile().exists();
 
 	function zfitem(zfc, zfc_key, zfi_key) { return zfc.isPresent(zfc_key) ? zfc.get(zfc_key).getOrNull(zfi_key) : null; }
-	function is_any_true(a) { var ret = false; for (var i in a) { if (a[i])  { ret = true; break; } }  return ret;       }
 
 	this.debug("entryActionLoad: " +
 	      " \n last sync soapURL:  "          + zfitem(zfcLastSync, sourceid_pr, Account.url) +
@@ -612,22 +611,22 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	a_reason['no-lastsync']  = !is_file_exists_pr;
 
-	if (!is_any_true(a_reason))
+	if (!isAnyValue(a_reason, true))
 		a_reason['new-source']   = !zfcLastSync.isPresent(sourceid_pr);
-	if (!is_any_true(a_reason))
+	if (!isAnyValue(a_reason, true))
 		a_reason['new-url']      = zfcLastSync.get(sourceid_pr).getOrNull(Account.url) != this.state.sources[sourceid_pr][Account.url];
-	if (!is_any_true(a_reason))
+	if (!isAnyValue(a_reason, true))
 		a_reason['new-username'] = zfcLastSync.get(sourceid_pr).getOrNull(Account.username) != this.username();
 
-	if (this.formatPr() == FORMAT_GD && !is_any_true(a_reason))
+	if (this.formatPr() == FORMAT_GD && !isAnyValue(a_reason, true))
 		a_reason['gd_sync_with'] =
 			zfcLastSync.get(sourceid_pr).getOrNull(Account.gd_sync_with) != this.state.gd_sync_with;
-	if (this.formatPr() == FORMAT_GD && !is_any_true(a_reason))
+	if (this.formatPr() == FORMAT_GD && !isAnyValue(a_reason, true))
 		a_reason['gd_is_sync_postal_address'] =
 			zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
 			  String(this.state.gd_is_sync_postal_address);
 
-	var is_slow_sync = is_any_true(a_reason);
+	var is_slow_sync = isAnyValue(a_reason, true);
 
 	this.debug("entryActionLoad: is_slow_sync: " + is_slow_sync + " a_reason: " + aToString(a_reason));
 
@@ -8081,7 +8080,16 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 	//
 	var valid_email_re = /^([A-Z0-9\.\!\#\$\%\*\/\?\|\^\{\}\`\~\&\'\+\-\=]+@[A-Z0-9.-]+\.[A-Z]+)$/i;
 
-	if (url && username.length > 0 && valid_email_re.test(username) && password && password.length > 0)
+	var a_reason = new Object();
+
+	a_reason['url'] = Boolean(url);
+
+	if (!isAnyValue(a_reason, false)) a_reason['username_length'] = (username.length > 0);
+	if (!isAnyValue(a_reason, false)) a_reason['valid_username']  = Boolean(valid_email_re.test(username));
+	if (!isAnyValue(a_reason, false)) a_reason['password']        = Boolean(password);
+	if (!isAnyValue(a_reason, false)) a_reason['password_length'] = (password.length > 0);
+
+	if (!isAnyValue(a_reason, false))
 	{
 		var headers = newObject("Content-type", "application/x-www-form-urlencoded");
 		var body = "";
@@ -8097,6 +8105,8 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 	}
 	else
 	{
+		this.debug("a_reason: " + aToString(a_reason));
+
 		this.state.stopFailCode = 'failon.integrity.gd.bad.credentials';
 		nextEvent = 'evLackIntegrity';
 	}

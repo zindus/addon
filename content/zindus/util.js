@@ -369,6 +369,24 @@ function keysForMatchingValues(a1, a2)
 	return ret;
 }
 
+function isAnyValue(a, value)
+{
+	zinAssert(typeof(value) == 'boolean');
+
+	var ret = false;
+	
+	for (var i in a)
+	{
+		if (a[i] == value)
+		{
+			ret = true;
+			break;
+		}
+	}
+
+	return ret;
+}
+
 // takes either:
 // one argument - an array with an even number of elements
 // an even number of arguments
