@@ -1003,6 +1003,12 @@ SyncFsm.prototype.initialiseZfcGdFakeContactsFolder = function(zfc)
 SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 {
 	var aUri = new Object();
+	var a_ids_to_remove;
+
+	if (AddressBook.version() == AddressBook.TB3)
+		a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, null, TBCARD_ATTRIBUTE_LUID_ITER, null);
+	else
+		a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, null);
 
  	var functor_foreach_card = {
 		state: this.state,
@@ -1010,10 +1016,17 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 		{
 			var abCard     = item.QueryInterface(Ci.nsIAbCard);
 			var attributes = this.state.m_addressbook.getCardAttributes(abCard);
-			var luid       = attributes[TBCARD_ATTRIBUTE_LUID];
+			var i, value;
 
-			if (luid && (luid > 0 || luid.length > 0)) // the TBCARD_ATTRIBUTE_LUID for GAL cards is an ldap dn hence the test for length>0
-				this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID, 0));  // api doesn't have "delete"
+			for (i in a_ids_to_remove)
+			{
+				value = attributes[i];
+
+				// the TBCARD_ATTRIBUTE_LUID for GAL cards is an ldap dn hence the test for length>0
+				//
+				if (value && (value > 0 || value.length > 0))
+					this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(i, 0));  // api doesn't have "delete"
+			}
 
 			return true;
 		}
@@ -1890,9 +1903,9 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 	var aAdd   = new Array(); // each element in the array is an index into aSyncGalContact
 	var abName = APP_NAME + ">" + AB_GAL;
 	var uri    = this.state.m_addressbook.getAddressBookUriByName(abName);
-	var zc, attributes, properties, isGalEnabled, element;
 	var zfcLastSync = this.state.zfcLastSync;
 	var sourceid_pr = this.state.sourceid_pr;
+	var zc, attributes, properties, isGalEnabled, element, i, j;
 
 	this.state.stopwatch.mark(state);
 
@@ -1951,9 +1964,9 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 		//
 		// zinAssert(this.state.aSyncGalContact.length > 0 && this.state.SyncGalTokenChanged);
 
-		for (var i in this.state.aSyncGalContact)
+		for (i in this.state.aSyncGalContact)
 		{
-			// First, we remove Zimbra <cn> properties that don't map to a thunderbird property because...
+			// First, we remove Zimbra <cn> email2, email3 etc because:
 			// 1. background: for <cn> elements that come from an addressbook, email, email2 and email3 have corresponding
 			//    fields in Zimbra's web-UI
 			// 2. for <cn> elements that come from SyncGalResponse, email2, email3, email4, etc are set to the aliases for the account
@@ -1962,9 +1975,14 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 			//    c. if/when we preserve Zimbra contact fields that don't have a corresponding Thunderbird field, we won't
 			//       want to do it for GAL contacts 'cos they're never written back to Zimbra.
 
-			this.contact_converter().removeKeysNotCommonToAllFormats(FORMAT_ZM, this.state.aSyncGalContact[i].element);
+			let a_keys_to_delete = new Object();
 
-			var properties = this.contact_converter().convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncGalContact[i].element);
+			for (j in this.state.aSyncGalContact[i].element)
+				if (j != "email1" && j.match(/email[0-9]+/))
+					a_keys_to_delete[j] = true;
+
+			for (j in a_keys_to_delete)
+				delete this.state.aSyncGalContact[i].element[j];
 		}
 
 		if (this.state.SyncGalTokenInRequest == null)
@@ -1991,7 +2009,7 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 			var abip = this.state.m_addressbook.newAddressBook(abName);
 			uri = abip.m_uri;
 
-			for (var i in this.state.aSyncGalContact)
+			for (i in this.state.aSyncGalContact)
 				aAdd.push(i);
 		}
 		else
@@ -2029,12 +2047,12 @@ SyncFsm.prototype.entryActionGalCommit = function(state, event, continuation)
 
 			this.state.m_addressbook.forEachCard(uri, functor);
 
-			for (var i in this.state.aSyncGalContact)
+			for (i in this.state.aSyncGalContact)
 				if (!this.state.aSyncGalContact[i].present)
 					aAdd.push(i);
 		}
 
-		for (var i in aAdd)
+		for (i in aAdd)
 		{
 			zc = this.state.aSyncGalContact[aAdd[i]];
 
@@ -2729,6 +2747,10 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 	// The key '1-797-402' is only unique within an addressbook.
 	//
 
+	function is_card_attribute_valid(attributes, key) {
+		return ((key in attributes) && (attributes[key] > 0));
+	}
+
 	// pass 1 - iterate through the cards in the zindus folders building an associative array of mailing list uris
 	//          and do some housekeeping.
 	//
@@ -2738,11 +2760,12 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 
 	functor_foreach_card = {
 		state: this.state,
+		m_tb3_luid_iter: 1,
 		run: function(uri, item)
 		{
-			var abCard = item.QueryInterface(Ci.nsIAbCard);
-
-			this.luid_iter++;
+			var abCard     = item.QueryInterface(Ci.nsIAbCard);
+			var attributes = this.state.m_addressbook.getCardAttributes(abCard);
+			var id         = attributes[TBCARD_ATTRIBUTE_LUID];
 
 			if (abCard.isMailList)
 				aMailListUri[abCard.mailListURI] = uri;
@@ -2750,22 +2773,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 			// if a sync gets cancelled somewhere between assigning+writing luid attributes to cards and saving the map,
 			// we might end up with a card with an luid attribute but without the luid being in the map
 			// Here, we remove any such attributes...
-
-			var attributes = this.state.m_addressbook.getCardAttributes(abCard);
-			var id = attributes[TBCARD_ATTRIBUTE_LUID];
-			var luid_iter = attributes[TBCARD_ATTRIBUTE_LUID_ITER];
-
-			if (AddressBook.version() == AddressBook.TB3)
-				if (!isPropertyPresent(attributes, TBCARD_ATTRIBUTE_LUID_ITER))
-				{
-					if (!isPropertyPresent(this, "luid_iter"))
-						this.luid_iter = 1;
-					else
-						this.luid_iter++;
-
-					this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID_ITER, this.luid_iter));
-				}
-
+			//
 			if (id > AUTO_INCREMENT_STARTS_AT)
 			{
 				// pass 3 gives the card an luid and commits it to the database
@@ -2795,6 +2803,22 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 					                             stringBundleString("status.failon.integrity.data.store.detail") +
 					                             stringBundleString("text.suggest.reset");
 				}
+			}
+
+			// nsIAbMDBCard has disappeared from Components.interfaces in Tb3 and I can't figure out
+			// how to get mdb rowid out of an abCard.
+			// So the Tb2 method of constructing a id from tableid+rowid+key isn't used.
+			// Instead, we give cards that don't have an TBCARD_ATTRIBUTE_LUID attribute, a TBCARD_ATTRIBUTE_LUID_ITER attribute
+			// and AddressBookTb3.prototype.nsIAbMDBCardToKey uses that to return a unique key.
+			// This will get a lot simpler once Tb3 cards get their own unique id.
+			// And even simpler when we don't need three passes to identify mailing list cards.
+			//
+			if (AddressBook.version() == AddressBook.TB3 && !abCard.isMailList
+			                                             && !is_card_attribute_valid(attributes, TBCARD_ATTRIBUTE_LUID))
+			{
+				this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID_ITER, this.m_tb3_luid_iter));
+
+				this.m_tb3_luid_iter++;
 			}
 
 			return this.state.stopFailCode == null;
@@ -6449,7 +6473,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					properties = contact.addWhitespaceToPostalProperties(properties);
 
 				contact.updateFromProperties(properties);
-				contact.removeEmptyPostalElements(); // see issue #160removeEmptyPostalElements(); // see issue #160
+				contact.removeEmptyPostalElements(); // see issue #160
 
 				if (isMatchObjects(properties_pre_update, contact.m_properties))
 				{

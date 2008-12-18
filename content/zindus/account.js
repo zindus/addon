@@ -77,7 +77,7 @@ Account.prototype.set = function(key, value)
 
 Account.prototype.format = function()
 {
-	return this.m_properties['format'];
+	return this.m_properties[Account.format];
 }
 
 Account.prototype.unique_key = function()
@@ -132,26 +132,40 @@ Account.arrayToString = function(a_accounts)
 Account.prototype.fromPrefset = function(sourceid)
 {
 	var prefset = new PrefSet(PrefSet.ACCOUNT, PrefSet.ACCOUNT_PROPERTIES);
-	var value;
+	var ret = true;
+	var i, value;
 
 	prefset.load(sourceid);
 
-	logger().debug("Account.prototype.fromPrefset: sourceid: " + sourceid + " prefset: " + prefset.toString());
-
 	this.set(Account.url,                 prefset.getProperty(PrefSet.ACCOUNT_URL));
 	this.set(Account.username,            prefset.getProperty(PrefSet.ACCOUNT_USERNAME));
-	this.set(Account.passwordlocator,     new PasswordLocator(this.get(Account.url), this.get(Account.username)));
-	this.set('format',              prefset.getProperty(PrefSet.ACCOUNT_FORMAT));      // format == Account.Google, Account.Zimbra etc
-
-	for (var i = 0; i < Account.PER_FORMAT_PROPERTIES.length; i++)
-	{
-		value = prefset.getProperty(Account.PER_FORMAT_PROPERTIES[i]);
-
-		if (value != PrefSet.DEFAULT_VALUE)
-			this.set(Account.PER_FORMAT_PROPERTIES[i], value);
-	}
+	this.set(Account.format,              prefset.getProperty(PrefSet.ACCOUNT_FORMAT));      // format == Account.Google, Account.Zimbra etc
 
 	this.sourceid(sourceid);
+
+	const a_keys = newObject(Account.url, null, Account.username, null, Account.format, null);
+
+	for (i in a_keys)
+		if (!this.get(i) || this.get(i).length < 1)
+			ret = false;
+
+	if (ret)
+	{
+		this.set(Account.passwordlocator,     new PasswordLocator(this.get(Account.url), this.get(Account.username)));
+
+		for (i = 0; i < Account.PER_FORMAT_PROPERTIES.length; i++)
+		{
+			value = prefset.getProperty(Account.PER_FORMAT_PROPERTIES[i]);
+
+			if (value != PrefSet.DEFAULT_VALUE)
+				this.set(Account.PER_FORMAT_PROPERTIES[i], value);
+		}
+
+	}
+
+	logger().debug("Account.prototype.fromPrefset: sourceid: " + sourceid + " prefset: " + prefset.toString() + " returns: " + ret);
+
+	return ret;
 }
 
 Account.prototype.save = function()
@@ -165,7 +179,7 @@ Account.prototype.save = function()
 
 	prefset.setProperty(PrefSet.ACCOUNT_URL,      this.get(Account.url));
 	prefset.setProperty(PrefSet.ACCOUNT_USERNAME, this.get(Account.username));
-	prefset.setProperty(PrefSet.ACCOUNT_FORMAT,   this.get('format'));
+	prefset.setProperty(PrefSet.ACCOUNT_FORMAT,   this.get(Account.format));
 
 	for (var i = 0; i < Account.PER_FORMAT_PROPERTIES.length; i++)
 		prefset.delProperty(Account.PER_FORMAT_PROPERTIES[i]);
@@ -193,8 +207,8 @@ function AccountFactory()
 
 AccountFactory.accountsLoadFromPrefset = function()
 {
-	var a_sourceid  = preferences().getImmediateChildren(preferences().branch(), PrefSet.ACCOUNT + '.');
-	var ret         = new Array();
+	var a_sourceid    = preferences().getImmediateChildren(preferences().branch(), PrefSet.ACCOUNT + '.');
+	var ret           = new Array();
 	var has_integrity = true;
 	var i, account;
 
@@ -212,15 +226,16 @@ AccountFactory.accountsLoadFromPrefset = function()
 	for (i = 0; i < a_sourceid.length; i++)
 	{
 		account = new Account();
-		account.fromPrefset(a_sourceid[i]);
-		ret.push(account);
+		has_integrity = account.fromPrefset(a_sourceid[i]);
 
-		if (account.sourceid() != Account.indexToSourceId(i) || !Account.BIMAP_FORMAT.isPresent(null, account.format()))
+		if (!has_integrity || account.sourceid() != Account.indexToSourceId(i) || !Account.BIMAP_FORMAT.isPresent(null, account.format()))
 		{
 			logger().error("This account doesn't have integrity: " + account.toString());
 			has_integrity = false;
 			break;
 		}
+
+		ret.push(account);
 	}
 
 	if (!has_integrity)

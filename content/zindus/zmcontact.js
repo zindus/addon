@@ -96,7 +96,7 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 			logger().warn("This contact contains something that isn't understood: " +
 			                                                xmlDocumentToString(node));
 
-		// if (key && value) logger().debug("77224: setting contact." + key + " to " + value);
+		// if (key && value) logger().debug("AMHERE: setting contact: key: " + key + " to " + value);
 	}
 }
 

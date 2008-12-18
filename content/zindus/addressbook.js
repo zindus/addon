@@ -791,14 +791,38 @@ AddressBookTb2.prototype.nsIAbMDBCardToKey = function(abCard)
 	return hyphenate('-', mdbCard.dbTableID, mdbCard.dbRowID, mdbCard.key);
 }
 
+// In Tb3a3, mailing lists were cards that could have attributes added to them
+// In Tb3b1, adding an attribute to a mailing list causes the card enumerator to silently fail!
+// So we avoid doing that ... which is why we don't look for the TBCARD_ATTRIBUTE_LUID_ITER attribute on Tb3 mailing lists
+//
 AddressBookTb3.prototype.nsIAbMDBCardToKey = function(abCard)
 {
+	var ret = null;
+
 	zinAssert(typeof(abCard) == 'object' && abCard != null);
 
-	var attributes = this.getCardAttributes(abCard);
-	zinAssert(isPropertyPresent(attributes, TBCARD_ATTRIBUTE_LUID_ITER));
+	if (abCard.isMailList)
+		ret = abCard.mailListURI
+	else
+	{
+		let attributes = this.getCardAttributes(abCard);
+		const a_attrs = [TBCARD_ATTRIBUTE_LUID, TBCARD_ATTRIBUTE_LUID_ITER]
 
-	return attributes[TBCARD_ATTRIBUTE_LUID_ITER];
+		for (var i = 0; i < a_attrs.length; i++)
+		{
+			let key = a_attrs[i];
+
+			if (key in attributes && attributes[key] > 0)
+			{
+				ret = key + ":" + attributes[key];
+				break;
+			}
+		}
+
+		zinAssert(ret);
+	}
+
+	return ret;
 }
 
 AddressBookTb2.prototype.directoryProperty = function(elem, property)

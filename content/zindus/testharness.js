@@ -50,7 +50,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testAddressBookBugzilla432145Create();
 	// ret = ret && this.testAddressBookBugzilla432145Compare();
 	// ret = ret && this.testAddressBookBugzilla432145Delete();
-	ret = ret && this.testFeedCollection();
+	// ret = ret && this.testFeedCollection();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
@@ -78,6 +78,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testPerformanceZfcSet();
 	// ret = ret && this.testPerformanceStringConcat();
 	// ret = ret && this.testPerformanceLoggingStyles();
+	// ret = ret && this.testTb3CardUuid();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -110,16 +111,6 @@ TestHarness.prototype.newContactConverter = function(arg)
 
 TestHarness.prototype.testFeedCollection = function()
 {
-	var a_reason = new Object();
-
-	a_reason['a'] = true;
-	// a_reason['b'] = false;
-
-	this.m_logger.debug("isAnyValue true: " + isAnyValue(a_reason, true));
-	this.m_logger.debug("isAnyValue false: " + isAnyValue(a_reason, false));
-
-	return; // TODO
-
 	var zfc = new FeedCollection();
 	var key, zfi;
 
@@ -232,7 +223,7 @@ TestHarness.prototype.testContactConverter1 = function()
 				if (a_data[i][format] != null)
 					a_properties[format][a_data[i][format]] = a_data[i]['value'];
 
-	// this.m_logger.debug("testContactConverter: a_properties: " + aToString(a_properties));
+	this.m_logger.debug("testContactConverter: a_properties: " + aToString(a_properties));
 
 	// test conversion of ...
 	zinAssert(contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, 'HomeAddress') == false);
@@ -242,7 +233,7 @@ TestHarness.prototype.testContactConverter1 = function()
 	zinAssert(isMatchObjects(a_properties[FORMAT_TB], contact_converter.convert(FORMAT_TB, FORMAT_TB, a_properties[FORMAT_TB])));
 	zinAssert(isMatchObjects(a_properties[FORMAT_ZM], contact_converter.convert(FORMAT_ZM, FORMAT_TB, a_properties[FORMAT_TB])));
 	zinAssert(isMatchObjects(a_properties[FORMAT_GD], contact_converter.convert(FORMAT_GD, FORMAT_TB, a_properties[FORMAT_TB])));
-
+	
 	// test that crc's match
 	//
 	var a_crc = new Object();
@@ -1922,3 +1913,39 @@ TestHarness.prototype.testPerformanceLoggingStyles = function()
 
 	return true;
 }
+
+TestHarness.prototype.testTb3CardUuid = function()
+{
+	this.m_logger.debug("testTb3CardUuid");
+
+	var addressbook = AddressBook.new();
+	var contact_converter = this.newContactConverter();
+	var name        = "test-tb3-card-uuid";
+	var abip        = addressbook.newAddressBook(name);
+	var uri         = abip.uri();
+	var properties  = new Object();
+	var attributes  = new Object();
+
+	addressbook.contact_converter(contact_converter);
+
+	var i = 333;
+
+	properties['PrimaryEmail'] = i + "-test@example.com";
+	properties['DisplayName'] = i + "-test-display";
+	properties['Notes'] = i + "-test-line-one";
+
+	// for (var i in Components.interfaces)
+	//	this.m_logger.debug(i);
+
+	var abCard = addressbook.addCard(uri, properties, attributes);
+	// var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
+	// var mdbCard = abCard.QueryInterface(Ci.nsAbMDBCard);
+	// var dbRowID = mdbCard.getProperty("DBRowID", null);
+	var db = addressbook.nsIAddrDatabase(uri)
+	var dbRowID = db.getCardValue(abCard, "dbRowID");
+
+	this.m_logger.debug("dbRowID: " + dbRowID);
+
+	return true;
+}
+
