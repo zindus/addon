@@ -802,11 +802,11 @@ AddressBookTb3.prototype.nsIAbMDBCardToKey = function(abCard)
 	zinAssert(typeof(abCard) == 'object' && abCard != null);
 
 	if (abCard.isMailList)
-		ret = abCard.mailListURI
+		ret = abCard.mailListURI;
 	else
 	{
 		let attributes = this.getCardAttributes(abCard);
-		const a_attrs = [TBCARD_ATTRIBUTE_LUID, TBCARD_ATTRIBUTE_LUID_ITER]
+		const a_attrs = [TBCARD_ATTRIBUTE_LUID, TBCARD_ATTRIBUTE_LUID_ITER];
 
 		for (var i = 0; i < a_attrs.length; i++)
 		{
@@ -819,7 +819,8 @@ AddressBookTb3.prototype.nsIAbMDBCardToKey = function(abCard)
 			}
 		}
 
-		zinAssert(ret);
+		if (!ret)
+			zinAssertAndLog(false, "properties: " + aToString(this.getCardProperties(abCard)) + " attributes: " + aToString(attributes) );
 	}
 
 	return ret;

@@ -2818,8 +2818,16 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 			{
 				this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID_ITER, this.m_tb3_luid_iter));
 
+				// TODO remove this - debugging garcha
+				this.state.m_logger.debug("loadTbCards: pass 1: assigning: " +
+				          " tb3_luid_iter: " + this.m_tb3_luid_iter + " to card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
+
 				this.m_tb3_luid_iter++;
 			}
+
+			// TODO remove this - debugging garcha
+			if (AddressBook.version() == AddressBook.TB3)
+				this.state.m_logger.debug("loadTbCards: pass 1: key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) + " for card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 
 			return this.state.stopFailCode == null;
 		}
