@@ -269,7 +269,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	a_map = {
 		"server.2.type":        { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT     },
 		"server.2.url":         { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_URL        },
-		"server.2.username":    { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_USERNAME   },
+		"server.2.username":    { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_USERNAME   }
 	};
 
 	migratePrefName(a_map);

@@ -67,7 +67,7 @@ Account.prototype.get = function(key)
 {
 	zinAssertAndLog(isInArray(key, Account.PROPERTIES), "key: " + key);
 
-	return this.m_properties[key];
+	return (key in this.m_properties) ? this.m_properties[key] : null;
 }
 
 Account.prototype.set = function(key, value)

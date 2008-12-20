@@ -27,12 +27,10 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.15 2008-07-10 22:53:47 cvsuser Exp $
+// $Id: fsm.js,v 1.16 2008-12-20 05:27:24 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
-	var fsmstate;
-
 	var id_fsm   = fsmstate.id_fsm;
 	var oldstate = fsmstate.oldstate;
 	var newstate = fsmstate.newstate;
@@ -82,12 +80,12 @@ function fsmTransitionDo(fsmstate)
 		//
 		if (newstate == 'final')
 		{
-			var fsmstate = new FsmState('id_fsm',    id_fsm,
-			                            'timeoutID', null,
-			                            'oldstate',  newstate,
-			                            'newstate',  null,
-			                            'event',     null,
-			                            'context',   context);
+			fsmstate = new FsmState('id_fsm',    id_fsm,
+			                        'timeoutID', null,
+			                        'oldstate',  newstate,
+			                        'newstate',  null,
+			                        'event',     null,
+			                        'context',   context);
 
 			Maestro.notifyFsmState(fsmstate);
 		}

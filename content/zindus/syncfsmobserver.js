@@ -130,7 +130,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGalSync:        { count: 1 },
 		stGalCommit:      { },
 		stGetContactPuZm: { count: 1 },
-		stUpdateZm:       { count: 1 },
+		stUpdateZm:       { count: 1 }
 	};
 
 	var a_states_gd = {
@@ -142,7 +142,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGetContactGd3:  { count: 1 },
 		stDeXmlifyAddrGd: { },
 		stGetContactPuGd: { count: 1 },
-		stUpdateGd:       { count: 1 },
+		stUpdateGd:       { count: 1 }
 	};
 
 	var a_states_common = {

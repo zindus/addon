@@ -187,8 +187,8 @@ MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
 		}
 	}
 
-	for (var key in a_key)
-		ret.push(key);
+	for (var i in a_key)
+		ret.push(i);
 
 	return ret;
 }

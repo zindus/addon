@@ -132,7 +132,7 @@ PasswordLocator.prototype.username = function(value)
 PasswordLocator.prototype.delPassword = function()
 {
 	var pm = new PasswordManager();
-	ret = pm.del(this.m_url, this.m_username);
+	pm.del(this.m_url, this.m_username);
 }
 
 PasswordLocator.prototype.setPassword = function(value)

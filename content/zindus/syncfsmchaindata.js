@@ -129,7 +129,7 @@ SyncFsmChainData.prototype.zfcTb = function()
 	if (arguments.length == 1)
 		this.m_zfcTb = arguments[0];
 
-	return this.m_zfcTb;;
+	return this.m_zfcTb;
 }
 
 SyncFsmChainData.prototype.signature = function()

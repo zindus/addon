@@ -391,7 +391,7 @@ ContactConverter.prototype.crc32 = function(properties)
 	for (var i in properties)
 		if (properties[i].length > 0)
 		{
-			index_to = this.m_map[FORMAT_TB][i];
+			let index_to = this.m_map[FORMAT_TB][i];
 
 			if (typeof(index_to) != 'undefined')
 				aSorted[index_to] = true;

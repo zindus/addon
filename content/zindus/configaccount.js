@@ -119,6 +119,7 @@ ConfigAccount.prototype.onCommand = function(id_target)
 			this.m_payload_sw = new Payload();
 			this.m_payload_sw.m_a_accounts      = [ account ];
 			this.m_payload_sw.m_syncfsm_details = newObject('type', "authonly");
+			this.m_payload_sw.m_is_cancelled    = false;
 			this.m_payload_sw.m_es              = new SyncFsmExitStatus();
 
 			logger().debug("ConfigAccount.onCommand: before openDialog: m_es: " + this.m_payload_sw.m_es.toString());

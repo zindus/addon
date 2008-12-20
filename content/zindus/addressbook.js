@@ -513,9 +513,10 @@ AddressBook.prototype.updateCard = function(abCard, uri, properties, attributes,
 	//
 	var a_deletes = {};
 
-	for (key in this.contact_converter().m_common_to[FORMAT_TB][format])
-		if (!isPropertyPresent(a_field_used, key))
-			a_deletes[key] = "";
+	if (format != FORMAT_TB)
+		for (key in this.contact_converter().m_common_to[FORMAT_TB][format])
+			if (!isPropertyPresent(a_field_used, key))
+				a_deletes[key] = "";
 
 	this.setCardProperties(abCard, uri, a_deletes);
 

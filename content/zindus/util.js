@@ -254,8 +254,8 @@ function keysIn()
 
 function keysToString(obj)
 {
-	ret = "";
 	var is_first = true;
+	var ret = "";
 
 	for (var i in obj)
 	{
@@ -413,7 +413,7 @@ function newObject()
 
 function newObjectWithKeys()
 {
-	ret = new Object();
+	var ret = new Object();
 
 	for (var i = 0; i < arguments.length; i++)
 		ret[arguments[i]] = 0;
@@ -768,7 +768,7 @@ function prefsetMatchWithPreAuth(url)
 	var prefset   = new PrefSet(PrefSet.PREAUTH, PrefSet.PREAUTH_PROPERTIES);
 	var is_match  = false;
 
-	for (i = 0; i < a_preauth.length; i++)
+	for (var i = 0; i < a_preauth.length; i++)
 	{
 		prefset.load(a_preauth[i]);
 

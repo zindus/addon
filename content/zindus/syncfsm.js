@@ -72,12 +72,12 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		start:             { evCancel: 'final', evNext: 'stAuthSelect',                                     evLackIntegrity: 'final'     },
 		stAuthSelect:      { evCancel: 'final', evNext: 'stAuthLogin',      evPreAuth:     'stAuthPreAuth', evLackIntegrity: 'final'     },
 		stAuthLogin:       { evCancel: 'final', evNext: 'stLoad',           evHttpRequest: 'stHttpRequest'                               },
-		stAuthPreAuth:     { evCancel: 'final', evNext: 'stAuthCheck',      evHttpRequest: 'stHttpRequest',                              },
+		stAuthPreAuth:     { evCancel: 'final', evNext: 'stAuthCheck',      evHttpRequest: 'stHttpRequest'                               },
 		stAuthCheck:       { evCancel: 'final', evNext: 'stLoad',                                           evLackIntegrity: 'final'     },
 		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evRepeat:      'stLoad',        evLackIntegrity: 'final'     },
 		stLoadTb:          { evCancel: 'final', evNext: 'stGetAccountInfo', evRepeat:      'stLoadTb',      evLackIntegrity: 'final'     },
 		stGetAccountInfo:  { evCancel: 'final', evNext: 'stSelectSoapUrl',  evHttpRequest: 'stHttpRequest'                               },
-		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stSync',           evHttpRequest: 'stHttpRequest',                              },
+		stSelectSoapUrl:   { evCancel: 'final', evNext: 'stSync',           evHttpRequest: 'stHttpRequest'                               },
 		stSync:            { evCancel: 'final', evNext: 'stSyncResponse',   evHttpRequest: 'stHttpRequest'                               },
 		stSyncResponse:    { evCancel: 'final', evNext: 'stGetContactZm',   evRedo:        'stSync',        evDo: 'stGetAccountInfo'     },
 		stGetContactZm:    { evCancel: 'final', evNext: 'stGalConsider',    evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactZm'   },
@@ -151,9 +151,9 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stLoad:           { evCancel: 'final', evNext: 'stLoadTb',         evRepeat:      'stLoad',          evLackIntegrity: 'final'     },
 		stLoadTb:         { evCancel: 'final', evNext: 'stDelContactGd',   evRepeat:      'stLoadTb',        evLackIntegrity: 'final'     },
 		stDelContactGd:   { evCancel: 'final', evSkip: 'stGetContactGd1',  evHttpRequest: 'stHttpRequest',   evNext: 'stDelContactGd'     },
-		stGetContactGd1:  { evCancel: 'final', evNext: 'stGetContactGd2',  evHttpRequest: 'stHttpRequest',                                },
+		stGetContactGd1:  { evCancel: 'final', evNext: 'stGetContactGd2',  evHttpRequest: 'stHttpRequest'                                 },
 		stGetContactGd2:  { evCancel: 'final', evNext: 'stGetContactGd3',  evRepeat:      'stGetContactGd1', evLackIntegrity: 'final'     },
-		stGetContactGd3:  { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge',      evRepeat: 'stGetContactGd3', },
+		stGetContactGd3:  { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge',      evRepeat: 'stGetContactGd3'  },
 		stDeXmlifyAddrGd: { evCancel: 'final', evNext: 'stConverge',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stDeXmlifyAddrGd' },
 		stConverge:       { evCancel: 'final', evNext: 'stGetContactPuGd', evRepeat:      'stConverge',      evLackIntegrity: 'final'     },
 		stGetContactPuGd: { evCancel: 'final', evNext: 'stUpdateGd',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stGetContactPuGd' },
@@ -825,7 +825,7 @@ SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 	var a_not_persisted = [ FeedItem.ATTR_KEEP, FeedItem.ATTR_PRES, FeedItem.ATTR_TBPA ];
 	var error_msg       = "";
 	var context         = this;
-	var sourceid;
+	var sourceid, zfc;
 
 	zinAssert(result.is_consistent);
 
@@ -868,6 +868,7 @@ SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 	for (sourceid in this.state.sources)
 	{
 		this.state.stopwatch.mark("isConsistentSources sourceid: " + sourceid + " starts");
+
 		zfc = this.zfc(sourceid);
 
 		let generator = zfc.forEachGenerator(functor_foreach_luid, chunk_size('feed'));
@@ -890,6 +891,7 @@ SyncFsmZm.prototype.isConsistentSharedFolderReferences = function()
 {
 	var is_consistent = true;
 	var error_msg     = "";
+	var zfc, format;
 
 	var functor_foreach_luid = {
 		state: this.state,
@@ -990,12 +992,12 @@ SyncFsm.prototype.initialiseZfcAutoIncrement = function(zfc)
 
 SyncFsm.prototype.initialiseZfcGdFakeContactsFolder = function(zfc)
 {
-	key = zfc.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
+	let key = zfc.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
 
 	zfc.set(new FeedItem(FeedItem.TYPE_FL, FeedItem.ATTR_KEY, key,
-	                                             FeedItem.ATTR_L, 1,
-	                                             FeedItem.ATTR_NAME, GD_PAB,
-	                                             FeedItem.ATTR_MS, 1));
+	                                       FeedItem.ATTR_L, 1,
+	                                       FeedItem.ATTR_NAME, GD_PAB,
+	                                       FeedItem.ATTR_MS, 1));
 }
 
 // remove any luid attributes in the addressbook
@@ -2299,9 +2301,9 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 			m_a_empty_contacts: new Object(),
 			run: function(card, id, properties)
 			{
-				var properties = context.contact_converter().convert(FORMAT_ZM, FORMAT_TB, properties);
+				var tmp = context.contact_converter().convert(FORMAT_ZM, FORMAT_TB, properties);
 
-				if (this.is_empty(properties))
+				if (this.is_empty(tmp))
 					this.m_a_empty_contacts[id] = true;
 			}
 		};
@@ -2377,7 +2379,7 @@ SyncFsm.prototype.testForFolderPresentInZfcTb = function(name)
 		this.state.stopFailArg  = [ this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(name)) ];
 	}
 
-	ret = (this.state.stopFailCode == null);
+	let ret = (this.state.stopFailCode == null);
 
 	this.state.m_logger.debug("testForFolderPresentInZfcTb: name: " + name + " returns: " + ret);
 
@@ -2425,7 +2427,7 @@ SyncFsm.prototype.testForAccountsIntegrity = function()
 	var index_identical = null;
 	var sfcd            = this.state.m_sfcd;
 	var cZimbra         = 0;
-	var i, account, key;
+	var i, account, key, ret;
 
 	// test that no two accounts are the same
 	//
@@ -2721,7 +2723,7 @@ SyncFsm.prototype.loadTbAddressBooks = function()
 		}
 	};
 
-	aUri = new Array();
+	let aUri = new Array();
 
 	this.state.m_addressbook.forEachAddressBook(functor_foreach_addressbook);
 
@@ -2809,8 +2811,9 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 			// how to get mdb rowid out of an abCard.
 			// So the Tb2 method of constructing a id from tableid+rowid+key isn't used.
 			// Instead, we give cards that don't have an TBCARD_ATTRIBUTE_LUID attribute, a TBCARD_ATTRIBUTE_LUID_ITER attribute
-			// and AddressBookTb3.prototype.nsIAbMDBCardToKey uses that to return a unique key.
-			// This will get a lot simpler once Tb3 cards get their own unique id.
+			// AddressBookTb3.prototype.nsIAbMDBCardToKey incorporates the first attribute in preference to the latter but either way
+			// returns a unique key.
+			// This will get a lot simpler when Tb3 cards get a unique id.
 			// And even simpler when we don't need three passes to identify mailing list cards.
 			//
 			if (AddressBook.version() == AddressBook.TB3 && !abCard.isMailList
@@ -3781,8 +3784,8 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 		},
 		perf: function(key, action)
 		{
-			return false; // turn this off except for debugging
-
+			if (false)  // turn this off except for debugging
+			{
 			let elapsed = context.state.stopwatch.elapsed();
 
 			if (action == 'copy')
@@ -3794,6 +3797,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 			}
 			else // action == 'mark'
 				this.m_perf.a_start[key] = elapsed;
+			}
 		},
 		name_parent: function(luid_parent)
 		{
@@ -4240,7 +4244,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 		{
 			var zfc  = context.zfc(sourceid);
 			var luid = zfi.key();
-			var gid;
+			var gid, skip_msg;
 
 			buildgcs_msg = "";
 			skip_msg     = null;
@@ -4727,7 +4731,7 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 	var aOperationsToRemove;  // each key in this hash is the indexSuo of a contact delete operation that is to be removed
 	var i, suo, indexSuo, luid_target, l_target, gid_l_target, msg;
 	var aBuckets = [Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF];
-	var aBucket;
+	var aBucket, bucket;
 
 	zinAssert(this.formatPr() == FORMAT_ZM);
 
@@ -4748,22 +4752,25 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 			}
 		}
 
-		for (indexSuo in this.state.aSuo[sourceid][Suo.DEL | FeedItem.TYPE_CN])
-		{
-			suo         = this.state.aSuo[sourceid][Suo.DEL | FeedItem.TYPE_CN][indexSuo];
-			luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
-			l_target    = SyncFsm.keyParentRelevantToGid(this.zfc(sourceid), luid_target);
-			gid_l_target = this.state.aReverseGid[sourceid][l_target];
+		bucket = Suo.DEL | FeedItem.TYPE_CN;
 
-			if (isPropertyPresent(this.state.a_folders_deleted, gid_l_target))
+		if (bucket in this.state.aSuo[sourceid])
+			for (indexSuo in this.state.aSuo[sourceid][bucket])
 			{
-				aOperationsToRemove[indexSuo] = null;
-				this.state.a_folders_deleted[gid_l_target].push(suo);
+				suo         = this.state.aSuo[sourceid][bucket][indexSuo];
+				luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+				l_target    = SyncFsm.keyParentRelevantToGid(this.zfc(sourceid), luid_target);
+				gid_l_target = this.state.aReverseGid[sourceid][l_target];
+
+				if (isPropertyPresent(this.state.a_folders_deleted, gid_l_target))
+				{
+					aOperationsToRemove[indexSuo] = null;
+					this.state.a_folders_deleted[gid_l_target].push(suo);
+				}
 			}
-		}
 
 		for (indexSuo in aOperationsToRemove)
-			delete this.state.aSuo[sourceid][Suo.DEL | FeedItem.TYPE_CN][indexSuo];
+			delete this.state.aSuo[sourceid][bucket][indexSuo];
 	}
 
 	if (!isObjectEmpty(this.state.a_folders_deleted))
@@ -4972,7 +4979,7 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 
 	for (var i = 0; i < aSuoWinners.length; i++)
 	{
-		suo = aSuoWinners[i];
+		let suo = aSuoWinners[i];
 
 		msg += "\n suo: "  + suo.toString();
 
@@ -4992,7 +4999,7 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 //
 SyncFsm.prototype.testForCreateSharedAddressbook = function()
 {
-	var sourceid;
+	var zfc, format, sourceid;
 	var is_slow_sync = this.is_slow_sync(this.state.sourceid_pr);
 
 	var functor = {
@@ -5532,8 +5539,8 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 {
-	var i, gid, id, type, sourceid_target, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
-	var zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg;
+	var i, gid, id, type, sourceid_target, sourceid_winner, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
+	var suo, zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg, format_winner;
 	var count = 0;
 	var chunk_size_cards = chunk_size('cards');
 
@@ -7258,7 +7265,7 @@ SyncFsm.prototype.logZfc = function(zfc, text)
 
 	this.debug(text);
 
-	while (zfi = generator.next())
+	while (Boolean(zfi = generator.next()))
 		if (format == FORMAT_ZM)
 			this.debug_continue(zfi.toString());
 		else
@@ -8171,7 +8178,7 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 
 SyncFsm.prototype.entryActionAuthCheck = function(state, event, continuation)
 {
-	nextEvent = 'evNext';
+	var nextEvent = 'evNext';
 
 	this.state.stopwatch.mark(state);
 
@@ -8474,18 +8481,20 @@ SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, self_url, gd_luid_a
 SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuation)
 {
 	var sourceid_pr = this.state.sourceid_pr;
-	var nextEvent = null;
+	var bucket      = Suo.MOD | FeedItem.TYPE_CN;
+	var nextEvent   = null;
 
 	if (!this.state.is_done_get_contacts_pu)
 	{
-		for (indexSuo in this.state.aSuo[sourceid_pr][Suo.MOD | FeedItem.TYPE_CN])
-		{
-			suo         = this.state.aSuo[sourceid_pr][Suo.MOD | FeedItem.TYPE_CN][indexSuo];
-			luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+		if (isPropertyPresent(this.state.aSuo[sourceid_pr], bucket))
+			for (indexSuo in this.state.aSuo[sourceid_pr][bucket])
+			{
+				let suo         = this.state.aSuo[sourceid_pr][bucket][indexSuo];
+				let luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 
-			if (!isPropertyPresent(this.state.a_gd_contact, luid_target))
-				this.state.a_gd_contact_to_get.push(luid_target);
-		}
+				if (!isPropertyPresent(this.state.a_gd_contact, luid_target))
+					this.state.a_gd_contact_to_get.push(luid_target);
+			}
 
 		this.state.is_done_get_contacts_pu = true;
 
@@ -8499,8 +8508,8 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 		// http://groups.google.com/group/google-contacts-api/browse_thread/thread/50e9ba8955b3b18f
 		// id ought to be treated as an opaque string nor does it vary by projection (always uses /base) while self does...
 		//
-		var id  = this.state.a_gd_contact_to_get.pop();
-		var url = gdAdjustHttpHttps(this.zfcPr().get(id).get(FeedItem.ATTR_SELF));
+		let id  = this.state.a_gd_contact_to_get.pop();
+		let url = gdAdjustHttpHttps(this.zfcPr().get(id).get(FeedItem.ATTR_SELF));
 
 		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
 		

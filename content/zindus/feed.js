@@ -190,12 +190,11 @@ FeedCollection.prototype.forEachIterator = function(functor, itCollection)
 
 FeedCollection.prototype.forEachGenerator = function(functor, yield_count) // don't support flavour
 {
-	var fContinue;
-	var count = 0;
+	var flavour = FeedCollection.ITER_NON_RESERVED;
+	var count   = 0;
+	var fContinue, key;
 
-	flavour = FeedCollection.ITER_NON_RESERVED;
-
-	for (var key in this.m_collection)
+	for (key in this.m_collection)
 	{
 		fContinue = this.forEachDoOne(functor, key, flavour);
 
@@ -321,7 +320,7 @@ FeedCollection.prototype.save = function()
 //
 FeedCollection.prototype.generateZfis = function(yield_count)
 {
-	var i, key,zid;
+	var i, j, key, zid, zfi, type, zuio;
 	var count = 0;
 	var a_key = new Object();
 	var a_sort_order = [ null,
@@ -353,7 +352,7 @@ FeedCollection.prototype.generateZfis = function(yield_count)
 	for (i = 0; i < a_sort_order.length; i++)
 		for (zid in a_key[a_sort_order[i]])
 		{
-			a_sorted_ids = a_key[a_sort_order[i]][zid];
+			let a_sorted_ids = a_key[a_sort_order[i]][zid];
 			a_sorted_ids.sort(numeric_compare);
 
 			for (j = 0; j < a_sorted_ids.length; j++)
@@ -371,7 +370,7 @@ FeedCollection.prototype.toString = function(arg)
 	var ret       = new BigString();
 	var zfi;
 
-	while (zfi = generator.next())
+	while (Boolean(zfi = generator.next()))
 		ret.concat(zfi.toString(arg) + "\n");
 
 	return ret.toString();
@@ -454,7 +453,7 @@ FeedItem.prototype.set = function(arg1, arg2)
 				  !isPropertyPresent(arg1, FeedItem.ATTR_TYPE));
 
 		for each (var j in FeedItem.attributesForType(this.type()))
-			this.setWhenValueDefined(j, arg1[j]);
+			this.setWhenPresent(arg1, j);
 	}
 	else
 		zinAssert(false);
@@ -504,10 +503,10 @@ FeedItem.prototype.type = function()
 	return FeedItem.TYPE_BIMAP.lookup(null, this.get(FeedItem.ATTR_TYPE));
 }
 
-FeedItem.prototype.setWhenValueDefined = function(arg1, arg2)
+FeedItem.prototype.setWhenPresent = function(properties, key)
 {
-	if (typeof(arg2) != 'undefined')
-		this.m_properties[arg1] = arg2;
+	if (key in properties)
+		this.m_properties[key] = properties[key];
 }
 
 FeedItem.prototype.forEach = function(functor, flavour)
@@ -588,8 +587,8 @@ FeedItem.attributesForType = function(type)
 	var ret = [ FeedItem.ATTR_KEY, FeedItem.ATTR_ID, FeedItem.ATTR_MS, FeedItem.ATTR_L ];
 
 	switch (type) {
-		case FeedItem.TYPE_CN: ret = ret.concat(FeedItem.ATTR_REV);                         break;
-		case FeedItem.TYPE_FL: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_PERM); break;
+		case FeedItem.TYPE_CN: ret = ret.concat(FeedItem.ATTR_REV);                                        break;
+		case FeedItem.TYPE_FL: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_PERM);                   break;
 		case FeedItem.TYPE_LN: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_ZID, FeedItem.ATTR_RID); break;
 		default: zinAssertAndLog(false, "unmatched case: " + type);
 	}

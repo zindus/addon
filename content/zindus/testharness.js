@@ -462,7 +462,7 @@ TestHarness.prototype.testLsoCaseOne = function(lso, str)
 	// buildGcs: compare:  sourceid: 2 zfi: type=cn key=92114 id=92114 l=85098 ms=100170 rev=100170 ls=1##94649#94649#  gid: 523 gid's ver: 1 lso : 1##94649#94649# lso.compare == -1
 	// Turned out to be a bug - compare() was using string comparisons, so it failed when comparing a 3-digit with a four-digit ms or rev
 
-	var lso = new Lso("1##94649#94649#");
+	lso = new Lso("1##94649#94649#");
 	var zfi = new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, "92114",
 	                                               FeedItem.ATTR_ID, "92114",
 	                                               FeedItem.ATTR_L, "85098",
