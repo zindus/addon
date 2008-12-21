@@ -73,10 +73,9 @@ FeedItem.TYPE_MASK = (FeedItem.TYPE_CN | FeedItem.TYPE_FL | FeedItem.TYPE_LN | F
 FeedItem.DO_FIRST                = newObject(FeedItem.ATTR_TYPE, 0, FeedItem.ATTR_KEY, 0, FeedItem.ATTR_ID, 0, FeedItem.ATTR_L, 0,
                                              FeedItem.ATTR_NAME, 0, FeedItem.ATTR_LS, 0,  FeedItem.ATTR_MS, 0, FeedItem.ATTR_REV, 0);
 
-
 FeedItem.TYPE_BIMAP = new BiMap(
 		[FeedItem.TYPE_CN, FeedItem.TYPE_FL, FeedItem.TYPE_LN, FeedItem.TYPE_SF],
-		['cn',                'fl',                'ln'               , 'sf'               ]);
+		['cn',             'fl',             'ln',             'sf'            ]);
 
 function FeedCollection()
 {
@@ -101,7 +100,6 @@ FeedCollection.prototype.filename = function()
 	if (arguments.length == 1)
 		this.m_filename = arguments[0];
 
-	// logger().debug("FeedCollection: filename: " + this.m_filename);
 	return this.m_filename;
 }
 
@@ -269,14 +267,10 @@ FeedCollection.prototype.load = function()
 		m_zfi: new FeedItem(),
 		run: function(line)
 		{
-			// logger().debug("functor: line.length: " + line.length + " line: " + line);
-
 			if (line.charAt(0) == '#')
 				; // do nothing
 			else if (line.length == 0)
 			{
-				// logger().debug("functor: setting this.m_zfc.m_collection[" + this.m_zfi.m_properties[FeedItem.ATTR_KEY] + "]");
-
 				this.m_zfc.set(this.m_zfi);
 				this.m_zfi = new FeedItem();
 			}
@@ -285,14 +279,11 @@ FeedCollection.prototype.load = function()
 				var eq  = line.indexOf('=');
 
 				this.m_zfi.set([line.substring(0, eq)], line.substring(eq + 1));
-
-				// logger().debug("functor: m_zfi.m_properties[" + line.substring(0, eq) + "] = " + line.substring(eq + 1));
 			}
 		}
 	};
 
 	var file = this.nsifile();
-	// logger()..debug("FeedCollection: about to parse file: " + file.path);
 
 	if (file.exists() && !file.isDirectory())
 		Filesystem.fileReadByLine(file.path, functor);
