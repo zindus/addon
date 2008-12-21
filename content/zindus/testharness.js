@@ -21,6 +21,8 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
+// includejs("contact.testharness.js"); // in development
+
 function TestHarness()
 {
 	this.m_logger = newLogger("TestHarness");
@@ -61,6 +63,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGoogleContacts3();
 	// ret = ret && this.testGoogleContacts4();
 	// ret = ret && this.testGoogleContacts5();
+	// ret = ret && this.testContactGoogle();
 	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testGdContact();
 	// ret = ret && this.testStringBundleContainsContactProperties();
@@ -1005,6 +1008,44 @@ TestHarness.prototype.testGoogleContacts5 = function()
 
 	this.m_logger.debug("testGoogleContacts5 3: contact: " + contact.toString());
 	this.m_logger.debug("testGoogleContacts5 4: contact: " + contact.toStringXml());
+
+	return true;
+}
+
+TestHarness.prototype.testContactGoogle = function()
+{
+	var xmlString = "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96</id><updated>2008-05-05T21:13:38.158Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>rr rr</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96/1210022018158000'/><gd:email rel='http://schemas.google.com/g/2005#home' address='rr.rr.rr.rr@example.com' primary='true'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>111111</gd:phoneNumber><gd:deleted/></entry>";
+	var xml    = new XML(xmlString);
+	var nsAtom = Namespace(Xpath.NS_ATOM);
+	var b, x, str, key, enm, generator, contact;
+
+	this.m_logger.debug("testContactGoogle: xml: " + xml.toString());
+
+	str = new String(xml.nsAtom::xxx);
+	b   = Boolean(xml.nsAtom::ie);
+	x   = xml.nsAtom::id;
+	this.m_logger.debug("testContactGoogle: xml: " + str + " str.length: " + str.length + " b: " + b + " x.length: " + x.length());
+
+	if (false)
+	{
+		enm       = new ZinEnumNames( 'a', 'b', 'c' );
+		generator = enm.generator();
+
+		while (Boolean(key = generator.next()))
+			this.m_logger.debug("key: " + key);
+	}
+
+	if (true)
+	{
+		contact = new ContactGoogle(xml);
+
+		this.m_logger.debug("contact.id: " + contact.meta.id);
+
+		generator = enumContactGoogle.meta.value_generator();
+
+		while (Boolean(key = generator.next()))
+			this.m_logger.debug("contact.meta." + key + ": " + contact.meta[key]);
+	}
 
 	return true;
 }
