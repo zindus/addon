@@ -1,0 +1,55 @@
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.mo.menuitem.accesskey "z">
+<!ENTITY zindus.sb.settings.label "Nastavení">
+<!ENTITY zindus.ca.account.type.label "Synchronizovat s">
+<!ENTITY zindus.ca.group.login.details.label "Nastavení účtu">
+<!ENTITY zindus.ca.group.pap.label "Pro tento účet">
+<!ENTITY zindus.ca.url.description.value "Url adresa serveru.<html:br/>například: https://mymail.example.com">
+<!ENTITY zindus.ca.url.label "Adresa serveru:">
+<!ENTITY zindus.ca.username.description.value "Zadejte emailovou adresu a heslo k Vašemu účtu.">
+<!ENTITY zindus.ca.username.label "Emailová adresa:">
+<!ENTITY zindus.ca.password.label "Heslo:">
+<!ENTITY zindus.ca.test.connection.label "Test připojení">
+<!ENTITY zindus.ca.test.connection.accesskey "T">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Osobní kontakty">
+<!ENTITY zindus.ca.zimbra.gal.label "Globální kontaky">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Ano">
+<!ENTITY zindus.ca.zimbra.gal.no.label "Ne">
+<!ENTITY zindus.cs.title "Nastavení doplňku Zindus">
+<!ENTITY zindus.cs.buttonlabelextra2 "Nápověda">
+<!ENTITY zindus.cs.account.add.label "Přidat">
+<!ENTITY zindus.cs.account.add.accesskey "A">
+<!ENTITY zindus.cs.account.edit.label "Upravit">
+<!ENTITY zindus.cs.account.edit.accesskey "E">
+<!ENTITY zindus.cs.account.delete.label "Odstranit">
+<!ENTITY zindus.cs.account.delete.accesskey "D">
+<!ENTITY zindus.cs.account.email.label "Emailová adresa">
+<!ENTITY zindus.cs.account.addressbook.label "Adresář">
+<!ENTITY zindus.cs.accounts.label "Účty">
+<!ENTITY zindus.cs.general.settings.label "Nastavení">
+<!ENTITY zindus.cs.general.actions.label "Akce">
+<!ENTITY zindus.cs.general.auto.sync.label "Automatická synchronizace">
+<!ENTITY zindus.cs.general.verbose.logging.label "Důkladné logování">
+<!ENTITY zindus.cs.general.button.sync.now.label "Synchronizovat teď">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.reset.label "Reset">
+<!ENTITY zindus.cs.general.button.reset.accesskey "R">
+<!ENTITY zindus.cs.general.button.timer.label "Spustit měření">
+<!ENTITY zindus.cs.general.button.test.harness.label "Test spojení">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Pokročilé nastavení Google">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.gr.title "Neodpovídá pravidlům pro kontakty Google">
+<!ENTITY zindus.gr.button.accept.label "Potvrdit">
+<!ENTITY zindus.gr.button.skip.label "Přeskočit">
+<!ENTITY zindus.gr.column.location.label "Umístění">
+<!ENTITY zindus.gr.column.displayname.label "Zobrazované jméno">
+<!ENTITY zindus.gr.column.email.label "E-mail">
+<!ENTITY zindus.gr.column.summary.label "Rozdíly">
+<!ENTITY zindus.cg.title "Pokročilé nastavení Zindus pro Google">
+<!ENTITY zindus.cg.postal.caption.label "Pole pro korespondenční adresu">
+<!ENTITY zindus.cg.postal.false.label "Nesynchronizováno (doporučeno)">
+<!ENTITY zindus.cg.postal.true.label "Pole z Thunderbirdu jsou v Google reprezentovány jako XML">
+<!ENTITY zindus.cg.rule.caption.label "Jak jsou spravovány kontakty, které neodpovídají pravidlům pro kontakty Google">
+<!ENTITY zindus.cg.rule.ask.me.label "Zeptej se mne">
+<!ENTITY zindus.cg.rule.dont.ask.label "Neptej se mne - smaž kontakty, které neodpovídají pravidlům">
+<!ENTITY zindus.sw.title "Zindus synchronizace">
