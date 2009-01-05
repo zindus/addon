@@ -22,7 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 function ContactGoogle(xml, mode) {
-	this.m_entry      = xml ? xml : ContactGoogleXml.newEntry();
+	this.m_entry      = xml ? xml : ContactGoogleStatic.newEntry();
 	this.m_mode       = mode ? mode : ContactGoogle.ePostal.kDisabled;
 	this.m_properties = null;             // associative array populated by the getter
 	this.m_groups     = null;             //             array populated by the getter
@@ -64,8 +64,7 @@ groups_initialise_getter_and_setter: function() {
 	var fn_getter
 },
 mode : function (value) {
-	if (value)
-	{
+	if (value) {
 		zinAssertAndLog(ContactGoogle.ePostal.isPresent(value), value);
 		this.m_mode = value;
 		this.m_properties = null;
@@ -82,8 +81,7 @@ make_mask_of_elements_in_entry: function () {
 	var reGd   = /email|phoneNumber|postalAddress|organization|im/;
 
 	with (ContactGoogleStatic)
-		for (i = 0; i < children.length(); i++)
-		{
+		for (i = 0; i < children.length(); i++) {
 			let name = children[i].name().localName;
 			let uri  = children[i].name().uri;
 
@@ -93,14 +91,11 @@ make_mask_of_elements_in_entry: function () {
 
 	return ret;
 },
-// For reasons of convenience, the parsing in this class makes a few assumptions about Google <entry> elements.
-// These assumptions are observed to hold but aren't documented at Google.
-//
 warn_if_entry_isnt_valid : function() {
 	var entry = this.m_entry;
 
 	with (ContactGoogleStatic) {
-		// We want to know if <title> has a type attribute set to something other than 'text'. ATOM rfc says that 'html' is legal
+		// Curious to know whether <title> has a type attribute set to something other than 'text'. ATOM rfc says that 'html' is legal
 		//
 		let title = entry.nsAtom::title;
 	
@@ -115,8 +110,7 @@ groups_from_xml: function () {
 		var groups = this.m_entry.nsGContact::groupMembershipInfo;
 
 	for (var i = 0; i < groups.length(); i++)
-		if (groups[i].@deleted != 'true')
-		{
+		if (groups[i].@deleted != 'true') {
 			let href = groups[i].@href.toString();
 
 			if (href.length > 0)
@@ -150,8 +144,7 @@ properties_from_xml: function () {
 			set_for(properties, nsGd, entry, 'postalAddress');
 
 		if (imask & mask.organization)
-			for (i = 0; i < a_fragment.organization.length; i++)
-			{
+			for (i = 0; i < a_fragment.organization.length; i++) {
 				let list = entry.nsGd::organization.(@rel==get_rel(a_fragment.organization[i]));
 
 				if (list.length() > 0)
@@ -162,8 +155,7 @@ properties_from_xml: function () {
 				}
 			}
 
-		if (imask & mask.im)
-		{
+		if (imask & mask.im) {
 			let list = entry.nsGd::im.(@protocol==get_rel('AIM'));
 	
 			if (list.length() > 0)
@@ -199,8 +191,8 @@ get properties () {
 set properties (properties) {
 	// Here's how the contact is updated:
 	// - iterate through the children of <entry>
-	// - for each child of <entry> that we're interested in: if there's a corresponding member of property,
-	//   set the child of <entry>, otherwise delete it.
+	//   - for each child of <entry> that we're interested in:
+	//     - if there's a corresponding member of property, modify the child, otherwise delete it.
 	// - add the property members that weren't involved in modify or delete
 
 	var entry        = this.m_entry;
@@ -212,8 +204,7 @@ set properties (properties) {
 	logger().debug("AMHERE: 1: properties: " + aToString(properties));
 
 	with (ContactGoogleStatic) {
-		if (imask & mask.title)
-		{
+		if (imask & mask.title) {
 			// only ever modify - never add or delete <title> here
 			entry.nsAtom::title = ('title' in properties) ? properties['title'] : "";
 			a_is_used['title'] = true;
@@ -237,16 +228,13 @@ set properties (properties) {
 		else if (imask & mask.postalAddress)
 			this.postalAddressModifyFields(properties, a_is_used);
 
-		if (imask & mask.organization)
-		{
+		if (imask & mask.organization) {
 			let is_found = false;
 
-			for (i = 0; i < a_fragment.organization.length && !is_found; i++)
-			{
+			for (i = 0; i < a_fragment.organization.length && !is_found; i++) {
 				organization = entry.nsGd::organization.(@rel==get_rel(a_fragment.organization[i]));
 
-				if (organization.length() > 0)
-				{
+				if (organization.length() > 0) {
 					let e;
 					e = organization[0].nsGd::orgTitle;
 					if (e.length() > 0)
@@ -260,30 +248,26 @@ set properties (properties) {
 
 			if (!is_found)
 				organization = null;
-			else if (organization.*.length() == 0)
-			{
+			else if (organization.*.length() == 0) {
 				logger().debug("AMHERE: deleting");
 				delete entry.*[organization.childIndex()];
 				organization = null;
 			}
 		}
 
-		if (imask & mask.im)
-		{
+		if (imask & mask.im) {
 			let tmp = entry.nsGd::im.(@protocol==get_rel('AIM'));
 	
 			if (tmp.length() > 0)
 				modify_or_delete_child(tmp[0], properties, 'im_AIM', a_is_used, true);
 		}
 
-		// logger().debug("AMHERE: 2: properties: " + aToString(properties) + " a_is_used: " + aToString(a_is_used));
-		// add properties...
+		// ADD properties...
 		// the choice of rel='other' for AIM and rel='home' for email* is arbitrary
+		// logger().debug("AMHERE: 2: properties: " + aToString(properties) + " a_is_used: " + aToString(a_is_used));
 		//
 		let l, r;
 		let is_added_organization = false;
-
-		// logger().debug(aToString(cgopi));
 
 		for (key in cgopi.iterator(properties))
 			if (!(key in a_is_used)) {
@@ -298,9 +282,7 @@ set properties (properties) {
 					break;
 				case "organization_orgName":
 				case "organization_orgTitle":
-					if (!organization)
-					{
-						logger().debug("ADDING");
+					if (!organization) {
 						organization = <gd:organization xmlns:gd={Xpath.NS_GD} rel={get_rel("work")} />;
 						is_added_organization = true;
 					}
@@ -325,7 +307,6 @@ set properties (properties) {
 				case "postalAddress_home":
 				case "postalAddress_work":
 					[l, r] = get_element_and_suffix(key);
-					logger().debug("AMHERE 44: l: " + l + " r: " + r + " key: " + key);
 					entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{properties[key]}</gd:{l}>;
 					break;
 				default:
@@ -363,12 +344,11 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 		var new_properties;
 
 		if (key in properties)
-			is_property_postal = gac().convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
+			is_property_postal = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
 
 		// if (a) the new property is a parsable postal address OR (b) the existing property isn't parsable
 		//
-		if (is_property_postal || otheraddr == null)
-		{
+		if (is_property_postal || otheraddr == null) {
 			new_properties = { key : null };
 
 			if (otheraddr && otheraddr.length > 0) // the postalAddress of the contact is xml
@@ -378,7 +358,7 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 			else
 				;                                  // the postalAddress of the contact is xml with an empty <otheraddr> element
 
-			gac().convert(new_properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
+			gac.convert(new_properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
 		}
 		else
 			new_properties = properties;
@@ -391,8 +371,7 @@ postalAddressOtherAddr : function(key) {
 
 	var is_parsed = key in this.properties;
 
-	if (is_parsed)
-	{
+	if (is_parsed) {
 		var str = this.properties[key];
 		var ret = "";
 		var a_in  = newObject('x', str);
@@ -411,8 +390,8 @@ postalAddressOtherAddr : function(key) {
 	return ret;
 },
 postalAddressRemoveEmptyElements : function () {
-	// workaround for a Google bug whereby they give you an empty <postalAddress> element but when you give it back to them the update fails
-	// see issue #160
+	// workaround for a Google bug whereby you may get an empty <postalAddress> element but if you preserve it and send it back
+	// the update fails.  See issue #160
 	var children = this.m_entry.*;
 
 	for (var i = children.length() - 1; i >= 0; i--)
@@ -448,18 +427,17 @@ ContactGoogle.eTransform = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x0
 // factory methods
 //
 ContactGoogle.textToContact = function(text, mode) {
-	var xml = ContactGoogle.newXml(text);
+	var xml = ContactGoogleStatic.newXml(text);
 	return new ContactGoogle(xml, mode);
 }
 ContactGoogle.textToContacts = function(text, a_contact, mode) {
-	var feed    = ContactGoogle.newXml(text);
+	var feed    = ContactGoogleStatic.newXml(text);
 	var nsAtom  = ContactGoogleStatic.nsAtom;
 	var entries = feed.nsAtom::entry;
 	var ret     = a_contact ? a_contact : new Object();
 	var contact;
 
-	for (var i = 0; i < entries.length(); i++)
-	{
+	for (var i = 0; i < entries.length(); i++) {
 		contact = new ContactGoogle(entries[i], mode);
 		ret[contact.meta.id] = contact;
 	}
@@ -467,38 +445,25 @@ ContactGoogle.textToContacts = function(text, a_contact, mode) {
 	return ret;
 }
 
-ContactGoogle.newXml = function(text) {
-	try {
-		var xml = new XML(text.replace(reXmlDeclaration,""));
-	}
-	catch (ex) {
-		zinAssertAndLog(false, ex.message + "\nbad xml text: " + text);
-	}
-
-	return xml;
-}
-
 ContactGoogle.addWhitespaceToPostalProperties = function(properties) {
-	var is_sane, a_gac_properties;
+	var i, is_sane, a_gac_properties;
 
 	with (ContactGoogleStatic) {
 		var a_suffix = a_fragment['postalAddress'];
 
-		for (var i = 0; i < a_suffix.length; i++)
-		{
+		for (i = 0; i < a_suffix.length; i++) {
 			let key = get_hyphenation('postalAddress', a_suffix[i])
 
-			if (key in properties)
-			{
+			if (key in properties) {
 				a_gac_properties   = new Object();
-				is_sane = gac().convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
+				is_sane = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
 
 				zinAssertAndLog(is_sane, function() { return "key: " + key + " properties: " + aToString(properties); } );
 
-				for (var i in a_gac_properties)
+				for (i in a_gac_properties)
 					a_gac_properties[i] = " " + a_gac_properties[i] + " ";
 
-				gac().convert(properties_out, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
+				gac.convert(properties_out, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
 			}
 		}
 	}
@@ -527,8 +492,7 @@ ContactGoogle.transformTbPropertyTo = function(transform, value)
 {
 	var ret;
 
-	switch(transform)
-	{
+	switch(transform) {
 		case ContactGoogle.eTransform.kEmail:      ret = value.toLowerCase(); break;
 		case ContactGoogle.eTransform.kWhitespace: ret = zinTrim(value);      break;
 		default: zinAssert(false, transform);
@@ -558,13 +522,12 @@ reset : function () {
 }
 };
 
-// mapping the <email> elements to email1, email2 etc is a bit tricky:
-// - if there's an <email> element with a primary attribute, it's email1
-// - if no <email> elements have a primary attribute, then the first is email1
-// - email2 is the first <element> that's doesn't map to email1
-// One complication catered for below is that the <email> element with the primary attribute may not be the first <email> element
-// eg: <email address='fred'/> <email address='joe' primary='true'/>,
-// email1 == joe and email2 == fred
+// Here's how the <email> elements map to email1, email2 properties:
+// - email1 is the first <email> element that has a primary attribute, 
+//   or if no <email> has a primary attribute, then email1 is the first <email> element
+// - email2 is the first <email> that isn't email1
+// Note that there's no guarantee that the <email> element with the primary attribute will be the first.
+// eg: <email address='fred'/> <email address='joe' primary='true'/> gives email1 == joe and email2 == fred
 //
 function ContactGoogleEmailIterator(entry) {
 	if (entry)
@@ -573,14 +536,13 @@ function ContactGoogleEmailIterator(entry) {
 
 ContactGoogleEmailIterator.prototype = {
 iterator: function(entry) {
-	var i;
-	with (ContactGoogleXml) {
+	with (ContactGoogleStatic) {
 		this.m_emails  = entry.nsGd::email;
 		this.m_a_index = new Array();
 
-		if (this.m_emails.length() > 0)
-		{
+		if (this.m_emails.length() > 0) {
 			let primary = -1;
+			let i;
 	
 			for (i = 0; i < this.m_emails.length() && (primary == -1); i++)
 				if (this.m_emails[i].@primary == "true")
@@ -604,7 +566,6 @@ iterator: function(entry) {
 __iterator__: function(is_keys_only) {
 	const max = 1; // don't interate over email3 
 
-	// for (var i = ZinMin(max, this.m_a_index.length - 1); i >= 0; i--)
 	for (var i = 0; i <= ZinMin(max, this.m_a_index.length - 1); i++)
 		yield is_keys_only ? value : [ 'email' + (i + 1), this.m_a_index[i]];
 }
@@ -640,9 +601,6 @@ __iterator__: function() {
 			yield key;
 }
 };
-
-ContactGoogleXml.cgopi = new ContactGoogleOrderedPropertyIterator();
-ContactGoogleXml.cgei  = new ContactGoogleEmailIterator();
 
 // ContactGoogleStatic
 // static objects and methods are in this separate object for with() convenience
@@ -692,7 +650,6 @@ var ContactGoogleStatic = {
 		var a_suffix = this.a_fragment[prefix];
 
 		for (var i = 0; i < a_suffix.length; i++) {
-
 			let tmp = entry.ns::[prefix].(@rel==this.get_rel(a_suffix[i]));
 
 			if (tmp.length() > 0)
@@ -702,8 +659,7 @@ var ContactGoogleStatic = {
 	modify_or_delete_child : function(xml, properties, key, a_is_used, is_address_attribute) {
 		logger().debug("AMHERE: modify_or_delete_child: key: " + key);
 
-		if (key in properties && properties[key].length > 0)
-		{
+		if (key in properties && properties[key].length > 0) {
 			logger().debug("AMHERE: modify key: " + key);
 
 			if (is_address_attribute)
@@ -711,8 +667,7 @@ var ContactGoogleStatic = {
 			else
 				xml.* = properties[key];
 		}
-		else
-		{
+		else {
 			logger().debug("AMHERE: deleting key: " + key);
 			delete xml.parent().*[xml.childIndex()];
 		}
@@ -736,8 +691,7 @@ var ContactGoogleStatic = {
 		return this.m_a_rel[suffix];
 	},
 	get_element_and_suffix : function (key) {
-		if (!(key in this.m_a_element_and_suffix))
-		{
+		if (!(key in this.m_a_element_and_suffix)) {
 			let l = leftOfChar(key, '_');
 			let r = rightOfChar(key, '_');
 			this.m_a_element_and_suffix[key] = newObject('l', l, 'r', r)
@@ -757,10 +711,20 @@ var ContactGoogleStatic = {
 	newEntry : function() {
 		return <atom:entry xmlns:atom={Xpath.NS_ATOM}
 		                   xmlns:gd={Xpath.NS_GD}
-						   xmlns:openSearch={Xpath.NS_OPENSEARCH}
-						   xmlns:gContact={Xpath.NS_GCONTACT}>
-		               <atom:category scheme={Xpath.NS_GD + "#kind"} term={Xpath.NS_GCONTACT + "#group"}/>
-		               <atom:title type="text"/>
-					</atom:entry>;
+		                   xmlns:openSearch={Xpath.NS_OPENSEARCH}
+		                   xmlns:gContact={Xpath.NS_GCONTACT}>
+		              <atom:category scheme={Xpath.NS_GD + "#kind"} term={Xpath.NS_GCONTACT + "#group"}/>
+		              <atom:title type="text"/>
+		          </atom:entry>;
+	},
+	newXml : function(text) {
+		try {
+			var xml = new XML(text.replace(reXmlDeclaration,""));
+		}
+		catch (ex) {
+			zinAssertAndLog(false, ex.message + "\nbad xml text: " + text);
+		}
+
+		return xml;
 	}
 };
