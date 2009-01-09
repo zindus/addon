@@ -103,10 +103,17 @@
 			<deck id="ca-pap-deck" >
 				<hbox>
 					<vbox id="ca-gd-vbox" pack="center" >
-						<label id="ca-gd-syncwith-label" />
+						<label value="&zindus.ca.google.sync.with.label;" />
 						<radiogroup id="ca-gd-syncwith-radiogroup" >
 							<radio id="ca-gd-syncwith-pab" label="&zindus.ca.google.sync.with.pab.label;" selected="true" />
 							<radio id="ca-gd-syncwith-zg" />
+						</radiogroup>
+					</vbox>
+					<vbox>
+						<label value="&zindus.ca.google.suggested.contacts.label;" />
+						<radiogroup id="ca-gd-suggested-radiogroup" >
+							<radio id="ca-gd-suggested-include" label="&zindus.ca.google.suggested.include.label;" selected="true" />
+							<radio id="ca-gd-suggested-ignore" label="&zindus.ca.google.suggested.ignore.label;" />
 						</radiogroup>
 					</vbox>
 					<spacer flex="1"/> 

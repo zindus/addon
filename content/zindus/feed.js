@@ -60,6 +60,8 @@ FeedItem.ATTR_PERM = 'perm'; //
 FeedItem.ATTR_CS   = 'cs';   // checksum
 FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
+// FeedItem.ATTR_INGP = 'ingp'; // is the contact in a google group: yes/no?  Only stored when not syncing with Suggested Contacts
+// FeedItem.ATTR_EMPT = 'empt'; // true iff the contact is empty when mapped to the other side
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
 FeedItem.ATTR_TBPA = 'tbpa'; // temporary (not persisted) - thunderbird contact has data in a postal field
@@ -163,27 +165,6 @@ FeedCollection.prototype.del = function(key)
 FeedCollection.prototype.isPresent = function(key)
 {
 	return typeof(this.m_collection[key]) != 'undefined';
-}
-
-FeedCollection.prototype.forEachIterator = function(functor, itCollection)
-{
-	var flavour = typeof(itCollection.m_flavour) == 'undefined' ? FeedCollection.ITER_NON_RESERVED : itCollection.m_flavour;
-	var count = 1;
-	var key;
-
-	try { while (true) {
-		key = itCollection.next();
-
-		count++;
-		itCollection.m_count++;
-
-		itCollection.m_is_finished = ! this.forEachDoOne(functor, key, flavour);
-
-		if (itCollection.m_is_finished || count > itCollection.m_chunk)
-			break;
-	} } catch(ex if ex instanceof StopIteration) {
-		itCollection.m_is_finished = true;
-	}
 }
 
 FeedCollection.prototype.forEachGenerator = function(functor, yield_count) // don't support flavour

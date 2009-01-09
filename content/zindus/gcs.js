@@ -24,16 +24,11 @@
 // gcs == Global Converged State
 //
 
-Gcs.WIN      = 0; // item didn't change, or item changed in one source
-Gcs.CONFLICT = 1; // item changed in more than one source
-
-Gcs.bimap_state = new BiMap(
-	[Gcs.WIN, Gcs.CONFLICT],
-	['win',   'conflict', ]);
+var eGcs = new ZinEnum( 'win', 'conflict' );
 
 function Gcs(sourceid, state)
 {
-	zinAssert(isValidSourceId(sourceid) && Gcs.bimap_state.isPresent(state));
+	zinAssert(isValidSourceId(sourceid) && eGcs.isPresent(state));
 
 	this.sourceid = sourceid;
 	this.state    = state;
@@ -41,5 +36,5 @@ function Gcs(sourceid, state)
 
 Gcs.prototype.toString = function()
 {
-	return  "winner: " + this.sourceid + " state: " + Gcs.bimap_state.lookup(this.state);
+	return  "winner: " + this.sourceid + " state: " + eGcs.keyFromValue(this.state);
 }

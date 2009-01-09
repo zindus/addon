@@ -39,7 +39,7 @@ function GoogleRuleTrash(addressbook)
 	this.m_logger            = newLogger("GoogleRuleTrash");
 }
 
-GoogleRuleTrash.FAIL_CODES = [ 'failon.gd.conflict.1', 'failon.gd.conflict.2', 'failon.gd.conflict.3', 'failon.gd.conflict.4' ];
+GoogleRuleTrash.FAIL_CODES = [ 'failon.gd.conflict.4' ];
 
 GoogleRuleTrash.prototype.moveToTrashDontAsk = function(failcode, grd)
 {
@@ -50,85 +50,12 @@ GoogleRuleTrash.prototype.moveToTrashDontAsk = function(failcode, grd)
 
 	switch (failcode)
 	{
-		case 'failon.gd.conflict.1':
-		case 'failon.gd.conflict.2':
-		case 'failon.gd.conflict.3':
-			var a_email = new Array(); // index the email addresses via an array so that we can iterate through them in a guaranteed order
-
-			for (var email in grd.m_unique)
-				a_email.push(email);
-
-			this.moveToTrashRuleUnique(failcode, grd, a_email, 0, {});
-			this.moveToTrashRuleUniqueFinalise();
-			break;
 		case 'failon.gd.conflict.4':
 			this.moveToTrashCardsTb(grd.m_empty);
 			break;
 		default:
 			zinAssertAndLog(false, failcode);
 	}
-}
-
-GoogleRuleTrash.prototype.moveToTrashRuleUnique = function(failcode, grd, a_email, start, a_luids_deleted)
-{
-	var a_gcch, a_gcch_to_move, index, luid, luid_keep, ret;
-
-	for (index = start; index < a_email.length; )
-	{
-		email          = a_email[index];
-		a_gcch         = grd.m_unique[email];
-		a_gcch_to_move = new Object();
-		luid_keep      = this.selectContactHandle(a_gcch);
-
-		this.m_logger.debug("moveToTrashRuleUnique: luid_keep: " + luid_keep);
-
-		for (luid in a_gcch)
-			if (luid != luid_keep)
-			{
-				a_gcch_to_move[luid] = a_gcch[luid];
-				a_luids_deleted[luid] = true;
-			}
-
-		this.moveToTrashCards(a_gcch_to_move);
-
-		index = this.advanceToNextUnique(grd, a_email, index, a_luids_deleted);
-	}
-}
-
-// Conflicts are organised by email address, and since a contact can have multiple email addresses it can be associated
-// with multiple conflicts.
-// The first thing done after advancing to the next conflict is to remove any contacts deleted upstream.
-// Downstream conflicts may get entirely resolved by upstream contact deletions.
-//
-GoogleRuleTrash.prototype.advanceToNextUnique = function(grd, a_email, index, a_luids_deleted)
-{
-	var i, email, a_gcch, luid;
-
-	do
-	{
-		index++;
-
-		email  = a_email[index];
-		a_gcch = grd.m_unique[email];
-
-		var a_delete_from_gcch = new Array();
-
-		for (luid in a_gcch)
-			if (isPropertyPresent(a_luids_deleted, luid))
-				a_delete_from_gcch.push(luid)
-
-		for (i = 0; i < a_delete_from_gcch.length; i++)
-		{
-			this.m_logger.debug("advanceToNextUnique: removing luid from next gcch: " + a_delete_from_gcch[i]);
-
-			delete a_gcch[a_delete_from_gcch[i]];
-		}
-	}
-	while (index < a_email.length && aToLength(a_gcch) < 2);
-
-	this.m_logger.debug("advanceToNextUnique: returns: " + index);
-
-	return index;
 }
 
 GoogleRuleTrash.prototype.selectContactHandle = function(a_gcch)
@@ -340,35 +267,6 @@ GoogleRuleTrash.prototype.moveToTrashCardsGd = function(a_gcch)
 			else
 				this.m_logger.error("moveToTrashCardsGd: addCard failed: luid: " + luid);
 		}
-}
-
-GoogleRuleTrash.prototype.moveToTrashRuleUniqueFinalise = function()
-{
-	if (!isObjectEmpty(this.a_gd_uris_to_delete))
-	{
-		var zfc   = new FeedCollection();
-		var a_zfi = new Object();
-		var uri, username;
-
-		zfc.filename(Filesystem.FILENAME_GD_TO_BE_DELETED);
-
-		for (uri in this.a_gd_uris_to_delete)
-		{
-			username = this.a_gd_uris_to_delete[uri];
-
-			if (!isPropertyPresent(a_zfi, username))
-				a_zfi[username] = new FeedItem(null, FeedItem.ATTR_KEY, username);
-
-			a_zfi[username].set(uri, '1');
-		}
-
-		for (username in a_zfi)
-			zfc.set(a_zfi[username]);
-
-		zfc.save();
-
-		this.m_logger.debug("moveToTrashRuleUniqueFinalise: google contacts to be deleted by next sync: zfc: " + zfc.toString());
-	}
 }
 
 // this method doesn't use abCard.lastModifiedDate because during a slow sync, luid attributes are given to cards,
@@ -798,269 +696,6 @@ GoogleRuleEmpty.prototype.refreshRows = function()
 	}
 }
 
-function GoogleRuleUnique()
-{
-	GoogleRuleDialog.call(this);
-
-	this.m_logger           = newLogger("GoogleRuleUnique");
-	this.m_a_email          = new Array();          // index the email addresses via an array so that we can iterate through them
-	                                                // in a guaranteed order and so that we know the total number of them and show progress
-	this.m_a_luids_deleted  = new Object();         // collect the luids that have been deleted along the way
-	this.m_index            = 0;
-	this.m_gct              = new GoogleRuleTrash();
-	this.m_treeitem_to_luid = null;
-}
-
-GoogleRuleUnique.prototype  = new GoogleRuleDialog();
-
-GoogleRuleUnique.prototype.onLoad = function()
-{
-	GoogleRuleDialog.prototype.onLoad.call(this);
-
-	for (var email in this.m_grd.m_unique)
-		this.m_a_email.push(email);
-
-	this.updateView();
-}
-
-GoogleRuleUnique.prototype.onExtra1 = function()
-{
-	this.m_logger.debug("onExtra1: enters");
-
-	this.m_index = this.m_gct.advanceToNextUnique(this.m_grd, this.m_a_email, this.m_index, this.m_a_luids_deleted);
-
-	var is_finished = (this.m_index >= this.m_a_email.length);
-
-	if (is_finished)
-	{
-		this.m_gct.moveToTrashRuleUniqueFinalise();
-		dId('gr-dialog').cancelDialog()
-	}
-	else
-		this.updateView();
-
-	this.m_logger.debug("onExtra1: exits");
-}
-
-GoogleRuleUnique.prototype.updateView = function()
-{
-	zinAssert(this.m_index < this.m_a_email.length);
-
-	dId("gr-top-caption").label = stringBundleString("gr.caption.syncing.with.label", [ this.m_grd.m_username ]);
-	dId("gr-tree-caption").label = stringBundleString("gr.caption.unique.label", [ (this.m_index + 1), this.m_a_email.length ]);
-	dId("gr-dont-ask").label = stringBundleString("gr.dont.ask.unique.label");
-
-	this.m_logger.debug("updateView: progress: " + (this.m_index + 1) + " of " + this.m_a_email.length);
-
-	var value = stringBundleString("gr.description.unique.value",
-			      [ convertCER(String(this.m_a_email[this.m_index]), CER_TO_ENTITY),
-			        stringBundleString("gr.more.information", [ GoogleRuleTrash.failCodeToHref(this.m_es.failcode()) ]) ]);
-
-	xulSetHtml('gr-description', value);
-
-	this.refreshRows();
-
-	dId("gr-tree").focus();
-}
-
-// In each row, display:
-//  DisplayName PrimaryEmail (SecondEmail if no Primary) (a limited number of distinguishing property name:values)
-// - use tb property names
-// - only choosing from amongst those properties that map to google - the filtering happened when the error was raised
-//
-GoogleRuleUnique.prototype.refreshRows = function()
-{
-	var treechildren   = dId("gr-treechildren");
-	var email          = this.m_a_email[this.m_index];
-	var a_gcch         = this.m_grd.m_unique[email];
-	var max_attributes = 2;
-	var a_columns      = ['Location', 'DisplayName', 'Email', 'Summary', ];
-	var a_email_keys   = { PrimaryEmail: 0, SecondEmail: 0 };
-	var a_cell         = new Object();
-	var luid_to_select = this.m_gct.selectContactHandle(a_gcch);
-	var i, count, properties, key, value, luid, row, label, treeitem, treerow, treeitem_index_to_select;
-
-	this.m_treeitem_to_luid = new Array();
-
-	this.populateDifferingProperties(a_gcch, { DisplayName: 0 });
-
-	if (treechildren.hasChildNodes())
-	{
-		var children = treechildren.childNodes;
-
-		for (i = children.length - 1; i >= 0; i--)
-			if (children[i].nodeType == Node.ELEMENT_NODE)
-				treechildren.removeChild(children[i])
-	}
-
-	for (luid in a_gcch)
-	{
-		treeitem = document.createElement("treeitem");
-		treerow  = document.createElement("treerow");
-
-		this.m_treeitem_to_luid.push(luid);
-
-		if (luid == luid_to_select)
-			treeitem_index_to_select = this.m_treeitem_to_luid.length - 1;
-
-		for (i = 0; i < a_columns.length; i++)
-			a_cell[a_columns[i]] = document.createElement("treecell");
-
-		properties = a_gcch[luid].m_properties;
-
-		// Location
-		//
-		value = (a_gcch[luid].m_format == FORMAT_TB) ? this.m_gct.m_addressbook.getAddressBookNameByUri(a_gcch[luid].m_uri) :
-		                                               stringBundleString("brand.google");
-		a_cell['Location'].setAttribute('label', value);
-
-		// DisplayName
-		//
-		if (isPropertyPresent(properties, 'DisplayName'))
-			a_cell['DisplayName'].setAttribute('label', properties['DisplayName']);
-
-		// Email
-		//
-		a_cell['Email'].setAttribute('label', email);
-
-		for (key in a_email_keys)
-			if (a_gcch[luid].m_properties_different[key] == email)
-				delete a_gcch[luid].m_properties_different[key];
-		
-		// Summary
-		//
-		count = 0;
-		value = "";
-
-		for (key in a_gcch[luid].m_properties_different)
-		{
-			value += " " + stringBundleString("cc." + key) + ": " + a_gcch[luid].m_properties_different[key];
-
-			if (++count >= max_attributes)
-				break;
-		}
-
-		a_cell['Summary'].setAttribute('label', value);
-
-		this.m_logger.debug("refreshRows: luid: " + luid + " value: " + value);
-
-		for (i = 0; i < a_columns.length; i++)
-			treerow.appendChild(a_cell[a_columns[i]]);
-
-		treeitem.appendChild(treerow);
-		treechildren.appendChild(treeitem);
-	}
-
-	dId("gr-tree").view.selection.select(treeitem_index_to_select);
-}
-
-GoogleRuleUnique.prototype.populateDifferingProperties = function(a_gcch, a_exclude)
-{
-	var a_map = new Object(); // key is property-key:property-value, value is index into a_gcch
-	var i, key, key_map, luid;
-
-	this.m_logger.debug("populateDifferingProperties: a_gcch: " + keysToString(a_gcch));
-
-	for (luid in a_gcch)
-	{
-		a_gcch[luid].m_properties_different = new Object();
-
-		for (key in a_gcch[luid].m_properties)
-		{
-			if (!isPropertyPresent(a_exclude, key))
-			{
-				a_gcch[luid].m_properties_different[key] = a_gcch[luid].m_properties[key];
-				key_map = key + ":" + a_gcch[luid].m_properties[key];
-
-				if (!isPropertyPresent(a_map, key_map))
-					a_map[key_map] = new Array();
-
-				a_map[key_map].push(luid);
-			}
-		}
-	}
-
-	this.m_logger.debug("populateDifferingProperties: a_map: " + aToString(a_map));
-
-	for (key_map in a_map)
-		if (a_map[key_map].length > 1)
-		{
-			key = key_map.split(":")[0];
-
-			this.m_logger.debug("populateDifferingProperties: deleting key: " + key + " from: " + a_map[key_map].toString());
-
-			for (i = 0; i < a_map[key_map].length; i++)
-				delete a_gcch[a_map[key_map][i]].m_properties_different[key];
-		}
-
-	var msg = "";
-	for (luid in a_gcch)
-		msg += "luid: " + luid + " properties_different: " + aToString(a_gcch[luid].m_properties_different) + "\n";
-
-	this.m_logger.debug("populateDifferingProperties: properties_different: " + msg);
-}
-
-GoogleRuleUnique.prototype.onAccept = function()
-{
-	var email          = this.m_a_email[this.m_index];
-	var a_gcch         = this.m_grd.m_unique[email];
-	var a_gcch_to_move = new Object();
-	var luid_keep      = this.m_treeitem_to_luid[dId("gr-tree").currentIndex];
-	var i, luid, ret;
-
-	this.m_logger.debug("onAccept: luid_keep: " + luid_keep);
-
-	var is_dont_ask           = false;
-	var is_dont_ask_confirmed = false;
-
-	if (dId("gr-dont-ask").checked)
-	{
-		is_dont_ask = true;
-
-		is_dont_ask_confirmed = this.confirmDontAsk();
-	}
-
-	if (is_dont_ask && !is_dont_ask_confirmed)
-	{
-		ret = false; // do nothing, stay where we are...
-	}
-	else
-	{
-		for (luid in a_gcch)
-			if (luid != luid_keep)
-			{
-				a_gcch_to_move[luid] = a_gcch[luid];
-				
-				this.m_a_luids_deleted[luid] = true;
-			}
-
-		this.m_gct.moveToTrashCards(a_gcch_to_move);
-
-		if (is_dont_ask && is_dont_ask_confirmed)
-		{
-			this.setDontAsk();
-			this.m_gct.moveToTrashRuleUnique(this.m_es.failcode(), this.m_grd, this.m_a_email, this.m_index + 1, this.m_a_luids_deleted);
-			this.m_index = this.m_a_email.length;
-			ret = true; // we're leaving...
-		}
-		else
-		{
-			this.m_index = this.m_gct.advanceToNextUnique(this.m_grd, this.m_a_email, this.m_index, this.m_a_luids_deleted);
-			ret = (this.m_index >= this.m_a_email.length);
-
-			if (!ret)
-				this.updateView();  // we're going around again...
-		}
-	}
-
-	if (ret)
-		this.m_gct.moveToTrashRuleUniqueFinalise();
-
-	this.m_logger.debug("onAccept: m_index: " + this.m_index + " of: " + this.m_a_email.length + " returns: " + ret);
-
-	return ret;
-}
-
 function GoogleRuleRepeater()
 {
 	this.m_gct = null;
@@ -1073,7 +708,7 @@ GoogleRuleRepeater.prototype.resolve_if_appropriate = function(logger, es, sfcd)
 	if (es.m_exit_status != 0)
 	{
 		var failcode         = es.failcode();
-		var a_failcodes_seen = sfcd.sourceid(Account.indexToSourceId(sfcd.m_account_index), 'a_failcodes_seen');
+		var a_failcodes_seen = sfcd.sourceid(AccountStatic.indexToSourceId(sfcd.m_account_index), 'a_failcodes_seen');
 		var is_dont_ask      = GoogleRuleTrash.isDontAsk(failcode);
 		var is_failcode_seen = isPropertyPresent(a_failcodes_seen, failcode);
 		is_repeat            = isInArray(failcode, GoogleRuleTrash.FAIL_CODES) && is_dont_ask && !is_failcode_seen;

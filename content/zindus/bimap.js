@@ -29,10 +29,9 @@ function BiMap(array_a, array_b)
 	this.add(array_a, array_b);
 }
 
-BiMap.prototype.add = function(array_a, array_b)
-{
-	zinAssert(typeof(array_a) == 'object' && typeof(array_b) == 'object');
-
+BiMap.prototype = {
+add : function(array_a, array_b) {
+	zinAssert(array_a instanceof Array && array_b instanceof Array);
 	zinAssert(array_a.length == array_b.length);
 
 	for (var i = 0; i < array_a.length; i++)
@@ -45,10 +44,8 @@ BiMap.prototype.add = function(array_a, array_b)
 		this.m_a[array_a[i]] = array_b[i];
 		this.m_b[array_b[i]] = array_a[i];
 	}
-}
-
-BiMap.prototype.delete = function(key_a, key_b)
-{
+},
+delete : function(key_a, key_b) {
 	var obj, key;
 
 	this.assertKeysValid(key_a, key_b);
@@ -63,20 +60,16 @@ BiMap.prototype.delete = function(key_a, key_b)
 		delete this.m_a[this.m_b[key_b]];
 		delete this.m_b[key_b];
 	}
-}
-
-BiMap.prototype.assertKeysValid = function(key_a, key_b)
-{
+},
+assertKeysValid : function(key_a, key_b) {
 	var c = 0;
 	c += (key_a == null) ? 0 : 1;
 	c += (key_b == null) ? 0 : 1;
 
 	// exactly one of the keys must be non-null
 	zinAssertAndLog(c == 1, function() { return "key_a: " + key_a + " key_b: " + key_b + " " + this.toString(); } );
-}
-
-BiMap.prototype.getObjAndKey = function(key_a, key_b)
-{
+}, 
+getObjAndKey : function(key_a, key_b) {
 	var obj, key;
 
 	this.assertKeysValid(key_a, key_b);
@@ -96,27 +89,23 @@ BiMap.prototype.getObjAndKey = function(key_a, key_b)
 	// Some linux javascript interpreters (JavaScript-C 1.6 pre-release 1 2006-04-04) report an error with this sort of assigment:
 	// [ a, b ] = blah();
 	//
-	return newObject('obj', obj, 'key', key);
-}
+	return [ obj, key ];
+}, 
+lookup : function(key_a, key_b) {
+	var obj, key;
 
-BiMap.prototype.lookup = function(key_a, key_b)
-{
-	var tmp = this.getObjAndKey(key_a, key_b);
+	[obj, key] = this.getObjAndKey(key_a, key_b);
 
-	zinAssert(isPropertyPresent(tmp.obj, tmp.key));
+	return obj[key];
+},
+isPresent : function(key_a, key_b) {
+	var obj, key;
 
-	return tmp.obj[tmp.key];
-}
+	[obj, key] = this.getObjAndKey(key_a, key_b);
 
-BiMap.prototype.isPresent = function(key_a, key_b)
-{
-	var tmp = this.getObjAndKey(key_a, key_b);
-
-	return isPropertyPresent(tmp.obj, tmp.key);
-}
-
-BiMap.prototype.toString = function()
-{
+	return key in obj;
+}, 
+toString : function() {
 	var ret = "";
 	var isFirst = true;
 
@@ -132,3 +121,4 @@ BiMap.prototype.toString = function()
 
 	return ret;
 }
+};

@@ -57,9 +57,6 @@ function SyncFsmExitStatus()
 	'failon.no.tbpre'                      : { 'trailer' : 0, 'arglength': 1 }, //    
 	'failon.no.pab'                        : { 'trailer' : 1, 'arglength': 0 }, //     
 	'failon.multiple.ln'                   : { 'trailer' : 1, 'arglength': 0 }, //      
-	'failon.gd.conflict.1'                 : { 'trailer' : 0, 'arglength': 0 }, //     
-	'failon.gd.conflict.2'                 : { 'trailer' : 0, 'arglength': 0 }, //     
-	'failon.gd.conflict.3'                 : { 'trailer' : 0, 'arglength': 0 }, //    
 	'failon.gd.conflict.4'                 : { 'trailer' : 0, 'arglength': 0 }, //    
 	'failon.gd.forbidden'                  : { 'trailer' : 0, 'arglength': 0 }, //    
 	'failon.gd.syncwith'                   : { 'trailer' : 1, 'arglength': 1 }, //     

@@ -24,9 +24,6 @@
 // zuio == Zimbra Uniquely Identified Object
 //
 
-// 1 arg:  ==> construct a Zuio given a key
-// 2 args: ==> construct a Zuio given (key, zid)
-//
 function Zuio()
 {
 	this.m_id  = null;
@@ -40,15 +37,40 @@ function Zuio()
 		zinAssert(false);
 }
 
-Zuio.prototype.toString = function()
-{
+Zuio.prototype = {
+toString : function() {
 	return  "(" + this.m_id + " " + this.m_zid + ")";
-}
-
-Zuio.prototype.key = function()
-{
+},
+key : function() {
 	return Zuio.key(this.m_id, this.m_zid);
+},
+setFromPair : function(id, zid) {
+	zinAssert(id);
+
+	this.m_id  = id;
+	this.m_zid = zid;
+},
+setFromKey : function(key) {
+	var key_as_string = String(key);
+
+	zinAssertAndLog(key && key_as_string.length > 0, "key: " + key);
+
+	var a = key_as_string.split("#");
+
+	if (a.length == 1)
+		this.setFromPair(a[0], null);
+	else if (a.length == 2)
+		this.setFromPair(a[0], a[1]);
+	else 
+		zinAssert(false);
+},
+id : function() {
+	return this.m_id;
+},
+zid : function() {
+	return this.m_zid;
 }
+};
 
 Zuio.key = function(id, zid)
 {
@@ -62,29 +84,3 @@ Zuio.key = function(id, zid)
 	return ret;
 }
 
-Zuio.prototype.setFromPair = function(id, zid)
-{
-	zinAssert(id);
-
-	this.m_id  = id;
-	this.m_zid = zid;
-}
-
-Zuio.prototype.setFromKey = function(key)
-{
-	var key_as_string = String(key);
-
-	zinAssertAndLog(key && key_as_string.length > 0, "key: " + key);
-
-	var a = key_as_string.split("#");
-
-	if (a.length == 1)
-		this.setFromPair(a[0], null);
-	else if (a.length == 2)
-		this.setFromPair(a[0], a[1]);
-	else 
-		zinAssert(false);
-}
-
-Zuio.prototype.id  = function() { return this.m_id;  }
-Zuio.prototype.zid = function() { return this.m_zid; }

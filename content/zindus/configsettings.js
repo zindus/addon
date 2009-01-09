@@ -191,9 +191,6 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 						switch(failcode)
 						{
-							case 'failon.gd.conflict.1': 
-							case 'failon.gd.conflict.2': 
-							case 'failon.gd.conflict.3': chrome_uri = "chrome://zindus/content/googleruleunique.xul"; break;
 							case 'failon.gd.conflict.4': chrome_uri = "chrome://zindus/content/googleruleempty.xul";  break;
 							default: zinAssertAndLog(false, failcode);
 						}
@@ -235,7 +232,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			rowid           = dId("cs-account-tree").currentIndex;
 			var old_account = this.m_accounts[rowid];
 
-			this.m_logger.debug("account-delete: rowid: " + rowid + " username: " + old_account.get(Account.username));
+			this.m_logger.debug("account-delete: rowid: " + rowid + " username: " + old_account.username);
 
 			this.m_accounts[rowid].remove();
 			this.m_accounts.splice(rowid, 1);
@@ -260,8 +257,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			for (var i = 0; i < this.m_accounts.length; i++)
 				if (i != rowid)
-					payload.m_account_keys[hyphenate(':', this.m_accounts[i].format_xx(), this.m_accounts[i].get(Account.url),
-					                                      this.m_accounts[i].get(Account.username))] = true;
+					payload.m_account_keys[hyphenate(':', this.m_accounts[i].format_xx(), this.m_accounts[i].url,
+					                                      this.m_accounts[i].username)] = true;
 
 			window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
@@ -291,13 +288,13 @@ ConfigSettings.prototype.onCommand = function(id_target)
 						zinAssert(false);
 				}
 
-				var old_pl = new PasswordLocator(account.get(Account.passwordlocator));
-				var new_pl = new PasswordLocator(account.get(Account.url), account.get(Account.username));
+				var old_pl = new PasswordLocator(account.passwordlocator);
+				var new_pl = new PasswordLocator(account.url, account.username);
 
 				new_pl.setPassword(old_pl.getPassword());
 				old_pl.delPassword();
 
-				account.set(Account.passwordlocator, new_pl);
+				account.passwordlocator = new_pl;
 
 				is_accounts_changed = true;
 			}
@@ -330,7 +327,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			// remove the last account from preferences because it has shifted up...
 			//
 			account = new Account();
-			account.sourceid(Account.indexToSourceId(this.m_accounts.length));
+			account.sourceid = AccountStatic.indexToSourceId(this.m_accounts.length);
 			account.remove();
 
 			// set rowid so that the right row gets selected below
@@ -352,7 +349,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 		this.updateView();
 
 		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete" ]))
-			this.m_logger.debug("id_target: " + id_target + " m_accounts is: " + Account.arrayToString(this.m_accounts));
+			this.m_logger.debug("id_target: " + id_target + " m_accounts is: " + AccountStatic.arrayToString(this.m_accounts));
 	}
 }
 
@@ -500,18 +497,18 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 
 		// Email
 		//
-		this.appendCell(treerow, account.get(Account.username));
+		this.appendCell(treerow, account.username);
 
 		// Addressbook
 		//
 		if (account.format_xx() == FORMAT_GD)
-			value = account.get(Account.gd_sync_with) == 'zg' ? FolderConverter.PREFIX_PRIMARY_ACCOUNT : this.m_addressbook.getPabName();
+			value = account.gd_sync_with == 'zg' ? FolderConverter.PREFIX_PRIMARY_ACCOUNT : this.m_addressbook.getPabName();
 		else
 			value = "        *";
 
 		this.appendCell(treerow, value);
 
-		this.m_logger.debug("accountsTreeRefresh: treeitem at rowid: " + rowid + " account: " + account.get(Account.username) + " " + account.get('format'));
+		this.m_logger.debug("accountsTreeRefresh: treeitem at rowid: " + rowid + " account: " + account.username + " " + account.get('format'));
 
 		treeitem.appendChild(treerow);
 
@@ -539,20 +536,18 @@ ConfigSettings.prototype.accountsTreeItemId = function(rowid)
 
 ConfigSettings.prototype.deletePasswordWhenRequired = function(account)
 {
-	var url      = account.get(Account.url);
-	var username = account.get(Account.username);
-	var pm       = new PasswordManager();
+	var pm = new PasswordManager();
 
-	if (!this.accountsIsPresentUrlUsername(url, username))
-		pm.del(url, username);
+	if (!this.accountsIsPresentUrlUsername(account.url, account.username))
+		pm.del(account.url, account.username);
 
 	// always delete the authtoken because the password may have changed
 	//
 	if (account.format_xx() == FORMAT_GD)
 	{
-		url = googleClientLoginUrl('use-authtoken');
+		let url = googleClientLoginUrl('use-authtoken');
 
-		pm.del(url, username);
+		pm.del(url, account.username);
 	}
 }
 
@@ -561,7 +556,7 @@ ConfigSettings.prototype.accountsIsPresentUrlUsername = function(url, username)
 	var ret = false;
 
 	for (var rowid = 0; rowid < this.m_accounts.length; rowid++)
-		if (this.m_accounts[rowid].get(Account.url) == url && this.m_accounts[rowid].get(Account.username) == username)
+		if (this.m_accounts[rowid].url == url && this.m_accounts[rowid].username == username)
 		{
 			ret = true;
 			break;
@@ -576,7 +571,7 @@ ConfigSettings.prototype.accountsArrayOf = function(format_xx)
 	var a_rowid = new Array();
 
 	for (var rowid = 0; rowid < this.m_accounts.length; rowid++)
-		if (this.m_accounts[rowid].format() == format)
+		if (this.m_accounts[rowid].format == format)
 			a_rowid.push(rowid);
 
 	return a_rowid;
@@ -611,7 +606,7 @@ ConfigSettings.prototype.accountsSortAndSave = function(accounts)
 
 	for (var i = 0; i < accounts.length; i++)
 	{
-		ret[i].sourceid(Account.indexToSourceId(i));
+		ret[i].sourceid = AccountStatic.indexToSourceId(i);
 		ret[i].save();
 	}
 

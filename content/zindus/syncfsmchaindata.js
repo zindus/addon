@@ -51,7 +51,7 @@ function SyncFsmChainData(a_accounts)
 
 		this.m_a_last_of_format[account.format_xx()] = i;
 
-		this.m_a_sourceid[Account.indexToSourceId(i)] = true;
+		this.m_a_sourceid[AccountStatic.indexToSourceId(i)] = true;
 	}
 }
 
@@ -72,10 +72,10 @@ SyncFsmChainData.prototype.toString = function()
 		ret += "\n account: "      + this.account(i).toString();
 
 		for (var j in SyncFsmChainData.ITEM_KEYS)
-			if (typeof(this.sourceid(Account.indexToSourceId(i), j)) == 'object')
-				ret += " " + j + ": " + aToString(this.sourceid(Account.indexToSourceId(i), j));
+			if (typeof(this.sourceid(AccountStatic.indexToSourceId(i), j)) == 'object')
+				ret += " " + j + ": " + aToString(this.sourceid(AccountStatic.indexToSourceId(i), j));
 			else
-				ret += " " + j + ": " + this.sourceid(Account.indexToSourceId(i), j);
+				ret += " " + j + ": " + this.sourceid(AccountStatic.indexToSourceId(i), j);
 	}
 
 	return ret;
@@ -112,7 +112,7 @@ SyncFsmChainData.prototype.first_sourceid_of_format = function(format_xx)
 
 	var index = this.m_a_first_of_format[format_xx];
 
-	return typeof(index) == 'undefined' ? index : Account.indexToSourceId(index);
+	return typeof(index) == 'undefined' ? index : AccountStatic.indexToSourceId(index);
 }
 
 SyncFsmChainData.prototype.last_sourceid_of_format = function(format_xx)
@@ -121,7 +121,7 @@ SyncFsmChainData.prototype.last_sourceid_of_format = function(format_xx)
 
 	var index = this.m_a_last_of_format[format_xx];
 
-	return typeof(index) == 'undefined' ? index : Account.indexToSourceId(index);
+	return typeof(index) == 'undefined' ? index : AccountStatic.indexToSourceId(index);
 }
 
 SyncFsmChainData.prototype.zfcTb = function()
@@ -144,7 +144,7 @@ SyncFsmChainData.prototype.signature = function()
 		else
 			ret += ","
 
-		ret += Account.indexToSourceId(i) + ":" + this.account(i).unique_key();
+		ret += AccountStatic.indexToSourceId(i) + ":" + this.account(i).unique_key();
 	}
 
 	return ret;
@@ -152,7 +152,7 @@ SyncFsmChainData.prototype.signature = function()
 
 SyncFsmChainData.prototype.sourceid = function(sourceid, key, value)
 {
-	var index = Account.sourceIdToIndex(sourceid);
+	var index = AccountStatic.sourceIdToIndex(sourceid);
 
 	zinAssertAndLog(index >= 0 && index < this.m_a_item.length, "sourceid: " + sourceid);
 	zinAssertAndLog(isPropertyPresent(SyncFsmChainData.ITEM_KEYS, key), "not a valid key: " + key);
@@ -177,7 +177,7 @@ SyncFsmChainData.prototype.account_names_as_string = function()
 		else
 			ret += ","
 
-		ret += this.account(i).get(Account.username);
+		ret += this.account(i).username;
 	}
 
 	return ret;

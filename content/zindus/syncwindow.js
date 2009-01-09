@@ -21,8 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-includejs("payload.js");
-
 function SyncWindow()
 {
 	// logging enabled for issue #50
@@ -146,7 +144,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		{
 			dId('zindus-sw-progress-meter').setAttribute('value', this.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
 
-			this.updateProgressUi(this.m_sfcd.account().get(Account.username) + "<br/><br/>" + this.m_sfo.progressToString());
+			this.updateProgressUi(this.m_sfcd.account().username + "<br/><br/>" + this.m_sfo.progressToString());
 
 			this.m_zwc.forEach(this.zwc_functor(false));
 		}
@@ -160,7 +158,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			if (is_repeat)
 			{
-				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().get(Account.username)));
+				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().username));
 			}
 
 			if (!is_repeat)

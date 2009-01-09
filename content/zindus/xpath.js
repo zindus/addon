@@ -31,7 +31,7 @@ Xpath.NS_ZACCOUNT       = "urn:zimbraAccount";
 Xpath.NS_ZMAIL          = "urn:zimbraMail";
 
 Xpath.NS_ATOM           = "http://www.w3.org/2005/Atom";
-Xpath.NS_OPENSEARCH     = "http://a9.com/-/spec/opensearchrss/1.0/";
+Xpath.NS_OPENSEARCH     = "http://a9.com/-/spec/opensearch/1.1/";
 Xpath.NS_GCONTACT       = "http://schemas.google.com/contact/2008";
 Xpath.NS_GD             = "http://schemas.google.com/g/2005";
 

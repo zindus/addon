@@ -708,7 +708,7 @@ function zinTrim(str)
 
 	if (str)
 	{
-		zinAssert(typeof(str) == "string");
+		zinAssertAndLog(typeof(str) == "string", function () { return "typeof: " + typeof(str) + " : " + str.toString(); } );
 
 		ret = str.replace(/^\s+|\s+$/g, "");
 	}
@@ -717,6 +717,11 @@ function zinTrim(str)
 
 	return ret;
 }; 
+
+function zinIsWhitespace(str)
+{
+	return ! /\S/.test(str);
+}
 
 // Javascript doesn't have a native sleep
 // this is a workaround
@@ -813,10 +818,8 @@ function convertCER(str, dirn)
 	return ret;
 }
 
-function ZinMin(a, b)
-{
-	return a < b ? a : b;
-}
+function ZinMin(a, b) { return a < b ? a : b; }
+function ZinMax(a, b) { return a > b ? a : b; }
 
 function dId() // variable arguments: either: (win, id) or (id)
 {
@@ -1047,10 +1050,12 @@ function gdAdjustHttpHttps(url)
 
 function url(key)
 {
+	var ret;
 	switch(key)
 	{
-		case 'what-is-soapURL': ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
-		case 'faq-thunderbird': ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
+		case 'what-is-soapURL':       ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
+		case 'faq-thunderbird':       ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
+		case 'roadmap-thunderbird-3': ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
 		default: zinAssertAndLog(false, key);
 	}
 

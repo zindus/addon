@@ -22,7 +22,6 @@
  * ***** END LICENSE BLOCK *****/
 
 includejs("crc32.js");
-includejs("gdaddressconverter.js");
 
 // For the Thunderbird properties, see: mozilla/mailnews/addrbook/resources/content/abCardOverlay.js
 // which is a subset of the constants defined in mozilla/mailnews/addrbook/public/nsIAddrDatabase.idl
@@ -55,28 +54,28 @@ ContactConverter.prototype.setup = function(vary)
 	this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "NickName",        FORMAT_ZM, null,                FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "PrimaryEmail",    FORMAT_ZM, "email",             FORMAT_GD, "PrimaryEmail"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "SecondEmail",     FORMAT_ZM, "email2",            FORMAT_GD, "SecondEmail"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkPhone",       FORMAT_ZM, "workPhone",         FORMAT_GD, "phoneNumber#work"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomePhone",       FORMAT_ZM, "homePhone",         FORMAT_GD, "phoneNumber#home"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "FaxNumber",       FORMAT_ZM, "workFax",           FORMAT_GD, "phoneNumber#work_fax"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "PagerNumber",     FORMAT_ZM, "pager",             FORMAT_GD, "phoneNumber#pager"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "CellularNumber",  FORMAT_ZM, "mobilePhone",       FORMAT_GD, "phoneNumber#mobile"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress",     FORMAT_ZM, "homeStreet",        FORMAT_GD, gd("postalAddress#home")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress2",    FORMAT_ZM, "homeStreet",        FORMAT_GD, gd("postalAddress#home")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCity",        FORMAT_ZM, "homeCity",          FORMAT_GD, gd("postalAddress#home")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeState",       FORMAT_ZM, "homeState",         FORMAT_GD, gd("postalAddress#home")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeZipCode",     FORMAT_ZM, "homePostalCode",    FORMAT_GD, gd("postalAddress#home")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCountry",     FORMAT_ZM, "homeCountry",       FORMAT_GD, gd("postalAddress#home")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress",     FORMAT_ZM, "workStreet",        FORMAT_GD, gd("postalAddress#work")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress2",    FORMAT_ZM, "workStreet",        FORMAT_GD, gd("postalAddress#work")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCity",        FORMAT_ZM, "workCity",          FORMAT_GD, gd("postalAddress#work")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkState",       FORMAT_ZM, "workState",         FORMAT_GD, gd("postalAddress#work")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkZipCode",     FORMAT_ZM, "workPostalCode",    FORMAT_GD, gd("postalAddress#work")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCountry",     FORMAT_ZM, "workCountry",       FORMAT_GD, gd("postalAddress#work")));
-	this.m_equivalents.push(newObject(FORMAT_TB, "JobTitle",        FORMAT_ZM, "jobTitle",          FORMAT_GD, "organization#orgTitle"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "PrimaryEmail",    FORMAT_ZM, "email",             FORMAT_GD, "email1"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "SecondEmail",     FORMAT_ZM, "email2",            FORMAT_GD, "email2"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkPhone",       FORMAT_ZM, "workPhone",         FORMAT_GD, "phoneNumber_work"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomePhone",       FORMAT_ZM, "homePhone",         FORMAT_GD, "phoneNumber_home"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "FaxNumber",       FORMAT_ZM, "workFax",           FORMAT_GD, "phoneNumber_work_fax"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "PagerNumber",     FORMAT_ZM, "pager",             FORMAT_GD, "phoneNumber_pager"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "CellularNumber",  FORMAT_ZM, "mobilePhone",       FORMAT_GD, "phoneNumber_mobile"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress",     FORMAT_ZM, "homeStreet",        FORMAT_GD, gd("postalAddress_home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeAddress2",    FORMAT_ZM, "homeStreet",        FORMAT_GD, gd("postalAddress_home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCity",        FORMAT_ZM, "homeCity",          FORMAT_GD, gd("postalAddress_home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeState",       FORMAT_ZM, "homeState",         FORMAT_GD, gd("postalAddress_home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeZipCode",     FORMAT_ZM, "homePostalCode",    FORMAT_GD, gd("postalAddress_home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "HomeCountry",     FORMAT_ZM, "homeCountry",       FORMAT_GD, gd("postalAddress_home")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress",     FORMAT_ZM, "workStreet",        FORMAT_GD, gd("postalAddress_work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkAddress2",    FORMAT_ZM, "workStreet",        FORMAT_GD, gd("postalAddress_work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCity",        FORMAT_ZM, "workCity",          FORMAT_GD, gd("postalAddress_work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkState",       FORMAT_ZM, "workState",         FORMAT_GD, gd("postalAddress_work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkZipCode",     FORMAT_ZM, "workPostalCode",    FORMAT_GD, gd("postalAddress_work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "WorkCountry",     FORMAT_ZM, "workCountry",       FORMAT_GD, gd("postalAddress_work")));
+	this.m_equivalents.push(newObject(FORMAT_TB, "JobTitle",        FORMAT_ZM, "jobTitle",          FORMAT_GD, "organization_orgTitle"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Department",      FORMAT_ZM, "department",        FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "Company",         FORMAT_ZM, "company",           FORMAT_GD, "organization#orgName"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "Company",         FORMAT_ZM, "company",           FORMAT_GD, "organization_orgName"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom1",         FORMAT_ZM, null,                FORMAT_GD, null));
@@ -84,7 +83,7 @@ ContactConverter.prototype.setup = function(vary)
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom3",         FORMAT_ZM, null,                FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom4",         FORMAT_ZM, null,                FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Notes",           FORMAT_ZM, "notes",             FORMAT_GD, "content"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "_AimScreenName",  FORMAT_ZM, null,                FORMAT_GD, "im#AIM"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "_AimScreenName",  FORMAT_ZM, null,                FORMAT_GD, "im_AIM"));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "middleName",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email3",            FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "workPhone2",        FORMAT_GD, null));
@@ -151,7 +150,7 @@ ContactConverter.prototype.setup = function(vary)
 										   "HomeState"    : 0, "WorkState"    : 0,
 										   "HomeZipCode"  : 0, "WorkZipCode"  : 0,
 										   "HomeCountry"  : 0, "WorkCountry"  : 0 };
-	this.m_gd_address_field[FORMAT_GD] = { "postalAddress#home" :  0, "postalAddress#work" : 0 };
+	this.m_gd_address_field[FORMAT_GD] = { "postalAddress_home" :  0, "postalAddress_work" : 0 };
 	this.m_gd_address_field[FORMAT_ZM] = { };
 
 	var i, j, k;
@@ -245,7 +244,7 @@ ContactConverter.prototype.convert = function(format_to, format_from, properties
 			if (format_to == FORMAT_TB)
 				this.addSuffix(key, properties_to, a_gd_address_fields[key.toLowerCase()])
 			else if (format_to == FORMAT_GD)
-				this.m_gac.convert(properties_to, "postalAddress#" + key.toLowerCase(), a_gd_address_fields[key.toLowerCase()],
+				this.m_gac.convert(properties_to, "postalAddress_" + key.toLowerCase(), a_gd_address_fields[key.toLowerCase()],
 				                     GdAddressConverter.ADDR_TO_XML );
 
 	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
@@ -447,8 +446,8 @@ ContactConverter.prototype.removeKeysNotCommonToAllFormats = function(format_fro
 }
 
 // So for example:
-//	this.m_common_to[FORMAT_TB][FORMAT_GD] = PrimaryEmail : true, SecondEmail : true, WorkPhone : true, ...
-//	this.m_common_to[FORMAT_GD][FORMAT_TB] = PrimaryEmail : true, SecondEmail : true, phoneNumber#work : true, ...
+//	this.m_common_to[FORMAT_TB][FORMAT_GD] = PrimaryEmail : true, SecondEmail : true, WorkPhone        : true, ...
+//	this.m_common_to[FORMAT_GD][FORMAT_TB] = email1       : true, email2      : true, phoneNumber_work : true, ...
 //
 ContactConverter.prototype.initialise_common_to = function(format_to, format_from)
 {
@@ -553,8 +552,8 @@ ContactConverter.prototype.gd_certain_keys_converted = function()
 {
 	if (!this.m_gd_certain_keys_converted)
 		this.m_gd_certain_keys_converted = newObject(
-			"phoneNumber"  , this.keysCommonToThatMatch(/^phoneNumber#(.*)/,    "$1", FORMAT_GD, FORMAT_TB),
-			"postalAddress", this.keysCommonToThatMatch(/^(postalAddress#.*$)/, "$1", FORMAT_GD, FORMAT_TB));
+			"phoneNumber"  , this.keysCommonToThatMatch(/^phoneNumber_(.*)/,    "$1", FORMAT_GD, FORMAT_TB),
+			"postalAddress", this.keysCommonToThatMatch(/^(postalAddress_.*$)/, "$1", FORMAT_GD, FORMAT_TB));
 
 	return this.m_gd_certain_keys_converted;
 }

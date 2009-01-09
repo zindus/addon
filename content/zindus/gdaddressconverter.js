@@ -32,11 +32,11 @@ function GdAddressConverter()
 	this.m_suffix_element_bimap = new BiMap(this.a_suffix_unique, this.a_element_unique);
 }
 
-GdAddressConverter.PRETTY_XML         = 0x04;
 GdAddressConverter.ADDR_TO_XML        = 0x10;
 GdAddressConverter.ADDR_TO_PROPERTIES = 0x20;
+GdAddressConverter.PRETTY_XML         = 0x04;
 
-// always returns true unless ADDR_TO_PROPERTIES and the string couldn't be parsed as xml
+// returns true unless ADDR_TO_PROPERTIES and the string couldn't be parsed as xml
 //
 GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 {
@@ -48,7 +48,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 
 	if (dirn & GdAddressConverter.ADDR_TO_PROPERTIES)
 	{
-		var xml_as_char = a_xml[key].replace(/\<\?xml version=.*?\?\>/, ""); // bug 336551
+		var xml_as_char = a_xml[key].replace(reXmlDeclaration, ""); // bug 336551
 
 		address = this.string_to_e4x(xml_as_char);
 

@@ -34,14 +34,7 @@ function PrefSet(prefprefix, a)
 PrefSet.DEFAULT_VALUE         = null;
 PrefSet.ID_UNINITIALISED      = -1;
 
-PrefSet.ACCOUNT                     = "account";
-PrefSet.ACCOUNT_FORMAT              = "format";
-PrefSet.ACCOUNT_URL                 = "url";
-PrefSet.ACCOUNT_USERNAME            = "username";
-PrefSet.ACCOUNT_GD_SYNC_WITH        = "gd_sync_with";
-PrefSet.ACCOUNT_ZM_SYNC_GAL_ENABLED = "zm_sync_gal_enabled";
-PrefSet.ACCOUNT_PROPERTIES          = [ PrefSet.ACCOUNT_FORMAT, PrefSet.ACCOUNT_URL, PrefSet.ACCOUNT_USERNAME,
-                                        PrefSet.ACCOUNT_GD_SYNC_WITH,                PrefSet.ACCOUNT_ZM_SYNC_GAL_ENABLED ];
+PrefSet.ACCOUNT               = "account"; // see AccountStatic.m_prefset_properties for the properties
 
 PrefSet.PREAUTH               = "preauth";
 PrefSet.PREAUTH_NAME          = "name";
@@ -194,23 +187,6 @@ PrefSet.prototype.makePrefKey = function(id, property)
 
 	if (arguments.length == 2)
 		ret +=  "." + property;
-
-	return ret;
-}
-
-PrefSet.prototype.getPassword = function()
-{
-	zinAssert(this.m_prefprefix == PrefSet.ACCOUNT);
-
-	var username = this.getProperty(PrefSet.ACCOUNT_USERNAME);
-	var url      = this.getProperty(PrefSet.ACCOUNT_URL);
-	var ret      = null;
-
-	if (username != null && url != null)
-	{
-		var pm = new PasswordManager();
-		ret = String(pm.get(url, username));
-	}
 
 	return ret;
 }

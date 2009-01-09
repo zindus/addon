@@ -267,22 +267,22 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	// delete once confident all users are on version >= 0.7.9
 	// 
 	a_map = {
-		"server.2.type":        { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT     },
-		"server.2.url":         { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_URL        },
-		"server.2.username":    { type: 'char', new: PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_USERNAME   }
+		"server.2.type":        { type: 'char', new: PrefSet.ACCOUNT + ".2." + eAccount.format   },
+		"server.2.url":         { type: 'char', new: PrefSet.ACCOUNT + ".2." + eAccount.url      },
+		"server.2.username":    { type: 'char', new: PrefSet.ACCOUNT + ".2." + eAccount.username }
 	};
 
 	migratePrefName(a_map);
 
 	bimap = new BiMap( [ "google", "zimbra" ], [ Account.Google, Account.Zimbra ] );
 
-	migratePrefValue([ PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT ], bimap);
+	migratePrefValue([ PrefSet.ACCOUNT + ".2." + eAccount.format ], bimap);
 
-	if ( prefs.getCharPrefOrNull(prefs.branch(), PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_URL) &&
-	    !prefs.getCharPrefOrNull(prefs.branch(), PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT))
+	if ( prefs.getCharPrefOrNull(prefs.branch(), PrefSet.ACCOUNT + ".2." + eAccount.url) &&
+	    !prefs.getCharPrefOrNull(prefs.branch(), PrefSet.ACCOUNT + ".2." + eAccount.format))
 	{
 		this.m_logger.debug("account 2 had a url but no format - this account must have been created in version 0.6.19 or earlier when all accounts were assumed zimbra - set format to zimbra explicitly now..."); // issue #106
-		prefs.setCharPref(prefs.branch(), PrefSet.ACCOUNT + ".2." + PrefSet.ACCOUNT_FORMAT, Account.Zimbra );
+		prefs.setCharPref(prefs.branch(), PrefSet.ACCOUNT + ".2." + eAccount.format, Account.Zimbra );
 	}
 
 	// 0.7.11 - move gd_sync_with and zm_sync_gal_enabled from zindus.general to zindus.account.2 (they are now per-account preferences)

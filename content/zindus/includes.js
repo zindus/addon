@@ -26,6 +26,7 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("const.js");
 	ZindusScopeRegistry.includejs("util.js");
 	ZindusScopeRegistry.includejs("bimap.js");
+	ZindusScopeRegistry.includejs("enum.js");
 	ZindusScopeRegistry.includejs("mozillapreferences.js");
 	ZindusScopeRegistry.includejs("filesystem.js");
 	ZindusScopeRegistry.includejs("passwordmanager.js");
@@ -35,6 +36,7 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("windowcollection.js");
 	ZindusScopeRegistry.includejs("statusbar.js");
 	ZindusScopeRegistry.includejs("bigstring.js");
+	ZindusScopeRegistry.includejs("account.js");
 	ZindusScopeRegistry.includejs("syncfsm.js");
 	ZindusScopeRegistry.includejs("syncfsmexitstatus.js");
 	ZindusScopeRegistry.includejs("syncfsmchaindata.js");
@@ -42,7 +44,6 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("observerservice.js");
 	ZindusScopeRegistry.includejs("maestro.js");
 	ZindusScopeRegistry.includejs("timer.js");
-	ZindusScopeRegistry.includejs("account.js");
 	ZindusScopeRegistry.includejs("removedatastore.js");
 	ZindusScopeRegistry.includejs("configsettings.js");
 	ZindusScopeRegistry.includejs("googlerule.js");

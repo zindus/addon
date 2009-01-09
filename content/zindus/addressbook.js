@@ -436,7 +436,7 @@ AddressBook.prototype.deleteCardsArray = function(dir, cardsArray)
 			error_msg = "deleteCards: encountered bug #451306 - workaround succeeded";
 	}
 
-	ret = (error_name == null);
+	var ret = (error_name == null);
 
 	if (error_msg)
 		this.m_logger.debug(error_msg);

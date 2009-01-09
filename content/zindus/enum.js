@@ -86,6 +86,12 @@ keyFromValue : function (value) {
 	zinAssertAndLog(this.isPresent(value), value);
 	return this.m_reverse[value];
 },
+toArray : function () {
+	var ret = new Array();
+	for (var key in this.m_properties)
+		ret.push(this.m_properties[key]);
+	return ret;
+},
 toString : function () {
 	return aToString(this.m_properties);
 },
