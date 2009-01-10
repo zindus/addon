@@ -73,44 +73,46 @@ Suo.opcodeAsStringForUI = function(opcode)
 	return stringBundleString(Suo.bimap_opcode_UI.lookup(opcode));
 }
 
-function SuoCollection()
-{
-	this.m_collection  = new Object();
+function SuoIterator(aSuo) {
+	if (aSuo)
+		this.iterator(null, aSuo)
 }
 
-SuoCollection.prototype.assertValidKey = function(key)
-{
-	zinAssert(isPropertyPresent(key, "sourceid") && isPropertyPresent(key, "bucket") && isPropertyPresent(key, "id"));
+SuoIterator.prototype = {
+iterator: function(fn, aSuo) {
+	if (aSuo)
+		this.m_a_suo = aSuo;
+	this.m_fn    = fn;
+	// logger().debug("SuoIterator: AMHERE 1: m_a_suo: " + aToString(this.m_a_suo));
+	return this;
+},
+__iterator__: function(is_keys_only) {
+	var i, id, bucket, sourceid, suo, is_do;
+
+	zinAssert(this.m_fn && this.m_a_suo);
+
+	// logger().debug("SuoIterator: AMHERE 2");
+
+	for (sourceid in this.m_a_suo)
+		if (sourceid in this.m_a_suo)
+			for (i = 0; i < ORDER_SOURCE_UPDATE.length; i++)
+			{
+				bucket = ORDER_SOURCE_UPDATE[i];
+				is_do  = false;
+
+				// logger().debug("SuoIterator: AMHERE 3: bucket: " + bucket );
+
+				if (bucket in this.m_a_suo[sourceid])
+					is_do = this.m_fn(sourceid, bucket);
+
+				if (is_do)
+					for (id in this.m_a_suo[sourceid][bucket])
+					{
+						suo = this.m_a_suo[sourceid][bucket][id];
+						logger().debug("SuoIterator: AMHERE: yielding id: " + id + " suo: " + suo.toString());
+						yield is_keys_only ? suo : [ id, suo ];
+					}
+			}
 }
+};
 
-SuoCollection.prototype.get = function(key)
-{
-	zinAssert(isPropertyPresent(this.m_collection, key.sourceid) &&
-	          isPropertyPresent(this.m_collection[key.sourceid], key.bucket) &&
-	          isPropertyPresent(this.m_collection[key.sourceid][key.bucket][key.id]));
-
-	return this.m_collection[key.sourceid][key.bucket][key.id];
-}
-
-SuoCollection.prototype.set = function(key, suo)
-{
-	this.assertValidKey(key);
-
-	if (!isPropertyPresent(this.m_collection, key.sourceid))
-		this.m_collection[key.sourceid] = new Object();
-
-	if (!isPropertyPresent(this.m_collection[key.sourceid], key.bucket))
-		this.m_collection[key.sourceid][key.bucket] = new Object();
-
-	this.m_collection[key.sourceid][key.bucket][key.id] = suo;
-}
-
-function SuoCollectionIterator(sc, iterator_type)
-{
-	this.sc = sc;
-}
-
-SuoCollectionIterator.prototype.getNext = function()
-{
-	return key; // key.sourceid key.bucket key.id
-}

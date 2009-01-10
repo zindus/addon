@@ -52,7 +52,7 @@ const ORDER_SOURCE_UPDATE = [
 const AUTO_INCREMENT_STARTS_AT        = 256;  // the 'next' attribute of the AUTO_INCREMENT item starts at this value + 1.
 const ZM_FIRST_USER_ID                = 256;
 const AB_GAL                          = "GAL";
-const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/contacts/";
+const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/";
 const GOOGLE_PROJECTION               = "/thin";  // use 'thin' to avoid gd:extendedProperty elements
 
 function SyncFsm()
@@ -156,7 +156,8 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stGetContactGd3:  { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge',      evRepeat: 'stGetContactGd3'  },
 		stDeXmlifyAddrGd: { evCancel: 'final', evNext: 'stConverge',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stDeXmlifyAddrGd' },
 		stConverge:       { evCancel: 'final', evNext: 'stGetContactPuGd', evRepeat:      'stConverge',      evLackIntegrity: 'final'     },
-		stGetContactPuGd: { evCancel: 'final', evNext: 'stUpdateGd',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stGetContactPuGd' },
+		stGetContactPuGd: { evCancel: 'final', evNext: 'stGetGroupGd',     evHttpRequest: 'stHttpRequest',   evRepeat: 'stGetContactPuGd' },
+		stGetGroupGd:     { evCancel: 'final', evNext: 'stUpdateGd',       evHttpRequest: 'stHttpRequest'                                 },
 		stUpdateGd:       { evCancel: 'final', evNext: 'stUpdateTb',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stUpdateGd',
 		                                                                                                     evLackIntegrity: 'final'     },
 		stUpdateTb:       { evCancel: 'final', evNext: 'stUpdateCleanup',  evRepeat:      'stUpdateTb',      evLackIntegrity: 'final'     },
@@ -182,6 +183,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stDeXmlifyAddrGd:       this.entryActionDeXmlifyAddrGd,
 		stConverge:             this.entryActionConverge,
 		stGetContactPuGd:       this.entryActionGetContactPuGd,
+		stGetGroupGd:           this.entryActionGetGroupGd,
 		stUpdateGd:             this.entryActionUpdateGd,
 		stUpdateTb:             this.entryActionUpdateTb,
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
@@ -196,6 +198,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 	var a_exit = {
 		stAuth:                 this.exitActionAuth,
 		stGetContactPuGd:       this.exitActionGetContactPuGd,
+		stGetGroupGd:           this.exitActionGetGroupGd,
 		stDeXmlifyAddrGd:       this.exitActionDeXmlifyAddrGd,
 		stUpdateGd:             this.exitActionUpdateGd,
 		stHttpResponse:         this.exitActionHttpResponse  /* this gets tweaked by setupHttpZm */
@@ -1672,6 +1675,25 @@ SyncFsm.prototype.entryActionGetContactPuZm = function(state, event, continuatio
 	if (!this.state.is_done_get_contacts_pu)
 	{
 		zinAssert(this.state.aContact.length == 0);
+
+		// TODO replace the code below with this use of iterator - when we're testing zm
+		// TODO also replace other uses of indexSuo.*Suo with the iterator
+		//
+		if (false)
+		{
+		var sourceid_pr = this.state.sourceid_pr;
+		var fn          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.DEL | FeedItem.TYPE_CN)); }
+
+		for (var suo in this.state.m_suo_iterator.iterator(fn))
+			if (zfcGid.get(suo.gid).isPresent(suo.sourceid_target))
+			{
+				let luid_target = zfcGid.get(suo.gid).get(suo.sourceid_target);
+				let zfc         = this.zfc(suo.sourceid_target);
+
+				if (zfc.get(luid_target).isForeign())
+					this.state.aContact.push(new Zuio(zfc.get(luid_target).key()));
+			}
+		}
 
 		for (sourceid in this.state.sources)
 		{
@@ -5305,6 +5327,8 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		this.state.m_progress_yield_text = null;
 
 		this.state.aSuo = this.suoBuildLosers(this.state.aGcs);// 8.  generate the operations required to bring the losing sources up to date
+		this.state.m_suo_iterator = new SuoIterator(this.state.aSuo);
+
 		if (this.formatPr() == FORMAT_ZM)
 		{
 			this.state.stopwatch.mark(state + " Converge: removeContactDeletesWhenFolderIsBeingDeleted: " + this.state.m_progress_count++);
@@ -6303,6 +6327,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					ContactGoogle.addWhitespaceToPostalProperties(properties);
 
 				contact.properties = properties;
+				contact.groups     = [ this.state.m_gd_my_contacts_group_id ];
 
 				remote.method  = "POST";
 				remote.url     = this.state.gd_url_base;
@@ -7736,7 +7761,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.m_sfcd              = sfcd;
 	state.m_logappender       = new LogAppenderHoldOpen(); // holds an output stream open - must be closed explicitly
 	state.m_logger            = new Logger(Singleton.instance().logger().level(), "SyncFsm", state.m_logappender);
-	state.m_debug_filter_out  = new RegExp('https?' + GOOGLE_URL_HIER_PART + '.*?' + '(base|thin)/' , "mg");
+	state.m_debug_filter_out  = new RegExp('https?' + GOOGLE_URL_HIER_PART + 'contacts/' + '.*?' + '(base|thin)/' , "mg");
 	state.m_generator         = null;
 	state.m_http              = null;
 	state.cCallsToHttp        = 0;                       // handy for debugging the closure passed to soapCall.asyncInvoke()
@@ -7751,6 +7776,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.aHasChecksum        = new Object(); // used in slow sync: aHasChecksum[key][luid]   = true;
 	state.aChecksum           = new Object(); // used in slow sync: aChecksum[sourceid][luid] = checksum;
 	state.aSuo                = null;         // container for source update operations - populated in Converge
+	state.m_suo_iterator      = null;         // iterator for aSuo
 	state.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	state.stopFailCode        = null;         // if a state continues on evLackIntegrity, this is set for the observer
 	state.stopFailTrailer     = null;
@@ -7761,7 +7787,6 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.m_progress_yield_text = null;
 
 	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
-	state.is_done_get_contacts_pu  = false;   // have we worked out the contacts to get from the server pre update?
 	state.remote_update_package    = null;    // maintains state between an server update request and the response
 	state.foreach_tb_card_functor  = null;
 	state.m_folder_converter       = new FolderConverter();
@@ -7799,6 +7824,7 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.aContact               = new Array();  // array of contact (zid, id) - push in SyncResponse, shift in GetContactResponse
 	state.isRedoSyncRequest      = false;        // we may need to do <SyncRequest> again - the second time without a token
 	state.aSyncContact           = new Object(); // each property is a ZmContact object returned in GetContactResponse
+	state.is_done_get_contacts_pu = false;       // have we worked out the contacts to get from the server pre update?
 
 	state.initialiseSource(sourceid, FORMAT_ZM);
 }
@@ -7812,10 +7838,11 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.a_gd_response                 = new Array();
 	state.a_gd_contact                  = null;
 	state.a_gd_contact_iterator         = null;
-	state.a_gd_contact_to_get           = new Array();
+	state.a_gd_contact_to_get           = null;
 	state.a_gd_contact_to_del           = null;
 	state.a_gd_contact_dexmlify_ids     = null;         // set to a Array() when it's in use
 	state.m_gd_contact_length           = 0;
+	state.m_gd_my_contacts_group_id     = null;
 	state.gd_url_base                   = null;
 	state.gd_url_next                   = null;
 	state.gd_is_dexmlify_postal_address = false;
@@ -7994,7 +8021,7 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 {
 	var url;
 
-	this.state.gd_url_base = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER) + GOOGLE_URL_HIER_PART + 
+	this.state.gd_url_base = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER) + GOOGLE_URL_HIER_PART + 'contacts/' + 
 	                         encodeURIComponent(this.account().username) + GOOGLE_PROJECTION;
 	
 	if (this.state.gd_url_next)
@@ -8221,22 +8248,20 @@ SyncFsmGd.prototype.newZfiCnGd = function(id, rev, edit_url, self_url, gd_luid_a
 SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuation)
 {
 	var sourceid_pr = this.state.sourceid_pr;
-	var bucket      = Suo.MOD | FeedItem.TYPE_CN;
+	var fn          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.MOD | FeedItem.TYPE_CN)); }
 	var nextEvent   = null;
 
-	if (!this.state.is_done_get_contacts_pu)
+	if (!this.state.a_gd_contact_to_get)
 	{
-		if (isPropertyPresent(this.state.aSuo[sourceid_pr], bucket))
-			for (indexSuo in this.state.aSuo[sourceid_pr][bucket])
-			{
-				let suo         = this.state.aSuo[sourceid_pr][bucket][indexSuo];
-				let luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+		this.state.a_gd_contact_to_get = new Array();
 
-				if (!isPropertyPresent(this.state.a_gd_contact, luid_target))
-					this.state.a_gd_contact_to_get.push(luid_target);
-			}
+		for (var suo in this.state.m_suo_iterator.iterator(fn))
+		{
+			let luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 
-		this.state.is_done_get_contacts_pu = true;
+			if (!isPropertyPresent(this.state.a_gd_contact, luid_target))
+				this.state.a_gd_contact_to_get.push(luid_target);
+		}
 
 		this.debug("entryActionGetContactPuGd: a_gd_contact_to_get: " + this.state.a_gd_contact_to_get.toString());
 	}
@@ -8265,6 +8290,7 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 	continuation(nextEvent);
 }
 
+
 SyncFsmGd.prototype.exitActionGetContactPuGd = function(state, event)
 {
 	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
@@ -8284,6 +8310,66 @@ SyncFsmGd.prototype.exitActionGetContactPuGd = function(state, event)
 		zinAssertAndLog(!(id in this.state.a_gd_contact), function () { return "id=" + id; });
 
 		this.state.a_gd_contact[id] = contact;
+	}
+}
+
+SyncFsmGd.prototype.entryActionGetGroupGd = function(state, event, continuation)
+{
+	var nextEvent = 'evNext';
+
+	if (!this.state.stopFailCode)
+	{
+		var sourceid_pr = this.state.sourceid_pr;
+		var context = this;
+		var fn          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.ADD | FeedItem.TYPE_CN)); }
+		var is_add      = false;
+
+		for (var suo in this.state.m_suo_iterator.iterator(fn))
+		{
+			is_add = true;
+			break;
+		}
+
+		if (is_add)
+		{
+			let url = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER) + GOOGLE_URL_HIER_PART + 'groups/' + 
+	                         encodeURIComponent(this.account().username) + GOOGLE_PROJECTION;
+
+			this.setupHttpGd(state, 'evNext', "GET", url, null, null, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
+			nextEvent = 'evHttpRequest'
+		}
+	}
+	else
+		this.state.m_http = null;
+
+	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.exitActionGetGroupGd = function(state, event)
+{
+	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
+		return;
+
+	if (!this.state.m_http.is_http_status(HTTP_STATUS_2xx))
+	{
+		this.state.stopFailCode = 'failon.gd.get';
+	}
+	else
+	{
+		with (ContactGoogleStatic) {
+			var feed        = newXml(this.state.m_http.response('text'));
+			var systemGroup = feed.nsAtom::entry.nsGContact::systemGroup.(@id=="Contacts");
+
+			this.state.m_gd_my_contacts_group_id = systemGroup.length() == 1 ? systemGroup.parent().nsAtom::id.text() : null;
+
+			this.debug("exitActionGetGroupGd: My Contacts Group id: " + this.state.m_gd_my_contacts_group_id);
+
+			if (!this.state.m_gd_my_contacts_group_id)
+			{
+				this.debug("failing because we're about to add a contact but don't know the My Contacts group id");
+				this.state.stopFailCode = 'failon.gd.get';
+			}
+		}
 	}
 }
 

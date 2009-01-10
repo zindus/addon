@@ -142,6 +142,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGetContactGd3:  { count: 1 },
 		stDeXmlifyAddrGd: { },
 		stGetContactPuGd: { count: 1 },
+		stGetGroupGd:     { }, // no need to show progress for this, because UI will still reflect stGetContactPuGd
 		stUpdateGd:       { count: 1 }
 	};
 
@@ -327,7 +328,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				break;
 
 			case 'stGetContactPuGd':
-				if (context.state.a_gd_contact_to_get.length > 0)
+				if (context.state.a_gd_contact_to_get && context.state.a_gd_contact_to_get.length > 0)
 				{
 					var op = this.buildOp(context.state.sourceid_pr, "get.many");
 

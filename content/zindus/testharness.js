@@ -41,7 +41,8 @@ TestHarness.prototype.run = function()
 	var ret = true;
 
 	ret = ret && this.testPreferencesHaveDefaults();
-	ret = ret && this.testAccount();
+	ret = ret && this.testSuo();
+	// ret = ret && this.testAccount();
 	// ret = ret && this.testCrc32();
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testFilesystem();
@@ -89,6 +90,52 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testTb3CardUuid();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
+}
+
+TestHarness.prototype.testSuo = function()
+{
+	var suo, it, fn, aSuo, str;
+	var context = this;
+	this.m_logger.debug("ORDER_SOURCE_UPDATE: " + ORDER_SOURCE_UPDATE.toString());
+
+	aSuo = new Object();
+	aSuo[SOURCEID_TB] = new Object();
+	aSuo[SOURCEID_AA] = new Object();
+
+	aSuo[SOURCEID_TB][Suo.ADD | FeedItem.TYPE_FL] = new Object();
+	aSuo[SOURCEID_AA][Suo.MOD | FeedItem.TYPE_CN] = new Object();
+
+	aSuo[SOURCEID_TB][Suo.ADD | FeedItem.TYPE_FL][1] = " Suo.ADD ";
+	aSuo[SOURCEID_AA][Suo.MOD | FeedItem.TYPE_CN][2] = " Suo.MOD ";
+
+	it = new SuoIterator(aSuo);
+	// this.m_logger.debug("suo: " + suo.toString());
+
+	str = "test #1 - iterate over everthing: ";
+	for (suo in it.iterator(function(sourceid, bucket) { return true; }))
+		str += suo.toString();
+	this.m_logger.debug("str: " + str);
+	zinAssert(/ADD/.test(str) && /MOD/.test(str));
+
+	str = "test #2 - iterate ADD: ";
+	for (suo in it.iterator(function(sourceid, bucket) { return bucket & Suo.ADD; }))
+		str += suo.toString();
+	this.m_logger.debug("str: " + str);
+	zinAssert(/ADD/.test(str));
+
+	str = "test #3 - iterate MOD: ";
+	for (suo in it.iterator(function(sourceid, bucket) { return bucket & Suo.MOD; }))
+		str += suo.toString();
+	this.m_logger.debug("str: " + str);
+	zinAssert(/MOD/.test(str));
+
+	str = "test #4 - iterate SOURCEID_AA ... MOD: ";
+	for (suo in it.iterator(function(sourceid, bucket) { return sourceid == SOURCEID_AA; }))
+		str += suo.toString();
+	this.m_logger.debug("str: " + str);
+	zinAssert(/MOD/.test(str));
+
+	return true;
 }
 
 TestHarness.prototype.testAccount = function()
