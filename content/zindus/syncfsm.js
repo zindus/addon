@@ -613,18 +613,23 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	if (!isAnyValue(a_reason, true))
 		a_reason['new-source']   = !zfcLastSync.isPresent(sourceid_pr);
-	if (!isAnyValue(a_reason, true))
-		a_reason['new-url']      = zfcLastSync.get(sourceid_pr).getOrNull(eAccount.url) != this.account().url;
-	if (!isAnyValue(a_reason, true))
-		a_reason['new-username'] = zfcLastSync.get(sourceid_pr).getOrNull(eAccount.username) != this.account().username;
 
-	if (this.formatPr() == FORMAT_GD && !isAnyValue(a_reason, true))
-		a_reason['gd_sync_with'] =
-			zfcLastSync.get(sourceid_pr).getOrNull(eAccount.gd_sync_with) != this.account().gd_sync_with;
-	if (this.formatPr() == FORMAT_GD && !isAnyValue(a_reason, true))
-		a_reason['gd_is_sync_postal_address'] =
-			zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
-			  String(this.state.gd_is_sync_postal_address);
+	var zfiLastSync = zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr) : null;
+
+	if (!isAnyValue(a_reason, true)) a_reason['new-url']      = zfiLastSync.getOrNull(eAccount.url)      != this.account().url;
+	if (!isAnyValue(a_reason, true)) a_reason['new-username'] = zfiLastSync.getOrNull(eAccount.username) != this.account().username;
+
+	if (this.formatPr() == FORMAT_GD)
+	{
+		if (!isAnyValue(a_reason, true))
+			a_reason['gd_sync_with'] = zfiLastSync.getOrNull(eAccount.gd_sync_with) != this.account().gd_sync_with;
+		if (!isAnyValue(a_reason, true))
+			a_reason['gd_suggested'] = zfiLastSync.getOrNull(eAccount.gd_suggested) != this.account().gd_suggested;
+		if (!isAnyValue(a_reason, true))
+			a_reason['gd_is_sync_postal_address'] =
+				zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
+			  		String(this.state.gd_is_sync_postal_address);
+	}
 
 	var is_slow_sync = isAnyValue(a_reason, true);
 
@@ -2123,12 +2128,12 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 	{
 		this.loadTbLocaliseEmailedContacts();                  // 2. ensure that emailed contacts is in the current locale
 
-		if (this.is_slow_sync(this.state.sourceid_pr))
+		if (this.is_slow_sync())
 			this.loadTbDeleteReadOnlySharedAddresbooks();      // 3. ensure that we don't try to update read-only addressbooks on the server
 	}
 	else if (this.formatPr() == FORMAT_GD)
 	{
-		if (this.is_slow_sync(this.state.sourceid_pr))
+		if (this.is_slow_sync())
 			this.loadTbSetupGdAddressbook();
 
 		gd_ab_name_internal = this.gdAddressbookName('internal');
@@ -2137,7 +2142,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 		this.debug("loadTb: gd_ab_name_public: " + gd_ab_name_public + " gd_ab_name_internal: " + gd_ab_name_internal);
 	}
 
-	if (this.formatPr() == FORMAT_GD && !this.is_slow_sync(this.state.sourceid_pr))
+	if (this.formatPr() == FORMAT_GD && !this.is_slow_sync())
 	{
 		// performance optimisation for google accounts - only look at the addressbook specific to this account
 		//
@@ -2199,7 +2204,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 
 	if (passed && this.formatPr() == FORMAT_GD)
 	{
-		if (this.is_slow_sync(this.state.sourceid_pr))
+		if (this.is_slow_sync())
 		{
 			this.state.gd_luid_ab_in_gd = SyncFsm.zfcFindFirstFolder(this.zfcPr(), GD_PAB);
 			this.state.gd_luid_ab_in_tb = SyncFsm.zfcFindFirstFolder(this.zfcTb(), gd_ab_name_internal);
@@ -2249,7 +2254,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 	{
 		passed = passed && this.testForFolderPresentInZfcTb(TB_PAB);
 
-		if (!this.is_slow_sync(this.state.sourceid_pr))
+		if (!this.is_slow_sync())
 		{
 			passed = passed && this.testForReservedFolderInvariant(TB_PAB);
 		}
@@ -2300,7 +2305,7 @@ SyncFsm.prototype.loadTbSetupGdAddressbook = function()
 	var abName = this.gdAddressbookName('zg');
 	var aUris  = this.state.m_addressbook.getAddressBooksByPattern(new RegExp( "^" + abName + "$" ));
 
-	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
+	zinAssert(this.is_slow_sync());
 
 	if (this.account().gd_sync_with == 'zg' && isObjectEmpty(aUris))
 	{
@@ -2359,7 +2364,7 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 	var zfcTbPost = this.zfcTb();
 	var ret;
 
-	zinAssert(!this.state.stopFailCode && !this.is_slow_sync(this.state.sourceid_pr));
+	zinAssert(!this.state.stopFailCode && !this.is_slow_sync());
 
 	var pre_id  = SyncFsm.zfcFindFirstFolder(zfcTbPre, name);
 	var post_id = SyncFsm.zfcFindFirstFolder(zfcTbPost, name);
@@ -2573,7 +2578,7 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 
 SyncFsm.prototype.loadTbDeleteReadOnlySharedAddresbooks = function()
 {
-	zinAssert(this.is_slow_sync(this.state.sourceid_pr));
+	zinAssert(this.is_slow_sync());
 
 	var aUris = this.state.m_addressbook.getAddressBooksByPattern(new RegExp(FolderConverter.PREFIX_FOREIGN_READONLY));
 
@@ -3178,7 +3183,7 @@ SyncFsm.prototype.loadTbTestForEmptyCards = function()
 	                          " gd_luid_ab_in_tb=" + this.state.gd_luid_ab_in_tb +
 	                          " zfi: " + this.zfcTb().get(this.state.gd_luid_ab_in_tb) + "a_email_luid: " + aToString(a_empty_contacts));
 
-	if (!this.is_slow_sync(this.state.sourceid_pr) && this.zfcTb().get(this.state.gd_luid_ab_in_tb).isPresent(FeedItem.ATTR_DEL))
+	if (!this.is_slow_sync() && this.zfcTb().get(this.state.gd_luid_ab_in_tb).isPresent(FeedItem.ATTR_DEL))
 		zinAssert(false); // this should get detected and handled earlier
 
 	if (!isObjectEmpty(a_empty_contacts))
@@ -3569,6 +3574,31 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 		}
 	};
 
+	// iterate through SuggestedContacts last because if the Google account contains duplicates we want
+	// the non-suggested version to twin.  Otherwise if the suggested version twins, it may get deleted while the non-suggested version adds
+	// which isn't fatal, but runs the risk of side-effects eg if the Google duplicates aren't exact duplicates but almost-duplicates eg
+	// one has a picture and one doesn't.
+	//
+	function SuggestedGenerator (functor, chunk_size) {
+		var functorx  = {
+			run: function(zfi) {
+				var key          = zfi.key();
+				var is_suggested = (key in context.state.a_gd_contact) && (context.state.a_gd_contact[key].groups.length == 0);
+				var ret;
+				if ((pass_number == 1 && !is_suggested) || (pass_number == 2 && is_suggested))
+					ret = functor.run(zfi);
+				else
+					ret = true;
+				return ret;
+			}
+		};
+		var generator, pass_number;
+
+		pass_number = 1; generator = zfc.forEachGenerator(functorx, chunk_size); while (generator.next()) yield true;
+		pass_number = 2; generator = zfc.forEachGenerator(functorx, chunk_size); while (generator.next()) yield true;
+		yield false;
+	}
+
 	for (sourceid in this.state.sources)
 	{
 		zfc         = this.zfc(sourceid);
@@ -3589,8 +3619,9 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 			           (this.state.m_tb_card_count < 5000) ? .75 : .5;
 
 			this.state.m_logger.debug("updateGidFromSourcesGenerator: generator rate: " + rate + " m_tb_card_count: "+this.state.m_tb_card_count);
+			let make_generator = (format == FORMAT_GD) ? SuggestedGenerator : zfc.forEachGenerator;
 
-			generator = zfc.forEachGenerator(functor_foreach_luid_slow_sync, chunk_size('feed', rate));
+			generator = make_generator(functor_foreach_luid_slow_sync, chunk_size('feed', rate));
 		}
 
 		while (generator.next())
@@ -3645,17 +3676,17 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddressGenerator = function()
 {
 	var sourceid_tb = this.state.sourceid_tb;
 	var sourceid_gd = this.state.sourceid_pr;
+	var zfcTb       = this.zfcTb();
 	var context     = this;
 
 	this.debug("twiddleMapsForGdPostalAddress:");
 
-	zinAssert(this.is_slow_sync(sourceid_gd));
+	zinAssert(this.is_slow_sync());
 
 	var functor_foreach_gid = {
 		run: function(zfi)
 		{
-			if (zfi.isPresent(sourceid_tb) && zfi.isPresent(sourceid_gd) &&
-			    context.zfcTb().get(zfi.get(sourceid_tb)).type() == FeedItem.TYPE_CN)
+			if (zfi.isPresent(sourceid_tb) && zfi.isPresent(sourceid_gd) && zfcTb.get(zfi.get(sourceid_tb)).type() == FeedItem.TYPE_CN)
 			{
 				// Thunderbird and Google contact are twins
 				//
@@ -3723,6 +3754,69 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddressGenerator = function()
 	yield false;
 }
 
+// On slow sync...
+// For each thunderbird/google twin:
+//   if the google contact exactly matches the thunderbird contact
+//   and the google contact is a suggested contact then
+//     tick the thunderbird contact backwards to force Google to win
+// Also, mark as deleted the google suggested contacts so that:
+// a) the ones that twinned will cause their thunderbird counterparts to get deleted and
+// b) the ones that didn't twin will get removed from the gid and zfc and not generate ADD operations.
+//
+
+SyncFsm.prototype.twiddleMapsToRemoveFromTbGdSuggestedContacts = function()
+{
+	var sourceid_tb = this.state.sourceid_tb;
+	var sourceid_gd = this.state.sourceid_pr;
+	var zfcPr       = this.zfcPr();
+	var context     = this;
+
+	this.debug("twiddleMapsToRemoveFromTbGdSuggestedContacts:");
+
+	zinAssert(this.is_slow_sync() && this.account().gd_suggested == 'ignore')
+
+	var functor_foreach_gid = {
+		run: function(zfi)
+		{
+			if (zfi.isPresent(sourceid_gd) && zfcPr.get(zfi.get(sourceid_gd)).type() == FeedItem.TYPE_CN)
+			{
+				let luid_gd = zfi.get(sourceid_gd);
+				let contact = context.state.a_gd_contact[luid_gd];
+				let msg     = " zfi: " + zfi.toString();
+				let is_twin = false;
+
+				if (zfi.isPresent(sourceid_tb))
+				{
+					// Thunderbird and Google contact are twins
+					//
+					let luid_tb = zfi.get(sourceid_tb);
+
+					if ((contact.groups.length == 0) && context.isTwin(sourceid_tb, sourceid_gd, luid_tb, luid_gd, context.contact_converter()))
+					{
+						context.backdateZfcForcingItToLose(sourceid_tb, luid_tb);
+						msg += " tb contact matches a suggested contact so backdating tb to force it to lose and be deleted";
+						is_twin = true;
+					}
+
+					context.debug_continue(msg);
+				}
+
+				if (contact.groups.length == 0)
+					zfcPr.get(luid_gd).set(FeedItem.ATTR_DEL, '1');
+			}
+
+			return true;
+		}
+	};
+
+	var generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
+
+	while (generator.next())
+		yield true;
+
+	yield false;
+}
+
 SyncFsm.prototype.backdateZfcForcingItToLose = function(sourceid, luid)
 {
 	var zfc    = this.zfc(sourceid);
@@ -3763,7 +3857,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 	var a_checksum  = {};
 	var gid, old_gid, luid_gd, luid_tb;
 
-	zinAssert(!this.is_slow_sync(sourceid_gd));
+	zinAssert(!this.is_slow_sync());
 
 	var functor_foreach_gid = {
 		state: this.state,
@@ -4755,7 +4849,7 @@ SyncFsm.prototype.suoRunWinners = function(aSuoWinners)
 SyncFsm.prototype.testForCreateSharedAddressbook = function()
 {
 	var zfc, format, sourceid;
-	var is_slow_sync = this.is_slow_sync(this.state.sourceid_pr);
+	var is_slow_sync = this.is_slow_sync();
 
 	var functor = {
 		converter: this.state.m_folder_converter,
@@ -4824,8 +4918,8 @@ SyncFsm.prototype.testForEmailedContactsMatch = function()
 
 	if (!this.zfcPr().isPresent(id) || this.zfcPr().get(id).isPresent(FeedItem.ATTR_DEL))
 		msg += " server doesn't have: " + ZM_FOLDER_EMAILED_CONTACTS;
-	else if (this.is_slow_sync(this.state.sourceid_pr))
-		msg += " id=" + id + " sourceid: " + this.state.sourceid_pr + " is_slow_sync: " + this.is_slow_sync(this.state.sourceid_pr);
+	else if (this.is_slow_sync())
+		msg += " id=" + id + " sourceid: " + this.state.sourceid_pr + " is_slow_sync: " + this.is_slow_sync();
 	else
 	{
 		msg += " server has: " + ZM_FOLDER_EMAILED_CONTACTS;
@@ -5117,7 +5211,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	if (passed)
 	{
 
-		if (this.is_slow_sync(this.state.sourceid_pr))
+		if (this.is_slow_sync())
 		{
 			this.state.m_progress_yield_text = "checksums";
 
@@ -5149,15 +5243,23 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		{
 			this.state.stopwatch.mark(state + " before twiddleMapsForGdPostalAddress: ");
 
-			if (this.is_slow_sync(this.state.sourceid_pr) && this.state.gd_is_sync_postal_address)
+			if (this.is_slow_sync())
 			{
-				generator = this.twiddleMapsForGdPostalAddressGenerator();
+				if (this.state.gd_is_sync_postal_address)
+				{
+					generator = this.twiddleMapsForGdPostalAddressGenerator();
+					do { yield true; } while (generator.next());
+				}
 
-				do { yield true; } while (generator.next());
+				if (this.account().gd_suggested == 'ignore')
+				{
+					generator = this.twiddleMapsToRemoveFromTbGdSuggestedContacts();
+					do { yield true; } while (generator.next());
+				}
 			}
 
 			this.state.stopwatch.mark(state + " before twiddleMapsToPairNewMatchingContacts: ");
-			if (!this.is_slow_sync(this.state.sourceid_pr))
+			if (!this.is_slow_sync())
 				this.twiddleMapsToPairNewMatchingContacts();
 		}
 
@@ -5567,7 +5669,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				l_target    = zfcTarget.get(luid_target).keyParent();
 				uri         = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target,l_target));
 				abCard      = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
-				is_deleted  = false;
+				var is_deleted = false;
 
 				if (abCard)
 				{
@@ -6665,6 +6767,7 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 	{
 		zfcLastSync.get(sourceid_pr).set('SyncToken',           this.state.gd_sync_token);
 		zfcLastSync.get(sourceid_pr).set(eAccount.gd_sync_with, this.account().gd_sync_with);
+		zfcLastSync.get(sourceid_pr).set(eAccount.gd_suggested, this.account().gd_suggested);
 	}
 
 	if (sfcd.first_sourceid_of_format(FORMAT_ZM) == this.state.sourceid_pr) // if this is the first ZM source...
@@ -6744,7 +6847,11 @@ SyncFsm.prototype.formatPr     = function()         { return this.state.sources[
 SyncFsm.prototype.account      = function()         { return this.state.sources[this.state.sourceid_pr]['account'];  }
 SyncFsm.prototype.getIntPref   = function(key)      { var p = preferences(); return p.getIntPref(  p.branch(), key); }
 SyncFsm.prototype.getCharPref  = function(key)      { var p = preferences(); return p.getCharPref( p.branch(), key); }
-SyncFsm.prototype.is_slow_sync = function(sourceid) { return this.state.m_sfcd.sourceid(sourceid, 'is_slow_sync');   }
+
+SyncFsm.prototype.is_slow_sync = function(sourceid)
+{
+	return this.state.m_sfcd.sourceid(sourceid ? sourceid : this.state.sourceid_pr, 'is_slow_sync');
+}
 
 SyncFsm.prototype.zfc = function(sourceid)
 {
@@ -7896,7 +8003,7 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 	{
 		url = this.state.gd_url_base + "?max-results=10000";
 
-		if (!this.is_slow_sync(this.state.sourceid_pr))
+		if (!this.is_slow_sync())
 			url += "&showdeleted=true";
 
 		let SyncToken = this.state.zfcLastSync.get(this.state.sourceid_pr).getOrNull('SyncToken');
@@ -7936,30 +8043,38 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 	}
 	else if (this.state.m_http.is_http_status(HTTP_STATUS_2xx))
 	{
+		let warn_msg;
 		this.state.a_gd_response.push(this.state.m_http.response('text'));
 		response = this.state.m_http.response();
 
-		this.state.gd_is_dexmlify_postal_address = this.is_slow_sync(this.state.sourceid_pr) && !this.state.gd_is_sync_postal_address;
-
 		// set the sync token
 		//
-		var warn_msg = "<updated> element is missing from <feed>!";
+		warn_msg = "<updated> element is missing from <feed>!";
 		Xpath.setConditionalFromSingleElement(this.state, 'gd_sync_token', "//atom:feed/atom:updated", response, warn_msg);
 		this.debug("entryActionGetContactGd2: gd_sync_token: " + this.state.gd_sync_token);
 
 		this.state.gd_url_next = null;
 		Xpath.setConditional(this.state, 'gd_url_next', "//atom:feed/atom:link[@rel='next']/attribute::href", response, null);
+		this.debug("entryActionGetContactGd2: next url: " + this.state.gd_url_next);
 
-		// get the total number of contacts (including deleted and empty ones) to support progress observer
-		//
-		var warn_msg = "<openSearch> element is missing from <feed>!";
-		Xpath.setConditionalFromSingleElement(this.state, 'm_gd_contact_length', "//atom:feed/openSearch:totalResults", response, warn_msg);
+		if (this.state.gd_url_next)
+			nextEvent = 'evRepeat';
+		else
+		{
+			nextEvent = 'evNext';
 
-		this.debug("entryActionGetContactGd2: openSearch.totalResults: " + this.state.m_gd_contact_length + " next url: " + this.state.gd_url_next);
+			// get the total number of contacts to support the progress observer
+			// In the event that the contacts don't all fit in one <feed>, the <totalResults> element within each of the response
+			// is the same - ie it gives the grand total, not the per-request total.
+			//
+			warn_msg = "<openSearch> element is missing from <feed>!";
+			let xpath_query = "//atom:feed/openSearch:totalResults";
+			Xpath.setConditionalFromSingleElement(this.state, 'm_gd_contact_length', xpath_query, response, warn_msg);
 
-		this.state.m_gd_contact_count = 0;
+			this.debug("entryActionGetContactGd2: openSearch.totalResults: " + this.state.m_gd_contact_length);
 
-		nextEvent = this.state.gd_url_next ? 'evRepeat' : 'evNext';
+			this.state.m_gd_contact_count = 0;
+		}
 	}
 	else
 		nextEvent = 'evCancel';
@@ -7969,6 +8084,8 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 
 SyncFsm.prototype.entryActionGetContactGd3 = function(state, event, continuation)
 {
+	this.state.gd_is_dexmlify_postal_address = this.is_slow_sync() && !this.state.gd_is_sync_postal_address;
+
 	var nextEvent = this.runEntryActionGenerator(state, event, this.entryActionGetContactGd3Generator);
 
 	if (nextEvent != 'evRepeat')
@@ -7981,7 +8098,8 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 {
 	var context     = this;
 	var zfcPr       = this.zfcPr();
-	var a_contact_count = newObject('regular', 0, 'deleted', 0, 'empty', 0);
+	var a_contact_count     = newObject('regular', 0, 'empty', 0, 'deleted', 0, 'suggested', 0);
+	var a_deleted_suggested = {};
 	var i, j, generator;
 
 	this.state.stopwatch.mark(state + " enters");
@@ -7989,12 +8107,13 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 	var functor = {
 		run: function(contact)
 		{
-			var id                  = contact.meta.id;
-			var rev                 = contact.meta.updated;
-			var edit_url            = contact.meta.edit;
-			var self_url            = contact.meta.self;
-			var is_deleted_or_empty = contact.meta.deleted || contact.is_empty();
-			var zfi                 = null;
+			var id           = contact.meta.id;
+			var rev          = contact.meta.updated;
+			var edit_url     = contact.meta.edit;
+			var self_url     = contact.meta.self;
+			var is_suggested = !context.is_slow_sync() && context.account().gd_suggested == 'ignore' && contact.groups.length == 0;
+			var is_ignored   = contact.meta.deleted || contact.is_empty() || is_suggested;
+			var zfi          = null;
 			let msg = "";
 
 			context.state.a_gd_contact[id] = contact;
@@ -8004,13 +8123,23 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 				a_contact_count['deleted']++;
 			else if (contact.is_empty())
 				a_contact_count['empty']++;
+			else if (is_suggested)
+				a_contact_count['suggested']++;
 			else
 				a_contact_count['regular']++;
 
 			msg += "id=" + id;
 	
-			if (!is_deleted_or_empty)
+			if (!is_ignored)
 				msg += " contact: " + contact.toString();
+			else
+			{
+				msg += " contact: ";
+
+				if (contact.meta.deleted)      msg += " deleted";
+				else if (contact.is_empty())   msg += " empty";
+				else if (is_suggested) msg += " suggested";
+			}
 
 			if (zfcPr.isPresent(id))
 			{
@@ -8022,23 +8151,24 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 
 				msg += " updated: ";
 
-				if (is_deleted_or_empty)
+				if (is_ignored)
 				{
 					zfi.set(FeedItem.ATTR_DEL, '1');
 
-					msg += " marked as deleted" + (contact.meta.deleted ? "" : " (because it is empty)") + ": ";
+					msg += " marked as deleted";
 				}
-
-				msg += " zfi: " + zfi.toString();
 			}
-			else if (!is_deleted_or_empty)
+			else if (!is_ignored)
 			{
 				zfi = context.newZfiCnGd(id, rev, edit_url, self_url, context.state.gd_luid_ab_in_gd);
 				zfcPr.set(zfi); // add new
-				msg += " added: " + zfi.toString();
+				msg += " added: ";
 			}
 			else
-				msg += " ignored " + (contact.meta.deleted ? "deleted" : "empty") + " contact";
+				msg += " ignored ";
+
+			if (zfi)
+				msg += " zfi: " + zfi.toString();
 
 			context.debug(msg);
 

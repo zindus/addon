@@ -201,7 +201,7 @@ set properties (properties) {
 	var organization = null;
 	var i, key;
 
-	logger().debug("AMHERE: 1: properties: " + aToString(properties));
+	// logger().debug("AMHERE: 1: properties: " + aToString(properties));
 
 	with (ContactGoogleStatic) {
 		if (imask & mask.title) {
@@ -249,7 +249,7 @@ set properties (properties) {
 			if (!is_found)
 				organization = null;
 			else if (organization.*.length() == 0) {
-				logger().debug("AMHERE: deleting");
+				// logger().debug("AMHERE: deleting");
 				delete entry.*[organization.childIndex()];
 				organization = null;
 			}
@@ -641,8 +641,8 @@ var ContactGoogleStatic = {
 	},
 	set_if : function(properties, key, xml_value) {
 		var value = xml_value.toString();
-		logger().debug("AMHERE: set_if: key: " + key + " value: " + value + " length: " + value.length);
-		logger().debug("AMHERE: set_if: xml_value: " + xml_value + " length: " + xml_value.length());
+		// logger().debug("AMHERE: set_if: key: " + key + " value: " + value + " length: " + value.length);
+		// logger().debug("AMHERE: set_if: xml_value: " + xml_value + " length: " + xml_value.length());
 		if (value.length > 0)
 			properties[key] = value;
 	},
@@ -657,10 +657,10 @@ var ContactGoogleStatic = {
 		}
 	},
 	modify_or_delete_child : function(xml, properties, key, a_is_used, is_address_attribute) {
-		logger().debug("AMHERE: modify_or_delete_child: key: " + key);
+		// logger().debug("AMHERE: modify_or_delete_child: key: " + key);
 
 		if (key in properties && properties[key].length > 0) {
-			logger().debug("AMHERE: modify key: " + key);
+			// logger().debug("AMHERE: modify key: " + key);
 
 			if (is_address_attribute)
 				xml.@address = properties[key];
@@ -668,7 +668,7 @@ var ContactGoogleStatic = {
 				xml.* = properties[key];
 		}
 		else {
-			logger().debug("AMHERE: deleting key: " + key);
+			// logger().debug("AMHERE: deleting key: " + key);
 			delete xml.parent().*[xml.childIndex()];
 		}
 
