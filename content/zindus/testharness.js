@@ -109,7 +109,6 @@ TestHarness.prototype.testSuo = function()
 	aSuo[SOURCEID_AA][Suo.MOD | FeedItem.TYPE_CN][2] = " Suo.MOD ";
 
 	it = new SuoIterator(aSuo);
-	// this.m_logger.debug("suo: " + suo.toString());
 
 	str = "test #1 - iterate over everthing: ";
 	for (suo in it.iterator(function(sourceid, bucket) { return true; }))
@@ -134,6 +133,10 @@ TestHarness.prototype.testSuo = function()
 		str += suo.toString();
 	this.m_logger.debug("str: " + str);
 	zinAssert(/MOD/.test(str));
+
+	var key;
+	for ([key, suo] in it.iterator(function() { return true; }))
+		this.m_logger.debug("key: " + aToString(key) + " suo: " + suo.toString());
 
 	return true;
 }

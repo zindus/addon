@@ -34,13 +34,9 @@ Suo.bimap_opcode = new BiMap(
 	[ Suo.ADD, Suo.MOD,  Suo.DEL,  Suo.MDU            ],
 	[ 'add',   'modify', 'delete', 'meta-data-update' ]);
 
-Suo.bimap_opcode_past_tense = new BiMap(
-	[ Suo.ADD,   Suo.MOD,    Suo.DEL   ],
-	[ 'added',   'modified', 'deleted' ]);
-
 Suo.bimap_opcode_UI = new BiMap(
-	[ Suo.ADD,   Suo.MOD,     Suo.DEL     ],
-	[ 'suo.add',  'suo.modify', 'suo.delete' ]);  // these are string ids from zindus.properties
+	[ Suo.ADD,   Suo.MOD,      Suo.DEL      ],
+	[ 'suo.add', 'suo.modify', 'suo.delete' ]);  // these are string ids from zindus.properties
 
 function Suo(gid, sourceid_winner, sourceid_target, opcode)
 {
@@ -55,17 +51,17 @@ Suo.prototype.toString = function()
 	return      "gid: =" + this.gid +
 			" winner: "  + this.sourceid_winner +
 			" target: "  + this.sourceid_target +
-			" opcode: "  + Suo.opcodeAsString(this.opcode);
+			" opcode: "  + this.opcodeAsString();
+}
+
+Suo.prototype.opcodeAsString = function()
+{
+	return Suo.bimap_opcode.lookup(this.opcode);
 }
 
 Suo.opcodeAsString = function(opcode)
 {
 	return Suo.bimap_opcode.lookup(opcode);
-}
-
-Suo.opcodeAsStringPastTense = function(opcode)
-{
-	return Suo.bimap_opcode_past_tense.lookup(opcode);
 }
 
 Suo.opcodeAsStringForUI = function(opcode)
@@ -83,15 +79,13 @@ iterator: function(fn, aSuo) {
 	if (aSuo)
 		this.m_a_suo = aSuo;
 	this.m_fn    = fn;
-	// logger().debug("SuoIterator: AMHERE 1: m_a_suo: " + aToString(this.m_a_suo));
 	return this;
 },
 __iterator__: function(is_keys_only) {
 	var i, id, bucket, sourceid, suo, is_do;
+	var key = { sourceid: null, bucket: null, id: null };
 
 	zinAssert(this.m_fn && this.m_a_suo);
-
-	// logger().debug("SuoIterator: AMHERE 2");
 
 	for (sourceid in this.m_a_suo)
 		if (sourceid in this.m_a_suo)
@@ -100,8 +94,6 @@ __iterator__: function(is_keys_only) {
 				bucket = ORDER_SOURCE_UPDATE[i];
 				is_do  = false;
 
-				// logger().debug("SuoIterator: AMHERE 3: bucket: " + bucket );
-
 				if (bucket in this.m_a_suo[sourceid])
 					is_do = this.m_fn(sourceid, bucket);
 
@@ -109,10 +101,12 @@ __iterator__: function(is_keys_only) {
 					for (id in this.m_a_suo[sourceid][bucket])
 					{
 						suo = this.m_a_suo[sourceid][bucket][id];
-						logger().debug("SuoIterator: AMHERE: yielding id: " + id + " suo: " + suo.toString());
-						yield is_keys_only ? suo : [ id, suo ];
+						key.sourceid = sourceid;
+						key.bucket   = bucket;
+						key.id       = id;
+						logger().debug("SuoIterator: AMHERE: yielding key: " + aToString(key) + " suo: " + suo.toString());
+						yield is_keys_only ? suo : [ key, suo ];
 					}
 			}
 }
 };
-

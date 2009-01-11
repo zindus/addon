@@ -4532,7 +4532,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 					conflict_msg += "conflict: " + item + ": " + short_label_winner +
 									" on " + source_name_winner +
 									" wins and " + item + " on " + source_name_loser +
-									" is " + Suo.opcodeAsStringPastTense(suo.opcode);
+									" will " + Suo.opcodeAsString(suo.opcode);
 
 					this.state.aConflicts.push(conflict_msg);
 
@@ -5406,22 +5406,20 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 
 SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 {
-	var i, gid, id, type, sourceid_target, sourceid_winner, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
-	var suo, zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg, format_winner;
-	var count = 0;
-	var chunk_size_cards = chunk_size('cards');
+	var gid, type, sourceid_target, sourceid_winner, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
+	var suo, key, zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg, format_winner;
+	var count      = 0;
+	var context    = this;
+	var fn         = function(sourceid, bucket) { return (sourceid == context.state.sourceid_tb); }
 
 	this.state.stopwatch.mark(state);
 
 	if (!this.state.stopFailCode)
 		bigloop:
-		for (var i = 0; i < ORDER_SOURCE_UPDATE.length; i++)
-			if (isPropertyPresent(this.state.aSuo[this.state.sourceid_tb], ORDER_SOURCE_UPDATE[i]))
-				for (var indexSuo in this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]])
+			for (suo in this.state.m_suo_iterator.iterator(fn))
 	{
-		suo  = this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]][indexSuo];
-		gid  = suo.gid;
-		type = this.feedItemTypeFromGid(gid, suo.sourceid_winner);
+		gid             = suo.gid;
+		type            = this.feedItemTypeFromGid(gid, suo.sourceid_winner);
 		sourceid_winner = suo.sourceid_winner;
 		sourceid_target = suo.sourceid_target;
 		format_winner   = this.state.sources[sourceid_winner]['format'];
@@ -5435,15 +5433,15 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 		properties      = null;
 		msg = "";
 
-		this.state.m_logger.debug("entryActionUpdateTb: acting on suo: - opcode: " + Suo.opcodeAsString(ORDER_SOURCE_UPDATE[i] & Suo.MASK)
-			+ " type: " + FeedItem.typeAsString(ORDER_SOURCE_UPDATE[i] & FeedItem.TYPE_MASK)
-			+ " suo: "  + this.state.aSuo[this.state.sourceid_tb][ORDER_SOURCE_UPDATE[i]][indexSuo].toString());
+		this.debug("entryActionUpdateTb: acting on suo:" +
+			" opcode: " + suo.opcodeAsString() +
+			" type: " + FeedItem.typeAsString(type) +
+			" suo: "  + suo.toString());
 
-
-		if (ORDER_SOURCE_UPDATE[i] & FeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
+		if (type == FeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
 			zinAssert(zfiWinner.name() != TB_PAB && zfiWinner.name() != ZM_FOLDER_CONTACTS);
 
-		switch(ORDER_SOURCE_UPDATE[i])
+		switch(suo.opcode | type)
 		{
 			case Suo.ADD | FeedItem.TYPE_CN:
 				// allocate a new luid in the source map
@@ -5767,15 +5765,15 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				break;
 
 			default:
-				zinAssertAndLog(false, "unmatched case: " + ORDER_SOURCE_UPDATE[i]);
+				zinAssertAndLog(false, "unmatched case: " + suo.opcode | type);
 		}
 
 		if (luid_target)
 			SyncFsm.setLsoToGid(zfiGid, zfcTarget.get(luid_target));
 
-		this.state.m_logger.debug("entryActionUpdateTb: " + msg);
+		this.debug("entryActionUpdateTb: " + msg);
 
-		if ((++count % chunk_size_cards) == 0)
+		if ((++count % chunk_size('cards')) == 0)
 			yield true;
 	}
 
@@ -6291,6 +6289,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 	var nextEvent = 'evNext';
 	var msg       = "";
 	var is_noop   = false;
+	var context   = this;
+	var fn        = function(sourceid, bucket) { return (context.state.sources[sourceid]['format'] == FORMAT_GD); }
 	var sourceid, sourceid_winner, sourceid_target, suo, luid_winner, luid_target, properties, contact, zfcTarget, zfiTarget, zfiGid;
 
 	this.state.stopwatch.mark(state);
@@ -6306,7 +6306,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				" opcode: " + Suo.opcodeAsString(ORDER_SOURCE_UPDATE[i] & Suo.MASK) +
 				" type: "   + FeedItem.typeAsString(ORDER_SOURCE_UPDATE[i] & FeedItem.TYPE_MASK) +
 		        " indexSuo: " + indexSuo +
-				" suo: " + this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo].toString());
+				" suo: "  + suo.toString());
 
 		suo             = this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo];
 		sourceid_winner = suo.sourceid_winner;
@@ -6947,7 +6947,7 @@ SyncFsm.prototype.resetLsoVer = function(gid, zfi)
 SyncFsm.prototype.feedItemTypeFromGid = function(gid, sourceid)
 {
 	var luid = this.state.zfcGid.get(gid).get(sourceid);
-	return this.state.sources[sourceid]['zfcLuid'].get(luid).type();
+	return this.zfc(sourceid).get(luid).type();
 }
 
 SyncFsm.prototype.getTbAddressbookNameFromLuid = function(sourceid, luid)
