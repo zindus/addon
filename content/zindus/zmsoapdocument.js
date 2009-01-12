@@ -347,8 +347,8 @@ ZmSoapDocument.prototype.ForeignContactDelete = function(args)
 	elCn.appendChild(elA);
 	elCreate.appendChild(elCn);
 
-	var delete_args = newObject("id", args.zid + ":" + args.id, "op", "delete");
-	elDeleteForeign = this.ActionRequest("ContactActionRequest", delete_args);
+	var delete_args     = newObject("id", args.zid + ":" + args.id, "op", "delete");
+	var elDeleteForeign = this.ActionRequest("ContactActionRequest", delete_args);
 
 	elRequest.appendChild(elCreate);
 	elRequest.appendChild(elDeleteForeign);

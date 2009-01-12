@@ -96,7 +96,6 @@ TestHarness.prototype.testSuo = function()
 {
 	var suo, it, fn, aSuo, str;
 	var context = this;
-	this.m_logger.debug("ORDER_SOURCE_UPDATE: " + ORDER_SOURCE_UPDATE.toString());
 
 	aSuo = new Object();
 	aSuo[SOURCEID_TB] = new Object();
@@ -105,8 +104,8 @@ TestHarness.prototype.testSuo = function()
 	aSuo[SOURCEID_TB][Suo.ADD | FeedItem.TYPE_FL] = new Object();
 	aSuo[SOURCEID_AA][Suo.MOD | FeedItem.TYPE_CN] = new Object();
 
-	aSuo[SOURCEID_TB][Suo.ADD | FeedItem.TYPE_FL][1] = " Suo.ADD ";
-	aSuo[SOURCEID_AA][Suo.MOD | FeedItem.TYPE_CN][2] = " Suo.MOD ";
+	aSuo[SOURCEID_TB][Suo.ADD | FeedItem.TYPE_FL][1] = " Suo.ADD|FL ";
+	aSuo[SOURCEID_AA][Suo.MOD | FeedItem.TYPE_CN][2] = " Suo.MOD|CN ";
 
 	it = new SuoIterator(aSuo);
 
@@ -116,8 +115,15 @@ TestHarness.prototype.testSuo = function()
 	this.m_logger.debug("str: " + str);
 	zinAssert(/ADD/.test(str) && /MOD/.test(str));
 
-	str = "test #2 - iterate ADD: ";
+	str = "test #2.1 - iterate ADD: ";
 	for (suo in it.iterator(function(sourceid, bucket) { return bucket & Suo.ADD; }))
+		str += suo.toString();
+	this.m_logger.debug("str: " + str);
+	zinAssert(/ADD/.test(str));
+
+	str = "test #2.2 - iterate TYPE_FL: ";
+	//for (suo in it.iterator(function(sourceid, bucket) { return bucket & FeedItem.TYPE_FL; }))
+	for (suo in it.iterator(Suo.match_with_bucket(Suo.ADD | FeedItem.TYPE_FL)))
 		str += suo.toString();
 	this.m_logger.debug("str: " + str);
 	zinAssert(/ADD/.test(str));
@@ -134,9 +140,21 @@ TestHarness.prototype.testSuo = function()
 	this.m_logger.debug("str: " + str);
 	zinAssert(/MOD/.test(str));
 
+	str = "test #5 - iterate all ... with a deletion: ";
+	aSuo[SOURCEID_AA][Suo.DEL | FeedItem.TYPE_CN] = new Object();
+	aSuo[SOURCEID_AA][Suo.DEL | FeedItem.TYPE_CN][2] = " Suo.DEL|CN ";
+
 	var key;
 	for ([key, suo] in it.iterator(function() { return true; }))
-		this.m_logger.debug("key: " + aToString(key) + " suo: " + suo.toString());
+	{
+		str += suo.toString();
+		if ((key.bucket & Suo.MASK) | Suo.DEL)
+			delete aSuo[key.sourceid][key.bucket][key.id];
+	}
+	this.m_logger.debug("str: " + str);
+	zinAssert(/ADD/.test(str) && /MOD/.test(str) && /DEL/.test(str));
+
+		// this.m_logger.debug("key: " + aToString(key) + " suo: " + suo.toString());
 
 	return true;
 }

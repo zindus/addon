@@ -40,20 +40,11 @@ includejs("passwordmanager.js");
 includejs("stopwatch.js");
 includejs("cookieobserver.js");
 
-const ORDER_SOURCE_UPDATE = [
-	Suo.MOD | FeedItem.TYPE_FL, Suo.MOD | FeedItem.TYPE_SF,
-	Suo.ADD | FeedItem.TYPE_FL, Suo.ADD | FeedItem.TYPE_SF, 
-	Suo.DEL | FeedItem.TYPE_CN,
-	Suo.MOD | FeedItem.TYPE_CN,
-	Suo.ADD | FeedItem.TYPE_CN,
-	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF
-];
-
-const AUTO_INCREMENT_STARTS_AT        = 256;  // the 'next' attribute of the AUTO_INCREMENT item starts at this value + 1.
-const ZM_FIRST_USER_ID                = 256;
-const AB_GAL                          = "GAL";
-const GOOGLE_URL_HIER_PART            = "://www.google.com/m8/feeds/";
-const GOOGLE_PROJECTION               = "/thin";  // use 'thin' to avoid gd:extendedProperty elements
+const AUTO_INCREMENT_STARTS_AT = 256;  // the 'next' attribute of the AUTO_INCREMENT item starts at this value + 1.
+const ZM_FIRST_USER_ID         = 256;
+const AB_GAL                   = "GAL";
+const GOOGLE_URL_HIER_PART     = "://www.google.com/m8/feeds/";
+const GOOGLE_PROJECTION        = "/thin";  // use 'thin' to avoid gd:extendedProperty elements
 
 function SyncFsm()
 {
@@ -1669,20 +1660,13 @@ SyncFsm.prototype.entryActionGetContactZm = function(state, event, continuation)
 
 SyncFsm.prototype.entryActionGetContactPuZm = function(state, event, continuation)
 {
-	var sourceid, indexSuo, bucket, msg;
-	var zfcGid = this.state.zfcGid;
-
 	if (!this.state.is_done_get_contacts_pu)
 	{
-		zinAssert(this.state.aContact.length == 0);
-
-		// TODO replace the code below with this use of iterator - when we're testing zm
-		// TODO also replace other uses of indexSuo.*Suo with the iterator
-		//
-		if (false)
-		{
 		var sourceid_pr = this.state.sourceid_pr;
+		var zfcGid      = this.state.zfcGid;
 		var fn          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.DEL | FeedItem.TYPE_CN)); }
+
+		zinAssert(this.state.aContact.length == 0);
 
 		for (var suo in this.state.m_suo_iterator.iterator(fn))
 			if (zfcGid.get(suo.gid).isPresent(suo.sourceid_target))
@@ -1693,32 +1677,10 @@ SyncFsm.prototype.entryActionGetContactPuZm = function(state, event, continuatio
 				if (zfc.get(luid_target).isForeign())
 					this.state.aContact.push(new Zuio(zfc.get(luid_target).key()));
 			}
-		}
-
-		for (sourceid in this.state.sources)
-		{
-			var format = this.state.sources[sourceid]['format'];
-			var zfc    = this.zfc(sourceid);
-
-			if (format == FORMAT_ZM)
-				for (bucket in this.state.aSuo[sourceid])
-					for (indexSuo in this.state.aSuo[sourceid][bucket])
-					{
-						suo = this.state.aSuo[sourceid][bucket][indexSuo];
-
-						if (zfcGid.get(suo.gid).isPresent(suo.sourceid_target))
-						{
-							luid_target = zfcGid.get(suo.gid).get(suo.sourceid_target);
-
-							if (bucket == (Suo.DEL | FeedItem.TYPE_CN) && zfc.get(luid_target).isForeign())
-								this.state.aContact.push(new Zuio(zfc.get(luid_target).key()));
-						}
-					}
-		}
 
 		this.state.is_done_get_contacts_pu = true;
 
-		msg = "";
+		let msg = "";
 		for (var i = 0; i < this.state.aContact.length; i++)
 			msg += " " + i + ": " + this.state.aContact[i].toString();
 		this.state.m_logger.debug("entryActionGetContactPuZm: " + msg);
@@ -3641,9 +3603,10 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 			           (this.state.m_tb_card_count < 5000) ? .75 : .5;
 
 			this.state.m_logger.debug("updateGidFromSourcesGenerator: generator rate: " + rate + " m_tb_card_count: "+this.state.m_tb_card_count);
-			let make_generator = (format == FORMAT_GD) ? SuggestedGenerator : zfc.forEachGenerator;
-
-			generator = make_generator(functor_foreach_luid_slow_sync, chunk_size('feed', rate));
+			if (format == FORMAT_GD)
+				generator = SuggestedGenerator(functor_foreach_luid_slow_sync, chunk_size('feed', rate));
+			else
+				generator = zfc.forEachGenerator(functor_foreach_luid_slow_sync, chunk_size('feed', rate));
 		}
 
 		while (generator.next())
@@ -4599,135 +4562,115 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 //
 SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 {
-	var aFoldersBeingDeleted; // each key in this hash is the gid of a folder about to be deleted
-	var aOperationsToRemove;  // each key in this hash is the indexSuo of a contact delete operation that is to be removed
-	var i, suo, indexSuo, luid_target, l_target, gid_l_target, msg;
-	var aBuckets = [Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF];
-	var aBucket, bucket;
+	var a_suo_to_delete = new Array();
+	var msg = "";
+	var key, suo;
 
 	zinAssert(this.formatPr() == FORMAT_ZM);
 
 	this.state.a_folders_deleted = new Object();
 
-	for (var sourceid in this.state.sources)
-	{
-		aOperationsToRemove  = new Object();
+	for (suo in this.state.m_suo_iterator.iterator(Suo.match_with_bucket(Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF)))
+		this.state.a_folders_deleted[suo.gid] = new Array();
 
-		for (i = 0; i < aBuckets.length; i++)
+	for ([key, suo] in this.state.m_suo_iterator.iterator(Suo.match_with_bucket(Suo.DEL | FeedItem.TYPE_CN)))
+	{
+		let luid_target  = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+		let l_target     = SyncFsm.keyParentRelevantToGid(this.zfc(suo.sourceid_target), luid_target);
+		let gid_l_target = this.state.aReverseGid[suo.sourceid_target][l_target];
+
+		if (gid_l_target in this.state.a_folders_deleted)
 		{
-			aBucket = this.state.aSuo[sourceid][aBuckets[i]];
-
-			for (indexSuo in aBucket)
-			{
-				suo = aBucket[indexSuo];
-				this.state.a_folders_deleted[suo.gid] = new Array();
-			}
+			this.state.a_folders_deleted[gid_l_target].push(suo);
+			a_suo_to_delete.push(key);
 		}
-
-		bucket = Suo.DEL | FeedItem.TYPE_CN;
-
-		if (bucket in this.state.aSuo[sourceid])
-			for (indexSuo in this.state.aSuo[sourceid][bucket])
-			{
-				suo         = this.state.aSuo[sourceid][bucket][indexSuo];
-				luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
-				l_target    = SyncFsm.keyParentRelevantToGid(this.zfc(sourceid), luid_target);
-				gid_l_target = this.state.aReverseGid[sourceid][l_target];
-
-				if (isPropertyPresent(this.state.a_folders_deleted, gid_l_target))
-				{
-					aOperationsToRemove[indexSuo] = null;
-					this.state.a_folders_deleted[gid_l_target].push(suo);
-				}
-			}
-
-		for (indexSuo in aOperationsToRemove)
-			delete this.state.aSuo[sourceid][bucket][indexSuo];
 	}
 
-	if (!isObjectEmpty(this.state.a_folders_deleted))
+	for (var i = 0; i < a_suo_to_delete.length; i++)
 	{
-		var msg = "removeContactDeletesWhenFolderIsBeingDeleted: ";
-
-		for (var gid in this.state.a_folders_deleted)
-			msg += " \nfolder being deleted gid=" + gid + " suos of child contacts: " + this.state.a_folders_deleted[gid].toString();
-
-		this.debug(msg);
+		key = a_suo_to_delete[i];
+		delete this.state.aSuo[key.sourceid][key.bucket][key.id];
 	}
 
+	this.debug("removeContactDeletesWhenFolderIsBeingDeleted: " +
+				" \n removed these keys from aSuo: " + a_suo_to_delete.toString() +
+	            " \n a_folders_deleted: " + aToString(this.state.a_folders_deleted));
 }
 
-// Test that no folder names have both an ADD and DEL operation
+// Test that no folder names have both an ADD and/or MOD and/or DEL operation
 //
-// If there is, we have to give up convergence because:
-// we apply the operations in a fixed order, namely ADD followed by DEL, and almost certainly the user did DEL followed by ADD.
-// Yes, this is ugly.  The right thing to do here would be to rewrite the aSuo code into an container that can be re-ordered
-// to suit it's contents.
-// Giving up consistency is easier given the limitation, and after all, how often are:
+// If there is, we give up convergence because:
+// we apply the operations in a fixed order, namely MOD, then ADD then DEL, and:
+// - if there's a ADD+DEL then almost certainly the user did DEL followed by ADD so we'd be applying them in the wrong order
+// - if there's a MOD+DEL then the user might have deleted x then renamed y to x (ie DEL then MOD)
+//   but we'd rename y to x giving two x's then we'd try to delete the first x which would work ok with Zimbra but not
+//   with thunderbird because don't delete tb addressbooks by luid (ie uri), we delete them by name and we lose name-uniqueness we're
+//   screwed.
+//
+// The underlying the ADD+DEL vs DEL+ADD is that we're not an operation-based synchronizser, so we don't really know the order in
+// which the original operations took place.  We could probably make intelligent guesses, but it's safer to 
+// give up consistency.  And after all, how often are:
 // - zimbra users going to do: DEL addressbook X/flush trash/ADD addressbook X
-// - tb users going to do: DEL addressbook X/ADD addressbook X
+// - tb     users going to do: DEL addressbook X/ADD addressbook X
 //
-
+// TODO: revisit the order in which we process operations
+// I think if removeContactDeletesWhenFolderIsBeingDeleted is extended to also remove contacts being modified in folders
+// that are being deleted, then we can change order of iteration to DEL|FL MOD|FL ADD|FL which might
+// avoid the need for this method altoghether.
+// 
 SyncFsm.prototype.testForConflictingUpdateOperations = function()
 {
-	var aName = new Object();
-	var sourceid_loser;
+	var context = this;
+	var a_name  = new Object(); // a_name[sourceid][folder-name] == 1 or 2;
+	var msg     = "";
+	var key, suo;
 
 	zinAssert(this.formatPr() == FORMAT_ZM);
 
-	for (sourceid_loser in this.state.sources)
-	{
-		this.testForConflictingUpdateOperationsHelper(aName, sourceid_loser, Suo.ADD | FeedItem.TYPE_FL);
-		this.testForConflictingUpdateOperationsHelper(aName, sourceid_loser, Suo.ADD | FeedItem.TYPE_SF);
+	function count_folder_names() {
+		// When working out a name:
+		// - if it's an ADD or MOD, then use winner, but if it's DEL, then use target because the winner's name might have changed
+		//   eg when a zimbra folder gets moved into trash it may also get renamed to avoid clashes.
+		// - names are normalised into thunderbird's namespace so that we match zimbra: fred with thunderbird: zindus/fred
+		//
+		let is_name_from_winner = Boolean(key.bucket & (Suo.ADD | Suo.MOD));
+		let sourceid            = is_name_from_winner ? suo.sourceid_winner : suo.sourceid_target;
+		let format              = context.state.sources[sourceid]['format'];
+		let luid                = context.state.zfcGid.get(suo.gid).get(sourceid);
+		let name                = context.state.m_folder_converter.convertForPublic(FORMAT_TB, format, context.zfc(sourceid).get(luid));
+		logger().debug("AMHEREX: " +
+			" key.bucket: " + key.bucket +
+			" is_name_from_winner: " + is_name_from_winner +
+			" name: " + name + " from: sourceid: " + sourceid + " key: " + key.toString());
 
-		this.state.m_logger.debug("testForConflictingUpdateOperations: sourceid_loser: " + sourceid_loser +
-		                          " folders being added: " + aToString(aName));
+		if (!(suo.sourceid_target in a_name))
+			a_name[suo.sourceid_target] = new Object();
 
-		this.testForConflictingUpdateOperationsHelper(aName, sourceid_loser, Suo.DEL | FeedItem.TYPE_SF);
-		this.testForConflictingUpdateOperationsHelper(aName, sourceid_loser, Suo.DEL | FeedItem.TYPE_FL);
-
-		this.state.m_logger.debug("testForConflictingUpdateOperations: sourceid_loser: " + sourceid_loser +
-		                          " both added and deleted (failed if anything >= 2): " + aToString(aName));
-
-		for (var name in aName)
-			if (aName[name] >= 2)
-			{
-				this.state.stopFailCode    = 'failon.folder.source.update';
-				this.state.stopFailArg     = [ name ];
-				this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
-				break;
-			}
-
-		if (this.state.stopFailCode)
-			break;
+		if (name in a_name[suo.sourceid_target])
+			a_name[suo.sourceid_target][name]++;
+		else
+			a_name[suo.sourceid_target][name]=1;
 	}
 
+	var fn = function (sourceid, bucket) { return bucket & (FeedItem.TYPE_FL | FeedItem.TYPE_SF); }
+
+	for ([key, suo] in this.state.m_suo_iterator.iterator(fn))
+		count_folder_names();
+
+	bigloop:
+		for (var sourceid in a_name)
+			for (var name in a_name[sourceid])
+				if (a_name[sourceid][name] >= 2)
+				{
+					this.state.stopFailCode    = 'failon.folder.source.update';
+					this.state.stopFailArg     = [ name ];
+					this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
+					break bigloop;
+				}
+
+	this.debug("testForConflictingUpdateOperations: anything >= 2 implies failure: " + aToString(a_name));
+
 	return this.state.stopFailCode == null;
-}
-
-SyncFsm.prototype.testForConflictingUpdateOperationsHelper = function(aName, sourceid_loser, op)
-{
-	var suo, sourceid, format, zfc, luid, zfi, name;
-
-	if (isPropertyPresent(this.state.aSuo[sourceid_loser], op))
-		for (var indexSuo in this.state.aSuo[sourceid_loser][op])
-		{
-			// - if it's an ADD, then use winner, but if it's a del, then use target because the winner's name might have changed
-			//   eg when a zimbra folder gets moved into trash it may also get renamed to avoid clashes.
-			// - names are normalised into thunderbird's namespace so that we match zimbra: fred with thunderbird: zindus/fred
-			//
-			suo      = this.state.aSuo[sourceid_loser][op][indexSuo];
-			sourceid = (op & Suo.ADD) ? suo.sourceid_winner : sourceid = suo.sourceid_target;
-			format   = this.state.sources[sourceid]['format'];
-			zfc      = this.zfc(sourceid);
-			luid     = this.state.zfcGid.get(suo.gid).get(sourceid);
-			name     = this.state.m_folder_converter.convertForPublic(FORMAT_TB, format, zfc.get(luid));
-
-			if (isPropertyPresent(aName, name))
-				aName[name]++;
-			else
-				aName[name]=1;
-		}
 }
 
 SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid)
@@ -5232,7 +5175,6 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 	if (passed)
 	{
-
 		if (this.is_slow_sync())
 		{
 			this.state.m_progress_yield_text = "checksums";
@@ -5825,29 +5767,19 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 
 SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 {
-	var soap = new Object();
-	var bucket  = null;
-	var msg = "";
-	var indexSuo = null;
-	var sourceid, sourceid_winner, sourceid_target, zfcWinner, zfiWinner, l_gid, l_winner, l_target, name_winner, type, suo;
-	var format_winner, zuio_target, l_zuio, properties;
+	var msg     = "";
+	var context = this;
+	var fn      = function(sourceid, bucket) { return (context.state.sources[sourceid]['format'] == FORMAT_ZM); }
+	var remote  = null;
+	var sourceid, sourceid_winner, sourceid_target, zfcWinner, zfiWinner, zfcTarget, l_gid, l_winner, l_target, name_winner, type;
+	var key_suo, suo, format_winner, zuio_target, l_zuio, properties, luid_winner, luid_target;
 
 	this.state.stopwatch.mark(state);
 
 	if (!this.state.stopFailCode)
-		for (sourceid in this.state.sources)
-			if (this.state.sources[sourceid]['format'] == FORMAT_ZM)
-				for (var i = 0; i < ORDER_SOURCE_UPDATE.length && !bucket; i++)
-					if (isPropertyPresent(this.state.aSuo[sourceid], ORDER_SOURCE_UPDATE[i]))
-						for (indexSuo in this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]])
+		for ([key_suo, suo] in this.state.m_suo_iterator.iterator(fn))
 	{
-		this.state.m_logger.debug("entryActionUpdateZm: " +
-				" opcode: " + Suo.opcodeAsString(ORDER_SOURCE_UPDATE[i] & Suo.MASK) +
-				" type: "   + FeedItem.typeAsString(ORDER_SOURCE_UPDATE[i] & FeedItem.TYPE_MASK) +
-		        " indexSuo: " + indexSuo +
-				" suo: " + this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo].toString());
-
-		suo             = this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo];
+		type            = this.feedItemTypeFromGid(suo.gid, suo.sourceid_winner);
 		sourceid_winner = suo.sourceid_winner;
 		sourceid_target = suo.sourceid_target;
 		format_winner   = this.state.sources[sourceid_winner]['format'];
@@ -5856,21 +5788,27 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		zfcTarget       = this.zfc(suo.sourceid_target);
 		zfiWinner       = zfcWinner.get(luid_winner);
 
-		if (ORDER_SOURCE_UPDATE[i] & FeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
+		this.state.m_logger.debug("entryActionUpdateGd: " +
+				" opcode: " + suo.opcodeAsString() +
+				" type: "   + FeedItem.typeAsString(type) +
+				" suo: "    + suo.toString());
+
+		if (type & FeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
 			zinAssert(zfiWinner.name() != TB_PAB && zfiWinner.name() != ZM_FOLDER_CONTACTS);
 
-		switch(ORDER_SOURCE_UPDATE[i])
+		switch(suo.opcode | type)
 		{
 			case Suo.ADD | FeedItem.TYPE_FL:
 				zinAssertAndLog(format_winner == FORMAT_ZM ||
 				                this.state.m_folder_converter.prefixClass(zfiWinner.name()) == FolderConverter.PREFIX_CLASS_PRIMARY,
 				                   "zfiWinner: " + zfiWinner.toString());
 				name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner, zfiWinner);
-				soap.method = "CreateFolder";
-				soap.arg    = newObject(FeedItem.ATTR_NAME, name_winner, FeedItem.ATTR_L, '1');
-				soap.zid    = null;
-				bucket      = ORDER_SOURCE_UPDATE[i];
-				msg        += " about to add folder name: " + name_winner + " l: " + '1';
+
+				msg          += " about to add folder name: " + name_winner + " l: " + '1';
+				remote        = new Object();
+				remote.method = "CreateFolder";
+				remote.arg    = newObject(FeedItem.ATTR_NAME, name_winner, FeedItem.ATTR_L, '1');
+				remote.zid    = null;
 				break;
 
 			case Suo.ADD | FeedItem.TYPE_CN:
@@ -5881,13 +5819,13 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				if (zfcTarget.get(l_target).type() == FeedItem.TYPE_SF)
 					l_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, l_target, FeedItem.TYPE_FL);
 
-				l_zuio      = new Zuio(l_target);
-				properties  = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
-				soap.method = "CreateContact";
-				soap.arg    = newObject('properties', properties, FeedItem.ATTR_L, l_zuio.id());
-				soap.zid    = l_zuio.zid();
-				bucket      = ORDER_SOURCE_UPDATE[i];
-				msg        += " about to add contact: ";
+				l_zuio        = new Zuio(l_target);
+				properties    = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
+				msg          += " about to add contact: ";
+				remote        = new Object();
+				remote.method = "CreateContact";
+				remote.arg    = newObject('properties', properties, FeedItem.ATTR_L, l_zuio.id());
+				remote.zid    = l_zuio.zid();
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_FL:
@@ -5897,17 +5835,17 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				if (zfcTarget.get(luid_target).type() == FeedItem.TYPE_SF)
 				{
 					luid_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, luid_target, FeedItem.TYPE_LN);
-					soap.luid_target = luid_target;
+					remote.luid_target = luid_target;
 				}
 
 				// sanity check that we never modify any of zimbra's immutable folders
 				zinAssertAndLog(luid_target >= ZM_FIRST_USER_ID, "id=" + luid_target + "folder name: " + name_winner);
 
-				soap.method = "FolderAction";
-				soap.arg    = newObject('id', luid_target, 'op', 'update', FeedItem.ATTR_NAME, name_winner);
-				soap.zid    = null;
-				bucket      = ORDER_SOURCE_UPDATE[i];
-				msg        += " about to rename folder: ";
+				msg          += " about to rename folder: ";
+				remote        = new Object();
+				remote.method = "FolderAction";
+				remote.arg    = newObject('id', luid_target, 'op', 'update', FeedItem.ATTR_NAME, name_winner);
+				remote.zid    = null;
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_CN:
@@ -5921,12 +5859,14 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 				zuio_target = new Zuio(luid_target);
 				l_zuio      = new Zuio(l_target);
-				msg        += " about to modify contact: ";
-				soap.zid    = zuio_target.zid();
-				soap.method = null;
+
+				msg          += " about to modify contact: ";
+				remote        = new Object();
+				remote.zid    = zuio_target.zid();
+				remote.method = null;
 
 				if (this.state.sources[sourceid_winner]['format'] == FORMAT_TB) // always a content update in Tb2 - may not be so in Tb3.
-					soap.method = "ModifyContact";
+					remote.method = "ModifyContact";
 				else
 				{
 					// look at the pre-update zfi:
@@ -5936,10 +5876,10 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 					var zfi = this.state.zfcPreUpdateWinners.get(suo.gid);
 					var lso = new Lso(zfi.get(FeedItem.ATTR_LS));
 
-					soap.method = (zfi.get(FeedItem.ATTR_REV) > lso.get(FeedItem.ATTR_REV)) ? "ModifyContact" : "ContactAction";
+					remote.method = (zfi.get(FeedItem.ATTR_REV) > lso.get(FeedItem.ATTR_REV)) ? "ModifyContact" : "ContactAction";
 				}
 
-				if (soap.method == "ModifyContact")
+				if (remote.method == "ModifyContact")
 				{
 					properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
 
@@ -5949,13 +5889,11 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 						if (!isPropertyPresent(properties, key))
 							properties[key] = null;
 
-					soap.arg   = newObject('id', zuio_target.id(), 'properties', properties, FeedItem.ATTR_L, l_zuio.id());
-					bucket     = ORDER_SOURCE_UPDATE[i];
+					remote.arg   = newObject('id', zuio_target.id(), 'properties', properties, FeedItem.ATTR_L, l_zuio.id());
 				}
-				else if (soap.method == "ContactAction")
+				else if (remote.method == "ContactAction")
 				{
-					soap.arg   = newObject('id', zuio_target.id(), 'op', 'move', FeedItem.ATTR_L, l_zuio.id());
-					bucket     = ORDER_SOURCE_UPDATE[i];
+					remote.arg   = newObject('id', zuio_target.id(), 'op', 'move', FeedItem.ATTR_L, l_zuio.id());
 				}
 				else
 					zinAssert(false);
@@ -5965,18 +5903,18 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
 				name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner, zfiWinner);
 
+				msg        += " about to move folder to trash: " + name_winner;
+				remote      = new Object();
+				remote.method = "FolderAction";
+				remote.zid    = null;
+
 				if (zfcTarget.get(luid_target).type() == FeedItem.TYPE_SF)
 				{
 					luid_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, luid_target, FeedItem.TYPE_LN);
-					soap.luid_target = luid_target;
+					remote.luid_target = luid_target;
 				}
 
 				zinAssertAndLog(luid_target >= ZM_FIRST_USER_ID, "luid_target=" + luid_target);
-
-				soap.method = "FolderAction";
-				soap.zid    = null;
-				bucket      = ORDER_SOURCE_UPDATE[i];
-				msg        += " about to move folder to trash: " + name_winner;
 
 				// add the date to the folder's name in the Trash to avoid name clashes
 				// this isn't guaranteed to work of course, but if it doesn't, the sync will abort
@@ -5989,57 +5927,55 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				msg += " - name of the folder in the Trash will be: " + newname;
 
 				// op == 'move' is what we'd use if we weren't changing it's name
-				// soap.arg     = newObject('id', luid_target, 'op', 'move', FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
+				// remote.arg     = newObject('id', luid_target, 'op', 'move', FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
 				// with op=update, the server does the move before the rename so still fails because of folder name conflict in Trash
-				// soap.arg     = newObject('id', luid_target, 'op', 'update', FeedItem.ATTR_NAME, newname, FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
-				soap.arg     = newObject('id', luid_target, 'op', 'rename', FeedItem.ATTR_NAME, newname);
+				// remote.arg     = newObject('id', luid_target, 'op', 'update', FeedItem.ATTR_NAME, newname, FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
+				remote.arg     = newObject('id', luid_target, 'op', 'rename', FeedItem.ATTR_NAME, newname);
 				break;
 
 			case Suo.DEL | FeedItem.TYPE_CN:
 				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
 
+				remote      = new Object();
+
 				if (zfcTarget.get(luid_target).isForeign())
 				{
-					zuio        = new Zuio(luid_target);
+					zuio_target = new Zuio(luid_target);
 					properties  = this.getContactFromLuid(sourceid_target, luid_target, FORMAT_ZM);
 					zinAssert(properties);
-					soap.method = "ForeignContactDelete";
-					soap.arg    = newObject('properties', properties, 'id', zuio.id(), 'zid', zuio.zid());
-					soap.zid    = null;
-					bucket      = ORDER_SOURCE_UPDATE[i];
+					remote.method = "ForeignContactDelete";
+					remote.arg    = newObject('properties', properties, 'id', zuio_target.id(), 'zid', zuio_target.zid());
+					remote.zid    = null;
 					msg        += " about to copy foreign contact to trash then delete it.";
 				}
 				else
 				{
-					soap.method = "ContactAction";
-					soap.arg    = newObject('id', luid_target, 'op', 'move', FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
-					soap.zid    = null;
-					bucket      = ORDER_SOURCE_UPDATE[i];
+					remote.method = "ContactAction";
+					remote.arg    = newObject('id', luid_target, 'op', 'move', FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
+					remote.zid    = null;
 					msg        += " about to move contact to trash.";
 				}
-
 				break;
 
 			default:
-				zinAssertAndLog(false, "unmatched case: " + ORDER_SOURCE_UPDATE[i]);
+				zinAssertAndLog(false, "unmatched case: " + suo.opcode | type);
 		}
 
-		if (bucket)
+		if (remote)
 			break;
 	}
 
-	if (msg != "")
-		this.state.m_logger.debug("entryActionUpdateZm: " + msg);
+	this.state.m_logger.debug("entryActionUpdateZm: " + msg);
 
 	this.state.remote_update_package = null;
 
-	if (bucket)
+	if (remote)
 	{
-		this.state.remote_update_package = newObject('sourceid', sourceid, 'bucket', bucket, 'indexSuo', indexSuo, 'soap', soap);
+		this.state.remote_update_package = newObject('key_suo', key_suo, 'remote', remote);
 
 		this.state.m_logger.debug("entryActionUpdateZm: remote_update_package: " + aToString(this.state.remote_update_package));
 
-		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(soap.zid), soap.zid, soap.method, soap.arg);
+		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(remote.zid), remote.zid, remote.method, remote.arg);
 
 		continuation('evHttpRequest');
 	}
@@ -6058,10 +5994,12 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 	var response               = this.state.m_http.response();
 	var change                 = newObject('acct', null);
 	var remote_update_package  = this.state.remote_update_package;
+	var remote                 = remote_update_package.remote;
+	var key_suo                = remote_update_package.key_suo;
 	var is_response_understood = false;
 	var context                = this;
 	var msg = "exitActionUpdateZm: ";
-	var suo = this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
+	var suo = this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
 	var msg, xpath_query, functor;
 
 	this.debug("exitActionUpdateZm: remote_update_package: " +  aToString(remote_update_package));
@@ -6073,15 +6011,15 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 			var attribute = attributesFromNode(node);
 			var l    = attribute[FeedItem.ATTR_L];
 			var id   = attribute[FeedItem.ATTR_ID];
-			var type = remote_update_package.bucket & FeedItem.TYPE_MASK;
+			var type = key_suo.bucket & FeedItem.TYPE_MASK;
 
 			is_response_understood = true;
 
-			if (remote_update_package.soap.method == "CreateFolder")
+			if (remote.method == "CreateFolder")
 				msg += "created: <folder id=" + id + " l=" + l + " name='" + attribute['name'] + "'>";
-			else if (remote_update_package.soap.method == "CreateContact")
+			else if (remote.method == "CreateContact")
 				msg += "created: <cn id=" + id +" l=" + l + ">";
-			else if (remote_update_package.soap.method == "ModifyContact")
+			else if (remote.method == "ModifyContact")
 				msg += "modified: <cn id=" + id + ">";
 
 			if (change.acct)
@@ -6091,16 +6029,16 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
 			else
 			{
-				delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
+				delete this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
 
-				var zfiGid = this.state.zfcGid.get(suo.gid);
-				zfcTarget = context.zfc(suo.sourceid_target);
-				var key = Zuio.key(id, change.acct);
-				var zfi;
+				let zfiGid    = this.state.zfcGid.get(suo.gid);
+				let zfcTarget = context.zfc(suo.sourceid_target);
+				let key       = Zuio.key(id, change.acct);
+				let zfi;
 
 				attribute[FeedItem.ATTR_KEY] = key;
 
-				if (remote_update_package.soap.method == "ModifyContact")
+				if (remote.method == "ModifyContact")
 				{
 					zfi = zfcTarget.get(key);
 					zfi.set(attribute)
@@ -6131,7 +6069,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 		{
 			var attribute = attributesFromNode(node);
 			var id   = attribute['id'];
-			var type = remote_update_package.bucket & FeedItem.TYPE_MASK;
+			var type = key_suo.bucket & FeedItem.TYPE_MASK;
 
 			msg += " recieved: <action id=" + id + ">";
 
@@ -6141,7 +6079,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				this.state.m_logger.error("<action> element received seems to be missing an 'id' attribute - ignoring: " + aToString(attribute));
 			else
 			{
-				delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
+				delete this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
 
 				var zfcTarget   = context.zfc(suo.sourceid_target);
 				var luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
@@ -6149,16 +6087,16 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				var key         = Zuio.key(id, change.acct);
 				var zfiRelevantToGid;
 
-				if (isPropertyPresent(remote_update_package.soap, 'luid_target'))
-					zfiTarget = zfcTarget.get(remote_update_package.soap.luid_target);  // used in MOD | TYPE_FL
+				if (isPropertyPresent(remote, 'luid_target'))
+					zfiTarget = zfcTarget.get(remote.luid_target);  // used in MOD | TYPE_FL
 
-				if (remote_update_package.bucket == (Suo.DEL | FeedItem.TYPE_FL) ||
-				   (remote_update_package.bucket == (Suo.DEL | FeedItem.TYPE_LN) ))
+				if (key_suo.bucket == (Suo.DEL | FeedItem.TYPE_FL) ||
+				   (key_suo.bucket == (Suo.DEL | FeedItem.TYPE_LN) ))
 					zfiTarget.set(FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH); // the folder got "renamed" into trash so fake the l attribute
 				else
 				{
-					remote_update_package.soap.arg[FeedItem.ATTR_KEY] = key;
-					zfiTarget.set(remote_update_package.soap.arg);
+					remote.arg[FeedItem.ATTR_KEY] = key;
+					zfiTarget.set(remote.arg);
 				}
 
 				zfiTarget.set(FeedItem.ATTR_MS, change.token);
@@ -6183,7 +6121,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 		run: function(doc, node)
 		{
 			var zfcTarget = context.zfc(suo.sourceid_target);
-			var key       = Zuio.key(remote_update_package.soap.arg.id, remote_update_package.soap.arg.zid);
+			var key       = Zuio.key(remote.arg.id, remote.arg.zid);
 
 			zfcTarget.get(key).set(FeedItem.ATTR_DEL, 1);
 
@@ -6191,7 +6129,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 			is_response_understood = true;
 
-			delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
+			delete this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
 		}
 	};
 
@@ -6204,13 +6142,13 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 		this.state.m_logger.error("No change token found.  This shouldn't happen.  Ignoring soap response.");
 
 		// drastic, but it ensures we don't end up in a loop
-		delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket];
+		delete this.state.aSuo[key_suo.sourceid][key_suo.bucket];
 	}
 	else
 	{
 		msg += " change.token: " + change.token + " change.acct: " + change.acct;
 
-		switch(remote_update_package.bucket)
+		switch(key_suo.bucket)
 		{
 			case Suo.ADD | FeedItem.TYPE_FL:
 				xpath_query = "/soap:Envelope/soap:Body/zm:CreateFolderResponse/zm:folder";
@@ -6225,12 +6163,12 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				functor = functor_action_response;
 				break;
 			case Suo.MOD | FeedItem.TYPE_CN:
-				if (remote_update_package.soap.method == "ModifyContact")
+				if (remote.method == "ModifyContact")
 				{
 					xpath_query = "/soap:Envelope/soap:Body/zm:ModifyContactResponse/zm:cn";
 					functor = functor_create_blah_response;
 				}
-				else if (remote_update_package.soap.method == "ContactAction")
+				else if (remote.method == "ContactAction")
 				{
 					xpath_query = "/soap:Envelope/soap:Body/zm:ContactActionResponse/zm:action";
 					functor = functor_action_response;
@@ -6243,8 +6181,11 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				functor = functor_action_response;
 				break;
 			case Suo.DEL | FeedItem.TYPE_CN:
-				luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+				{
+				let luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+				let zfcTarget = this.zfc(suo.sourceid_target);
 
+				// TODO - where does zfcTarget get set? - must test this
 				if (zfcTarget.get(luid_target).isForeign())
 				{
 					xpath_query = "/soap:Envelope/soap:Body/z:BatchResponse";
@@ -6254,6 +6195,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				{
 					xpath_query = "/soap:Envelope/soap:Body/zm:ContactActionResponse/zm:action";
 					functor = functor_action_response;
+				}
 				}
 				break;
 			default:
@@ -6269,73 +6211,65 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 		this.state.stopFailCode    = 'failon.unable.to.update.server';
 		this.state.stopFailTrailer = stringBundleString("text.zm.soap.method",
-								     [ remote_update_package.soap.method + " " + aToString(remote_update_package.soap.arg) ] );
+								     [ remote.method + " " + aToString(remote.arg) ] );
 	}
 
 	this.state.m_logger.debug(msg);
 
-	if (isObjectEmpty(this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket]))
+	if (isObjectEmpty(this.state.aSuo[key_suo.sourceid][key_suo.bucket]))
 	{
-		delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket];  // delete empty buckets
-		this.state.m_logger.debug("deleted aSuo sourceid: " + sourceid + " bucket: " + remote_update_package.bucket);
+		delete this.state.aSuo[key_suo.sourceid][key_suo.bucket];  // delete empty buckets
+		this.state.m_logger.debug("deleted aSuo sourceid: " + sourceid + " bucket: " + key_suo.bucket);
 	}
 }
 
 SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 {
-	var remote    = new Object();
-	var bucket    = null;
-	var indexSuo  = null;
 	var nextEvent = 'evNext';
 	var msg       = "";
-	var is_noop   = false;
 	var context   = this;
 	var fn        = function(sourceid, bucket) { return (context.state.sources[sourceid]['format'] == FORMAT_GD); }
+	var remote    = null;
 	var sourceid, sourceid_winner, sourceid_target, suo, luid_winner, luid_target, properties, contact, zfcTarget, zfiTarget, zfiGid;
+	var type, key_suo;
 
 	this.state.stopwatch.mark(state);
 
 	if (!this.state.stopFailCode)
-		for (sourceid in this.state.sources)
-			if (this.state.sources[sourceid]['format'] == FORMAT_GD)
-				for (var i = 0; i < ORDER_SOURCE_UPDATE.length && !bucket; i++)
-					if (isPropertyPresent(this.state.aSuo[sourceid], ORDER_SOURCE_UPDATE[i]))
-						for (indexSuo in this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]])
+		for ([key_suo, suo] in this.state.m_suo_iterator.iterator(fn))
 	{
-		this.state.m_logger.debug("entryActionUpdateGd: " +
-				" opcode: " + Suo.opcodeAsString(ORDER_SOURCE_UPDATE[i] & Suo.MASK) +
-				" type: "   + FeedItem.typeAsString(ORDER_SOURCE_UPDATE[i] & FeedItem.TYPE_MASK) +
-		        " indexSuo: " + indexSuo +
-				" suo: "  + suo.toString());
-
-		suo             = this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo];
+		type            = this.feedItemTypeFromGid(suo.gid, suo.sourceid_winner);
 		sourceid_winner = suo.sourceid_winner;
 		sourceid_target = suo.sourceid_target;
 		zfcTarget       = this.zfc(suo.sourceid_target);
 		zfiGid          = this.state.zfcGid.get(suo.gid);
 		luid_winner     = zfiGid.get(suo.sourceid_winner);
 
-		switch(ORDER_SOURCE_UPDATE[i])
+		this.state.m_logger.debug("entryActionUpdateGd: " +
+				" opcode: " + suo.opcodeAsString() +
+				" type: "   + FeedItem.typeAsString(type) +
+				" suo: "    + suo.toString());
+
+		switch(suo.opcode | type)
 		{
 			case Suo.ADD | FeedItem.TYPE_CN:
 				msg           += " about to add contact: ";
 				properties     = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
-				contact = new ContactGoogle();
-
 				if (this.state.gd_is_sync_postal_address)
 					ContactGoogle.addWhitespaceToPostalProperties(properties);
 
+				contact            = new ContactGoogle();
 				contact.properties = properties;
 				contact.groups     = [ this.state.m_gd_my_contacts_group_id ];
 
+				remote = new Object();
 				remote.method  = "POST";
 				remote.url     = this.state.gd_url_base;
 				remote.headers = newObject("Content-type", "application/atom+xml");
 				remote.body    = contact.toStringXml();
 				remote.sourceid_winner = sourceid_winner;
 				remote.luid_winner     = luid_winner;
-				bucket         = ORDER_SOURCE_UPDATE[i];
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_CN:
@@ -6362,19 +6296,18 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					zfiTarget  = zfcTarget.get(luid_target);
 					msg       += " the local mod doesn't affect the remote contact - skip remote update: " + aToString(properties_pre_update);
 					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
-					delete this.state.aSuo[sourceid][ORDER_SOURCE_UPDATE[i]][indexSuo];
-					nextEvent = 'evRepeat';
-					is_noop   = true;
+					delete this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
+					// ... a no-op ... loop around again
 				}
 				else
 				{
+					remote = new Object();
 					remote.method  = "POST";  // POST // PUT
 					remote.url     = gdAdjustHttpHttps(contact.meta.edit);
 					remote.headers = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT", "If-Match", "*");
 					remote.body    = contact.toStringXml();
 					remote.sourceid_winner = sourceid_winner;
 					remote.luid_winner     = luid_winner;
-					bucket         = ORDER_SOURCE_UPDATE[i];
 				}
 				break;
 
@@ -6383,34 +6316,31 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				luid_target    = zfiGid.get(sourceid_target);
 				zfiTarget      = zfcTarget.get(luid_target);
 
+				remote = new Object();
 				remote.method  = "POST"; // POST DELETE
 				remote.url     = gdAdjustHttpHttps(zfiTarget.get(FeedItem.ATTR_EDIT));
 				remote.headers = newObject("X-HTTP-Method-Override", "DELETE", "If-Match", "*");
 				remote.body    = null;
-				bucket         = ORDER_SOURCE_UPDATE[i];
 				break;
 
 			default:
-				zinAssertAndLog(false, "unmatched case: " + ORDER_SOURCE_UPDATE[i]);
+				zinAssertAndLog(false, "unmatched case: " + (suo.opcode | type));
 		}
 
-		if (bucket || is_noop)
+		if (remote)
 			break;
 	}
 
-	if (msg != "")
-		this.state.m_logger.debug("entryActionUpdateGd: " + msg);
+	this.state.m_logger.debug("entryActionUpdateGd: " + msg);
 
 	this.state.remote_update_package = null;
 
-	if (bucket && !is_noop)
+	if (remote)
 	{
-		this.state.remote_update_package = newObject('sourceid', sourceid, 'bucket', bucket, 'indexSuo', indexSuo, 'remote', remote);
+		this.state.remote_update_package = newObject('key_suo', key_suo, 'remote', remote);
 
-		this.state.m_logger.debug("entryActionUpdateGd: remote_update_package: " +
-		                          " sourceid: " + sourceid + " bucket: " + bucket + " indexSuo: " + indexSuo +
+		this.state.m_logger.debug("entryActionUpdateGd: remote_update_package: " + " key_suo: " + aToString(key_suo) +
 								  " remote.method: " + remote.method + " remote.url: " + remote.url);
-
 
 		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_YES);
 
@@ -6431,7 +6361,8 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 	var remote_update_package = this.state.remote_update_package;
 	var is_response_processed = false;
-	var suo       = this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
+	var key_suo   = remote_update_package.key_suo;
+	var suo       = this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
 	var zfiGid    = this.state.zfcGid.get(suo.gid);
 	var zfcTarget = this.zfc(suo.sourceid_target);
 	var response  = this.state.m_http.response();
@@ -6440,8 +6371,8 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 	this.debug("exitActionUpdateGd: " + remote_update_package.remote.method + " " + remote_update_package.remote.url);
 
 	if (this.state.m_http.is_http_status(HTTP_STATUS_2xx) ||
-	    (remote_update_package.bucket == (Suo.DEL | FeedItem.TYPE_CN) && this.state.m_http.is_http_status(HTTP_STATUS_404_NOT_FOUND)))
-		switch (remote_update_package.bucket)
+	    (key_suo.bucket == (Suo.DEL | FeedItem.TYPE_CN) && this.state.m_http.is_http_status(HTTP_STATUS_404_NOT_FOUND)))
+		switch (key_suo.bucket)
 		{
 			case Suo.ADD | FeedItem.TYPE_CN:
 				if (this.state.m_http.is_http_status(HTTP_STATUS_201_CREATED))
@@ -6506,7 +6437,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				break;
 
 			default:
-				zinAssertAndLog(false, "unmatched case: " + remote_update_package.bucket);
+				zinAssertAndLog(false, "unmatched case: " + key_suo.bucket);
 		}
 
 	if (!is_response_processed)
@@ -6522,7 +6453,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 	}
 
 	if (is_response_processed)
-		delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket][remote_update_package.indexSuo];
+		delete this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
 	else
 	{
 		msg += " the update operation wasn't successful";
@@ -6530,10 +6461,10 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 	this.state.m_logger.debug(msg);
 
-	if (isObjectEmpty(this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket]))
+	if (isObjectEmpty(this.state.aSuo[key_suo.sourceid][key_suo.bucket]))
 	{
-		delete this.state.aSuo[remote_update_package.sourceid][remote_update_package.bucket];  // delete empty buckets
-		this.state.m_logger.debug("deleted aSuo sourceid: " + sourceid + " bucket: " + remote_update_package.bucket);
+		delete this.state.aSuo[key_suo.sourceid][key_suo.bucket];  // delete empty buckets
+		this.state.m_logger.debug("deleted aSuo sourceid: " + key_suo.sourceid + " bucket: " + key_suo.bucket);
 	}
 }
 

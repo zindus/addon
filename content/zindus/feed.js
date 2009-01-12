@@ -173,6 +173,8 @@ FeedCollection.prototype.forEachGenerator = function(functor, yield_count) // do
 	var count   = 0;
 	var fContinue, key;
 
+	zinAssert(this.m_collection);
+
 	for (key in this.m_collection)
 	{
 		fContinue = this.forEachDoOne(functor, key, flavour);

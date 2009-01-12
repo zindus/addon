@@ -38,6 +38,15 @@ Suo.bimap_opcode_UI = new BiMap(
 	[ Suo.ADD,   Suo.MOD,      Suo.DEL      ],
 	[ 'suo.add', 'suo.modify', 'suo.delete' ]);  // these are string ids from zindus.properties
 
+Suo.ORDER_SOURCE_UPDATE = [
+	Suo.MOD | FeedItem.TYPE_FL, Suo.MOD | FeedItem.TYPE_SF,
+	Suo.ADD | FeedItem.TYPE_FL, Suo.ADD | FeedItem.TYPE_SF, 
+	Suo.DEL | FeedItem.TYPE_CN,
+	Suo.MOD | FeedItem.TYPE_CN,
+	Suo.ADD | FeedItem.TYPE_CN,
+	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF
+];
+
 function Suo(gid, sourceid_winner, sourceid_target, opcode)
 {
 	this.gid             = gid;
@@ -69,6 +78,36 @@ Suo.opcodeAsStringForUI = function(opcode)
 	return stringBundleString(Suo.bimap_opcode_UI.lookup(opcode));
 }
 
+// return a comparison function for use with SuoIterator
+//
+Suo.match_with_bucket = function() {
+	var args = new Array();
+	for (var i = 0; i < arguments.length; i++)
+		args.push(arguments[i]);
+	var fn = function(sourceid, bucket) {
+		var ret = false;
+		for (var i = 0; i < args.length && !ret; i++)
+			ret = (bucket == args[i])
+		return ret;
+		};
+	return fn;
+}
+
+function SuoKey(sourceid, bucket, id)
+{
+	this.sourceid = sourceid ? sourceid : null;
+	this.bucket   = bucket   ? bucket   : null;
+	this.id       = id       ? id       : null;
+}
+
+SuoKey.prototype = {
+	toString : function() {
+		return "sourceid: " + this.sourceid +
+		       " bucket: "  + Suo.opcodeAsString(this.bucket & Suo.MASK) + '|' + FeedItem.typeAsString(this.bucket & FeedItem.TYPE_MASK) +
+	           " id: "      + this.id;
+	}
+};
+
 function SuoIterator(aSuo) {
 	if (aSuo)
 		this.iterator(null, aSuo)
@@ -82,16 +121,16 @@ iterator: function(fn, aSuo) {
 	return this;
 },
 __iterator__: function(is_keys_only) {
-	var i, id, bucket, sourceid, suo, is_do;
-	var key = { sourceid: null, bucket: null, id: null };
+	var i, id, bucket, sourceid, is_do;
+	var key = new SuoKey();
 
 	zinAssert(this.m_fn && this.m_a_suo);
 
 	for (sourceid in this.m_a_suo)
 		if (sourceid in this.m_a_suo)
-			for (i = 0; i < ORDER_SOURCE_UPDATE.length; i++)
+			for (i = 0; i < Suo.ORDER_SOURCE_UPDATE.length; i++)
 			{
-				bucket = ORDER_SOURCE_UPDATE[i];
+				bucket = Suo.ORDER_SOURCE_UPDATE[i];
 				is_do  = false;
 
 				if (bucket in this.m_a_suo[sourceid])
@@ -100,12 +139,12 @@ __iterator__: function(is_keys_only) {
 				if (is_do)
 					for (id in this.m_a_suo[sourceid][bucket])
 					{
-						suo = this.m_a_suo[sourceid][bucket][id];
+						let suo = this.m_a_suo[sourceid][bucket][id];
 						key.sourceid = sourceid;
 						key.bucket   = bucket;
 						key.id       = id;
-						logger().debug("SuoIterator: AMHERE: yielding key: " + aToString(key) + " suo: " + suo.toString());
-						yield is_keys_only ? suo : [ key, suo ];
+						logger().debug("SuoIterator: AMHERE: yielding key: " + key.toString() + " suo: " + suo.toString());
+						yield is_keys_only ? suo : [ cloneObject(key), suo ]; // clone the key so that the user can keep a reference
 					}
 			}
 }
