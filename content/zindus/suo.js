@@ -23,7 +23,6 @@
 
 // suo == Source Update Operation
 //
-
 Suo.ADD  = 0x10; // these are OR-ed with FeedItem.TYPE_*
 Suo.MOD  = 0x20;
 Suo.DEL  = 0x40;
@@ -39,12 +38,12 @@ Suo.bimap_opcode_UI = new BiMap(
 	[ 'suo.add', 'suo.modify', 'suo.delete' ]);  // these are string ids from zindus.properties
 
 Suo.ORDER_SOURCE_UPDATE = [
+	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF,
 	Suo.MOD | FeedItem.TYPE_FL, Suo.MOD | FeedItem.TYPE_SF,
 	Suo.ADD | FeedItem.TYPE_FL, Suo.ADD | FeedItem.TYPE_SF, 
 	Suo.DEL | FeedItem.TYPE_CN,
 	Suo.MOD | FeedItem.TYPE_CN,
-	Suo.ADD | FeedItem.TYPE_CN,
-	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF
+	Suo.ADD | FeedItem.TYPE_CN
 ];
 
 function Suo(gid, sourceid_winner, sourceid_target, opcode)

@@ -4560,10 +4560,12 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 // whereas with Zimbra, the contacts aren't deleted, they're in the Trash and get removed from the source map + gid because
 // they're no longer of interest.
 //
-SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
+SyncFsm.prototype.removeContactOpsWhenFolderIsBeingDeleted = function()
 {
+	// var fn              = function (sourceid, bucket) { return bucket == (Suo.MOD | FeedItem.TYPE_CN) || (Suo.DEL | FeedItem.TYPE_CN); }
+	var fn              = function (sourceid, bucket) { return bucket & FeedItem.TYPE_CN; }
 	var a_suo_to_delete = new Array();
-	var msg = "";
+	var msg             = "";
 	var key, suo;
 
 	zinAssert(this.formatPr() == FORMAT_ZM);
@@ -4573,16 +4575,32 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 	for (suo in this.state.m_suo_iterator.iterator(Suo.match_with_bucket(Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF)))
 		this.state.a_folders_deleted[suo.gid] = new Array();
 
-	for ([key, suo] in this.state.m_suo_iterator.iterator(Suo.match_with_bucket(Suo.DEL | FeedItem.TYPE_CN)))
+	for ([key, suo] in this.state.m_suo_iterator.iterator(fn))
 	{
-		let luid_target  = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
-		let l_target     = SyncFsm.keyParentRelevantToGid(this.zfc(suo.sourceid_target), luid_target);
-		let gid_l_target = this.state.aReverseGid[suo.sourceid_target][l_target];
-
-		if (gid_l_target in this.state.a_folders_deleted)
+		if (key.bucket & Suo.ADD)
 		{
-			this.state.a_folders_deleted[gid_l_target].push(suo);
-			a_suo_to_delete.push(key);
+			// we don't expect to see contacts being added to folders that are being deleted:
+			// a) Thunderbird: this can't happen
+			// b) Zimbra: we should be ignoring any new contacts in folders that aren't of interest
+			// c) Google: n/a
+			//
+			let luid_winner  = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
+			let l_winner     = SyncFsm.keyParentRelevantToGid(this.zfc(suo.sourceid_winner), luid_winner);
+			let gid_l_winner = this.state.aReverseGid[suo.sourceid_winner][l_winner];
+
+			zinAssertAndLog(!(gid_l_winner in this.state.a_folders_deleted), function() { return key.toString(); });
+		}
+		else
+		{
+			let luid_target  = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+			let l_target     = SyncFsm.keyParentRelevantToGid(this.zfc(suo.sourceid_target), luid_target);
+			let gid_l_target = this.state.aReverseGid[suo.sourceid_target][l_target];
+
+			if (gid_l_target in this.state.a_folders_deleted)
+			{
+				this.state.a_folders_deleted[gid_l_target].push(suo);
+				a_suo_to_delete.push(key);
+			}
 		}
 	}
 
@@ -4592,85 +4610,9 @@ SyncFsm.prototype.removeContactDeletesWhenFolderIsBeingDeleted = function()
 		delete this.state.aSuo[key.sourceid][key.bucket][key.id];
 	}
 
-	this.debug("removeContactDeletesWhenFolderIsBeingDeleted: " +
+	this.debug("removeContactOpsWhenFolderIsBeingDeleted: " +
 				" \n removed these keys from aSuo: " + a_suo_to_delete.toString() +
 	            " \n a_folders_deleted: " + aToString(this.state.a_folders_deleted));
-}
-
-// Test that no folder names have both an ADD and/or MOD and/or DEL operation
-//
-// If there is, we give up convergence because:
-// we apply the operations in a fixed order, namely MOD, then ADD then DEL, and:
-// - if there's a ADD+DEL then almost certainly the user did DEL followed by ADD so we'd be applying them in the wrong order
-// - if there's a MOD+DEL then the user might have deleted x then renamed y to x (ie DEL then MOD)
-//   but we'd rename y to x giving two x's then we'd try to delete the first x which would work ok with Zimbra but not
-//   with thunderbird because don't delete tb addressbooks by luid (ie uri), we delete them by name and we lose name-uniqueness we're
-//   screwed.
-//
-// The underlying the ADD+DEL vs DEL+ADD is that we're not an operation-based synchronizser, so we don't really know the order in
-// which the original operations took place.  We could probably make intelligent guesses, but it's safer to 
-// give up consistency.  And after all, how often are:
-// - zimbra users going to do: DEL addressbook X/flush trash/ADD addressbook X
-// - tb     users going to do: DEL addressbook X/ADD addressbook X
-//
-// TODO: revisit the order in which we process operations
-// I think if removeContactDeletesWhenFolderIsBeingDeleted is extended to also remove contacts being modified in folders
-// that are being deleted, then we can change order of iteration to DEL|FL MOD|FL ADD|FL which might
-// avoid the need for this method altoghether.
-// 
-SyncFsm.prototype.testForConflictingUpdateOperations = function()
-{
-	var context = this;
-	var a_name  = new Object(); // a_name[sourceid][folder-name] == 1 or 2;
-	var msg     = "";
-	var key, suo;
-
-	zinAssert(this.formatPr() == FORMAT_ZM);
-
-	function count_folder_names() {
-		// When working out a name:
-		// - if it's an ADD or MOD, then use winner, but if it's DEL, then use target because the winner's name might have changed
-		//   eg when a zimbra folder gets moved into trash it may also get renamed to avoid clashes.
-		// - names are normalised into thunderbird's namespace so that we match zimbra: fred with thunderbird: zindus/fred
-		//
-		let is_name_from_winner = Boolean(key.bucket & (Suo.ADD | Suo.MOD));
-		let sourceid            = is_name_from_winner ? suo.sourceid_winner : suo.sourceid_target;
-		let format              = context.state.sources[sourceid]['format'];
-		let luid                = context.state.zfcGid.get(suo.gid).get(sourceid);
-		let name                = context.state.m_folder_converter.convertForPublic(FORMAT_TB, format, context.zfc(sourceid).get(luid));
-		logger().debug("AMHEREX: " +
-			" key.bucket: " + key.bucket +
-			" is_name_from_winner: " + is_name_from_winner +
-			" name: " + name + " from: sourceid: " + sourceid + " key: " + key.toString());
-
-		if (!(suo.sourceid_target in a_name))
-			a_name[suo.sourceid_target] = new Object();
-
-		if (name in a_name[suo.sourceid_target])
-			a_name[suo.sourceid_target][name]++;
-		else
-			a_name[suo.sourceid_target][name]=1;
-	}
-
-	var fn = function (sourceid, bucket) { return bucket & (FeedItem.TYPE_FL | FeedItem.TYPE_SF); }
-
-	for ([key, suo] in this.state.m_suo_iterator.iterator(fn))
-		count_folder_names();
-
-	bigloop:
-		for (var sourceid in a_name)
-			for (var name in a_name[sourceid])
-				if (a_name[sourceid][name] >= 2)
-				{
-					this.state.stopFailCode    = 'failon.folder.source.update';
-					this.state.stopFailArg     = [ name ];
-					this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
-					break bigloop;
-				}
-
-	this.debug("testForConflictingUpdateOperations: anything >= 2 implies failure: " + aToString(a_name));
-
-	return this.state.stopFailCode == null;
 }
 
 SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid)
@@ -4701,7 +4643,7 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid)
 		}
 	}
 
-	// this.state.m_logger.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid=" + luid + " returns: " + ret);
+	// this.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid=" + luid + " returns: " + ret);
 
 	return ret;
 }
@@ -4744,7 +4686,7 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 		var luid     = this.state.zfcGid.get(gid).get(sourceid);
 		var zfi      = zfc.get(luid);
 
-		if (zfi.type() == FeedItem.TYPE_FL && !zfi.isPresent(FeedItem.ATTR_DEL))
+		if (zfi.type() == FeedItem.TYPE_FL && !zfi.isPresent(FeedItem.ATTR_DEL) && SyncFsm.isOfInterest(zfc, luid))
 		{
 			zinAssert(zfi.isPresent(FeedItem.ATTR_NAME));
 
@@ -5273,13 +5215,11 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 		if (this.formatPr() == FORMAT_ZM)
 		{
-			this.state.stopwatch.mark(state + " Converge: removeContactDeletesWhenFolderIsBeingDeleted: " + this.state.m_progress_count++);
+			this.state.stopwatch.mark(state + " Converge: removeContactOpsWhenFolderIsBeingDeleted: " + this.state.m_progress_count++);
 			this.state.m_progress_yield_text = "prepare-to-update";
 			yield true;
 
-			this.removeContactDeletesWhenFolderIsBeingDeleted(); // 9. remove contact deletes when folder is being deleted
-
-			passed = this.testForConflictingUpdateOperations();  // 10. abort if any update operations could lead to potential inconsistency
+			this.removeContactOpsWhenFolderIsBeingDeleted(); // 9. remove contact deletes when folder is being deleted
 		}
 	}
 
@@ -5676,7 +5616,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 					this.state.m_addressbook.deleteAddressBook(uri);
 					zfcTarget.get(luid_target).set(FeedItem.ATTR_DEL, 1);
 
-					// partner with removeContactDeletesWhenFolderIsBeingDeleted...
+					// partner with removeContactOpsWhenFolderIsBeingDeleted...
 					// mark as deleted any contacts that are children of the deleted addressbook
 					// and leave the map as if the contacts were actually deleted (which they are!)
 					//
@@ -6185,7 +6125,6 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				let luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 				let zfcTarget = this.zfc(suo.sourceid_target);
 
-				// TODO - where does zfcTarget get set? - must test this
 				if (zfcTarget.get(luid_target).isForeign())
 				{
 					xpath_query = "/soap:Envelope/soap:Body/z:BatchResponse";
