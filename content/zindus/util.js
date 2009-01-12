@@ -689,11 +689,12 @@ function zmPermFromZfi(zfi)
 	return ret;
 }
 
-function arrayfromArguments(args, start_at)
+function arrayFromArguments(args, start_at)
 {
 	var ret = new Array();
+	var start = start_at ? start_at : 0;
 
-	for (var i = start_at; i < args.length; i++)
+	for (var i = start; i < args.length; i++)
 		ret.push(args[i]);
 
 	return ret;

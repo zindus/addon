@@ -80,9 +80,7 @@ Suo.opcodeAsStringForUI = function(opcode)
 // return a comparison function for use with SuoIterator
 //
 Suo.match_with_bucket = function() {
-	var args = new Array();
-	for (var i = 0; i < arguments.length; i++)
-		args.push(arguments[i]);
+	var args = arrayFromArguments(arguments);
 	var fn = function(sourceid, bucket) {
 		var ret = false;
 		for (var i = 0; i < args.length && !ret; i++)

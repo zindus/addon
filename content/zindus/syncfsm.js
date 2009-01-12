@@ -4549,12 +4549,12 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	return aSuoResult;
 }
 
-// Background: ORDER_SOURCE_UPDATE specifies that contact delete is processed before folder delete.
-// The main reason to remove Suo's that delete contacts when there is already a Suo to delete the parent folder is:
+// Here we remove Suo's that delete contacts when there is already a Suo to delete the parent folder because:
 // - When we move the folder to Trash, the contacts remain in the parent folder in the trash
 //   If we deleted the contacts first, we'd lose the parent-child relationship between contact and folder in the Zimbra Trash.
-// Similar reasoning applies to shared folders and their contacts.
+// Likewise for shared folders and their contacts.
 // It's also a performance optimisation.
+// And if we wanted to process folder delete before contact delete we'd have to do this.
 // There's matching code in UpdateTb that mark the contacts whose DEL suo's have been removed as deleted
 // UpdateZm doesn't have analoguos code because with Tb, when the folder is deleted, the contacts are really deleted,
 // whereas with Zimbra, the contacts aren't deleted, they're in the Trash and get removed from the source map + gid because
@@ -4562,7 +4562,6 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 //
 SyncFsm.prototype.removeContactOpsWhenFolderIsBeingDeleted = function()
 {
-	// var fn              = function (sourceid, bucket) { return bucket == (Suo.MOD | FeedItem.TYPE_CN) || (Suo.DEL | FeedItem.TYPE_CN); }
 	var fn              = function (sourceid, bucket) { return bucket & FeedItem.TYPE_CN; }
 	var a_suo_to_delete = new Array();
 	var msg             = "";
@@ -4614,6 +4613,73 @@ SyncFsm.prototype.removeContactOpsWhenFolderIsBeingDeleted = function()
 				" \n removed these keys from aSuo: " + a_suo_to_delete.toString() +
 	            " \n a_folders_deleted: " + aToString(this.state.a_folders_deleted));
 }
+
+
+// Test that no folder names have both an ADD and/or MOD and/or DEL operation
+//
+// If there is, we give up convergence because:
+// we apply the operations in a fixed order, namely MOD, then ADD then DEL, and:
+// - if there's a ADD+DEL then almost certainly the user did DEL followed by ADD so we'd be applying them in the wrong order
+// - if there's a MOD+DEL then the user might have deleted x then renamed y to x (ie DEL then MOD)
+//   but we'd rename y to x giving two x's then we'd try to delete the first x which would work ok with Zimbra but not
+//   with thunderbird because we don't delete tb addressbooks by luid (ie uri), we delete them by name and we lose name-uniqueness we're
+//   screwed.  Also, the set of tb addressbooks would temporarily be in an inconsistent state, which is undesirable.
+//
+SyncFsm.prototype.testForConflictingUpdateOperations = function()
+{
+	var context = this;
+	var a_name  = new Object(); // a_name[sourceid][folder-name] == 1 or 2;
+	var msg     = "";
+	var key, suo;
+
+	zinAssert(this.formatPr() == FORMAT_ZM);
+
+	function count_folder_names() {
+		// When working out a name:
+		// - if it's an ADD or MOD, then use winner, but if it's DEL, then use target because the winner's name might have changed
+		//   eg when a zimbra folder gets moved into trash it may also get renamed to avoid clashes.
+		// - names are normalised into thunderbird's namespace so that we match zimbra: fred with thunderbird: zindus/fred
+		//
+		let is_name_from_winner = Boolean(key.bucket & (Suo.ADD | Suo.MOD));
+		let sourceid            = is_name_from_winner ? suo.sourceid_winner : suo.sourceid_target;
+		let format              = context.state.sources[sourceid]['format'];
+		let luid                = context.state.zfcGid.get(suo.gid).get(sourceid);
+		let name                = context.state.m_folder_converter.convertForPublic(FORMAT_TB, format, context.zfc(sourceid).get(luid));
+		logger().debug("AMHEREX: " +
+			" key.bucket: " + key.bucket +
+			" is_name_from_winner: " + is_name_from_winner +
+			" name: " + name + " from: sourceid: " + sourceid + " key: " + key.toString());
+
+		if (!(suo.sourceid_target in a_name))
+			a_name[suo.sourceid_target] = new Object();
+
+		if (name in a_name[suo.sourceid_target])
+			a_name[suo.sourceid_target][name]++;
+		else
+			a_name[suo.sourceid_target][name]=1;
+	}
+
+	var fn = function (sourceid, bucket) { return bucket & (FeedItem.TYPE_FL | FeedItem.TYPE_SF); }
+
+	for ([key, suo] in this.state.m_suo_iterator.iterator(fn))
+		count_folder_names();
+
+	bigloop:
+		for (var sourceid in a_name)
+			for (var name in a_name[sourceid])
+				if (a_name[sourceid][name] >= 2)
+				{
+					this.state.stopFailCode    = 'failon.folder.source.update';
+					this.state.stopFailArg     = [ name ];
+					this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
+					break bigloop;
+				}
+
+	this.debug("testForConflictingUpdateOperations: anything >= 2 implies failure: " + aToString(a_name));
+
+	return this.state.stopFailCode == null;
+}
+
 
 SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid)
 {
@@ -5200,17 +5266,15 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		this.state.m_progress_yield_text = "winners";
 		yield true;
 
-		let aSuoWinners = this.suoBuildWinners(this.state.aGcs);   // 6.  generate operations required to bring meta-data for winners up to date
+		let aSuoWinners = this.suoBuildWinners(this.state.aGcs);   // 6.  generate ops required to bring meta-data for winners up to date
 
-		this.suoRunWinners(aSuoWinners);                       // 7.  run the operations that update winner meta-data
+		this.suoRunWinners(aSuoWinners);                           // 7.  run the ops that update winner meta-data
 
 		this.state.stopwatch.mark(state + " Converge: suoBuildLosers: " + this.state.m_progress_count++);
 		this.state.m_progress_yield_text = "losers";
 		yield true;
 
-		this.state.m_progress_yield_text = null;
-
-		this.state.aSuo = this.suoBuildLosers(this.state.aGcs);// 8.  generate the operations required to bring the losing sources up to date
+		this.state.aSuo = this.suoBuildLosers(this.state.aGcs);   // 8. generate the ops required to bring the losing sources up to date
 		this.state.m_suo_iterator = new SuoIterator(this.state.aSuo);
 
 		if (this.formatPr() == FORMAT_ZM)
@@ -5219,7 +5283,9 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 			this.state.m_progress_yield_text = "prepare-to-update";
 			yield true;
 
-			this.removeContactOpsWhenFolderIsBeingDeleted(); // 9. remove contact deletes when folder is being deleted
+			this.removeContactOpsWhenFolderIsBeingDeleted();     // 9. remove contact ops when folder is being deleted
+
+			passed = this.testForConflictingUpdateOperations();  // 10. abort if any update ops could lead to potential inconsistency
 		}
 	}
 
@@ -7097,7 +7163,7 @@ SyncFsm.prototype.setupHttpZm = function(state, eventOnResponse, url, zid, metho
 	this.state.m_http = new HttpStateZm(url, this.state.m_logger);
 	this.state.m_http.m_method = method;
 	this.state.m_http.m_zsd.context(this.state.authToken, zid, (method != "ForeignContactDelete"));
-	this.state.m_http.m_zsd[method].apply(this.state.m_http.m_zsd, arrayfromArguments(arguments, SyncFsm.prototype.setupHttpZm.length));
+	this.state.m_http.m_zsd[method].apply(this.state.m_http.m_zsd, arrayFromArguments(arguments, SyncFsm.prototype.setupHttpZm.length));
 
 	this.setupHttpCommon(state, eventOnResponse);
 }
