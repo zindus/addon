@@ -1762,12 +1762,21 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	zinAssert(tb_properties["HomeAddress"] == zinTrim(convertCER(entity_str, CER_TO_CHAR)));
 
+	// test addWhitespaceToPostalProperties
+	//
+	contact = new_contact(this.m_address_as_xml_entity);
+	zinAssert(contact.isAnyPostalAddressInXml());
+	gd_properties = cloneObject(contact.properties);
+	// this.m_logger.debug("addWhitespaceToPostalProperties: before: " + aToString(gd_properties));
+	var properties_with_postal_whitespace = ContactGoogle.addWhitespaceToPostalProperties(gd_properties);
+	// this.m_logger.debug("addWhitespaceToPostalProperties: after: " + aToString(properties_with_postal_whitespace));
+	zinAssert(new RegExp(' ' + this.m_street1 + ' ').test(properties_with_postal_whitespace['postalAddress_home']))
+	zinAssert(gd_properties['email1'] == properties_with_postal_whitespace['email1']);
+
 	this.m_logger.debug("testContactGooglePostalAddress: end");
 
 	return true;
 }
-
-
 
 // test that all "system" and "general" preferences have a value in the default branch
 //

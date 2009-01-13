@@ -637,7 +637,7 @@ GoogleRuleEmpty.prototype.updateView = function()
 
 	for (luid in this.m_grd.m_empty)
 	{
-		checkbox = dId(luid);
+		let checkbox = dId(luid);
 
 		if (checkbox && checkbox.checked)
 		{
@@ -686,7 +686,7 @@ GoogleRuleEmpty.prototype.refreshRows = function()
 
 		row = document.createElement("row");
 
-		checkbox = document.createElement("checkbox");
+		var checkbox = document.createElement("checkbox");
 		checkbox.setAttribute("label", value);
 		checkbox.id = luid;
 

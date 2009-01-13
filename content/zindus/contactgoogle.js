@@ -461,17 +461,17 @@ ContactGoogle.textToContacts = function(text, a_contact, mode) {
 }
 
 ContactGoogle.addWhitespaceToPostalProperties = function(properties) {
-	var i, is_sane, a_gac_properties;
+	var properties_out = cloneObject(properties);
 
 	with (ContactGoogleStatic) {
 		var a_suffix = a_fragment['postalAddress'];
 
-		for (i = 0; i < a_suffix.length; i++) {
+		for (var i = 0; i < a_suffix.length; i++) {
 			let key = get_hyphenation('postalAddress', a_suffix[i])
 
 			if (key in properties) {
-				a_gac_properties   = new Object();
-				is_sane = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
+				let a_gac_properties = new Object();
+				let is_sane          = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
 
 				zinAssertAndLog(is_sane, function() { return "key: " + key + " properties: " + aToString(properties); } );
 
@@ -482,6 +482,8 @@ ContactGoogle.addWhitespaceToPostalProperties = function(properties) {
 			}
 		}
 	}
+
+	return properties_out;
 }
 
 ContactGoogle.transformTbProperties = function(transform, properties)
