@@ -22,7 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 function ContactGoogle(xml, mode) {
-	this.m_entry      = xml ? xml : ContactGoogleStatic.newEntry();
+	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry();
 	this.m_mode       = mode ? mode : ContactGoogle.ePostal.kDisabled;
 	this.m_properties = null;             // associative array populated by the getter
 	this.m_groups     = null;             //             array populated by the getter
@@ -271,7 +271,7 @@ set properties (properties) {
 
 		for (key in cgopi.iterator(properties))
 			if (!(key in a_is_used)) {
-				logger().debug("properties setter: adding key: " + key);
+				// logger().debug("properties setter: adding key: " + key);
 
 				switch(key) {
 				case "title":
@@ -325,7 +325,7 @@ postalAddressModifyFields : function(properties, a_is_used) {
 		let a_suffix = a_fragment['postalAddress'];
 
 		for (var i = 0; i < a_suffix.length; i++) {
-			let tmp = this.m_entry.ns::['postalAddress'].(@rel==get_rel(a_suffix[i]));
+			let tmp = this.m_entry.nsGd::['postalAddress'].(@rel==get_rel(a_suffix[i]));
 
 			if (tmp.length() > 0)
 				this.postalAddressModifyField(tmp[0], properties, a_suffix[i], a_is_used);
@@ -354,7 +354,7 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 			if (otheraddr && otheraddr.length > 0) // the postalAddress of the contact is xml
 				a_gac_properties["otheraddr"] = otheraddr;
 			else if (otheraddr == null)            // the postalAddress of the contact is text
-				a_gac_properties["otheraddr"] = xml.text();
+				a_gac_properties["otheraddr"] = xml.toString();
 			else
 				;                                  // the postalAddress of the contact is xml with an empty <otheraddr> element
 
@@ -377,7 +377,7 @@ postalAddressOtherAddr : function(key) {
 		var a_in  = newObject('x', str);
 		var a_out = new Object();
 	
-		is_parsed = is_parsed && gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
+		is_parsed = is_parsed && ContactGoogleStatic.gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
 	}
 
 	if (!is_parsed)                                 // it wasn't xml
@@ -386,6 +386,21 @@ postalAddressOtherAddr : function(key) {
 		ret = a_out["otheraddr"];
 	else                                            // it was xml but didn't have an <otheraddr> element
 		ret = "";
+
+	return ret;
+},
+isAnyPostalAddressInXml : function() {
+	var ret = false;
+
+	zinAssert(this.mode() & ContactGoogle.ePostal.kEnabled); // it only makes sense to call this method in this mode
+
+	with (ContactGoogleStatic)
+		for (var i = 0; i < a_fragment.postalAddress.length && !ret; i++) {
+			let key = get_hyphenation('postalAddress', a_fragment.postalAddress[i]);
+
+			if (key in this.properties)
+				ret = (this.postalAddressOtherAddr(key) != null);
+		}
 
 	return ret;
 },
@@ -580,7 +595,7 @@ function ContactGoogleOrderedPropertyIterator(properties) {
 	this.m_properties = null;
 
 	if (properties)
-		this.iterator(properties)
+		this.iterator(properties);
 }
 
 ContactGoogleOrderedPropertyIterator.prototype = {

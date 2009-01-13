@@ -52,6 +52,7 @@ function Suo(gid, sourceid_winner, sourceid_target, opcode)
 	this.sourceid_winner = sourceid_winner;
 	this.sourceid_target = sourceid_target;
 	this.opcode          = opcode;
+	this.is_processed    = false; // used in sanity checking that all operations are processed exactly once
 }
 
 Suo.prototype.toString = function()
@@ -111,11 +112,18 @@ function SuoIterator(aSuo) {
 }
 
 SuoIterator.prototype = {
-iterator: function(fn, aSuo) {
+iterator : function(fn, aSuo) {
 	if (aSuo)
 		this.m_a_suo = aSuo;
 	this.m_fn    = fn;
 	return this;
+},
+generator : function(fn, aSuo) {
+	var key, suo;
+	this.iterator(fn, aSuo);
+	for ([key, suo] in this)
+		yield [key, suo];
+	yield false;
 },
 __iterator__: function(is_keys_only) {
 	var i, id, bucket, sourceid, is_do;

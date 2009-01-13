@@ -221,28 +221,10 @@ ZinMailWindowOverlay.prototype.observe = function(subject, topic, data)
 //
 ZinMailWindowOverlay.prototype.migratePrefs = function()
 {
-	var old, value;
+	var old, value, a_map;
 	var prefs = preferences();
 
-	// delete once confident all users are on version >= 0.6.13
-	// 
-	var a_map = {
-		"general.verboselogging":        { type: 'char', new: "general." + PrefSet.GENERAL_AS_VERBOSE_LOGGING  },
-		"general.verbose_logging":       { type: 'char', new: "general." + PrefSet.GENERAL_AS_VERBOSE_LOGGING  },
-		"general.gdsyncwith":            { type: 'char', new: "general." + PrefSet.GENERAL_GD_SYNC_WITH        },
-		"general.SyncGalEnabled":        { type: 'char', new: "general." + PrefSet.GENERAL_ZM_SYNC_GAL_ENABLED },
-		"system.logfileSizeMax":         { type: 'int',  new: MozillaPreferences.AS_LOGFILE_MAX_SIZE           },
-		"system.timerDelayOnStart":      { type: 'int',  new: MozillaPreferences.AS_TIMER_DELAY_ON_START       },
-		"system.timerDelayOnRepeat":     { type: 'int',  new: MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT      },
-		"system.SyncGalMdInterval":      { type: 'int',  new: MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL       },
-		"system.SyncGalEnabledRecheck":  { type: 'int',  new: MozillaPreferences.ZM_SYNC_GAL_RECHECK           },
-		"system.SyncGalEnabledIfFewer":  { type: 'char', new: MozillaPreferences.ZM_SYNC_GAL_IF_FEWER          },
-		"system.preferSchemeForSoapUrl": { type: 'char', new: MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME      }
-		};
-
 	this.m_logger.debug("migrate old prefs... ");
-
-	migratePrefName(a_map);
 
 	// 0.7.7 replace MANUAL_SYNC_ONLY with AUTO_SYNC
 	//
@@ -321,13 +303,29 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 		prefs.branch().deleteBranch("general.gd_sync_with");
 		prefs.branch().deleteBranch("general.zm_sync_gal_enabled");
 	}
+
+	// 0.8.6
+	// - add gd_suggested = 'include' to google accounts if necessary
+	//
+	if (true)
+	{
+		let accounts = AccountFactory.accountsLoadFromPrefset();
+		let i;
+
+		for (i = 0; i < accounts.length; i++)
+			if ((accounts[i].format_xx() == FORMAT_GD) && (accounts[i].gd_suggested != 'include' || accounts[i].gd_suggested != 'ignore'))
+			{
+				accounts[i].gd_suggested = 'include';
+				accounts[i].save();
+			}
+	}
 }
 
 ZinMailWindowOverlay.prototype.timerStartup = function()
 {
 	var prefs = preferences();
 
-	if (prefs.getCharPrefOrNull(prefs.branch(), "general." + PrefSet.GENERAL_AS_AUTO_SYNC) != "false")
+	if (prefs.getCharPrefOrNull(prefs.branch(), PrefSet.GENERAL + '.' + PrefSet.GENERAL_AS_AUTO_SYNC) != "false")
 	{
 		var delay_on_start     = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_START );
 		this.m_delay_on_repeat = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT );

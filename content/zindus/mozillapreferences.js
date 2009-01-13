@@ -110,6 +110,12 @@ MozillaPreferences.prototype.setCharPref = function(branch, key, value)
 		branch.setCharPref(key, value);
 }
 
+MozillaPreferences.prototype.setBoolPref = function(branch, key, value)
+{
+	if (branch)
+		branch.setBoolPref(key, Boolean(value));
+}
+
 MozillaPreferences.prototype.getPrefReal = function(branch, key, type, mustbepresent)
 {
 	var ret = null;

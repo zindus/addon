@@ -509,7 +509,8 @@ ContactConverter.prototype.gdAddressInput = function(format_to, format_from, pro
 			break;
 
 		case FORMAT_GD:
-			left = rightOfChar(key_from); // "home" or "work"
+			left = rightOfChar(key_from, '_'); // "home" or "work"
+			zinAssertAndLog(left in a_gd_address_fields, left);
 			this.m_gac.convert(properties_from, key_from, a_gd_address_fields[left], GdAddressConverter.ADDR_TO_PROPERTIES );
 			break;
 		default: zinAssert(false);

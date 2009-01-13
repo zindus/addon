@@ -86,6 +86,8 @@ SyncFsmObserver.prototype.buildOp = function(sourceid, stringid)
 
 SyncFsmObserver.prototype.sourceName = function(sourceid)
 {
+	zinAssertAndLog(sourceid in this.state.sources, sourceid);
+
 	return this.state.sources[sourceid]['format'] == FORMAT_TB ? stringBundleString("brand.thunderbird").toLowerCase() :
 	                                                             stringBundleString("brand.server").toLowerCase();
 }
@@ -348,36 +350,38 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 			case 'stUpdateZm':
 			case 'stUpdateGd': {
-				let y, z;
-				let sourceid = null;
+				let max_suos = 0;
 
-				bigloop:
-					for (y in context.state.aSuo[context.state.sourceid_pr])
-						for (z in context.state.aSuo[context.state.sourceid_pr][y])
-						{
-							sourceid = this.state.sourceid_pr;
-							break bigloop;
-						}
+				function count_suos (fn) {
+					var it = new SuoIterator(context.state.aSuo);
+					var ret = 0;
+					for (suo in it.iterator(fn))
+						ret++;
+					return ret;
+				}
 
-				if (sourceid)
+				if (!context.state.m_suo_generator)
+					max_suos = count_suos(function(sourceid, bucket) { return sourceid == context.state.sourceid_pr; });
+
+				if (context.state.m_suo_generator || max_suos > 0)
 				{
-					var op = this.buildOp(sourceid, "put.many");
+					var op = this.buildOp(context.state.sourceid_pr, "put.many");
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
-						let cTotal = 0; // aSuo definitely needs an iterator!
-						for (y in context.state.aSuo[sourceid])
-							for (z in context.state.aSuo[sourceid][y])
-								cTotal++;
-
-						this.progressReportOnSource(sourceid, "put.many", cTotal);
+						this.progressReportOnSource(context.state.sourceid_pr, "put.many", max_suos);
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 					}
 
 					progress_count = this.get(SyncFsmObserver.PROG_CNT) + 1;
 
-					this.set(SyncFsmObserver.PROG_CNT, progress_count);
-					percentage_progress_big_hand = progress_count / this.get(SyncFsmObserver.PROG_MAX);
+					if (progress_count > this.get(SyncFsmObserver.PROG_MAX))
+						ret = false;
+					else
+					{
+						this.set(SyncFsmObserver.PROG_CNT, progress_count);
+						percentage_progress_big_hand = progress_count / this.get(SyncFsmObserver.PROG_MAX);
+					}
 
 				}
 				else
