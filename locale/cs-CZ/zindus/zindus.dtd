@@ -12,6 +12,10 @@
 <!ENTITY zindus.ca.test.connection.label "Test připojení">
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.google.sync.with.pab.label "Osobní kontakty">
+<!ENTITY zindus.ca.google.sync.with.label "Synchronizovat kontakty Google s">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Google navrhla kontakty">
+<!ENTITY zindus.ca.google.suggested.include.label       "Zahrnovat">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorovat">
 <!ENTITY zindus.ca.zimbra.gal.label "Globální kontaky">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Ano">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Ne">
@@ -40,11 +44,6 @@
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 <!ENTITY zindus.gr.title "Neodpovídá pravidlům pro kontakty Google">
 <!ENTITY zindus.gr.button.accept.label "Potvrdit">
-<!ENTITY zindus.gr.button.skip.label "Přeskočit">
-<!ENTITY zindus.gr.column.location.label "Umístění">
-<!ENTITY zindus.gr.column.displayname.label "Zobrazované jméno">
-<!ENTITY zindus.gr.column.email.label "E-mail">
-<!ENTITY zindus.gr.column.summary.label "Rozdíly">
 <!ENTITY zindus.cg.title "Pokročilé nastavení Zindus pro Google">
 <!ENTITY zindus.cg.postal.caption.label "Pole pro korespondenční adresu">
 <!ENTITY zindus.cg.postal.false.label "Nesynchronizováno (doporučeno)">

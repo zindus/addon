@@ -12,6 +12,10 @@
 <!ENTITY zindus.ca.test.connection.label "Verbindung prüfen">
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.google.sync.with.pab.label "Persönliches Adressbuch">
+<!ENTITY zindus.ca.google.sync.with.label               "Synchronisiere Google Kontakte mit">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Kontakte">
+<!ENTITY zindus.ca.google.suggested.include.label       "Include">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorieren">
 <!ENTITY zindus.ca.zimbra.gal.label "Globale Adressliste (GAL):">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Ja">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Nein">
@@ -40,11 +44,6 @@
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 <!ENTITY zindus.gr.title "Regelverletzung von Google Kontakte">
 <!ENTITY zindus.gr.button.accept.label "Bestätigen">
-<!ENTITY zindus.gr.button.skip.label "Überspringen">
-<!ENTITY zindus.gr.column.location.label "Ort">
-<!ENTITY zindus.gr.column.displayname.label "Anzeigenamen">
-<!ENTITY zindus.gr.column.email.label "E-Mail">
-<!ENTITY zindus.gr.column.summary.label "Unterschiede">
 <!ENTITY zindus.cg.title "Zindus zusätzliche Google Einstellungen">
 <!ENTITY zindus.cg.postal.caption.label "Felder Postadresse">
 <!ENTITY zindus.cg.postal.false.label "Nicht synchronisieren (empfohlen)">

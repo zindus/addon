@@ -4,8 +4,7 @@
 <!ENTITY zindus.ca.account.type.label "Sincronizar con">
 <!ENTITY zindus.ca.group.login.details.label "Detalles de Acceso">
 <!ENTITY zindus.ca.group.pap.label "Para esta conta">
-<!ENTITY zindus.ca.url.description.value "Tipo de url a empregar para acceder ó servidor
-<html:br/>exemplo: https://meumail.exemplo.com">
+<!ENTITY zindus.ca.url.description.value "Tipo de url a empregar para acceder ó servidor<html:br/>exemplo: https://meumail.exemplo.com">
 <!ENTITY zindus.ca.url.label "Dirección do Servidor:">
 <!ENTITY zindus.ca.username.description.value "Escribe a túa dirección de email e contasinal que empregas para acceder">
 <!ENTITY zindus.ca.username.label "Dirección de Correo:">
@@ -13,6 +12,10 @@
 <!ENTITY zindus.ca.test.connection.label "Test de Conexión">
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.google.sync.with.pab.label "Axenda de Direccións Persoal">
+<!ENTITY zindus.ca.google.sync.with.label               "Sincronizar contactos de Google con">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Contacts">
+<!ENTITY zindus.ca.google.suggested.include.label       "Include">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignore">
 <!ENTITY zindus.ca.zimbra.gal.label "Lista de Direccións Global (GAL):">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Si">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Non">
@@ -41,11 +44,6 @@
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 <!ENTITY zindus.gr.title "Violacións de Regras dos Contactos de Google">
 <!ENTITY zindus.gr.button.accept.label "Confirmar">
-<!ENTITY zindus.gr.button.skip.label "Saltar">
-<!ENTITY zindus.gr.column.location.label "Ubicación">
-<!ENTITY zindus.gr.column.displayname.label "NomeaAmosar">
-<!ENTITY zindus.gr.column.email.label "Email">
-<!ENTITY zindus.gr.column.summary.label "Diferenzas">
 <!ENTITY zindus.cg.title "Configuracións Avanzadas de Google en Zindus">
 <!ENTITY zindus.cg.postal.caption.label "Campos de Dirección Postal">
 <!ENTITY zindus.cg.postal.false.label "Non Sincronizado (recomendado)">

@@ -17,6 +17,10 @@
 <!ENTITY zindus.ca.test.connection.label                "Test Connection">
 <!ENTITY zindus.ca.test.connection.accesskey            "T">
 <!ENTITY zindus.ca.google.sync.with.pab.label           "Personal Address Book">
+<!ENTITY zindus.ca.google.sync.with.label               "Sync Google Contacts with">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Contacts">
+<!ENTITY zindus.ca.google.suggested.include.label       "Include">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignore">
 <!ENTITY zindus.ca.zimbra.gal.label                     "Global Address List (GAL): ">
 <!ENTITY zindus.ca.zimbra.gal.yes.label                 "Yes">
 <!ENTITY zindus.ca.zimbra.gal.no.label                  "No">
@@ -51,11 +55,6 @@
 <!-- Google Contacts Rule Violation -->
 <!ENTITY zindus.gr.title                                "Google Contacts rule violation">
 <!ENTITY zindus.gr.button.accept.label                  "Confirm">
-<!ENTITY zindus.gr.button.skip.label                    "Skip">
-<!ENTITY zindus.gr.column.location.label                "Location">
-<!ENTITY zindus.gr.column.displayname.label             "DisplayName">
-<!ENTITY zindus.gr.column.email.label                   "Email">
-<!ENTITY zindus.gr.column.summary.label                 "Differences">
 
 <!-- Google Advanced -->
 <!ENTITY zindus.cg.title                                "Zindus Advanced Google Settings">
