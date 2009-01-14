@@ -159,9 +159,14 @@ properties_from_xml: function () {
 			let list = entry.nsGd::im.(@protocol==get_rel('AIM'));
 	
 			if (list.length() > 0)
-				properties['im_AIM'] = list[0].@address;
+				properties['im_AIM'] = list[0].@address.toString();
 		}
 	}
+
+	// TODO this is just while debugging - remove for release
+	if (true)
+		for (i in properties)
+			zinAssertAndLog(typeof(properties[i]) == 'string', i);
 
 	return properties;
 },

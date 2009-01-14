@@ -330,13 +330,11 @@ AddressBookTb2.prototype.newAddressBook = function(name)
 
 AddressBookTb3.prototype.newAddressBook = function(name)
 {
-	var prefkey = this.nsIAbManager().newAddressBook(name, "", kPABDirectory); // TODO - what does this do if it fails?
+	var prefkey = this.nsIAbManager().newAddressBook(name, "", kPABDirectory); // FIXME - what does this do if it fails?
 	var prefs   = new MozillaPreferences("");
 	var uri     = kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
 
 	AddressBook.prototype.newAddressBook.call(this);
-
-	// this.m_logger.debug("blah: prefkey: " + prefkey + " uri: " + uri);
 
 	return new AddressBookImportantProperties(uri, prefkey);
 }
@@ -478,7 +476,7 @@ AddressBookTb3.prototype.deleteCards = function(uri, aCards)
 	return this.deleteCardsArray(dir, cardsArray);
 }
 
-AddressBook.prototype.addCard = function(uri, properties, attributes)
+AddressBookTb2.prototype.addCard = function(uri, properties, attributes)
 {
 	zinAssert(uri != null);
 	zinAssert(properties != null);
@@ -496,13 +494,32 @@ AddressBook.prototype.addCard = function(uri, properties, attributes)
 	return abCard;
 }
 
+AddressBookTb3.prototype.addCard = function(uri, properties, attributes)
+{
+	zinAssert(uri != null);
+	zinAssert(properties != null);
+	zinAssert(attributes != null);
+
+	if (false)
+		this.m_logger.debug("addCard: uri: " + uri + " properties: " + aToString(properties) + " attributes: " + aToString(attributes));
+
+	var dir    = this.nsIAbDirectory(uri);
+	var abCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Ci.nsIAbCard);
+	var key;
+
+	for (key in properties)
+		abCard.setProperty(key, properties[key]);
+
+	for (key in attributes)
+		abCard.setProperty(key, attributes[key]);
+
+	return dir.addCard(abCard);
+}
+
 AddressBook.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
 	var a_field_used = new Object();
 	var key;
-
-	// this.m_logger.debug("updateCard: blah: " + " \n properties: " + aToString(properties) +
-	//                                            "\n card properties: " + aToString(this.getCardProperties(abCard)));
 
 	this.setCardProperties(abCard, uri, properties);
 
@@ -555,11 +572,11 @@ AddressBook.prototype.getCardProperties = function(abCard)
 	var ret = new Object();
 	var i, value;
 
+	// this.m_logger.debug("AddressBook.getCardProperties: abCard:" (abCard ? "non-null" : "null"));
+
 	for (i in this.m_contact_converter.m_map[FORMAT_TB])
 	{
 		value = this.getCardProperty(abCard, i);
-
-		// this.m_logger.debug("AddressBook.getCardProperties: i: " + i + " value: " + value);
 
 		if (value)
 			ret[i] = value;
@@ -762,7 +779,7 @@ AddressBook.prototype.isElemPab = function(elem)
 
 AddressBook.prototype.nsIAbCardToPrintable = function(abCard)
 {
-	return (abCard.isMailList ? abCard.mailListURI : this.getCardProperty(abCard, "PrimaryEmail"));
+	return (abCard.isMailList ? ("mailing list uri: " + abCard.mailListURI) : this.getCardProperty(abCard, "PrimaryEmail"));
 }
 
 AddressBook.prototype.nsIAbCardToPrintableVerbose = function(abCard)

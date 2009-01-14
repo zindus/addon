@@ -21,9 +21,6 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-// suo == Source Update Operation
-//
-
 function StopWatch(prefix)
 {
 	this.m_prefix = prefix;
@@ -31,17 +28,14 @@ function StopWatch(prefix)
 	this.m_logger = newLogger("stopwatch");
 }
 
-StopWatch.prototype.mark = function(marker)
-{
-	this.m_logger.debug(this.m_prefix + ": " + marker + ": " + this.elapsed());
-}
-
-StopWatch.prototype.elapsed = function()
-{
-	return (new Date(Date.now()) - this.m_start);
-}
-
-StopWatch.prototype.reset = function()
-{
-	this.m_start  = new Date(Date.now());
-}
+StopWatch.prototype = {
+	mark : function(marker) {
+		this.m_logger.debug(this.m_prefix + ": " + marker + ": " + this.elapsed());
+	},
+	elapsed : function() {
+		return (new Date(Date.now()) - this.m_start);
+	},
+	reset : function() {
+		this.m_start  = new Date(Date.now());
+	}
+};

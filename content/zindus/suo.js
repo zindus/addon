@@ -38,12 +38,12 @@ Suo.bimap_opcode_UI = new BiMap(
 	[ 'suo.add', 'suo.modify', 'suo.delete' ]);  // these are string ids from zindus.properties
 
 Suo.ORDER_SOURCE_UPDATE = [
-	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF,
 	Suo.MOD | FeedItem.TYPE_FL, Suo.MOD | FeedItem.TYPE_SF,
 	Suo.ADD | FeedItem.TYPE_FL, Suo.ADD | FeedItem.TYPE_SF, 
 	Suo.DEL | FeedItem.TYPE_CN,
 	Suo.MOD | FeedItem.TYPE_CN,
-	Suo.ADD | FeedItem.TYPE_CN
+	Suo.ADD | FeedItem.TYPE_CN,
+	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF
 ];
 
 function Suo(gid, sourceid_winner, sourceid_target, opcode)
@@ -148,7 +148,7 @@ __iterator__: function(is_keys_only) {
 						key.sourceid = sourceid;
 						key.bucket   = bucket;
 						key.id       = id;
-						logger().debug("SuoIterator: AMHERE: yielding key: " + key.toString() + " suo: " + suo.toString());
+						logger().debug("SuoIterator: yielding key: " + key.toString() + " suo: " + suo.toString());
 						yield is_keys_only ? suo : [ cloneObject(key), suo ]; // clone the key so that the user can keep a reference
 					}
 			}

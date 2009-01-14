@@ -40,29 +40,23 @@ function Logger(level, prefix, appender)
 	if (arguments.length == 3)
 		this.m_appender = appender;
 	else
-		this.m_appender = LogAppenderFactory.new();
-
-	// dump("executionStackAsString: " + executionStackAsString() + "\n");
+		this.m_appender = LogAppenderStatic.newLogAppender();
 }
 
-Logger.prototype.level = function()
-{
+Logger.prototype = {
+level : function() {
 	if (arguments.length == 1)
 		this.m_level = arguments[0];
 
 	return this.m_level;
-}
-
-Logger.prototype.appender = function()
-{
+},
+appender : function() {
 	if (arguments.length == 1)
 		this.m_appender = arguments[0];
 
 	return this.m_appender;
-}
-
-Logger.prototype.debug = function(msg)
-{
+},
+debug : function(msg) {
 	// this try/catch is helpful when working out what part of the code is calling logger when it shouldn't be
 	// eg SyncWindow.onCancel() after the fsm has finished and called onAccept() and this file scope has disappeared.
 	// try {
@@ -73,48 +67,21 @@ Logger.prototype.debug = function(msg)
 	//				dump(ex.message + " stack: \n" + ex.stack);
 	//}
 	if (this.level() <= l) this.log(l, msg);
-}
-Logger.prototype.info  = function(msg) { var l = Logger.INFO;  if (this.level() <= l) this.log(l, msg); }
-Logger.prototype.warn  = function(msg) { var l = Logger.WARN;  if (this.level() <= l) this.log(l, msg); }
-Logger.prototype.error = function(msg) { var l = Logger.ERROR; if (this.level() <= l) this.log(l, msg); }
-Logger.prototype.fatal = function(msg) { var l = Logger.FATAL; if (this.level() <= l) this.log(l, msg); }
-Logger.prototype.debug_continue = function(msg) {
+},
+info  : function(msg) { var l = Logger.INFO;  if (this.level() <= l) this.log(l, msg); },
+warn  : function(msg) { var l = Logger.WARN;  if (this.level() <= l) this.log(l, msg); },
+error : function(msg) { var l = Logger.ERROR; if (this.level() <= l) this.log(l, msg); },
+fatal : function(msg) { var l = Logger.FATAL; if (this.level() <= l) this.log(l, msg); },
+debug_continue : function(msg) {
 	var l = Logger.DEBUG;
 	if (this.level() <= l) { 
 		this.log(l, msg, Logger.NO_PREFIX);
 	}
-}
-
-Logger.prototype.log = function(l, msg, np)
-{
+},
+log : function(l, msg, np) {
 	this.m_appender.log(l, this.m_prefix, msg, np);
 }
-
-function LogAppenderOpenClose()
-{
-	LogAppender.call(this);
-}
-
-function LogAppenderHoldOpen()
-{
-	LogAppender.call(this);
-	this.m_os = null;
-}
-
-// unresolved issue with using this class - how the syncfsm flushes it
-// when it cancels (because the fsm doesn't enter final state).
-//
-function LogAppenderHoldOpenAndBuffer()
-{
-	LogAppenderHoldOpen.call(this);
-
-	this.m_buffer        = new Array();
-	this.m_buffer_length = 0;
-}
-
-LogAppenderOpenClose.prototype = new LogAppender();
-LogAppenderHoldOpen.prototype  = new LogAppender();
-LogAppenderHoldOpenAndBuffer.prototype  = new LogAppenderHoldOpen();
+};
 
 function LogAppender()
 {
@@ -137,67 +104,127 @@ function LogAppender()
 		this.m_buffer_prefix[this.a_level[i]] = new Object();
 }
 
-LogAppender.prototype.log = function(level, prefix, msg, np)
-{
-	var message = this.make_log_message(level, prefix, msg, np);
+LogAppender.prototype = {
+	logToFile : null, // abstract base class
+	log : function(level, prefix, msg, np) {
+		var message = this.make_log_message(level, prefix, msg, np);
 
-	if (message)
-		this.log_output(level, message);
-}
+		if (message)
+			this.log_output(level, message);
+	},
+	log_output : function(level, msg) {
+		if (LogAppenderStatic.isLoud(level))
+			dump(msg);
 
-LogAppender.prototype.log_output = function(level, msg)
-{
-	if (this.isLoud(level))
-		dump(msg);
+		this.logToFile(msg);
 
-	this.logToFile(msg);
+		if (LogAppenderStatic.isLoud(level))
+			LogAppenderStatic.logToConsoleService(level, msg);
+	},
+	make_log_message : function(level, prefix, msg, np) {
+		var ret;
 
-	if (this.isLoud(level))
-		this.logToConsoleService(level, msg);
-}
+		if (np == Logger.NO_PREFIX)
+			ret = msg + "\n";
+		else {
+			if (!(prefix in this.m_buffer_prefix[level]))
+				this.m_buffer_prefix[level][prefix] = new String(this.bimap_LEVEL.lookup(level, null) + ":   ")
+		                .substr(0, this.m_max_level_length)
+						.concat( (prefix ? (new String(prefix.substr(0, this.m_max_prefix_length) + ":                ")
+						                     .substr(0, this.m_max_prefix_length + 1) + " ") : ""));
 
-LogAppender.prototype.make_log_message = function(level, prefix, msg, np)
-{
-	var ret;
+			ret = new String(this.m_buffer_prefix[level][prefix]).concat(msg, "\n");
+		}
 
-	if (np == Logger.NO_PREFIX)
-		ret = msg + "\n";
-	else
-	{
-		if (!isPropertyPresent(this.m_buffer_prefix[level], prefix))
-			this.m_buffer_prefix[level][prefix] = new String(this.bimap_LEVEL.lookup(level, null) + ":   ")
-	                .substr(0, this.m_max_level_length)
-					.concat( (prefix ? (new String(prefix.substr(0, this.m_max_prefix_length) + ":                ")
-					                     .substr(0, this.m_max_prefix_length + 1) + " ") : ""));
+		return ret;
+	},
+	fileOpen : function() {
+		var ret = null;
 
-		ret = new String(this.m_buffer_prefix[level][prefix]).concat(msg, "\n");
+		try {
+			var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_RDONLY | Filesystem.FLAG_PR_WRONLY
+			                                             | Filesystem.FLAG_PR_APPEND; // | Filesystem.FLAG_PR_SYNC;
+
+			if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
+				ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
+
+			ret = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
+
+			// this next line throws an exception if the logfile is already open (eg by a hung process)
+			//
+			ret.init(this.m_logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
+		}
+		catch (ex) {
+			if (!LogAppenderStatic.m_is_first_logging_file_open_exception) {
+				LogAppenderStatic.reportError("fileOpen: exception opening file: " + this.m_logfile.path, ex);
+				LogAppenderStatic.m_is_first_logging_file_open_exception = true;
+			}
+
+			ret = null;
+		}
+
+		return ret;
 	}
+};
 
-	return ret;
-}
+var LogAppenderStatic = {
+	m_is_first_logging_file_open_exception : false,
+	newLogAppender : function() {
+		return new LogAppenderHoldOpen();
+		// return new LogAppenderOpenClose();
+	},
+	isLoud : function(level) {
+		return (level == Logger.WARN || level == Logger.ERROR || level == Logger.FATAL);
+	},
+	logToConsoleService : function(level, message) {
+		// See: http://developer.mozilla.org/en/docs/nsIConsoleService
+		//
+		var consoleService = Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService);
+		var scriptError    = Cc["@mozilla.org/scripterror;1"].createInstance(Ci.nsIScriptError);
+		var category       = "";
+		var flags;
 
-LogAppenderHoldOpenAndBuffer.prototype.make_log_message = function(level, prefix, msg, np)
-{
-	var ret = LogAppender.prototype.make_log_message.call(this, level, prefix, msg, np);
-	const CHUNK_BUFFER = 5000;
+		switch (level) {
+			case Logger.WARN:  flags = scriptError.warningFlag; break;
+			case Logger.ERROR: flags = scriptError.errorFlag;   break;
+			case Logger.FATAL: flags = scriptError.errorFlag;   break;
+			default: zinAssert(false);
+		}
 
-	this.m_buffer.push(ret);
-	this.m_buffer_length += ret.length;
+		scriptError.init(message, null, null, null, null, flags, category);
+		consoleService.logMessage(scriptError);
+	},
+	fileClose : function(os) {
+		if (typeof(os) != "undefined" && os != null) {
+			os.flush();
+			os.close()
+		}
+	},
+	reportError : function(msg, ex) {
+		msg += "\nstack: " + executionStackAsString();
 
-	if (this.m_buffer_length >= CHUNK_BUFFER || this.isLoud(level))
-	{
-		ret = String.prototype.concat.apply("", this.m_buffer);
-		this.m_buffer = new Array();
-		this.m_buffer_length = 0;
-		this.log_output(level, ret);
+		dump(msg + "\n");
+		dump(ex + "\n");
+
+		if (typeof(Components) == 'object') {
+			Components.utils.reportError(msg);
+			Components.utils.reportError(ex);
+		}
+	},
+	write : function (os, message) {
+		try {
+			os.write(message, message.length);
+		} catch (ex) {
+			LogAppenderStatic.reportError("logToFile: unable to write to logfile, message: " + message, ex);
+		}
 	}
-	else
-	{
-		ret = null;
-	}
+};
 
-	return ret;
-}
+function LogAppenderOpenClose() { LogAppender.call(this); } 
+function LogAppenderHoldOpen()  { LogAppender.call(this); this.m_os = null; }
+
+LogAppenderOpenClose.prototype = new LogAppender();
+LogAppenderHoldOpen.prototype  = new LogAppender();
 
 LogAppenderHoldOpen.prototype.log = function(level, prefix, msg, np)
 {
@@ -207,105 +234,17 @@ LogAppenderHoldOpen.prototype.log = function(level, prefix, msg, np)
 	LogAppender.prototype.log.call(this, level, prefix, msg, np);
 }
 
-LogAppender.prototype.isLoud = function(level)
-{
-	return (level == Logger.WARN || level == Logger.ERROR || level == Logger.FATAL);
-}
-
-LogAppender.prototype.logToConsoleService = function(level, message)
-{
-	// See: http://developer.mozilla.org/en/docs/nsIConsoleService
-	//
-	var consoleService = Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService);
-	var scriptError    = Cc["@mozilla.org/scripterror;1"].createInstance(Ci.nsIScriptError);
-	var category       = "";
-	var flags;
-
-	switch (level)
-	{
-		case Logger.WARN:  flags = scriptError.warningFlag; break;
-		case Logger.ERROR: flags = scriptError.errorFlag;   break;
-		case Logger.FATAL: flags = scriptError.errorFlag;   break;
-		default: zinAssert(false);
-	}
-
-	scriptError.init(message, null, null, null, null, flags, category);
-	consoleService.logMessage(scriptError);
-}
-
-LogAppender.prototype.logToFile = null; // abstract base class
-
-LogAppender.prototype.fileOpen = function()
-{
-	var ret = null;
-
-	try
-	{
-		var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_RDONLY | Filesystem.FLAG_PR_WRONLY
-		                                             | Filesystem.FLAG_PR_APPEND; // | Filesystem.FLAG_PR_SYNC;
-
-		if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
-			ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
-
-		ret = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
-
-		// this next line throws an exception if the logfile is already open (eg by a hung process)
-		//
-		ret.init(this.m_logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
-	}
-	catch (ex)
-	{
-		if (typeof(LogAppender.is_first_logging_file_open_exception) == 'undefined')
-		{
-			this.reportError("fileOpen: exception opening file: " + this.m_logfile.path, ex);
-			LogAppender.is_first_logging_file_open_exception = true;
-		}
-
-		ret = null;
-	}
-
-	return ret;
-}
-
-LogAppender.prototype.reportError = function(msg, ex)
-{
-	msg += "\nstack: " + executionStackAsString();
-
-	dump(msg + "\n");
-	dump(ex + "\n");
-
-	if (typeof(Components) == 'object')
-	{
-		Components.utils.reportError(msg);
-		Components.utils.reportError(ex);
-	}
-}
-
-LogAppender.prototype.fileClose = function(os)
-{
-	if (typeof os != "undefined" && os != null)
-	{
-		os.flush();
-		os.close()
-	}
-}
-
 LogAppenderOpenClose.prototype.logToFile = function(message)
 {
 	var os = this.fileOpen();
 
-	if (os != null)
-	{
-		try {
-			os.write(message, message.length);
-		} catch (ex) {
-			this.reportError("logToFile: unable to write to logfile, message: " + message, ex);
-		}
+	if (os != null) {
+		LogAppenderStatic.write(os, message);
 
 		try {
-			this.fileClose(os);
+			LogAppenderStatic.fileClose(os);
 		} catch (ex) {
-			this.reportError("logToFile: unable to close logfile", ex);
+			LogAppenderStatic.reportError("logToFile: unable to close logfile", ex);
 		}
 	}
 }
@@ -313,27 +252,13 @@ LogAppenderOpenClose.prototype.logToFile = function(message)
 LogAppenderHoldOpen.prototype.logToFile = function(message)
 {
 	if (this.m_os != null)
-		try {
-			this.m_os.write(message, message.length);
-		} catch (ex) {
-			this.reportError("logToFile: unable to write to logfile, message: " + message, ex);
-		}
+		LogAppenderStatic.write(this.m_os, message);
 }
 
 LogAppenderHoldOpen.prototype.close = function()
 {
-	this.fileClose(this.m_os);
+	LogAppenderStatic.fileClose(this.m_os);
 	this.m_os = null;
-}
-
-function LogAppenderFactory()
-{
-}
-
-LogAppenderFactory.new = function()
-{
-	return new LogAppenderHoldOpen();
-	// return new LogAppenderOpenClose();
 }
 
 Logger.nsIConsoleListener = function()
@@ -343,8 +268,7 @@ Logger.nsIConsoleListener = function()
 	var logger = Singleton.instance().logger();
 
 	var listener = {
-		observe:function( aMessage )
-		{
+		observe:function( aMessage ) {
 			logger.debug("console: " + aMessage.message);
 		},
 		QueryInterface: function (iid) {

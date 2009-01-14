@@ -14,7 +14,7 @@
  * 
  * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
- * Portions created by Initial Developer are Copyright (C) 2007-2008
+ * Portions created by Initial Developer are Copyright (C) 2007-2009
  * the Initial Developer. All Rights Reserved.
  * 
  * Contributor(s): Leni Mayo
@@ -30,12 +30,8 @@ function Payload()
 }
 
 Payload.prototype = {
-toString : function() {
-	var msg = "";
-
-	msg += " m_args: "   + ((this.m_args   != null) ? this.m_args.toString()   : "null");
-	msg += " m_result: " + ((this.m_result != null) ? this.m_result.toString() : "null");
-
-	return msg;
+	toString : function() {
+		return " m_args: "   + ((this.m_args   != null) ? this.m_args.toString()   : "null") +
+		       " m_result: " + ((this.m_result != null) ? this.m_result.toString() : "null");
 }
 };

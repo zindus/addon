@@ -2778,15 +2778,18 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 				this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID_ITER, this.m_tb3_luid_iter));
 
 				// was debugging garcha here
-				// this.state.m_logger.debug("loadTbCards: pass 1: assigning: " +
-				//        " tb3_luid_iter: " + this.m_tb3_luid_iter + " to card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
+				if (false)
+					this.state.m_logger.debug("loadTbCards: pass 1: assigning: " +
+				        " tb3_luid_iter: " + this.m_tb3_luid_iter + " to card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 
 				this.m_tb3_luid_iter++;
 			}
 
 			// was debugging garcha here
-			// if (AddressBook.version() == AddressBook.TB3)
-			//	this.state.m_logger.debug("loadTbCards: pass 1: key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) + " for card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
+			if (false)
+				if (AddressBook.version() == AddressBook.TB3)
+					this.state.m_logger.debug("loadTbCards: pass 1: key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) +
+					                           " for card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 
 			return this.state.stopFailCode == null;
 		}
@@ -4631,6 +4634,7 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 	var context = this;
 	var a_name  = new Object(); // a_name[sourceid][folder-name] == 1 or 2;
 	var msg     = "";
+	var fn      = function (sourceid, bucket) { return bucket & (FeedItem.TYPE_FL | FeedItem.TYPE_SF); }
 	var key, suo;
 
 	zinAssert(this.formatPr() == FORMAT_ZM);
@@ -4646,10 +4650,9 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 		let format              = context.state.sources[sourceid]['format'];
 		let luid                = context.state.zfcGid.get(suo.gid).get(sourceid);
 		let name                = context.state.m_folder_converter.convertForPublic(FORMAT_TB, format, context.zfc(sourceid).get(luid));
-		logger().debug("AMHEREX: " +
-			" key.bucket: " + key.bucket +
-			" is_name_from_winner: " + is_name_from_winner +
-			" name: " + name + " from: sourceid: " + sourceid + " key: " + key.toString());
+
+		// logger().debug("AMHEREX: " + " key.bucket: " + key.bucket + " is_name_from_winner: " + is_name_from_winner +
+		//	                          " name: " + name + " from: sourceid: " + sourceid + " key: " + key.toString());
 
 		if (!(suo.sourceid_target in a_name))
 			a_name[suo.sourceid_target] = new Object();
@@ -4659,8 +4662,6 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 		else
 			a_name[suo.sourceid_target][name]=1;
 	}
-
-	var fn = function (sourceid, bucket) { return bucket & (FeedItem.TYPE_FL | FeedItem.TYPE_SF); }
 
 	for ([key, suo] in this.state.m_suo_iterator.iterator(fn))
 		count_folder_names();
@@ -4680,7 +4681,6 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 
 	return this.state.stopFailCode == null;
 }
-
 
 SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid)
 {
@@ -5356,16 +5356,16 @@ SyncFsm.prototype.entryActionUpdateTb = function(state, event, continuation)
 SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 {
 	var gid, type, sourceid_target, sourceid_winner, luid_winner, luid_target, zfcWinner, zfcTarget, zfcGid, zfiWinner, zfiGid;
-	var suo, key, zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg, format_winner;
-	var count      = 0;
-	var context    = this;
-	var fn         = function(sourceid, bucket) { return (sourceid == context.state.sourceid_tb); }
+	var suo, key, zc, uri, abCard, l_winner, l_gid, l_target, l_current, properties, attributes, msg, format_winner, checksum;
+	var count       = 0;
+	var context     = this;
+	var addressbook = this.state.m_addressbook;
+	var fn          = function(sourceid, bucket) { return (sourceid == context.state.sourceid_tb); }
 
 	this.state.stopwatch.mark(state);
 
 	if (!this.state.stopFailCode)
-		bigloop:
-			for (suo in this.state.m_suo_iterator.iterator(fn))
+		for (suo in this.state.m_suo_iterator.iterator(fn))
 	{
 		gid             = suo.gid;
 		type            = this.feedItemTypeFromGid(gid, suo.sourceid_winner);
@@ -5380,7 +5380,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 		zfiWinner       = zfcWinner.get(luid_winner);
 		luid_target     = null;  // if non-null at the bottom of loop, it means that a change was made
 		properties      = null;
-		msg = "";
+		msg             = "";
 
 		this.debug("entryActionUpdateTb: acting on suo:" +
 			" opcode: " + suo.opcodeAsString() +
@@ -5401,7 +5401,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				// add the luid in the source map (zfc)
 				// update the gid with the new luid
 				// update the reverse map 
-
+				//
 				luid_target = zfcTarget.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
 
 				msg += "About to add a contact to the thunderbird addressbook, gid=" + gid + " and luid_winner=" + luid_winner;
@@ -5412,15 +5412,12 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 
 				msg += " properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-				var checksum = this.contact_converter().crc32(properties);
-
+				checksum = this.contact_converter().crc32(properties);
 				l_winner = SyncFsm.keyParentRelevantToGid(zfcWinner, zfiWinner.key()); // luid of the parent folder in the source
-				                                                                       // this.state.m_logger.debug("l_winner: " +l_winner);
 				l_gid    = this.state.aReverseGid[sourceid_winner][l_winner];          // gid  of the parent folder
-				                                                                       // this.state.m_logger.debug("l_gid=" + l_gid);
 				l_target = zfcGid.get(l_gid).get(sourceid_target);                     // luid of the parent folder in the target
-				uri      = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-				abCard   = this.state.m_addressbook.addCard(uri, properties, attributes);
+				uri      = addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+				abCard   = addressbook.addCard(uri, properties, attributes);
 
 				// msg += " l_winner=" + l_winner + " l_gid=" + l_gid + " l_target=" + l_target + " parent uri: " + uri;
 
@@ -5436,11 +5433,11 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 			case Suo.ADD | FeedItem.TYPE_SF:
 				var abName = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_ZM, zfiWinner);
 
-				if (!this.state.m_addressbook.getAddressBookUriByName(abName))
+				if (!addressbook.getAddressBookUriByName(abName))
 				{
-					msg += "About to add a thunderbird addressbook (folder), gid=" + gid + " and luid_winner=" + luid_winner + " abName: " + abName;
+					msg += "About to add a thunderbird addressbook, gid=" + gid + " and luid_winner=" + luid_winner + " abName: " + abName;
 
-					var abip = this.state.m_addressbook.newAddressBook(abName);
+					let abip = addressbook.newAddressBook(abName);
 					uri = abip.m_uri;
 
 					if (!abip.m_uri || abip.m_uri.length < 1 || !abip.m_prefid || abip.m_prefid.length < 1) // re: issue #38
@@ -5448,7 +5445,6 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 						this.state.m_logger.error("bad uri or tpi after creating a tb addressbook: " + msg + " abip: " + abip.toString());
 						this.state.stopFailCode    = 'failon.unable.to.update.thunderbird';
 						this.state.stopFailTrailer = stringBundleString("status.failon.unable.to.update.thunderbird.detail1", [ abName ]);
-						break bigloop;
 					}
 
 					luid_target = zfcTarget.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
@@ -5465,9 +5461,8 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 					this.state.aReverseGid[sourceid_target][luid_target] = gid;
 				}
 				else
-					this.state.m_logger.warn("Was about to create an addressbook: " + abName +
+					this.state.m_logger.error("Was about to create an addressbook: " + abName +
 					                         " but it already exists.  This shouldn't happen.");
-
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_CN:
@@ -5492,7 +5487,6 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB);
 
 				var is_noop_modification = false;
-				var error_msg = null;
 				var is_delete_failed = false;
 
 				if (l_target == l_current && !properties)
@@ -5515,31 +5509,28 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 					zinAssertAndLog(properties, "luid_winner=" + luid_winner);
 					attributes = newObject(TBCARD_ATTRIBUTE_LUID, luid_target);
 
-					uri    = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-					// this.state.m_logger.debug("entryActionUpdateTb: uri: " + uri + " luid_target=" + luid_target);
-					abCard = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
-					// this.state.m_logger.debug("entryActionUpdateTb: card: " + abCard);
+					uri    = addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+					abCard = addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
 
 					if (abCard)
 					{
 						msg += " setting card to: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-						abCard = this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, format_winner);
+						abCard = addressbook.updateCard(abCard, uri, properties, attributes, format_winner);
 					}
 					else
-						error_msg = " couldn't find the card to modify by searching on luid.  It's possible that it was deleted between now and the start of sync but it may also indicate a problem.";
+						msg += "ERROR: couldn't find the card to modify by searching on luid.  It's possible that it was deleted between now and the start of sync but it may also indicate a problem.";
 				}
 				else
 				{
 					msg += " - parent folder changed"; // implement as delete+add
 
-					var uri_from = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_current));
-					var uri_to   = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
-					abCard       = this.state.m_addressbook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid_target);
+					let uri_from = addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_current));
+					let uri_to   = addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
+					abCard       = addressbook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid_target);
 
 					if (abCard)
 					{
-
 						if (format_winner == FORMAT_ZM && this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB))
 						{
 							properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB);
@@ -5549,40 +5540,40 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 						}
 						else
 						{
-							attributes = this.state.m_addressbook.getCardAttributes(abCard);
-							properties = this.state.m_addressbook.getCardProperties(abCard);
+							attributes = addressbook.getCardAttributes(abCard);
+							properties = addressbook.getCardProperties(abCard);
 
 							msg += " - content didn't change";
 						}
 
-						is_delete_failed = !this.state.m_addressbook.deleteCards(uri_from, [ abCard ]);
+						is_delete_failed = !addressbook.deleteCards(uri_from, [ abCard ]);
 
 						if (!is_delete_failed)
+						{
 							msg += " - card deleted - card added: properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
-						else
-							error_msg = "card delete failed";
+							abCard = addressbook.addCard(uri_to, properties, attributes);
 
-						abCard = this.state.m_addressbook.addCard(uri_to, properties, attributes);
+							if (!abCard)
+								msg += "ERROR: card add failed, uri_to: " + uri_to;
+						}
+						else
+							msg += "ERROR: card delete failed";
 					}
 				}
 
-				if (abCard)
+				if (is_noop_modification)
+					; // do nothing - luid_target is set so the gid's ver and the target's lso get updated below
+				else if (abCard)
 				{
-					properties   = this.state.m_addressbook.getCardProperties(abCard);
-					var checksum = this.contact_converter().crc32(properties);
+					properties = addressbook.getCardProperties(abCard);
+					checksum   = this.contact_converter().crc32(properties);
 					zfcTarget.set(new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, luid_target,
 					                                             FeedItem.ATTR_CS,  checksum,
 					                                             FeedItem.ATTR_L,   l_target));
 				}
-				else if (is_noop_modification)
-					; // do nothing - but luid_target must remain set because the gid's ver and the target's lso gets updated below
-
-				if (!abCard)
-					error_msg = "Can't find card to modify in the addressbook: luid=" + luid_target + " - this shouldn't happen.";
-
-				if (error_msg)
+				else
 				{
-					this.state.m_logger.error(error_msg);
+					this.state.m_logger.error(" msg: " + msg);
 
 					this.state.stopFailCode = 'failon.unable.to.update.thunderbird';
 
@@ -5590,10 +5581,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 						this.state.stopFailTrailer = stringBundleString("status.failon.unable.to.update.thunderbird.detail2")
 					else
 						this.state.stopFailTrailer = "\n";
-						
-					break bigloop;
 				}
-
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_FL:
@@ -5610,18 +5598,18 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				{
 					zfcTarget.get(luid_target).increment(FeedItem.ATTR_MS);  // don't rename an addressbook to the name it already has
 
-					msg += "No need to an thunderbird addressbook to the name it already has: do nothing: name: " + name_winner_public +
+					msg += "do nothing: thunderbird addressbook already has the name we intended to give it: name: " + name_winner_public +
 								" gid=" + gid + " luid_winner=" + luid_winner;
 				}
 				else
 				{
-					uri = this.state.m_addressbook.getAddressBookUriByName(name_target);
+					uri = addressbook.getAddressBookUriByName(name_target);
 
 					if (uri)
 					{
 						msg += "About to rename a thunderbird addressbook: gid=" + gid + " luid_winner=" + luid_winner;
 
-						this.state.m_addressbook.renameAddressBook(uri, name_winner_public);
+						addressbook.renameAddressBook(uri, name_winner_public);
 
 						zfcTarget.get(luid_target).set(FeedItem.ATTR_NAME, name_winner_map);
 						zfcTarget.get(luid_target).increment(FeedItem.ATTR_MS);
@@ -5635,55 +5623,49 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 						luid_target = null;
 					}
 				}
-
 				break;
 
 			case Suo.DEL | FeedItem.TYPE_CN:
 				luid_target = zfiGid.get(sourceid_target);
 				l_target    = zfcTarget.get(luid_target).keyParent();
-				uri         = this.state.m_addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target,l_target));
-				abCard      = this.state.m_addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
+				uri         = addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target,l_target));
+				abCard      = addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid_target);
 				var is_deleted = false;
 
 				if (abCard)
 				{
-					msg += "Card to be deleted: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard);
+					msg += "Card to be deleted: " + addressbook.nsIAbCardToPrintable(abCard);
 
-					is_deleted = this.state.m_addressbook.deleteCards(uri, [ abCard ]);
+					is_deleted = addressbook.deleteCards(uri, [ abCard ]);
 
-					zfcTarget.get(luid_target).set(FeedItem.ATTR_DEL, 1);
+					if (is_deleted)
+						zfcTarget.get(luid_target).set(FeedItem.ATTR_DEL, 1);
+					else
+						msg += "ERROR: delete of cards failed."
 				}
-
-				var error_msg = null;
-
-				if (!abCard)
-					error_msg = "Can't find card to delete in the addressbook: luid=" + luid_target + " - this shouldn't happen.";
+				else
+					msg = "ERROR: Can't find card to delete in the addressbook: luid=" + luid_target + " - this shouldn't happen.";
 
 				if (!is_deleted)
-					error_msg = "delete of cards failed."
-
-				if (error_msg)
 				{
-					this.state.m_logger.error(error_msg)
+					this.state.m_logger.error(msg)
 
 					this.state.stopFailCode    = 'failon.unable.to.update.thunderbird';
 					this.state.stopFailTrailer = !is_deleted ? stringBundleString("status.failon.unable.to.update.thunderbird.detail2"): "";
-					break bigloop;
 				}
-
 				break;
 
 			case Suo.DEL | FeedItem.TYPE_FL:
 			case Suo.DEL | FeedItem.TYPE_SF:
 				luid_target     = zfiGid.get(sourceid_target);
 				var name_target = this.getTbAddressbookNameFromLuid(sourceid_target, luid_target);
-				uri             = this.state.m_addressbook.getAddressBookUriByName(name_target);
+				uri             = addressbook.getAddressBookUriByName(name_target);
 
 				if (uri)
 				{
 					msg += "Addressbook to be deleted: name: " + name_target + " uri: " + uri;
 
-					this.state.m_addressbook.deleteAddressBook(uri);
+					addressbook.deleteAddressBook(uri);
 					zfcTarget.get(luid_target).set(FeedItem.ATTR_DEL, 1);
 
 					// partner with removeContactOpsWhenFolderIsBeingDeleted...
@@ -5713,12 +5695,14 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 
 					luid_target = null;
 				}
-
 				break;
 
 			default:
 				zinAssertAndLog(false, "unmatched case: " + suo.opcode | type);
 		}
+
+		if (this.state.stopFailCode)
+			break;
 
 		if (luid_target)
 			SyncFsm.setLsoToGid(zfiGid, zfcTarget.get(luid_target));
@@ -8342,7 +8326,7 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 
 	if (this.state.a_gd_contact_dexmlify_ids.length > 0)
 	{
-		let id      = this.state.a_gd_contact_dexmlify_ids.pop();
+		id          = this.state.a_gd_contact_dexmlify_ids.pop();
 		let url     = id;
 		let contact = this.state.a_gd_contact[id];
 		let remote  = new Object();
@@ -8381,16 +8365,12 @@ SyncFsmGd.prototype.exitActionDeXmlifyAddrGd = function(state, event)
 	zinAssertAndLog(id in this.state.a_gd_contact, id);
 	zinAssertAndLog(this.zfcPr().isPresent(id), id);
 
-	this.state.a_gd_contact[id] = a_gd_contact[id];
+	this.state.a_gd_contact[id] = contact;
 
 	zfi = this.zfcPr().get(id);
 	zfi.set(FeedItem.ATTR_REV,  contact.meta.updated);
 	zfi.set(FeedItem.ATTR_EDIT, contact.meta.edit);
 	zfi.set(FeedItem.ATTR_SELF, contact.meta.self);
 
-	var msg = "";
-	msg += " updated: ";
-	msg += " zfi: " + zfi.toString();
-
-	this.state.m_logger.debug("exitActionDeXmlifyAddrGd: id=" + id + " properties: " + contact.toString() + msg);
+	this.debug("exitActionDeXmlifyAddrGd: id=" + id + " contact: " + contact.toString() + " updated zfi: " + zfi.toString());
 }

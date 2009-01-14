@@ -27,6 +27,8 @@ function TestHarness()
 {
 	this.m_logger = newLogger("TestHarness");
 	this.m_bugzilla_432145_count = 100;
+	this.m_a_books = [1000, 2000, 3000, 4000, 5000];
+
 
 	this.m_bugzilla_432145_uri = new Array();
 	this.m_bugzilla_432145_uri[0] = "moz-abmdbdirectory://abook-3.mab";
@@ -41,14 +43,14 @@ TestHarness.prototype.run = function()
 	var ret = true;
 
 	ret = ret && this.testPreferencesHaveDefaults();
-	ret = ret && this.testSuo();
+	// ret = ret && this.testSuo();
 	// ret = ret && this.testAccount();
 	// ret = ret && this.testCrc32();
 	// ret = ret && this.testLogging();
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	ret = ret && this.testContactConverter();
+	// ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testAddressBookBugzilla432145Create();
@@ -69,8 +71,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testContactGoogle1();
 	// ret = ret && this.testContactGoogle2();
 	// ret = ret && this.testContactGoogleIterators();
-	ret = ret && this.testContactGooglePostalAddress();
-	ret = ret && this.testGdAddressConverter();
+	// ret = ret && this.testContactGooglePostalAddress();
+	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testBiMap();
 	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
@@ -87,7 +89,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testPerformanceZfcSet();
 	// ret = ret && this.testPerformanceStringConcat();
 	// ret = ret && this.testPerformanceLoggingStyles();
-	// ret = ret && this.testTb3CardUuid();
+	ret = ret && this.testTb3CardUuid();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1647,6 +1649,7 @@ TestHarness.prototype.setupFixtureGdPostalAddress = function()
 	this.m_entry_as_xml_char = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/username%40@gmail.com/base/7ae485588d2b6b50</id><updated>2008-04-26T01:58:35.904Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>77</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50/1209175115904000'/> \
 		<gd:email rel='http://schemas.google.com/g/2005#other' address='77@example.com' primary='true'/>\
 		<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>@@postal@@</gd:postalAddress>\
+		<gd:im address='@@im#AIM@@' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/>\
 		</entry>";
 
 	this.m_street1 = "Apartment 2";
@@ -2257,9 +2260,6 @@ TestHarness.prototype.testGoogleContactWithe4x = function()
 	return true;
 }
 
-// var a_books = [100, 200, 300, 400, 500];
-var a_books = [1000, 2000, 3000, 4000, 5000];
-
 TestHarness.prototype.createBigAddressbooks = function()
 {
 	var name, abip, i;
@@ -2267,12 +2267,12 @@ TestHarness.prototype.createBigAddressbooks = function()
 
 	this.m_logger.debug("createBigAddressbooks");
 
-	for (i = 0; i < a_books.length; i++)
+	for (i = 0; i < this.m_a_books.length; i++)
 	{
-		name = "test-" + a_books[i];
+		name = "test-" + this.m_a_books[i];
 		abip = addressbook.newAddressBook(name);
 
-		this.createLotsOfContacts(abip.uri(), a_books[i]);
+		this.createLotsOfContacts(abip.uri(), this.m_a_books[i]);
 	}
 
 	return true;
@@ -2289,9 +2289,9 @@ TestHarness.prototype.testPerformanceCardLookup = function()
 
 	this.m_logger.debug("testPerformanceCardLookup");
 
-	for (j = 0; j < a_books.length; j++)
+	for (j = 0; j < this.m_a_books.length; j++)
 	{
-		name = "test-" + a_books[j];
+		name = "test-" + this.m_a_books[j];
 		aUri[name] = addressbook.getAddressBookUriByName(name);
 		uri       = aUri[name];
 		count     = 0;
@@ -2301,7 +2301,7 @@ TestHarness.prototype.testPerformanceCardLookup = function()
 		this.m_logger.debug("testPerformanceCardLookup: name: " + name + " uri: " + uri);
 		key    = 'Notes';
 
-		for (i = 1000; i<= 1000+a_books[j]; i++)
+		for (i = 1000; i<= 1000+this.m_a_books[j]; i++)
 		{
 			// value  = i + "-test@example.com"; // PrimaryEmail
 
@@ -2466,13 +2466,14 @@ TestHarness.prototype.testPerformanceLoggingStyles = function()
 	}
 
 	// test #2
-	//
+	if (true)
+	{
 	stopwatch = new StopWatch("test #2");
-	stopwatch.mark("starts: log via LogAppenderHoldOpenAndBuffer: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
+	stopwatch.mark("starts: log via LogAppenderHoldOpen: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
 	last = 0;
 
-	var appender = new LogAppenderHoldOpenAndBuffer()
-	// var appender = new LogAppenderHoldOpen()
+	// this class has been removed: var appender = new LogAppenderHoldOpenAndBuffer()
+	var appender = new LogAppenderHoldOpen()
 	var buflogger = new Logger(Singleton.instance().logger().level(), "testPerformanceLoggingStyles", appender);
 
 	stopwatch.mark("before loop with buflogger: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
@@ -2489,6 +2490,7 @@ TestHarness.prototype.testPerformanceLoggingStyles = function()
 	}
 
 	stopwatch.mark("ends: after loop with buflogger: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
+	}
 
 	return true;
 }
@@ -2511,12 +2513,26 @@ TestHarness.prototype.testTb3CardUuid = function()
 
 	properties['PrimaryEmail'] = i + "-test@example.com";
 	properties['DisplayName'] = i + "-test-display";
-	properties['Notes'] = i + "-test-line-one";
+	// properties['Notes'] = i + "-test-line-one";
+	properties['Notes'] = "american frame \
+	lanscape hole =  9 3/4  x     7 3/4         $17.26\n\
+	                 frame ^V 1/2  x    14.1/2\n\
+\n\
+					 portrait     hole   = 7 1/4  x    10        $16.79\n\
+					                  frame  = 14       x    16 3/4";
+
+	properties['JobTitle'] = "JobTitle";
+	properties['Company'] = "Company";
+
+	properties = this.sampleContactGoogleProperties();
+	contact = new ContactGoogle();
+	contact.mode(ContactGoogle.ePostal.kEnabled);
+	contact.properties = properties;
 
 	// for (var i in Components.interfaces)
 	//	this.m_logger.debug(i);
 
-	var abCard = addressbook.addCard(uri, properties, attributes);
+	var abCard = addressbook.addCard(uri, contact.properties, attributes);
 	// var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	// var mdbCard = abCard.QueryInterface(Ci.nsAbMDBCard);
 	// var dbRowID = mdbCard.getProperty("DBRowID", null);
