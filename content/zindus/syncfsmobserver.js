@@ -138,7 +138,6 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 	var a_states_gd = {
 		stAuth:           { count: 1 },
 		stAuthCheck:      { },
-		stDelContactGd:   { }, // FIXME to show progress, this can't be glommed on to another state - needs work, meantime: no progress
 		stGetContactGd1:  { count: 1 },
 		stGetContactGd2:  { count: 1 },
 		stGetContactGd3:  { count: 1 },

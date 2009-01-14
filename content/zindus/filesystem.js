@@ -30,7 +30,6 @@ Filesystem.FILENAME_LOGFILE  = "logfile.txt";
 Filesystem.FILENAME_LASTSYNC = "lastsync.txt";
 Filesystem.FILENAME_GID      = "gid.txt";
 Filesystem.FILENAME_STATUS   = "status.txt";
-Filesystem.FILENAME_GD_TO_BE_DELETED = "google-contacts-to-be-deleted.txt";
 
 Filesystem.aDirectory = new Object();
 

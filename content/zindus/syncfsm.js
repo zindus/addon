@@ -140,8 +140,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stAuth:           { evCancel: 'final', evNext: 'stAuthCheck',      evHttpRequest: 'stHttpRequest',   evLackIntegrity: 'final'     },
 		stAuthCheck:      { evCancel: 'final', evNext: 'stLoad',                                             evLackIntegrity: 'final'     },
 		stLoad:           { evCancel: 'final', evNext: 'stLoadTb',         evRepeat:      'stLoad',          evLackIntegrity: 'final'     },
-		stLoadTb:         { evCancel: 'final', evNext: 'stDelContactGd',   evRepeat:      'stLoadTb',        evLackIntegrity: 'final'     },
-		stDelContactGd:   { evCancel: 'final', evSkip: 'stGetContactGd1',  evHttpRequest: 'stHttpRequest',   evNext: 'stDelContactGd'     },
+		stLoadTb:         { evCancel: 'final', evNext: 'stGetContactGd1',  evRepeat:      'stLoadTb',        evLackIntegrity: 'final'     },
 		stGetContactGd1:  { evCancel: 'final', evNext: 'stGetContactGd2',  evHttpRequest: 'stHttpRequest'                                 },
 		stGetContactGd2:  { evCancel: 'final', evNext: 'stGetContactGd3',  evRepeat:      'stGetContactGd1', evLackIntegrity: 'final'     },
 		stGetContactGd3:  { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge',      evRepeat: 'stGetContactGd3'  },
@@ -167,7 +166,6 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stAuthCheck:            this.entryActionAuthCheck,
 		stLoad:                 this.entryActionLoad,
 		stLoadTb:               this.entryActionLoadTb,
-		stDelContactGd:         this.entryActionDelContactGd,
 		stGetContactGd1:        this.entryActionGetContactGd1,
 		stGetContactGd2:        this.entryActionGetContactGd2,
 		stGetContactGd3:        this.entryActionGetContactGd3,
@@ -562,8 +560,6 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	if (sfcd.is_first_in_chain() && is_reset)
 	{
 		this.debug("entryActionLoad: forcing a reset - removing data files and initialising maps and tb attributes...");
-
-		RemoveDatastore.removeZfcs( newObjectWithKeys(Filesystem.FILENAME_GD_TO_BE_DELETED) );
 
 		this.initialiseZfcLastSync();
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
@@ -6694,11 +6690,6 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 		zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('account_signature', sfcd.signature());
 	}
 
-	if (sfcd.is_last_in_chain())
-	{
-		RemoveDatastore.removeZfc(Filesystem.FILENAME_GD_TO_BE_DELETED);
-	}
-
 	if (this.formatPr() == FORMAT_GD && this.state.m_sfcd.last_sourceid_of_format(FORMAT_GD) == this.state.sourceid_pr)
 	{
 		// Consider expiring the ToBeDeleted addressbook on the last successful sync with Google.
@@ -7835,70 +7826,6 @@ SyncFsm.prototype.entryActionAuthCheck = function(state, event, continuation)
 		this.state.stopFailTrailer = stringBundleString("text.http.status.code", [ this.state.m_http.m_http_status_code ]);
 
 		nextEvent = 'evLackIntegrity';  // this isn't really a lack of integrity, but it's processed in the same way
-	}
-
-	continuation(nextEvent);
-}
-
-SyncFsmGd.prototype.entryActionDelContactGd = function(state, event, continuation)
-{
-	var nextEvent = null;
-
-	if (!this.state.a_gd_contact_to_del)
-	{
-		this.state.a_gd_contact_to_del = new Array();
-
-		var context = this;
-		var functor_foreach_item = {
-			run: function(edit_uri, value)
-			{
-				context.state.a_gd_contact_to_del.push(edit_uri);
-
-				return true;
-			}
-		};
-
-		var zfc = new FeedCollection();
-		zfc.filename(Filesystem.FILENAME_GD_TO_BE_DELETED);
-
-		if (zfc.nsifile().exists())
-		{
-			zfc.load();
-
-			if (zfc.isPresent(this.account().username))
-			{
-				zfc.get(this.account().username).forEach(functor_foreach_item, FeedItem.ITER_GID_ITEM);
-				zfc.del(this.account().username);
-			}
-
-			zfc.save();
-
-			if (zfc.length() == 0)
-				RemoveDatastore.removeZfc(Filesystem.FILENAME_GD_TO_BE_DELETED);
-		}
-
-		this.state.m_logger.debug("entryActionDelContactGd: a_gd_contact_to_del: " + this.state.a_gd_contact_to_del.toString());
-	}
-
-	if (this.state.a_gd_contact_to_del.length > 0)
-	{
-		var url = gdAdjustHttpHttps(this.state.a_gd_contact_to_del.pop());
-
-		// evNext on error here means that we ignore any errors arising from trying to delete a contact at google
-		// which means later on, the user will end up in conflict resolution again (which is what we want).
-		// that's also why we use 'evNext' to mean "repeat this state" and 'evSkip' to mean 'next state' - it'd be more natural
-		// to use evRepeat and evNext
-		//
-		this.setupHttpGd(state, 'evNext', "POST", url, { "X-HTTP-Method-Override" : "DELETE"}, null,
-		                  HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_YES);
-		
-		nextEvent = 'evHttpRequest'
-	}
-	else
-	{
-		this.state.m_http = null;
-
-		nextEvent = 'evSkip';
 	}
 
 	continuation(nextEvent);
