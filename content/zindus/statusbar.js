@@ -142,7 +142,7 @@ StatusBar.saveState = function(es, is_never_synced)
 StatusBar.stateAsZfc = function()
 {
 	var ret = new FeedCollection();
-	ret.filename(Filesystem.FILENAME_STATUS);
+	ret.filename(Filesystem.eFilename.STATUS);
 
 	return ret;
 }

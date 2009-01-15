@@ -21,146 +21,118 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-Filesystem.DIRECTORY_PROFILE = "profile";  // C:\Documents and Settings\user\Application Data\Thunderbird\Profiles\blah
-Filesystem.DIRECTORY_APP     = APP_NAME;   //                                                                      blah\zindus
-Filesystem.DIRECTORY_LOG     = "log";      //                                                                      blah\zindus\log
-Filesystem.DIRECTORY_DATA    = "data";     //                                                                      blah\zindus\data
+var Filesystem = {
+	m_a_directory        : new Object(),
+	m_a_parent_directory : null,
+	eDirectory : new ZinEnum( {
+		PROFILE : 'profile',   // C:\Documents and Settings\user\Application Data\Thunderbird\Profiles\blah
+		APP     : APP_NAME,    //                                                                      blah\zindus
+		LOG     : 'log',       //                                                                      blah\zindus\log
+		DATA    : 'data'       //                                                                      blah\zindus\data
+	}),
+	eFilename : new ZinEnum( {
+		LOGFILE  : 'logfile.txt',
+		LASTSYNC : 'lastsync.txt',
+		GID      : 'gid.txt',
+		STATUS   : 'status.txt'
+	}),
+	ePerm : new ZinEnum( {     // from prio.h
+		PR_IRUSR  : 0400,      // Read    by owner
+		PR_IWUSR  : 0200,      // Write   by owner
+		PR_IXUSR  : 0100,      // Execute by owner
+		PR_IRWXU  : 0700       // R/W/X by owner
+	}),
+	eFlag : new ZinEnum( {     // from prio.h
+		PR_RDONLY      : 0x01, // seems silly that mozilla doesn't expose these constants via an interface!
+		PR_WRONLY      : 0x02,
+		PR_CREATE_FILE : 0x08,
+		PR_APPEND      : 0x10,
+		PR_TRUNCATE    : 0x20,
+		PR_SYNC        : 0x40
+	}),
+	nsIFileForDirectory : function(name) {
+		zinAssertAndLog(this.eDirectory.isPresent(name), name);
 
-Filesystem.FILENAME_LOGFILE  = "logfile.txt";
-Filesystem.FILENAME_LASTSYNC = "lastsync.txt";
-Filesystem.FILENAME_GID      = "gid.txt";
-Filesystem.FILENAME_STATUS   = "status.txt";
+		if (!this.m_a_parent_directory)
+			with(Filesystem.eDirectory)
+				this.m_a_parent_directory = newObject(APP,  PROFILE,
+				                                      LOG,  APP,
+													  DATA, APP);
 
-Filesystem.aDirectory = new Object();
-
-// from prio.h
-Filesystem.PERM_PR_IRUSR  = 0400;  // Read  by owner
-Filesystem.PERM_PR_IWUSR  = 0200;  // Write by owner
-Filesystem.PERM_PR_IXUSR  = 0100;  // Write by owner
-Filesystem.PERM_PR_IRWXU  = 0700;  // R/W/X by owner
-
-Filesystem.FLAG_PR_RDONLY      = 0x01;
-Filesystem.FLAG_PR_WRONLY      = 0x02;
-Filesystem.FLAG_PR_CREATE_FILE = 0x08;
-Filesystem.FLAG_PR_APPEND      = 0x10;
-Filesystem.FLAG_PR_TRUNCATE    = 0x20;
-Filesystem.FLAG_PR_SYNC        = 0x40;
-
-function Filesystem()
-{
-}
-
-Filesystem.getDirectory = function(code)
-{
-	var nsifile;
-
-	if (!isPropertyPresent(Filesystem.aDirectory, code))
-		switch(code)
-		{
-			case Filesystem.DIRECTORY_PROFILE:
+		if (!(name in this.m_a_directory))
+			if (name == this.eDirectory.PROFILE) {
 				// http://developer.mozilla.org/en/docs/Code_snippets:File_I/O
-				Filesystem.aDirectory[code] = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties)
+				this.m_a_directory[name] = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties)
 				                                  .get("ProfD", Ci.nsIFile);
-				Filesystem.aDirectory[code].clone();
-				break;
+				this.m_a_directory[name].clone();
+			}
+			else
+			{
+				this.m_a_directory[name] = this.nsIFileForDirectory(this.m_a_parent_directory[name]);
+				this.m_a_directory[name].append(name);
+			}
 
-			case Filesystem.DIRECTORY_APP:
-				Filesystem.aDirectory[code] = Filesystem.getDirectory(Filesystem.DIRECTORY_PROFILE);
-				Filesystem.aDirectory[code].append(code);
-				break;
+		return this.m_a_directory[name].clone();
+	},
+	createDirectoryIfRequired : function(name) {
+		var nsifile = this.nsIFileForDirectory(name);
 
-		case Filesystem.DIRECTORY_LOG:
-				Filesystem.aDirectory[code] = Filesystem.getDirectory(Filesystem.DIRECTORY_APP);
-				Filesystem.aDirectory[code].append(code);
-				break;
+		if (!nsifile.exists() || !nsifile.isDirectory()) 
+			try {
+				nsifile.create(Ci.nsIFile.DIRECTORY_TYPE, this.ePerm.PR_IRWXU);
+			}
+			catch (e) {
+				let msg = stringBundleString("text.filesystem.create.directory.failed", [ nsifile.path, e ] );
+				zinAlert('text.alert.title', msg);
+			}
+	},
+	createDirectoriesIfRequired : function() {
+		for (var name in newObjectWithKeys(this.eDirectory.APP, this.eDirectory.LOG, this.eDirectory.DATA))
+			this.createDirectoryIfRequired(name)
+	},
+	writeToFile : function(file, content) {
+		var ret = false;
 
-		case Filesystem.DIRECTORY_DATA:
-				Filesystem.aDirectory[code] = Filesystem.getDirectory(Filesystem.DIRECTORY_APP);
-				Filesystem.aDirectory[code].append(code);
-				break;
-
-		default:
-			zinAssert(false);
-			break;
-	}
-
-	var ret = Filesystem.aDirectory[code].clone();
-
-	return ret;
-}
-
-Filesystem.createDirectoryIfRequired = function(code)
-{
-	var nsifile = Filesystem.getDirectory(code);
-
-	if (!nsifile.exists() || !nsifile.isDirectory()) 
 		try {
-			nsifile.create(Ci.nsIFile.DIRECTORY_TYPE, Filesystem.PERM_PR_IRWXU);
+			if (!file.exists()) 
+				file.create(Ci.nsIFile.NORMAL_FILE_TYPE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR);
+
+			let os = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
+
+			os.init(file, this.eFlag.PR_WRONLY | this.eFlag.PR_TRUNCATE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR, null);
+			os.write(content, content.length);
+			os.flush();
+			os.close();
+
+			ret = true;
 		}
 		catch (e) {
-			var msg = stringBundleString("text.filesystem.create.directory.failed", [ nsifile.path, e ] );
-			zinAlert('text.alert.title', msg);
+			zinAlert('text.alert.title', e);
 		}
-}
 
-Filesystem.createDirectoriesIfRequired = function()
-{
-	Filesystem.createDirectoryIfRequired(Filesystem.DIRECTORY_APP);
-	Filesystem.createDirectoryIfRequired(Filesystem.DIRECTORY_LOG);
-	Filesystem.createDirectoryIfRequired(Filesystem.DIRECTORY_DATA);
-}
+		return ret;
+	},
+	fileReadByLine : function(path, functor) {
+		var file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
 
-Filesystem.writeToFile = function(file, content) 
-{
-	var retval = false;
+		file.initWithPath(path);
 
-	try 
-	{
-		if (!file.exists()) 
-			file.create(Ci.nsIFile.NORMAL_FILE_TYPE, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR);
+		if (file.exists()) {
+			let istream = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
 
-		// Write with nsIFileOutputStream.
-		var outputStream = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
+			istream.init(file, this.eFlag.PR_RDONLY,  this.ePerm.PR_IRUSR, 0);
+			istream.QueryInterface(Ci.nsILineInputStream);
 
-		outputStream.init(file, Filesystem.FLAG_PR_WRONLY | Filesystem.FLAG_PR_TRUNCATE,
-		                        Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
-		outputStream.write(content, content.length);
-		outputStream.flush();
-		outputStream.close();
+			let line = {};
 
-		retval = true;
-	}
-	catch (e) 
-	{
-		zinAlert('text.alert.title', e);
-	}
+			while (istream.readLine(line)) {
+				functor.run(line.value); 
+				line.value = null;
+			} 
 
-	return retval;
-}
+			zinAssert(!line.value); // just to confirm that this loop works as documented
 
-Filesystem.fileReadByLine = function(path, functor)
-{
-	var file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
-
-	file.initWithPath(path);
-
-	if (file.exists())
-	{
-		var istream = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
-
-		istream.init(file, Filesystem.FLAG_PR_RDONLY,  Filesystem.PERM_PR_IRUSR, 0);
-		istream.QueryInterface(Ci.nsILineInputStream);
-
-		var line = {};
-
-		while (istream.readLine(line))
-		{
-			functor.run(line.value); 
-			line.value = null;
+			istream.close();
 		} 
-
-		zinAssert(!line.value); // just to confirm my understanding of the way the loop works
-
-		istream.close();
-	} 
-}
+	}
+};

@@ -485,16 +485,21 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	var sfcd      = this.state.m_sfcd;
 	var is_reset  = false;
 	var a_zfc     = new Object();          // associative array of zfc, key is the file name
-	var a_account_independent_filenames = newObject(Filesystem.FILENAME_GID, 0,
-	                                                Filesystem.FILENAME_LASTSYNC, 0,
-													this.zfcFileNameFromSourceid(SOURCEID_TB), 0);
 	var filename, sourceid;
 
-	a_zfc[Filesystem.FILENAME_GID]      = this.state.zfcGid      = new FeedCollection();
-	a_zfc[Filesystem.FILENAME_LASTSYNC] = this.state.zfcLastSync = new FeedCollection();
+	this.state.zfcGid      = new FeedCollection();
+	this.state.zfcLastSync = new FeedCollection();
 
-	a_zfc[Filesystem.FILENAME_GID].filename(Filesystem.FILENAME_GID);
-	a_zfc[Filesystem.FILENAME_LASTSYNC].filename(Filesystem.FILENAME_LASTSYNC);
+	with (Filesystem.eFilename)
+	{
+		var a_account_independent_filenames = newObjectWithKeys(GID, LASTSYNC, this.zfcFileNameFromSourceid(SOURCEID_TB));
+
+		a_zfc[GID]      = this.state.zfcGid;     
+		a_zfc[LASTSYNC] = this.state.zfcLastSync;
+
+		a_zfc[GID].filename(GID);
+		a_zfc[LASTSYNC].filename(LASTSYNC);
+	}
 
 	for (sourceid in this.state.sources)
 	{
@@ -519,7 +524,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 				break;
 			}
 
-	a_zfc[Filesystem.FILENAME_LASTSYNC].load();
+	a_zfc[Filesystem.eFilename.LASTSYNC].load();
 
 	var zfcLastSync = this.state.zfcLastSync;
 
@@ -572,7 +577,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	}
 	else
 	{
-		a_zfc[Filesystem.FILENAME_GID].load();
+		a_zfc[Filesystem.eFilename.GID].load();
 		a_zfc[this.zfcFileNameFromSourceid(SOURCEID_TB)].load();
 	}
 
@@ -5765,7 +5770,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		zfcTarget       = this.zfc(suo.sourceid_target);
 		zfiWinner       = zfcWinner.get(luid_winner);
 
-		this.debug("entryActionUpdateGd: " + " opcode: " + suo.opcodeAsString() + " type: " + FeedItem.typeAsString(type) +
+		this.debug("entryActionUpdateZm: " + " opcode: " + suo.opcodeAsString() + " type: " + FeedItem.typeAsString(type) +
 				                             " suo: "    + suo.toString());
 
 		zinAssert(!suo.is_processed);

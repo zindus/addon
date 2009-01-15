@@ -29,7 +29,7 @@ function RemoveDatastore()
 
 RemoveDatastore.removeZfc = function(filename)
 {
-	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
+	var directory = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
 	var file;
 
 	logger().debug("removeZfc: " + filename);
@@ -48,7 +48,7 @@ RemoveDatastore.removeZfc = function(filename)
 
 RemoveDatastore.removeZfcs = function(a_exclude)
 {
-	var directory = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
+	var directory = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
 	var file;
 
 	logger().debug("removeZfcs: " + (a_exclude ? ("excluding: " + aToString(a_exclude)) : ""));
@@ -77,11 +77,11 @@ RemoveDatastore.removeZfcs = function(a_exclude)
 //
 RemoveDatastore.removeLogfile = function()
 {
-	var file_new = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
-	var file_old = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG);
-	var name_old = Filesystem.FILENAME_LOGFILE + ".old";
+	var file_new = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.LOG);
+	var file_old = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.LOG);
+	var name_old = Filesystem.eFilename.LOGFILE + ".old";
 
-	file_new.append(Filesystem.FILENAME_LOGFILE);
+	file_new.append(Filesystem.eFilename.LOGFILE);
 	file_old.append(name_old);
 
 	if (file_new.exists() && !file_new.isDirectory())

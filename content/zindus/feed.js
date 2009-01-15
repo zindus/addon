@@ -119,7 +119,7 @@ FeedCollection.prototype.nsifile = function()
 {
 	zinAssert(this.m_filename);
 
-	var ret = Filesystem.getDirectory(Filesystem.DIRECTORY_DATA);
+	var ret = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
 
 	ret.append(this.m_filename);
 

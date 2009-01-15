@@ -88,11 +88,11 @@ function LogAppender()
 	var prefs = new MozillaPreferences();
 
 	this.m_logfile_size_max  = prefs.getIntPref(prefs.branch(), MozillaPreferences.AS_LOGFILE_MAX_SIZE );
-	this.m_logfile           = Filesystem.getDirectory(Filesystem.DIRECTORY_LOG); // an nsIFile object
+	this.m_logfile           = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.LOG);
 	this.m_max_level_length  = 7;
 	this.m_max_prefix_length = 15;
 
-	this.m_logfile.append(Filesystem.FILENAME_LOGFILE);
+	this.m_logfile.append(Filesystem.eFilename.LOGFILE);
 
 	this.a_level = [Logger.NONE, Logger.FATAL, Logger.ERROR, Logger.WARN, Logger.INFO, Logger.DEBUG];
 	this.a_word  = ['none',      'fatal',      'error',      'warn',      'info',      'debug'     ];
@@ -142,17 +142,20 @@ LogAppender.prototype = {
 		var ret = null;
 
 		try {
-			var ioFlags = Filesystem.FLAG_PR_CREATE_FILE | Filesystem.FLAG_PR_RDONLY | Filesystem.FLAG_PR_WRONLY
-			                                             | Filesystem.FLAG_PR_APPEND; // | Filesystem.FLAG_PR_SYNC;
+			
+			with(Filesystem.eFlag)
+			{
+				var ioFlags = PR_CREATE_FILE | PR_RDONLY | PR_WRONLY | PR_APPEND; // not used: PR_SYNC;
 
-			if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
-				ioFlags |= Filesystem.FLAG_PR_TRUNCATE;
+				if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
+					ioFlags |= PR_TRUNCATE;
+			}
 
 			ret = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
 
 			// this next line throws an exception if the logfile is already open (eg by a hung process)
 			//
-			ret.init(this.m_logfile, ioFlags, Filesystem.PERM_PR_IRUSR | Filesystem.PERM_PR_IWUSR, null);
+			ret.init(this.m_logfile, ioFlags, Filesystem.ePerm.PR_IRUSR | Filesystem.ePerm.PR_IWUSR, null);
 		}
 		catch (ex) {
 			if (!LogAppenderStatic.m_is_first_logging_file_open_exception) {
