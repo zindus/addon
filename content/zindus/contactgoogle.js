@@ -312,7 +312,12 @@ set properties (properties) {
 				case "postalAddress_home":
 				case "postalAddress_work":
 					[l, r] = get_element_and_suffix(key);
-					entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{properties[key]}</gd:{l}>;
+					let value = properties[key];
+					if (l == 'postalAddress') {
+						zinAssert(this.mode() & ContactGoogle.ePostal.kEnabled);
+						value = ContactGoogleStatic.add_whitespace_to_postal_properties(properties, key);
+					}
+					entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{value}</gd:{l}>;
 					break;
 				default:
 					zinAssertAndLog(false, key);
@@ -341,6 +346,8 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 	// if the contact's field contains xml,  preserve the <otheraddr> element
 	// if the contact's field contacts text, move the text into an <otheraddr> element in the xml and save that
 	//
+	zinAssert((this.m_mode & ContactGoogle.ePostal.kEnabled));
+
 	with (ContactGoogleStatic) {
 		var key                = get_hyphenation('postalAddress', suffix);
 		var is_property_postal = false;
@@ -362,6 +369,9 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 				a_gac_properties["otheraddr"] = xml.toString();
 			else
 				;                                  // the postalAddress of the contact is xml with an empty <otheraddr> element
+
+			for (var i in a_gac_properties)
+				a_gac_properties[i] = ContactGoogleStatic.add_whitespace_to_postal_line(a_gac_properties[i]);
 
 			gac.convert(new_properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
 		}
@@ -440,7 +450,7 @@ toStringXml: function() {
 }
 };
 
-ContactGoogle.eMeta      = new ZinEnum( 'id', 'updated', 'edit', 'self', 'deleted' ); // 'etag' 
+ContactGoogle.eMeta      = new ZinEnum( 'id', 'updated', 'edit', 'self', 'deleted' );
 ContactGoogle.ePostal    = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
 ContactGoogle.eTransform = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
 
@@ -465,35 +475,9 @@ ContactGoogle.textToContacts = function(text, a_contact, mode) {
 	return ret;
 }
 
-ContactGoogle.addWhitespaceToPostalProperties = function(properties) {
-	var properties_out = cloneObject(properties);
-
-	with (ContactGoogleStatic) {
-		var a_suffix = a_fragment['postalAddress'];
-
-		for (var i = 0; i < a_suffix.length; i++) {
-			let key = get_hyphenation('postalAddress', a_suffix[i])
-
-			if (key in properties) {
-				let a_gac_properties = new Object();
-				let is_sane          = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
-
-				zinAssertAndLog(is_sane, function() { return "key: " + key + " properties: " + aToString(properties); } );
-
-				for (i in a_gac_properties)
-					a_gac_properties[i] = " " + a_gac_properties[i] + " ";
-
-				gac.convert(properties_out, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
-			}
-		}
-	}
-
-	return properties_out;
-}
-
 ContactGoogle.transformTbProperties = function(transform, properties)
 {
-	for (key in properties)
+	for (var key in properties)
 		properties[key] = ContactGoogle.transformTbProperty(transform, key, properties[key]);
 }
 
@@ -517,7 +501,7 @@ ContactGoogle.transformTbPropertyTo = function(transform, value)
 	switch(transform) {
 		case ContactGoogle.eTransform.kEmail:      ret = value.toLowerCase(); break;
 		case ContactGoogle.eTransform.kWhitespace: ret = zinTrim(value);      break;
-		default: zinAssert(false, transform);
+		default: zinAssertAndLog(false, transform);
 	}
 
 	return ret;
@@ -748,5 +732,24 @@ var ContactGoogleStatic = {
 		}
 
 		return xml;
+	},
+	add_whitespace_to_postal_line : function(x) {
+		return " " + x + " ";
+	},
+	add_whitespace_to_postal_properties : function(properties, key) {
+		with (ContactGoogleStatic) {
+			let properties_out   = { };
+			let a_gac_properties = new Object();
+			let is_sane          = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
+
+			zinAssertAndLog(is_sane, function() { return "key: " + key + " properties: " + aToString(properties); } );
+
+			for (i in a_gac_properties)
+				a_gac_properties[i] = add_whitespace_to_postal_line(a_gac_properties[i]);
+
+			gac.convert(properties_out, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
+		}
+
+		return properties_out[key];
 	}
 };

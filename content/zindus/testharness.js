@@ -71,7 +71,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testContactGoogle1();
 	// ret = ret && this.testContactGoogle2();
 	// ret = ret && this.testContactGoogleIterators();
-	// ret = ret && this.testContactGooglePostalAddress();
+	ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testBiMap();
 	// ret = ret && this.testStringBundleContainsContactProperties();
@@ -89,7 +89,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testPerformanceZfcSet();
 	// ret = ret && this.testPerformanceStringConcat();
 	// ret = ret && this.testPerformanceLoggingStyles();
-	ret = ret && this.testTb3CardUuid();
+	// ret = ret && this.testTb3CardUuid();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -1066,8 +1066,10 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 	properties["email1"] = "10";
 	properties["email2"] = "11";
 	properties["im_AIM"] = "12";
-	properties["postalAddress_home"] = "13";
-	properties["postalAddress_work"] = "14";
+	// properties["postalAddress_home"] = "13";
+	// properties["postalAddress_work"] = "14";
+	properties["postalAddress_home"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>13</street></address>";
+	properties["postalAddress_work"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>14</street></address>";
 
 	return properties;
 }
@@ -1740,8 +1742,42 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	tb_properties["HomeAddress2"] = this.m_street2;
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
+	this.m_logger.debug("testing xmlify");
+	this.m_logger.debug("tb_properties:  " + aToString(tb_properties));
+	this.m_logger.debug("gd_properties:  " + aToString(gd_properties));
+	this.m_logger.debug("contact before update: " + contact.toString());
 	contact.properties = gd_properties;
 	zinAssert(contact.postalAddressOtherAddr("postalAddress_home") == this.m_otheraddr);
+	var tb_properties_2 = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
+	this.m_logger.debug("contact after update: " + contact.toString());
+	this.m_logger.debug("tb_properties_2:  " + aToString(tb_properties_2));
+	zinAssert(isMatchObjects(tb_properties, tb_properties_2));
+
+
+	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", adding postal fields to a contact should xmlify postalAddress inside the contact
+	// 
+	this.setupFixtureGdPostalAddress();
+
+	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
+	contact = ContactGoogle.textToContact(context.m_entry_as_xml_char.replace("@@postal@@", "" ), ContactGoogle.ePostal.kDisabled);
+	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
+	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
+	contact.properties = gd_properties;
+	this.m_logger.debug("contact with no postal: " + contact.toString());
+	contact.mode(ContactGoogle.ePostal.kEnabled);
+
+	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
+	tb_properties["HomeAddress2"] = this.m_street2;
+	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
+	// this.m_logger.debug("testing xmlify on add");
+	// this.m_logger.debug("tb_properties:  " + aToString(tb_properties));
+	// this.m_logger.debug("gd_properties:  " + aToString(gd_properties));
+	// this.m_logger.debug("contact before add: " + contact.toString());
+	contact.properties = gd_properties;
+	var tb_properties_2 = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
+	// this.m_logger.debug("contact after add: " + contact.toString());
+	// this.m_logger.debug("tb_properties_2:  " + aToString(tb_properties_2));
+	zinAssert(isMatchObjects(tb_properties, tb_properties_2));
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact (no address field) should xmlify the plain-text
 	// into the <otheraddr> element
@@ -1753,7 +1789,6 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 	contact.properties = gd_properties;
-	// this.m_logger.debug("contact after update: " + contact.toString());
 	// this.m_logger.debug("contact.postalAddressOtherAddr: " + contact.postalAddressOtherAddr("postalAddress_home"));
 	zinAssert(contact.postalAddressOtherAddr("postalAddress_home") == this.m_otheraddr);
 
@@ -1767,14 +1802,17 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 
 	// test addWhitespaceToPostalProperties
 	//
+	if (false)
+	{
 	contact = new_contact(this.m_address_as_xml_entity);
 	zinAssert(contact.isAnyPostalAddressInXml());
 	gd_properties = cloneObject(contact.properties);
 	// this.m_logger.debug("addWhitespaceToPostalProperties: before: " + aToString(gd_properties));
 	var properties_with_postal_whitespace = ContactGoogle.addWhitespaceToPostalProperties(gd_properties);
-	// this.m_logger.debug("addWhitespaceToPostalProperties: after: " + aToString(properties_with_postal_whitespace));
+	this.m_logger.debug("addWhitespaceToPostalProperties: after: " + aToString(properties_with_postal_whitespace));
 	zinAssert(new RegExp(' ' + this.m_street1 + ' ').test(properties_with_postal_whitespace['postalAddress_home']))
 	zinAssert(gd_properties['email1'] == properties_with_postal_whitespace['email1']);
+	}
 
 	this.m_logger.debug("testContactGooglePostalAddress: end");
 

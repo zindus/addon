@@ -6219,11 +6219,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 		switch(suo.opcode | type)
 		{
 			case Suo.ADD | FeedItem.TYPE_CN:
-				msg           += " about to add contact: ";
-				properties     = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
-
-				if (this.state.gd_is_sync_postal_address)
-					ContactGoogle.addWhitespaceToPostalProperties(properties);
+				msg               += " about to add contact: ";
+				properties         = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
 				contact            = new ContactGoogle();
 				contact.properties = properties;
@@ -6250,18 +6247,16 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 				// convert the properties to a gd contact so that transformations apply before the identity test
 				//
-				if (this.state.gd_is_sync_postal_address)
-					ContactGoogle.addWhitespaceToPostalProperties(properties);
-
 				contact.properties = properties;
 				contact.postalAddressRemoveEmptyElements(); // see issue #160
 
 				if (isMatchObjects(properties_pre_update, contact.properties))
 				{
-					zfiTarget  = zfcTarget.get(luid_target);
-					msg       += " the local mod doesn't affect the remote contact - skip remote update: " + aToString(properties_pre_update);
-					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
 					// ... a no-op ... no need to contact Google
+
+					zfiTarget  = zfcTarget.get(luid_target);
+					msg       += " the local mod doesn't affect the remote contact - skip update: " + aToString(properties_pre_update);
+					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
 				}
 				else
 				{
