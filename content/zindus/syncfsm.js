@@ -6245,6 +6245,12 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 				var properties_pre_update = contact.properties;
 
+				if (false)
+				this.debug("\n winning properties: " + aToString(properties) +
+				           "\n contact.mode: " + contact.mode() +
+				           "\n contact.properties before update: " + aToString(properties_pre_update) +
+				           "\n contact.properties after update: " + aToString(contact.properties));
+
 				// convert the properties to a gd contact so that transformations apply before the identity test
 				//
 				contact.properties = properties;
@@ -6257,6 +6263,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					zfiTarget  = zfcTarget.get(luid_target);
 					msg       += " the local mod doesn't affect the remote contact - skip update: " + aToString(properties_pre_update);
 					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
+					suo.is_processed = true;
 				}
 				else
 				{
@@ -6788,6 +6795,11 @@ SyncFsm.prototype.contact_converter = function()
 	zinAssert(ret);
 
 	return ret;
+}
+
+SyncFsm.prototype.google_contact_mode = function()
+{
+	return this.state.gd_is_sync_postal_address ? ContactGoogle.ePostal.kEnabled : ContactGoogle.ePostal.kDisabled;
 }
 
 // if there's no ver in the gid, add it and reset the zfi ls
@@ -8019,10 +8031,8 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 
 	this.state.a_gd_contact = new Object();
 
-	let mode = this.state.gd_is_sync_postal_address ? ContactGoogle.ePostal.kEnabled : ContactGoogle.ePostal.kDisabled;
-
 	for (i = 0; i < this.state.a_gd_response.length; i++)
-		ContactGoogle.textToContacts(this.state.a_gd_response[i], this.state.a_gd_contact, mode);
+		ContactGoogle.textToContacts(this.state.a_gd_response[i], this.state.a_gd_contact, this.google_contact_mode());
 
 	this.state.m_progress_yield_text = "parsing-google-xml";
 
@@ -8118,7 +8128,7 @@ SyncFsmGd.prototype.exitActionGetContactPuGd = function(state, event)
 	}
 	else
 	{
-		let contact = ContactGoogle.textToContact(this.state.m_http.response('text'));
+		let contact = ContactGoogle.textToContact(this.state.m_http.response('text'), this.google_contact_mode());
 		let id      = contact.meta.id;
 
 		zinAssertAndLog(!(id in this.state.a_gd_contact), function () { return "id=" + id; });
@@ -8248,7 +8258,7 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 
 		this.debug(bigmsg.toString());
 
-		this.state.m_logger.debug("entryActionDeXmlifyAddrGd: a_gd_contact_dexmlify_ids: "+this.state.a_gd_contact_dexmlify_ids.toString());
+		this.debug("entryActionDeXmlifyAddrGd: a_gd_contact_dexmlify_ids: " + this.state.a_gd_contact_dexmlify_ids.toString());
 	}
 
 	if (this.state.a_gd_contact_dexmlify_ids.length > 0)

@@ -31,6 +31,10 @@ function ContactGoogle(xml, mode) {
 	this.meta_initialise_getters();
 }
 
+ContactGoogle.eMeta      = new ZinEnum( 'id', 'updated', 'edit', 'self', 'deleted' );
+ContactGoogle.ePostal    = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
+ContactGoogle.eTransform = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
+
 ContactGoogle.prototype = {
 meta_initialise_getters : function () {
 	let fn, key, value;
@@ -428,31 +432,30 @@ postalAddressRemoveEmptyElements : function () {
 		if (children[i].name().uri == Xpath.NS_GD && children[i].name().localName == 'postalAddress' && children[i].*.length() == 0)
 			delete children[i];
 },
-is_empty: function() {
+is_empty : function() {
 	return isObjectEmpty(this.properties);
 },
-toString: function() {
+toString : function() {
 	var ret = "\n";
 	var key, value;
 
+	ret += " meta:       ";
 	for ([key, value] in ContactGoogle.eMeta)
-		ret += " meta:     " + key + ": " + this.meta[key] + "\n";
+		ret += " " + key + ": " + this.meta[key];
+	ret += "\n"
 
-	ret += " groups:   " + this.groups.toString() + "\n";
+	ret += " groups:     " + this.groups.toString() + "\n";
 
+	ret += " properties: ";
 	for (key in this.properties)
-		ret += " property: " + key + ": " + this.properties[key] + "\n";
+		ret += " " + key + ": " + this.properties[key];
 
 	return ret;
 },
-toStringXml: function() {
+toStringXml : function() {
 	return this.m_entry.toXMLString();
 }
 };
-
-ContactGoogle.eMeta      = new ZinEnum( 'id', 'updated', 'edit', 'self', 'deleted' );
-ContactGoogle.ePostal    = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
-ContactGoogle.eTransform = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
 
 // factory methods
 //

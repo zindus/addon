@@ -13,9 +13,9 @@
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.google.sync.with.pab.label "Axenda de Direccións Persoal">
 <!ENTITY zindus.ca.google.sync.with.label               "Sincronizar contactos de Google con">
-<!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Contacts">
-<!ENTITY zindus.ca.google.suggested.include.label       "Include">
-<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignore">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Contactos Suxeridos por Google">
+<!ENTITY zindus.ca.google.suggested.include.label       "Incluir">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorar">
 <!ENTITY zindus.ca.zimbra.gal.label "Lista de Direccións Global (GAL):">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Si">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Non">

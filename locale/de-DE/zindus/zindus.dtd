@@ -14,7 +14,7 @@
 <!ENTITY zindus.ca.google.sync.with.pab.label "Persönliches Adressbuch">
 <!ENTITY zindus.ca.google.sync.with.label               "Synchronisiere Google Kontakte mit">
 <!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Kontakte">
-<!ENTITY zindus.ca.google.suggested.include.label       "Include">
+<!ENTITY zindus.ca.google.suggested.include.label       "Verwenden">
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorieren">
 <!ENTITY zindus.ca.zimbra.gal.label "Globale Adressliste (GAL):">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Ja">
