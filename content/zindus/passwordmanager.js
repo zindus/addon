@@ -29,135 +29,133 @@ function PasswordManager()
 	this.m_logger                     = newLogger("PasswordManager");
 }
 
-PasswordManager.prototype.get = function(host, username)
-{
-	var value = null;
+PasswordManager.prototype = {
+	get : function(host, username) {
+		var value = null;
 
-	try {
-		var a_host     = { value: "" };
-		var a_username = { value: "" };
-		var a_password = { value: "" };
+		try {
+			var a_host     = { value: "" };
+			var a_username = { value: "" };
+			var a_password = { value: "" };
 
-		this.m_nsIPasswordManagerInternal.findPasswordEntry(host, username, "", a_host, a_username, a_password);
+			this.m_nsIPasswordManagerInternal.findPasswordEntry(host, username, "", a_host, a_username, a_password);
 
-		value = a_password.value;
+			value = a_password.value;
+		}
+		catch (ex) {
+			this.m_logger.debug("get: findPasswordEntry failed: host: " + host + " username: " + username + " ex: " + ex.messsage);
+		}
+
+		return value;
+	},
+	del : function(host, username) {
+		var is_success = true;
+
+		try {
+			this.m_nsIPasswordManager.removeUser(host, username);
+		}
+		catch (ex) {
+			is_success = false;
+			this.m_logger.debug("del: removeUser failed: host: " + host + " username: " + username + " ex: " + ex.messsage); // issue #172
+		}
+
+		if (is_success)
+			this.m_logger.debug("del: host: " + host + " username: " + username + (is_success ? " succeeded" : " failed"));
+
+		return is_success;
+	},
+	set : function(host, username, password) {
+		var is_success = false;
+
+		try {
+			this.m_nsIPasswordManager.removeUser(host, username); // Remove the old password first because addUser does "add" not "udpate"
+		}
+		catch (ex) {
+			this.m_logger.debug("set: removeUser failed: host: " + host + " username: " + username + " ex: " + ex.messsage); // issue #172
+		}
+
+		try {
+			is_success = true;
+			this.m_nsIPasswordManager.addUser(host, username, password);
+		}
+		catch (ex) {
+			this.m_logger.debug("set: addUser failed: host: " + host + " username: " + username + " ex: " + ex.messsage); // for issue #172
+		}
+
+		if (is_success)
+			this.m_logger.debug("set: host: " + host + " username: " + username);
 	}
-	catch (ex) {
-	}
+};
 
-	return value;
-}
-
-PasswordManager.prototype.del = function(host, username)
-{
-	var is_success = true;
-
-	try {
-		this.m_nsIPasswordManager.removeUser(host, username);
-	}
-	catch (ex) {
-		is_success = false;
-	}
-
-	this.m_logger.debug("PasswordManager.del: host: " + host + " username: " + username + (is_success ? " succeeded" : " failed"));
-
-	return is_success;
-}
-
-PasswordManager.prototype.set = function(host, username, password)
-{
-	try {
-		this.m_nsIPasswordManager.removeUser(host, username); // Remove the old password first because addUser does "add" not "udpate"
-	}
-	catch (ex)
-	{
-	}
-
-	this.m_nsIPasswordManager.addUser(host, username, password);
-
-	this.m_logger.debug("PasswordManager.set: host: " + host + " username: " + username);
-}
-
-// The "test sync with account" feature means that we have to use a password without it being saved in the password manager
-// against it's url and username.
-// At the same time, we want to minimise the extent to which passwords are managed in cleartext in memory
-// So what we do is store immediately store all passwords in the password manager using PasswordLocator
-// and for the "test sync with account" feature we can use a fake url and username that's independent of the real sync url and username
+// PasswordLocator
+// This class allows us to avoid ever passing a password from one function to another.
+// Instead, we pass around instances of PasswordLocator then retrieve the actual password from Thunderbird's password
+// manager when we have to use it.
 //
-
-PasswordLocator.TempUrl      = "http://temp-password-for-zindus-account.tld";
-PasswordLocator.TempUsername = "username-should-never-persist-beyond-config-setup";
-
 // one arg  ==> copy constructor
 // two args ==> url and username
 //
-function PasswordLocator(url, username)
+function PasswordLocator()
 {
-	if (arguments.length == 1)
-	{
-		var pl = url;
+	var url, username;
 
-		username = pl.username();
-		url      = pl.url();
+	if (arguments.length == 1) {
+		url      = arguments[0].url();
+		username = arguments[0].username();
 	}
+	else if (arguments.length == 2) {
+		url      = arguments[0];
+		username = arguments[1];
+	}
+	else
+		zinAssert(false);
 
 	zinAssertAndLog(typeof(url) != 'undefined' && typeof(username) != 'undefined' &&
-	                url != null && username != null, "url: " + url + " username: " + username);
+	                url != null && username != null, function () { return "url: " + url + " username: " + username; });
 
 	this.m_url      = url;
 	this.m_username = username;
 }
 
-PasswordLocator.prototype.toString = function()
-{
-	return "url: " + this.url() + " username: " + this.username();
-}
+PasswordLocator.prototype = {
+	toString : function() {
+		return "url: " + this.url() + " username: " + this.username();
+	},
+	url : function(value) {
+		if (value)
+			this.m_url = value;
 
-PasswordLocator.prototype.url = function(value)
-{
-	if (value)
-		this.m_url = value;
+		return this.m_url;
+	},
+	username : function(value) {
+		if (value)
+			this.m_username = value;
 
-	return this.m_url;
-}
+		return this.m_username;
+	},
+	delPassword : function() {
+		let pm = new PasswordManager();
+		pm.del(this.m_url, this.m_username);
+	},
+	setPassword : function(value) {
+		var ret = null;
 
-PasswordLocator.prototype.username = function(value)
-{
-	if (value)
-		this.m_username = value;
+		if (value) {
+			let pm = new PasswordManager();
+			pm.set(this.m_url, this.m_username, value);
+			ret = value;
+		}
 
-	return this.m_username;
-}
+		return ret;
+	},
+	getPassword : function() {
+		var ret = null;
 
-PasswordLocator.prototype.delPassword = function()
-{
-	var pm = new PasswordManager();
-	pm.del(this.m_url, this.m_username);
-}
+		if (this.m_url && this.m_username) {
+			let pm = new PasswordManager();
+			ret = pm.get(this.m_url, this.m_username);
+		}
 
-PasswordLocator.prototype.setPassword = function(value)
-{
-	var ret = null;
-
-	if (value)
-	{
-		var pm = new PasswordManager();
-		pm.set(this.m_url, this.m_username, value);
-		ret = value;
+		return ret;
 	}
-
-	return ret;
-}
-
-PasswordLocator.prototype.getPassword  = function()
-{
-	var ret = null;
-
-	if (this.m_url && this.m_username)
-	{
-		var pm = new PasswordManager();
-		ret = pm.get(this.m_url, this.m_username);
-	}
-
-	return ret;
-}
+};
