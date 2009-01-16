@@ -23,32 +23,29 @@
 
 // Handy place to keep stuff that we only ever need one of
 //
-function Singleton()
+function singleton() {
+	if (typeof (singleton.m_instance) == "undefined")
+		singleton.m_instance = new SingletonInstance();
+
+	return singleton.m_instance;
+}
+
+function SingletonInstance()
 {
 	this.m_preferences      = new MozillaPreferences();
-
-	var loglevel            = this.get_loglevel_from_preference();
-	this.m_logger_global    = new Logger(loglevel, "global");
-	this.m_logger_no_prefix = new Logger(loglevel, "");
+	this.m_logger_global    = new Logger(this.get_loglevel_from_preference(), "global");
+	this.m_logger_no_prefix = new Logger(this.get_loglevel_from_preference(), "");
 }
 
-Singleton.instance = function()
-{
-	if (typeof (Singleton.m_instance) == "undefined")
-		Singleton.m_instance = new Singleton();
-
-	return Singleton.m_instance;
-}
-
-Singleton.prototype.preferences = function() { return this.m_preferences;    }
-
-Singleton.prototype.logger = function(type)
-{
-	return (type && type == 'info') ? this.m_logger_no_prefix : this.m_logger_global;
-}
-
-Singleton.prototype.get_loglevel_from_preference = function()
-{
-	return (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(),
-	                        "general." + PrefSet.GENERAL_AS_VERBOSE_LOGGING ) == "true") ? Logger.DEBUG : Logger.INFO;
-}
+SingletonInstance.prototype = {
+	preferences : function() {
+		return this.m_preferences;
+	},
+	logger : function(type) {
+		return (type && type == 'info') ? this.m_logger_no_prefix : this.m_logger_global;
+	},
+	get_loglevel_from_preference : function() {
+		return (this.m_preferences.getCharPrefOrNull(this.m_preferences.branch(),
+	                        PrefSet.GENERAL + "." + PrefSet.GENERAL_AS_VERBOSE_LOGGING ) == "true") ? Logger.DEBUG : Logger.INFO;
+	}
+};

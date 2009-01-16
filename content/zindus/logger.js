@@ -268,7 +268,7 @@ Logger.nsIConsoleListener = function()
 {
 	// see: http://developer.mozilla.org/en/docs/Console_service
 	//
-	var logger = Singleton.instance().logger();
+	var logger = singleton().logger();
 
 	var listener = {
 		observe:function( aMessage ) {

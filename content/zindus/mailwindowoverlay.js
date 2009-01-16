@@ -210,7 +210,7 @@ ZinMailWindowOverlay.prototype.observe = function(subject, topic, data)
 	{
 		this.m_logger.debug("ZinMailWindowOverlay: observe: topic: " + topic);
 
-		this.m_logger.level(Singleton.instance().get_loglevel_from_preference());
+		this.m_logger.level(singleton().get_loglevel_from_preference());
 
 		this.timerShutdown();
 		this.timerStartup();

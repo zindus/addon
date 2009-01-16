@@ -306,8 +306,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			this.updatePrefsetsFromDocument();
 			this.m_prefset_general.save();
 
-			this.m_logger.level(Singleton.instance().get_loglevel_from_preference());
-			Singleton.instance().logger().level(Singleton.instance().get_loglevel_from_preference());
+			this.m_logger.level(singleton().get_loglevel_from_preference());
+			singleton().logger().level(singleton().get_loglevel_from_preference());
 
 			ObserverService.notify(ObserverService.TOPIC_PREFERENCE_CHANGE, null, null);
 

@@ -1983,7 +1983,7 @@ TestHarness.prototype.testDeleteCard = function()
 TestHarness.prototype.testFileLoggingTimes = function()
 {
 	var log_appender = new LogAppenderHoldOpen();
-	var logger       = new Logger(Singleton.instance().logger().level(), "TestHarnessTimer", log_appender);
+	var logger       = new Logger(singleton().logger().level(), "TestHarnessTimer", log_appender);
 	var msg          = " 123456789 123456789 123456789 123456789 123456789 123456789";
 	var lines        = 8683;
 	var i, a;
@@ -2474,7 +2474,7 @@ TestHarness.prototype.testPerformanceLoggingStyles = function()
 
 	// this class has been removed: var appender = new LogAppenderHoldOpenAndBuffer()
 	var appender = new LogAppenderHoldOpen()
-	var buflogger = new Logger(Singleton.instance().logger().level(), "testPerformanceLoggingStyles", appender);
+	var buflogger = new Logger(singleton().logger().level(), "testPerformanceLoggingStyles", appender);
 
 	stopwatch.mark("before loop with buflogger: " + (stopwatch.elapsed() - last)); last = stopwatch.elapsed();
 

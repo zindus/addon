@@ -423,7 +423,7 @@ function newObjectWithKeys()
 
 function newLogger(prefix)
 {
-	return new Logger(Singleton.instance().logger().level(), prefix);
+	return new Logger(singleton().logger().level(), prefix);
 }
 
 function isObjectEmpty(obj)
@@ -763,9 +763,9 @@ function rightOfChar(str, c)
 
 function isSingletonInScope()
 {
-	return (typeof(Singleton) == 'function' && typeof(Singleton.instance()) == 'object'
-	                                        && typeof(Singleton.instance().logger()) == 'object'
-											&& typeof(Singleton.instance().logger().error) == 'function');
+	return (typeof(singleton) == 'function' && typeof(singleton()) == 'object'
+	                                        && typeof(singleton().logger()) == 'object'
+											&& typeof(singleton().logger().error) == 'function');
 }
 
 function prefsetMatchWithPreAuth(url)
@@ -946,11 +946,11 @@ function textToHtml(text)
 	return html;
 }
 
-function logger(arg)   { return Singleton.instance().logger(arg);   }
-function preferences() { return Singleton.instance().preferences(); }
+function logger(arg)   { return singleton().logger(arg);   }
+function preferences() { return singleton().preferences(); }
 function preference(key, type)
 {
-	var p = Singleton.instance().preferences();
+	var p = singleton().preferences();
 	var ret;
 
 	switch (type)
