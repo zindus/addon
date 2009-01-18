@@ -43,7 +43,7 @@ PasswordManager.prototype = {
 			value = a_password.value;
 		}
 		catch (ex) {
-			this.m_logger.debug("get: findPasswordEntry failed: host: " + host + " username: " + username + " ex: " + ex.messsage);
+			this.m_logger.debug("get: findPasswordEntry failed: host: " + host + " username: " + username + " ex: " + ex);
 		}
 
 		return value;
@@ -56,7 +56,7 @@ PasswordManager.prototype = {
 		}
 		catch (ex) {
 			is_success = false;
-			this.m_logger.debug("del: removeUser failed: host: " + host + " username: " + username + " ex: " + ex.messsage); // issue #172
+			this.m_logger.debug("del: removeUser failed: host: " + host + " username: " + username + " ex: " + ex); // issue #172
 		}
 
 		if (is_success)
@@ -71,7 +71,7 @@ PasswordManager.prototype = {
 			this.m_nsIPasswordManager.removeUser(host, username); // Remove the old password first because addUser does "add" not "udpate"
 		}
 		catch (ex) {
-			this.m_logger.debug("set: removeUser failed: host: " + host + " username: " + username + " ex: " + ex.messsage); // issue #172
+			this.m_logger.debug("set: removeUser failed: host: " + host + " username: " + username + " ex: " + ex); // issue #172
 		}
 
 		try {
@@ -79,7 +79,7 @@ PasswordManager.prototype = {
 			this.m_nsIPasswordManager.addUser(host, username, password);
 		}
 		catch (ex) {
-			this.m_logger.debug("set: addUser failed: host: " + host + " username: " + username + " ex: " + ex.messsage); // for issue #172
+			this.m_logger.debug("set: addUser failed: host: " + host + " username: " + username + " ex: " + ex); // for issue #172
 		}
 
 		if (is_success)
