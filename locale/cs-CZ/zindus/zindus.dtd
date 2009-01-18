@@ -13,8 +13,8 @@
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.google.sync.with.pab.label "Osobní kontakty">
 <!ENTITY zindus.ca.google.sync.with.label "Synchronizovat kontakty Google s">
-<!ENTITY zindus.ca.google.suggested.contacts.label      "Google navrhla kontakty">
-<!ENTITY zindus.ca.google.suggested.include.label       "Zahrnovat">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Kontakty navržené Googlem">
+<!ENTITY zindus.ca.google.suggested.include.label       "Zahrnout">
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorovat">
 <!ENTITY zindus.ca.zimbra.gal.label "Globální kontaky">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Ano">
