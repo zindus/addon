@@ -26,10 +26,9 @@ includejs("contactgoogle.js"); // in development
 function TestHarness()
 {
 	this.m_logger = newLogger("TestHarness");
-	this.m_bugzilla_432145_count = 100;
 	this.m_a_books = [1000, 2000, 3000, 4000, 5000];
 
-
+	this.m_bugzilla_432145_count = 100;
 	this.m_bugzilla_432145_uri = new Array();
 	this.m_bugzilla_432145_uri[0] = "moz-abmdbdirectory://abook-3.mab";
 	this.m_bugzilla_432145_uri[1] = "moz-abmdbdirectory://abook-12.mab";
@@ -50,7 +49,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	// ret = ret && this.testContactConverter();
+	ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testAddressBookBugzilla432145Create();
@@ -61,20 +60,20 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
-	// ret = ret && this.testZuio();
+	ret = ret && this.testZuio();
 	// ret = ret && this.testGoogleContacts1();
 	// ret = ret && this.testGoogleContacts2();
 	// ret = ret && this.testGoogleContacts3();
 	// ret = ret && this.testGoogleContacts4();
 	// ret = ret && this.testGoogleContacts5();
-	// ret = ret && this.testZinEnum();
-	// ret = ret && this.testContactGoogle1();
-	// ret = ret && this.testContactGoogle2();
-	// ret = ret && this.testContactGoogleIterators();
+	ret = ret && this.testZinEnum();
+	ret = ret && this.testContactGoogle1();
+	ret = ret && this.testContactGoogle2();
+	ret = ret && this.testContactGoogleIterators();
 	ret = ret && this.testContactGooglePostalAddress();
-	// ret = ret && this.testGdAddressConverter();
-	// ret = ret && this.testBiMap();
-	// ret = ret && this.testStringBundleContainsContactProperties();
+	ret = ret && this.testGdAddressConverter();
+	ret = ret && this.testBiMap();
+	ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
 	// ret = ret && this.testDeleteCard();
 	// ret = ret && this.testFileLoggingTimes();
@@ -737,6 +736,8 @@ TestHarness.prototype.testZuio = function()
 	ret = ret && zuio.zid() == null;
 	ret = ret && !zuio.zid();
 
+	zinAssert(ret);
+
 	return ret;
 }
 
@@ -1103,12 +1104,28 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 	var key;
 	zinAssert(contact && contact.properties);
 
+	function try_match_postal(key) {
+
+		if (/postalAddress.*$/.test(key) && is_match_postal)
+		{
+			var re = /[ \r\n'"]/mg;
+			var left  = contact.properties[key].replace(re,"")
+			var right = properties[key].replace(re,"");
+			// logger().debug("AMHEREZ: left: " + left);
+			// logger().debug("AMHEREZ: right: " + right);
+
+			zinAssertAndLog(left == right, "key: " + key + " value in contact: " + contact.properties[key] + " expected: " + properties[key]);
+		}
+	}
+
 	this.m_logger.debug("matchContactGoogle: blah: \n properties: " + aToString(properties) + " \nmeta: " + aToString(meta) + " \ncontact properties: " + aToString(contact.properties));
 	this.m_logger.debug("matchContactGoogle: blah: \ncontact xml: " + contact.toStringXml());
 
 	for (key in properties)
-		if (!/postalAddress.*$/.test(key) || is_match_postal)
+		if (!/postalAddress.*$/.test(key))
 			zinAssertAndLog(contact.properties[key] == properties[key], "key: " + key + " value in contact: " + contact.properties[key] + " expected: " + properties[key]);
+		else
+			try_match_postal(key);
 
 	if (meta)
 		for (key in meta)
@@ -1116,8 +1133,10 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 
 	if (contact.properties)
 		for (key in contact.properties)
-			if (!/postalAddress.*$/.test(key) || is_match_postal)
+			if (!/postalAddress.*$/.test(key))
 				zinAssertAndLog(contact.properties[key] == properties[key], "key: " + key);
+			else
+				try_match_postal(key);
 
 	if (meta)
 		for (key in contact.meta)
@@ -1340,6 +1359,12 @@ TestHarness.prototype.testContactGoogle2 = function()
 	var id = firstKeyInObject(a_gd_contact);
 	var contact = a_gd_contact[id];
 
+	function remove_postal_properties(properties) {
+		var ret = cloneObject(properties);
+		if ('postalAddress_home' in ret) delete ret['postalAddress_home'];
+		if ('postalAddress_work' in ret) delete ret['postalAddress_work'];
+		return ret;
+	}
 	function match(contact, properties, meta) {
 		var mode;
 		var orig = contact.mode();
@@ -1387,7 +1412,6 @@ TestHarness.prototype.testContactGoogle2 = function()
 	//
 	properties = this.sampleContactGoogleProperties();
 	contact.properties = properties;
-	this.m_logger.debug("AMHERE ALL: " + contact.toStringXml());
 	match(contact, properties, null);
 
 	// test adding all properties to a new contact
@@ -1689,7 +1713,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	contact = new ContactGoogle();
 	contact.mode(ContactGoogle.ePostal.kEnabled);
 	contact.properties = properties;
-	zinAssert(!contact.isAnyPostalAddressInXml());
+	zinAssert(contact.isAnyPostalAddressInXml());
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", test a contact can be created with an empty <gd:postalAddress> element - Issue #83
 	//
