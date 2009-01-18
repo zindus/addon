@@ -382,6 +382,8 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 		else
 			new_properties = properties;
 
+		// logger().debug("AMHERE: key: " + key + " new_properties: " + aToString(new_properties));
+
 		modify_or_delete_child(xml, new_properties, key, a_is_used);
 	}
 },
@@ -649,7 +651,7 @@ var ContactGoogleStatic = {
 		return (length == 0) ? "" : xml.toString();
 	},
 	set_if : function(properties, key, xml_value) {
-		var value = xml_value.toString();
+		var value = xml_value.hasComplexContent() ? xml_value.child(0).toString() : xml_value.toString(); // TODO is this right?
 		// logger().debug("AMHERE: set_if: key: " + key + " value: " + value + " length: " + value.length);
 		// logger().debug("AMHERE: set_if: xml_value: " + xml_value + " length: " + xml_value.length());
 		if (value.length > 0)
@@ -741,7 +743,7 @@ var ContactGoogleStatic = {
 	},
 	add_whitespace_to_postal_properties : function(properties, key) {
 		with (ContactGoogleStatic) {
-			let properties_out   = { };
+			var properties_out   = { };
 			let a_gac_properties = new Object();
 			let is_sane          = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
 
