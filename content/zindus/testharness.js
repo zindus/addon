@@ -1584,8 +1584,6 @@ TestHarness.prototype.testZinEnum = function()
 		zinAssertAndLog(enm2.isPresent(value), value);
 	}
 
-	// TODO confirm this works on linux
-	//
 	for each ([key, value] in enm1) {
 		this.m_logger.debug("enm1: for: value: " + value);
 		zinAssertAndLog(enm1.isPresent(value), value);

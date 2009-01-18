@@ -304,7 +304,7 @@ function isMatchObjectKeys(obj1, obj2)
 
 	if (ret)
 		for (i in obj1)
-			if (!isPropertyPresent(obj2, i))
+			if (!(i in obj2))
 			{
 				ret = false;
 				// newLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
@@ -313,7 +313,7 @@ function isMatchObjectKeys(obj1, obj2)
 
 	if (ret)
 		for (i in obj2)
-			if (!isPropertyPresent(obj1, i))
+			if (!(i in obj1))
 			{
 				ret = false;
 				// newLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
@@ -349,7 +349,7 @@ function isMatchArrayElementInObject(a, obj)
 	var ret = true;
 
 	for (var i = 0; i < a.length; i++)
-		if (!isPropertyPresent(obj, a[i]))
+		if (!(a[i] in obj))
 		{
 			ret = false;
 			break;
@@ -363,7 +363,7 @@ function keysForMatchingValues(a1, a2)
 	var ret = new Object();
 
 	for (key in a1)
-		if (isPropertyPresent(a2, key) && a1[key] == a2[key])
+		if ((key in a2) && a1[key] == a2[key])
 			ret[key] = a1[key];
 
 	return ret;
