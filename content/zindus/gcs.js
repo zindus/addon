@@ -14,14 +14,14 @@
  * 
  * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
- * Portions created by Initial Developer are Copyright (C) 2007-2008
+ * Portions created by Initial Developer are Copyright (C) 2007-2009
  * the Initial Developer. All Rights Reserved.
  * 
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
 
-// gcs == Global Converged State
+// Gcs == Global Converged State
 //
 
 var eGcs = new ZinEnum( 'win', 'conflict' );
@@ -34,7 +34,8 @@ function Gcs(sourceid, state)
 	this.state    = state;
 }
 
-Gcs.prototype.toString = function()
-{
-	return  "winner: " + this.sourceid + " state: " + eGcs.keyFromValue(this.state);
-}
+Gcs.prototype = {
+	toString : function() {
+		return  "winner: " + this.sourceid + " state: " + eGcs.keyFromValue(this.state);
+	}
+};

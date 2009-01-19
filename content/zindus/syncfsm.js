@@ -14,7 +14,7 @@
  * 
  * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
- * Portions created by Initial Developer are Copyright (C) 2007-2008
+ * Portions created by Initial Developer are Copyright (C) 2007-2009
  * the Initial Developer. All Rights Reserved.
  * 
  * Contributor(s): Leni Mayo
@@ -31,9 +31,9 @@ includejs("addressbook.js");
 includejs("contactconverter.js");
 includejs("folderconverter.js");
 includejs("feed.js");
+includejs("gcs.js");
 includejs("suo.js");
 includejs("zuio.js");
-includejs("gcs.js");
 includejs("lso.js");
 includejs("zidbag.js");
 includejs("passwordmanager.js");
@@ -634,7 +634,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	if (is_slow_sync)
 	{
-		RemoveDatastore.removeZfc(filename_pr);
+		Filesystem.removeZfc(filename_pr);
 
 		this.removeSourceIdFromGid(sourceid_pr);
 

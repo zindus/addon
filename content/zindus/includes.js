@@ -14,7 +14,7 @@
  * 
  * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
- * Portions created by Initial Developer are Copyright (C) 2007-2008
+ * Portions created by Initial Developer are Copyright (C) 2007-2009
  * the Initial Developer. All Rights Reserved.
  * 
  * Contributor(s): Leni Mayo
@@ -44,7 +44,7 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("observerservice.js");
 	ZindusScopeRegistry.includejs("maestro.js");
 	ZindusScopeRegistry.includejs("timer.js");
-	ZindusScopeRegistry.includejs("removedatastore.js");
+	// TODO remove me ZindusScopeRegistry.includejs("removedatastore.js");
 	ZindusScopeRegistry.includejs("configsettings.js");
 	ZindusScopeRegistry.includejs("googlerule.js");
 }

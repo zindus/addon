@@ -14,7 +14,7 @@
  * 
  * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
- * Portions created by Initial Developer are Copyright (C) 2007-2008
+ * Portions created by Initial Developer are Copyright (C) 2007-2009
  * the Initial Developer. All Rights Reserved.
  * 
  * Contributor(s): Leni Mayo
@@ -46,7 +46,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 			this.migratePrefs();
 
-			RemoveDatastore.removeZfcsIfNecessary();
+			Filesystem.removeZfcsIfNecessary();
 
 			ObserverService.register(this, this.m_topic_preference_change);
 

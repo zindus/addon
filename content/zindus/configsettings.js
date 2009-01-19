@@ -14,7 +14,7 @@
  * 
  * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
- * Portions created by Initial Developer are Copyright (C) 2007-2008
+ * Portions created by Initial Developer are Copyright (C) 2007-2009
  * the Initial Developer. All Rights Reserved.
  * 
  * Contributor(s): Leni Mayo
@@ -219,8 +219,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 
 		case "cs-button-reset":
-			RemoveDatastore.removeZfcs();
-			RemoveDatastore.removeLogfile();
+			Filesystem.removeZfcs();
+			Filesystem.removeLogfile();
 			StatusBar.update();
 			break;
 

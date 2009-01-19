@@ -14,7 +14,7 @@
  * 
  * The Initial Developer of the Original Code is Toolware Pty Ltd.
  *
- * Portions created by Initial Developer are Copyright (C) 2007-2008
+ * Portions created by Initial Developer are Copyright (C) 2007-2009
  * the Initial Developer. All Rights Reserved.
  * 
  * Contributor(s): Leni Mayo
@@ -27,7 +27,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.16 2008-12-20 05:27:24 cvsuser Exp $
+// $Id: fsm.js,v 1.17 2009-01-19 04:36:30 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
