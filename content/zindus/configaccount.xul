@@ -106,7 +106,7 @@
 						<label value="&zindus.ca.google.sync.with.label;" />
 						<radiogroup id="ca-gd-syncwith-radiogroup" >
 							<radio id="ca-gd-syncwith-pab" label="&zindus.ca.google.sync.with.pab.label;" selected="true" />
-							<radio id="ca-gd-syncwith-zg" />
+							<radio id="ca-gd-syncwith-zg" style="min-width:20em"   />
 						</radiogroup>
 					</vbox>
 					<vbox>

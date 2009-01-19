@@ -60,20 +60,20 @@ debug : function(msg) {
 	// this try/catch is helpful when working out what part of the code is calling logger when it shouldn't be
 	// eg SyncWindow.onCancel() after the fsm has finished and called onAccept() and this file scope has disappeared.
 	// try {
-
-	var l = Logger.DEBUG;
-
+	// ...
 	// } catch(ex) {
 	//				dump(ex.message + " stack: \n" + ex.stack);
 	//}
+
+	const l = Logger.DEBUG;
 	if (this.level() <= l) this.log(l, msg);
 },
-info  : function(msg) { var l = Logger.INFO;  if (this.level() <= l) this.log(l, msg); },
-warn  : function(msg) { var l = Logger.WARN;  if (this.level() <= l) this.log(l, msg); },
-error : function(msg) { var l = Logger.ERROR; if (this.level() <= l) this.log(l, msg); },
-fatal : function(msg) { var l = Logger.FATAL; if (this.level() <= l) this.log(l, msg); },
+info  : function(msg) { const l = Logger.INFO;  if (this.level() <= l) this.log(l, msg); },
+warn  : function(msg) { const l = Logger.WARN;  if (this.level() <= l) this.log(l, msg); },
+error : function(msg) { const l = Logger.ERROR; if (this.level() <= l) this.log(l, msg); },
+fatal : function(msg) { const l = Logger.FATAL; if (this.level() <= l) this.log(l, msg); },
 debug_continue : function(msg) {
-	var l = Logger.DEBUG;
+	const l = Logger.DEBUG;
 	if (this.level() <= l) { 
 		this.log(l, msg, Logger.NO_PREFIX);
 	}

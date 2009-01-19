@@ -7854,7 +7854,7 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 		url = this.state.gd_url_next;
 	else
 	{
-		url = this.state.gd_url_base + "?max-results=10000";
+		url = this.state.gd_url_base + "?max-results=3000";
 
 		if (!this.is_slow_sync())
 			url += "&showdeleted=true";
@@ -8047,7 +8047,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 			yield true;
 	}
 
-	this.state.stopwatch.mark(state + "parsed a_gd_contact");
+	this.state.stopwatch.mark(state + " finished parsing a_gd_contact");
 
 	this.debug("entryActionGetContactGd3: contacts processed: " +
 		" regular: " + a_contact_count['regular'] +
@@ -8304,7 +8304,7 @@ SyncFsmGd.prototype.exitActionDeXmlifyAddrGd = function(state, event)
 
 	this.state.a_gd_contact[id] = contact;
 
-	zfi = this.zfcPr().get(id);
+	var zfi = this.zfcPr().get(id);
 	zfi.set(FeedItem.ATTR_REV,  contact.meta.updated);
 	zfi.set(FeedItem.ATTR_EDIT, contact.meta.edit);
 	zfi.set(FeedItem.ATTR_SELF, contact.meta.self);

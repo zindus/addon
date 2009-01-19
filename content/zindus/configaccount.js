@@ -165,9 +165,11 @@ ConfigAccount.prototype.onBlur = function(id)
 	if (id == "ca-username" && this.serverFormat() == FORMAT_GD)
 	{
 		let username = dId(id).value;
+		const max_length = 30; // this roughly corresponds to the min-width style on the XUL element
 
 		dId("ca-gd-syncwith-zg").label = stringBundleString("brand.zindus") + "/" +
-		                                 (username.length ? username : stringBundleString("cs.general.gd.syncwith.suffix"));
+		                                 (username.length ? username.substr(0, max_length) :
+										                    stringBundleString("cs.general.gd.syncwith.suffix"));
 	}
 	
 	// free.fr
