@@ -7767,7 +7767,7 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 	// See RFC 2821 and http://en.wikipedia.org/wiki/E-mail_address
 	// Thank goodness Gmail doesn't support email addresses where the local-part is a quoted string :-)
 	//
-	var valid_email_re = /^([A-Z0-9\.\!\#\$\%\*\/\?\|\^\{\}\`\~\&\'\+\-\=]+@[A-Z0-9.-]+\.[A-Z]+)$/i;
+	var valid_email_re = /^([A-Z0-9\.\!\#\$\%\*\/\?\|\^\{\}\`\~\&\'\+\_\-\=]+@[A-Z0-9.-]+\.[A-Z]+)$/i;
 
 	var a_reason = new Object();
 
