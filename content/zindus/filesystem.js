@@ -137,15 +137,12 @@ var Filesystem = {
 	},
 	// the remove* methods...
 	removeZfc : function(filename) {
-		var directory = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
-		var file;
+		var directory_data = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
 
 		logger().debug("removeZfc: " + filename);
 
-		// remove files in the data directory
-		//
-		if (directory.exists() && directory.isDirectory()) {
-			file = directory;
+		if (directory_data.exists() && directory_data.isDirectory()) {
+			let file = directory_data;
 			file.append(filename);
 
 			if (file.exists())
@@ -153,18 +150,17 @@ var Filesystem = {
 		}
 	},
 	removeZfcs : function(a_exclude) {
-		var directory = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
-		var file;
+		var directory_data = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
 
 		logger().debug("removeZfcs: " + (a_exclude ? ("excluding: " + aToString(a_exclude)) : ""));
 
 		// remove files in the data directory
 		//
-		if (directory.exists() && directory.isDirectory()) {
-			var iter = directory.directoryEntries;
+		if (directory_data.exists() && directory_data.isDirectory()) {
+			let iter = directory_data.directoryEntries;
 
 			while (iter.hasMoreElements()) {
-				file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+				let file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
 
 				if (!a_exclude || !isPropertyPresent(a_exclude, file.leafName))
 					file.remove(false);
@@ -178,12 +174,15 @@ var Filesystem = {
 		// The reason this is a three step: 1. remove old 2. copy new to old 3. truncate new
 		// and not simply "move" is because we hold open filehandles to the logfile (LogAppender) for performance.
 		//
-		var file_new = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.LOG);
-		var file_old = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.LOG);
-		var name_old = Filesystem.eFilename.LOGFILE + ".old";
+		with (Filesystem)
+		{
+			var file_new = nsIFileForDirectory(eDirectory.LOG);
+			var file_old = nsIFileForDirectory(eDirectory.LOG);
+			var name_old = eFilename.LOGFILE + ".old";
 
-		file_new.append(Filesystem.eFilename.LOGFILE);
-		file_old.append(name_old);
+			file_new.append(eFilename.LOGFILE);
+			file_old.append(name_old);
+		}
 
 		if (file_new.exists() && !file_new.isDirectory()) {
 			try {
@@ -203,24 +202,23 @@ var Filesystem = {
 		}
 	},
 	removeZfcsIfNecessary : function() {
-		var data_format_version = null;
+		var data_version   = null;
 		var zfiStatus      = StatusBar.stateAsZfi();
 		var msg            = "";
 		var is_out_of_date = false;
 
 		if (zfiStatus)
-			data_format_version = zfiStatus.getOrNull('appversion');
+			data_version = zfiStatus.getOrNull('appversion');
 
-		msg += "Software works with datastore version: " + APP_VERSION_DATA_CONSISTENT_WITH + " (or newer).  Here: " + data_format_version;
+		msg += "Software works with datastore version: " + APP_VERSION_DATA_CONSISTENT_WITH + " (or newer).  Here: " + data_version;
 
 		var is_status_file_exists = StatusBar.stateAsZfc().nsifile().exists();
 
 		if (!zfiStatus && is_status_file_exists)
 			msg += " but the status file exists";
 
-		if ((!zfiStatus && is_status_file_exists) ||
-		    (zfiStatus && !data_format_version)   ||
-		    (data_format_version && compareToolkitVersionStrings(data_format_version, APP_VERSION_DATA_CONSISTENT_WITH) == -1))
+		if ((!zfiStatus && is_status_file_exists) || (zfiStatus && !data_version) ||
+		    (data_version && compareToolkitVersionStrings(data_version, APP_VERSION_DATA_CONSISTENT_WITH) == -1))
 		{
 			msg += " - out of date";
 
