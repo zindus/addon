@@ -38,38 +38,38 @@ function Zuio()
 }
 
 Zuio.prototype = {
-toString : function() {
-	return  "(" + this.m_id + " " + this.m_zid + ")";
-},
-key : function() {
-	return Zuio.key(this.m_id, this.m_zid);
-},
-setFromPair : function(id, zid) {
-	zinAssert(id);
+	toString : function() {
+		return  "(" + this.m_id + " " + this.m_zid + ")";
+	},
+	key : function() {
+		return Zuio.key(this.m_id, this.m_zid);
+	},
+	setFromPair : function(id, zid) {
+		zinAssert(id);
 
-	this.m_id  = id;
-	this.m_zid = zid;
-},
-setFromKey : function(key) {
-	var key_as_string = String(key);
+		this.m_id  = id;
+		this.m_zid = zid;
+	},
+	setFromKey : function(key) {
+		var key_as_string = String(key);
 
-	zinAssertAndLog(key && key_as_string.length > 0, "key: " + key);
+		zinAssertAndLog(key && key_as_string.length > 0, "key: " + key);
 
-	var a = key_as_string.split("#");
+		var a = key_as_string.split("#");
 
-	if (a.length == 1)
-		this.setFromPair(a[0], null);
-	else if (a.length == 2)
-		this.setFromPair(a[0], a[1]);
-	else 
-		zinAssert(false);
-},
-id : function() {
-	return this.m_id;
-},
-zid : function() {
-	return this.m_zid;
-}
+		if (a.length == 1)
+			this.setFromPair(a[0], null);
+		else if (a.length == 2)
+			this.setFromPair(a[0], a[1]);
+		else 
+			zinAssert(false);
+	},
+	id : function() {
+		return this.m_id;
+	},
+	zid : function() {
+		return this.m_zid;
+	}
 };
 
 Zuio.key = function(id, zid)
