@@ -924,6 +924,7 @@ TestHarness.prototype.testGoogleContacts1 = function()
 	<gd:im address='aim-im-2' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/>\
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#home_fax'>4-home-fax</gd:phoneNumber>\
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#pager'>@@phoneNumber#pager@@</gd:phoneNumber>\
+	<gd:phoneNumber rel='http://schemas.google.com/g/2005#pager'>@@phoneNumber#pager@@</gd:phoneNumber>\
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>@@phoneNumber#home@@</gd:phoneNumber>\
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>3-home</gd:phoneNumber>\
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>@@phoneNumber#mobile@@</gd:phoneNumber>\
@@ -1482,6 +1483,17 @@ TestHarness.prototype.testContactGoogle2 = function()
 	contact.groups = new_groups;
 	match_groups(new_groups, contact);
 	this.m_logger.debug("contact groups: " + contact.groups.toString());
+
+	// test that a <gd:organization> without a rel attribute is ignored
+	//
+	var xmlStringTwo = xmlString.replace("organization rel='http://schemas.google.com/g/2005#work'", 
+	                                     "organization ");
+	a_gd_contact = ContactGoogle.textToContacts(xmlStringTwo);
+	id = firstKeyInObject(a_gd_contact);
+	contact = a_gd_contact[id];
+	this.m_logger.debug("contact: AMHEREXX: " + contact.toString()); // TODO remove me
+	zinAssert(!('organization_orgTitle' in contact.properties));
+	zinAssert(!('organization_orgName'  in contact.properties));
 
 	return true;
 }

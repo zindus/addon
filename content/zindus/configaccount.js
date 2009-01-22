@@ -75,7 +75,7 @@ ConfigAccount.prototype.onCancel = function()
 	this.m_logger.debug("onCancel:");
 
 	for (var i = 0; i < this.m_server_format_values.length; i++)
-		ConfigAccountStatic.newTempPasswordLocator(this.m_server_format_values[i]).delPassword();
+		ConfigSettingsStatic.removeFromPasswordDatabase(ConfigAccountStatic.newTempPasswordLocator(this.m_server_format_values[i]));
 
 	if (this.m_payload_sw)
 	{
@@ -100,7 +100,7 @@ ConfigAccount.prototype.onAccept = function()
 
 	for (var i = 0; i < this.m_server_format_values.length; i++)
 		if (this.m_server_format_values[i] != account.format_xx())
-			ConfigAccountStatic.newTempPasswordLocator(this.m_server_format_values[i]).delPassword();
+			ConfigSettingsStatic.removeFromPasswordDatabase(ConfigAccountStatic.newTempPasswordLocator(this.m_server_format_values[i]));
 
 	Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_CONFIGACCOUNT);
 
@@ -354,7 +354,7 @@ ConfigAccount.prototype.accountFromDocument = function(format_xx)
 	if (format_xx)
 		account.set('format', this.m_format_bimap.lookup(format_xx, null));
 	else
-		account.set('format', this.m_format_bimap.lookup(ConfigSettings.getValueFromRadio("ca-format-radiogroup",
+		account.set('format', this.m_format_bimap.lookup(ConfigSettingsStatic.getValueFromRadio("ca-format-radiogroup",
 	                                                                                    this.m_server_format_bimap), null));
 
 	account.url             = dId("ca-url").value      ? zinTrim(dId("ca-url").value)      : "";
@@ -364,11 +364,11 @@ ConfigAccount.prototype.accountFromDocument = function(format_xx)
 
 	if (account.format_xx() == FORMAT_GD)
 	{
-		account.gd_sync_with = ConfigSettings.getValueFromRadio("ca-gd-syncwith-radiogroup", this.m_gd_sync_with_bimap);
-		account.gd_suggested = ConfigSettings.getValueFromRadio("ca-gd-suggested-radiogroup", this.m_gd_suggested_bimap);
+		account.gd_sync_with = ConfigSettingsStatic.getValueFromRadio("ca-gd-syncwith-radiogroup", this.m_gd_sync_with_bimap);
+		account.gd_suggested = ConfigSettingsStatic.getValueFromRadio("ca-gd-suggested-radiogroup", this.m_gd_suggested_bimap);
 	}
 	else
-		account.zm_sync_gal_enabled = ConfigSettings.getValueFromRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap);
+		account.zm_sync_gal_enabled = ConfigSettingsStatic.getValueFromRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap);
 		
 	this.m_logger.debug("accountFromDocument: returns: " + account.toString());
 
@@ -390,8 +390,11 @@ var ConfigAccountStatic = {
 		dId(radiogroup_id).selectedItem = dId(selected_id);
 	},
 	newTempPasswordLocator : function(format_xx) {
-		let format = getBimapFormat('long').lookup(format_xx, null);
+		let format   = getBimapFormat('long').lookup(format_xx, null);
+		var url      = preference(MozillaPreferences.AS_PW_URL,      'char');
+		var username = preference(MozillaPreferences.AS_PW_USERNAME, 'char');
+		url          = url.replace(/%format%/, format);
 
-		return new PasswordLocator("http://temp-password-for-zindus-" + format + "-account.tld", "username");
+		return new PasswordLocator(url, username);
 	}
 };

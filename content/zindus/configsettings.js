@@ -237,7 +237,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			this.m_accounts[rowid].remove();
 			this.m_accounts.splice(rowid, 1);
 
-			this.deletePasswordWhenRequired(old_account);
+			this.cleanUpPasswordDb(old_account);
 
 			is_accounts_changed = true;
 			break;
@@ -281,7 +281,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 						this.m_accounts[rowid] = account;
 
-						this.deletePasswordWhenRequired(old_account);
+						this.cleanUpPasswordDb(old_account);
 						break;
 
 					default:
@@ -292,7 +292,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				var new_pl = new PasswordLocator(account.url, account.username);
 
 				new_pl.setPassword(old_pl.getPassword());
-				old_pl.delPassword();
+
+				ConfigSettingsStatic.removeFromPasswordDatabase(old_pl);
 
 				account.passwordlocator = new_pl;
 
@@ -425,39 +426,6 @@ ConfigSettings.prototype.isServerSettingsComplete = function()
 	return this.m_accounts.length > 0;
 }
 
-ConfigSettings.getValueFromRadio = function(radiogroup_id, bimap)
-{
-	var el = dId(radiogroup_id);
-
-	zinAssertAndLog(el, "radiogroup_id: " + radiogroup_id);
-
-	var selected_id = el.selectedItem.id;
-
-	return bimap.lookup(null, selected_id);
-}
-
-ConfigSettings.setPrefsetFromRadio = function(radiogroup_id, bimap, prefset, property)
-{
-	var value = ConfigSettings.getValueFromRadio(radiogroup_id, bimap);
-	prefset.setProperty(property, value);
-	logger().debug("setPrefsetFromRadio: set prefset key: " + property + " value: " + value);
-}
-
-ConfigSettings.setRadioFromPrefset = function(radiogroup_id, bimap, prefset, property, default_id)
-{
-	var selected_id;
-	var value = prefset.getProperty(property);
-
-	logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " value: " + value);
-
-	if (value && bimap.isPresent(value, null))
-		selected_id = bimap.lookup(value, null);
-	else
-		selected_id = default_id;
-		
-	dId(radiogroup_id).selectedItem = dId(selected_id);
-}
-
 ConfigSettings.prototype.updatePrefsetsFromDocument = function()
 {
 	// general tab - checkbox elements
@@ -534,21 +502,15 @@ ConfigSettings.prototype.accountsTreeItemId = function(rowid)
 	return "cs-account-treeitem-" + rowid;
 }
 
-ConfigSettings.prototype.deletePasswordWhenRequired = function(account)
+ConfigSettings.prototype.cleanUpPasswordDb = function(account)
 {
-	var pm = new PasswordManager();
+	this.m_logger.debug("cleanUpPasswordDb: account url: " + account.url + " username: " + account.username);
 
 	if (!this.accountsIsPresentUrlUsername(account.url, account.username))
-		pm.del(account.url, account.username);
+		ConfigSettingsStatic.removeFromPasswordDatabase(account.url, account.username);
 
-	// always delete the authtoken because the password may have changed
-	//
-	if (account.format_xx() == FORMAT_GD)
-	{
-		let url = googleClientLoginUrl('use-authtoken');
-
-		pm.del(url, account.username);
-	}
+	if (account.format_xx() == FORMAT_GD) // always delete the authtoken because the password may have changed
+		ConfigSettingsStatic.removeFromPasswordDatabase(googleClientLoginUrl('use-authtoken'), account.username);
 }
 
 ConfigSettings.prototype.accountsIsPresentUrlUsername = function(url, username)
@@ -643,3 +605,50 @@ ConfigSettings.open = function()
 	if (!is_already_open)
 		window.openDialog('chrome://zindus/content/configsettings.xul', '_blank', WINDOW_FEATURES);
 }
+
+var ConfigSettingsStatic = {
+	m_pm : new PasswordManager(),
+	getValueFromRadio : function(radiogroup_id, bimap) {
+		var el = dId(radiogroup_id);
+
+		zinAssertAndLog(el, "radiogroup_id: " + radiogroup_id);
+
+		var selected_id = el.selectedItem.id;
+
+		return bimap.lookup(null, selected_id);
+	},
+	setPrefsetFromRadio : function(radiogroup_id, bimap, prefset, property) {
+		var value = this.getValueFromRadio(radiogroup_id, bimap);
+		prefset.setProperty(property, value);
+		logger().debug("setPrefsetFromRadio: set prefset key: " + property + " value: " + value);
+	},
+	setRadioFromPrefset : function(radiogroup_id, bimap, prefset, property, default_id) {
+		var selected_id;
+		var value = prefset.getProperty(property);
+
+		logger().debug("setRadioFromPrefset: radiogroup_id: " + radiogroup_id + " value: " + value);
+
+		if (value && bimap.isPresent(value, null))
+			selected_id = bimap.lookup(value, null);
+		else
+			selected_id = default_id;
+		
+		dId(radiogroup_id).selectedItem = dId(selected_id);
+	},
+	removeFromPasswordDatabase : function() {
+		var url, username;
+
+		if (arguments.length == 1) {
+			zinAssert(arguments[0] instanceof PasswordLocator);
+			url      = arguments[0].url();
+			username = arguments[0].username();
+		}
+		else {
+			zinAssert(typeof(arguments[0]) == 'string' && typeof(arguments[1]) == 'string');
+			url      = arguments[0];
+			username = arguments[1];
+		}
+
+		this.m_pm.del(url, username);
+	}
+};

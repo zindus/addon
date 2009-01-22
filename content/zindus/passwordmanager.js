@@ -50,6 +50,8 @@ PasswordManager.prototype = {
 	},
 	del : function(host, username) {
 		var is_success = true;
+		zinAssert(typeof(host) == 'string');
+		zinAssert(typeof(username) == 'string');
 
 		try {
 			this.m_nsIPasswordManager.removeUser(host, username);
@@ -138,15 +140,10 @@ PasswordLocator.prototype = {
 		pm.del(this.m_url, this.m_username);
 	},
 	setPassword : function(value) {
-		var ret = null;
-
 		if (value) {
 			let pm = new PasswordManager();
 			pm.set(this.m_url, this.m_username, value);
-			ret = value;
 		}
-
-		return ret;
 	},
 	getPassword : function() {
 		var ret = null;

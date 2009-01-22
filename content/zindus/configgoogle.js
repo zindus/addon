@@ -47,7 +47,7 @@ ConfigGd.prototype.onAccept = function()
 {
 	var a = this.m_map;
 	for (var k in a)
-		ConfigSettings.setPrefsetFromRadio(a[k].group, this.m_bimap[a[k].bimap], this.m_prefset_gd, a[k].prefset_key);
+		ConfigSettingsStatic.setPrefsetFromRadio(a[k].group, this.m_bimap[a[k].bimap], this.m_prefset_gd, a[k].prefset_key);
 
 	this.m_prefset_gd.save();
 }
@@ -62,5 +62,5 @@ ConfigGd.prototype.initialiseView = function()
 
 	var a = this.m_map;
 	for (var k in a)
-		ConfigSettings.setRadioFromPrefset(a[k].group, this.m_bimap[a[k].bimap], this.m_prefset_gd, a[k].prefset_key, a[k].default);
+		ConfigSettingsStatic.setRadioFromPrefset(a[k].group, this.m_bimap[a[k].bimap], this.m_prefset_gd, a[k].prefset_key, a[k].default);
 }

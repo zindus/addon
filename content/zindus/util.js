@@ -968,9 +968,7 @@ function googleClientLoginUrl(type)
 {
 	zinAssert(type == 'use-password' || type == 'use-authtoken');
 
-	const GOOGLE_URL_CLIENT_LOGIN = "https://www.google.com/accounts/ClientLogin";
-
-	return (type == 'use-password') ? GOOGLE_URL_CLIENT_LOGIN : GOOGLE_URL_CLIENT_LOGIN + "/AuthToken";
+	return "https://www.google.com/accounts/ClientLogin" + ((type == 'use-password') ? "" : "/Contacts/AuthToken");
 }
 
 function getInfoMessage(type, arg1)

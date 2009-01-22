@@ -127,7 +127,7 @@ properties_from_xml: function () {
 	var entry      = this.m_entry;
 	var imask      = this.make_mask_of_elements_in_entry();
 	let properties = new Object();
-	let i;
+	let i, j;
 
 	this.warn_if_entry_isnt_valid();
 
@@ -147,20 +147,17 @@ properties_from_xml: function () {
 		if (imask & mask.postalAddress && (this.m_mode & ContactGoogle.ePostal.kEnabled) )
 			set_for(properties, nsGd, entry, 'postalAddress');
 
-		if (imask & mask.organization)
-			for (i = 0; i < a_fragment.organization.length; i++) {
-				let list = entry.nsGd::organization.(@rel==get_rel(a_fragment.organization[i]));
+		if (imask & mask.organization) {
+			var list = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchAll);
 
-				if (list.length() > 0)
-				{
-					set_if(properties, 'organization_orgTitle',  list[0].nsGd::orgTitle);
-					set_if(properties, 'organization_orgName',   list[0].nsGd::orgName);
-					break;
-				}
+			if (list.length() > 0) {
+				set_if(properties, 'organization_orgTitle',  list[0].nsGd::orgTitle);
+				set_if(properties, 'organization_orgName',   list[0].nsGd::orgName);
 			}
+		}
 
 		if (imask & mask.im) {
-			let list = entry.nsGd::im.(@protocol==get_rel('AIM'));
+			var list = get_elements_matching_attribute(entry.nsGd::im, 'protocol', ['AIM'], kMatchFirst);
 	
 			if (list.length() > 0)
 				properties['im_AIM'] = list[0].@address.toString();
@@ -240,19 +237,17 @@ set properties (properties) {
 		if (imask & mask.organization) {
 			let is_found = false;
 
-			for (i = 0; i < a_fragment.organization.length && !is_found; i++) {
-				organization = entry.nsGd::organization.(@rel==get_rel(a_fragment.organization[i]));
+			organization = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchAll);
 
-				if (organization.length() > 0) {
-					let e;
-					e = organization[0].nsGd::orgTitle;
+			if (organization.length() > 0) {
+				function modify_or_delete_child_if(e, key) {
 					if (e.length() > 0)
-						modify_or_delete_child(e, properties, 'organization_orgTitle', a_is_used);
-					e = organization[0].nsGd::orgName;
-					if (e.length() > 0)
-						modify_or_delete_child(e, properties, 'organization_orgName', a_is_used);
-					is_found = true;
+						modify_or_delete_child(e, properties, key, a_is_used);
 				}
+
+				modify_or_delete_child_if(organization[0].nsGd::orgTitle, 'organization_orgTitle');
+				modify_or_delete_child_if(organization[0].nsGd::orgName, 'organization_orgName');
+				is_found = true;
 			}
 
 			if (!is_found)
@@ -265,7 +260,7 @@ set properties (properties) {
 		}
 
 		if (imask & mask.im) {
-			let tmp = entry.nsGd::im.(@protocol==get_rel('AIM'));
+			let tmp = get_elements_matching_attribute(entry.nsGd::im, 'protocol', ['AIM'], kMatchFirst);
 	
 			if (tmp.length() > 0)
 				modify_or_delete_child(tmp[0], properties, 'im_AIM', a_is_used, true);
@@ -336,14 +331,10 @@ set properties (properties) {
 },
 postalAddressModifyFields : function(properties, a_is_used) {
 	with (ContactGoogleStatic) {
-		let a_suffix = a_fragment['postalAddress'];
+		let list = get_elements_matching_attribute(this.m_entry.nsGd::postalAddress, 'rel', a_fragment.postalAddress, kMatchFirst);
 
-		for (var i = 0; i < a_suffix.length; i++) {
-			let tmp = this.m_entry.nsGd::['postalAddress'].(@rel==get_rel(a_suffix[i]));
-
-			if (tmp.length() > 0)
-				this.postalAddressModifyField(tmp[0], properties, a_suffix[i], a_is_used);
-		}
+		for (var i = 0; i < list.length(); i++)
+			this.postalAddressModifyField(list[i], properties, rightOfChar(list[i].@rel, '#'), a_is_used);
 	}
 },
 postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
@@ -382,7 +373,7 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 		else
 			new_properties = properties;
 
-		// logger().debug("AMHERE: key: " + key + " new_properties: " + aToString(new_properties));
+		logger().debug("AMHERE: key: " + key + " new_properties: " + aToString(new_properties));
 
 		modify_or_delete_child(xml, new_properties, key, a_is_used);
 	}
@@ -640,6 +631,8 @@ var ContactGoogleStatic = {
 	gac                    : new GdAddressConverter(),
 	cgopi                  : new ContactGoogleOrderedPropertyIterator(),
 	cgei                   : new ContactGoogleEmailIterator(),
+	kMatchFirst            : 1, // faux contstants passed to get_elements_matching_attribute
+	kMatchAll              : 2,
 
 	to_bool : function (xml) {
 		return (xml.length() > 0);
@@ -651,21 +644,21 @@ var ContactGoogleStatic = {
 		return (length == 0) ? "" : xml.toString();
 	},
 	set_if : function(properties, key, xml_value) {
-		var value = xml_value.hasComplexContent() ? xml_value.child(0).toString() : xml_value.toString(); // TODO is this right?
+		try {
+			var value = xml_value.hasComplexContent() ? xml_value.child(0).toString() : xml_value.toString();
+		} catch(ex) {
+			zinAssertAndLog(false);
+		}
 		// logger().debug("AMHERE: set_if: key: " + key + " value: " + value + " length: " + value.length);
 		// logger().debug("AMHERE: set_if: xml_value: " + xml_value + " length: " + xml_value.length());
 		if (value.length > 0)
 			properties[key] = value;
 	},
 	set_for : function (properties, ns, entry, prefix) {
-		var a_suffix = this.a_fragment[prefix];
+		let list = this.get_elements_matching_attribute(entry.ns::[prefix], 'rel', this.a_fragment[prefix], this.kMatchFirst);
 
-		for (var i = 0; i < a_suffix.length; i++) {
-			let tmp = entry.ns::[prefix].(@rel==this.get_rel(a_suffix[i]));
-
-			if (tmp.length() > 0)
-				this.set_if(properties, this.get_hyphenation(prefix, a_suffix[i]), tmp[0]);
-		}
+		for (var i = 0; i < list.length(); i++)
+			this.set_if(properties, this.get_hyphenation(prefix, rightOfChar(list[i].@rel)), list[i]);
 	},
 	modify_or_delete_child : function(xml, properties, key, a_is_used, is_address_attribute) {
 		// logger().debug("AMHERE: modify_or_delete_child: key: " + key);
@@ -680,20 +673,20 @@ var ContactGoogleStatic = {
 		}
 		else {
 			// logger().debug("AMHERE: deleting key: " + key);
-			delete xml.parent().*[xml.childIndex()];
+			try {
+				delete xml.parent().*[xml.childIndex()];
+			} catch(ex) {
+				zinAssertAndLog(false, "xml: " + xml.toXMLString() + " key: " + key);
+			}
 		}
 
 		a_is_used[key] = true;
 	},
 	modify_or_delete_child_for : function (properties, ns, entry, prefix, a_is_used) {
-		var a_suffix = this.a_fragment[prefix];
+		let list = this.get_elements_matching_attribute(entry.ns::[prefix], 'rel', this.a_fragment[prefix], this.kMatchFirst);
 
-		for (var i = 0; i < a_suffix.length; i++) {
-			let tmp = entry.ns::[prefix].(@rel==this.get_rel(a_suffix[i]));
-
-			if (tmp.length() > 0)
-				this.modify_or_delete_child(tmp[0], properties, this.get_hyphenation(prefix, a_suffix[i]), a_is_used);
-		}
+		for (var i = 0; i < list.length(); i++)
+			this.modify_or_delete_child(list[i], properties, this.get_hyphenation(prefix, rightOfChar(list[i].@rel)), a_is_used);
 	},
 	get_rel : function (suffix) {
 		if (!(suffix in this.m_a_rel))
@@ -709,6 +702,34 @@ var ContactGoogleStatic = {
 		}
 
 		return [this.m_a_element_and_suffix[key].l, this.m_a_element_and_suffix[key].r];
+	},
+	get_elements_matching_attribute : function (list, attribute, a_rel, style) {
+		// don't use this formulation because it throws an exception if entry doesn't have a rel attribute:
+		// entry.nsGd::organization.(@rel==blah);
+		// We could catch the exception, but a) that seems clumsy and b) we compose the list differently based on style
+		//
+		zinAssert(style == this.kMatchFirst || style == this.kMatchAll);
+
+		var a_matched = {};
+
+		var ret = <></>;
+
+		for (var i = 0; i < list.length(); i++)
+		{
+			let tmp = list[i].@[attribute];
+
+			if (style == this.kMatchAll || !(tmp in a_matched)) // 
+				for (var j = 0; j < a_rel.length; j++)
+					if (tmp == this.get_rel(a_rel[j]))
+					{
+						a_matched[tmp] = true;
+						ret += list[i];
+					}
+		}
+
+		zinAssertAndLog(a_rel.length >= ret.length(), function () { return ret.toXMLString(); });
+
+		return ret;
 	},
 	get_hyphenation : function (left, right) {
 		if (!(left in this.m_a_hyphenation))

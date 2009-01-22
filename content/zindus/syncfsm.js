@@ -672,6 +672,18 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 			if (str)
 				this.state.a_zm_tested_soapurls = str.split(",");
 		}
+
+		// migrate:
+		// A bug in pre-0.8.6 versions created a temporary password that shouldn't have been left in the password database.
+		// Here we remove it.  We can't do it on startup because the passwordmanager isn't available.
+		// Remove this once confident that all users are on version 0.8.6 or higher
+		//
+		if (is_slow_sync && this.formatPr() == FORMAT_GD)
+			with (ConfigSettingsStatic)
+			{
+				removeFromPasswordDatabase(googleClientLoginUrl('use-authtoken'), "username");
+				removeFromPasswordDatabase("https://www.google.com/accounts/ClientLogin/AuthToken", this.account().username);
+			}
 	}
 	else
 	{
@@ -6287,6 +6299,16 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				remote.body    = null;
 				break;
 
+			case Suo.MOD | FeedItem.TYPE_FL:
+				// we could get in here because a) if we're syncing with both zimbra and google and the sync
+				// with zimbra causes the gid's ver to get bumped, that'll generate a modify operation
+				msg       += " handling the modify addressbook as a no-op";
+				luid_target = zfiGid.get(sourceid_target);
+				zfiTarget   = zfcTarget.get(luid_target);
+				SyncFsm.setLsoToGid(zfiGid, zfiTarget);
+				suo.is_processed = true;
+				break;
+
 			default:
 				zinAssertAndLog(false, "unmatched case: " + (suo.opcode | type));
 		}
@@ -7817,6 +7839,7 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 
 		var passwordlocator = new PasswordLocator(this.account().passwordlocator);
 		passwordlocator.url(googleClientLoginUrl('use-authtoken'));
+		passwordlocator.username(this.account().username);
 
 		passwordlocator.setPassword(this.state.authToken);
 
