@@ -1,0 +1,54 @@
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.mo.menuitem.accesskey "Z">
+<!ENTITY zindus.sb.settings.label "Instellingen">
+<!ENTITY zindus.ca.account.type.label "Synchroniseren met">
+<!ENTITY zindus.ca.group.login.details.label "Logingegevens">
+<!ENTITY zindus.ca.group.pap.label "Voor deze account">
+<!ENTITY zindus.ca.url.description.value "Typ de url die u gebruikt bij het aanmelden op de server. <html:br/>voorbeeld: https://mijnmail.voorbeeld.nl">
+<!ENTITY zindus.ca.url.label "Server url:">
+<!ENTITY zindus.ca.username.description.value "Typ het e-mailadres en wachtwoord dat u gebruikt om aan te melden.">
+<!ENTITY zindus.ca.username.label "E-mail adres:">
+<!ENTITY zindus.ca.password.label "Wachtwoord:">
+<!ENTITY zindus.ca.test.connection.label "Controleer verbinding">
+<!ENTITY zindus.ca.test.connection.accesskey "T">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Persoonlijk adressenboek">
+<!ENTITY zindus.ca.google.sync.with.label               "Synchroniseer Google contacts met">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Contacts">
+<!ENTITY zindus.ca.google.suggested.include.label       "Omvatten">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Negeer">
+<!ENTITY zindus.ca.zimbra.gal.label "Algemene Adressen Lijst (GAL):">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Ja">
+<!ENTITY zindus.ca.zimbra.gal.no.label "Nee">
+<!ENTITY zindus.cs.title "Zindus Configuratie Instellingen">
+<!ENTITY zindus.cs.buttonlabelextra2 "Help">
+<!ENTITY zindus.cs.account.add.label "Toevoegen">
+<!ENTITY zindus.cs.account.add.accesskey "A">
+<!ENTITY zindus.cs.account.edit.label "Bewerken">
+<!ENTITY zindus.cs.account.edit.accesskey "E">
+<!ENTITY zindus.cs.account.delete.label "Verwijderen">
+<!ENTITY zindus.cs.account.delete.accesskey "D">
+<!ENTITY zindus.cs.account.email.label "E-mail adres">
+<!ENTITY zindus.cs.account.addressbook.label "Adresboek">
+<!ENTITY zindus.cs.accounts.label "Accounts">
+<!ENTITY zindus.cs.general.settings.label "Instellingen">
+<!ENTITY zindus.cs.general.actions.label "Acties">
+<!ENTITY zindus.cs.general.auto.sync.label "Automatisch synchroniseren">
+<!ENTITY zindus.cs.general.verbose.logging.label "Logboek bijhouden">
+<!ENTITY zindus.cs.general.button.sync.now.label "Synchroniseer nu">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.reset.label "Herstel">
+<!ENTITY zindus.cs.general.button.reset.accesskey "R">
+<!ENTITY zindus.cs.general.button.timer.label "Uitvoertimer">
+<!ENTITY zindus.cs.general.button.test.harness.label "Controleer">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Geavanceerde Google instellingen">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.gr.title "Google Contacts conflicten">
+<!ENTITY zindus.gr.button.accept.label "Bevestig">
+<!ENTITY zindus.cg.title "Zindus Geavanceerde Google instellingen">
+<!ENTITY zindus.cg.postal.caption.label "Postadres velden">
+<!ENTITY zindus.cg.postal.false.label "Niet synchroniseren (aanbevolen)">
+<!ENTITY zindus.cg.postal.true.label "Thunderbird velden worden weergegeven als xml in Google">
+<!ENTITY zindus.cg.rule.caption.label "Hoe Google Contact conflicten worden behandeld">
+<!ENTITY zindus.cg.rule.ask.me.label "Vraag me">
+<!ENTITY zindus.cg.rule.dont.ask.label "Vraag me niet - verwijder contacten om conflicten te voorkomen">
+<!ENTITY zindus.sw.title "Zindus Synchronisatie">
