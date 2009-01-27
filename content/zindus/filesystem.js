@@ -31,10 +31,10 @@ var Filesystem = {
 		DATA    : 'data'       //                                                                      blah\zindus\data
 	}),
 	eFilename : new ZinEnum( {
-		LOGFILE  : 'logfile.txt',
-		LASTSYNC : 'lastsync.txt',
-		GID      : 'gid.txt',
-		STATUS   : 'status.txt'
+		LOGFILE   : 'logfile.txt',
+		LASTSYNC  : 'lastsync.txt',
+		GID       : 'gid.txt',
+		STATUS    : 'status.txt'
 	}),
 	ePerm : new ZinEnum( {     // from prio.h
 		PR_IRUSR  : 0400,      // Read    by owner

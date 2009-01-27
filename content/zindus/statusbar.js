@@ -42,6 +42,8 @@
 //   
 function StatusBar()
 {
+	Filesystem.createDirectoriesIfRequired();  // this comes first - can't log without a directory for the logfile!
+
 	this.m_logger         = newLogger("StatusBar");
 	this.m_timer_id       = null;
 	this.m_timer_functor  = null;

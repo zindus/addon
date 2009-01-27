@@ -681,7 +681,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 		if (is_slow_sync && this.formatPr() == FORMAT_GD)
 			with (ConfigSettingsStatic)
 			{
-				removeFromPasswordDatabase(googleClientLoginUrl('use-authtoken'), "username");
+				removeFromPasswordDatabase("https://www.google.com/accounts/ClientLogin/AuthToken", "username");
 				removeFromPasswordDatabase("https://www.google.com/accounts/ClientLogin/AuthToken", this.account().username);
 			}
 	}
@@ -1736,8 +1736,8 @@ SyncFsm.prototype.entryActionGetContactZmSetup = function(state)
 
 SyncFsm.GetContactZmNextBatch = function(aContact)
 {
-	var max_contacts_in_one_request = 50;
-	var zuio = null;
+	const max_contacts_in_one_request = 50;
+	var zuio  = null;
 	var a_ret = new Array();
 
 	// all contacts in the request have to be using the same zid
@@ -7225,6 +7225,9 @@ SyncFsm.prototype.handleXmlHttpResponse = function (continuation, context)
 			//
 			http.m_http_status_code = http.m_xhr.status;
 
+			if (false && this.state.cCallsToHttp == 2) // pretend that we got a 404 for testing
+				http.m_http_status_code = 404;
+
 			is_failed = (http.m_http_status_code == 0);
 		}
 		catch(e) {
@@ -8123,7 +8126,7 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 		let id  = this.state.a_gd_contact_to_get.pop();
 		let url = gdAdjustHttpHttps(this.zfcPr().get(id).get(FeedItem.ATTR_SELF));
 
-		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
+		this.setupHttpGd(state, 'evRepeat', "GET", url, null, null, HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_YES);
 		
 		nextEvent = 'evHttpRequest'
 	}
@@ -8137,17 +8140,31 @@ SyncFsmGd.prototype.entryActionGetContactPuGd = function(state, event, continuat
 	continuation(nextEvent);
 }
 
-
 SyncFsmGd.prototype.exitActionGetContactPuGd = function(state, event)
 {
 	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
 		return;
 
 	// a 404 here is conceivable - a contact can get deleted on the server between the earlier GET and now.
+	// FIXME?: using v1 of the API we sometimes encountered Google's "missing tombstone" bug here, see issue#: 107
+	// One avenue for a workaround to Google's bug is to save some state indicating that we've encountered a 404 on a contact
+	// and if we encounter it a second time then it's definitely the Google bug in which case we could force a slow sync.
+	// Don't do anything util we get a bug report for v2.
 	//
 	if (!this.state.m_http.is_http_status(HTTP_STATUS_2xx))
 	{
 		this.state.stopFailCode = 'failon.gd.get';
+
+		// if we fail and there's no google404 key inside the sourceid_pr item of lastsync.txt, create one.
+		// if we fail and there's a google404 key inside the sourceid_pr item of lastsync.txt, force a slow sync
+		// remove the google404 key when we know we are finished (entry action above)..
+		//
+		// let zfcLastSync = new FeedCollection();
+		// zfcLastSync.filename(LASTSYNC);
+		// zfcLastSync.load();
+		// test for presence of sourceid_pr item...
+		// var account_signature = zfcLastSync.get(this.state.sourceid_pr).getOrNull('google404');
+		// zfcLastSync.get(sourceid_pr).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
 	}
 	else
 	{

@@ -48,7 +48,6 @@
 <!ENTITY zindus.cs.general.button.reset.label           "Reset">
 <!ENTITY zindus.cs.general.button.reset.accesskey       "R">
 <!ENTITY zindus.cs.general.button.timer.label           "Run Timer">
-<!ENTITY zindus.cs.general.button.test.harness.label    "Test Harness">
 <!ENTITY zindus.cs.general.button.gd.advanced.label     "Advanced Google Settings">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 

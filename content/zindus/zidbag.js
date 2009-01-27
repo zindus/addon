@@ -29,9 +29,9 @@
 
 function ZidBag()
 {
-	this.a_zid              = new Array();
-	this.m_index            = 0;
-	this.m_properties       = new Object();
+	this.a_zid        = new Array();
+	this.m_index      = 0;
+	this.m_properties = new Object();
 }
 
 ZidBag.a_valid_properties = newObjectWithKeys(eAccount.url, 'SyncToken');
@@ -39,17 +39,15 @@ ZidBag.a_valid_properties = newObjectWithKeys(eAccount.url, 'SyncToken');
 ZidBag.prototype = {
 toString : function() {
 	var ret = "m_index: " + this.m_index + " a_zid: ";
-	var i, j, zid;
 
 	zinAssert(this.a_zid.length == aToLength(this.m_properties));
 
-	for (i = 0; i < this.a_zid.length; i++)
-	{
-		zid = this.a_zid[i];
+	for (var i = 0; i < this.a_zid.length; i++) {
+		let zid = this.a_zid[i];
 
 		ret += "\n " + i + ": " + strPadTo(zid, 36);
 
-		for (j in this.m_properties[zid])
+		for (var j in this.m_properties[zid])
 			ret += " " + j + ": " + this.get(zid, j);
 	}
 

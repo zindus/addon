@@ -21,56 +21,37 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
-function ObserverService()
-{
-}
+var ObserverService = {
+	TOPIC_PREFERENCE_CHANGE : "ZindusPreferenceChange",
+	service : function() {
+		return Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+	},
+	isRegistered : function(topic) {
+		var enumerator = this.service().enumerateObservers(topic);
+		var count      = 0;
 
-ObserverService.TOPIC_PREFERENCE_CHANGE = "ZindusPreferenceChange";
-
-ObserverService.service = function()
-{
-	return Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService);
-}
-
-ObserverService.isRegistered = function(topic)
-{
-	var os = ObserverService.service();
-	var enumerator = os.enumerateObservers(topic);
-	var count = 0;
-
-	while (enumerator.hasMoreElements())
-	{
-		try {
-			var o = enumerator.getNext().QueryInterface(Components.interfaces.nsIObserver);
-
-			// dump("observerServiceIsRegistered: blah: o: " + aToString(o) + "\n");
-
-			count++;
+		while (enumerator.hasMoreElements()) {
+			try {
+				let o = enumerator.getNext().QueryInterface(Ci.nsIObserver);
+				// dump("observerServiceIsRegistered: o: " + aToString(o) + "\n");
+				count++;
+			}
+			catch (e) {
+				zinAlert('text.alert.title', "exception while enumerating: e: " + e);
+			}
 		}
-		catch (e) {
-			zinAlert('text.alert.title', "exception while enumerating: e: " + e);
-		}
+
+		return count > 0;
+	},
+	notify : function(topic, subject, data) {
+		this.service().notifyObservers(subject, topic, data);
+	},
+	register : function(obj, topic) {
+		logger().debug("ObserverService.register: " + topic);
+		this.service().addObserver(obj, topic, false);
+	},
+	unregister : function(obj, topic) {
+		logger().debug("ObserverService.unregister: " + topic);
+		this.service().removeObserver(obj, topic);
 	}
-
-	return count > 0;
-}
-
-ObserverService.notify = function(topic, subject, data)
-{
-	ObserverService.service().notifyObservers(subject, topic, data);
-}
-
-ObserverService.register = function(obj, topic)
-{
-	logger().debug("ObserverService.register: " + topic);
-
-	ObserverService.service().addObserver(obj, topic, false);
-}
-
-ObserverService.unregister = function(obj, topic)
-{
-	logger().debug("ObserverService.unregister: " + topic);
-
-	ObserverService.service().removeObserver(obj, topic);
-}
-
+};

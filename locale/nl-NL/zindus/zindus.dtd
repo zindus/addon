@@ -13,9 +13,9 @@
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.google.sync.with.pab.label "Persoonlijk adressenboek">
 <!ENTITY zindus.ca.google.sync.with.label               "Synchroniseer Google contacts met">
-<!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Contacts">
-<!ENTITY zindus.ca.google.suggested.include.label       "Omvatten">
-<!ENTITY zindus.ca.google.suggested.ignore.label        "Negeer">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Aanbevolen contacten door Google">
+<!ENTITY zindus.ca.google.suggested.include.label       "Toevoegen">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Overslaan">
 <!ENTITY zindus.ca.zimbra.gal.label "Algemene Adressen Lijst (GAL):">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Ja">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Nee">

@@ -22,6 +22,7 @@
  * ***** END LICENSE BLOCK *****/
 
 // Handy place to keep stuff that we only ever need one of
+// and for which we want to delay construction until after all .js files are loaded.
 //
 function singleton() {
 	if (typeof (singleton.m_instance) == "undefined")
