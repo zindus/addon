@@ -2,27 +2,27 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBABg8i71844n3y8D0P+3nSXEFbJhKHRZsn1XAysiNofSOlws+vnjg616D/yjOewW6Ne/5cI09YgNr6r/QxfYYeyjp184nJwmw0D9qhZc4TaNW31qudX6TetyMEXiUOxcZBgij/64mzrUMML/aBUzvucJgN60ulJFDi7XYDv8ueHh9">
-    <em:updates RDF:resource="rdf:#$qjjRS2"/>
-  </RDF:Description>
-  <RDF:Description RDF:about="rdf:#$ujjRS2"
-                   em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
-                   em:maxVersion="2.0a2"
-                   em:minVersion="2.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.5.20090127.105333-tb+sm.xpi"
-                   em:updateHash="sha256:6df8cce8f249ed64a927adad9af05a1449e5edec41e5d99b3e726fb04bb36be1" />
-  <RDF:Seq RDF:about="rdf:#$qjjRS2">
-    <RDF:li RDF:resource="rdf:#$rjjRS2"/>
-  </RDF:Seq>
   <RDF:Description RDF:about="rdf:#$BjjRS2"
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:maxVersion="3.0b1"
                    em:minVersion="2.0b2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.5.20090127.105333-tb+sm.xpi"
-                   em:updateHash="sha256:6df8cce8f249ed64a927adad9af05a1449e5edec41e5d99b3e726fb04bb36be1" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.6-tb+sm.xpi"
+                   em:updateHash="sha256:a20ce4baaf799dc1cedfd9f36a40407a5ebe66d40c5406f7fa9b0f5d61db3de5" />
+  <RDF:Description RDF:about="rdf:#$ujjRS2"
+                   em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
+                   em:maxVersion="2.0a2"
+                   em:minVersion="2.0a1"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.6-tb+sm.xpi"
+                   em:updateHash="sha256:a20ce4baaf799dc1cedfd9f36a40407a5ebe66d40c5406f7fa9b0f5d61db3de5" />
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBACcCIdi8mSf2nRNWkvKNGZ26JCw9B9Nw5wdYIYPMGx/Ts1DF2Kqa0wthj72OpJjAYCjfAZUPiCHMkeqcmo8itpp52QndTbREhQ8YJd6Q94NQHjS/dkzIX87D9Kog54SR5CP+9cFDfAk0ODVQuG+ehtqEKpmnk89iZV7RZdC6hPfq">
+    <em:updates RDF:resource="rdf:#$qjjRS2"/>
+  </RDF:Description>
+  <RDF:Seq RDF:about="rdf:#$qjjRS2">
+    <RDF:li RDF:resource="rdf:#$rjjRS2"/>
+  </RDF:Seq>
   <RDF:Description RDF:about="rdf:#$rjjRS2"
-                   em:version="0.8.5.20090127.105333">
+                   em:version="0.8.6">
     <em:targetApplication RDF:resource="rdf:#$ujjRS2"/>
     <em:targetApplication RDF:resource="rdf:#$BjjRS2"/>
   </RDF:Description>

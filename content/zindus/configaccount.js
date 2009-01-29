@@ -164,10 +164,10 @@ ConfigAccount.prototype.onBlur = function(id)
 
 	if (id == "ca-username" && this.serverFormat() == FORMAT_GD)
 	{
-		let username = dId(id).value;
 		const max_length = 30; // this roughly corresponds to the min-width style on the XUL element
+		let username     = dId(id).value;
 
-		dId("ca-gd-syncwith-zg").label = stringBundleString("brand.zindus") + "/" +
+		dId("ca-gd-syncwith-zg").label = stringBundleString("brand.zindus").toLowerCase() + "/" +
 		                                 (username.length ? username.substr(0, max_length) :
 										                    stringBundleString("cs.general.gd.syncwith.suffix"));
 	}
@@ -176,12 +176,12 @@ ConfigAccount.prototype.onBlur = function(id)
 	//
 	if (id == "ca-url" && this.serverFormat() == FORMAT_ZM)
 	{
-		var url        = dId(id).value;
-		var is_free_fr = false;
+		let url        = dId(id).value;
+		let is_free_fr = false;
 
 		if (url.length > 0)
 		{
-			var prefset = prefsetMatchWithPreAuth(url);
+			let prefset = prefsetMatchWithPreAuth(url);
 
 			if (prefset && prefset.getProperty(PrefSet.PREAUTH_NAME) == "free.fr")
 				is_free_fr = true;
