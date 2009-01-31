@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+
+<!-- ***** BEGIN LICENSE BLOCK *****
+  
+  "The contents of this file are subject to the Mozilla Public License
+  Version 1.1 (the "License"); you may not use this file except in
+  compliance with the License. You may obtain a copy of the License at
+  http://www.mozilla.org/MPL/
+  
+  Software distributed under the License is distributed on an "AS IS"
+  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+  License for the specific language governing rights and limitations
+  under the License.
+  
+  The Original Code is Zindus Sync.
+  
+  The Initial Developer of the Original Code is Toolware Pty Ltd.
+ 
+  Portions created by Initial Developer are Copyright (C) 2007-2009
+  the Initial Developer. All Rights Reserved.
+ 
+  Contributor(s): Leni Mayo
+  
+  ***** END LICENSE BLOCK ***** -->
+
+<!-- experimenting with spicebird -->
+
+<?xul-overlay href="chrome://zindus/content/statusbaroverlay.xul" ?>
+
+<?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
+
+<overlay id="zindus-mailwindowoverlay-tb" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
+
+	<toolbox id="mail-toolbox" class="toolbox-top" mode="full">
+		<toolbarpalette id="MailToolbarPalette">
+			<toolbarbutton id="zindus-toolbarbutton"
+			               class="toolbarbutton-1"
+			               label="&zindus.mo.menuitem.label;"
+						   tooltiptext="&zindus.cs.title;"
+			               oncommand="with (ZindusScopeRegistry.getScope()) { ConfigSettings.open(); };" />
+		</toolbarpalette>
+	</toolbox>	
+
+	<statusbar id="status-bar" app="home,mailnews,contacts" >
+		<statusbarpanel id="zindus-statusbar-progress" hidden="true" insertbefore="totalMessageCount" app="home,mailnews,contacts" />
+		<statusbarpanel id="zindus-statusbar-state"    hidden="true" insertbefore="totalMessageCount" app="home,mailnews,contacts" 
+		                tooltiptext="" class="statusbarpanel-iconic" >
+			<menupopup id="zindus-statusbar-menu" app="home,mailnews,contacts" />
+		</statusbarpanel>
+	</statusbar>
+
+
+</overlay>
