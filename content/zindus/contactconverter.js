@@ -122,18 +122,13 @@ ContactConverter.prototype.setup = function(style)
 	// if we're creating equivalents for all tb properties, then for those tb properties that don't map to zimbra,
 	// create a mapping using the name of the TB field prefixed with 'prefix'
 	//
-	const prefix = 'Zindus'; // TODO make this ZindusTb
-
-	logger().debug("AMHERE: ContactConverter: style: " + ContactConverter.eStyle.keyFromValue(style)); // TODO
+	const prefix = 'ZindusTb';
 
 	if (style == ContactConverter.eStyle.kZmMapsAllTbProperties)
 		for (i = 0; i < this.m_equivalents.length; i++)
 			if (this.m_equivalents[i][FORMAT_TB] != null)
 				if (!this.m_equivalents[i][FORMAT_ZM])
-				{
-					logger().debug("AMHERE: ContactConverter: creating a zimbra mapping: i: " + i + " value: " + prefix + this.m_equivalents[i][FORMAT_TB] ); // TODO
 					this.m_equivalents[i][FORMAT_ZM] = 'Zindus' + this.m_equivalents[i][FORMAT_TB];
-				}
 
 	// Don't generate debug messages if unable to convert these attributes...
 	// eg. the <cn> elements returned by SyncGal include ldap attributes
@@ -245,14 +240,9 @@ ContactConverter.prototype.convert = function(format_to, format_from, properties
 				}
 			}
 			else if (!(format_from == FORMAT_GD && isPropertyPresent(this.m_gd_address_field[format_from], key_from)))
-			{  // TODO remove braces after debugging
-				this.m_logger.debug("AMHERE: equiv at 33: " + this.m_equivalents[33][FORMAT_ZM]);
-
 				this.m_logger.warn("Ignoring contact field that we don't have a mapping for: " +
 				                       "from: " + this.m_bimap_format.lookup(format_from, null) + " " +
 				                       "field: "  + key_from);
-				zinAssert(false);
-			}
 		}
 	}
 
