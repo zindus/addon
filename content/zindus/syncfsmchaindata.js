@@ -35,10 +35,8 @@ function SyncFsmChainData(a_accounts)
 	this.m_a_first_of_format = new Object();
 	this.m_a_last_of_format  = new Object();
 	this.m_a_sourceid        = new Object();
-	this.m_zfcTb             = null;
 
-	for (var i = 0; i < this.m_a_item.length; i++)
-	{
+	for (var i = 0; i < this.m_a_item.length; i++) {
 		account = a_accounts[i];
 
 		this.m_a_item[i] = newObject("account", account);
@@ -60,125 +58,82 @@ SyncFsmChainData.ITEM_KEYS = {
 	a_failcodes_seen: function() { return new Object(); }
 };
 
-SyncFsmChainData.prototype.toString = function()
-{
-	var ret = "SyncFsmChainData:" + "\n" +
-	          " account_index: " + this.m_account_index +
-		      " a_first_of_format: " + aToString(this.m_a_first_of_format) +
-		      " a_last_of_format: "  + aToString(this.m_a_last_of_format);
+SyncFsmChainData.prototype = {
+	toString : function() {
+		var ret = "SyncFsmChainData:" + "\n" +
+		          " account_index: " + this.m_account_index +
+			      " a_first_of_format: " + aToString(this.m_a_first_of_format) +
+			      " a_last_of_format: "  + aToString(this.m_a_last_of_format);
 
-	for (var i = 0; i < this.m_a_item.length; i++)
-	{
-		ret += "\n account: "      + this.account(i).toString();
+		for (var i = 0; i < this.m_a_item.length; i++) {
+			ret += "\n account: "      + this.account(i).toString();
 
-		for (var j in SyncFsmChainData.ITEM_KEYS)
-			if (typeof(this.sourceid(AccountStatic.indexToSourceId(i), j)) == 'object')
-				ret += " " + j + ": " + aToString(this.sourceid(AccountStatic.indexToSourceId(i), j));
+			for (var j in SyncFsmChainData.ITEM_KEYS)
+				if (typeof(this.sourceid(AccountStatic.indexToSourceId(i), j)) == 'object')
+					ret += " " + j + ": " + aToString(this.sourceid(AccountStatic.indexToSourceId(i), j));
+				else
+					ret += " " + j + ": " + this.sourceid(AccountStatic.indexToSourceId(i), j);
+		}
+
+		return ret;
+	},
+	is_first_in_chain : function() {
+		return this.m_account_index == 0;
+	},
+	is_last_in_chain : function() {
+		return this.m_account_index == this.m_a_item.length - 1;
+	},
+	account : function(index) {
+		if (index)
+			zinAssertAndLog(index < this.m_a_item.length, index);
+		else
+			index = this.m_account_index;
+
+		return this.m_a_item[index].account;
+	},
+	length : function() {
+		return this.m_a_item.length;
+	},
+	first_sourceid_of_format : function(format_xx) {
+		zinAssert(format_xx);
+
+		var index = this.m_a_first_of_format[format_xx];
+
+		return typeof(index) == 'undefined' ? index : AccountStatic.indexToSourceId(index);
+	},
+	last_sourceid_of_format : function(format_xx) {
+		zinAssert(format_xx);
+
+		var index = this.m_a_last_of_format[format_xx];
+
+		return typeof(index) == 'undefined' ? index : AccountStatic.indexToSourceId(index);
+	},
+	signature : function() {
+		var ret = "";
+		var is_first  = true;
+
+		for (var i = 0; i < this.m_a_item.length; i++) {
+			if (is_first)
+				is_first = false;
 			else
-				ret += " " + j + ": " + this.sourceid(AccountStatic.indexToSourceId(i), j);
+				ret += ","
+
+			ret += AccountStatic.indexToSourceId(i) + ":" + this.account(i).unique_key();
+		}
+
+		return ret;
+	},
+	sourceid : function(sourceid, key, value) {
+		var index = AccountStatic.sourceIdToIndex(sourceid);
+
+		zinAssertAndLog(index >= 0 && index < this.m_a_item.length, "sourceid: " + sourceid);
+		zinAssertAndLog(isPropertyPresent(SyncFsmChainData.ITEM_KEYS, key), "not a valid key: " + key);
+
+		var item = this.m_a_item[index];
+
+		if (typeof(value) != 'undefined')
+			item[key] = value;
+
+		return item[key];
 	}
-
-	return ret;
-}
-
-SyncFsmChainData.prototype.is_first_in_chain = function()
-{
-	return this.m_account_index == 0;
-}
-
-SyncFsmChainData.prototype.is_last_in_chain = function()
-{
-	return this.m_account_index == this.m_a_item.length - 1;
-}
-
-SyncFsmChainData.prototype.account = function(index)
-{
-	if (index)
-		zinAssertAndLog(index < this.m_a_item.length, index);
-	else
-		index = this.m_account_index;
-
-	return this.m_a_item[index].account;
-}
-
-SyncFsmChainData.prototype.length = function()
-{
-	return this.m_a_item.length;
-}
-
-SyncFsmChainData.prototype.first_sourceid_of_format = function(format_xx)
-{
-	zinAssert(format_xx);
-
-	var index = this.m_a_first_of_format[format_xx];
-
-	return typeof(index) == 'undefined' ? index : AccountStatic.indexToSourceId(index);
-}
-
-SyncFsmChainData.prototype.last_sourceid_of_format = function(format_xx)
-{
-	zinAssert(format_xx);
-
-	var index = this.m_a_last_of_format[format_xx];
-
-	return typeof(index) == 'undefined' ? index : AccountStatic.indexToSourceId(index);
-}
-
-SyncFsmChainData.prototype.zfcTb = function()
-{
-	if (arguments.length == 1)
-		this.m_zfcTb = arguments[0];
-
-	return this.m_zfcTb;
-}
-
-SyncFsmChainData.prototype.signature = function()
-{
-	var ret = "";
-	var is_first  = true;
-
-	for (var i = 0; i < this.m_a_item.length; i++)
-	{
-		if (is_first)
-			is_first = false;
-		else
-			ret += ","
-
-		ret += AccountStatic.indexToSourceId(i) + ":" + this.account(i).unique_key();
-	}
-
-	return ret;
-}
-
-SyncFsmChainData.prototype.sourceid = function(sourceid, key, value)
-{
-	var index = AccountStatic.sourceIdToIndex(sourceid);
-
-	zinAssertAndLog(index >= 0 && index < this.m_a_item.length, "sourceid: " + sourceid);
-	zinAssertAndLog(isPropertyPresent(SyncFsmChainData.ITEM_KEYS, key), "not a valid key: " + key);
-
-	var item = this.m_a_item[index];
-
-	if (typeof(value) != 'undefined')
-		item[key] = value;
-
-	return item[key];
-}
-
-SyncFsmChainData.prototype.account_names_as_string = function()
-{
-	var ret = "";
-	var is_first  = true;
-
-	for (var i = 0; i < this.m_a_item.length; i++)
-	{
-		if (is_first)
-			is_first = false;
-		else
-			ret += ","
-
-		ret += this.account(i).username;
-	}
-
-	return ret;
-}
+};

@@ -164,8 +164,7 @@ properties_from_xml: function () {
 		}
 	}
 
-	// TODO this is just while debugging - remove for release
-	if (true)
+	if (false)
 		for (i in properties)
 			zinAssertAndLog(typeof(properties[i]) == 'string', i);
 
@@ -207,7 +206,7 @@ set properties (properties) {
 	var organization = null;
 	var i, key;
 
-	// logger().debug("AMHERE: 1: properties: " + aToString(properties));
+	// logger().debug("ContactGoogle: 1: properties: " + aToString(properties));
 
 	with (ContactGoogleStatic) {
 		if (imask & mask.title) {
@@ -253,7 +252,7 @@ set properties (properties) {
 			if (!is_found)
 				organization = null;
 			else if (organization.*.length() == 0) {
-				// logger().debug("AMHERE: deleting");
+				// logger().debug("ContactGoogle: deleting");
 				delete entry.*[organization.childIndex()];
 				organization = null;
 			}
@@ -268,7 +267,7 @@ set properties (properties) {
 
 		// ADD properties...
 		// the choice of rel='other' for AIM and rel='home' for email* is arbitrary
-		// logger().debug("AMHERE: 2: properties: " + aToString(properties) + " a_is_used: " + aToString(a_is_used));
+		// logger().debug("ContactGoogle: 2: properties: " + aToString(properties) + " a_is_used: " + aToString(a_is_used));
 		//
 		let l, r;
 		let is_added_organization = false;
@@ -373,7 +372,7 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 		else
 			new_properties = properties;
 
-		logger().debug("AMHERE: key: " + key + " new_properties: " + aToString(new_properties));
+		// logger().debug("ContactGoogle: key: " + key + " new_properties: " + aToString(new_properties));
 
 		modify_or_delete_child(xml, new_properties, key, a_is_used);
 	}
@@ -649,8 +648,8 @@ var ContactGoogleStatic = {
 		} catch(ex) {
 			zinAssertAndLog(false);
 		}
-		// logger().debug("AMHERE: set_if: key: " + key + " value: " + value + " length: " + value.length);
-		// logger().debug("AMHERE: set_if: xml_value: " + xml_value + " length: " + xml_value.length());
+		// logger().debug("ContactGoogle: set_if: key: " + key + " value: " + value + " length: " + value.length);
+		// logger().debug("ContactGoogle: set_if: xml_value: " + xml_value + " length: " + xml_value.length());
 		if (value.length > 0)
 			properties[key] = value;
 	},
@@ -661,10 +660,10 @@ var ContactGoogleStatic = {
 			this.set_if(properties, this.get_hyphenation(prefix, rightOfChar(list[i].@rel)), list[i]);
 	},
 	modify_or_delete_child : function(xml, properties, key, a_is_used, is_address_attribute) {
-		// logger().debug("AMHERE: modify_or_delete_child: key: " + key);
+		// logger().debug("ContactGoogle: modify_or_delete_child: key: " + key);
 
 		if (key in properties && properties[key].length > 0) {
-			// logger().debug("AMHERE: modify key: " + key);
+			// logger().debug("ContactGoogle: modify key: " + key);
 
 			if (is_address_attribute)
 				xml.@address = properties[key];
@@ -672,7 +671,7 @@ var ContactGoogleStatic = {
 				xml.* = properties[key];
 		}
 		else {
-			// logger().debug("AMHERE: deleting key: " + key);
+			// logger().debug("ContactGoogle: deleting key: " + key);
 			try {
 				delete xml.parent().*[xml.childIndex()];
 			} catch(ex) {

@@ -23,17 +23,27 @@
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
+// FIXME:
+// this class needs to be refactored:
+// - each key has important attributes:
+//   - the preference name
+//   - type: char/int/bool
+//   - parent key ... to generalise prefset?
+// - don't currently support boolean - this should change
+//
+// this class currently services two orthogonal purposes:
+// - a facade to nsIPrefService
+// - home for preference keys that don't belong in a prefset
 
 MozillaPreferences.AS_LOGFILE_MAX_SIZE      = "system.as_logfile_max_size";
 MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT = "system.as_timer_delay_on_repeat";
 MozillaPreferences.AS_TIMER_DELAY_ON_START  = "system.as_timer_delay_on_start";
 MozillaPreferences.AS_ALLOW_PRE_RELEASE     = "system.as_allow_pre_release";
-MozillaPreferences.AS_PW_URL                = "system.as_pw_url";
-MozillaPreferences.AS_PW_USERNAME           = "system.as_pw_username";
 MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
 MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
 MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME = "system.zm_prefer_soapurl_scheme";
+MozillaPreferences.ZM_SHARE_SERVICE_REGEXP  = "system.zm_share_service_regexp";
 MozillaPreferences.GD_SCHEME_DATA_TRANSFER  = "system.gd_data_transfer_scheme";
 MozillaPreferences.GD_TRASH_EXPIRE_SECONDS  = "system.gd_trash_expire_seconds";
 
@@ -47,6 +57,7 @@ MozillaPreferences.getAllSystemPrefs = function()
 		MozillaPreferences.ZM_SYNC_GAL_IF_FEWER,     'int',
 		MozillaPreferences.ZM_SYNC_GAL_RECHECK,      'int',
 		MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME, 'char',
+		MozillaPreferences.ZM_SHARE_SERVICE_REGEXP,  'char',
 		MozillaPreferences.GD_SCHEME_DATA_TRANSFER,  'char',
 		MozillaPreferences.GD_TRASH_EXPIRE_SECONDS,  'int' );
 }

@@ -40,8 +40,7 @@ function ZinEnum() {
 		for (i = 0; i < arguments.length; i++)
 			this.m_properties[arguments[i]] = i+1;
 
-	for (key in this.m_properties)
-	{
+	for (key in this.m_properties) {
 		this.__defineGetter__(key, this.getter(key));
 
 		value = this.m_properties[key];
@@ -53,50 +52,49 @@ function ZinEnum() {
 }
 
 ZinEnum.prototype = {
-initialise: function(properties) {
-	zinAssert(typeof(properties) == 'object');
-	var key;
+	initialise: function(properties) {
+		zinAssert(typeof(properties) == 'object');
+		var key;
 
-	this.m_properties = properties;
-	this.m_reverse = new Object();
+		this.m_properties = properties;
+		this.m_reverse = new Object();
 
-	for (key in this.m_properties)
-	{
-		this.__defineGetter__(key, this.getter(key));
+		for (key in this.m_properties) {
+			this.__defineGetter__(key, this.getter(key));
 
-		let value = this.m_properties[key];
+			let value = this.m_properties[key];
 
-		zinAssertAndLog(!(value in this.m_reverse), value);
-		this.m_reverse[value] = key;
+			zinAssertAndLog(!(value in this.m_reverse), value);
+			this.m_reverse[value] = key;
+		}
+	},
+	getter: function(key) {
+		return function() { return this.m_properties[key]; };
+	},
+	generator: function() {
+		for (var key in this.m_properties)
+			yield [ key, this.m_properties[key] ];
+
+		yield false;
+	},
+	isPresent : function (value) {
+		return value in this.m_reverse;
+	},
+	keyFromValue : function (value) {
+		zinAssertAndLog(this.isPresent(value), value);
+		return this.m_reverse[value];
+	},
+	toArray : function () {
+		var ret = new Array();
+		for (var key in this.m_properties)
+			ret.push(this.m_properties[key]);
+		return ret;
+	},
+	toString : function () {
+		return aToString(this.m_properties);
+	},
+	__iterator__: function(is_keys_only) {
+		for (var key in this.m_properties)
+			yield is_keys_only ? this.m_properties[key] : [ key, this.m_properties[key] ];
 	}
-},
-getter: function(key) {
-	return function() { return this.m_properties[key]; };
-},
-generator: function() {
-	for (var key in this.m_properties)
-		yield [ key, this.m_properties[key] ];
-
-	yield false;
-},
-isPresent : function (value) {
-	return value in this.m_reverse;
-},
-keyFromValue : function (value) {
-	zinAssertAndLog(this.isPresent(value), value);
-	return this.m_reverse[value];
-},
-toArray : function () {
-	var ret = new Array();
-	for (var key in this.m_properties)
-		ret.push(this.m_properties[key]);
-	return ret;
-},
-toString : function () {
-	return aToString(this.m_properties);
-},
-__iterator__: function(is_keys_only) {
-	for (var key in this.m_properties)
-		yield is_keys_only ? this.m_properties[key] : [ key, this.m_properties[key] ];
-}
 };

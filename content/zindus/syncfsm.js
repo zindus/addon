@@ -2995,7 +2995,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 							var ret = false;
 							var key;
 
-							for (key in context.state.m_contact_converter_vary_gd_postal.m_gd_address_field[FORMAT_TB])
+							for (key in context.state.m_contact_converter_style_gd_postal.m_gd_address_field[FORMAT_TB])
 								if (isPropertyPresent(properties, key))
 								{
 									ret = true;
@@ -3357,7 +3357,7 @@ SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 				msg = " not in scope - ignoring";
 			else if (zfi.type() == FeedItem.TYPE_CN)
 			{
-				var a_properties    = context.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_vary_none);
+				var a_properties    = context.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_style_basic);
 				var a_parent_in_map = context.getContactParentInMap(sourceid, luid);
 
 				if (a_properties) // a card with no properties will never be part of a twin so don't bother
@@ -3512,7 +3512,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 					if (isPropertyPresent(this.state.aHasChecksum, key) && !isObjectEmpty(this.state.aHasChecksum[key]))
 						for (var luid_possible in this.state.aHasChecksum[key])
 							if (this.state.aHasChecksum[key][luid_possible] &&
-						    	context.isTwin(sourceid_tb, sourceid, luid_possible, luid, context.state.m_contact_converter_vary_none))
+						    	context.isTwin(sourceid_tb, sourceid, luid_possible, luid, context.state.m_contact_converter_style_basic))
 							{
 								luid_tb = luid_possible;
 								break;
@@ -3716,7 +3716,7 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddressGenerator = function()
 				{
 					msg += " gd has xml";
 
-					if (context.isTwin(sourceid_tb, sourceid_gd, luid_tb, luid_gd, context.state.m_contact_converter_vary_gd_postal))
+					if (context.isTwin(sourceid_tb, sourceid_gd, luid_tb, luid_gd, context.state.m_contact_converter_style_gd_postal))
 						msg += " is twin";
 					else if (!this.is_tb_contact_have_an_address_field(luid_tb))
 					{
@@ -3909,7 +3909,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 				do_lookup = do_lookup && SyncFsm.isRelevantToGid(context.zfc(sourceid), luid);
 
 				if (do_lookup)
-					properties = context.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_vary_none);
+					properties = context.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_style_basic);
 
 				if (properties) // a contact with no properties will never be part of a twin so don't bother
 					this.add_to_a_checksum(sourceid, luid, properties);
@@ -4663,9 +4663,6 @@ SyncFsm.prototype.testForConflictingUpdateOperations = function()
 		let format              = context.state.sources[sourceid]['format'];
 		let luid                = context.state.zfcGid.get(suo.gid).get(sourceid);
 		let name                = context.state.m_folder_converter.convertForPublic(FORMAT_TB, format, context.zfc(sourceid).get(luid));
-
-		// logger().debug("AMHEREX: " + " key.bucket: " + key.bucket + " is_name_from_winner: " + is_name_from_winner +
-		//	                          " name: " + name + " from: sourceid: " + sourceid + " key: " + key.toString());
 
 		if (!(suo.sourceid_target in a_name))
 			a_name[suo.sourceid_target] = new Object();
@@ -6810,9 +6807,9 @@ SyncFsm.prototype.contact_converter = function()
 	var ret;
 
 	if (this.formatPr() == FORMAT_GD && this.state.gd_is_sync_postal_address)
-		ret = this.state.m_contact_converter_vary_gd_postal;
+		ret = this.state.m_contact_converter_style_gd_postal;
 	else
-		ret = this.state.m_contact_converter_vary_none;
+		ret = this.state.m_contact_converter_style_basic;
 
 	zinAssert(ret);
 
@@ -7707,8 +7704,9 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.m_folder_converter       = new FolderConverter();
 	state.m_addressbook            = AddressBook.new();
 
-	state.m_contact_converter_vary_none = new ContactConverter();
-	state.m_contact_converter_vary_none.setup(ContactConverter.VARY_NONE);
+	let style = sfcd.account().is_share_service() ? ContactConverter.eStyle.kZmMapsAllTbProperties : ContactConverter.eStyle.kBasic;
+	state.m_contact_converter_style_basic = new ContactConverter();
+	state.m_contact_converter_style_basic.setup(style);
 
 	state.sources = new Object();
 
@@ -7768,11 +7766,11 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
 
-	// this contact_converter is used when we're syncing postalAddress with Google, but the _vary_none version is still called
+	// this contact_converter is used when we're syncing postalAddress with Google, but the _style_basic version is still called
 	// from the slow sync checksum code because we don't want to include Google postalAddress in the checksum/isTwin comparison
 	//
-	state.m_contact_converter_vary_gd_postal = new ContactConverter();
-	state.m_contact_converter_vary_gd_postal.setup(ContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
+	state.m_contact_converter_style_gd_postal = new ContactConverter();
+	state.m_contact_converter_style_gd_postal.setup(ContactConverter.eStyle.kGdMapsPostalProperties);
 
 	state.initialiseSource(sourceid, FORMAT_GD);
 }
@@ -8261,7 +8259,7 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 
 			contact.mode(ContactGoogle.ePostal.kEnabled);
 
-			for (key in this.state.m_contact_converter_vary_gd_postal.gd_certain_keys_converted()["postalAddress"])
+			for (key in this.state.m_contact_converter_style_gd_postal.gd_certain_keys_converted()["postalAddress"])
 				if (key in contact.properties)
 				{
 					if (!postal_properties)

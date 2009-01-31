@@ -93,10 +93,9 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 		else if (elementA.hasAttribute("ct"))
 			; // if it has a ct (content-type) attribute, Tb2: ignore it Tb3: look for n="image" and get+store the image(s)
 		else
-			logger().warn("This contact contains something that isn't understood: " +
-			                                                xmlDocumentToString(node));
+			logger().warn("This contact contains something that isn't understood: " + xmlDocumentToString(node));
 
-		// if (key && value) logger().debug("AMHERE: setting contact: key: " + key + " to " + value);
+		// if (key && value) logger().debug("ZmContact: setting contact: key: " + key + " to " + value);
 	}
 }
 

@@ -61,7 +61,7 @@ SyncWindow.prototype.onLoad = function()
 
 		this.m_logger.debug("onLoad: blah: sfcd: " + this.m_sfcd.toString());
 
-		logger('info').info(getInfoMessage('start', this.m_sfcd.account_names_as_string()));
+		logger('info').info(getInfoMessage('start', this.m_sfcd.signature()));
 
 		window.setTimeout(this.onTimerFire, 0, this);
 	}

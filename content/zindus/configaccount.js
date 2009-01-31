@@ -391,10 +391,9 @@ var ConfigAccountStatic = {
 	},
 	newTempPasswordLocator : function(format_xx) {
 		let format   = getBimapFormat('long').lookup(format_xx, null);
-		var url      = preference(MozillaPreferences.AS_PW_URL,      'char');
-		var username = preference(MozillaPreferences.AS_PW_USERNAME, 'char');
-		url          = url.replace(/%format%/, format);
+		let url      = "http://temp-password-for-zindus-%format%-account.tld";
+		let username = "username";
 
-		return new PasswordLocator(url, username);
+		return new PasswordLocator(url.replace(/%format%/, format), username);
 	}
 };

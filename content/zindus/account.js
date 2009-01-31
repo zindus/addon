@@ -47,103 +47,110 @@ function Account(account)
 }
 
 Account.prototype = {
-make_getter: function(key) {
-	var context = this;
-	return function() { return context.get(eAccount[key]); }
-},
-make_setter: function(key) {
-	var context = this;
-	return function(value) { context.set(eAccount[key], value); }
-},
-get : function(key) {
-	zinAssertAndLog(eAccount.isPresent(key), key);
-	let value = (key in this.m_properties) ? this.m_properties[key] : null;
-	return value;
-},
-set : function(key, value) {
-	this.m_properties[key] = value;
-},
-unique_key : function() {
-	var ret;
-	switch(this.format_xx()) {
-		case FORMAT_ZM: ret = hyphenate(":", Account.Zimbra, this.url, this.username); break;
-		case FORMAT_GD: ret = hyphenate(":", Account.Google,           this.username); break;
-		default: zinAssertAndLog(false, "mismatched case: " + this.format_xx());
-	}
-	return ret;
-},
-format_xx : function() {
-	return AccountStatic.m_bimap_format.lookup(null, this.format);
-},
-toString : function() {
-	var ret = "Account:";
-
-	for (var key in this.m_properties)
-		ret += " " + key + ": " + this.m_properties[key];
-
-	return ret;
-},
-fromPrefset : function(sourceid) {
-	var prefset = AccountStatic.newPrefSet();
-	var ret = true;
-	var key;
-
-	prefset.load(sourceid);
-
-	this.sourceid = sourceid;
-
-	for (key in AccountStatic.m_keys_required) {
-		this.set(key, prefset.getProperty(key));
-
-		if (!this.get(key) || this.get(key).length < 1) {
-			ret = false;
-			logger().debug("fromPrefset: returning false on key: " + key);
-			break;
+	make_getter: function(key) {
+		var context = this;
+		return function() { return context.get(eAccount[key]); }
+	},
+	make_setter: function(key) {
+		var context = this;
+		return function(value) { context.set(eAccount[key], value); }
+	},
+	get : function(key) {
+		zinAssertAndLog(eAccount.isPresent(key), key);
+		let value = (key in this.m_properties) ? this.m_properties[key] : null;
+		return value;
+	},
+	set : function(key, value) {
+		this.m_properties[key] = value;
+	},
+	unique_key : function() {
+		var ret;
+		switch(this.format_xx()) {
+			case FORMAT_ZM: ret = hyphenate(":", Account.Zimbra, this.url, this.username); break;
+			case FORMAT_GD: ret = hyphenate(":", Account.Google,           this.username); break;
+			default: zinAssertAndLog(false, "mismatched case: " + this.format_xx());
 		}
-	}
+		return ret;
+	},
+	format_xx : function() {
+		return AccountStatic.m_bimap_format.lookup(null, this.format);
+	},
+	toString : function() {
+		var ret = "Account:";
 
-	if (ret) {
-		this.passwordlocator = new PasswordLocator(this.url, this.username);
+		for (var key in this.m_properties)
+			ret += " " + key + ": " + this.m_properties[key];
+
+		return ret;
+	},
+	fromPrefset : function(sourceid) {
+		var prefset = AccountStatic.newPrefSet();
+		var ret = true;
+		var key;
+
+		prefset.load(sourceid);
+
+		this.sourceid = sourceid;
+
+		for (key in AccountStatic.m_keys_required) {
+			this.set(key, prefset.getProperty(key));
+
+			if (!this.get(key) || this.get(key).length < 1) {
+				ret = false;
+				logger().debug("fromPrefset: returning false on key: " + key);
+				break;
+			}
+		}
+
+		if (ret) {
+			this.passwordlocator = new PasswordLocator(this.url, this.username);
+
+			for (key in AccountStatic.m_keys_optional) {
+				let value = prefset.getProperty(key);
+
+				if (value != PrefSet.DEFAULT_VALUE)
+					this.set(key, value);
+			}
+		}
+
+		logger().debug("Account.prototype.fromPrefset: sourceid: " + sourceid + " prefset: " + prefset.toString() + " returns: " + ret);
+
+		return ret;
+	},
+	save : function() {
+		var prefset = AccountStatic.newPrefSet(this.sourceid);
+		var key;
+
+		zinAssert(this.sourceid);
+
+		prefset.remove(); // flush out any child preferences that we don't want to keep - eg when the account format changes
+
+		for (key in AccountStatic.m_keys_required)
+			prefset.setProperty(key, this.get(key));
 
 		for (key in AccountStatic.m_keys_optional) {
-			let value = prefset.getProperty(key);
+			prefset.delProperty(key);
 
-			if (value != PrefSet.DEFAULT_VALUE)
-				this.set(key, value);
+			let value = this.get(key);
+
+			if (value)
+				prefset.setProperty(key, value);
 		}
+
+		prefset.save();
+	},
+	remove : function() {
+		logger().debug("Account.remove: removing prefset with sourceid: " + this.sourceid);
+
+		AccountStatic.newPrefSet(this.sourceid).remove();
+	},
+	is_share_service : function () {
+		let re = preferences().getCharPrefOrNull(preferences().branch(), MozillaPreferences.ZM_SHARE_SERVICE_REGEXP);
+
+		re = re || new RegExp(re);
+
+		return Boolean(re && this.url.match(re));
 	}
-
-	logger().debug("Account.prototype.fromPrefset: sourceid: " + sourceid + " prefset: " + prefset.toString() + " returns: " + ret);
-
-	return ret;
-},
-save : function() {
-	var prefset = AccountStatic.newPrefSet(this.sourceid);
-	var key;
-
-	zinAssert(this.sourceid);
-
-	prefset.remove(); // flush out any child preferences that we don't want to keep - eg when the account format changes
-
-	for (key in AccountStatic.m_keys_required)
-		prefset.setProperty(key, this.get(key));
-
-	for (key in AccountStatic.m_keys_optional) {
-		prefset.delProperty(key);
-
-		let value = this.get(key);
-
-		if (value)
-			prefset.setProperty(key, value);
-	}
-
-	prefset.save();
-},
-remove : function() {
-	logger().debug("Account.remove: removing prefset with sourceid: " + this.sourceid);
-
-	AccountStatic.newPrefSet(this.sourceid).remove();
-}
 };
 
 var AccountFactory = {

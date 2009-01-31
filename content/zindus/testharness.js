@@ -1110,8 +1110,6 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 			var re = /[ \r\n'"]/mg;
 			var left  = contact.properties[key].replace(re,"")
 			var right = properties[key].replace(re,"");
-			// logger().debug("AMHEREZ: left: " + left);
-			// logger().debug("AMHEREZ: right: " + right);
 
 			zinAssertAndLog(left == right, "key: " + key + " value in contact: " + contact.properties[key] + " expected: " + properties[key]);
 		}
@@ -1491,7 +1489,6 @@ TestHarness.prototype.testContactGoogle2 = function()
 	a_gd_contact = ContactGoogle.textToContacts(xmlStringTwo);
 	id = firstKeyInObject(a_gd_contact);
 	contact = a_gd_contact[id];
-	this.m_logger.debug("contact: AMHEREXX: " + contact.toString()); // TODO remove me
 	zinAssert(!('organization_orgTitle' in contact.properties));
 	zinAssert(!('organization_orgName'  in contact.properties));
 

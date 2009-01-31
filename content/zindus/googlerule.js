@@ -25,10 +25,10 @@ function GoogleRuleTrash(addressbook)
 {
 	if (!addressbook)
 	{
-		contact_converter  = new ContactConverter();
-		this.m_addressbook = AddressBook.new();
-
+		let contact_converter  = new ContactConverter();
 		contact_converter.setup();
+
+		this.m_addressbook = AddressBook.new();
 		this.m_addressbook.contact_converter(contact_converter);
 	}
 	else
