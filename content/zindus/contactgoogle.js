@@ -148,7 +148,7 @@ properties_from_xml: function () {
 			set_for(properties, nsGd, entry, 'postalAddress');
 
 		if (imask & mask.organization) {
-			var list = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchAll);
+			var list = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst);
 
 			if (list.length() > 0) {
 				set_if(properties, 'organization_orgTitle',  list[0].nsGd::orgTitle);
@@ -236,7 +236,7 @@ set properties (properties) {
 		if (imask & mask.organization) {
 			let is_found = false;
 
-			organization = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchAll);
+			organization = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst);
 
 			if (organization.length() > 0) {
 				function modify_or_delete_child_if(e, key) {
@@ -630,8 +630,7 @@ var ContactGoogleStatic = {
 	gac                    : new GdAddressConverter(),
 	cgopi                  : new ContactGoogleOrderedPropertyIterator(),
 	cgei                   : new ContactGoogleEmailIterator(),
-	kMatchFirst            : 1, // faux contstants passed to get_elements_matching_attribute
-	kMatchAll              : 2,
+	kMatchFirst            : 1, // tell get_elements_matching_attribute() to return only the first element of each match
 
 	to_bool : function (xml) {
 		return (xml.length() > 0);
@@ -703,21 +702,21 @@ var ContactGoogleStatic = {
 		return [this.m_a_element_and_suffix[key].l, this.m_a_element_and_suffix[key].r];
 	},
 	get_elements_matching_attribute : function (list, attribute, a_rel, style) {
-		// don't use this formulation because it throws an exception if entry doesn't have a rel attribute:
+		// the e4x formulation for matching attributes throws an exception if the element doesn't have a rel attribute:
 		// entry.nsGd::organization.(@rel==blah);
-		// We could catch the exception, but a) that seems clumsy and b) we compose the list differently based on style
-		//
-		zinAssert(style == this.kMatchFirst || style == this.kMatchAll);
+		// We could catch the exception, but a) that seems clumsy and b) we may (in future) compose the list differently based on style
+		// ie when tb supports multiple 'work' email addresses
 
-		var a_matched = {};
+		zinAssert(style == this.kMatchFirst); // this.kMatchAll not implemented.
 
-		var ret = <></>;
+		let a_matched = {};
+		let ret       = <></>;
 
 		for (var i = 0; i < list.length(); i++)
 		{
 			let tmp = list[i].@[attribute];
 
-			if (style == this.kMatchAll || !(tmp in a_matched)) // 
+			if (!(tmp in a_matched))
 				for (var j = 0; j < a_rel.length; j++)
 					if (tmp == this.get_rel(a_rel[j]))
 					{

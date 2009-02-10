@@ -67,6 +67,7 @@ TestHarness.prototype.run = function()
 	ret = ret && this.testZinEnum();
 	ret = ret && this.testContactGoogle1();
 	ret = ret && this.testContactGoogle2();
+	// ret = ret && this.testContactGoogleIssue179();
 	ret = ret && this.testContactGoogleIterators();
 	ret = ret && this.testContactGooglePostalAddress();
 	ret = ret && this.testGdAddressConverter();
@@ -1110,12 +1111,16 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 			var re = /[ \r\n'"]/mg;
 			var left  = contact.properties[key].replace(re,"")
 			var right = properties[key].replace(re,"");
+			// logger().debug("AMHEREZ: left: " + left);
+			// logger().debug("AMHEREZ: right: " + right);
 
 			zinAssertAndLog(left == right, "key: " + key + " value in contact: " + contact.properties[key] + " expected: " + properties[key]);
 		}
 	}
 
+	this.m_logger.debug("matchContactGoogle:");
 	this.m_logger.debug("matchContactGoogle: blah: \n properties: " + aToString(properties) + " \nmeta: " + aToString(meta) + " \ncontact properties: " + aToString(contact.properties));
+	this.m_logger.debug("matchContactGoogle: blah: \ncontact properties: " + aToString(contact.properties));
 	this.m_logger.debug("matchContactGoogle: blah: \ncontact xml: " + contact.toStringXml());
 
 	for (key in properties)
@@ -1489,8 +1494,46 @@ TestHarness.prototype.testContactGoogle2 = function()
 	a_gd_contact = ContactGoogle.textToContacts(xmlStringTwo);
 	id = firstKeyInObject(a_gd_contact);
 	contact = a_gd_contact[id];
+	this.m_logger.debug("contact: AMHEREXX: " + contact.toString()); // TODO remove me
 	zinAssert(!('organization_orgTitle' in contact.properties));
 	zinAssert(!('organization_orgName'  in contact.properties));
+
+	return true;
+}
+
+TestHarness.prototype.testContactGoogleIssue179 = function()
+{
+	var xmlStringEntry = "\
+	<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'> \
+	<id>http://www.google.com/m8/feeds/contacts/example%40googlemail.com/base/d</id> \
+	<updated>2009-02-05T13:22:07.967Z</updated> \
+	<category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/> \
+	<title>BTW</title><content>some content here </content> \
+	 <link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/example%40googlemail.com/thin/d'/> \
+	 <link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/example%40googlemail.com/thin/d'/> \
+	 <gd:organization rel='http://schemas.google.com/g/2005#other'> \
+	 	<gd:orgName>aa1</gd:orgName> \
+		<gd:orgTitle>aa2</gd:orgTitle> \
+	</gd:organization> \
+	<gd:organization rel='http://schemas.google.com/g/2005#other'> \
+		<gd:orgName>bb1</gd:orgName> \
+		<gd:orgTitle>bb2</gd:orgTitle> \
+	</gd:organization> \
+	<gd:organization rel='http://schemas.google.com/g/2005#other'> \
+		<gd:orgTitle>cc1</gd:orgTitle> \
+	</gd:organization> \
+	<gd:email rel='http://schemas.google.com/g/2005#other' address='btw@example.com' primary='true'/> \
+	<gd:email rel='http://schemas.google.com/g/2005#other' address='btw@example.com'/> \
+	<gd:phoneNumber label='work mobile'>123456789</gd:phoneNumber> \
+	<gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>123456789</gd:phoneNumber> \
+	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>xxxxx</gd:postalAddress> \
+	<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>lskjdflkjsdflkjsdf </gd:postalAddress> \
+	<gContact:groupMembershipInfo deleted='false' href='http://www.google.com/m8/feeds/groups/example%40googlemail.com/base/6'/> \
+	</entry>";
+
+	let contact = ContactGoogle.textToContact(xmlStringEntry);
+
+	this.m_logger.debug("contact: " + contact.toString());
 
 	return true;
 }
