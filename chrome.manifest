@@ -14,3 +14,7 @@ overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zind
 overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/mailwindowoverlay-sm.xul application={92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}
 overlay chrome://messenger/content/addressbook/addressbook.xul     chrome://zindus/content/addressbookoverlay.xul
 style   chrome://global/content/customizeToolbar.xul               chrome://zindus/skin/zindus.css
+
+# spicebird experiment
+overlay chrome://messenger/content/csMailnewsOverlay.xul           chrome://zindus/content/mailwindowoverlay.xul    application={ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}
+overlay chrome://messenger/content/csMailnewsOverlay.xul           chrome://zindus/content/mailwindowoverlay-sb.xul application={ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}

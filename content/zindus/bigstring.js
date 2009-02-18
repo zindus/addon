@@ -30,34 +30,29 @@ function BigString()
 	this.reset();
 }
 
-BigString.prototype.concat = function(str)
-{
-	zinAssert(arguments.length == 1);
+BigString.prototype = {
+	concat : function(str) {
+		zinAssert(arguments.length == 1);
 
-	this.m_intermediate += str;
+		this.m_intermediate += str;
 
-	if (++this.m_count > this.m_chunk_size)
-		this.concatIntermediate(str);
-}
-
-BigString.prototype.concatIntermediate = function(str)
-{
-	this.m_string += this.m_intermediate;
-	this.m_intermediate = "";
-	this.m_count = 0;
-}
-
-BigString.prototype.toString = function()
-{
-	if (this.m_intermediate.length > 0)
-		this.concatIntermediate("");
+		if (++this.m_count > this.m_chunk_size)
+			this.concatIntermediate(str);
+	},
+	concatIntermediate : function(str) {
+		this.m_string += this.m_intermediate;
+		this.m_intermediate = "";
+		this.m_count = 0;
+	},
+	toString : function() {
+		if (this.m_intermediate.length > 0)
+			this.concatIntermediate("");
 	
-	return this.m_string;
-}
-
-BigString.prototype.reset = function()
-{
-	this.m_string = "";
-	this.m_count = 0;
-	this.m_intermediate = "";
-}
+		return this.m_string;
+	},
+	reset : function() {
+		this.m_string = "";
+		this.m_count = 0;
+		this.m_intermediate = "";
+	}
+};

@@ -211,13 +211,13 @@ FolderConverter.prototype.emailed_contacts_per_locale = function(key)
 {
 	var ret = null;
 
-	if (isPropertyPresent(this.m_locale_map, key))
+	if (key in this.m_locale_map)
 		ret = this.m_locale_map[key];
 	else
 	{
 		key = key.substr(0, 2);
 
-		if (isPropertyPresent(this.m_locale_map, key))
+		if (key in this.m_locale_map)
 			ret = this.m_locale_map[key];
 	}
 

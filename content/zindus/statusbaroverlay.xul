@@ -58,8 +58,8 @@
 	-->
 	<statusbarpanel id="zindus-statusbar-state" context="zindus-statusbar-menu"
 	                ondblclick="window.zindus_statusbar.timerStart();" >
-		<image id="zindus-statusbar-logo"                            src="chrome://zindus/content/zindus16x16-bw.gif"       />
-		<image id="zindus-statusbar-logo-processing"   hidden="true" src="chrome://zindus/content/zindus-processing-bw.gif" />
+		<image id="zindus-statusbar-logo"                            src="chrome://zindus/skin/zindus16x16-bw.gif"       />
+		<image id="zindus-statusbar-logo-processing"   hidden="true" src="chrome://zindus/skin/zindus-processing-bw.gif" />
 		<label id="zindus-statusbar-alert"             hidden="true" value="!" />
 		<label id="zindus-statusbar-error"             hidden="true" value="X" />
 		<label id="zindus-statusbar-insync"            hidden="true" value="Y" />

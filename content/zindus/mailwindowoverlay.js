@@ -45,6 +45,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 			logger('info').info(getInfoMessage('startup'));
 
 			this.migratePrefs();
+			this.migratePasswords();
 
 			Filesystem.removeZfcsIfNecessary();
 
@@ -52,7 +53,7 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 
 			this.timerStartup();
 
-			StatusBar.update();
+			StatusBarState.update();
 		}
 	}
 	catch (ex)
@@ -153,7 +154,7 @@ ZinMailWindowOverlay.prototype.scheduleTimer = function(context, x)
 ZinMailWindowOverlay.prototype.statusSummary = function()
 {
 	var last_sync_date = null;
-	var zfiStatus      = StatusBar.stateAsZfi();
+	var zfiStatus      = StatusBarState.toZfi();
 	var now            = new Date();
 	var next_sync_date = now;
 
@@ -309,7 +310,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	//
 	if (true)
 	{
-		let accounts = AccountFactory.accountsLoadFromPrefset();
+		let accounts = AccountStatic.arrayLoadFromPrefset();
 		let i;
 
 		for (i = 0; i < accounts.length; i++)
@@ -319,6 +320,161 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 				accounts[i].save();
 			}
 	}
+}
+
+ZinMailWindowOverlay.prototype.migratePasswords = function()
+{
+	var accounts = AccountStatic.arrayLoadFromPrefset();
+	var pm       = PasswordManager.new();
+	var log      = this.m_logger;
+	var i, j;
+
+	var password_version_old = preferences().getCharPrefOrNull(preferences().branch(), MozillaPreferences.AS_PASSWORD_VERSION);
+	var password_version_new = null;
+
+	this.m_logger.debug("migrate old password/logins: password_version_old: " + password_version_old);
+
+	pm.m_migrate_hostnames = false;  // disable conversions that apply to tb2
+
+	// 0.8.6
+	// Bugs in pre-0.8.6 versions created temporary passwords that shouldn't have been left in the password database.
+	// Here we remove them.
+	//
+	if (("@mozilla.org/passwordmanager;1" in Components.classes) && (password_version_old == "notset"))
+	{
+		let accounts = AccountStatic.arrayLoadFromPrefset();
+		let url      = "https://www.google.com/accounts/ClientLogin/AuthToken";
+
+		pm.del(url, "username");
+
+		for (i = 0; i < accounts.length; i++)
+			if ((accounts[i].format_xx() == FORMAT_GD))
+				pm.del(url, accounts[i].username);
+	}
+
+	if (("@mozilla.org/login-manager;1" in Components.classes) && (password_version_old == "notset" || password_version_old == "pm-2"))
+	{
+		// passwordmanager doesn't seem to delete the bogus 'username' entry correctly, so we try again here on the first
+		// run after an upgrade to tb3.
+		//
+		let url      = "https://www.google.com";
+		let username = "username";
+		let logins   = pm.nsILoginManager().getAllLogins({});
+
+		for (i = 0; i < logins.length; i++)
+			if (logins[i].hostname == url && logins[i].username == username &&
+			    (logins[i].formSubmitURL == null || logins[i].formSubmitURL == "") &&
+			    (logins[i].httpRealm == null || logins[i].httpRealm == ""))
+			{
+				pm.nsILoginManager().removeLogin(logins[i]);
+				this.m_logger.debug("migrate: removed bogus login: url: " + url + " username: " + username);
+			}
+	}
+
+	// migrate the hostnames/urls used in password manager and loginmanager
+	// to ensure a smooth path to 
+	if (password_version_old == "notset" && ("@mozilla.org/passwordmanager;1" in Components.classes))
+	{
+		password_version_new = "pm-2";
+
+		this.m_logger.debug("migrating from password_version: notset to: " + password_version_new);
+
+		function migrate_password(old_url, new_url, username, password) {
+			log.debug("migrating username: " + username + " old_url: " + old_url + " to: " + new_url);
+			pm.set(PasswordManager.m_bimap_google_hostname.lookup(old_url, null), username, password);
+			pm.del(old_url, username);
+		}
+
+		for (i = 0; i < accounts.length; i++)
+			if ((accounts[i].format_xx() == FORMAT_GD))
+			{
+				let username = accounts[i].passwordlocator.username();
+				let url, password;
+
+				url      = eGoogleLoginUrl.kAuthToken;
+				password = pm.get(url, username);
+				if (password)
+					migrate_password(url, PasswordManager.m_bimap_google_hostname.lookup(url, null), username, password);
+
+				url      = eGoogleLoginUrl.kClientLogin;
+				password = pm.get(url, username);
+				if (password)
+					migrate_password(url, PasswordManager.m_bimap_google_hostname.lookup(url, null), username, password);
+
+			}
+	}
+	else if (password_version_old == "notset" && ("@mozilla.org/login-manager;1" in Components.classes))
+	{
+		// Thunderbird3's auto-migration of nsIPasswordManager entries to nsILoginManager logins is lossy
+		// Here we apply a heuristic to try and recover
+		//
+		password_version_new = "lm-2";
+		this.m_logger.debug("migrating from password_version: notset to: " + password_version_new);
+
+		var login_manager = Components.classes["@mozilla.org/login-manager;1"].getService(Components.interfaces.nsILoginManager);
+		var logins        = login_manager.getAllLogins({});
+
+		function migrate_login_from_notset(logininfo) {
+			let type = (logininfo.password.length < 100 ? eGoogleLoginUrl.kClientLogin : eGoogleLoginUrl.kAuthToken );
+
+			log.debug("migrating logininfo type: " + eGoogleLoginUrl.keyFromValue(type) + " to version lm-2: hostname: " +
+			            logininfo.hostname + " username: " + logininfo.username);
+
+			pm.set(type, logininfo.username, logininfo.password);
+			login_manager.removeLogin(logininfo);
+		}
+
+		for (i = 0; i < accounts.length; i++)
+			if ((accounts[i].format_xx() == FORMAT_GD))
+				for (j = 0; j < logins.length; j++)
+					if (logins[j].username == accounts[i].passwordlocator.username() &&
+					    logins[j].hostname == "https://www.google.com" && (logins[j].httpRealm === null))
+						migrate_login_from_notset(logins[j]);
+	}
+	else if (password_version_old == "pm-2" && ("@mozilla.org/login-manager;1" in Components.classes))
+	{
+		password_version_new = "lm-2";
+		this.m_logger.debug("migrating from password_version: pm-2 to: " + password_version_new);
+
+		var login_manager = Components.classes["@mozilla.org/login-manager;1"].getService(Components.interfaces.nsILoginManager);
+		var logins        = login_manager.getAllLogins({});
+
+		function migrate_login_from_pm_2(logininfo) {
+			let url = PasswordManager.m_bimap_google_hostname.lookup(null, logininfo.hostname);
+
+			log.debug("migrating logininfo hostname: " + logininfo.hostname + " to version lm-2: username: " + logininfo.username);
+
+			pm.set(url, logininfo.username, logininfo.password);
+			login_manager.removeLogin(logininfo);
+		}
+				if (false)
+				{
+					var is_username = logins[j].username == accounts[i].passwordlocator.username();
+					var is_realm    = logins[j].httpRealm === null;
+					var is_hostname_clientlogin = logins[j].hostname == PasswordManager.m_bimap_google_hostname.lookup(eGoogleLoginUrl.kClientLogin, null);
+					var is_hostname_authtoken = logins[j].hostname == PasswordManager.m_bimap_google_hostname.lookup(eGoogleLoginUrl.kAuthToken, null);
+
+					this.m_logger.debug("hostname: " + logins[j].hostname + " password.length: " + logins[j].password.length);
+					this.m_logger.debug("is_username: " + is_username);
+					this.m_logger.debug("is_realm: " + is_realm);
+					this.m_logger.debug("bimap: " + PasswordManager.m_bimap_google_hostname.toString());
+					this.m_logger.debug("old authtoken hostname: " + PasswordManager.m_bimap_google_hostname.lookup(null, eGoogleLoginUrl.kAuthToken));
+					this.m_logger.debug("is_hostname_clientlogin: " + is_hostname_clientlogin);
+					this.m_logger.debug("is_hostname_authtoken: " + is_hostname_authtoken);
+				}
+
+		for (i = 0; i < accounts.length; i++)
+			if ((accounts[i].format_xx() == FORMAT_GD))
+				for (j = 0; j < logins.length; j++)
+					if (logins[j].username == accounts[i].passwordlocator.username() &&
+						(logins[j].httpRealm === null) &&
+					    (logins[j].hostname == PasswordManager.m_bimap_google_hostname.lookup(eGoogleLoginUrl.kClientLogin, null) ||
+					     logins[j].hostname == PasswordManager.m_bimap_google_hostname.lookup(eGoogleLoginUrl.kAuthToken, null)))
+						migrate_login_from_pm_2(logins[j]);
+	}
+
+	if (password_version_new)
+		preferences().setCharPref(preferences().branch(), MozillaPreferences.AS_PASSWORD_VERSION, password_version_new);
 }
 
 ZinMailWindowOverlay.prototype.timerStartup = function()

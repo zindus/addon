@@ -98,3 +98,9 @@ ZinEnum.prototype = {
 			yield is_keys_only ? this.m_properties[key] : [ key, this.m_properties[key] ];
 	}
 };
+
+// This really belongs in a separate source file but until we get a few more of such things we'll leave them here for the moment.
+// can't put it in const.js or util.js because they're included before this one.
+//
+const eGoogleLoginUrl = new ZinEnum( { 'kClientLogin'   : "https://www.google.com/accounts/ClientLogin",
+                                       'kAuthToken'     : "https://www.google.com/accounts/ClientLogin/Contacts/AuthToken" } );

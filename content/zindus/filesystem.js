@@ -203,7 +203,7 @@ var Filesystem = {
 	},
 	removeZfcsIfNecessary : function() {
 		var data_version   = null;
-		var zfiStatus      = StatusBar.stateAsZfi();
+		var zfiStatus      = StatusBarState.toZfi();
 		var msg            = "";
 		var is_out_of_date = false;
 
@@ -212,7 +212,7 @@ var Filesystem = {
 
 		msg += "Software works with datastore version: " + APP_VERSION_DATA_CONSISTENT_WITH + " (or newer).  Here: " + data_version;
 
-		var is_status_file_exists = StatusBar.stateAsZfc().nsifile().exists();
+		var is_status_file_exists = StatusBarState.toZfc().nsifile().exists();
 
 		if (!zfiStatus && is_status_file_exists)
 			msg += " but the status file exists";

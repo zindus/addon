@@ -53,10 +53,7 @@ function ConfigSettings()
 ConfigSettings.prototype.onLoad = function(target)
 {
 	if (this.is_developer_mode)
-	{
-		document.getElementById("cs-button-test-harness").removeAttribute('hidden');
-		document.getElementById("cs-button-run-timer").removeAttribute('hidden');
-	}
+		xulSetAttribute('hidden', false, "cs-button-test-harness", "cs-button-test-wizard", "cs-button-run-timer");
 
 	this.m_prefset_general.load();
 	this.m_prefset_general_orig.load();
@@ -166,7 +163,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			// 
 			if (!window.closed && this.m_payload instanceof Payload)
 			{
-				var msg = "";
+				let msg = "";
 
 				stopwatch.mark("finish")
 
@@ -184,13 +181,12 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 					if (isInArray(failcode, GoogleRuleTrash.FAIL_CODES))
 					{
-						var payload2 = new Payload();
-						var chrome_uri;
+						let payload2 = new Payload();
+						let chrome_uri;
 
 						payload2.m_args = newObject('m_es', this.m_payload.m_es);
 
-						switch(failcode)
-						{
+						switch(failcode) {
 							case 'failon.gd.conflict.4': chrome_uri = "chrome://zindus/content/googleruleempty.xul";  break;
 							default: zinAssertAndLog(false, failcode);
 						}
@@ -208,10 +204,11 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			this.m_payload = null;
 			break;
 
-		case "cs-button-test-harness":
-			var testharness = new TestHarness();
+		case "cs-button-test-harness": {
+			let testharness = new TestHarness();
 			testharness.run();
 			break;
+			}
 
 		case "cs-button-run-timer":
 			this.m_timer_timeoutID = window.setTimeout(this.onTimerFire, 0, this);
@@ -221,7 +218,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 		case "cs-button-reset":
 			Filesystem.removeZfcs();
 			Filesystem.removeLogfile();
-			StatusBar.update();
+			StatusBarState.update();
 			break;
 
 		case "cs-button-advanced":
@@ -230,7 +227,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		case "cs-account-delete":
 			rowid           = dId("cs-account-tree").currentIndex;
-			var old_account = this.m_accounts[rowid];
+			let old_account = this.m_accounts[rowid];
 
 			this.m_logger.debug("account-delete: rowid: " + rowid + " username: " + old_account.username);
 
@@ -242,42 +239,37 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			is_accounts_changed = true;
 			break;
 
+		case "cs-button-test-wizard":
 		case "cs-account-add":
-		case "cs-account-edit":
-			var c_zimbra = this.accountsArrayOf(FORMAT_ZM).length;
-
-			this.updatePrefsetsFromDocument(); // because prefset_general gets passed through to SyncWindow
-
+		case "cs-account-edit": {
 			rowid = dId("cs-account-tree").currentIndex;
 
-			var payload = new Payload();
-			payload.m_is_zm_enabled = rowid == -1 || this.m_accounts[rowid].format_xx() == FORMAT_ZM || (c_zimbra == 0);
-			payload.m_account = (id_target == "cs-account-add") ? null : this.m_accounts[rowid];
-			payload.m_account_keys = new Object();
+			let payload = new Payload();
+			payload.m_accounts = this.m_accounts;
+			payload.m_account  = (id_target == "cs-account-edit") ? this.m_accounts[rowid] : null;
 
-			for (var i = 0; i < this.m_accounts.length; i++)
-				if (i != rowid)
-					payload.m_account_keys[hyphenate(':', this.m_accounts[i].format_xx(), this.m_accounts[i].url,
-					                                      this.m_accounts[i].username)] = true;
-
-			window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
+			if (id_target == "cs-button-test-wizard")
+				window.openDialog("chrome://zindus/content/configwizard.xul", "_blank", WINDOW_FEATURES, payload);
+			else
+				window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
 			if (payload.m_result)
 			{
-				var account = new Account(payload.m_result); // bring the Account object into the scope of the current window.
+				let account = new Account(payload.m_result); // bring the Account object into the scope of the current window.
 
 				switch (id_target) {
+					case "cs-button-test-wizard":
 					case "cs-account-add":
 						this.m_accounts.push(account);
 
 						if (account.format_xx() == FORMAT_ZM)
-							rowid = c_zimbra; // Zimbra accounts appear above Google accounts
+							rowid = 0; // Zimbra accounts appear above Google accounts
 						else
 							rowid = this.m_accounts.length - 1;
 						break;
 
 					case "cs-account-edit":
-						var old_account = this.m_accounts[rowid];
+						let old_account = this.m_accounts[rowid];
 
 						this.m_accounts[rowid] = account;
 
@@ -288,19 +280,13 @@ ConfigSettings.prototype.onCommand = function(id_target)
 						zinAssert(false);
 				}
 
-				var old_pl = new PasswordLocator(account.passwordlocator);
-				var new_pl = new PasswordLocator(account.url, account.username);
-
-				new_pl.setPassword(old_pl.getPassword());
-
-				ConfigSettingsStatic.removeFromPasswordDatabase(old_pl);
-
-				account.passwordlocator = new_pl;
+				ConfigSettingsStatic.resetPasswordLocator(account);
 
 				is_accounts_changed = true;
 			}
 
 			break;
+			}
 
 		case "cs-auto-sync":
 		case "cs-verbose-logging":
@@ -327,7 +313,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 		{
 			// remove the last account from preferences because it has shifted up...
 			//
-			account = new Account();
+			let account = new Account();
 			account.sourceid = AccountStatic.indexToSourceId(this.m_accounts.length);
 			account.remove();
 
@@ -370,7 +356,7 @@ ConfigSettings.prototype.initialiseView = function()
 {
 	// accounts tab
 	//
-	this.m_accounts = AccountFactory.accountsLoadFromPrefset();
+	this.m_accounts = AccountStatic.arrayLoadFromPrefset();
 	this.accountsTreeRefresh();
 
 	if (this.m_accounts.length > 0)
@@ -398,17 +384,13 @@ ConfigSettings.prototype.updateView = function()
 	else
 	{
 		this.m_logger.debug("updateView: enabling buttons");
-		xulSetAttribute('disabled', false,
-		                  "cs-command", "cs-button-run-timer", "cs-button-sync-now");
+		xulSetAttribute('disabled', false, "cs-command", "cs-button-run-timer", "cs-button-sync-now");
 	}
 
-	var a_google = this.accountsArrayOf(FORMAT_GD);
-	var a_zimbra = this.accountsArrayOf(FORMAT_ZM);
+	var c_google = AccountStatic.arraySliceOfFormat(this.m_accounts, FORMAT_GD).length;
 
-	xulSetAttribute('hidden', a_google.length == 0, "cs-button-advanced");
-
-	xulSetAttribute('disabled', dId("cs-account-tree").currentIndex < 0,
-	                                        "cs-account-edit", "cs-account-delete");
+	xulSetAttribute('visible', (c_google != 0), "cs-button-advanced");
+	xulSetAttribute('disabled', (dId("cs-account-tree").currentIndex < 0), "cs-account-edit", "cs-account-delete");
 }
 
 ConfigSettings.prototype.onFsmStateChangeFunctor = function(fsmstate)
@@ -510,7 +492,7 @@ ConfigSettings.prototype.cleanUpPasswordDb = function(account)
 		ConfigSettingsStatic.removeFromPasswordDatabase(account.url, account.username);
 
 	if (account.format_xx() == FORMAT_GD) // always delete the authtoken because the password may have changed
-		ConfigSettingsStatic.removeFromPasswordDatabase(googleClientLoginUrl('use-authtoken'), account.username);
+		ConfigSettingsStatic.removeFromPasswordDatabase(eGoogleLoginUrl.kAuthToken, account.username);
 }
 
 ConfigSettings.prototype.accountsIsPresentUrlUsername = function(url, username)
@@ -525,18 +507,6 @@ ConfigSettings.prototype.accountsIsPresentUrlUsername = function(url, username)
 		}
 
 	return ret;
-}
-
-ConfigSettings.prototype.accountsArrayOf = function(format_xx)
-{
-	var format  = this.m_format_bimap.lookup(format_xx, null);
-	var a_rowid = new Array();
-
-	for (var rowid = 0; rowid < this.m_accounts.length; rowid++)
-		if (this.m_accounts[rowid].format == format)
-			a_rowid.push(rowid);
-
-	return a_rowid;
 }
 
 ConfigSettings.prototype.accountsSortAndSave = function(accounts)
@@ -607,7 +577,7 @@ ConfigSettings.open = function()
 }
 
 var ConfigSettingsStatic = {
-	m_pm : new PasswordManager(),
+	m_pm : PasswordManager.new(),
 	getValueFromRadio : function(radiogroup_id, bimap) {
 		var el = dId(radiogroup_id);
 
@@ -634,6 +604,17 @@ var ConfigSettingsStatic = {
 			selected_id = default_id;
 		
 		dId(radiogroup_id).selectedItem = dId(selected_id);
+	},
+	resetPasswordLocator : function (account) {
+		// the PasswordLocator in the account returned by ConfigAccout is temporary
+		// here we make change it to the permanent one and remove the temporary one
+		//
+		let old_pl = new PasswordLocator(account.passwordlocator);
+
+		account.passwordlocator = new PasswordLocator(account.url, account.username);
+		account.passwordlocator.setPassword(old_pl.getPassword());
+
+		this.removeFromPasswordDatabase(old_pl);
 	},
 	removeFromPasswordDatabase : function() {
 		var url, username;

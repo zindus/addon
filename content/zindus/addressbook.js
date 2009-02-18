@@ -150,7 +150,7 @@ AddressBook.prototype.getAddressBookUriByName = function(name)
 
 	this.populateNameToUriMap();
 
-	if (isPropertyPresent(this.m_map_name_to_uri, name) && this.m_map_name_to_uri[name].length == 1)
+	if ((name in this.m_map_name_to_uri) && this.m_map_name_to_uri[name].length == 1)
 		ret = this.m_map_name_to_uri[name][0].uri();
 
 	// this.m_logger.debug("getAddressBookUriByName: returns: " + ret + " when: " + this.getNameToUriMapAsString());

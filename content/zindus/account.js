@@ -37,9 +37,17 @@ Account.Zimbra = 'Zimbra';   // so if you ever want to change one the old prefer
 
 function Account(account)
 {
-	this.m_properties = account ? account.m_properties : new Object();
-
 	let key, value;
+
+	this.m_properties = new Object();
+
+	if (account) // assign each property (instead of the object) to guarantee that the object is in the scope of the current window
+		for (key in account.m_properties)
+			if (key == 'passwordlocator')
+				this.m_properties[key] = new PasswordLocator(account.m_properties[key]);
+			else
+				this.m_properties[key] = account.m_properties[key];
+
 	for each ([key, value] in eAccount) {
 		this.__defineGetter__(key, this.make_getter(key));
 		this.__defineSetter__(key, this.make_setter(key));
@@ -64,13 +72,7 @@ Account.prototype = {
 		this.m_properties[key] = value;
 	},
 	unique_key : function() {
-		var ret;
-		switch(this.format_xx()) {
-			case FORMAT_ZM: ret = hyphenate(":", Account.Zimbra, this.url, this.username); break;
-			case FORMAT_GD: ret = hyphenate(":", Account.Google,           this.username); break;
-			default: zinAssertAndLog(false, "mismatched case: " + this.format_xx());
-		}
-		return ret;
+		return AccountStatic.unique_key(this.format_xx(), this.url, this.username);
 	},
 	format_xx : function() {
 		return AccountStatic.m_bimap_format.lookup(null, this.format);
@@ -145,16 +147,46 @@ Account.prototype = {
 		AccountStatic.newPrefSet(this.sourceid).remove();
 	},
 	is_share_service : function () {
-		let re = preferences().getCharPrefOrNull(preferences().branch(), MozillaPreferences.ZM_SHARE_SERVICE_REGEXP);
-
-		re = re || new RegExp(re);
+		let url = preferences().getCharPrefOrNull(preferences().branch(), MozillaPreferences.ZM_SHARE_SERVICE_URL);
+		let re  = url ? new RegExp('^' + url + '$') : null;
 
 		return Boolean(re && this.url.match(re));
 	}
 };
 
-var AccountFactory = {
-	accountsLoadFromPrefset : function() {
+var AccountStatic = {
+	m_keys_optional      : newObjectWithKeys( eAccount.gd_sync_with, eAccount.gd_suggested, eAccount.zm_sync_gal_enabled ),
+	m_keys_required      : newObjectWithKeys( eAccount.url, eAccount.username, eAccount.format),
+	m_bimap_format       : getBimapFormat('long'),
+	m_prefset_properties : eAccount.toArray(),
+	newPrefSet : function (sourceid) {
+		let prefset = new PrefSet(PrefSet.ACCOUNT, this.m_prefset_properties);
+		if (sourceid)
+			prefset.m_id = sourceid;
+		return prefset;
+	},
+	indexToSourceId : function(index) {
+		zinAssert(typeof(index) != 'undefined');
+
+		return index + SOURCEID_TB + 1;
+	},
+	sourceIdToIndex : function(sourceid) {
+		zinAssert(typeof(sourceid) != 'undefined');
+
+		return sourceid - SOURCEID_TB - 1;
+	},
+	unique_key : function(format_xx, url, username) {
+		var ret;
+		switch(format_xx) {
+			case FORMAT_ZM: ret = hyphenate(":", Account.Zimbra, url, username); break;
+			case FORMAT_GD: ret = hyphenate(":", Account.Google,      username); break;
+			default: zinAssertAndLog(false, "mismatched case: " + format_xx);
+		}
+		return ret;
+	},
+	// static methods for managing arrays of accounts
+	//
+	arrayLoadFromPrefset : function() {
 		var a_sourceid    = preferences().getImmediateChildren(preferences().branch(), PrefSet.ACCOUNT + '.');
 		var ret           = new Array();
 		var a_failed      = new Object();
@@ -199,32 +231,20 @@ var AccountFactory = {
 			}
 		}
 
-		logger().debug("accountsLoadFromPrefset: accounts: " + AccountStatic.arrayToString(ret));
+		logger().debug("arrayLoadFromPrefset: accounts: " + AccountStatic.arrayToString(ret));
 
 		return ret;
-	}
-};
-
-var AccountStatic = {
-	m_keys_optional      : newObjectWithKeys( eAccount.gd_sync_with, eAccount.gd_suggested, eAccount.zm_sync_gal_enabled ),
-	m_keys_required      : newObjectWithKeys( eAccount.url, eAccount.username, eAccount.format),
-	m_bimap_format       : getBimapFormat('long'),
-	m_prefset_properties : eAccount.toArray(),
-	newPrefSet : function (sourceid) {
-		let prefset = new PrefSet(PrefSet.ACCOUNT, this.m_prefset_properties);
-		if (sourceid)
-			prefset.m_id = sourceid;
-		return prefset;
 	},
-	indexToSourceId : function(index) {
-		zinAssert(typeof(index) != 'undefined');
+	arraySliceOfFormat : function(a_account, format_xx) {
+		zinAssert(a_account && format_xx);
 
-		return index + SOURCEID_TB + 1;
-	},
-	sourceIdToIndex : function(sourceid) {
-		zinAssert(typeof(sourceid) != 'undefined');
+		var ret = new Array();
 
-		return sourceid - SOURCEID_TB - 1;
+		for (var i = 0; i < a_account.length; i++)
+			if (a_account[i].format_xx() == format_xx)
+				ret.push(a_account[i]);
+
+		return ret;
 	},
 	arrayToString : function(a_accounts) {
 		var ret = "";

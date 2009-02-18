@@ -21,6 +21,9 @@
  * 
  * ***** END LICENSE BLOCK *****/
 
+// FIXME: this class needs to be refactored into a component
+// that observes notifications from fsms and reflects them back to clients.
+//
 // A few places in this class there are properties and methods that are both static and per-object.
 // The static ones are a nicer idiom for users of the notify* methods.
 // Instead of creating a Maestro object, the call is just Maestro.notifyFunctorRegister().
@@ -114,7 +117,7 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 
 				// logger().debug("Maestro: observe: register: " + id_functor);
 
-				zinAssert(!isPropertyPresent(this.m_a_functor, id_functor));
+				zinAssert(!(id_functor in this.m_a_functor));
 
 				this.m_a_functor[id_functor] = newObject('a_id_fsm', cloneObject(subject['a_id_fsm']),
 				                                         'functor',  subject['functor'],

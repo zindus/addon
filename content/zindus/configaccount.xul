@@ -23,6 +23,8 @@
   
   ***** END LICENSE BLOCK ***** -->
 
+<?xul-overlay href="chrome://zindus/content/configaccountoverlay.xul"?>
+
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
 <?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
@@ -34,10 +36,10 @@
 	buttonlabelextra2="&zindus.cs.buttonlabelextra2;"
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigAccount(); } window.wd.onLoad(event.target);"
-	oncommand="window.wd.onCommand(event.target.id);"
-	ondialogaccept="window.wd.onAccept();"
-	ondialogcancel="window.wd.onCancel();"
+	onload="with (ZindusScopeRegistry.getScope()) { window.ca = new ConfigAccount(); } window.ca.onLoad(window.arguments[0]);"
+	oncommand="window.ca.onCommand(event.target.id);"
+	ondialogaccept="window.ca.onAccept();"
+	ondialogcancel="window.ca.onCancel();"
 	ondialogextra2="with (ZindusScopeRegistry.getScope()) { openURL('http://www.zindus.com/faq-thunderbird/'); }"
 	>
 
@@ -49,91 +51,12 @@
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
-	<vbox flex="1" class="zindus-enclosing-vbox" pack="center" >
-		<command id="ca-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
-		<groupbox pack="center" >
-			<caption label="&zindus.ca.account.type.label;" />
-				<radiogroup id="ca-format-radiogroup" orient="horizontal" >
-					<radio id="ca-format-google" selected="true" />
-					<radio id="ca-format-zimbra" />
-				</radiogroup>
-		</groupbox>
-		<spacer class="zindus-spacer" flex="1"/> 
-		<groupbox pack="center" oninput="window.wd.onInput();" >
-			<caption label="&zindus.ca.group.login.details.label;" />
-			<grid flex="1" class="zindus-grid" > 
-				<columns>
-					<column style="margin-left:15px" />
-					<column flex="1" />
-				</columns>
-				<rows>
-					<description id="ca-url-description" xmlns:html="http://www.w3.org/1999/xhtml"
-					             style="margin-bottom:10px;" >
-						&zindus.ca.url.description.value;
-					</description>
-					<row id="ca-url-row" >
-						<label value="&zindus.ca.url.label;" />
-						<textbox id="ca-url" onblur="window.wd.onBlur('ca-url');" />
-					</row>
-					<description value="&zindus.ca.username.description.value;" style="margin-top:5px; margin-bottom:10px; padding:5px;" />
-					<row>
-						<label value="&zindus.ca.username.label;" />
-						<textbox id="ca-username" onblur="window.wd.onBlur('ca-username');" />
-					</row>
-					<spacer class="zindus-spacer" />
-					<row>
-						<label value="&zindus.ca.password.label;" />
-						<textbox id="ca-password" type="password" />
-					</row>
-					<spacer class="zindus-spacer" /> 
-					<hbox align="left" style="margin-left:20px" >
-						<button id="ca-button-authonly" command="ca-command" flex="1"
-					        	align="center" label="&zindus.ca.test.connection.label;"
-								accesskey="&zindus.ca.test.connection.accesskey;" />
-					</hbox>
-					<spacer class="zindus-spacer" flex="1"/> 
-				</rows>
-			</grid>
-		</groupbox>
-		<spacer class="zindus-spacer" flex="1"/> 
-		<!-- pap == per account preferences -->
+	<vbox id="zindus-ca-enclosing-vbox"/>
 
-		<groupbox pack="center" >
-			<caption label="&zindus.ca.group.pap.label;" />
-			<deck id="ca-pap-deck" >
-				<hbox>
-					<vbox id="ca-gd-vbox" pack="center" >
-						<label value="&zindus.ca.google.sync.with.label;" />
-						<radiogroup id="ca-gd-syncwith-radiogroup" >
-							<radio id="ca-gd-syncwith-pab" label="&zindus.ca.google.sync.with.pab.label;" selected="true" />
-							<radio id="ca-gd-syncwith-zg" style="min-width:20em"   />
-						</radiogroup>
-					</vbox>
-					<vbox>
-						<label value="&zindus.ca.google.suggested.contacts.label;" />
-						<radiogroup id="ca-gd-suggested-radiogroup" >
-							<radio id="ca-gd-suggested-include" label="&zindus.ca.google.suggested.include.label;" selected="true" />
-							<radio id="ca-gd-suggested-ignore" label="&zindus.ca.google.suggested.ignore.label;" />
-						</radiogroup>
-					</vbox>
-					<spacer flex="1"/> 
-				</hbox>
-				<hbox>
-					<vbox id="ca-zm-vbox" > <!-- pack="center" hbox pack="baseline" -->
-					<label value="&zindus.ca.zimbra.gal.label;" />
-					<menulist id="ca-zm-gal-menulist" >
-						<menupopup>
-							<menuitem id="ca-zm-gal-yes"      label="&zindus.ca.zimbra.gal.yes.label;" />
-							<menuitem id="ca-zm-gal-if-fewer" label="" /> <!-- selected in initialiseView after label is set -->
-							<menuitem id="ca-zm-gal-no"       label="&zindus.ca.zimbra.gal.no.label;" />
-						</menupopup>
-					</menulist>
-					</vbox>
-					<spacer flex="1"/> 
-				</hbox>
-			</deck>
-		</groupbox>
-		<spacer class="zindus-spacer" flex="1"/> 
-	</vbox>
+	<button hidden="true" >
+		<observes element="zindus-ca-is-ok-enabled" attribute="label"
+			onbroadcast="document.getElementById('zindus-ca-dialog').setAttribute('buttondisabledaccept', 
+				document.getElementById('zindus-ca-is-ok-enabled').getAttribute('label') == 'false')" />
+	</button>
 
 </dialog>

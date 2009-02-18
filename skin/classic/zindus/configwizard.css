@@ -1,0 +1,18 @@
+.page-intro-description {
+	margin: 15px;
+}
+
+.page-intro-groupbox {
+	height: 55px;
+}
+.page-intro-groupbox:hover {
+	-moz-appearance: button;
+	/*
+	The visual effect of outline is better but it doesn't work under tb2 w/o setting moz-appearance
+	FIXME: revisit this after dropping support for tb2
+	background-color: red;
+	-moz-outline:3px solid black;
+	outline:3px solid grey;
+	*/
+}
+

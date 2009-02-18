@@ -55,7 +55,7 @@
 		<stack>
 			<vbox pack="center" hidden="true" >
 				<hbox align="right" >
-					<image src="chrome://zindus/content/zindus-processing-bw.gif" />
+					<image src="chrome://zindus/skin/zindus-processing-bw.gif" />
 				</hbox>
 			</vbox>
 			<vbox align="center">

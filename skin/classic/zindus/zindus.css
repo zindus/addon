@@ -1,5 +1,5 @@
 #zindus-toolbarbutton {
-	list-style-image: url("chrome://zindus/skin/zindus24x24-tmp.gif");
+	list-style-image: url("chrome://zindus/skin/zindus24x24.gif");
 }
 
 toolbar[iconsize="small"] #zindus-toolbarbutton {

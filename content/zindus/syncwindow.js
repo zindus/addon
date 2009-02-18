@@ -167,8 +167,8 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 				if (isPropertyPresent(Maestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
 				{
-					StatusBar.saveState(this.m_payload.m_es);
-					StatusBar.update();
+					StatusBarState.save(this.m_payload.m_es);
+					StatusBarState.update();
 				}
 
 				this.m_sfcd.m_account_index++;

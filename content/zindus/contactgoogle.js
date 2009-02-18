@@ -451,19 +451,18 @@ toStringXml : function() {
 
 // factory methods
 //
-ContactGoogle.textToContact = function(text, mode) {
-	var xml = ContactGoogleStatic.newXml(text);
+ContactGoogle.newContact = function(arg, mode) {
+	var xml = ContactGoogleStatic.newXml(arg);
 	return new ContactGoogle(xml, mode);
 }
-ContactGoogle.textToContacts = function(text, a_contact, mode) {
-	var feed    = ContactGoogleStatic.newXml(text);
+ContactGoogle.newContacts = function(arg, a_contact, mode) {
+	var feed    = ContactGoogleStatic.newXml(arg);
 	var nsAtom  = ContactGoogleStatic.nsAtom;
 	var entries = feed.nsAtom::entry;
 	var ret     = a_contact ? a_contact : new Object();
-	var contact;
 
 	for (var i = 0; i < entries.length(); i++) {
-		contact = new ContactGoogle(entries[i], mode);
+		let contact = new ContactGoogle(entries[i], mode);
 		ret[contact.meta.id] = contact;
 	}
 
@@ -747,13 +746,25 @@ var ContactGoogleStatic = {
 		              <atom:title type="text"/>
 		          </atom:entry>;
 	},
-	newXml : function(text) {
+	newXml : function(arg) {
+		zinAssert((arg instanceof String) || (typeof(arg) == 'string') || (arg instanceof XMLHttpRequest));
+		var is_text_parsed = false;
+
+		var text = (arg instanceof XMLHttpRequest) ? arg.responseText : arg;
+
 		try {
-			var xml = new XML(text.replace(reXmlDeclaration,""));
+			var xml = new XML(stripCharsToWorkaroundBug478905(text).replace(reXmlDeclaration,""));
+			is_text_parsed = true;
 		}
 		catch (ex) {
-			zinAssertAndLog(false, ex.message + "\nbad xml text: " + text);
+			// The e4x parser can fail on certain UTF-8 byte sequences (see Issue #180)
+			// and http://groups.google.com/group/mozilla.dev.tech.xml/browse_thread/thread/60ff2a453c96af06#
+			// here we try to recover using the DOM XML parser.
+			//
+			logger().warn("ContactGoogleStatic: newXml: failed to parse XML using e4x: " + ex.message + " xml text: " + text);
 		}
+
+		zinAssert(is_text_parsed);
 
 		return xml;
 	},

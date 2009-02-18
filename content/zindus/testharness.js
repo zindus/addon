@@ -40,6 +40,8 @@ TestHarness.prototype.run = function()
 	var ret = true;
 
 	ret = ret && this.testPreferencesHaveDefaults();
+	ret = ret && this.testRemoveBadLogin();
+	// ret = ret && this.testPasswordManager();
 	// ret = ret && this.testSuo();
 	// ret = ret && this.testAccount();
 	// ret = ret && this.testCrc32();
@@ -47,7 +49,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	ret = ret && this.testContactConverter();
+	// ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testAddressBookBugzilla432145Create();
@@ -58,21 +60,16 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
-	ret = ret && this.testZuio();
-	// ret = ret && this.testGoogleContacts1();
-	// ret = ret && this.testGoogleContacts2();
-	// ret = ret && this.testGoogleContacts3();
-	// ret = ret && this.testGoogleContacts4();
-	// ret = ret && this.testGoogleContacts5();
-	ret = ret && this.testZinEnum();
-	ret = ret && this.testContactGoogle1();
-	ret = ret && this.testContactGoogle2();
+	// ret = ret && this.testZuio();
+	// ret = ret && this.testZinEnum();
+	// ret = ret && this.testContactGoogle1();
+	// ret = ret && this.testContactGoogle2();
 	// ret = ret && this.testContactGoogleIssue179();
-	ret = ret && this.testContactGoogleIterators();
-	ret = ret && this.testContactGooglePostalAddress();
-	ret = ret && this.testGdAddressConverter();
-	ret = ret && this.testBiMap();
-	ret = ret && this.testStringBundleContainsContactProperties();
+	// ret = ret && this.testContactGoogleIterators();
+	// ret = ret && this.testContactGooglePostalAddress();
+	// ret = ret && this.testGdAddressConverter();
+	// ret = ret && this.testBiMap();
+	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
 	// ret = ret && this.testDeleteCard();
 	// ret = ret && this.testFileLoggingTimes();
@@ -88,6 +85,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testPerformanceStringConcat();
 	// ret = ret && this.testPerformanceLoggingStyles();
 	// ret = ret && this.testTb3CardUuid();
+	// ret = ret && this.testLoginManager();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -279,7 +277,7 @@ TestHarness.prototype.testContactConverterGdPostalAddress = function()
 	var context = this;
 
 	function new_contact(str) {
-		return ContactGoogle.textToContact(context.m_entry_as_xml_char.replace("@@postal@@", str ), ContactGoogle.ePostal.kEnabled);
+		return ContactGoogle.newContact(context.m_entry_as_xml_char.replace("@@postal@@", str ), ContactGoogle.ePostal.kEnabled);
 	}
 
 	this.setupFixtureGdPostalAddress();
@@ -302,7 +300,7 @@ TestHarness.prototype.testContactConverterGdPostalAddress = function()
 	// With PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", address should convert to/from Thunderbird fields
 	// but the <otheraddr> element from Google doesn't become a Thunderbird property
 	//
-	contact_converter = this.newContactConverter(ContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
+	contact_converter = this.newContactConverter(ContactConverter.eStyle.kGdMapsPostalProperties);
 	zinAssert(contact_converter.isKeyConverted(FORMAT_GD, FORMAT_TB, "HomeAddress"));
 
 	contact    = new_contact(this.m_address_as_xml_entity);
@@ -394,27 +392,12 @@ TestHarness.prototype.testContactConverter1 = function()
 
 	// test the contact_converter.keysCommonToThatMatch()
 	//
-	contact_converter = this.newContactConverter(ContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
+	contact_converter = this.newContactConverter(ContactConverter.eStyle.kGdMapsPostalProperties);
 
 	var a_postalAddress = contact_converter.keysCommonToThatMatch(/^postalAddress_(.*)$/, "$1", FORMAT_GD, FORMAT_TB);
 	zinAssert(isPropertyPresent(a_postalAddress, "home") && isPropertyPresent(a_postalAddress, "work"));
 
 	return true;
-}
-
-TestHarness.prototype.gdContactFromXmlString = function(contact_converter, str)
-{
-	var domparser = new DOMParser();
-	var doc = domparser.parseFromString(str, "text/xml");
-	// this.m_logger.debug("gdContactFromXmlString: entry: " + xmlDocumentToString(doc));
-	a_gd_contact = GdContact.arrayFromXpath(contact_converter, doc, "/atom:entry");
-
-	zinAssertAndLog(aToLength(a_gd_contact) == 1, "length: " + aToLength(a_gd_contact));
-
-	var contact = a_gd_contact[firstKeyInObject(a_gd_contact)];
-	// this.m_logger.debug("gdContactFromXmlString: contact: " + contact.toString());
-
-	return contact;
 }
 
 TestHarness.prototype.testContactConverterPropertyMatch = function(obj1, obj2)
@@ -890,147 +873,6 @@ TestHarness.prototype.testAddressBookBugzilla432145Populate = function(propertie
 	attributes[TBCARD_ATTRIBUTE_LUID] = luid;
 }
 
-TestHarness.prototype.testGoogleContacts1 = function()
-{
-	var key, meta, properties, xmlString;
-
-	properties = this.sampleGoogleContactProperties();
-
-	meta = newObject("id",      "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0",
-	                 "self",    "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0",
-					 "updated", "2008-03-29T20:36:25.343Z",
-					 "edit",    "http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0/12068229blah"
-					  );
-
-
-	xmlString = "<?xml version='1.0' encoding='UTF-8'?> <feed xmlns='http://www.w3.org/2005/Atom' xmlns:openSearch='http://a9.com/-/spec/opensearchrss/1.0/' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>username-goes-here@gmail.com</id><updated>2008-03-30T00:33:50.384Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>cvek username-goes-here's Contacts</title><link rel='alternate' type='text/html' href='http://www.google.com/'/><link rel='http://schemas.google.com/g/2005#feed' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base'/><link rel='http://schemas.google.com/g/2005#post' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base'/><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base?max-results=25&amp;showdeleted=true'/><author><name>cvek username-goes-here</name><email>username-goes-here@gmail.com</email></author><generator version='1.0' uri='http://www.google.com/m8/feeds'>Contacts</generator><openSearch:totalResults>6</openSearch:totalResults><openSearch:startIndex>1</openSearch:startIndex><openSearch:itemsPerPage>25</openSearch:itemsPerPage> \
-	<entry> \
-	<id>@@id@@</id> \
-	<updated>@@updated@@</updated> \
-	<category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/> \
-	<title type='text'>@@title@@</title> \
-	<content type='text'>@@content@@</content> \
-	<link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0'/> \
-	<link rel='edit' type='application/atom+xml' href='@@edit@@'/>\
-	<gd:organization rel='http://schemas.google.com/g/2005#work'>\
-		<gd:orgName>@@organization#orgName@@</gd:orgName>\
-		<gd:orgTitle>@@organization#orgTitle@@</gd:orgTitle>\
-	</gd:organization>\
-	<gd:email rel='http://schemas.google.com/g/2005#other' address='@@PrimaryEmail@@' primary='true'/>\
-	<gd:email rel='http://schemas.google.com/g/2005#home' address='@@SecondEmail@@'/>\
-	<gd:email rel='http://schemas.google.com/g/2005#home' address='john.smith.home.2@example.com'/>\
-	<gd:email rel='http://schemas.google.com/g/2005#other' address='john.smith.other@example.com' />\
-	<gd:email rel='http://schemas.google.com/g/2005#work' address='john.smith.work@example.com'/>\
-	<gd:im address='@@im#AIM@@' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/>\
-	<gd:im address='aim-im-2' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/>\
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#home_fax'>4-home-fax</gd:phoneNumber>\
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#pager'>@@phoneNumber#pager@@</gd:phoneNumber>\
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#pager'>@@phoneNumber#pager@@</gd:phoneNumber>\
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>@@phoneNumber#home@@</gd:phoneNumber>\
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>3-home</gd:phoneNumber>\
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>@@phoneNumber#mobile@@</gd:phoneNumber>\
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#work_fax'>@@phoneNumber#work_fax@@</gd:phoneNumber>\
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#work'>@@phoneNumber#work@@</gd:phoneNumber>\
-	<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>home-address-line-1 home address line 2</gd:postalAddress>\
-	</entry></feed>";
-
-	for (key in properties)
-		xmlString = xmlString.replace("@@" + key + "@@", properties[key]);
-
-	for (key in meta)
-		xmlString = xmlString.replace("@@" + key + "@@", meta[key]);
-
-	var domparser = new DOMParser();
-	var response = domparser.parseFromString(xmlString, "text/xml");
-
-	var xpath_query = "/atom:feed/atom:entry";
-	var contact_converter = this.newContactConverter();
-	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, xpath_query);
-
-	// 1. test that a contact can get parsed out of xml 
-	// this.m_logger.debug("testGoogleContacts1: 1. id: " + id + " contact: " + contact.toString());
-	zinAssertAndLog(aToLength(a_gd_contact) == 1, "length: " + aToLength(a_gd_contact));
-
-	var id = firstKeyInObject(a_gd_contact);
-	var contact = a_gd_contact[id];
-
-	// 2. test that everything was parsed out of the xml correctly
-	//
-	this.matchGoogleContact(contact, properties, meta);
-
-	// 3. test that updating with all properties works
-	//
-	contact.updateFromProperties(properties);
-
-	this.matchGoogleContact(contact, properties, meta);
-
-	// 3. test that updating with no properties works
-	//
-	delete properties["content"];
-	delete properties["organization#orgName"];
-	delete properties["organization#orgTitle"];
-	delete properties["phoneNumber#work"];
-	delete properties["phoneNumber#home"];
-	delete properties["phoneNumber#work_fax"];
-	delete properties["phoneNumber#pager"];
-	delete properties["phoneNumber#mobile"];
-	delete properties["PrimaryEmail"]; // properties["PrimaryEmail"] = "";
-	delete properties["SecondEmail"];
-	delete properties["im#AIM"];
-
-	contact.updateFromProperties(properties);
-
-	properties["PrimaryEmail"]     = "john.smith.home.2@example.com"; // the first <email> element
-	properties["SecondEmail"]      = "john.smith.other@example.com";  // the second...
-	properties["phoneNumber#home"] = "3-home";
-	properties["im#AIM"]           = "aim-im-2";
-
-	this.matchGoogleContact(contact, properties, meta);
-
-	// 4. test adding all properties to a new contact
-	//
-	properties = this.sampleGoogleContactProperties();
-	var contact_converter = this.newContactConverter();
-	contact = new GdContact(contact_converter);
-	contact.updateFromProperties(properties);
-	this.matchGoogleContact(contact, properties, {});
-
-	// 5. test creating a contact without a title
-	//
-	properties = newObject("content", "1-content", "organization#orgName", "2-organization#orgName");
-	contact.updateFromProperties(properties);
-	this.matchGoogleContact(contact, properties, {});
-
-	// 5. test creating a contact with an empty title
-	//
-	properties = newObject("title", "", "content", "1-content", "organization#orgName", "2-organization#orgName");
-	contact.updateFromProperties(properties);
-	delete properties["title"];
-	this.matchGoogleContact(contact, properties, {});
-
-	// test that we can find openSearch
-	//
-	var warn_msg = "<openSearch> element is missing from <feed>!";
-	var openSearch = { totalResults: 0 };
-	Xpath.setConditionalFromSingleElement(openSearch, 'totalResults', "//atom:feed/openSearch:totalResults", response, warn_msg);
-	this.m_logger.debug("entryActionGetContactGd1: openSearch totalResults: " + openSearch.totalResults);
-
-	return true;
-}
-
-TestHarness.prototype.testGoogleContacts2 = function()
-{
-	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/username%40@gmail.com/base/7ae485588d2b6b50</id><updated>2008-04-26T01:58:35.904Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>77</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50/1209175115904000'/><gd:email rel='http://schemas.google.com/g/2005#other' address='77@example.com' primary='true'/></entry>"
-	var domparser = new DOMParser();
-	var response = domparser.parseFromString(xmlString, "text/xml");
-	var contact_converter = this.newContactConverter();
-	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
-	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + aToLength(a_gd_contact));
-	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
-
-	return true;
-}
-
 TestHarness.prototype.sampleGoogleContactProperties = function()
 {
 	var properties = new Object();
@@ -1075,30 +917,6 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 	return properties;
 }
 
-TestHarness.prototype.matchGoogleContact = function(contact, properties, meta)
-{
-	var key;
-	zinAssert(contact && contact.m_properties);
-
-	// this.m_logger.debug("matchGoogleContact: blah: \n properties: " + aToString(properties) + " \nmeta: " + aToString(meta) + " \ncontact: " + contact.toString());
-
-	for (key in properties)
-		zinAssertAndLog(contact.m_properties[key] == properties[key], "key: " + key + " value in contact: " + contact.m_properties[key] + " expected: " + properties[key]);
-
-	for (key in meta)
-		zinAssertAndLog(contact.m_meta[key] == meta[key], "key: " + key);
-
-	if (contact.m_properties)
-		for (key in contact.m_properties)
-			zinAssertAndLog(contact.m_properties[key] == properties[key], "key: " + key);
-
-	if (contact.m_meta)
-		for (key in contact.m_meta)
-			zinAssertAndLog(contact.m_meta[key] == meta[key], "key: " + key);
-
-	
-}
-
 TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, is_match_postal)
 {
 	var key;
@@ -1111,16 +929,12 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 			var re = /[ \r\n'"]/mg;
 			var left  = contact.properties[key].replace(re,"")
 			var right = properties[key].replace(re,"");
-			// logger().debug("AMHEREZ: left: " + left);
-			// logger().debug("AMHEREZ: right: " + right);
 
 			zinAssertAndLog(left == right, "key: " + key + " value in contact: " + contact.properties[key] + " expected: " + properties[key]);
 		}
 	}
 
-	this.m_logger.debug("matchContactGoogle:");
 	this.m_logger.debug("matchContactGoogle: blah: \n properties: " + aToString(properties) + " \nmeta: " + aToString(meta) + " \ncontact properties: " + aToString(contact.properties));
-	this.m_logger.debug("matchContactGoogle: blah: \ncontact properties: " + aToString(contact.properties));
 	this.m_logger.debug("matchContactGoogle: blah: \ncontact xml: " + contact.toStringXml());
 
 	for (key in properties)
@@ -1143,68 +957,6 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 	if (meta)
 		for (key in contact.meta)
 			zinAssertAndLog(contact.meta[key] == meta[key], "key: " + key);
-}
-
-TestHarness.prototype.testGoogleContacts3 = function()
-{
-	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96</id><updated>2008-05-05T21:13:38.158Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>rr rr</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96/1210022018158000'/><gd:email rel='http://schemas.google.com/g/2005#home' address='rr.rr.rr.rr@example.com' primary='true'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>111111</gd:phoneNumber></entry>";
-	var domparser = new DOMParser();
-	var response = domparser.parseFromString(xmlString, "text/xml");
-	var contact_converter = this.newContactConverter();
-	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
-	this.m_logger.debug("testGoogleContacts2: number of contacts parsed: " + aToLength(a_gd_contact));
-	this.m_logger.debug("testGoogleContacts2: contact: " + a_gd_contact[firstKeyInObject(a_gd_contact)].toString());
-
-	return true;
-}
-
-// this looks at a google contact whereby the corresponding thunderbird contact has no properties
-//
-TestHarness.prototype.testGoogleContacts4 = function()
-{
-	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/blah%40example.com/base/4fa24c410ca0d4f1</id><updated>2008-07-10T15:23:32.801Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'></title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/blah%40example.com/base/4fa24c410ca0d4f1'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/blah%40example.com/base/4fa24c410ca0d4f1/1215703412801000'/><gd:organization primary='true' rel='http://schemas.google.com/g/2005#other'><gd:orgName>Fred Bloggs</gd:orgName></gd:organization></entry>";
-
-	var domparser = new DOMParser();
-	var response = domparser.parseFromString(xmlString, "text/xml");
-	var contact_converter = this.newContactConverter();
-	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
-	this.m_logger.debug("testGoogleContacts4: number of contacts parsed: " + aToLength(a_gd_contact));
-
-	var contact = a_gd_contact[firstKeyInObject(a_gd_contact)];
-
-	zinAssert(contact.is_empty());
-	zinAssert(!contact.is_deleted());
-
-	this.m_logger.debug("testGoogleContacts4: contact: " + contact.toString());
-
-	return true;
-}
-
-// a google contact with an empty gd:postalAddress element
-//
-TestHarness.prototype.testGoogleContacts5 = function()
-{
-	var xmlString = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96</id><updated>2008-05-05T21:13:38.158Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>rr rr</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96/1210022018158000'/><gd:email rel='http://schemas.google.com/g/2005#home' address='rr.rr.rr.rr@example.com' primary='true'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>111111</gd:phoneNumber><gd:postalAddress rel='http://schemas.google.com/g/2005#work'></gd:postalAddress></entry>";
-
-	var domparser = new DOMParser();
-	var response = domparser.parseFromString(xmlString, "text/xml");
-	var contact_converter = this.newContactConverter();
-	var a_gd_contact = GdContact.arrayFromXpath(contact_converter, response, "/atom:entry");
-
-	var contact = a_gd_contact[firstKeyInObject(a_gd_contact)];
-
-	this.m_logger.debug("testGoogleContacts5 1: contact: " + contact.toString());
-	this.m_logger.debug("testGoogleContacts5 2: contact: " + contact.toStringXml());
-
-	// properties = newObject("PrimaryEmail", "blah@example.com");
-	// contact.updateFromProperties(properties);
-
-	contact.removeEmptyPostalElements();
-
-	this.m_logger.debug("testGoogleContacts5 3: contact: " + contact.toString());
-	this.m_logger.debug("testGoogleContacts5 4: contact: " + contact.toStringXml());
-
-	return true;
 }
 
 TestHarness.prototype.testContactGoogle1 = function()
@@ -1231,7 +983,7 @@ TestHarness.prototype.testContactGoogle1 = function()
 	if (true)
 	{
 		// contact = new ContactGoogle(xml);
-		contact = ContactGoogle.textToContact(xmlString);
+		contact = ContactGoogle.newContact(xmlString);
 
 		this.m_logger.debug("contact.meta.id: " + contact.meta.id);
 
@@ -1349,7 +1101,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 	for (key in meta)
 		xmlString = xmlString.replace("@@" + key + "@@", meta[key]);
 
-	var a_gd_contact = ContactGoogle.textToContacts(xmlString);
+	var a_gd_contact = ContactGoogle.newContacts(xmlString);
 
 	for (var id in a_gd_contact)
 		this.m_logger.debug("contact: " + a_gd_contact[id].toString());
@@ -1444,7 +1196,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	// test postalAddressRemoveEmptyElements()
 	//
-	a_gd_contact = ContactGoogle.textToContacts(xmlString);
+	a_gd_contact = ContactGoogle.newContacts(xmlString);
 	id = firstKeyInObject(a_gd_contact);
 	contact = a_gd_contact[id];
 
@@ -1491,10 +1243,9 @@ TestHarness.prototype.testContactGoogle2 = function()
 	//
 	var xmlStringTwo = xmlString.replace("organization rel='http://schemas.google.com/g/2005#work'", 
 	                                     "organization ");
-	a_gd_contact = ContactGoogle.textToContacts(xmlStringTwo);
+	a_gd_contact = ContactGoogle.newContacts(xmlStringTwo);
 	id = firstKeyInObject(a_gd_contact);
 	contact = a_gd_contact[id];
-	this.m_logger.debug("contact: AMHEREXX: " + contact.toString()); // TODO remove me
 	zinAssert(!('organization_orgTitle' in contact.properties));
 	zinAssert(!('organization_orgName'  in contact.properties));
 
@@ -1509,18 +1260,18 @@ TestHarness.prototype.testContactGoogleIssue179 = function()
 	<updated>2009-02-05T13:22:07.967Z</updated> \
 	<category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/> \
 	<title>BTW</title><content>some content here </content> \
-	 <link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/example%40googlemail.com/thin/d'/> \
-	 <link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/example%40googlemail.com/thin/d'/> \
-	 <gd:organization rel='http://schemas.google.com/g/2005#other'> \
-	 	<gd:orgName>aa1</gd:orgName> \
-		<gd:orgTitle>aa2</gd:orgTitle> \
+	<link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/example%40googlemail.com/thin/d'/> \
+	<link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/example%40googlemail.com/thin/d'/> \
+	<gd:organization rel='http://schemas.google.com/g/2005#other'> \
+	<gd:orgName>aa1</gd:orgName> \
+	<gd:orgTitle>aa2</gd:orgTitle> \
 	</gd:organization> \
 	<gd:organization rel='http://schemas.google.com/g/2005#other'> \
-		<gd:orgName>bb1</gd:orgName> \
-		<gd:orgTitle>bb2</gd:orgTitle> \
+	<gd:orgName>bb1</gd:orgName> \
+	<gd:orgTitle>bb2</gd:orgTitle> \
 	</gd:organization> \
 	<gd:organization rel='http://schemas.google.com/g/2005#other'> \
-		<gd:orgTitle>cc1</gd:orgTitle> \
+	<gd:orgTitle>cc1</gd:orgTitle> \
 	</gd:organization> \
 	<gd:email rel='http://schemas.google.com/g/2005#other' address='btw@example.com' primary='true'/> \
 	<gd:email rel='http://schemas.google.com/g/2005#other' address='btw@example.com'/> \
@@ -1531,7 +1282,7 @@ TestHarness.prototype.testContactGoogleIssue179 = function()
 	<gContact:groupMembershipInfo deleted='false' href='http://www.google.com/m8/feeds/groups/example%40googlemail.com/base/6'/> \
 	</entry>";
 
-	let contact = ContactGoogle.textToContact(xmlStringEntry);
+	let contact = ContactGoogle.newContact(xmlStringEntry);
 
 	this.m_logger.debug("contact: " + contact.toString());
 
@@ -1744,12 +1495,12 @@ TestHarness.prototype.setupFixtureGdPostalAddress = function()
 
 TestHarness.prototype.testContactGooglePostalAddress = function()
 {
-	var contact_converter = this.newContactConverter(ContactConverter.VARY_INCLUDE_GD_POSTAL_ADDRESS);
+	var contact_converter = this.newContactConverter(ContactConverter.eStyle.kGdMapsPostalProperties);
 	var contact, properties, tb_properties, gd_properties;
 	var context = this;
 
 	function new_contact(str) {
-		return ContactGoogle.textToContact(context.m_entry_as_xml_char.replace("@@postal@@", str ), ContactGoogle.ePostal.kEnabled);
+		return ContactGoogle.newContact(context.m_entry_as_xml_char.replace("@@postal@@", str ), ContactGoogle.ePostal.kEnabled);
 	}
 
 	this.m_logger.debug("testContactGooglePostalAddress: start");
@@ -1831,7 +1582,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	this.setupFixtureGdPostalAddress();
 
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
-	contact = ContactGoogle.textToContact(context.m_entry_as_xml_char.replace("@@postal@@", "" ), ContactGoogle.ePostal.kDisabled);
+	contact = ContactGoogle.newContact(context.m_entry_as_xml_char.replace("@@postal@@", "" ), ContactGoogle.ePostal.kDisabled);
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 	contact.properties = gd_properties;
@@ -2654,3 +2405,90 @@ TestHarness.prototype.testTb3CardUuid = function()
 	return true;
 }
 
+TestHarness.prototype.testLoginManager = function()
+{
+	try {
+		var myLoginManager = Components.classes["@mozilla.org/login-manager;1"].getService(Components.interfaces.nsILoginManager);
+	
+		var logins = myLoginManager.getAllLogins({});
+
+		this.m_logger.debug("testLoginManager: length: " + logins.length);
+	
+		for (var i = 0; i < logins.length; i++) {
+			this.m_logger.debug("logins: hostname: " + logins[i].hostname + " username: " + logins[i].username + " formSubmitURL: " + logins[i].formSubmitURL + " httpRealm: " + logins[i].httpRealm + " username: " + logins[i].username + " password: " + (logins[i].password ? (" is present with length: " + logins[i].password.length) : " none") + "usernameField: " + logins[i].usernameField + " passwordField: " + logins[i].passwordField)
+		}
+	}
+	catch(ex) {
+		this.m_logger.debug("testLoginManager: exception: ex: " + ex);
+	}
+
+	return true;
+}
+
+TestHarness.prototype.testPasswordManager = function()
+{
+	var pm = PasswordManager.new();
+
+	var url = "http://test-case.example.com/blah/somepath"; // Thunderbird2 nsIPasswordManager won't delete entries with a trailing '/'
+	var username = "fred";
+	var password = "joe";
+	var password_length = password.length;
+
+	this.m_logger.debug("testPasswordManager: pm instanceof tb2: " + (pm instanceof PasswordManagerTb2));
+	this.m_logger.debug("testPasswordManager: pm instanceof tb3: " + (pm instanceof PasswordManagerTb3));
+
+	// test set
+	//
+	pm.set(url, username, password);
+
+	if ("@mozilla.org/login-manager;1" in Components.classes)
+		zinAssert(Boolean(pm.findLogin(url, username)));
+
+	// test get
+	//
+	zinAssert(password == pm.get(url, username) && pm.get(url, username).length == password_length);
+	
+	// test del
+	//
+	zinAssert(pm.del(url, username));
+
+	// ConfigAccount
+	//
+	// includejs("configaccount.js");
+	// let account = new Account();
+	// account.passwordlocator = ConfigAccountStatic.newTempPasswordLocator(FORMAT_GD);
+	// account.passwordlocator.setPassword(password);
+	// zinAssert(password == account.passwordlocator.getPassword());
+
+	this.m_logger.debug("testPasswordManager: done.");
+
+	return true;
+}
+
+TestHarness.prototype.testRemoveBadLogin = function()
+{
+		var i;
+		var pm       = PasswordManager.new();
+
+		// passwordmanager doesn't seem to delete the bogus 'username' entry correctly, so we try again here on the first
+		// run after an upgrade to tb3.
+		//
+		let url      = "https://www.google.com";
+		let username = "username";
+		let logins   = pm.nsILoginManager().getAllLogins({});
+
+		this.m_logger.debug("testRemoveBadLogin: logins.length: " + logins.length);
+
+		for (i = 0; i < logins.length; i++)
+		{
+			this.m_logger.debug("url: " + logins[i].hostname + " username: " + logins[i].username + "formSubmitURL: " + logins[i].formSubmitURL + " httpRealm: " + logins[i].httpRealm);
+
+			if (logins[i].hostname == url && logins[i].username == username &&
+			    (logins[i].formSubmitURL == null || logins[i].formSubmitURL == "") &&
+			    (logins[i].httpRealm == null || logins[i].httpRealm == ""))
+			{
+				// would do: pm.nsILoginManager().removeLogin(logins[i]);
+				this.m_logger.debug("migrate: removed bogus login: url: " + url + " username: " + username);
+			}
+		}
+	}

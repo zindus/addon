@@ -61,7 +61,7 @@ TimerFunctor.prototype.run = function()
 {
 	this.m_logger.debug("run: m_id_fsm_functor: " + this.m_id_fsm_functor);
 
-	var accounts = AccountFactory.accountsLoadFromPrefset();
+	var accounts = AccountStatic.arrayLoadFromPrefset();
 
 	if (accounts.length > 0)
 	{
@@ -74,29 +74,27 @@ TimerFunctor.prototype.run = function()
 	else
 	{
 		logger('info').info(getInfoMessage('start', "no accounts configured"));
-		StatusBar.saveState(this.m_es, true);
+		StatusBarState.save(this.m_es, true);
 		this.m_zwc.populate();
-		StatusBar.update(this.m_zwc);
+		StatusBarState.update(this.m_zwc);
 		zinAssert(!this.m_has_fsm_state_changed); // don't want finish() to unregister the fsm observer
 		this.finish();
 	}
 }
 
-TimerFunctor.prototype.onTimerFire = function(context)
+TimerFunctor.prototype.onTimerFire = function(self)
 {
-	if (context.m_has_fsm_state_changed)
+	if (self.m_has_fsm_state_changed)
 	{
-		Maestro.notifyFunctorUnregister(context.m_id_fsm_functor);
-		context.initialise_per_fsm_members();
+		Maestro.notifyFunctorUnregister(self.m_id_fsm_functor);
+		self.initialise_per_fsm_members();
 	}
 
-	Maestro.notifyFunctorRegister(context, context.onFsmStateChangeFunctor, context.m_id_fsm_functor, Maestro.FSM_GROUP_SYNC);
+	Maestro.notifyFunctorRegister(self, self.onFsmStateChangeFunctor, self.m_id_fsm_functor, Maestro.FSM_GROUP_SYNC);
 }
 
 TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 {
-	var context = this;
-
 	this.m_logger.debug("onFsmStateChangeFunctor: entering: m_id_fsm_functor: " + this.m_id_fsm_functor +
 	                       " fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
@@ -149,7 +147,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 			if (!is_repeat)
 			{
-				StatusBar.saveState(this.m_es);
+				StatusBarState.save(this.m_es);
 
 				this.m_sfcd.m_account_index++;
 			}
@@ -160,7 +158,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			{
 				this.m_zwc.forEach(this.zwc_functor('hide'));
 			
-				StatusBar.update(this.m_zwc);
+				StatusBarState.update(this.m_zwc);
 
 				this.finish(false);
 			}
@@ -205,10 +203,10 @@ TimerFunctor.prototype.finish = function(is_back_off)
 
 TimerFunctor.prototype.zwc_functor = function(name)
 {
-	if (!isPropertyPresent(this.m_a_zwc_functor, name))
-	{
-		switch(name)
-		{
+	var self = this;
+
+	if (!(name in this.m_a_zwc_functor))
+		switch(name) {
 			case 'hide':
 				this.m_a_zwc_functor[name] = {
 					run: function(win) {
@@ -225,7 +223,7 @@ TimerFunctor.prototype.zwc_functor = function(name)
 					run: function(win) {
 						dId(win, 'zindus-statusbar-progress').setAttribute('hidden', false);
 						dId(win, 'zindus-statusbar-progress-leftmost').value = 
-							stringBundleString("brand.zindus") + ": " + this.context.m_sfcd.account().username;
+							stringBundleString("brand.zindus") + ": " + self.m_sfcd.account().username;
 					}
 				};
 				break;
@@ -234,8 +232,8 @@ TimerFunctor.prototype.zwc_functor = function(name)
 				this.m_a_zwc_functor[name] = {
 					run: function(win) {
 						dId(win, "zindus-statusbar-progress-meter").setAttribute('value',
-						                                             this.context.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
-						dId(win, "zindus-statusbar-progress-text").setAttribute('value', this.context.m_sfo.progressToString());
+						                                             self.m_sfo.get(SyncFsmObserver.PERCENTAGE_COMPLETE) );
+						dId(win, "zindus-statusbar-progress-text").setAttribute('value', self.m_sfo.progressToString());
 						dId(win, "zindus-statusbar-logo").setAttribute('hidden', true);
 						dId(win, "zindus-statusbar-logo-processing").setAttribute('hidden', false);
 					}
@@ -245,9 +243,6 @@ TimerFunctor.prototype.zwc_functor = function(name)
 			default:
 				zinAssert(false, name);
 		}
-
-		this.m_a_zwc_functor[name].context = this;
-	}
 
 	return this.m_a_zwc_functor[name];
 }

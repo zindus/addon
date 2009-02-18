@@ -35,7 +35,7 @@
 	<script type="application/x-javascript;version=1.7"> <![CDATA[
 		window.addEventListener('load',
 			function() {
-				with (ZindusScopeRegistry.getScope()) { StatusBar.update(); }
+				with (ZindusScopeRegistry.getScope()) { StatusBarState.update(); }
 			}, false);
 	]]> </script>
 

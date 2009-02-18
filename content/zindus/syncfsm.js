@@ -36,7 +36,6 @@ includejs("suo.js");
 includejs("zuio.js");
 includejs("lso.js");
 includejs("zidbag.js");
-includejs("passwordmanager.js");
 includejs("stopwatch.js");
 includejs("cookieobserver.js");
 
@@ -260,6 +259,8 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 	this.state.stopwatch.mark(state + " 2");
 
+	let pab_name = this.state.m_addressbook.getPabName()
+
 	if (event == 'evCancel')
 		nextEvent = 'evCancel';
 	else if (typeof(document.evaluate) != 'function')
@@ -277,8 +278,12 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	{
 		nextEvent = 'evLackIntegrity';
 	}
-	else if (!this.state.m_addressbook.getPabName())
+	else if (!pab_name || !this.state.m_addressbook.getAddressBookUriByName(pab_name))
 	{
+		// getAddressBookUriByName() returns null when there are two addressbooks of the given name, so
+		// it catches when the user has two addressbooks named "Personal Address Book"
+		// see issue#181
+
 		this.state.stopFailCode    = 'failon.no.pab';
 		this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 
@@ -291,7 +296,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	if (this.formatPr() == FORMAT_GD && this.state.id_fsm == Maestro.FSM_ID_GD_TWOWAY)
 	{
 		var passwordlocator = new PasswordLocator(this.account().passwordlocator);
-		passwordlocator.url(googleClientLoginUrl('use-authtoken'));
+		passwordlocator.url(eGoogleLoginUrl.kAuthToken);
 
 		this.state.authToken = passwordlocator.getPassword();
 
@@ -672,18 +677,6 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 			if (str)
 				this.state.a_zm_tested_soapurls = str.split(",");
 		}
-
-		// migrate:
-		// A bug in pre-0.8.6 versions created a temporary password that shouldn't have been left in the password database.
-		// Here we remove it.  We can't do it on startup because the passwordmanager isn't available.
-		// Remove this once confident that all users are on version 0.8.6 or higher
-		//
-		if (is_slow_sync && this.formatPr() == FORMAT_GD)
-			with (ConfigSettingsStatic)
-			{
-				removeFromPasswordDatabase("https://www.google.com/accounts/ClientLogin/AuthToken", "username");
-				removeFromPasswordDatabase("https://www.google.com/accounts/ClientLogin/AuthToken", this.account().username);
-			}
 	}
 	else
 	{
@@ -6358,7 +6351,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 			case Suo.ADD | FeedItem.TYPE_CN:
 				if (this.state.m_http.is_http_status(HTTP_STATUS_201_CREATED))
 				{
-					let contact = ContactGoogle.textToContact(this.state.m_http.response('text'));
+					let contact = ContactGoogle.newContact(this.state.m_http.m_xhr);
 					let id      = contact.meta.id;
 					let zfi     = this.newZfiCnGd(id, contact.meta.updated, contact.meta.edit, contact.meta.self,
 					                                  this.state.gd_luid_ab_in_gd);
@@ -6383,7 +6376,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				{
 					var luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 					var zfiTarget   = zfcTarget.get(luid_target);
-					let contact     = ContactGoogle.textToContact(this.state.m_http.response('text'));
+					let contact     = ContactGoogle.newContact(this.state.m_http.m_xhr);
 					let id          = contact.meta.id;
 
 					zinAssert(luid_target == id);
@@ -6491,7 +6484,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 			break;
 
 		case FORMAT_GD:
-			if (isPropertyPresent(this.state.a_gd_contact, luid))
+			if (luid in this.state.a_gd_contact)
 				ret = this.contact_converter().convert(format_to, FORMAT_GD, this.state.a_gd_contact[luid].properties);
 			break;
 
@@ -7539,8 +7532,8 @@ HttpStateGd.prototype.toStringFiltered = function()
 {
 	// enabled verbose debugging for issue #156 // return this.m_http_method + " " + this.m_url;
 	return this.m_http_method + " " + this.m_url
-					          + " " + ((this.m_url != googleClientLoginUrl('use-password') &&
-							            this.m_url != googleClientLoginUrl('use-authtoken')) ? this.httpBody() : "");
+					          + " " + ((this.m_url != eGoogleLoginUrl.kClientLogin &&
+							            this.m_url != eGoogleLoginUrl.kAuthToken ) ? this.httpBody() : "");
 }
 
 HttpStateGd.prototype.httpBody = function()
@@ -7748,9 +7741,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 
 	var state = this.state;
 
-	state.a_gd_response                 = new Array();
-	state.a_gd_contact                  = null;
-	state.a_gd_contact_iterator         = null;
+	state.a_gd_contact                  = new Object();
 	state.a_gd_contact_to_get           = null;
 	state.a_gd_contact_to_del           = null;
 	state.a_gd_contact_dexmlify_ids     = null;         // set to a Array() when it's in use
@@ -7786,11 +7777,6 @@ SyncFsmGd.prototype.entryActionAuth = function(state, event, continuation)
 	var url      = this.account().url;
 	var username = this.account().username;
 	var password = this.account().passwordlocator.getPassword();
-
-	// See RFC 2821 and http://en.wikipedia.org/wiki/E-mail_address
-	// Thank goodness Gmail doesn't support email addresses where the local-part is a quoted string :-)
-	//
-	var valid_email_re = /^([A-Z0-9\.\!\#\$\%\*\/\?\|\^\{\}\`\~\&\'\+\_\-\=]+@[A-Z0-9.-]+\.[A-Z]+)$/i;
 
 	var a_reason = new Object();
 
@@ -7839,7 +7825,7 @@ SyncFsmGd.prototype.exitActionAuth = function(state, event)
 		this.state.authToken = aMatch[1];
 
 		var passwordlocator = new PasswordLocator(this.account().passwordlocator);
-		passwordlocator.url(googleClientLoginUrl('use-authtoken'));
+		passwordlocator.url(eGoogleLoginUrl.kAuthToken);
 		passwordlocator.username(this.account().username);
 
 		passwordlocator.setPassword(this.state.authToken);
@@ -7878,7 +7864,9 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 		url = this.state.gd_url_next;
 	else
 	{
-		url = this.state.gd_url_base + "?max-results=3000";
+		let gd_contacts_per_request = preference(MozillaPreferences.GD_CONTACTS_PER_REQUEST, 'int');
+
+		url = this.state.gd_url_base + "?max-results=" + gd_contacts_per_request;
 
 		if (!this.is_slow_sync())
 			url += "&showdeleted=true";
@@ -7901,7 +7889,6 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuation)
 {
 	var nextEvent;
-	var response;
 
 	if (!this.state.m_http || !this.state.m_http.response('text'))
 		nextEvent = 'evCancel';
@@ -7912,7 +7899,7 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 		nextEvent = 'evLackIntegrity';
 
 		var passwordlocator = new PasswordLocator(this.account().passwordlocator);
-		passwordlocator.url(googleClientLoginUrl('use-authtoken'));
+		passwordlocator.url(eGoogleLoginUrl.kAuthToken);
 
 		passwordlocator.delPassword();
 
@@ -7920,19 +7907,18 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 	}
 	else if (this.state.m_http.is_http_status(HTTP_STATUS_2xx))
 	{
-		let warn_msg;
-		this.state.a_gd_response.push(this.state.m_http.response('text'));
-		response = this.state.m_http.response();
+		let response = this.state.m_http.response();
+		let i;
 
-		// set the sync token
-		//
-		warn_msg = "<updated> element is missing from <feed>!";
+		let warn_msg = "<updated> element is missing from <feed>!";
 		Xpath.setConditionalFromSingleElement(this.state, 'gd_sync_token', "//atom:feed/atom:updated", response, warn_msg);
 		this.debug("entryActionGetContactGd2: gd_sync_token: " + this.state.gd_sync_token);
 
 		this.state.gd_url_next = null;
 		Xpath.setConditional(this.state, 'gd_url_next', "//atom:feed/atom:link[@rel='next']/attribute::href", response, null);
 		this.debug("entryActionGetContactGd2: next url: " + this.state.gd_url_next);
+
+		ContactGoogle.newContacts(this.state.m_http.m_xhr, this.state.a_gd_contact, this.google_contact_mode());
 
 		if (this.state.gd_url_next)
 			nextEvent = 'evRepeat';
@@ -8053,11 +8039,6 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 		}
 	};
 
-	this.state.a_gd_contact = new Object();
-
-	for (i = 0; i < this.state.a_gd_response.length; i++)
-		ContactGoogle.textToContacts(this.state.a_gd_response[i], this.state.a_gd_contact, this.google_contact_mode());
-
 	this.state.m_progress_yield_text = "parsing-google-xml";
 
 	let id;
@@ -8166,7 +8147,7 @@ SyncFsmGd.prototype.exitActionGetContactPuGd = function(state, event)
 	}
 	else
 	{
-		let contact = ContactGoogle.textToContact(this.state.m_http.response('text'), this.google_contact_mode());
+		let contact = ContactGoogle.newContact(this.state.m_http.m_xhr, this.google_contact_mode());
 		let id      = contact.meta.id;
 
 		zinAssertAndLog(!(id in this.state.a_gd_contact), function () { return "id=" + id; });
@@ -8219,7 +8200,7 @@ SyncFsmGd.prototype.exitActionGetGroupGd = function(state, event)
 	else
 	{
 		with (ContactGoogleStatic) {
-			var feed        = newXml(this.state.m_http.response('text'));
+			var feed        = newXml(this.state.m_http.m_xhr);
 			var systemGroup = feed.nsAtom::entry.nsGContact::systemGroup.(@id=="Contacts");
 
 			this.state.m_gd_my_contacts_group_id = systemGroup.length() == 1 ? systemGroup.parent().nsAtom::id.text() : null;
@@ -8334,7 +8315,7 @@ SyncFsmGd.prototype.exitActionDeXmlifyAddrGd = function(state, event)
 	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
 		return;
 
-	var contact = ContactGoogle.textToContact(this.state.m_http.response('text'));
+	var contact = ContactGoogle.newContact(this.state.m_http.m_xhr);
 	var id      = contact.meta.id;
 
 	zinAssertAndLog(id in this.state.a_gd_contact, id);

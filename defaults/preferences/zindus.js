@@ -7,14 +7,15 @@ pref("extensions.zindus.system.as_logfile_max_size",      10000000);   // logfil
 pref("extensions.zindus.system.as_timer_delay_on_start",  3600);       // how long before the sync timer fires after startup
 pref("extensions.zindus.system.as_timer_delay_on_repeat", 43200);      // how long before the second and subsequent sync timers fire
 pref("extensions.zindus.system.as_allow_pre_release",     false);      // allow the addon to run in a pre-release Thunderbird
-pref("extensions.zindus.system.as_pw_url",                "http://temp-password-for-zindus-%format%-account.tld");
-pref("extensions.zindus.system.as_pw_username",           "username");
+pref("extensions.zindus.system.as_password_version",      "notset");   // pm-2, lm-2
 pref("extensions.zindus.system.zm_sync_gal_md_interval",  604800);     // how often the entire GAL is requested
 pref("extensions.zindus.system.zm_sync_gal_recheck",      2);          // how many zm_sync_gal_md_interval's before if_fewer is retested
 pref("extensions.zindus.system.zm_sync_gal_if_fewer",     500);        // sync gal if it contains less than this many contacts
 pref("extensions.zindus.system.zm_prefer_soapurl_scheme", "https");    // the scheme to prefer if multiple <soapURL>'s are recieved
+pref("extensions.zindus.system.zm_share_service_url",     "xxx");      // 
 pref("extensions.zindus.system.gd_data_transfer_scheme",  "https");    // the scheme to use for Google Contacts get+set (auth always https)
 pref("extensions.zindus.system.gd_trash_expire_seconds",  604800);     // cards in zindus/ToBeDeleted older than this are deleted
+pref("extensions.zindus.system.gd_contacts_per_request",  3000);       // given as an argument to ?max-results=nnnn
 
 pref("extensions.zindus.preauth.0.name",                  "free.fr");
 pref("extensions.zindus.preauth.0.regexp",                "^https?://zimbra\.free\.fr\/?");

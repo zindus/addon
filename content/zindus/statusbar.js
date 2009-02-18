@@ -51,185 +51,161 @@ function StatusBar()
 	this.m_maestro        = null;
 }
 
-StatusBar.prototype.onLoad = function()
-{
-	this.m_logger.debug("onLoad: enters and exits");
+StatusBar.prototype = {
+	onLoad : function() {
+		this.m_logger.debug("onLoad: enters and exits");
 
-	if (!ObserverService.isRegistered(Maestro.TOPIC))
-	{
-		this.m_maestro = new Maestro();
+		if (!ObserverService.isRegistered(Maestro.TOPIC)) {
+			this.m_maestro = new Maestro();
 
-		ObserverService.register(this.m_maestro, Maestro.TOPIC);
+			ObserverService.register(this.m_maestro, Maestro.TOPIC);
+		}
+
+		this.m_timer_id = hyphenate('-', Maestro.ID_FUNCTOR_STATUSBAR_TIMER, Date.now());
+
+		Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, this.m_timer_id, Maestro.FSM_GROUP_SYNC);
+	},
+	onUnLoad : function() {
+		this.m_logger.debug("onUnLoad: enters");
+
+		if (this.m_timer_functor != null && this.m_is_fsm_running) {
+			this.m_logger.debug("onUnLoad: cancelling sync...");
+			this.m_timer_functor.cancel();
+			this.m_timer_functor = null;
+		}
+
+		Maestro.notifyFunctorUnregister(this.m_timer_id);
+	},
+	onDblClick : function(event) {
+		this.m_logger.debug("onDblClick: event: button: " + event.button);
+	},
+	timerStart : function() {
+		let msg = "timerStart: ";
+
+		if (!this.m_is_fsm_running) {
+			window.setTimeout(this.onTimerFire, 0, this);
+			msg += "fired";
+		}
+		else
+			msg += "fsm is running - do nothing";
+
+		this.m_logger.debug(msg);
+	},
+	onTimerFire : function(self) {
+		self.m_logger.debug("onTimerFire: about to run timer");
+		self.m_timer_functor = new TimerFunctor(Maestro.ID_FUNCTOR_STATUSBAR_TIMER, null, null);
+		self.m_timer_functor.run();
+	},
+	onFsmStateChangeFunctor : function(fsmstate) {
+		this.m_is_fsm_running = Boolean(fsmstate && ! fsmstate.isFinal());
+
+		if (!this.m_is_fsm_running)
+			this.m_timer_functor = null; // don't hold a reference to the functor if the fsm is finished
+
+		// for a reason that I don't understand, the dId of the menuitem returns null at onLoad() time on OSX
+		// so we test for it...
+		//
+		let sync_now = dId("zindus-statusbar-sync-now");
+
+		if (sync_now)
+			sync_now.setAttribute('disabled', this.m_is_fsm_running);
 	}
-
-	this.m_timer_id = hyphenate('-', Maestro.ID_FUNCTOR_STATUSBAR_TIMER, Date.now());
-
-	Maestro.notifyFunctorRegister(this, this.onFsmStateChangeFunctor, this.m_timer_id, Maestro.FSM_GROUP_SYNC);
-}
-
-StatusBar.prototype.onUnLoad = function()
-{
-	this.m_logger.debug("onUnLoad: enters");
-
-	if (this.m_timer_functor != null && this.m_is_fsm_running)
-	{
-		this.m_logger.debug("onUnLoad: cancelling sync...");
-		this.m_timer_functor.cancel();
-		this.m_timer_functor = null;
-	}
-
-	Maestro.notifyFunctorUnregister(this.m_timer_id);
-}
-
-StatusBar.prototype.onDblClick = function(event)
-{
-	this.m_logger.debug("onDblClick: event: button: " + event.button);
-}
-
-StatusBar.prototype.timerStart = function()
-{
-	var msg = "timerStart: ";
-
-	if (!this.m_is_fsm_running)
-	{
-		window.setTimeout(this.onTimerFire, 0, this);
-		msg += "fired";
-	}
-	else
-		msg += "fsm is running - do nothing";
-
-	this.m_logger.debug(msg);
-}
-
-StatusBar.prototype.onTimerFire = function(context)
-{
-	context.m_logger.debug("onTimerFire: about to run timer");
-	context.m_timer_functor = new TimerFunctor(Maestro.ID_FUNCTOR_STATUSBAR_TIMER, null, null);
-	context.m_timer_functor.run();
-}
-
-StatusBar.prototype.onFsmStateChangeFunctor = function(fsmstate)
-{
-	this.m_is_fsm_running = Boolean(fsmstate && ! fsmstate.isFinal());
-
-	if (!this.m_is_fsm_running)
-		this.m_timer_functor = null; // don't hold a reference to the functor if the fsm is finished
-
-	// for a reason that I don't understand, the dId of the menuitem returns null at onLoad() time on OSX
-	// so we test for it...
-	//
-	var sync_now = dId("zindus-statusbar-sync-now");
-
-	if (sync_now)
-		sync_now.setAttribute('disabled', this.m_is_fsm_running);
-}
+};
 
 // Static methods that interact with status.txt
 //
-StatusBar.saveState = function(es, is_never_synced)
-{
-	var zfc = StatusBar.stateAsZfc();
-	var now = new Date();
-	var zfi = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSBAR,
-	                             'date', now.getTime(), // used to use stringified dates here but it turns out they're not portable
-	                             'exitstatus', es.m_exit_status,
-	                             'conflicts', es.m_count_conflicts,
-	                             'is_never_synced', (is_never_synced ? "true" : "false"),
-	                             'appversion', APP_VERSION_NUMBER );
+var StatusBarState = {
+	save : function(es, is_never_synced) {
+		let zfc = StatusBarState.toZfc();
+		let now = new Date();
+		let zfi = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSBAR,
+	                      'date',            now.getTime(), // used to use stringified dates here but it appears they're not portable
+	                      'exitstatus',      es.m_exit_status,
+	                      'conflicts',       es.m_count_conflicts,
+	                      'is_never_synced', (is_never_synced ? "true" : "false"),
+	                      'appversion',      APP_VERSION_NUMBER );
 
-	zfc.set(zfi);
-	zfc.save();
-}
+		zfc.set(zfi);
+		zfc.save();
+	},
+	toZfc : function() {
+		var ret = new FeedCollection();
+		ret.filename(Filesystem.eFilename.STATUS);
 
-StatusBar.stateAsZfc = function()
-{
-	var ret = new FeedCollection();
-	ret.filename(Filesystem.eFilename.STATUS);
+		return ret;
+	},
+	toZfi : function() {
+		var zfc = StatusBarState.toZfc();
+		var ret = null;
 
-	return ret;
-}
+		zfc.load();
 
-StatusBar.stateAsZfi = function()
-{
-	var zfc = StatusBar.stateAsZfc();
-	var ret = null;
+		if (zfc.isPresent(FeedItem.KEY_STATUSBAR))
+			ret = zfc.get(FeedItem.KEY_STATUSBAR);
 
-	zfc.load();
+		return ret;
+	},
+	update : function(zwc) {
+		let zfiStatus = StatusBarState.toZfi();
+		let tooltip, status;
 
-	if (zfc.isPresent(FeedItem.KEY_STATUSBAR))
-		ret = zfc.get(FeedItem.KEY_STATUSBAR);
+		if (zfiStatus) {
+			let exitstatus      = zfiStatus.getOrNull('exitstatus');
+			let conflicts       = zfiStatus.getOrNull('conflicts');
+			let is_never_synced = zfiStatus.getOrNull('is_never_synced');
+			let last_sync_date  = new Date();
+			let tooltip_prefix;
 
-	return ret;
-}
+			last_sync_date.setTime(zfiStatus.getOrNull('date'));
 
-StatusBar.update = function(zwc)
-{
-	var zfiStatus = StatusBar.stateAsZfi();
+			tooltip = last_sync_date.toLocaleString();
 
-	if (zfiStatus)
-	{
-		var exitstatus      = zfiStatus.getOrNull('exitstatus');
-		var conflicts       = zfiStatus.getOrNull('conflicts');
-		var is_never_synced = zfiStatus.getOrNull('is_never_synced');
-		var status          = null;
-		var tooltip, tooltip_prefix;
+			if (is_never_synced && is_never_synced == "true") {
+				status = "alert";
+				tooltip = stringBundleString("sp.last.sync.never");
+			}
+			else if (exitstatus != 0) {
+				status = "error";
+				tooltip_prefix = stringBundleString("sp.last.sync.failed");
+			}
+			else if (conflicts > 0) {
+				status = "alert";
+				tooltip_prefix = stringBundleString("sp.last.sync") + ": " + conflicts + " " +
+				                 stringBundleString("sp.last.sync.conflicts");
+			}
+			else {
+				status = "insync";
+				tooltip_prefix = stringBundleString("sp.last.sync");
+			}
 
-		var last_sync_date = new Date();
-		last_sync_date.setTime(zfiStatus.getOrNull('date'));
-		tooltip = last_sync_date.toLocaleString();
-
-		if (is_never_synced && is_never_synced == "true")
-		{
+			tooltip = tooltip_prefix + ": " + tooltip;
+		}
+		else {
 			status = "alert";
 			tooltip = stringBundleString("sp.last.sync.never");
 		}
-		else if (exitstatus != 0)
-		{
-			status = "error"
-			tooltip_prefix = stringBundleString("sp.last.sync.failed");
-		}
-		else if (conflicts > 0)
-		{
-			status = "alert";
-			tooltip_prefix = stringBundleString("sp.last.sync") + ": " + conflicts + " " +
-			                 stringBundleString("sp.last.sync.conflicts");
-		}
-		else
-		{
-			status = "insync";
-			tooltip_prefix = stringBundleString("sp.last.sync");
+
+		const obj = { alert : '!', error : 'X', insync : 'Y' };
+
+		logger().debug("StatusBarState: update: status: " + obj[status] + " (" + status + ") tooltip: " + tooltip);
+
+		if (arguments.length == 0) {
+			zwc = new WindowCollection(SHOW_STATUS_PANEL_IN);
+			zwc.populate();
 		}
 
-		tooltip = tooltip_prefix + ": " + tooltip;
-	}
-	else
-	{
-		status = "alert";
-		tooltip = stringBundleString("sp.last.sync.never");
-	}
+		let functor = {
+			run: function(win) {
+				for (var x in obj) {
+					dId(win, "zindus-statusbar-" + x).hidden = (status != x);
+					dId(win, "zindus-statusbar-" + x).value  = obj[x];
+				}
 
-	var obj = { alert : '!', error : 'X', insync : 'Y' };
-
-	logger().debug("StatusBar: update: status: " + obj[status] + " (" + status + ") tooltip: " + tooltip);
-
-	if (arguments.length == 0)
-	{
-		zwc = new WindowCollection(SHOW_STATUS_PANEL_IN);
-		zwc.populate();
-	}
-
-	var functor = {
-		run: function(win) {
-			for (var x in obj)
-			{
-				dId(win, "zindus-statusbar-" + x).hidden = (status != x);
-				dId(win, "zindus-statusbar-" + x).value  = obj[x];
+				dId(win, "zindus-statusbar-state").tooltipText = tooltip;
+				dId(win, "zindus-statusbar-state").hidden = false;
 			}
+		};
 
-			dId(win, "zindus-statusbar-state").tooltipText = tooltip;
-			dId(win, "zindus-statusbar-state").hidden = false;
-		}
-	};
-
-	zwc.forEach(functor);
-}
+		zwc.forEach(functor);
+	}
+};

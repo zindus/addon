@@ -964,13 +964,6 @@ function preference(key, type)
 	return ret;
 }
 
-function googleClientLoginUrl(type)
-{
-	zinAssert(type == 'use-password' || type == 'use-authtoken');
-
-	return "https://www.google.com/accounts/ClientLogin" + ((type == 'use-password') ? "" : "/Contacts/AuthToken");
-}
-
 function getInfoMessage(type, arg1)
 {
 	var ret;
@@ -993,7 +986,7 @@ function getInfoMessage(type, arg1)
 function xulSetAttribute(attribute, flag)
 {
 	var i, el;
-	zinAssert(typeof(flag) == 'boolean' && attribute == 'disabled' || attribute == 'hidden' && arguments.length > 2);
+	zinAssert(typeof(flag) == 'boolean' && isInArray(attribute, [ 'disabled', 'hidden', 'visible' ]) && arguments.length > 2);
 
 	for (i = 2; i < arguments.length; i++)
 	{
@@ -1004,12 +997,14 @@ function xulSetAttribute(attribute, flag)
 		if (flag)
 			switch(attribute) {
 				case 'disabled': el.setAttribute('disabled', true); break;
-				case 'hidden':   el.style.visibility = "hidden";    break;
+				case 'hidden':   el.setAttribute('hidden',   true); break;
+				case 'visible':  el.style.visibility = "visible";   break;
 			}
 		else
 			switch(attribute) {
 				case 'disabled': el.removeAttribute('disabled');    break;
-				case 'hidden':   el.style.visibility = "visible";   break;
+				case 'hidden':   el.removeAttribute('hidden');      break;
+				case 'visible':  el.style.visibility = "hidden";    break;
 			}
 	}
 }
@@ -1072,17 +1067,31 @@ function stripInvalidXMLCharsFromString(str)
 
 	var c;
 	var ret = "";
+	var c2028 = String("\u2028").charCodeAt(0); // see below.  FIXME: remove when mozilla fixes this bug
+	var c2029 = String("\u2029").charCodeAt(0); // see below.  FIXME: remove when mozilla fixes this bug
 
 	for (var i = 0; i < str.length; i++)
 	{
 		c = str.charCodeAt(i);
 
-		if ((c == 0x9) || (c == 0xA) || (c == 0xD) ||
+		if (((c == 0x9) || (c == 0xA) || (c == 0xD) ||
 		    ((c >= 0x20) && (c <= 0xD7FF)) || ((c >= 0xE000) && (c <= 0xFFFD)) || ((c >= 0x10000) && (c <= 0x10FFFF)))
+			&& c != c2028 && c != c2029)
 			ret += str.charAt(i);
 	}
 
 	return ret;
+}
+
+// Workaround for mozilla bug:
+// https://bugzilla.mozilla.org/show_bug.cgi?id=478905
+// http://groups.google.com/group/mozilla.dev.tech.xml/browse_thread/thread/60ff2a453c96af06
+// Internal Issue #180
+// remove this function when the bug is fixed.
+//
+function stripCharsToWorkaroundBug478905(str)
+{
+	return str.replace(/\u2028|\u2029/g, "");
 }
 
 function chunk_size(name, flex)

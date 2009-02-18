@@ -39,13 +39,15 @@ MozillaPreferences.AS_LOGFILE_MAX_SIZE      = "system.as_logfile_max_size";
 MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT = "system.as_timer_delay_on_repeat";
 MozillaPreferences.AS_TIMER_DELAY_ON_START  = "system.as_timer_delay_on_start";
 MozillaPreferences.AS_ALLOW_PRE_RELEASE     = "system.as_allow_pre_release";
+MozillaPreferences.AS_PASSWORD_VERSION      = "system.as_password_version";
 MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
 MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
 MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME = "system.zm_prefer_soapurl_scheme";
-MozillaPreferences.ZM_SHARE_SERVICE_REGEXP  = "system.zm_share_service_regexp";
+MozillaPreferences.ZM_SHARE_SERVICE_URL     = "system.zm_share_service_url";
 MozillaPreferences.GD_SCHEME_DATA_TRANSFER  = "system.gd_data_transfer_scheme";
 MozillaPreferences.GD_TRASH_EXPIRE_SECONDS  = "system.gd_trash_expire_seconds";
+MozillaPreferences.GD_CONTACTS_PER_REQUEST  = "system.gd_contacts_per_request";
 
 MozillaPreferences.getAllSystemPrefs = function()
 {
@@ -53,11 +55,12 @@ MozillaPreferences.getAllSystemPrefs = function()
 		MozillaPreferences.AS_LOGFILE_MAX_SIZE,      'int',
 		MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT, 'int',
 		MozillaPreferences.AS_TIMER_DELAY_ON_START,  'int',
+		MozillaPreferences.AS_PASSWORD_VERSION,      'char',
 		MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL,  'int',
 		MozillaPreferences.ZM_SYNC_GAL_IF_FEWER,     'int',
 		MozillaPreferences.ZM_SYNC_GAL_RECHECK,      'int',
 		MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME, 'char',
-		MozillaPreferences.ZM_SHARE_SERVICE_REGEXP,  'char',
+		MozillaPreferences.ZM_SHARE_SERVICE_URL,     'char',
 		MozillaPreferences.GD_SCHEME_DATA_TRANSFER,  'char',
 		MozillaPreferences.GD_TRASH_EXPIRE_SECONDS,  'int' );
 }

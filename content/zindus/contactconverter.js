@@ -42,7 +42,7 @@ ContactConverter.eStyle = new ZinEnum( 'kBasic', 'kZmMapsAllTbProperties', 'kGdM
 
 ContactConverter.prototype.setup = function(style)
 {
-	zinAssert(arguments.length == 0 || (arguments.length == 1 && (typeof(arguments[0]) == 'number') && arguments[0] > 0));
+	zinAssert(arguments.length == 0 || (arguments.length == 1 && ContactConverter.eStyle.isPresent(style)));
 
 	style = style || ContactConverter.eStyle.kBasic;
 
