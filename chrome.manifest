@@ -1,4 +1,5 @@
 content zindus                        content/zindus/
+
 locale  zindus       cs-CZ            locale/cs-CZ/zindus/
 locale  zindus       de-DE            locale/de-DE/zindus/
 locale  zindus       en-US            locale/en-US/zindus/
@@ -7,6 +8,8 @@ locale  zindus       gl-ES            locale/gl-ES/zindus/
 locale  zindus       it-IT            locale/it-IT/zindus/
 locale  zindus       nl-NL            locale/nl-NL/zindus/
 locale  zindus       pt-BR            locale/pt-BR/zindus/
+locale  zindus       uk-UA            locale/uk-UA/zindus/
+
 skin    zindus       classic/1.0      skin/classic/zindus/
 
 overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/mailwindowoverlay.xul
