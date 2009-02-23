@@ -29,7 +29,7 @@
 <!ENTITY zindus.cs.account.delete.accesskey "D">
 <!ENTITY zindus.cs.account.email.label "Ел. поштова адреса">
 <!ENTITY zindus.cs.account.addressbook.label "Адресна Книжка">
-<!ENTITY zindus.cs.accounts.label "запис">
+<!ENTITY zindus.cs.accounts.label "Облікові записи">
 <!ENTITY zindus.cs.general.settings.label "Налаштування">
 <!ENTITY zindus.cs.general.actions.label "Дія">
 <!ENTITY zindus.cs.general.auto.sync.label "Авто Синхронізація">

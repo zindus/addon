@@ -57,8 +57,10 @@ ConfigAccount.prototype.onLoad = function(payload)
 
 	let account  = payload.m_account;
 	let accounts = payload.m_accounts ? payload.m_accounts : AccountStatic.arrayLoadFromPrefset();
+	let is_loaded_by_wizard = (typeof(payload.m_format) != 'undefined');
 
-	document.title = account ? stringBundleString("ca.edit.title", [ account.username ] ) : stringBundleString("ca.add.title") ;
+	if (!is_loaded_by_wizard)
+		document.title = account ? stringBundleString("ca.edit.title", [ account.username ] ) : stringBundleString("ca.add.title") ;
 
 	let is_zm_enabled = !accounts ||
 	                    AccountStatic.arraySliceOfFormat(accounts, FORMAT_ZM).length == 0 ||
@@ -66,7 +68,7 @@ ConfigAccount.prototype.onLoad = function(payload)
 
 	xulSetAttribute('disabled', !is_zm_enabled, "ca-format-zimbra");
 
-	if (payload.m_format) {
+	if (is_loaded_by_wizard) {
 		// we were loaded by the wizard which is supplying us a format in the payload
 		// set the radiodbutton value and leave it hidden
 		//
@@ -270,7 +272,7 @@ ConfigAccount.prototype.initialiseView = function()
 
 		if (this.serverFormat() == FORMAT_GD)
 			dId("ca-url").value = eGoogleLoginUrl.kClientLogin;
-		else if (this.m_payload_configsettings.m_format == 'Zindus')
+		else if ((typeof(this.m_payload_configsettings.m_format) != 'undefined') && (this.m_payload_configsettings.m_format == 'Zindus'))
 			dId("ca-url").value = ConfigAccountStatic.m_share_service_url;
 		else // Zimbra
 			dId("ca-url").value = account ? account.url : "";

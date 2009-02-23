@@ -40,6 +40,7 @@ MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT = "system.as_timer_delay_on_repeat";
 MozillaPreferences.AS_TIMER_DELAY_ON_START  = "system.as_timer_delay_on_start";
 MozillaPreferences.AS_ALLOW_PRE_RELEASE     = "system.as_allow_pre_release";
 MozillaPreferences.AS_PASSWORD_VERSION      = "system.as_password_version";
+MozillaPreferences.AS_SHARE_SERICE_API_URL  = "system.as_share_service_api_url";
 MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
 MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
@@ -56,6 +57,7 @@ MozillaPreferences.getAllSystemPrefs = function()
 		MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT, 'int',
 		MozillaPreferences.AS_TIMER_DELAY_ON_START,  'int',
 		MozillaPreferences.AS_PASSWORD_VERSION,      'char',
+		MozillaPreferences.AS_SHARE_SERICE_API_URL,  'char',
 		MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL,  'int',
 		MozillaPreferences.ZM_SYNC_GAL_IF_FEWER,     'int',
 		MozillaPreferences.ZM_SYNC_GAL_RECHECK,      'int',

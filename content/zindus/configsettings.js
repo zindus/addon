@@ -249,7 +249,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			payload.m_account  = (id_target == "cs-account-edit") ? this.m_accounts[rowid] : null;
 
 			if (id_target == "cs-button-test-wizard")
-				window.openDialog("chrome://zindus/content/configwizard.xul", "_blank", WINDOW_FEATURES, payload);
+				window.openDialog("chrome://zindus/content/share_service/configwizard.xul", "_blank", WINDOW_FEATURES, payload);
 			else
 				window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
@@ -307,7 +307,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 	if (is_accounts_changed)
 	{
-		this.m_accounts = this.accountsSortAndSave(this.m_accounts);
+		this.m_accounts = ConfigSettingsStatic.accountsSortAndSave(this.m_accounts);
 
 		if (id_target == "cs-account-delete")
 		{
@@ -509,42 +509,6 @@ ConfigSettings.prototype.accountsIsPresentUrlUsername = function(url, username)
 	return ret;
 }
 
-ConfigSettings.prototype.accountsSortAndSave = function(accounts)
-{
-	var ret = new Array();
-	var i;
-
-	// move Zimbra accounts to the top so that they get synced first
-	//
-	// we do this because of this scenario:
-	// 1. slow sync ==> Google then Zimbra.
-	// 2. Slow Sync with Google, account has conflicts, user resolves by deleting some Thunderbird contacts (eg duplicates)
-	// 3. Slow Sync with Zimbra, contacts that the user may have deleted in Thunderbird to resolve Google conflict get added
-	//    because they exist at Zimbra (ouch!)
-	// 4. Next sync (a fast sync) ==> the same conflict that got resolved earlier!
-	//    If the user had the patience to fix the conflict a second time it'd stay fixed
-	//    but still not acceptable.
-	// 
-	// Having Zimbra accounts sync first means that the Google conflicts appear second so if the user deletes a contact and syncs again,
-	// the deletes are propagated to Zimbra
-	//
-	for (i = 0; i < accounts.length; i++)
-		if (accounts[i].format_xx() == FORMAT_ZM)
-			ret.push(accounts[i]);
-
-	for (i = 0; i < accounts.length; i++)
-		if (accounts[i].format_xx() == FORMAT_GD)
-			ret.push(accounts[i]);
-
-	for (var i = 0; i < accounts.length; i++)
-	{
-		ret[i].sourceid = AccountStatic.indexToSourceId(i);
-		ret[i].save();
-	}
-
-	return ret;
-}
-
 ConfigSettings.open = function()
 {
 	var is_already_open = false;
@@ -631,5 +595,38 @@ var ConfigSettingsStatic = {
 		}
 
 		this.m_pm.del(url, username);
+	},
+	accountsSortAndSave : function(accounts) {
+		var ret = new Array();
+		var i;
+
+		// move Zimbra accounts to the top so that they get synced first
+		//
+		// we do this because of this scenario:
+		// 1. slow sync ==> Google then Zimbra.
+		// 2. Slow Sync with Google, account has conflicts, user resolves by deleting some Thunderbird contacts (eg duplicates)
+		// 3. Slow Sync with Zimbra, contacts that the user may have deleted in Thunderbird to resolve Google conflict get added
+		//    because they exist at Zimbra (ouch!)
+		// 4. Next sync (a fast sync) ==> the same conflict that got resolved earlier!
+		//    If the user had the patience to fix the conflict a second time it'd stay fixed
+		//    but still not acceptable.
+		// 
+		// Having Zimbra accounts sync first means that the Google conflicts appear second so if the user deletes a contact and syncs again,
+		// the deletes are propagated to Zimbra
+		//
+		for (i = 0; i < accounts.length; i++)
+			if (accounts[i].format_xx() == FORMAT_ZM)
+				ret.push(accounts[i]);
+
+		for (i = 0; i < accounts.length; i++)
+			if (accounts[i].format_xx() == FORMAT_GD)
+				ret.push(accounts[i]);
+
+		for (i = 0; i < accounts.length; i++) {
+			ret[i].sourceid = AccountStatic.indexToSourceId(i);
+			ret[i].save();
+		}
+
+		return ret;
 	}
 };

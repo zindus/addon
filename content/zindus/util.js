@@ -116,13 +116,16 @@ function cloneObject(obj)
 
 function stringBundleString(id_string, args)
 {
-	var string_bundle_id = "zindus-stringbundle";
+	return stringBundleStringFrom("zindus-stringbundle", id_string, args);
+}
 
+function stringBundleStringFrom(string_bundle_id, id_string, args)
+{
 	var stringbundle = dId(string_bundle_id);
 	var ret = "";
 	var is_exception = false;
 
-	zinAssert(arguments.length == 1 || arguments.length == 2);
+	zinAssert(arguments.length == 2 || arguments.length == 3);
 	zinAssertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
 	zinAssert(typeof(args) == 'undefined' || args instanceof Array || typeof(args.length) == 'number');
 
@@ -135,9 +138,9 @@ function stringBundleString(id_string, args)
 	}
 	else try
 	{
-		if (arguments.length == 1)
+		if (!args)
 			ret = stringbundle.getString(APP_NAME + "." + id_string);
-		else if (arguments.length == 2)
+		else
 			ret = stringbundle.getFormattedString(APP_NAME + "." + id_string, args);
 	}
 	catch (e)
@@ -1109,4 +1112,22 @@ function chunk_size(name, flex)
 		zinAssert(flex > 0);
 
 	return a_chunk[name] * flex;
+}
+
+function http_status_from_xhr(xhr)
+{
+	var ret = null;
+
+	try {
+		// when the server is down:
+		// - in Tb2, an exception is thrown when xhr.status is referenced
+		// - in Tb3, xhr.status is zero
+
+		ret = xhr.status;
+	}
+	catch (ex) {
+		; // do nothing
+	}
+
+	return ret;
 }

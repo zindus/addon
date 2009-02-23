@@ -78,6 +78,11 @@ SyncWindow.prototype.onAccept = function()
 	if (!this.m_payload.m_is_cancelled)
 		Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_SYNCWINDOW);
 
+	// ensure that if get into onCancel after onAccept that we don't call syncfsm.cancel();
+	// because that fires an evCancel event into an fsm that's in the 'final' state.
+	//
+	this.m_syncfsm = null;
+
 	this.m_logger.debug("onAccept: exits");
 
 	return true;
