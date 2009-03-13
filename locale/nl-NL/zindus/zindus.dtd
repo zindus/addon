@@ -38,8 +38,6 @@
 <!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
 <!ENTITY zindus.cs.general.button.reset.label "Herstel">
 <!ENTITY zindus.cs.general.button.reset.accesskey "R">
-<!ENTITY zindus.cs.general.button.timer.label "Uitvoertimer">
-<!ENTITY zindus.cs.general.button.test.harness.label "Controleer">
 <!ENTITY zindus.cs.general.button.gd.advanced.label "Geavanceerde Google instellingen">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 <!ENTITY zindus.gr.title "Google Contacts conflicten">

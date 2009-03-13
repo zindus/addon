@@ -38,8 +38,6 @@
 <!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
 <!ENTITY zindus.cs.general.button.reset.label "Zurücksetzen">
 <!ENTITY zindus.cs.general.button.reset.accesskey "R">
-<!ENTITY zindus.cs.general.button.timer.label "Timer starten">
-<!ENTITY zindus.cs.general.button.test.harness.label "Testwerkzeug">
 <!ENTITY zindus.cs.general.button.gd.advanced.label "Zusätzliche Google Einstellungen">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
 <!ENTITY zindus.gr.title "Regelverletzung von Google Kontakte">
