@@ -753,6 +753,7 @@ function leftOfChar(str, c)
 }
 
 // rfc3986 refers to the part to the right of the hash as "fragment"
+// syntax components: scheme:user@host:port//path?Query#fragment
 //
 function rightOfChar(str, c)
 {

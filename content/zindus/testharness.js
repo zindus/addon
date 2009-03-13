@@ -40,7 +40,7 @@ TestHarness.prototype.run = function()
 	var ret = true;
 
 	ret = ret && this.testPreferencesHaveDefaults();
-	ret = ret && this.testRemoveBadLogin();
+	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
 	// ret = ret && this.testSuo();
 	// ret = ret && this.testAccount();
@@ -62,11 +62,12 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
-	// ret = ret && this.testContactGoogle1();
-	// ret = ret && this.testContactGoogle2();
-	// ret = ret && this.testContactGoogleIssue179();
-	// ret = ret && this.testContactGoogleIterators();
-	// ret = ret && this.testContactGooglePostalAddress();
+	ret = ret && this.testContactGoogle1();
+	ret = ret && this.testContactGoogle2();
+	ret = ret && this.testContactGoogleIssue179();
+	ret = ret && this.testContactGoogleIssue185();
+	ret = ret && this.testContactGoogleIterators();
+	ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testBiMap();
 	// ret = ret && this.testStringBundleContainsContactProperties();
@@ -1285,6 +1286,35 @@ TestHarness.prototype.testContactGoogleIssue179 = function()
 	let contact = ContactGoogle.newContact(xmlStringEntry);
 
 	this.m_logger.debug("contact: " + contact.toString());
+
+	return true;
+}
+
+TestHarness.prototype.testContactGoogleIssue185 = function()
+{
+	var contact = new ContactGoogle();
+	var properties = {
+			'title' :                'a-title', // TODO try me with a space too
+			'content' :              ' ',
+			'organization_orgName':  ' ',
+			'organization_orgTitle': ' ',
+			'phoneNumber_home':      ' ',
+			'im_AIM':                ' ',
+			'email1':                ' ',
+			'email2':                ' '
+		};
+
+	// set all properties
+	contact.properties = properties;
+	// this.m_logger.debug("contact.xml: " + contact.m_entry.toXMLString());
+	// this.m_logger.debug("contact.properties: " + aToString(contact.properties));
+	// this.m_logger.debug("properties: " + aToString(properties));
+	// var properties_transformed = contact.properties;
+	// ContactGoogle.transformTbProperties(ContactGoogle.eTransform.kAll, properties_transformed);
+	// this.m_logger.debug("properties_transformed: " + aToString(properties_transformed));
+
+	zinAssert('title' in contact.properties);
+	zinAssert(!('im_AIM' in contact.properties));
 
 	return true;
 }

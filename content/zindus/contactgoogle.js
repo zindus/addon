@@ -193,18 +193,29 @@ get properties () {
 		this.m_properties = this.properties_from_xml();
 	return this.m_properties;
 },
-set properties (properties) {
+set properties (properties_in) {
 	// Here's how the contact is updated:
 	// - iterate through the children of <entry>
 	//   - for each child of <entry> that we're interested in:
 	//     - if there's a corresponding member of property, modify the child, otherwise delete it.
 	// - add the property members that weren't involved in modify or delete
 
+	var properties   = new Object();
 	var entry        = this.m_entry;
 	var imask        = this.make_mask_of_elements_in_entry();
 	var a_is_used    = new Object();
 	var organization = null;
 	var i, key;
+
+	// ignore keys where the value is 100% whitespace
+	//
+	for (key in properties_in)
+	{
+		let value = ContactGoogle.transformTbProperty(ContactGoogle.eTransform.kWhitespace, key, properties_in[key]);
+
+		if (value.length > 0)
+			properties[key] = value;
+	}
 
 	// logger().debug("ContactGoogle: 1: properties: " + aToString(properties));
 

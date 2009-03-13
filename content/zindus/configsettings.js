@@ -247,25 +247,32 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			let payload = new Payload();
 			payload.m_accounts = this.m_accounts;
 			payload.m_account  = (id_target == "cs-account-edit") ? this.m_accounts[rowid] : null;
+			payload.m_format   = null;
 
 			if (id_target == "cs-button-test-wizard")
 				window.openDialog("chrome://zindus/content/share_service/configwizard.xul", "_blank", WINDOW_FEATURES, payload);
 			else
 				window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
-			if (payload.m_result)
+			if (payload.m_result_accounts)
 			{
-				let account = new Account(payload.m_result); // bring the Account object into the scope of the current window.
+				let account = null;
 
+				if (id_target == "cs-account-add" || id_target == "cs-account-edit")
+					account = new Account(payload.m_result_accounts[0]);
+
+				// remember that the account object(s) in m_result_accounts must be brought into the scope of the current window.
+				//
 				switch (id_target) {
-					case "cs-button-test-wizard":
+					case "cs-button-test-wizard": {
+						let i;
+						for (i = 0; i < payload.m_result_accounts.length; i++)
+							this.m_accounts.push(new Account(payload.m_result_accounts[i]));
+						}
+						break;
+
 					case "cs-account-add":
 						this.m_accounts.push(account);
-
-						if (account.format_xx() == FORMAT_ZM)
-							rowid = 0; // Zimbra accounts appear above Google accounts
-						else
-							rowid = this.m_accounts.length - 1;
 						break;
 
 					case "cs-account-edit":
@@ -280,7 +287,16 @@ ConfigSettings.prototype.onCommand = function(id_target)
 						zinAssert(false);
 				}
 
-				ConfigSettingsStatic.resetPasswordLocator(account);
+				if (id_target == "cs-account-add" || id_target == "cs-button-test-wizard")
+				{
+					if (payload.m_result_accounts[payload.m_result_accounts.length-1] == FORMAT_ZM)
+						rowid = 0; // Zimbra accounts appear above Google accounts
+					else
+						rowid = this.m_accounts.length - 1;
+				}
+
+				if (id_target == "cs-account-add" || id_target == "cs-account-edit")
+					ConfigSettingsStatic.resetPasswordLocator(account);
 
 				is_accounts_changed = true;
 			}
@@ -307,6 +323,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 	if (is_accounts_changed)
 	{
+		// if the accounts came from the wizard then they're saved again here - no big deal...
+		//
 		this.m_accounts = ConfigSettingsStatic.accountsSortAndSave(this.m_accounts);
 
 		if (id_target == "cs-account-delete")
@@ -335,7 +353,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		this.updateView();
 
-		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete" ]))
+		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete", "cs-button-test-wizard" ]))
 			this.m_logger.debug("id_target: " + id_target + " m_accounts is: " + AccountStatic.arrayToString(this.m_accounts));
 	}
 }

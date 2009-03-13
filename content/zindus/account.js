@@ -74,7 +74,10 @@ Account.prototype = {
 	unique_key : function() {
 		return AccountStatic.unique_key(this.format_xx(), this.url, this.username);
 	},
-	format_xx : function() {
+	format_xx : function(arg) {
+		if (arg)
+			this.format = AccountStatic.m_bimap_format.lookup(arg, null);
+
 		return AccountStatic.m_bimap_format.lookup(null, this.format);
 	},
 	toString : function() {
@@ -120,10 +123,10 @@ Account.prototype = {
 		return ret;
 	},
 	save : function() {
+		zinAssertAndLog(this.sourceid, function() { return this.toString(); });
+
 		var prefset = AccountStatic.newPrefSet(this.sourceid);
 		var key;
-
-		zinAssert(this.sourceid);
 
 		prefset.remove(); // flush out any child preferences that we don't want to keep - eg when the account format changes
 
@@ -175,6 +178,18 @@ var AccountStatic = {
 
 		return sourceid - SOURCEID_TB - 1;
 	},
+	nextAvailableSourceId : function () {
+		var a_sourceid    = preferences().getImmediateChildren(preferences().branch(), PrefSet.ACCOUNT + '.');
+		var max = 0;
+		for (var i = 0; i < a_sourceid.length; i++)
+		{
+			a_sourceid[i] = Number(a_sourceid[i]);
+			if (a_sourceid[i] > max)
+				max = a_sourceid[i];
+		}
+
+		return (max == 0) ? this.indexToSourceId(0) : (max + 1);
+	},
 	unique_key : function(format_xx, url, username) {
 		var ret;
 		switch(format_xx) {
@@ -192,10 +207,14 @@ var AccountStatic = {
 		var a_failed      = new Object();
 		var i, account;
 
+		// logger().debug("arrayLoadFromPrefset: AMHERE: 1: a_sourceid: " + a_sourceid.toString());
+
 		for (var i = 0; i < a_sourceid.length; i++)
 			a_sourceid[i] = Number(a_sourceid[i]);
 
 		a_sourceid.sort(numeric_compare);
+
+		// logger().debug("arrayLoadFromPrefset: AMHERE: 2: a_sourceid: " + a_sourceid.toString());
 
 		// accounts have integrity:
 		// - if the keys are 0, 1, 2 etc, offset as per indexToSourceId()
