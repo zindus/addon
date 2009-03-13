@@ -209,8 +209,7 @@ set properties (properties_in) {
 
 	// ignore keys where the value is 100% whitespace
 	//
-	for (key in properties_in)
-	{
+	for (key in properties_in) {
 		let value = ContactGoogle.transformTbProperty(ContactGoogle.eTransform.kWhitespace, key, properties_in[key]);
 
 		if (value.length > 0)
