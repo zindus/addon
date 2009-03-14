@@ -6,22 +6,22 @@
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:maxVersion="3.0b2"
                    em:minVersion="2.0b2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.7.20090314.063606-tb+sm.xpi"
-                   em:updateHash="sha256:7a8bf2ed6bf1e490e5f0940e2258411afd3695b0dde1dbd7ffa9a3ea359064e0" />
-  <RDF:Description RDF:about="rdf:#$rjjRS2"
-                   em:version="0.8.7.20090314.063606">
-    <em:targetApplication RDF:resource="rdf:#$ujjRS2"/>
-    <em:targetApplication RDF:resource="rdf:#$BjjRS2"/>
-  </RDF:Description>
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.7.20090315.093338-tb+sm.xpi"
+                   em:updateHash="sha256:5c144cf0c03e806e9ef42f8c149537c0338881734eab5437d044ff4a2894b50d" />
   <RDF:Description RDF:about="rdf:#$ujjRS2"
                    em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
                    em:maxVersion="2.0a2"
                    em:minVersion="2.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.7.20090314.063606-tb+sm.xpi"
-                   em:updateHash="sha256:7a8bf2ed6bf1e490e5f0940e2258411afd3695b0dde1dbd7ffa9a3ea359064e0" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.7.20090315.093338-tb+sm.xpi"
+                   em:updateHash="sha256:5c144cf0c03e806e9ef42f8c149537c0338881734eab5437d044ff4a2894b50d" />
   <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAEMcFXC8hqrvU9AFOn2UTs145c4SiZA9lkHtO2Qj4e5Bc1HOUx4yS0ODp6/EQI2SQG0dPPlvsS/p4YxA7ONbCdLw6OHt9CYy4Fi2f1Zl7L38yTWfCKgY6jKEIg0wiqWnYktRI2xGt+F46CXo/L+yt5ws/mBKcOEc962KPUA2woaG">
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAEux0e66IVZ51n5JXYvIwtlwCLbSd8NBEReAk3jOSdCgfzP3cSQL0hG08MlUgwudMtDTepi7nytOnaMKbc5mgkZA0VUlcTRsolM15FB+iz2pppnd8yr/fU5vk5crZz3TkkTEoELXfLcMT/9mVU634/s6Z9x9NtiVPHOr8eQjXpP5">
     <em:updates RDF:resource="rdf:#$qjjRS2"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$rjjRS2"
+                   em:version="0.8.7.20090315.093338">
+    <em:targetApplication RDF:resource="rdf:#$ujjRS2"/>
+    <em:targetApplication RDF:resource="rdf:#$BjjRS2"/>
   </RDF:Description>
   <RDF:Seq RDF:about="rdf:#$qjjRS2">
     <RDF:li RDF:resource="rdf:#$rjjRS2"/>
