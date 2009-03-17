@@ -673,21 +673,27 @@ function strPadTo(obj, length)
 	return ret;
 }
 
-function zmPermFromZfi(zfi)
+function zmPermFromZfi(perm)
 {
-	var perm = zfi.getOrNull(FeedItem.ATTR_PERM);
-	var ret  = ZM_PERM_NONE;
+	var ret = ZM_PERM_NONE;
 
-	if (perm && perm.length > 0)
-	{
-		if (perm.indexOf('r') >= 0)
-			ret |= ZM_PERM_READ;
+	logger().debug("zmPermFromZfi: AMHERE1: perm: " + perm + " perm.length: " + String(perm).length + " bool: " + Boolean(perm && (perm.length > 0)));
 
-		if (perm.indexOf('w') >= 0 && perm.indexOf('i'))
-			ret |= ZM_PERM_WRITE;
+	if (perm) {
+		perm = String(perm);
+
+		if (perm.length > 0) {
+			logger().debug("zmPermFromZfi: AMHERE2");
+
+			if (perm.indexOf('r') >= 0)
+				ret |= ZM_PERM_READ;
+
+			if (perm.indexOf('w') >= 0 && perm.indexOf('i'))
+				ret |= ZM_PERM_WRITE;
+		}
 	}
 
-	// logger().debug("zmPermFromZfi: zfi: " + zfi.key() + " " + perm + " returns: " + ret);
+	logger().debug("zmPermFromZfi: perm: " + perm + " returns: " + ret);
 
 	return ret;
 }

@@ -57,6 +57,7 @@ FeedItem.ATTR_LKEY = 'lkey'; // TYPE_SF elements have this attribute - it's the 
 FeedItem.ATTR_FKEY = 'fkey'; // TYPE_SF elements have this attribute - it's the key of the foreign <folder> element
 FeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this attribute - it's the key of the TYPE_SF element
 FeedItem.ATTR_PERM = 'perm'; // 
+FeedItem.ATTR_ACL  = 'acl';  // <acl> child of a zimbra <folder>
 FeedItem.ATTR_CS   = 'cs';   // checksum
 FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
@@ -84,6 +85,11 @@ function FeedCollection()
 	this.m_collection = new Object();
 	this.m_filename   = null; // this is a string containing the filename (like "fred.txt"), not an nsIFile
 	this.m_format     = null; // FORMAT_TB etc.  format is a member of this class to support keyParentRelevantToGid
+}
+
+FeedCollection.zfcFileNameFromSourceid = function(sourceid)
+{
+	return hyphenate("-", sourceid) + ".txt";
 }
 
 FeedCollection.prototype.clone = function()
@@ -561,9 +567,9 @@ FeedItem.attributesForType = function(type)
 	var ret = [ FeedItem.ATTR_KEY, FeedItem.ATTR_ID, FeedItem.ATTR_MS, FeedItem.ATTR_L ];
 
 	switch (type) {
-		case FeedItem.TYPE_CN: ret = ret.concat(FeedItem.ATTR_REV);                                        break;
-		case FeedItem.TYPE_FL: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_PERM);                   break;
-		case FeedItem.TYPE_LN: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_ZID, FeedItem.ATTR_RID); break;
+		case FeedItem.TYPE_CN: ret = ret.concat(FeedItem.ATTR_REV);                                         break;
+		case FeedItem.TYPE_FL: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_PERM, FeedItem.ATTR_ACL); break;
+		case FeedItem.TYPE_LN: ret = ret.concat(FeedItem.ATTR_NAME, FeedItem.ATTR_ZID, FeedItem.ATTR_RID);  break;
 		default: zinAssertAndLog(false, "unmatched case: " + type);
 	}
 

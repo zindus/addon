@@ -430,11 +430,6 @@ SyncFsmZm.prototype.exitActionAuthPreAuth = function(state, event)
 	}
 }
 
-SyncFsm.prototype.zfcFileNameFromSourceid = function(sourceid)
-{
-	return hyphenate("-", sourceid) + ".txt";
-}
-
 SyncFsm.prototype.runEntryActionGenerator = function(state, event, generator_factory_fn)
 {
 	var nextEvent;
@@ -497,7 +492,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	with (Filesystem.eFilename)
 	{
-		var a_account_independent_filenames = newObjectWithKeys(GID, LASTSYNC, this.zfcFileNameFromSourceid(SOURCEID_TB));
+		var a_account_independent_filenames = newObjectWithKeys(GID, LASTSYNC, FeedCollection.zfcFileNameFromSourceid(SOURCEID_TB));
 
 		a_zfc[GID]      = this.state.zfcGid;     
 		a_zfc[LASTSYNC] = this.state.zfcLastSync;
@@ -508,7 +503,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	for (sourceid in this.state.sources)
 	{
-		filename = this.zfcFileNameFromSourceid(sourceid);
+		filename = FeedCollection.zfcFileNameFromSourceid(sourceid);
 		a_zfc[filename] = this.state.sources[sourceid]['zfcLuid'] = new FeedCollection();
 		a_zfc[filename].filename(filename);
 		a_zfc[filename].format(this.state.sources[sourceid]['format']);
@@ -583,7 +578,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	else
 	{
 		a_zfc[Filesystem.eFilename.GID].load();
-		a_zfc[this.zfcFileNameFromSourceid(SOURCEID_TB)].load();
+		a_zfc[FeedCollection.zfcFileNameFromSourceid(SOURCEID_TB)].load();
 	}
 
 	this.state.stopwatch.mark(state + " 3");
@@ -591,7 +586,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	// Work out whether we're doing a slow sync
 	//
 	var sourceid_pr       = this.state.sourceid_pr;
-	var filename_pr       = this.zfcFileNameFromSourceid(sourceid_pr);
+	var filename_pr       = FeedCollection.zfcFileNameFromSourceid(sourceid_pr);
 	var is_file_exists_pr = a_zfc[filename_pr].nsifile().exists();
 
 	function zfitem(zfc, zfc_key, zfi_key) { return zfc.isPresent(zfc_key) ? zfc.get(zfc_key).getOrNull(zfi_key) : null; }
@@ -1298,6 +1293,18 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 				var l            = attribute[FeedItem.ATTR_L];
 				var name         = attribute[FeedItem.ATTR_NAME];
 				var type         = nodeName == 'folder' ? FeedItem.TYPE_FL : FeedItem.TYPE_LN;
+
+				if (node.hasChildNodes() && nodeName == 'folder')
+				{
+					let i;
+					for (i = 0; i < node.childNodes.length; i++) {
+						let child = node.childNodes.item(i);
+						if (child.nodeType == Node.ELEMENT_NODE && child.nodeName == 'acl' && child.hasChildNodes()) {
+							this.state.m_logger.debug("acl node: " + xmlDocumentToString(child));
+							attribute[FeedItem.ATTR_ACL] = xmlDocumentToString(child);
+						}
+					}
+				}
 
 				key = Zuio.key(attribute['id'], change.acct);
 				msg = "entryActionSyncResponse: found a " + nodeName + ": key=" + key +" l=" + l + " name=" + name;
@@ -6224,7 +6231,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				msg               += " about to add contact: ";
 				properties         = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
-				contact            = new ContactGoogle();
+				contact            = new ContactGoogle(null, this.google_contact_mode());
 				contact.properties = properties;
 				contact.groups     = [ this.state.m_gd_my_contacts_group_id ];
 
@@ -7045,7 +7052,7 @@ SyncFsm.isOfInterest = function(zfc, key)
 					// linear search through the map for the TYPE_SF because this function is called from SyncResponse processing
 					// in which the ATTR_SKEY attributes haven't yet been added
 					//
-					ret = (zmPermFromZfi(zfi) != ZM_PERM_NONE);
+					ret = (zmPermFromZfi(zfi.getOrNull(FeedItem.ATTR_PERM)) != ZM_PERM_NONE);
 
 					if (ret)
 						if (zfi.isPresent(FeedItem.ATTR_SKEY))

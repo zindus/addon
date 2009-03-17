@@ -235,7 +235,7 @@ FolderConverter.prototype.selectPrefix = function(zfi)
 		ret = FolderConverter.PREFIX_PRIMARY_ACCOUNT;
 	else
 	{
-		var perm = zmPermFromZfi(zfi);
+		let perm = zmPermFromZfi(zfi.getOrNull(FeedItem.ATTR_PERM));
 
 		if (perm & ZM_PERM_WRITE)
 			ret = FolderConverter.PREFIX_FOREIGN_READWRITE;

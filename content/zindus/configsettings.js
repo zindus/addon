@@ -53,7 +53,7 @@ function ConfigSettings()
 ConfigSettings.prototype.onLoad = function(target)
 {
 	if (this.is_developer_mode)
-		xulSetAttribute('hidden', false, "cs-button-test-harness", "cs-button-test-wizard", "cs-button-run-timer");
+		xulSetAttribute('hidden', false, "cs-button-test-harness", "cs-button-test-wizard", "cs-button-test-shr", "cs-button-run-timer");
 
 	this.m_prefset_general.load();
 	this.m_prefset_general_orig.load();
@@ -223,6 +223,14 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		case "cs-button-advanced":
 			window.openDialog("chrome://zindus/content/configgoogle.xul", "_blank", WINDOW_FEATURES, null);
+			break;
+
+		case "cs-button-test-shr": {
+			let payload = new Payload();
+			payload.m_account  = this.m_accounts[0];
+			payload.m_localised_pab = this.m_addressbook.getPabName();
+			window.openDialog("chrome://zindus/content/share_service/configzss.xul", "_blank", WINDOW_FEATURES, payload);
+			}
 			break;
 
 		case "cs-account-delete":
@@ -409,6 +417,9 @@ ConfigSettings.prototype.updateView = function()
 
 	xulSetAttribute('visible', (c_google != 0), "cs-button-advanced");
 	xulSetAttribute('disabled', (dId("cs-account-tree").currentIndex < 0), "cs-account-edit", "cs-account-delete");
+
+	let is_shr_enabled = this.m_accounts.length > 0 && this.m_accounts[0].is_share_service();
+	xulSetAttribute('disabled', !is_shr_enabled, "cs-button-test-shr");
 }
 
 ConfigSettings.prototype.onFsmStateChangeFunctor = function(fsmstate)
@@ -465,7 +476,7 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 
 		// Email
 		//
-		this.appendCell(treerow, account.username);
+		ConfigSettingsStatic.appendCell(treerow, account.username);
 
 		// Addressbook
 		//
@@ -474,7 +485,7 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 		else
 			value = "        *";
 
-		this.appendCell(treerow, value);
+		ConfigSettingsStatic.appendCell(treerow, value);
 
 		this.m_logger.debug("accountsTreeRefresh: treeitem at rowid: " + rowid + " account: " + account.username + " " + account.get('format'));
 
@@ -482,19 +493,6 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 
 		treechildren.appendChild(treeitem);
 	}
-}
-
-
-ConfigSettings.prototype.appendCell = function(treerow, value, properties)
-{
-	var treecell = document.createElement("treecell");
-
-	treecell.setAttribute("label", value);
-
-	if (properties)
-		treecell.setAttribute("properties", properties);
-
-	treerow.appendChild(treecell);
 }
 
 ConfigSettings.prototype.accountsTreeItemId = function(rowid)
@@ -586,6 +584,16 @@ var ConfigSettingsStatic = {
 			selected_id = default_id;
 		
 		dId(radiogroup_id).selectedItem = dId(selected_id);
+	},
+	appendCell : function(treerow, value, properties) {
+		var treecell = document.createElement("treecell");
+
+		treecell.setAttribute("label", value);
+
+		if (properties)
+			treecell.setAttribute("properties", properties);
+
+		treerow.appendChild(treecell);
 	},
 	resetPasswordLocator : function (account) {
 		// the PasswordLocator in the account returned by ConfigAccout is temporary

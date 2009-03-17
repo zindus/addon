@@ -56,7 +56,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testAddressBookBugzilla432145Compare();
 	// ret = ret && this.testAddressBookBugzilla432145Delete();
 	// ret = ret && this.testFeedCollection();
-	// ret = ret && this.testPermFromZfi();
+	ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testXmlHttpRequest();
@@ -692,17 +692,21 @@ TestHarness.prototype.testXmlHttpRequest = function()
 TestHarness.prototype.testPermFromZfi = function()
 {
 	var ret = true;
-	var zfi = new FeedItem(FeedItem.TYPE_RL, FeedItem.ATTR_KEY, 334, FeedItem.ATTR_PERM, "rwidxc");
+	var zfi = new FeedItem(FeedItem.TYPE_FL, FeedItem.ATTR_KEY, 334, FeedItem.ATTR_PERM, "rwidxc");
 
-	ret = ret && zmPermFromZfi(zfi) == ZM_PERM_READ | ZM_PERM_WRITE;
+	ret = ret && zmPermFromZfi(zfi.getOrNull(FeedItem.ATTR_PERM)) == ZM_PERM_READ | ZM_PERM_WRITE;
+
+	zinAssert(ret);
 
 	zfi.set(FeedItem.ATTR_PERM, "r");
 
-	ret = ret && zmPermFromZfi(zfi) == ZM_PERM_READ;
+	ret = ret && zmPermFromZfi(zfi.getOrNull(FeedItem.ATTR_PERM)) == ZM_PERM_READ;
 
-	zfi.set(FeedItem.ATTR_PERM, "");
+	zinAssert(ret);
 
-	ret = ret && zmPermFromZfi(zfi) == ZM_PERM_NONE;
+	ret = ret && zmPermFromZfi("") == ZM_PERM_NONE;
+
+	zinAssert(ret);
 
 	return ret;
 }

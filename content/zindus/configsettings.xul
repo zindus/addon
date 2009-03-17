@@ -96,7 +96,8 @@
 		    	<caption label="&zindus.cs.general.actions.label;"/>
 			<hbox align="right" >
 				<button id="cs-button-test-harness" hidden="true" align="center" command="cs-command" label="Test Harness" />
-				<button id="cs-button-test-wizard"  hidden="true" align="center" command="cs-command" label="Test Wizard" />
+				<button id="cs-button-test-wizard"  hidden="true" align="center" command="cs-command" label="Wizard" />
+				<button id="cs-button-test-shr"     hidden="true" align="center" command="cs-command" label="Shr" />
 				<button id="cs-button-run-timer"    hidden="true" align="center" command="cs-command" label="Run Timer" />
 				<button id="cs-button-reset"
 			        	align="center" command="cs-command" label="&zindus.cs.general.button.reset.label;"
