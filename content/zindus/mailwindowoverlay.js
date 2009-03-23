@@ -314,7 +314,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 		let i;
 
 		for (i = 0; i < accounts.length; i++)
-			if ((accounts[i].format_xx() == FORMAT_GD) && !accounts[i].gd_suggested.match(/include|ignore/))
+			if ((accounts[i].format_xx() == FORMAT_GD) && (!accounts[i].gd_suggested || !accounts[i].gd_suggested.match(/include|ignore/)))
 			{
 				this.m_logger.debug("about to add 'include': current gd_suggested: " + accounts[i].gd_suggested + " toString: " + accounts[i].toString());
 
