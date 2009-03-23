@@ -48,6 +48,9 @@ function FolderConverter()
 	// This list aims to be a superset of Zimbra's supported locales...
 	//
 	// Note - if any of these translations change, there will have to be code that migrates the old name to the new...
+	// TODO: update for new locales as per:
+	//   http://www.zimbra.com/products/languages.html
+	//   http://wiki.zimbra.com/index.php?title=Translations
 	//
 	this.m_locale_map  =
 	{

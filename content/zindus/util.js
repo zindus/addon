@@ -677,14 +677,10 @@ function zmPermFromZfi(perm)
 {
 	var ret = ZM_PERM_NONE;
 
-	logger().debug("zmPermFromZfi: AMHERE1: perm: " + perm + " perm.length: " + String(perm).length + " bool: " + Boolean(perm && (perm.length > 0)));
-
 	if (perm) {
 		perm = String(perm);
 
 		if (perm.length > 0) {
-			logger().debug("zmPermFromZfi: AMHERE2");
-
 			if (perm.indexOf('r') >= 0)
 				ret |= ZM_PERM_READ;
 
@@ -693,7 +689,7 @@ function zmPermFromZfi(perm)
 		}
 	}
 
-	logger().debug("zmPermFromZfi: perm: " + perm + " returns: " + ret);
+	// logger().debug("zmPermFromZfi: perm: " + perm + " returns: " + ret);
 
 	return ret;
 }

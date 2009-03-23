@@ -7161,7 +7161,6 @@ SyncFsm.prototype.entryActionHttpRequest = function(state, event, continuation)
 {
 	var context  = this;
 	var http = this.state.m_http;
-	var httpBody;
 
 	zinAssert(!http.is_cancelled);
 	zinAssert(http.isPreResponse());
