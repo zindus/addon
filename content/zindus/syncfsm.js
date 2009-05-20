@@ -602,31 +602,28 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	if (is_file_exists_pr)
 		a_zfc[filename_pr].load()
 
+	var a_reason = new Object();
+
+	a_reason['no-lastsync']  = !is_file_exists_pr;
+
+	if (!isAnyValue(a_reason, true))
+		a_reason['new-source']   = !zfcLastSync.isPresent(sourceid_pr);
+
 	var zfiLastSync = zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr) : null;
-	var a_reason    = new Object();
 
-	function set_a_reason(key, value) {
-		if (!isAnyValue(a_reason, true))
-			a_reason[key] = value;
-	}
+	if (!isAnyValue(a_reason, true)) a_reason['new-url']      = zfiLastSync.getOrNull(eAccount.url)      != this.account().url;
+	if (!isAnyValue(a_reason, true)) a_reason['new-username'] = zfiLastSync.getOrNull(eAccount.username) != this.account().username;
 
-	a_reason['no-lastsync-1']  = !is_file_exists_pr;
-	a_reason['no-lastsync-2']  = !zfiLastSync;
-
-	set_a_reason('new-source',   zfiLastSync && !zfcLastSync.isPresent(sourceid_pr));
-	set_a_reason('new-url',      zfiLastSync && (zfiLastSync.getOrNull(eAccount.url)      != this.account().url));
-	set_a_reason('new-username', zfiLastSync && (zfiLastSync.getOrNull(eAccount.username) != this.account().username));
-
-	if (this.formatPr() == FORMAT_ZM)
-		set_a_reason('zm_emailed_contacts', zfiLastSync &&
-		                                    (zfiLastSync.getOrNull(eAccount.zm_emailed_contacts) != this.account().zm_emailed_contacts));
-	else if (this.formatPr() == FORMAT_GD)
+	if (this.formatPr() == FORMAT_GD)
 	{
-		set_a_reason('gd_sync_with', zfiLastSync && (zfiLastSync.getOrNull(eAccount.gd_sync_with) != this.account().gd_sync_with));
-		set_a_reason('gd_suggested', zfiLastSync && (zfiLastSync.getOrNull(eAccount.gd_suggested) != this.account().gd_suggested));
-		set_a_reason('gd_is_sync_postal_address',
-		                      zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
-			  		          String(this.state.gd_is_sync_postal_address));
+		if (!isAnyValue(a_reason, true))
+			a_reason['gd_sync_with'] = zfiLastSync.getOrNull(eAccount.gd_sync_with) != this.account().gd_sync_with;
+		if (!isAnyValue(a_reason, true))
+			a_reason['gd_suggested'] = zfiLastSync.getOrNull(eAccount.gd_suggested) != this.account().gd_suggested;
+		if (!isAnyValue(a_reason, true))
+			a_reason['gd_is_sync_postal_address'] =
+				zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
+			  		String(this.state.gd_is_sync_postal_address);
 	}
 
 	var is_slow_sync = isAnyValue(a_reason, true);
@@ -1249,7 +1246,6 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 		var zfcZm       = this.zfcPr();
 		var sourceid_pr = this.state.sourceid_pr;
 		var change      = newObject('acct', null);
-		var self        = this;
 		var a_foreign_folder_present = null;
 		var key, id, functor, xpath_query, msg;
 
@@ -1321,9 +1317,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 
 				zinAssert( !(change.acct && type == FeedItem.TYPE_LN)); // don't expect to see <link> elements in foreign accounts
 
-				if (self.account().zm_emailed_contacts != "true" && key == ZM_ID_FOLDER_AUTO_CONTACTS)
-					msg += "ignoring emailed contacts";
-				else if (zfcZm.isPresent(key))
+				if (zfcZm.isPresent(key))
 				{
 					zfcZm.get(key).set(attribute);  // update existing item
 
@@ -2572,8 +2566,6 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 				}
 			}
 		}
-		else if (this.is_slow_sync() && this.account().zm_emailed_contacts != "true")
-			this.state.m_addressbook.renameAddressBook(uri, dateSuffixForFolder() + " " + ab_localised);
 	}
 	else
 		this.state.m_folder_converter.localised_emailed_contacts(this.state.zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).get('zm_localised_emailed_contacts'));
@@ -3271,9 +3263,7 @@ SyncFsm.prototype.twiddleMapsForImmutables = function()
 	else if (this.formatPr() == FORMAT_ZM)
 	{
 		this.twiddleMapsForImmutableZm(ZM_ID_FOLDER_CONTACTS);
-
-		if (this.account().zm_emailed_contacts == "true")
-			this.twiddleMapsForImmutableZm(ZM_ID_FOLDER_AUTO_CONTACTS);
+		this.twiddleMapsForImmutableZm(ZM_ID_FOLDER_AUTO_CONTACTS);
 	}
 }
 
@@ -3661,6 +3651,7 @@ SyncFsm.prototype.updateGidFromSourcesSanityCheck = function()
 			return true;
 		}
 	};
+
 
 	this.state.zfcGid.forEach(functor_foreach_gid);
 
@@ -4909,8 +4900,6 @@ SyncFsm.prototype.testForEmailedContactsMatch = function()
 	var passed = true;
 	var msg = "testForEmailedContactsMatch:";
 
-	zinAssert(this.account().zm_emailed_contacts == "true");
-
 	if (!this.zfcPr().isPresent(id) || this.zfcPr().get(id).isPresent(FeedItem.ATTR_DEL))
 		msg += " server doesn't have: " + ZM_FOLDER_EMAILED_CONTACTS;
 	else if (this.is_slow_sync())
@@ -5196,8 +5185,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		if (passed)
 			this.fakeDelOnUninterestingContacts();
 
-		if (this.account().zm_emailed_contacts == "true")
-			passed = passed && this.testForEmailedContactsMatch();
+		passed = passed && this.testForEmailedContactsMatch();
 
 		passed = passed && this.testForCreateSharedAddressbook();
 	}
@@ -6708,7 +6696,6 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 			zfcLastSync.get(sourceid_pr).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
 
 		zfcLastSync.get(sourceid_pr).set('SyncGalEnabled', this.account().zm_sync_gal_enabled);
-		zfcLastSync.get(sourceid_pr).set('zm_emailed_contacts', this.account().zm_emailed_contacts);
 
 		zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('zm_tested_soapurls', hyphenate(",", this.state.a_zm_tested_soapurls));
 	}
@@ -7189,7 +7176,8 @@ SyncFsm.prototype.entryActionHttpRequest = function(state, event, continuation)
 	http.m_xhr.open(http.m_http_method, http.m_url, true);
 
 	if (http.m_http_headers)
-		set_http_request_headers(http.m_xhr, http.m_http_headers);
+		for (var key in http.m_http_headers)
+			http.m_xhr.setRequestHeader(key,  http.m_http_headers[key]);
 
 	http.m_xhr.send(http.httpBody());
 }
@@ -7635,7 +7623,12 @@ SyncFsm.prototype.initialise = function(id_fsm, sfcd)
 	if (this.formatPr() == FORMAT_ZM)
 	{
 		if (this.account().url)
-			this.account().url = SyncFsm.zimbraSoapUrl(this.account().url);
+		{
+			if (this.account().url.charAt(this.account().url.length - 1) != '/')
+				this.account().url += '/';
+
+			this.account().url += "service/soap/";
+		}
 		else
 			; // if extension is installed but not configured, we end up in here with no preferences set - stAuth will report url is invalid
 	}
@@ -7655,14 +7648,6 @@ SyncFsm.prototype.initialise = function(id_fsm, sfcd)
 	// so then we can give the addressbook a reference to it.
 	//
 	this.state.m_addressbook.contact_converter(this.contact_converter());
-}
-
-SyncFsm.zimbraSoapUrl = function(url) 
-{
-	if (url.charAt(url.length - 1) != '/')
-		url += '/';
-
-	return url + "service/soap/";
 }
 
 function FsmState()

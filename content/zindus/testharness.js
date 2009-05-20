@@ -39,6 +39,9 @@ TestHarness.prototype.run = function()
 {
 	var ret = true;
 
+	ret = ret && this.testRenameAddressBook();
+	return; // TODO
+	
 	ret = ret && this.testPreferencesHaveDefaults();
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
@@ -2129,18 +2132,23 @@ TestHarness.prototype.testExitStatusMessages = function()
 TestHarness.prototype.testRenameAddressBook = function()
 {
 	var addressbook = AddressBook.new();
-	var abName      = "test-rename-1";
-	var abNameNew   = "test-rename-1-new";
+	var abName      = "Personal Address Book";
+	var abNameNew   = "zindus/Emailed Contacts";
 
 	// var abip = addressbook.newAddressBook(abName);
 	// uri = abip.m_uri
 	// this.m_logger.debug("testRenameAddressBook: abName: " + abName + " uri: " + uri);
 
-	uri = addressbook.getAddressBookUriByName(abName)
-	addressbook.renameAddressBook(uri, abNameNew);
-	uri = addressbook.getAddressBookUriByName(abNameNew)
+	let uri, name;
+	uri  = "moz-abmdbdirectory://abook.mab";
+	name = addressbook.getAddressBookNameByUri(uri);
 
-	this.m_logger.debug("testRenameAddressBook: abNameNew: " + abNameNew + " uri: " + uri);
+	if (name == abNameNew) {
+		addressbook.renameAddressBook(uri, abName);
+		uri = addressbook.getAddressBookUriByName(abName)
+	}
+
+	this.m_logger.debug("testRenameAddressBook: abName: " + abName+ " uri: " + uri);
 
 	return true;
 }

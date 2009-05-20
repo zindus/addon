@@ -267,7 +267,7 @@ ConfigAccount.prototype = {
 
 		let format_current = this.serverFormat();
 
-		xulSetAttribute('visible', (format_current != FORMAT_GD), "ca-url-description", "ca-url-row", "ca-zm-vbox");
+		xulSetAttribute('visible', (format_current != FORMAT_GD), "ca-url-description", "ca-url-row");
 
 		dId("ca-pap-deck").selectedIndex = (format_current == FORMAT_GD) ? 0 : 1;
 

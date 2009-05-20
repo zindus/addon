@@ -30,11 +30,9 @@ FeedItem.ITER_GID_ITEM           = 4;   // don't call functor when key == FeedIt
 FeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the one with the 'next' attribute
 FeedItem.KEY_STATUSBAR           = "2#zindus-housekeeping"; // this key is used in the StatusBar's FeedCollection
 FeedItem.KEY_LASTSYNC_COMMON     = "3#zindus-housekeeping"; // this key is used in lastsync.txt for attributes common to all accounts
-FeedItem.KEY_SHARE_ZID_TO_CN     = "4#zindus-housekeeping"; // this key is used in the share zimbra feed to map zid's to common name.
-FeedItem.KEY_SHARE_CHANGE_TOKEN  = "5#zindus-housekeeping"; // the last change token received from the server
+FeedItem.KEY_ZID_TO_CN           = "4#zindus-housekeeping"; // this key is used in the share zimbra feed to map zid's to common name.
 FeedItem.KEYS_RESERVED           = newObjectWithKeys(FeedItem.KEY_AUTO_INCREMENT,  FeedItem.KEY_STATUSBAR,
-                                                     FeedItem.KEY_LASTSYNC_COMMON, FeedItem.KEY_SHARE_ZID_TO_CN,
-													 FeedItem.KEY_SHARE_CHANGE_TOKEN);
+                                                     FeedItem.KEY_LASTSYNC_COMMON, FeedItem.KEY_ZID_TO_CN);
 
 FeedItem.TOSTRING_EOL_NL         = 0x01;
 FeedItem.TOSTRING_EOL_SP         = 0x02;
@@ -440,9 +438,6 @@ FeedItem.prototype.set = function(arg1, arg2)
 	}
 	else
 		zinAssert(false);
-
-	// if (this.isPresent(FeedItem.ATTR_KEY) && this.key() == "574") // TODO remove me
-	//	logger().debug("AMHERE: FeedItem.set: 574: executionStackAsString: " + executionStackAsString());
 }
 
 FeedItem.prototype.isPresent = function(key)

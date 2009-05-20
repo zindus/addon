@@ -100,7 +100,7 @@
 					<spacer flex="1"/> 
 				</hbox>
 				<hbox>
-					<vbox id="ca-zm-vbox" style="visibility:hidden" >
+					<vbox id="ca-zm-vbox" >
 						<label value="&zindus.ca.zimbra.gal.label;" />
 						<menulist id="ca-zm-gal-menulist" >
 							<menupopup>
