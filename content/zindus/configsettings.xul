@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 
-
 <!-- ***** BEGIN LICENSE BLOCK *****
   
   "The contents of this file are subject to the Mozilla Public License
@@ -24,6 +23,8 @@
   
   ***** END LICENSE BLOCK ***** -->
 
+<?xul-overlay href="chrome://zindus/content/share_service/configzss.xul"?>
+
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
 <?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
@@ -37,8 +38,7 @@
 	flex="1"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new ConfigSettings(); } window.wd.onLoad(event.target);"
-	oncommand="window.wd.onCommand(event.target.id);"
-	ondialogaccept="window.wd.onAccept();"
+	ondialogaccept="return window.wd.onAccept();"
 	ondialogcancel="window.wd.onCancel();"
 	ondialogextra2="with (ZindusScopeRegistry.getScope()) { openURL('http://www.zindus.com/faq-thunderbird/'); }"
 	>
@@ -46,11 +46,22 @@
 	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/scoperegistry.js"/>
 	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/includes.js"/>
 
-	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
+	<stringbundleset>
+		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
+		<stringbundle id="zindus-cw-stringbundle" src="chrome://zindus/content/share_service/configwizard.properties" /> <!-- TODO change to locale -->
+	</stringbundleset>
 
-	<command id="cs-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
+	<tabbox id="zindus-cs-tabbox" orient="vertical" flex="1" >
+		<tabs>
+			<tab id="zindus-cs-tab-accounts"  label="General" />
+			<tab id="zindus-cs-tab-share"     label="Sharing"  />
+		</tabs>
 
-	<vbox flex="1" class="zindus-enclosing-vbox" >
+		<tabpanels flex="1">
+			<command id="cs-command" oncommand="window.wd.onCommand(event.explicitOriginalTarget.id);" />
+
+	<tabpanel> <!-- Accounts -->
+	<vbox flex="1" class="zindus-enclosing-vbox" oncommand="window.wd.onCommand(event.target.id);" >
 		<groupbox>
 			<caption label="&zindus.cs.accounts.label;" />
 			<vbox flex="1" >
@@ -97,7 +108,6 @@
 			<hbox align="right" >
 				<button id="cs-button-test-harness" hidden="true" align="center" command="cs-command" label="Test Harness" />
 				<button id="cs-button-test-wizard"  hidden="true" align="center" command="cs-command" label="Wizard" />
-				<button id="cs-button-test-shr"     hidden="true" align="center" command="cs-command" label="Shr" />
 				<button id="cs-button-run-timer"    hidden="true" align="center" command="cs-command" label="Run Timer" />
 				<button id="cs-button-reset"
 			        	align="center" command="cs-command" label="&zindus.cs.general.button.reset.label;"
@@ -109,4 +119,10 @@
 			</hbox>
 		</groupbox>
 	</vbox>
+	</tabpanel>
+
+	<tabpanel id="cs-share-tabpanel" > <!-- Share -->
+	</tabpanel>
+	</tabpanels>
+</tabbox>
 </dialog>

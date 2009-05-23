@@ -305,14 +305,13 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 		prefs.branch().deleteBranch("general.zm_sync_gal_enabled");
 	}
 
+	let accounts = AccountStatic.arrayLoadFromPrefset();
+	var i;
+
 	// 0.8.6
 	// - add gd_suggested = 'include' to google accounts if necessary
 	//
 	if (true)
-	{
-		let accounts = AccountStatic.arrayLoadFromPrefset();
-		let i;
-
 		for (i = 0; i < accounts.length; i++)
 			if ((accounts[i].format_xx() == FORMAT_GD) && (!accounts[i].gd_suggested || !accounts[i].gd_suggested.match(/include|ignore/)))
 			{
@@ -321,7 +320,19 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 				accounts[i].gd_suggested = 'include';
 				accounts[i].save();
 			}
-	}
+
+	// 0.8.10
+	// - add zm_emailed_contacts == 'true' to zimbra accounts
+	//
+	if (true)
+		for (i = 0; i < accounts.length; i++)
+			if ((accounts[i].format_xx() == FORMAT_ZM) && (!accounts[i].zm_emailed_contacts || !accounts[i].zm_emailed_contacts.match(/true|false/)))
+			{
+				this.m_logger.debug("about to set 'zm_emailed_contacts': current zm_emailed_contacts: " + accounts[i].zm_emailed_contacts + " toString: " + accounts[i].toString());
+
+				accounts[i].zm_emailed_contacts = 'true';
+				accounts[i].save();
+			}
 }
 
 ZinMailWindowOverlay.prototype.migratePasswords = function()
@@ -449,21 +460,6 @@ ZinMailWindowOverlay.prototype.migratePasswords = function()
 			pm.set(url, logininfo.username, logininfo.password);
 			login_manager.removeLogin(logininfo);
 		}
-				if (false)
-				{
-					var is_username = logins[j].username == accounts[i].passwordlocator.username();
-					var is_realm    = logins[j].httpRealm === null;
-					var is_hostname_clientlogin = logins[j].hostname == PasswordManager.m_bimap_google_hostname.lookup(eGoogleLoginUrl.kClientLogin, null);
-					var is_hostname_authtoken = logins[j].hostname == PasswordManager.m_bimap_google_hostname.lookup(eGoogleLoginUrl.kAuthToken, null);
-
-					this.m_logger.debug("hostname: " + logins[j].hostname + " password.length: " + logins[j].password.length);
-					this.m_logger.debug("is_username: " + is_username);
-					this.m_logger.debug("is_realm: " + is_realm);
-					this.m_logger.debug("bimap: " + PasswordManager.m_bimap_google_hostname.toString());
-					this.m_logger.debug("old authtoken hostname: " + PasswordManager.m_bimap_google_hostname.lookup(null, eGoogleLoginUrl.kAuthToken));
-					this.m_logger.debug("is_hostname_clientlogin: " + is_hostname_clientlogin);
-					this.m_logger.debug("is_hostname_authtoken: " + is_hostname_authtoken);
-				}
 
 		for (i = 0; i < accounts.length; i++)
 			if ((accounts[i].format_xx() == FORMAT_GD))

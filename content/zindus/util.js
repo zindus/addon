@@ -1134,3 +1134,11 @@ function http_status_from_xhr(xhr)
 
 	return ret;
 }
+
+function set_http_request_headers(xhr, headers)
+{
+	zinAssert(xhr && headers);
+
+	for (var key in headers)
+		xhr.setRequestHeader(key,  headers[key]);
+}

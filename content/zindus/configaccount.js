@@ -364,8 +364,10 @@ ConfigAccount.prototype = {
 				account.gd_sync_with = getValueFromRadio("ca-gd-syncwith-radiogroup", this.m_gd_sync_with_bimap);
 				account.gd_suggested = getValueFromRadio("ca-gd-suggested-radiogroup", this.m_gd_suggested_bimap);
 			}
-			else
+			else {
 				account.zm_sync_gal_enabled = getValueFromRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap);
+				account.zm_emailed_contacts = this.is_share_service() ? "false" : "true";
+			}
 
 			// Thunderbird2 nsIPasswordManager won't delete entries where the hostname has a trailing '/'
 			//

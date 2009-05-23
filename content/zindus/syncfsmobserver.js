@@ -123,6 +123,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stAuthLogin:      { count: 1 },
 		stAuthPreAuth:    { count: 1 },
 		stAuthCheck:      { },
+		stGetInfo:        { count: 1 },
 		stGetAccountInfo: { count: 1 },
 		stSelectSoapUrl:  { count: 1 },
 		stSync:           { },
@@ -241,6 +242,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stAuthPreAuth':
 			case 'stAuth':           this.progressReportOnSource(context.state.sourceid_pr, "remote.auth");  break;
 			case 'stLoad':           this.progressReportOn("load");                                          break;
+			case 'stGetInfo':        this.progressReportOnSource(context.state.sourceid_pr, "account.info"); break;
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "account.info"); break;
 			case 'stSync':          
 			case 'stSyncResponse':

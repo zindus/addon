@@ -96,6 +96,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stAuthCheck:            this.entryActionAuthCheck,
 		stLoad:                 this.entryActionLoad,
 		stLoadTb:               this.entryActionLoadTb,
+		stGetInfo:              this.entryActionGetInfo,
 		stGetAccountInfo:       this.entryActionGetAccountInfo,
 		stSelectSoapUrl:        this.entryActionSelectSoapUrl,
 		stSync:                 this.entryActionSync,
@@ -120,6 +121,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 	var a_exit = {
 		stAuthLogin:            this.exitActionAuthLogin,
 		stAuthPreAuth:          this.exitActionAuthPreAuth,
+		stGetInfo:              this.exitActionGetInfo,
 		stGetAccountInfo:       this.exitActionGetAccountInfo,
 		stSelectSoapUrl:        this.exitActionSelectSoapUrl,
 		stGetContactZm:         this.exitActionGetContactZm,
@@ -602,28 +604,31 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	if (is_file_exists_pr)
 		a_zfc[filename_pr].load()
 
-	var a_reason = new Object();
-
-	a_reason['no-lastsync']  = !is_file_exists_pr;
-
-	if (!isAnyValue(a_reason, true))
-		a_reason['new-source']   = !zfcLastSync.isPresent(sourceid_pr);
-
+	var a_reason    = new Object();
 	var zfiLastSync = zfcLastSync.isPresent(sourceid_pr) ? zfcLastSync.get(sourceid_pr) : null;
 
-	if (!isAnyValue(a_reason, true)) a_reason['new-url']      = zfiLastSync.getOrNull(eAccount.url)      != this.account().url;
-	if (!isAnyValue(a_reason, true)) a_reason['new-username'] = zfiLastSync.getOrNull(eAccount.username) != this.account().username;
+	function set_a_reason(key, value) {
+		if (!isAnyValue(a_reason, true))
+			a_reason[key] = value;
+	}
 
-	if (this.formatPr() == FORMAT_GD)
+	a_reason['no-lastsync-1']  = !is_file_exists_pr;
+	a_reason['no-lastsync-2']  = !zfiLastSync;
+
+	set_a_reason('new-source',   zfiLastSync && !zfcLastSync.isPresent(sourceid_pr));
+	set_a_reason('new-url',      zfiLastSync && (zfiLastSync.getOrNull(eAccount.url)      != this.account().url));
+	set_a_reason('new-username', zfiLastSync && (zfiLastSync.getOrNull(eAccount.username) != this.account().username));
+
+	if (this.formatPr() == FORMAT_ZM)
+		set_a_reason('zm_emailed_contacts', zfiLastSync &&
+		                                    (zfiLastSync.getOrNull(eAccount.zm_emailed_contacts) != this.account().zm_emailed_contacts));
+	else if (this.formatPr() == FORMAT_GD)
 	{
-		if (!isAnyValue(a_reason, true))
-			a_reason['gd_sync_with'] = zfiLastSync.getOrNull(eAccount.gd_sync_with) != this.account().gd_sync_with;
-		if (!isAnyValue(a_reason, true))
-			a_reason['gd_suggested'] = zfiLastSync.getOrNull(eAccount.gd_suggested) != this.account().gd_suggested;
-		if (!isAnyValue(a_reason, true))
-			a_reason['gd_is_sync_postal_address'] =
-				zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
-			  		String(this.state.gd_is_sync_postal_address);
+		set_a_reason('gd_sync_with', zfiLastSync && (zfiLastSync.getOrNull(eAccount.gd_sync_with) != this.account().gd_sync_with));
+		set_a_reason('gd_suggested', zfiLastSync && (zfiLastSync.getOrNull(eAccount.gd_suggested) != this.account().gd_suggested));
+		set_a_reason('gd_is_sync_postal_address',
+		                      zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
+			  		          String(this.state.gd_is_sync_postal_address));
 	}
 
 	var is_slow_sync = isAnyValue(a_reason, true);
@@ -667,10 +672,14 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 		if (this.formatPr() == FORMAT_ZM && zfcLastSync.isPresent(FeedItem.KEY_LASTSYNC_COMMON))
 		{
-			var str = zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('zm_tested_soapurls')
+			let str = zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('zm_tested_soapurls')
 
 			if (str)
 				this.state.a_zm_tested_soapurls = str.split(",");
+
+			// put the server version string in the logfile - helpful for diagnosis
+			str = zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('zm_version')
+			this.debug("entryActionLoad: zimbraVersion: " + (str ? str : "unknown"));
 		}
 	}
 	else
@@ -1074,6 +1083,39 @@ SyncFsm.prototype.removeSourceIdFromGid = function(sourceid)
 	this.state.zfcGid.forEach(functor_foreach_gid);
 }
 
+SyncFsm.prototype.entryActionGetInfo = function(state, event, continuation)
+{
+	var nextEvent = 'evNext';
+
+	this.state.stopwatch.mark(state);
+
+	if (this.is_slow_sync()) {
+		this.setupHttpZm(state, 'evNext', this.state.zidbag.soapUrl(), null, "GetInfo");
+		nextEvent = 'evHttpRequest';
+	}
+	else
+		nextEvent = 'evNext';
+	
+
+	continuation(nextEvent);
+}
+
+SyncFsm.prototype.exitActionGetInfo = function(state, event)
+{
+	if (!this.state.m_http.response() || event == "evCancel" || !this.is_slow_sync())
+		return;
+
+	zinAssert (this.is_slow_sync());
+
+	let xpath_query = "/soap:Envelope/soap:Body/za:GetInfoResponse/za:version";
+	let warn_msg    = "<version> not present";
+
+	Xpath.setConditionalFromSingleElement(this.state, 'zimbraVersion', xpath_query, this.state.m_http.response(), warn_msg);
+
+	if (this.state.zimbraVersion)
+		this.debug("exitActionGetInfo: zimbraVersion: " + this.state.zimbraVersion);
+}
+
 
 SyncFsm.prototype.entryActionGetAccountInfo = function(state, event, continuation)
 {
@@ -1246,6 +1288,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 		var zfcZm       = this.zfcPr();
 		var sourceid_pr = this.state.sourceid_pr;
 		var change      = newObject('acct', null);
+		var self        = this;
 		var a_foreign_folder_present = null;
 		var key, id, functor, xpath_query, msg;
 
@@ -1317,7 +1360,9 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 
 				zinAssert( !(change.acct && type == FeedItem.TYPE_LN)); // don't expect to see <link> elements in foreign accounts
 
-				if (zfcZm.isPresent(key))
+				if (self.account().zm_emailed_contacts != "true" && key == ZM_ID_FOLDER_AUTO_CONTACTS)
+					msg += "ignoring emailed contacts";
+				else if (zfcZm.isPresent(key))
 				{
 					zfcZm.get(key).set(attribute);  // update existing item
 
@@ -2552,7 +2597,7 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 
 				uri = this.state.m_addressbook.getAddressBookUriByName(old_localised_ab);
 
-				msg += " testing for: " + old_localised_ab + " uri: " + uri;
+				// unicode chars bugger up stty: msg += " testing for: " + old_localised_ab + " uri: " + uri;
 
 				if (uri)
 				{
@@ -2566,6 +2611,8 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 				}
 			}
 		}
+		else if (this.is_slow_sync() && this.account().zm_emailed_contacts != "true")
+			this.state.m_addressbook.renameAddressBook(uri, dateSuffixForFolder() + " " + ab_localised);
 	}
 	else
 		this.state.m_folder_converter.localised_emailed_contacts(this.state.zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).get('zm_localised_emailed_contacts'));
@@ -2761,6 +2808,9 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 			                                  this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
 
 					this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID, 0));// api doesnt have "delete"
+
+					// get the attributes again so that the code below knows to assign a temporary luid
+					attributes = this.state.m_addressbook.getCardAttributes(abCard);
 				}
 				else if (zfcTb.get(id).type() != FeedItem.TYPE_CN)
 				{
@@ -3263,7 +3313,9 @@ SyncFsm.prototype.twiddleMapsForImmutables = function()
 	else if (this.formatPr() == FORMAT_ZM)
 	{
 		this.twiddleMapsForImmutableZm(ZM_ID_FOLDER_CONTACTS);
-		this.twiddleMapsForImmutableZm(ZM_ID_FOLDER_AUTO_CONTACTS);
+
+		if (this.account().zm_emailed_contacts == "true")
+			this.twiddleMapsForImmutableZm(ZM_ID_FOLDER_AUTO_CONTACTS);
 	}
 }
 
@@ -5185,7 +5237,8 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		if (passed)
 			this.fakeDelOnUninterestingContacts();
 
-		passed = passed && this.testForEmailedContactsMatch();
+		if (this.account().zm_emailed_contacts == "true")
+			passed = passed && this.testForEmailedContactsMatch();
 
 		passed = passed && this.testForCreateSharedAddressbook();
 	}
@@ -6696,8 +6749,12 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 			zfcLastSync.get(sourceid_pr).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
 
 		zfcLastSync.get(sourceid_pr).set('SyncGalEnabled', this.account().zm_sync_gal_enabled);
+		zfcLastSync.get(sourceid_pr).set('zm_emailed_contacts', this.account().zm_emailed_contacts);
 
 		zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('zm_tested_soapurls', hyphenate(",", this.state.a_zm_tested_soapurls));
+
+		if (this.state.zimbraVersion)
+			zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('zm_version', this.state.zimbraVersion);
 	}
 	else if (this.formatPr() == FORMAT_GD)
 	{
@@ -7176,8 +7233,7 @@ SyncFsm.prototype.entryActionHttpRequest = function(state, event, continuation)
 	http.m_xhr.open(http.m_http_method, http.m_url, true);
 
 	if (http.m_http_headers)
-		for (var key in http.m_http_headers)
-			http.m_xhr.setRequestHeader(key,  http.m_http_headers[key]);
+		set_http_request_headers(http.m_xhr, http.m_http_headers);
 
 	http.m_xhr.send(http.httpBody());
 }
@@ -7623,12 +7679,7 @@ SyncFsm.prototype.initialise = function(id_fsm, sfcd)
 	if (this.formatPr() == FORMAT_ZM)
 	{
 		if (this.account().url)
-		{
-			if (this.account().url.charAt(this.account().url.length - 1) != '/')
-				this.account().url += '/';
-
-			this.account().url += "service/soap/";
-		}
+			this.account().url = SyncFsm.zimbraSoapUrl(this.account().url);
 		else
 			; // if extension is installed but not configured, we end up in here with no preferences set - stAuth will report url is invalid
 	}
@@ -7648,6 +7699,15 @@ SyncFsm.prototype.initialise = function(id_fsm, sfcd)
 	// so then we can give the addressbook a reference to it.
 	//
 	this.state.m_addressbook.contact_converter(this.contact_converter());
+}
+
+// TODO refactor this so that the share_service stuff can use it too
+SyncFsm.zimbraSoapUrl = function(url) 
+{
+	if (url.charAt(url.length - 1) != '/')
+		url += '/';
+
+	return url + "service/soap/";
 }
 
 function FsmState()
@@ -7733,6 +7793,7 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.SyncTokenInRequest     = null;         // the 'token' given to    <SyncRequest>
 	state.isAnyChangeToFolders   = false;
 	state.zimbraId               = null;         // the zimbraId for the Auth username - returned by GetAccountInfoRespose
+	state.zimbraVersion          = null;         // the <version> element from GetInfoResponse
 	state.aContact               = new Array();  // array of contact (zid, id) - push in SyncResponse, shift in GetContactResponse
 	state.isRedoSyncRequest      = false;        // we may need to do <SyncRequest> again - the second time without a token
 	state.aSyncContact           = new Object(); // each property is a ZmContact object returned in GetContactResponse

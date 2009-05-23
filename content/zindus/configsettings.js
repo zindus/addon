@@ -23,6 +23,7 @@
 
 includejs("payload.js");
 includejs("testharness.js");
+includejs('share_service/configzss.js');
 
 const WINDOW_FEATURES = "chrome,centerscreen,modal=yes,dependent=yes";
 
@@ -48,18 +49,24 @@ function ConfigSettings()
 	this.m_accounts             = null;
 	this.m_logger               = newLogger("ConfigSettings"); // this.m_logger.level(Logger.NONE);
 	this.m_addressbook          = AddressBook.new();
+	this.m_czss                 = new ConfigZss();
 }
 
 ConfigSettings.prototype.onLoad = function(target)
 {
 	if (this.is_developer_mode)
-		xulSetAttribute('hidden', false, "cs-button-test-harness", "cs-button-test-wizard", "cs-button-test-shr", "cs-button-run-timer");
+		xulSetAttribute('hidden', false, "cs-button-test-harness", "cs-button-test-wizard", "cs-button-run-timer");
 
 	this.m_prefset_general.load();
 	this.m_prefset_general_orig.load();
 
 	this.initialiseView();
 	this.maestroRegister(); // during which we get notified and updateView() is called...
+
+	let payload = new Payload();
+	payload.m_account  = this.m_accounts.length == 0 ? null : this.m_accounts[0];
+	payload.m_localised_pab = this.m_addressbook.getPabName();
+	this.m_czss.onLoad(payload);
 }
 
 ConfigSettings.prototype.maestroRegister = function()
@@ -102,6 +109,8 @@ ConfigSettings.prototype.onCancel = function()
 	else
 		this.m_logger.debug("no syncwindow active");
 
+	this.m_czss.onCancel();
+
 	this.m_prefset_general_orig.save();
 
 	this.m_logger.debug("onCancel:");
@@ -113,23 +122,29 @@ ConfigSettings.prototype.onAccept = function()
 {
 	this.m_logger.debug("onAccept: enters");
 
-	this.updatePrefsetsFromDocument();
+	let ret = this.m_czss.onAccept();
 
-	this.m_prefset_general.save();
+	if (ret) {
+		this.updatePrefsetsFromDocument();
 
-	this.stop_timer_fsm_and_deregister();
+		this.m_prefset_general.save();
 
-	var is_notify_preference_change = false;
+		this.stop_timer_fsm_and_deregister();
 
-	for (var i = 0; i < this.m_checkbox_properties.length; i++)
-		if (this.m_prefset_general.getProperty(this.m_checkbox_properties[i]) !=
-		    this.m_prefset_general_orig.getProperty(this.m_checkbox_properties[i]))
-				is_notify_preference_change = true;
+		var is_notify_preference_change = false;
 
-	if (is_notify_preference_change)
-		ObserverService.notify(ObserverService.TOPIC_PREFERENCE_CHANGE, null, null);
+		for (var i = 0; i < this.m_checkbox_properties.length; i++)
+			if (this.m_prefset_general.getProperty(this.m_checkbox_properties[i]) !=
+		    	this.m_prefset_general_orig.getProperty(this.m_checkbox_properties[i]))
+					is_notify_preference_change = true;
 
-	this.m_logger.debug("onAccept: exits");
+		if (is_notify_preference_change)
+			ObserverService.notify(ObserverService.TOPIC_PREFERENCE_CHANGE, null, null);
+	}
+
+	this.m_logger.debug("onAccept: exits with return value: " + ret);
+
+	return ret;
 }
 
 ConfigSettings.prototype.onCommand = function(id_target)
@@ -201,6 +216,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 					zinAlert('cs.sync.title', msg, window);
 			}
 
+			this.m_czss.initialiseView();
+
 			this.m_payload = null;
 			break;
 
@@ -219,23 +236,21 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			Filesystem.removeZfcs();
 			Filesystem.removeLogfile();
 			StatusBarState.update();
+			this.m_czss.initialiseView();
 			break;
 
 		case "cs-button-advanced":
 			window.openDialog("chrome://zindus/content/configgoogle.xul", "_blank", WINDOW_FEATURES, null);
 			break;
 
-		case "cs-button-test-shr": {
-			let payload = new Payload();
-			payload.m_account  = this.m_accounts[0];
-			payload.m_localised_pab = this.m_addressbook.getPabName();
-			window.openDialog("chrome://zindus/content/share_service/configzss.xul", "_blank", WINDOW_FEATURES, payload);
-			}
-			break;
-
 		case "cs-account-delete":
 			rowid           = dId("cs-account-tree").currentIndex;
 			let old_account = this.m_accounts[rowid];
+
+			Filesystem.removeZfc(FeedCollection.zfcFileNameFromSourceid(old_account.sourceid)); // so that the sharing grants are gone
+
+			if (old_account.is_share_service())
+				this.m_czss.initialiseView();
 
 			this.m_logger.debug("account-delete: rowid: " + rowid + " username: " + old_account.username);
 
@@ -244,7 +259,9 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			this.cleanUpPasswordDb(old_account);
 
+
 			is_accounts_changed = true;
+
 			break;
 
 		case "cs-button-test-wizard":
@@ -417,9 +434,6 @@ ConfigSettings.prototype.updateView = function()
 
 	xulSetAttribute('visible', (c_google != 0), "cs-button-advanced");
 	xulSetAttribute('disabled', (dId("cs-account-tree").currentIndex < 0), "cs-account-edit", "cs-account-delete");
-
-	let is_shr_enabled = this.m_accounts.length > 0 && this.m_accounts[0].is_share_service();
-	xulSetAttribute('disabled', !is_shr_enabled, "cs-button-test-shr");
 }
 
 ConfigSettings.prototype.onFsmStateChangeFunctor = function(fsmstate)

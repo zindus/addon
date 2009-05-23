@@ -29,6 +29,7 @@ var eAccount = new ZinEnum( {
 	gd_sync_with        : 'gd_sync_with',
 	gd_suggested        : 'gd_suggested',
 	zm_sync_gal_enabled : 'zm_sync_gal_enabled',
+	zm_emailed_contacts : 'zm_emailed_contacts',
 	passwordlocator     : 'passwordlocator'
 } );
 
@@ -158,7 +159,8 @@ Account.prototype = {
 };
 
 var AccountStatic = {
-	m_keys_optional      : newObjectWithKeys( eAccount.gd_sync_with, eAccount.gd_suggested, eAccount.zm_sync_gal_enabled ),
+	m_keys_optional      : newObjectWithKeys( eAccount.gd_sync_with, eAccount.gd_suggested, eAccount.zm_sync_gal_enabled,
+	                                          eAccount.zm_emailed_contacts ),
 	m_keys_required      : newObjectWithKeys( eAccount.url, eAccount.username, eAccount.format),
 	m_bimap_format       : getBimapFormat('long'),
 	m_prefset_properties : eAccount.toArray(),

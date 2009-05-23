@@ -501,7 +501,7 @@ AddressBookTb3.prototype.addCard = function(uri, properties, attributes)
 	zinAssert(attributes != null);
 
 	if (false)
-		this.m_logger.debug("addCard: uri: " + uri + " properties: " + aToString(properties) + " attributes: " + aToString(attributes));
+		this.m_logger.debug("addCard: AMHERE: uri: " + uri + " properties: "+aToString(properties)+" attributes: " + aToString(attributes));
 
 	var dir    = this.nsIAbDirectory(uri);
 	var abCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Ci.nsIAbCard);
@@ -611,6 +611,8 @@ AddressBookTb3.prototype.getCardAttributes = function(abCard)
 
 	for (i = 0; i < a_card_attributes.length; i++)
 	{
+		zinAssert(typeof(abCard.getProperty) == 'function'); // TODO remove me after debugging finished
+
 		value = abCard.getProperty(a_card_attributes[i], null);
 
 		if (value)

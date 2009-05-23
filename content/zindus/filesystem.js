@@ -34,7 +34,8 @@ var Filesystem = {
 		LOGFILE   : 'logfile.txt',
 		LASTSYNC  : 'lastsync.txt',
 		GID       : 'gid.txt',
-		STATUS    : 'status.txt'
+		STATUS    : 'status.txt',
+		SHARE     : 'share.txt'
 	}),
 	ePerm : new ZinEnum( {     // from prio.h
 		PR_IRUSR  : 0400,      // Read    by owner
