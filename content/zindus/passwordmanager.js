@@ -250,6 +250,8 @@ PasswordLocator.prototype = {
 			let pm = PasswordManager.new();
 			pm.set(this.m_url, this.m_username, value);
 		}
+
+		// logger().debug("PasswordLocator: setPassword: AMHERE: url: "+this.m_url+" username: "+this.m_username+" bool: "+Boolean(value));
 	},
 	getPassword : function() {
 		var ret = null;
@@ -258,6 +260,9 @@ PasswordLocator.prototype = {
 			let pm = PasswordManager.new();
 			ret = pm.get(this.m_url, this.m_username);
 		}
+
+		// logger().debug("PasswordLocator: getPassword: AMHERE: url: " + this.m_url + " username: " + this.m_username +
+		//                 " as bool: " + Boolean(this.m_url && this.m_username) + " returns pw of length: " + ret.length);
 
 		return ret;
 	}

@@ -64,6 +64,10 @@ ConfigSettings.prototype.onLoad = function(target)
 	this.maestroRegister(); // during which we get notified and updateView() is called...
 
 	let payload = new Payload();
+	let self = this;
+	Payload.prototype.account = function() {
+		return (self.m_accounts.length == 0) ? null : self.m_accounts[0];
+	}
 	payload.m_account  = this.m_accounts.length == 0 ? null : this.m_accounts[0];
 	payload.m_localised_pab = this.m_addressbook.getPabName();
 	this.m_czss.onLoad(payload);
@@ -162,7 +166,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			this.m_payload = new Payload();
 			this.m_payload.m_a_accounts      = this.m_accounts;
-			this.m_payload.m_syncfsm_details = newObject('type', "twoway");
+			this.m_payload.m_syncfsm_details = newObject('type', "twoway", 'is_attended', true);
 			this.m_payload.m_es              = new SyncFsmExitStatus();
 			this.m_payload.m_is_cancelled    = false;
 
@@ -249,9 +253,6 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			Filesystem.removeZfc(FeedCollection.zfcFileNameFromSourceid(old_account.sourceid)); // so that the sharing grants are gone
 
-			if (old_account.is_share_service())
-				this.m_czss.initialiseView();
-
 			this.m_logger.debug("account-delete: rowid: " + rowid + " username: " + old_account.username);
 
 			this.m_accounts[rowid].remove();
@@ -259,11 +260,11 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 			this.cleanUpPasswordDb(old_account);
 
-
 			is_accounts_changed = true;
 
 			break;
 
+		case "czss-share-signup-wizard":
 		case "cs-button-test-wizard":
 		case "cs-account-add":
 		case "cs-account-edit": {
@@ -274,8 +275,10 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			payload.m_account  = (id_target == "cs-account-edit") ? this.m_accounts[rowid] : null;
 			payload.m_format   = null;
 
-			if (id_target == "cs-button-test-wizard")
+			if (id_target == "cs-button-test-wizard" || id_target == "czss-share-signup-wizard") {
+				payload.m_startpage = "cw-page-signup-1-username";
 				window.openDialog("chrome://zindus/content/share_service/configwizard.xul", "_blank", WINDOW_FEATURES, payload);
+			}
 			else
 				window.openDialog("chrome://zindus/content/configaccount.xul", "_blank", WINDOW_FEATURES, payload);
 
@@ -289,6 +292,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				// remember that the account object(s) in m_result_accounts must be brought into the scope of the current window.
 				//
 				switch (id_target) {
+					case "czss-share-signup-wizard":
 					case "cs-button-test-wizard": {
 						let i;
 						for (i = 0; i < payload.m_result_accounts.length; i++)
@@ -312,7 +316,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 						zinAssert(false);
 				}
 
-				if (id_target == "cs-account-add" || id_target == "cs-button-test-wizard")
+				if (id_target != "cs-account-edit")
 				{
 					if (payload.m_result_accounts[payload.m_result_accounts.length-1] == FORMAT_ZM)
 						rowid = 0; // Zimbra accounts appear above Google accounts
@@ -378,7 +382,10 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		this.updateView();
 
-		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete", "cs-button-test-wizard" ]))
+		this.m_czss.initialiseView();
+
+		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete", "czss-share-signup-wizard",
+		                           "cs-button-test-wizard" ]))
 			this.m_logger.debug("id_target: " + id_target + " m_accounts is: " + AccountStatic.arrayToString(this.m_accounts));
 	}
 }
@@ -431,6 +438,8 @@ ConfigSettings.prototype.updateView = function()
 	}
 
 	var c_google = AccountStatic.arraySliceOfFormat(this.m_accounts, FORMAT_GD).length;
+
+	this.m_logger.debug("updateView: AMHERE: tree.currentIndex: " + dId("cs-account-tree").currentIndex);
 
 	xulSetAttribute('visible', (c_google != 0), "cs-button-advanced");
 	xulSetAttribute('disabled', (dId("cs-account-tree").currentIndex < 0), "cs-account-edit", "cs-account-delete");
@@ -610,7 +619,7 @@ var ConfigSettingsStatic = {
 		treerow.appendChild(treecell);
 	},
 	resetPasswordLocator : function (account) {
-		// the PasswordLocator in the account returned by ConfigAccout is temporary
+		// the PasswordLocator in the account returned by ConfigAccount is temporary
 		// here we make change it to the permanent one and remove the temporary one
 		//
 		let old_pl = new PasswordLocator(account.passwordlocator);

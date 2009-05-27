@@ -152,9 +152,9 @@ Account.prototype = {
 	},
 	is_share_service : function () {
 		let url = preferences().getCharPrefOrNull(preferences().branch(), MozillaPreferences.ZM_SHARE_SERVICE_URL);
-		let re  = url ? new RegExp('^' + url + '$') : null;
+		let re  = url ? new RegExp('^' + str_with_trailing(url, '/') + '$') : null;
 
-		return Boolean(re && this.url.match(re));
+		return Boolean(re && str_with_trailing(this.url, '/').match(re));
 	}
 };
 

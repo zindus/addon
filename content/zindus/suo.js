@@ -91,6 +91,14 @@ Suo.match_with_bucket = function() {
 	return fn;
 }
 
+Suo.count = function(aSuo, fn) {
+	let it = new SuoIterator(aSuo);
+	let ret = 0;
+	for (suo in it.iterator(fn))
+		ret++;
+	return ret;
+}
+
 function SuoKey(sourceid, bucket, id)
 {
 	this.sourceid = sourceid ? sourceid : null;

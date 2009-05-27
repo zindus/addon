@@ -147,7 +147,8 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stGetContactGd2:  { evCancel: 'final', evNext: 'stGetContactGd3',  evRepeat:      'stGetContactGd1', evLackIntegrity: 'final'     },
 		stGetContactGd3:  { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge',      evRepeat: 'stGetContactGd3'  },
 		stDeXmlifyAddrGd: { evCancel: 'final', evNext: 'stConverge',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stDeXmlifyAddrGd' },
-		stConverge:       { evCancel: 'final', evNext: 'stGetContactPuGd', evRepeat:      'stConverge',      evLackIntegrity: 'final'     },
+		stConverge:       { evCancel: 'final', evNext: 'stConfirmOnErase', evRepeat:      'stConverge',      evLackIntegrity: 'final'     },
+		stConfirmOnErase: { evCancel: 'final', evNext: 'stGetContactPuGd'                                                                 },
 		stGetContactPuGd: { evCancel: 'final', evNext: 'stGetGroupGd',     evHttpRequest: 'stHttpRequest',   evRepeat: 'stGetContactPuGd' },
 		stGetGroupGd:     { evCancel: 'final', evNext: 'stUpdateGd',       evHttpRequest: 'stHttpRequest'                                 },
 		stUpdateGd:       { evCancel: 'final', evNext: 'stUpdateTb',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stUpdateGd',
@@ -173,6 +174,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stGetContactGd3:        this.entryActionGetContactGd3,
 		stDeXmlifyAddrGd:       this.entryActionDeXmlifyAddrGd,
 		stConverge:             this.entryActionConverge,
+		stConfirmOnErase:       this.entryActionConfirmOnErase,
 		stGetContactPuGd:       this.entryActionGetContactPuGd,
 		stGetGroupGd:           this.entryActionGetGroupGd,
 		stUpdateGd:             this.entryActionUpdateGd,
@@ -5359,6 +5361,44 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	yield false;
 }
 
+SyncFsm.prototype.entryActionConfirmOnErase = function(state, event, continuation)
+{
+	let is_confirm_on_erase = preference(MozillaPreferences.GD_CONFIRM_ON_ERASE, 'bool');
+	let nextEvent = 'evNext';
+
+	if (is_confirm_on_erase) {
+		let c_at_google = 0;
+		let functor = {
+			run: function(zfi) {
+				if (zfi.type() == FeedItem.TYPE_CN && !zfi.isPresent(FeedItem.ATTR_DEL))
+					c_at_google++;
+				return true;
+			}
+		};
+
+		this.zfcPr().forEach(functor);
+
+		let context = this;
+		let fn = function(sourceid, bucket) { return (context.state.sources[sourceid]['format'] == FORMAT_GD) && (bucket & Suo.DEL); }
+		let c_to_be_deleted = Suo.count(this.state.aSuo, fn);
+
+		this.debug("entryActionConfirmOnErase: c_at_google: " + c_at_google + " c_to_be_deleted: " + c_to_be_deleted);
+
+		if (c_to_be_deleted == c_at_google) {
+			if (this.state.m_is_attended) {
+				let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService);
+				let is_ok   = prompts.confirm(window, stringBundleString("brand.zindus"), stringBundleString("text.confirm.erase"));
+				nextEvent = is_ok ? 'evNext' : 'evCancel';
+			}
+			else
+				nextEvent = 'evCancel';
+		}
+	}
+
+	continuation(nextEvent);
+}
+
+
 // Add the ATTR_KEEP attribute to deleted tb mapitems when the gid has references to sources that aren't being synced.
 // This drives deletion of the items in those sources when they get synced because the deleted tb item wins.
 //
@@ -7152,7 +7192,8 @@ SyncFsm.newSyncFsm = function(syncfsm_details, sfcd)
 
 	zinAssert(account);
 
-	logger().debug("newSyncFsm: account: " + account.toString() + " account_index: " + sfcd.m_account_index);
+	logger().debug("newSyncFsm: account: " + account.toString() + " account_index: " + sfcd.m_account_index +
+	                   " is_attended: " + syncfsm_details.is_attended);
 
 	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm(); id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
 	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
@@ -7160,7 +7201,7 @@ SyncFsm.newSyncFsm = function(syncfsm_details, sfcd)
 	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGd(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
 	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
 
-	syncfsm.initialise(id_fsm, sfcd);
+	syncfsm.initialise(id_fsm, (syncfsm_details.is_attended ? true : false), sfcd);
 
 	return syncfsm;
 }
@@ -7656,12 +7697,12 @@ HttpStateGd.prototype.filterOut = function(str)
 	return str;
 }
 
-SyncFsm.prototype.initialise = function(id_fsm, sfcd)
+SyncFsm.prototype.initialise = function(id_fsm, is_attended, sfcd)
 {
 	var account  = sfcd.account();
 	var sourceid = account.sourceid;
 
-	this.initialiseState(id_fsm, sourceid, sfcd);
+	this.initialiseState(id_fsm, is_attended, sourceid, sfcd);
 	this.initialiseFsm();
 
 	if (id_fsm == Maestro.FSM_ID_ZM_AUTHONLY)
@@ -7702,13 +7743,9 @@ SyncFsm.prototype.initialise = function(id_fsm, sfcd)
 	this.state.m_addressbook.contact_converter(this.contact_converter());
 }
 
-// TODO refactor this so that the share_service stuff can use it too
 SyncFsm.zimbraSoapUrl = function(url) 
 {
-	if (url.charAt(url.length - 1) != '/')
-		url += '/';
-
-	return url + "service/soap/";
+	return str_with_trailing(url, '/') + "service/soap/";
 }
 
 function FsmState()
@@ -7721,7 +7758,7 @@ FsmState.prototype.initialiseSource = function(sourceid, format)
 	this.aChecksum[sourceid] = new Object();
 }
 
-SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
+SyncFsm.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd)
 {
 	this.state = new FsmState();
 
@@ -7757,6 +7794,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.m_tb_card_count     = 0;
 	state.m_progress_count    = 0;
 	state.m_progress_yield_text = null;
+	state.m_is_attended       = is_attended;
 
 	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
 	state.remote_update_package    = null;    // maintains state between an server update request and the response
@@ -7775,9 +7813,9 @@ SyncFsm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.sourceid_tb = SOURCEID_TB;
 }
 
-SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
+SyncFsmZm.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd)
 {
-	SyncFsm.prototype.initialiseState.call(this, id_fsm, sourceid, sfcd);
+	SyncFsm.prototype.initialiseState.call(this, id_fsm, is_attended, sourceid, sfcd);
 
 	var state = this.state;
 
@@ -7803,9 +7841,9 @@ SyncFsmZm.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
 	state.initialiseSource(sourceid, FORMAT_ZM);
 }
 
-SyncFsmGd.prototype.initialiseState = function(id_fsm, sourceid, sfcd)
+SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd)
 {
-	SyncFsm.prototype.initialiseState.call(this, id_fsm, sourceid, sfcd);
+	SyncFsm.prototype.initialiseState.call(this, id_fsm, is_attended, sourceid, sfcd);
 
 	var state = this.state;
 

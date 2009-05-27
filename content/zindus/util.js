@@ -1142,3 +1142,11 @@ function set_http_request_headers(xhr, headers)
 	for (var key in headers)
 		xhr.setRequestHeader(key,  headers[key]);
 }
+
+function str_with_trailing(str, chr)
+{
+	if (str.charAt(str.length - 1) != chr)
+		str += '/';
+
+	return str;
+}

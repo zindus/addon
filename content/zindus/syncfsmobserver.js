@@ -143,6 +143,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGetContactGd2:  { count: 1 },
 		stGetContactGd3:  { count: 1 },
 		stDeXmlifyAddrGd: { },
+		stConfirmOnErase: { },
 		stGetContactPuGd: { count: 1 },
 		stGetGroupGd:     { }, // no need to show progress for this, because UI will still reflect stGetContactPuGd
 		stUpdateGd:       { count: 1 }
@@ -353,16 +354,8 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stUpdateGd': {
 				let max_suos = 0;
 
-				function count_suos (fn) {
-					var it = new SuoIterator(context.state.aSuo);
-					var ret = 0;
-					for (suo in it.iterator(fn))
-						ret++;
-					return ret;
-				}
-
 				if (!context.state.m_suo_generator)
-					max_suos = count_suos(function(sourceid, bucket) { return sourceid == context.state.sourceid_pr; });
+					max_suos = Suo.count(context.state.aSuo, function(sourceid, bucket) { return sourceid == context.state.sourceid_pr; });
 
 				if (context.state.m_suo_generator || max_suos > 0)
 				{

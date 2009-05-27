@@ -49,6 +49,7 @@ MozillaPreferences.ZM_SHARE_SERVICE_URL     = "system.zm_share_service_url";
 MozillaPreferences.GD_SCHEME_DATA_TRANSFER  = "system.gd_data_transfer_scheme";
 MozillaPreferences.GD_TRASH_EXPIRE_SECONDS  = "system.gd_trash_expire_seconds";
 MozillaPreferences.GD_CONTACTS_PER_REQUEST  = "system.gd_contacts_per_request";
+MozillaPreferences.GD_CONFIRM_ON_ERASE      = "system.gd_confirm_on_erase";
 
 MozillaPreferences.getAllSystemPrefs = function()
 {
@@ -64,7 +65,9 @@ MozillaPreferences.getAllSystemPrefs = function()
 		MozillaPreferences.ZM_PREFER_SOAPURL_SCHEME, 'char',
 		MozillaPreferences.ZM_SHARE_SERVICE_URL,     'char',
 		MozillaPreferences.GD_SCHEME_DATA_TRANSFER,  'char',
-		MozillaPreferences.GD_TRASH_EXPIRE_SECONDS,  'int' );
+		MozillaPreferences.GD_TRASH_EXPIRE_SECONDS,  'int',
+		MozillaPreferences.GD_CONTACTS_PER_REQUEST,  'int',
+		MozillaPreferences.GD_CONFIRM_ON_ERASE,      'bool' );
 }
 
 function MozillaPreferences()
