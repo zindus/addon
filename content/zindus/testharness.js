@@ -2099,7 +2099,7 @@ TestHarness.prototype.testExitStatusMessages = function()
 		                                                     [ 'fred' ]) },
 		'failon.no.xpath'                     : {},
 		'failon.no.tbpre'                     : {},
-		'failon.no.pab'                       : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) },
+		'failon.no.pab.2'                     : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) },
 		'failon.multiple.ln'                  : { 'trailer': 'address book names go here' },
 		'failon.gd.forbidden'                 : {},
 		'failon.gd.syncwith'                  : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },

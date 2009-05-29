@@ -285,6 +285,9 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	}
 	else if (!pab_name || !this.state.m_addressbook.getAddressBookUriByName(pab_name) || pab_name.match(new RegExp("^" + APP_NAME, "i")))
 	{
+		// getAddressBookUriByName() returns null when there are two addressbooks of the given name, so
+		// it catches when the user has two addressbooks named "Personal Address Book" - see issue#181
+		// 
 		let msg = "entryActionStart:  addressbooks: " + this.state.m_addressbook.addressbooksToString() + "\n pab_name: " + pab_name;
 
 		if (pab_name)
@@ -294,12 +297,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 		this.debug(msg);
 
-		// getAddressBookUriByName() returns null when there are two addressbooks of the given name, so
-		// it catches when the user has two addressbooks named "Personal Address Book"
-		// see issue#181
-
-		this.state.stopFailCode    = 'failon.no.pab';
-		this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+		this.state.stopFailCode = 'failon.no.pab.2';
 
 		nextEvent = 'evLackIntegrity';
 	}
@@ -6207,7 +6205,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 
 			zfcTarget.get(key).set(FeedItem.ATTR_DEL, 1);
 
-			msg += " recieved: BatchResponse - marking as deleted: key: " + key;
+			msg += " recieved: foreign_contact_delete_response - marking as deleted: key: " + key;
 
 			is_response_understood = true;
 		}

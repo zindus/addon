@@ -55,7 +55,7 @@ function SyncFsmExitStatus()
 	'failon.unable.to.update.thunderbird'  : { 'trailer' : 1, 'arglength': 0 }, //     
 	'failon.no.xpath'                      : { 'trailer' : 0, 'arglength': 0 }, //    
 	'failon.no.tbpre'                      : { 'trailer' : 0, 'arglength': 1 }, //    
-	'failon.no.pab'                        : { 'trailer' : 1, 'arglength': 0 }, //     
+	'failon.no.pab.2'                      : { 'trailer' : 0, 'arglength': 0 }, //     
 	'failon.multiple.ln'                   : { 'trailer' : 1, 'arglength': 0 }, //      
 	'failon.gd.conflict.4'                 : { 'trailer' : 0, 'arglength': 0 }, //    
 	'failon.gd.forbidden'                  : { 'trailer' : 0, 'arglength': 0 }, //    
