@@ -78,8 +78,8 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stConverge:        { evCancel: 'final', evNext: 'stGetContactPuZm', evRepeat:      'stConverge',    evLackIntegrity: 'final'     },
 		stGetContactPuZm:  { evCancel: 'final', evNext: 'stUpdateTb',       evHttpRequest: 'stHttpRequest', evRepeat: 'stGetContactPuZm' },
 		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateZm',       evRepeat:      'stUpdateTb',    evLackIntegrity: 'final'     },
-		stUpdateZm:        { evCancel: 'final', evNext: 'stUpdateCleanup',  evHttpRequest: 'stHttpRequest', evRepeat:        'stUpdateZm',
-		                                                                                                    evLackIntegrity: 'final'     },
+		stUpdateZm:        { evCancel: 'final', evNext: 'stUpdateZmHttp'                                                                 },
+		stUpdateZmHttp:    { evCancel: 'final', evNext: 'stUpdateCleanup',  evHttpRequest: 'stHttpRequest', evRepeat: 'stUpdateZm'       },
 		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',         evRepeat:    'stUpdateCleanup', evLackIntegrity: 'final'     },
 
 		stHttpRequest:     { evCancel: 'final', evNext: 'stHttpResponse'                                                                 },
@@ -110,6 +110,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stConverge:             this.entryActionConverge,
 		stUpdateTb:             this.entryActionUpdateTb,
 		stUpdateZm:             this.entryActionUpdateZm,
+		stUpdateZmHttp:         this.entryActionUpdateZmHttp,
 		stUpdateCleanup:        this.entryActionUpdateCleanup,
 		stCommit:               this.entryActionCommit,
 
@@ -128,7 +129,7 @@ SyncFsmZm.prototype.initialiseFsm = function()
 		stGetContactZm:         this.exitActionGetContactZm,
 		stGetContactPuZm:       this.exitActionGetContactZm,
 		stGalSync:              this.exitActionGalSync,
-		stUpdateZm:             this.exitActionUpdateZm,
+		stUpdateZmHttp:         this.exitActionUpdateZmHttp,
 		stHttpResponse:         this.exitActionHttpResponse  /* this gets tweaked by setupHttpZm */
 	};
 
@@ -1319,7 +1320,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 		// <cn d="1169685098000" ms="2708" md="1169685098" email="a.b@example.com" fileAsStr="a b" l="7" id="561" rev="2708"/>
 		// <deleted ids="561"/>
 		// <link f="" rev="7" ms="7" l="1" id="258" md="1204158424" rid="464" zid="1d5c34c8-8c54-4b3f-a23c-eed92decfa67"
-		//       name="Leni Mayo's ab-1" owner="leni@george.ho.moniker.net" rest="blah" view="contact"/>
+		//       name="Leni Mayo's ab-1" owner="leni@george.ho.example.com" rest="blah" view="contact"/>
 	
 		// <folder view="contact" ms="2713" md="1169690090" l="1" name="address-book-3" id="563"><acl/></folder>
 		//  ==> if id is present, update the map
@@ -1772,7 +1773,6 @@ SyncFsm.prototype.entryActionGetContactZmSetup = function(state)
 	}
 	else
 	{
-		var max_contacts_in_one_request = 50;
 		var zuio = this.state.aContact[0];
 
 		var aGetContactRequest = SyncFsm.GetContactZmNextBatch(this.state.aContact);
@@ -1790,13 +1790,12 @@ SyncFsm.prototype.entryActionGetContactZmSetup = function(state)
 
 SyncFsm.GetContactZmNextBatch = function(aContact)
 {
-	const max_contacts_in_one_request = 50;
 	var zuio  = null;
 	var a_ret = new Array();
 
 	// all contacts in the request have to be using the same zid
 	//
-	for (var i = 0; i < max_contacts_in_one_request && i < aContact.length; i++)
+	for (var i = 0; i < MAX_BATCH_SIZE && i < aContact.length; i++)
 	{
 		if (!zuio || zuio.zid() == aContact[i].zid())
 			zuio = aContact[i];
@@ -4246,6 +4245,8 @@ SyncFsm.prototype.buildGcsGenerator = function()
 									zinAssertAndLog(folder != TB_PAB, folder);
 								}
 							}
+							else
+								msg += " not added to aBlah";
 						}
 						else
 							msg += " gid ver != lso ver: " + lso.get(FeedItem.ATTR_VER);
@@ -5014,6 +5015,46 @@ SyncFsm.prototype.fakeDelOnUninterestingContacts = function()
 		zfcZm.forEach(functor_fakeDelOnUninterestingContacts);
 }
 
+// In a batch update, the change token in the soap envelope corresponds to the modification sequence number of the very last item
+// in the batch.
+// But we've used that as the MS attribute (and therefore the LS attribute) of each and every item in the batch.
+// So unless we do something, the ms attribute in the subsequent <SyncResponse> will appear to have gone backwards!
+// Here, we reset the LS attribute to what it'd be if we udpated the items on the server without using batch.
+//
+SyncFsm.prototype.twiddleZmFxMs = function()
+{
+	var zfcZm = this.zfcPr();
+	var bigmsg = new BigString();
+
+	bigmsg.concat("twiddleZmFxMs: ");
+
+	var functor = {
+		run: function(zfi)
+		{
+			if (zfi.isPresent(FeedItem.ATTR_FXMS)) {
+				let lso   = new Lso(zfi.get(FeedItem.ATTR_LS));
+				let lsoms = lso.get(FeedItem.ATTR_MS);
+				let ms    = zfi.get(FeedItem.ATTR_MS);
+
+				if (ms < lsoms) {
+					lso.set(FeedItem.ATTR_MS, ms);
+					let str = lso.toString();
+					zfi.set(FeedItem.ATTR_LS, str);
+					bigmsg.concat("\n key=" + zfi.key() + " reset ATTR_LS: " + str);
+				}
+
+				zfi.del(FeedItem.ATTR_FXMS);
+			}
+
+			return true;
+		}
+	};
+
+	zfcZm.forEach(functor);
+
+	this.state.m_logger.debug(bigmsg.toString());
+}
+
 // In zfcZm:
 // - pass 1: Handle deletes - we need a separate pass for this in case a link to the a folder gets deleted then added in the same sync.
 //           Also look for multiple links to the same foreign folder - this isn't supported.
@@ -5241,6 +5282,8 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
+		this.twiddleZmFxMs();
+
 		passed = passed && this.sharedFoldersUpdateZm();
 
 		if (passed)
@@ -5849,210 +5892,83 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 // contact: same as Suo.MOD with l=3
 // folder:  same as Suo.MOD with l=3, but on response we also remove pending deletes for contained contacts
 //
+// To support Batch, we build an array where the index is 0-n and the value is remote_update_package.  add to this array 50 at a time
+// then empty it by Batch'ing together the operations that use the same zid.
+//
 
 SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 {
 	var msg     = "";
 	var context = this;
 	var fn      = function(sourceid, bucket) { return (context.state.sources[sourceid]['format'] == FORMAT_ZM); }
-	var remote  = newObject('method', null);
-	var sourceid_winner, sourceid_target, zfcWinner, zfiWinner, zfcTarget, l_gid, l_winner, l_target, name_winner, type;
-	var key_suo, suo, format_winner, zuio_target, l_zuio, properties, luid_winner, luid_target;
+	var remote  = null;
+	var key_suo, suo, is_more_ops;
 
 	this.state.stopwatch.mark(state);
 
 	if (!this.state.m_suo_generator)
 		this.state.m_suo_generator = this.state.m_suo_iterator.generator(fn);
 
-	var is_more_ops = !this.state.stopFailCode && Boolean([key_suo, suo] = this.state.m_suo_generator.next());
+	if (!this.state.m_suo_last_in_bucket) {
+		// we want to stop when we get to the end of a bucket because we don't want to call updateZmRemoteUpdatePackage
+		// to add contacts (for example) until after add folders have been processed.
+		//
+		let generator = this.state.m_suo_iterator.generator(fn);
+		this.state.m_suo_last_in_bucket = new Object();
+		let bucket = null;
 
-	if (!is_more_ops)
-		this.state.m_suo_generator = null;
-	else
-	{
-		type            = this.feedItemTypeFromGid(suo.gid, suo.sourceid_winner);
-		sourceid_winner = suo.sourceid_winner;
-		sourceid_target = suo.sourceid_target;
-		format_winner   = this.state.sources[sourceid_winner]['format'];
-		luid_winner     = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
-		zfcWinner       = this.zfc(suo.sourceid_winner);
-		zfcTarget       = this.zfc(suo.sourceid_target);
-		zfiWinner       = zfcWinner.get(luid_winner);
+		while (Boolean([key_suo, suo] = generator.next()))
+			this.state.m_suo_last_in_bucket[key_suo.bucket] = key_suo;
 
-		this.debug("entryActionUpdateZm: " + " opcode: " + suo.opcodeAsString() + " type: " + FeedItem.typeAsString(type) +
-				                             " suo: "    + suo.toString());
+		this.state.m_a_remote_update_package.m_c_total = Suo.count(this.state.aSuo, fn); // for observer
+	}
 
-		zinAssert(!suo.is_processed);
+	this.debug("entryActionUpdateZm: 1: stopFailCode: " + this.state.stopFailCode + " m_a_remote_update_package.length: " + this.state.m_a_remote_update_package.length); // TODO
 
-		if (type & FeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
-			zinAssert(zfiWinner.name() != TB_PAB && zfiWinner.name() != ZM_FOLDER_CONTACTS);
+	if (!this.state.stopFailCode && this.state.m_a_remote_update_package.length == 0) {
+		do {
+			is_more_ops = Boolean([key_suo, suo] = this.state.m_suo_generator.next());
 
-		switch(suo.opcode | type)
-		{
-			case Suo.ADD | FeedItem.TYPE_FL:
-				zinAssertAndLog(format_winner == FORMAT_ZM ||
-				                this.state.m_folder_converter.prefixClass(zfiWinner.name()) == FolderConverter.PREFIX_CLASS_PRIMARY,
-				                   "zfiWinner: " + zfiWinner.toString());
-				name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner, zfiWinner);
+			if (is_more_ops) {
+				let remote_update_package = this.updateZmRemoteUpdatePackage(key_suo, suo);
 
-				msg          += " about to add folder name: " + name_winner + " l: " + '1';
-				remote.method = "CreateFolder";
-				remote.arg    = newObject(FeedItem.ATTR_NAME, name_winner, FeedItem.ATTR_L, '1');
-				remote.zid    = null;
-				break;
+				if (remote_update_package)
+					this.state.m_a_remote_update_package.push(remote_update_package);
+			}
+		} while (is_more_ops &&
+		         this.state.m_a_remote_update_package.length < MAX_BATCH_SIZE &&
+				 !key_suo.isEqual(this.state.m_suo_last_in_bucket[key_suo.bucket]));
 
-			case Suo.ADD | FeedItem.TYPE_CN:
-				l_winner    = SyncFsm.keyParentRelevantToGid(zfcWinner, zfiWinner.key());
-				l_gid       = this.state.aReverseGid[sourceid_winner][l_winner];
-				l_target    = this.state.zfcGid.get(l_gid).get(sourceid_target);
+		this.debug("entryActionUpdateZm: 2: " + " m_a_remote_update_package.length: " + this.state.m_a_remote_update_package.length); // TODO
 
-				if (zfcTarget.get(l_target).type() == FeedItem.TYPE_SF)
-					l_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, l_target, FeedItem.TYPE_FL);
+		if (this.state.m_a_remote_update_package.length != 0) {
+			// work out how many we're going to process in the next batch - the observer reports this in the UI.
+			// TODO stop when you hit a foreign delete
+			//
+			let zid = this.state.m_a_remote_update_package[0].remote.zid;
+			for (var i = 0; (i < MAX_BATCH_SIZE) &&
+		            	(i < this.state.m_a_remote_update_package.length) &&
+						(zid == this.state.m_a_remote_update_package[i].remote.zid); i++)
+				;
 
-				l_zuio        = new Zuio(l_target);
-				properties    = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
-				msg          += " about to add contact: ";
-				remote.method = "CreateContact";
-				remote.arg    = newObject('properties', properties, FeedItem.ATTR_L, l_zuio.id());
-				remote.zid    = l_zuio.zid();
-				break;
-
-			case Suo.MOD | FeedItem.TYPE_FL:
-				name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner, zfiWinner);
-				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-
-				if (zfcTarget.get(luid_target).type() == FeedItem.TYPE_SF)
-				{
-					luid_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, luid_target, FeedItem.TYPE_LN);
-					remote.luid_target = luid_target;
-				}
-
-				// sanity check that we never modify any of zimbra's immutable folders
-				zinAssertAndLog(luid_target >= ZM_FIRST_USER_ID, "id=" + luid_target + "folder name: " + name_winner);
-
-				msg          += " about to rename folder: ";
-				remote.method = "FolderAction";
-				remote.arg    = newObject('id', luid_target, 'op', 'update', FeedItem.ATTR_NAME, name_winner);
-				remote.zid    = null;
-				break;
-
-			case Suo.MOD | FeedItem.TYPE_CN:
-				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-				l_winner    = SyncFsm.keyParentRelevantToGid(zfcWinner, zfiWinner.key());
-				l_gid       = this.state.aReverseGid[sourceid_winner][l_winner];
-				l_target    = this.state.zfcGid.get(l_gid).get(sourceid_target);
-
-				if (zfcTarget.get(l_target).type() == FeedItem.TYPE_SF)
-					l_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, l_target, FeedItem.TYPE_FL);
-
-				zuio_target = new Zuio(luid_target);
-				l_zuio      = new Zuio(l_target);
-
-				msg          += " about to modify contact: ";
-				remote.zid    = zuio_target.zid();
-				remote.method = null;
-
-				if (this.state.sources[sourceid_winner]['format'] == FORMAT_TB) // always a content update in Tb2 - may not be so in Tb3.
-					remote.method = "ModifyContact";
-				else
-				{
-					// look at the pre-update zfi:
-					// if rev was bumped ==> content update  ==> ModifyContactRequest ==> load content from zc
-					// if ms  was bumped ==> attributes only ==> ContactActionRequest ==> load content from zc
-					//
-					var zfi = this.state.zfcPreUpdateWinners.get(suo.gid);
-					var lso = new Lso(zfi.get(FeedItem.ATTR_LS));
-
-					remote.method = (zfi.get(FeedItem.ATTR_REV) > lso.get(FeedItem.ATTR_REV)) ? "ModifyContact" : "ContactAction";
-				}
-
-				if (remote.method == "ModifyContact")
-				{
-					properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
-
-					// populate properties with the contact attributes that must be deleted on the server...
-					//
-					for (key in this.contact_converter().m_common_to[FORMAT_ZM][FORMAT_TB])
-						if (!isPropertyPresent(properties, key))
-							properties[key] = null;
-
-					remote.arg   = newObject('id', zuio_target.id(), 'properties', properties, FeedItem.ATTR_L, l_zuio.id());
-				}
-				else if (remote.method == "ContactAction")
-				{
-					remote.arg   = newObject('id', zuio_target.id(), 'op', 'move', FeedItem.ATTR_L, l_zuio.id());
-				}
-				else
-					zinAssert(false);
-				break;
-
-			case Suo.DEL | FeedItem.TYPE_FL:
-				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-				name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner, zfiWinner);
-
-				msg        += " about to move folder to trash: " + name_winner;
-				remote.method = "FolderAction";
-				remote.zid    = null;
-
-				if (zfcTarget.get(luid_target).type() == FeedItem.TYPE_SF)
-				{
-					luid_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, luid_target, FeedItem.TYPE_LN);
-					remote.luid_target = luid_target;
-				}
-
-				zinAssertAndLog(luid_target >= ZM_FIRST_USER_ID, "luid_target=" + luid_target);
-
-				// add the date to the folder's name in the Trash to avoid name clashes
-				// this isn't guaranteed to work of course, but if it doesn't, the sync will abort
-				// and the folder will re-appear on the next slow sync.  No drama, the user will just scratch their head and
-				// then complain and/or retry.  The correct logic is "retry until success" but it's complex to code...
-				// would prefer an iso8601 date but zimbra doesnt allow folder names to contain colons
-				//
-				var newname = "/Trash/" + name_winner + dateSuffixForFolder();
-
-				msg += " - name of the folder in the Trash will be: " + newname;
-
-				// op == 'move' is what we'd use if we weren't changing it's name
-				// remote.arg     = newObject('id', luid_target, 'op', 'move', FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
-				// with op=update, the server does the move before the rename so still fails because of folder name conflict in Trash
-				// remote.arg     = newObject('id', luid_target, 'op', 'update', FeedItem.ATTR_NAME, newname, FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
-				remote.arg     = newObject('id', luid_target, 'op', 'rename', FeedItem.ATTR_NAME, newname);
-				break;
-
-			case Suo.DEL | FeedItem.TYPE_CN:
-				luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
-
-				if (zfcTarget.get(luid_target).isForeign())
-				{
-					zuio_target = new Zuio(luid_target);
-					properties  = this.getContactFromLuid(sourceid_target, luid_target, FORMAT_ZM);
-					zinAssert(properties);
-					remote.method = "ForeignContactDelete";
-					remote.arg    = newObject('properties', properties, 'id', zuio_target.id(), 'zid', zuio_target.zid());
-					remote.zid    = null;
-					msg        += " about to copy foreign contact to trash then delete it.";
-				}
-				else
-				{
-					remote.method = "ContactAction";
-					remote.arg    = newObject('id', luid_target, 'op', 'move', FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
-					remote.zid    = null;
-					msg        += " about to move contact to trash.";
-				}
-				break;
-
-			default:
-				zinAssertAndLog(false, "unmatched case: " + suo.opcode | type);
+			this.state.m_a_remote_update_package.m_c_used_in_current_batch = i;
 		}
 	}
 
+	continuation('evNext');
+}
+
+SyncFsm.prototype.entryActionUpdateZmHttp = function(state, event, continuation)
+{
 	var nextEvent;
 
-	if (remote.method)
-	{
-		this.state.remote_update_package = newObject('key_suo', key_suo, 'remote', remote);
+	this.debug("entryActionUpdateZmHttp: stopFailCode: " + this.state.stopFailCode + " m_a_remote_update_package.length: " + this.state.m_a_remote_update_package.length); // TODO
 
-		msg += " remote_update_package: " + aToString(this.state.remote_update_package);
+	if (!this.state.stopFailCode && this.state.m_a_remote_update_package.length > 0) {
+		let remote        = new Object();
+		remote.zid    = this.state.m_a_remote_update_package[0].remote.zid;
+		remote.method = "Batch";
+		remote.arg = { a_remote_update_package: this.state.m_a_remote_update_package };
 
 		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(remote.zid), remote.zid, remote.method, remote.arg);
 
@@ -6060,33 +5976,223 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 	}
 	else
 	{
-		nextEvent = is_more_ops ? 'evRepeat' : 'evNext' ;
-		this.state.m_http = null;
-		this.state.remote_update_package = null; // free memory
-	}
+		nextEvent = 'evNext';
 
-	this.state.m_logger.debug("entryActionUpdateZm: " + msg);
+		this.state.m_http = null;
+		this.state.m_suo_generator = null;           // free memory
+		this.state.m_a_remote_update_package = null; // free memory
+		this.state.m_suo_last_in_bucket = null;      // free memory
+	}
 
 	continuation(nextEvent);
 }
 
-SyncFsm.prototype.exitActionUpdateZm = function(state, event)
+SyncFsm.prototype.updateZmRemoteUpdatePackage = function(key_suo, suo)
+{
+	let msg             = "";
+	let remote          = newObject('method', null);
+	let type            = this.feedItemTypeFromGid(suo.gid, suo.sourceid_winner);
+	let sourceid_winner = suo.sourceid_winner;
+	let sourceid_target = suo.sourceid_target;
+	let format_winner   = this.state.sources[sourceid_winner]['format'];
+	let luid_winner     = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
+	let zfcWinner       = this.zfc(suo.sourceid_winner);
+	let zfcTarget       = this.zfc(suo.sourceid_target);
+	let zfiWinner       = zfcWinner.get(luid_winner);
+	var l_gid, l_winner, l_target, name_winner, zuio_target, l_zuio, properties, luid_target, is_more_ops;
+
+	this.debug("updateZmRemoteUpdatePackage: " +
+				" opcode: " + suo.opcodeAsString() +
+				" type: "   + FeedItem.typeAsString(type) +
+				" suo: "    + suo.toString());
+
+	zinAssert(!suo.is_processed);
+
+	if (type & FeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
+		zinAssert(zfiWinner.name() != TB_PAB && zfiWinner.name() != ZM_FOLDER_CONTACTS);
+
+	switch(suo.opcode | type)
+	{
+		case Suo.ADD | FeedItem.TYPE_FL:
+			zinAssertAndLog(format_winner == FORMAT_ZM ||
+			                this.state.m_folder_converter.prefixClass(zfiWinner.name()) == FolderConverter.PREFIX_CLASS_PRIMARY,
+			                   "zfiWinner: " + zfiWinner.toString());
+			name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner, zfiWinner);
+
+			msg          += " add folder name: " + name_winner + " l: " + '1';
+			remote.method = "CreateFolder";
+			remote.arg    = newObject(FeedItem.ATTR_NAME, name_winner, FeedItem.ATTR_L, '1');
+			remote.zid    = null;
+			break;
+
+		case Suo.ADD | FeedItem.TYPE_CN:
+			l_winner    = SyncFsm.keyParentRelevantToGid(zfcWinner, zfiWinner.key());
+			l_gid       = this.state.aReverseGid[sourceid_winner][l_winner];
+			l_target    = this.state.zfcGid.get(l_gid).get(sourceid_target);
+
+			if (zfcTarget.get(l_target).type() == FeedItem.TYPE_SF)
+				l_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, l_target, FeedItem.TYPE_FL);
+
+			l_zuio        = new Zuio(l_target);
+			properties    = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
+			msg          += " add contact: ";
+			remote.method = "CreateContact";
+			remote.arg    = newObject('properties', properties, FeedItem.ATTR_L, l_zuio.id());
+			remote.zid    = l_zuio.zid();
+			break;
+
+		case Suo.MOD | FeedItem.TYPE_FL:
+			name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner, zfiWinner);
+			luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
+
+			if (zfcTarget.get(luid_target).type() == FeedItem.TYPE_SF)
+			{
+				luid_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, luid_target, FeedItem.TYPE_LN);
+				remote.luid_target = luid_target;
+			}
+
+			// sanity check that we never modify any of zimbra's immutable folders
+			zinAssertAndLog(luid_target >= ZM_FIRST_USER_ID, "id=" + luid_target + "folder name: " + name_winner);
+
+			msg          += " rename folder to: " + name_winner;
+			remote.method = "FolderAction";
+			remote.arg    = newObject('id', luid_target, 'op', 'update', FeedItem.ATTR_NAME, name_winner);
+			remote.zid    = null;
+			break;
+
+		case Suo.MOD | FeedItem.TYPE_CN:
+			luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
+			l_winner    = SyncFsm.keyParentRelevantToGid(zfcWinner, zfiWinner.key());
+			l_gid       = this.state.aReverseGid[sourceid_winner][l_winner];
+			l_target    = this.state.zfcGid.get(l_gid).get(sourceid_target);
+
+			if (zfcTarget.get(l_target).type() == FeedItem.TYPE_SF)
+				l_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, l_target, FeedItem.TYPE_FL);
+
+			zuio_target = new Zuio(luid_target);
+			l_zuio      = new Zuio(l_target);
+
+			msg          += " modify contact: ";
+			remote.zid    = zuio_target.zid();
+			remote.method = null;
+
+			if (this.state.sources[sourceid_winner]['format'] == FORMAT_TB) // always a content update in Tb2 - may not be so in Tb3.
+				remote.method = "ModifyContact";
+			else
+			{
+				// look at the pre-update zfi:
+				// if rev was bumped ==> content update  ==> ModifyContactRequest ==> load content from zc
+				// if ms  was bumped ==> attributes only ==> ContactActionRequest ==> load content from zc
+				//
+				var zfi = this.state.zfcPreUpdateWinners.get(suo.gid);
+				var lso = new Lso(zfi.get(FeedItem.ATTR_LS));
+
+				remote.method = (zfi.get(FeedItem.ATTR_REV) > lso.get(FeedItem.ATTR_REV)) ? "ModifyContact" : "ContactAction";
+			}
+
+			if (remote.method == "ModifyContact")
+			{
+				properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
+
+				// populate properties with the contact attributes that must be deleted on the server...
+				//
+				for (key in this.contact_converter().m_common_to[FORMAT_ZM][FORMAT_TB])
+					if (!isPropertyPresent(properties, key))
+						properties[key] = null;
+
+				remote.arg   = newObject('id', zuio_target.id(), 'properties', properties, FeedItem.ATTR_L, l_zuio.id());
+			}
+			else if (remote.method == "ContactAction")
+			{
+				remote.arg   = newObject('id', zuio_target.id(), 'op', 'move', FeedItem.ATTR_L, l_zuio.id());
+			}
+			else
+				zinAssert(false);
+			break;
+
+		case Suo.DEL | FeedItem.TYPE_FL:
+			luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
+			name_winner = this.state.m_folder_converter.convertForPublic(FORMAT_ZM, format_winner, zfiWinner);
+
+			msg        += " move folder to trash: " + name_winner;
+			remote.method = "FolderAction";
+			remote.zid    = null;
+
+			if (zfcTarget.get(luid_target).type() == FeedItem.TYPE_SF)
+			{
+				luid_target = SyncFsm.luidFromLuidTypeSf(zfcTarget, luid_target, FeedItem.TYPE_LN);
+				remote.luid_target = luid_target;
+			}
+
+			zinAssertAndLog(luid_target >= ZM_FIRST_USER_ID, "luid_target=" + luid_target);
+
+			// add the date to the folder's name in the Trash to avoid name clashes
+			// this isn't guaranteed to work of course, but if it doesn't, the sync will abort
+			// and the folder will re-appear on the next slow sync.  No drama, the user will just scratch their head and
+			// then complain and/or retry.  The correct logic is "retry until success" but it's complex to code...
+			// would prefer an iso8601 date but zimbra doesnt allow folder names to contain colons
+			//
+			var newname = "/Trash/" + name_winner + dateSuffixForFolder();
+
+			msg += " - name of the folder in the Trash will be: " + newname;
+
+			// op == 'move' is what we'd use if we weren't changing it's name
+			// remote.arg     = newObject('id', luid_target, 'op', 'move', FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
+			// with op=update, the server does the move before the rename so still fails because of folder name conflict in Trash
+			// remote.arg     = newObject('id', luid_target, 'op', 'update', FeedItem.ATTR_NAME, newname, FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
+			remote.arg     = newObject('id', luid_target, 'op', 'rename', FeedItem.ATTR_NAME, newname);
+			break;
+
+		case Suo.DEL | FeedItem.TYPE_CN:
+			luid_target = this.state.zfcGid.get(suo.gid).get(sourceid_target);
+
+			if (zfcTarget.get(luid_target).isForeign())
+			{
+				zuio_target = new Zuio(luid_target);
+				properties  = this.getContactFromLuid(sourceid_target, luid_target, FORMAT_ZM);
+				zinAssert(properties);
+				remote.method = "ForeignContactDelete";
+				remote.arg    = newObject('properties', properties, 'id', zuio_target.id(), 'zid', zuio_target.zid());
+				remote.zid    = null;
+				msg        += " about to copy foreign contact to trash then delete it.";
+			}
+			else
+			{
+				remote.method = "ContactAction";
+				remote.arg    = newObject('id', luid_target, 'op', 'move', FeedItem.ATTR_L, ZM_ID_FOLDER_TRASH);
+				remote.zid    = null;
+				msg        += " about to move contact to trash.";
+			}
+			break;
+
+		default:
+			zinAssertAndLog(false, "unmatched case: " + suo.opcode | type);
+	}
+
+	let remote_update_package = null;
+
+	if (remote.method)
+		remote_update_package = newObject('key_suo', key_suo, 'remote', remote);
+
+	this.state.m_logger.debug("updateZmRemoteUpdatePackage: " + msg);
+
+	return remote_update_package;
+}
+
+SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 {
 	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
 		return;
 
-	var response               = this.state.m_http.response();
-	var change                 = newObject('acct', null);
-	var remote_update_package  = this.state.remote_update_package;
-	var remote                 = remote_update_package.remote;
-	var key_suo                = remote_update_package.key_suo;
-	var suo                    = this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
-	var is_response_understood = false;
-	var context                = this;
-	var msg                    = "exitActionUpdateZm: ";
-	var msg, xpath_query, functor;
+	var response  = this.state.m_http.response();
+	var change    = newObject('acct', null);
+	var context   = this;
+	var msg       = "exitActionUpdateZmHttp: ";
+	var is_failed = false;
+	var xpath_query, functor, remote, key_suo, suo, is_response_understood;
+	var msg = "";
 
-	this.debug("exitActionUpdateZm: remote_update_package: " +  aToString(remote_update_package));
+	this.debug("exitActionUpdateZmHttp: a_remote_update_package: " +  aToString(this.state.m_a_remote_update_package));
 
 	var functor_create_blah_response = {
 		state: this.state,
@@ -6100,16 +6206,16 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 			is_response_understood = true;
 
 			if (remote.method == "CreateFolder")
-				msg += "created: <folder id=" + id + " l=" + l + " name='" + attribute['name'] + "'>";
+				msg += " created: <folder id=" + id + " l=" + l + " name='" + attribute['name'] + "'>";
 			else if (remote.method == "CreateContact")
-				msg += "created: <cn id=" + id +" l=" + l + ">";
+				msg += " created: <cn id=" + id +" l=" + l + ">";
 			else if (remote.method == "ModifyContact")
-				msg += "modified: <cn id=" + id + ">";
+				msg += " modified: <cn id=" + id + ">";
 
 			if (change.acct)
 				msg += " in acct zid: " + change.acct;
 
-			if (!isPropertyPresent(attribute, FeedItem.ATTR_ID) || !isPropertyPresent(attribute, FeedItem.ATTR_L))
+			if (!(FeedItem.ATTR_ID in attribute) || !(FeedItem.ATTR_L in attribute))
 				this.state.m_logger.error("<folder> element received seems to be missing an 'id' or 'l' attribute - ignoring: " + aToString(attribute));
 			else
 			{
@@ -6125,6 +6231,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 					zfi = zfcTarget.get(key);
 					zfi.set(attribute)
 					zfi.set(FeedItem.ATTR_MS, change.token);
+					zfi.set(FeedItem.ATTR_FXMS, '1');
 					SyncFsm.setLsoToGid(zfiGid, zfi);
 					msg += " - updated luid and gid"; 
 				}
@@ -6132,6 +6239,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				{
 					zfi = new FeedItem(type, attribute);
 					zfi.set(FeedItem.ATTR_MS, change.token);
+					zfi.set(FeedItem.ATTR_FXMS, '1');
 					SyncFsm.setLsoToGid(zfiGid, zfi);
 
 					zfcTarget.set(zfi);
@@ -6180,6 +6288,7 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 				}
 
 				zfiTarget.set(FeedItem.ATTR_MS, change.token);
+				zfiTarget.set(FeedItem.ATTR_FXMS, '1');
 
 				if (zfiTarget.type() == FeedItem.TYPE_LN)
 				{
@@ -6221,65 +6330,77 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 	}
 	else
 	{
+		let a_remote_update_package = this.state.m_a_remote_update_package;
+
 		msg += " change.token: " + change.token + " change.acct: " + change.acct;
 
-		switch(key_suo.bucket)
-		{
-			case Suo.ADD | FeedItem.TYPE_FL:
-				xpath_query = "/soap:Envelope/soap:Body/zm:CreateFolderResponse/zm:folder";
-				functor = functor_create_blah_response;
-				break;
-			case Suo.ADD | FeedItem.TYPE_CN:
-				xpath_query = "/soap:Envelope/soap:Body/zm:CreateContactResponse/zm:cn";
-				functor = functor_create_blah_response;
-				break;
-			case Suo.MOD | FeedItem.TYPE_FL:
-				xpath_query = "/soap:Envelope/soap:Body/zm:FolderActionResponse/zm:action";
-				functor = functor_action_response;
-				break;
-			case Suo.MOD | FeedItem.TYPE_CN:
-				if (remote.method == "ModifyContact")
-				{
-					xpath_query = "/soap:Envelope/soap:Body/zm:ModifyContactResponse/zm:cn";
+		for (var i = 0; i < a_remote_update_package.m_c_used_in_current_batch && !is_failed; i++) {
+			remote  = a_remote_update_package[i].remote;
+			key_suo = a_remote_update_package[i].key_suo;
+			suo     = this.state.aSuo[key_suo.sourceid][key_suo.bucket][key_suo.id];
+
+			let xprefix = "/soap:Envelope/soap:Body/z:BatchResponse";
+			let j = i + 1;
+
+			switch(key_suo.bucket) {
+				case Suo.ADD | FeedItem.TYPE_FL:
+					xpath_query = xprefix + "/zm:CreateFolderResponse[@requestId='" + j + "']/zm:folder";
 					functor = functor_create_blah_response;
-				}
-				else if (remote.method == "ContactAction")
-				{
-					xpath_query = "/soap:Envelope/soap:Body/zm:ContactActionResponse/zm:action";
+					break;
+				case Suo.ADD | FeedItem.TYPE_CN:
+					xpath_query = xprefix +"/zm:CreateContactResponse[@requestId='" + j + "']/zm:cn";
+					functor = functor_create_blah_response;
+					break;
+				case Suo.MOD | FeedItem.TYPE_FL:
+					xpath_query = xprefix +"/zm:FolderActionResponse[@requestId='" + j + "']/zm:action";
 					functor = functor_action_response;
-				}
-				else
+					break;
+				case Suo.MOD | FeedItem.TYPE_CN:
+					if (remote.method == "ModifyContact") {
+						xpath_query = xprefix +"/zm:ModifyContactResponse[@requestId='" + j + "']/zm:cn";
+						functor = functor_create_blah_response;
+					}
+					else if (remote.method == "ContactAction") {
+						xpath_query = xprefix +"/zm:ContactActionResponse[@requestId='" + j + "']/zm:action";
+						functor = functor_action_response;
+					}
+					else
+						zinAssert(false);
+					break;
+				case Suo.DEL | FeedItem.TYPE_FL:
+					xpath_query = xprefix +"/zm:FolderActionResponse[@requestId='" + j + "']/zm:action";
+					functor = functor_action_response;
+					break;
+				case Suo.DEL | FeedItem.TYPE_CN: {
+					let luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+					let zfcTarget = this.zfc(suo.sourceid_target);
+
+					if (zfcTarget.get(luid_target).isForeign()) {
+						xpath_query = xprefix;
+						functor = functor_foreign_contact_delete_response;
+					}
+					else {
+						xpath_query = xprefix + "/zm:ContactActionResponse[@requestId='" + j + "']/zm:action";
+						functor = functor_action_response;
+					}
+					}
+					break;
+				default:
 					zinAssert(false);
-				break;
-			case Suo.DEL | FeedItem.TYPE_FL:
-				xpath_query = "/soap:Envelope/soap:Body/zm:FolderActionResponse/zm:action";
-				functor = functor_action_response;
-				break;
-			case Suo.DEL | FeedItem.TYPE_CN:
-				{
-				let luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
-				let zfcTarget = this.zfc(suo.sourceid_target);
+			}
 
-				if (zfcTarget.get(luid_target).isForeign())
-				{
-					xpath_query = "/soap:Envelope/soap:Body/z:BatchResponse";
-					functor = functor_foreign_contact_delete_response;
-				}
-				else
-				{
-					xpath_query = "/soap:Envelope/soap:Body/zm:ContactActionResponse/zm:action";
-					functor = functor_action_response;
-				}
-				}
-				break;
-			default:
-				zinAssert(false);
+			is_response_understood = false;
+
+			Xpath.runFunctor(functor, xpath_query, this.state.m_http.response());
+
+			if (!is_response_understood)
+				is_failed = true;
+			else
+				suo.is_processed = true;
 		}
-
-		Xpath.runFunctor(functor, xpath_query, this.state.m_http.response());
 	}
 
-	if (!is_response_understood)
+	if (is_failed)
 	{
 		msg += " - soap response didn't match xpath query: " + xpath_query;
 
@@ -6287,8 +6408,12 @@ SyncFsm.prototype.exitActionUpdateZm = function(state, event)
 		this.state.stopFailTrailer = stringBundleString("text.zm.soap.method",
 								     [ remote.method + " " + aToString(remote.arg) ] );
 	}
+	else {
+		this.debug("exitAction: AMHERE: shifting: " + this.state.m_a_remote_update_package.m_c_used_in_current_batch);
 
-	suo.is_processed = true;
+		for (var i = 0; i < this.state.m_a_remote_update_package.m_c_used_in_current_batch; i++)
+			this.state.m_a_remote_update_package.shift();
+	}
 
 	this.state.m_logger.debug(msg);
 }
@@ -7231,9 +7356,10 @@ SyncFsm.prototype.setupHttpGd = function(state, eventOnResponse, http_method, ur
 //
 SyncFsm.prototype.setupHttpZm = function(state, eventOnResponse, url, zid, method)
 {
-	// this.state.m_logger.debug("setupHttpZm: blah: " +
-	//                           " state: " + state + " eventOnResponse: " + eventOnResponse + " url: " + url +
-	//                           " method: " + method + " evNext will be: " + this.fsm.m_transitions[state][eventOnResponse]);
+	if (false)
+	this.state.m_logger.debug("setupHttpZm: AMHERE: " +
+	                          " state: " + state + " eventOnResponse: " + eventOnResponse + " url: " + url +
+	                          " method: " + method + " evNext will be: " + this.fsm.m_transitions[state][eventOnResponse]);
 
 	zinAssert(url != null);
 
@@ -7792,6 +7918,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd
 	state.aSuo                = null;         // container for source update operations - populated in Converge
 	state.m_suo_iterator      = null;         // iterator  for aSuo
 	state.m_suo_generator     = null;         // generator for aSuo
+	state.m_suo_last_in_bucket = null;        // key is bucket, value is the last SuoKey encountered when interating through the bucket
 	state.aConflicts          = new Array();  // an array of strings - each one reports on a conflict
 	state.stopFailCode        = null;         // if a state continues on evLackIntegrity, this is set for the observer
 	state.stopFailTrailer     = null;
@@ -7804,6 +7931,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd
 
 	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
 	state.remote_update_package    = null;    // maintains state between an server update request and the response
+	state.m_a_remote_update_package= new Array();
 	state.foreach_tb_card_functor  = null;
 	state.m_folder_converter       = new FolderConverter();
 	state.m_addressbook            = AddressBook.new();

@@ -107,6 +107,9 @@ function SuoKey(sourceid, bucket, id)
 }
 
 SuoKey.prototype = {
+	isEqual : function(key_suo) {
+		return (this.sourceid == key_suo.sourceid && this.bucket == key_suo.bucket && this.id == key_suo.id);
+	},
 	toString : function() {
 		return "sourceid: " + this.sourceid +
 		       " bucket: "  + Suo.opcodeAsString(this.bucket & Suo.MASK) + '|' + FeedItem.typeAsString(this.bucket & FeedItem.TYPE_MASK) +

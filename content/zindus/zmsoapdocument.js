@@ -60,6 +60,8 @@ ZmSoapDocument.prototype.setElementAsBody = function(element)
 
 	elBody.appendChild(element);
 	this.envelope.appendChild(elBody);
+
+	return element;
 }
 
 ZmSoapDocument.prototype.toString = function()
@@ -147,7 +149,7 @@ ZmSoapDocument.prototype.Auth = function(name, password, virtualhost)
 		elRequest.appendChild(elVirtualHost);
 	}
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.GetAccountInfo = function(by, name)
@@ -160,14 +162,14 @@ ZmSoapDocument.prototype.GetAccountInfo = function(by, name)
 
 	elRequest.appendChild(elAccount);
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.GetInfo = function()
 {
 	var elRequest = this.doc.createElementNS(Xpath.NS_ZACCOUNT, "GetInfoRequest");
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.CheckLicense = function()
@@ -176,7 +178,7 @@ ZmSoapDocument.prototype.CheckLicense = function()
 
 	elRequest.setAttribute("feature", "mapi");
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.SyncGal = function(token)
@@ -186,7 +188,7 @@ ZmSoapDocument.prototype.SyncGal = function(token)
 	if (token != null)
 		elRequest.setAttribute("token", token);
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.GetContacts = function(a_id)
@@ -202,7 +204,7 @@ ZmSoapDocument.prototype.GetContacts = function(a_id)
 
 	elRequest.appendChild(elCn);
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.Sync = function(token)
@@ -212,7 +214,7 @@ ZmSoapDocument.prototype.Sync = function(token)
 	if (token != null)
 		elRequest.setAttribute("token", token);
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.CreateFolder = function(folder)
@@ -231,7 +233,7 @@ ZmSoapDocument.prototype.CreateFolder = function(folder)
 
 	elRequest.appendChild(elFolder);
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.CreateContact = function(args)
@@ -258,17 +260,17 @@ ZmSoapDocument.prototype.CreateContact = function(args)
 
 	elRequest.appendChild(elCn);
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.FolderAction = function(args)
 {
-	this.setElementAsBody(this.ActionRequest("FolderActionRequest", args));
+	return this.setElementAsBody(this.ActionRequest("FolderActionRequest", args));
 }
 
 ZmSoapDocument.prototype.ContactAction = function(args)
 {
-	this.setElementAsBody(this.ActionRequest("ContactActionRequest", args));
+	return this.setElementAsBody(this.ActionRequest("ContactActionRequest", args));
 }
 
 ZmSoapDocument.prototype.ActionRequest = function(name, args)
@@ -288,7 +290,7 @@ ZmSoapDocument.prototype.FakeHead = function(args)
 {
 	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "FakeHeadRequest");
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.ModifyContact = function(args)
@@ -318,7 +320,7 @@ ZmSoapDocument.prototype.ModifyContact = function(args)
 
 	elRequest.appendChild(elCn);
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
 }
 
 ZmSoapDocument.prototype.ForeignContactDelete = function(args)
@@ -353,5 +355,29 @@ ZmSoapDocument.prototype.ForeignContactDelete = function(args)
 	elRequest.appendChild(elCreate);
 	elRequest.appendChild(elDeleteForeign);
 
-	this.setElementAsBody(elRequest);
+	return this.setElementAsBody(elRequest);
+}
+
+ZmSoapDocument.prototype.Batch = function(args)
+{
+	var elRequest = this.doc.createElementNS(Xpath.NS_ZIMBRA, "BatchRequest");
+	var zsd = new ZmSoapDocument();
+	var i, el;
+
+	logger().debug("ZmSoapDocument.prototype.Batch: args: " + aToString(args));
+
+	zinAssert(('a_remote_update_package' in args) && ('m_c_used_in_current_batch' in args.a_remote_update_package));
+
+	for (i = 0; i < args.a_remote_update_package.m_c_used_in_current_batch; i++) {
+		let method = args.a_remote_update_package[i].remote.method;
+		let arg    = args.a_remote_update_package[i].remote.arg;
+
+		el = zsd[method].apply(zsd, [ arg ]);
+		el.setAttribute("requestId", (i + 1));
+		elRequest.appendChild(el);
+	}
+
+	args.a_remote_update_package.m_c_used_in_current_batch = i;
+
+	return this.setElementAsBody(elRequest);
 }

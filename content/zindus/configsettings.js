@@ -439,8 +439,6 @@ ConfigSettings.prototype.updateView = function()
 
 	var c_google = AccountStatic.arraySliceOfFormat(this.m_accounts, FORMAT_GD).length;
 
-	this.m_logger.debug("updateView: AMHERE: tree.currentIndex: " + dId("cs-account-tree").currentIndex);
-
 	xulSetAttribute('visible', (c_google != 0), "cs-button-advanced");
 	xulSetAttribute('disabled', (dId("cs-account-tree").currentIndex < 0), "cs-account-edit", "cs-account-delete");
 }

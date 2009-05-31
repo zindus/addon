@@ -133,7 +133,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stGalSync:        { count: 1 },
 		stGalCommit:      { },
 		stGetContactPuZm: { count: 1 },
-		stUpdateZm:       { count: 1 }
+		stUpdateZm:       { },
+		stUpdateZmHttp:   { count: 1 }
 	};
 
 	var a_states_gd = {
@@ -284,32 +285,13 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 			case 'stGetContactZm':
 			case 'stGetContactPuZm':
-				if (context.state.aContact.length > 0)
-				{
-					var op = this.buildOp(context.state.sourceid_pr, "get.many");
-
-					if (this.get(SyncFsmObserver.OP) != op)
-					{
-						this.progressReportOnSource(context.state.sourceid_pr, "get.many", context.state.aContact.length);
-						this.m_zm_get_contact_count = 1;
-						this.m_zm_get_contact_max   = context.state.aContact.length;
-					}
-
-					var aGetContactRequest = SyncFsm.GetContactZmNextBatch(context.state.aContact);
-
-					var lo = this.m_zm_get_contact_count;
-					var hi = ZinMin(this.m_zm_get_contact_count + aGetContactRequest.length - 1, this.m_zm_get_contact_max);
-
-					if (lo == hi)
-						this.set(SyncFsmObserver.PROG_CNT, lo);
-					else
-						this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
-
-					percentage_progress_big_hand = lo / this.m_zm_get_contact_max;
-					this.m_zm_get_contact_count += aGetContactRequest.length;
-				}
-				else
-					ret = false; // no need to update the UI
+				let self = this;
+				[ ret, percentage_progress_big_hand ] = this.updateStateBatch("get.many", context, function(type) {
+					let ret = (type == 'total') ? context.state.aContact.length : SyncFsm.GetContactZmNextBatch(context.state.aContact).length;
+					self.m_logger.debug("AMHERE: fn: type: " + type + " returns: " + ret);
+					return ret;
+				} );
+				this.m_logger.debug("updateState: after: ret: " + ret + " percentage_progress_big_hand: " + percentage_progress_big_hand);
 				break;
 
 			case 'stGetContactGd3':
@@ -350,7 +332,13 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					ret = false; // no need to update the UI
 				break;
 
-			case 'stUpdateZm':
+			case 'stUpdateZmHttp':
+				[ ret, percentage_progress_big_hand ] = this.updateStateBatch("put.many", context, function (type) {
+					return (type == 'total') ? context.state.m_a_remote_update_package.m_c_total :
+					                           context.state.m_a_remote_update_package.m_c_used_in_current_batch;
+				});
+				break;
+
 			case 'stUpdateGd': {
 				let max_suos = 0;
 
@@ -510,4 +498,42 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	}
 
 	return ret;
+}
+
+SyncFsmObserver.prototype.updateStateBatch = function(stringid, context, fn)
+{
+	zinAssertAndLog(typeof(fn) == 'function', typeof(fn));
+
+	let c_total = fn('total');
+	let ret     = true;
+	let percentage_progress_big_hand;
+
+	if (c_total > 0) {
+		let op = this.buildOp(context.state.sourceid_pr, stringid);
+
+		if (this.get(SyncFsmObserver.OP) != op) {
+			this.progressReportOnSource(context.state.sourceid_pr, stringid, c_total);
+			this.m_batch_count = 1;
+			this.m_batch_max   = c_total;
+		}
+
+		let c_batch = fn('batch');
+		let lo      = this.m_batch_count;
+		let hi      = ZinMin(this.m_batch_count + c_batch - 1, this.m_batch_max);
+
+		if (lo == hi)
+			this.set(SyncFsmObserver.PROG_CNT, lo);
+		else
+			this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
+
+		percentage_progress_big_hand = lo / this.m_batch_max;
+		this.m_batch_count += c_batch;
+	}
+	else
+		ret = false; // no need to update the UI
+
+	this.m_logger.debug("updateStateBatch: stringid: " + stringid + " c_total: " + c_total + " returns: ret: " + ret +
+	                     " percentage_progress_big_hand: " + percentage_progress_big_hand);
+
+	return [ ret, percentage_progress_big_hand ];
 }

@@ -49,7 +49,7 @@ const TBCARD_ATTRIBUTE_LUID       = "zindus-id";    // user-defined attributes a
 const TBCARD_ATTRIBUTE_CHECKSUM   = "zindus-cs";
 const TBCARD_ATTRIBUTE_EXPIRED_ON = "zindus-expired-on";
 const TBCARD_ATTRIBUTE_LUID_ITER  = "zindus-id-iter"; // used to identify cards in mailing lists
-const TBCARD_CHECKSUM_BACKWARDS = -112233;
+const TBCARD_CHECKSUM_BACKWARDS   = -112233;
 
 const GD_PAB              = "zindus_pab_gd";
 
@@ -67,8 +67,10 @@ const FORMAT_GD = 3;
 
 const A_VALID_FORMATS =  [ FORMAT_TB, FORMAT_ZM, FORMAT_GD ];
 
-const CER_TO_CHAR        = 0x01; // convert Character Entity References (eg &lt;) into characters (eg <)
-const CER_TO_ENTITY      = 0x02; // convert Characters into Character Entity References
+const MAX_BATCH_SIZE = 50;   // max number of contacts that the addon will POST/GET to/from server in one request
+
+const CER_TO_CHAR    = 0x01; // convert Character Entity References (eg &lt;) into characters (eg <)
+const CER_TO_ENTITY  = 0x02; // convert Characters into Character Entity References
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
@@ -79,7 +81,6 @@ const reXmlDeclaration = /\<\?xml version=.*?\?\>/; // e4x bug: https://bugzilla
 // Thank goodness Gmail doesn't support email addresses where the local-part is a quoted string :-)
 //
 const valid_email_re = /^([A-Z0-9\.\!\#\$\%\*\/\?\|\^\{\}\`\~\&\'\+\_\-\=]+@[A-Z0-9.-]+\.[A-Z]+)$/i;
-
 
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 //

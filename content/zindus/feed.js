@@ -60,6 +60,7 @@ FeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this a
 FeedItem.ATTR_PERM = 'perm'; // 
 FeedItem.ATTR_ACL  = 'acl';  // <acl> child of a zimbra <folder>
 FeedItem.ATTR_CS   = 'cs';   // checksum
+FeedItem.ATTR_FXMS = 'fxms'; // fix the ms attribute after a batch update (because change token is high-water, not per-contact/folder)
 FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
 // FeedItem.ATTR_INGP = 'ingp'; // is the contact in a google group: yes/no?  Only used when not syncing with Suggested Contacts
