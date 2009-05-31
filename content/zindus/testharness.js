@@ -62,7 +62,6 @@ TestHarness.prototype.run = function()
 	ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
-	// ret = ret && this.testXmlHttpRequest();
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
 	ret = ret && this.testContactGoogle1();
@@ -668,28 +667,6 @@ TestHarness.prototype.testLogging = function()
 	logger.warn("hello, this is a warn");
 	logger.error("hello, this is a error");
 	logger.fatal("hello, this is a fatal");
-}
-
-TestHarness.prototype.testXmlHttpRequest = function()
-{
-	var soapURL = "http://george.ho.moniker.net/service/soap/";
-	var zsd = new ZmSoapDocument();
-
-	zsd.context(null, null);
-	zsd.Auth("leni@george.ho.moniker.net", "qwe123qwe123", null);
-
-	var xhrCallback = function()
-	{
-		if (xhr.readyState==4) {
-			zinAlert('text.alert.title', xhr.status);
-			zinAlert('text.alert.title', xhr.responseText);
-		}
-	};
-
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST", soapURL, true);
-	xhr.onreadystatechange=xhrCallback;
-	xhr.send(zsd.doc);
 }
 
 TestHarness.prototype.testPermFromZfi = function()
