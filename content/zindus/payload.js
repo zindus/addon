@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: payload.js,v 1.6 2009-05-31 22:56:37 cvsuser Exp $
 
 // This class helps to pass data to/from parent + child windows as a parameter to window.openDialog()
 //

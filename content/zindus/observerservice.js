@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: observerservice.js,v 1.16 2009-05-31 22:56:37 cvsuser Exp $
 
 var ObserverService = {
 	TOPIC_PREFERENCE_CHANGE : "ZindusPreferenceChange",

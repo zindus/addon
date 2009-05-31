@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: scoperegistry.js,v 1.3 2009-05-31 22:56:37 cvsuser Exp $
 
 // See: http://weblogs.mozillazine.org/weirdal/archives/008101.html
 

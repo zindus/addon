@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: statusbar.js,v 1.12 2009-05-31 22:56:37 cvsuser Exp $
 
 // Bits of "exit status" reported to the outside world:
 // - last sync success: (time, maybe other stuff like conflicts...)

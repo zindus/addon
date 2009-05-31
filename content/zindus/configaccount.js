@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: configaccount.js,v 1.31 2009-05-31 22:56:37 cvsuser Exp $
 
 includejs("payload.js");
 

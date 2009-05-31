@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: account.js,v 1.15 2009-05-31 22:56:37 cvsuser Exp $
 
 var eAccount = new ZinEnum( {
 	sourceid            : 'sourceid',

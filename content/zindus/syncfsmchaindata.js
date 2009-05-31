@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: syncfsmchaindata.js,v 1.12 2009-05-31 22:56:37 cvsuser Exp $
 
 // An instance of this class is passed from SyncFsm to SyncFsm - carrying state from one to the next
 //

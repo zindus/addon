@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: prefset.js,v 1.25 2009-05-31 22:56:37 cvsuser Exp $
 
 function PrefSet(prefprefix, a)
 {

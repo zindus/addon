@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: enum.js,v 1.6 2009-05-31 22:56:37 cvsuser Exp $
 
 // Two styles of argument to the constructor:
 // var enm = new ZinEnum(kA, kB, kC) or

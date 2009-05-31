@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: singleton.js,v 1.9 2009-05-31 22:56:37 cvsuser Exp $
 
 // Handy place to keep stuff that we only ever need one of
 // and for which we want to delay construction until after all .js files are loaded.

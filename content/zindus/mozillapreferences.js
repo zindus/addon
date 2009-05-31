@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: mozillapreferences.js,v 1.30 2009-05-31 22:56:37 cvsuser Exp $
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //

@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: zmcontact.js,v 1.13 2009-05-31 22:56:38 cvsuser Exp $
 
 function ZmContact()
 {

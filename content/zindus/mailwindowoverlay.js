@@ -20,6 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
+// $Id: mailwindowoverlay.js,v 1.55 2009-05-31 22:56:37 cvsuser Exp $
 
 function ZinMailWindowOverlay()
 {
