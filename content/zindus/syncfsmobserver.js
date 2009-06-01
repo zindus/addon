@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.68 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.69 2009-06-01 02:54:29 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -519,16 +519,23 @@ SyncFsmObserver.prototype.updateStateBatch = function(stringid, context, fn)
 		}
 
 		let c_batch = fn('batch');
-		let lo      = this.m_batch_count;
-		let hi      = ZinMin(this.m_batch_count + c_batch - 1, this.m_batch_max);
 
-		if (lo == hi)
-			this.set(SyncFsmObserver.PROG_CNT, lo);
-		else
-			this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
+		if (c_batch == 0)
+			ret = false;
+		else {
+			let lo      = this.m_batch_count;
+			let hi      = ZinMin(this.m_batch_count + c_batch - 1, this.m_batch_max);
 
-		percentage_progress_big_hand = lo / this.m_batch_max;
-		this.m_batch_count += c_batch;
+			this.m_logger.debug("updateStateBatch: c_batch: " + c_batch); // TODO
+
+			if (lo == hi)
+				this.set(SyncFsmObserver.PROG_CNT, lo);
+			else
+				this.set(SyncFsmObserver.PROG_CNT, hyphenate('-', lo, hi));
+
+			percentage_progress_big_hand = lo / this.m_batch_max;
+			this.m_batch_count += c_batch;
+		}
 	}
 	else
 		ret = false; // no need to update the UI
