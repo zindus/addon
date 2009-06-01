@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.175 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: syncfsm.js,v 1.176 2009-06-01 02:55:20 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4546,7 +4546,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 				}
 				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
 					suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
-				else if (zfiTarget.isPresent(FeedItem.ATTR_DEL))
+				else if (zfiTarget.isPresent(FeedItem.ATTR_DEL) || !SyncFsm.isOfInterest(zfiTarget, zfiTarget.key()))
 				{
 					msg = " winner modified but loser had been deleted - ";
 					suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
@@ -5954,6 +5954,8 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 			this.state.m_a_remote_update_package.m_c_used_in_current_batch = i;
 		}
+		else
+			this.state.m_a_remote_update_package.m_c_used_in_current_batch = 0;
 	}
 
 	continuation('evNext');
