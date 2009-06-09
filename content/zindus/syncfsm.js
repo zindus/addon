@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.176 2009-06-01 02:55:20 cvsuser Exp $
+// $Id: syncfsm.js,v 1.177 2009-06-09 05:31:58 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4546,7 +4546,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 				}
 				else if (!SyncFsm.isOfInterest(zfcWinner, zfiWinner.key()))
 					suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
-				else if (zfiTarget.isPresent(FeedItem.ATTR_DEL) || !SyncFsm.isOfInterest(zfiTarget, zfiTarget.key()))
+				else if (zfiTarget.isPresent(FeedItem.ATTR_DEL) || !SyncFsm.isOfInterest(zfcTarget, zfiTarget.key()))
 				{
 					msg = " winner modified but loser had been deleted - ";
 					suo = new Suo(gid, aGcs[gid].sourceid, sourceid, Suo.ADD);
@@ -5034,15 +5034,17 @@ SyncFsm.prototype.twiddleZmFxMs = function()
 		{
 			if (zfi.isPresent(FeedItem.ATTR_FXMS)) {
 				let lso   = new Lso(zfi.get(FeedItem.ATTR_LS));
-				let lsoms = lso.get(FeedItem.ATTR_MS);
-				let ms    = zfi.get(FeedItem.ATTR_MS);
+				let lsoms = Number(lso.get(FeedItem.ATTR_MS));
+				let ms    = Number(zfi.get(FeedItem.ATTR_MS));
 
-				if (ms < lsoms) {
+				if (ms <= lsoms) {
 					lso.set(FeedItem.ATTR_MS, ms);
 					let str = lso.toString();
 					zfi.set(FeedItem.ATTR_LS, str);
 					bigmsg.concat("\n key=" + zfi.key() + " reset ATTR_LS: " + str);
 				}
+				else
+					bigmsg.concat("\n key=" + zfi.key() + " has an fxms but not reset: ms: " + ms + " lsoms: " + lsoms + " ms < lsoms: " + (ms < lsoms));
 
 				zfi.del(FeedItem.ATTR_FXMS);
 			}
