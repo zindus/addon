@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.37 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: configsettings.js,v 1.38 2009-06-09 05:36:20 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -56,7 +56,7 @@ function ConfigSettings()
 ConfigSettings.prototype.onLoad = function(target)
 {
 	if (this.is_developer_mode)
-		xulSetAttribute('hidden', false, "cs-button-test-harness", "cs-button-test-wizard", "cs-button-run-timer");
+		xulSetAttribute('hidden', false, "cs-button-test-harness", "cs-button-run-timer");
 
 	this.m_prefset_general.load();
 	this.m_prefset_general_orig.load();
@@ -266,7 +266,6 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			break;
 
 		case "czss-share-signup-wizard":
-		case "cs-button-test-wizard":
 		case "cs-account-add":
 		case "cs-account-edit": {
 			rowid = dId("cs-account-tree").currentIndex;
@@ -276,7 +275,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			payload.m_account  = (id_target == "cs-account-edit") ? this.m_accounts[rowid] : null;
 			payload.m_format   = null;
 
-			if (id_target == "cs-button-test-wizard" || id_target == "czss-share-signup-wizard") {
+			if (id_target == "czss-share-signup-wizard") {
 				payload.m_startpage = "cw-page-signup-1-username";
 				window.openDialog("chrome://zindus/content/share_service/configwizard.xul", "_blank", WINDOW_FEATURES, payload);
 			}
@@ -293,8 +292,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				// remember that the account object(s) in m_result_accounts must be brought into the scope of the current window.
 				//
 				switch (id_target) {
-					case "czss-share-signup-wizard":
-					case "cs-button-test-wizard": {
+					case "czss-share-signup-wizard": {
 						let i;
 						for (i = 0; i < payload.m_result_accounts.length; i++)
 							this.m_accounts.push(new Account(payload.m_result_accounts[i]));
@@ -385,8 +383,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		this.m_czss.initialiseView();
 
-		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete", "czss-share-signup-wizard",
-		                           "cs-button-test-wizard" ]))
+		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete", "czss-share-signup-wizard" ]))
 			this.m_logger.debug("id_target: " + id_target + " m_accounts is: " + AccountStatic.arrayToString(this.m_accounts));
 	}
 }
