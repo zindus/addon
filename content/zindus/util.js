@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.46 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: util.js,v 1.47 2009-06-09 07:11:18 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1057,6 +1057,8 @@ function url(key)
 		case 'what-is-soapURL':       ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
 		case 'faq-thunderbird':       ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
 		case 'roadmap-thunderbird-3': ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
+		case 'share-tos':             ret = 'http://www.zindus.com/service/tos.html';                            break;
+		case 'share-faq':             ret = 'http://www.zindus.com/faq-share';                                   break;
 		default: zinAssertAndLog(false, key);
 	}
 
