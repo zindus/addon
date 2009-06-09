@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.37 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: contactconverter.js,v 1.38 2009-06-09 05:31:43 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -41,8 +41,8 @@ function ContactConverter()
 
 ContactConverter.eStyle = new ZinEnum( 'kBasic', 'kZmMapsAllTbProperties', 'kGdMapsPostalProperties' );
 
-ContactConverter.prototype.setup = function(style)
-{
+ContactConverter.prototype = {
+setup : function(style) {
 	zinAssert(arguments.length == 0 || (arguments.length == 1 && ContactConverter.eStyle.isPresent(style)));
 
 	style = style || ContactConverter.eStyle.kBasic;
@@ -107,19 +107,6 @@ ContactConverter.prototype.setup = function(style)
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress2",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress3",        FORMAT_GD, null));
 
-	// these fields aren't in the zimbra web UI but are supported by the zimbra server
-	// these are just the ones found through experimenting with Outlook sync - there are certainly more...
-	// Must consider whether there is a better way, eg: query/determine the entire list...
-	//
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "namePrefix",        FORMAT_GD, null)); // eg "Mr."
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "nameSuffix",        FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "initials",          FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email4",            FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email5",            FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "email6",            FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "office",            FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "outlookUserField1", FORMAT_GD, null));
-
 	// if we're creating equivalents for all tb properties, then for those tb properties that don't map to zimbra,
 	// create a mapping using the name of the TB field and a prefix
 	//
@@ -127,23 +114,25 @@ ContactConverter.prototype.setup = function(style)
 		for (i = 0; i < this.m_equivalents.length; i++)
 			if (this.m_equivalents[i][FORMAT_TB] != null)
 				if (!this.m_equivalents[i][FORMAT_ZM])
-					this.m_equivalents[i][FORMAT_ZM] = ContactConverterStatic.prefix_tb_property_in_zimbra + this.m_equivalents[i][FORMAT_TB];
+					this.m_equivalents[i][FORMAT_ZM] = ContactConverterStatic.prefix_tb_property_in_zimbra+this.m_equivalents[i][FORMAT_TB];
 
-	// Don't generate debug messages if unable to convert these attributes...
-	// eg. the <cn> elements returned by SyncGal include ldap attributes
-	// Enumerating these here might be ok at first to confirm completeness but will have diminishing value after a while.
-	// The trouble is that the response from the zimbra server lumps together all the attributes of a contact and provides
-	// no way of distinguishing contact content from metadata so we can't be sure we're converting all attributes relevent to content.
+	// The addon sends a a warning to the jsconsole if it encounters an attribute that it doesn't know about.
+	// The idea is that we'll get feedback and fix it.
+	// The attributes listed in m_dont_convert don't result in warnings - we know to ignore them.
 	//
 	this.m_dont_convert = new Object();
 	this.m_dont_convert[FORMAT_TB] = { };
 	this.m_dont_convert[FORMAT_GD] = { };
-	this.m_dont_convert[FORMAT_ZM] = newObject("zimbraId",                    0,
-	                                           "objectClass",                 0,
-	                                           "createTimeStamp",             0,
-	                                           "zimbraMailForwardingAddress", 0,
-	                                           "zimbraCalResType",            0,
-	                                           "modifyTimeStamp",             0);
+	this.m_dont_convert[FORMAT_ZM] = newObjectWithKeys(
+		// eg. the <cn> elements returned by SyncGal include ldap attributes
+		// 
+		"zimbraId", "objectClass", "createTimeStamp", "zimbraMailForwardingAddress", "zimbraCalResType", "modifyTimeStamp",
+		//
+		// these attributes aren't in the zimbra web ui, they are added by the zimbra outlook client
+		// eg. namePrefix == "Mr." nameSuffix == "Esq."
+		//
+		"namePrefix", "nameSuffix", "initials", "email4", "email5", "email6", "email7", "office", "outlookUserField1"
+		);
 
 	this.m_bimap_format = getBimapFormat('short');
 
@@ -171,8 +160,7 @@ ContactConverter.prototype.setup = function(style)
 		this.m_map[A_VALID_FORMATS[j]] = new Object();
 
 	for (i = 0; i < this.m_equivalents.length; i++)
-		for (j = 0; j < A_VALID_FORMATS.length; j++)
-		{
+		for (j = 0; j < A_VALID_FORMATS.length; j++) {
 			k = this.m_equivalents[i][A_VALID_FORMATS[j]];
 
 			if (k != null)
@@ -187,52 +175,44 @@ ContactConverter.prototype.setup = function(style)
 	this.m_common_to = new Object();
 
 	for (j = 0; j < A_VALID_FORMATS.length;  j++)
-		if (A_VALID_FORMATS[j] != FORMAT_TB)
-			{
-				this.initialise_common_to(FORMAT_TB, A_VALID_FORMATS[j]);
-				this.initialise_common_to(A_VALID_FORMATS[j], FORMAT_TB);
-			}
+		if (A_VALID_FORMATS[j] != FORMAT_TB) {
+			this.initialise_common_to(FORMAT_TB, A_VALID_FORMATS[j]);
+			this.initialise_common_to(A_VALID_FORMATS[j], FORMAT_TB);
+		}
 
 	if (false)
 	for (i in this.m_common_to)
 		for (j in this.m_common_to[i])
 			this.m_logger.debug("m_common_to: [" + this.m_bimap_format.lookup(i, null) +
 			                                "][" + this.m_bimap_format.lookup(j, null) + "]: " + aToString(this.m_common_to[i][j]));
-}
-
-ContactConverter.prototype.convert = function(format_to, format_from, properties_from)
-{
-	var key_from, index_to, key_to;
+},
+convert : function(format_to, format_from, properties_from) {
 	var a_zm_normalised_street = newObject("home", new Array(),  "work", new Array());
 	var a_gd_address_fields    = newObject("home", new Object(), "work", new Object());
+	var key_from, index_to, key_to;
 
 	zinAssert(isValidFormat(format_to) && isValidFormat(format_from));
 
 	var properties_to = new Object();
 
-	for (key_from in properties_from)
-	{
-		if (isPropertyPresent(this.m_dont_convert[format_from], key_from))
+	for (key_from in properties_from) {
+		if (key_from in this.m_dont_convert[format_from])
 			; // do nothing
 		else if (format_to == format_from)
 			properties_to[key_from] = properties_from[key_from];
-		else
-		{
+		else {
 			index_to = this.m_map[format_from][key_from];
 
-			if (typeof(index_to) != 'undefined')
-			{
+			if (typeof(index_to) != 'undefined') {
 				key_to = this.m_equivalents[index_to][format_to];
 
-				// this.m_logger.debug(" format_from: " + format_from + " format_to: " + format_to + " key_from: " + key_from + " key_to: " + key_to);
+				// this.m_logger.debug(" format_from: " + format_from + " format_to: " + format_to +
+				//                     " key_from: " + key_from + " key_to: " + key_to);
 
-				if (key_to != null)
-				{
-					if (isPropertyPresent(this.m_zm_street_field[format_from], key_from) &&
-					    isPropertyPresent(this.m_zm_street_field[format_to],   key_to))
+				if (key_to != null) {
+					if ((key_from in this.m_zm_street_field[format_from]) && (key_to in this.m_zm_street_field[format_to]))
 						this.normaliseStreetLine(format_to, format_from, properties_from, key_from, a_zm_normalised_street);
-					else if (isPropertyPresent(this.m_gd_address_field[format_from], key_from) &&
-					         isPropertyPresent(this.m_gd_address_field[format_to],   key_to))
+					else if ((key_from in this.m_gd_address_field[format_from]) && (key_to in this.m_gd_address_field[format_to]))
 						this.gdAddressInput(format_to, format_from, properties_from, key_from, a_gd_address_fields);
 					else
 						properties_to[key_to] = properties_from[key_from];
@@ -260,8 +240,7 @@ ContactConverter.prototype.convert = function(format_to, format_from, properties
 	//                                  " returns properties_to: " + aToString(properties_to));
 
 	return properties_to;
-}
-
+},
 // Here's what the address line conversion stuff does:
 // Thunderbird field                       Zimbra field
 // =================                       ============
@@ -272,61 +251,38 @@ ContactConverter.prototype.convert = function(format_to, format_from, properties
 // HomeAddress2: Melbourne, VIC, 3000                  Melbourne
 //                                                     VIC
 //                                                     3000
-
-ContactConverter.prototype.outputNormalisedStreetLine = function(format_to, properties_to, a_normalised_street)
-{
-	switch(format_to)
-	{
+outputNormalisedStreetLine : function(format_to, properties_to, a_normalised_street) {
+	switch(format_to) {
 		case FORMAT_TB:
 			if (a_normalised_street["home"].length > 0)
 				properties_to["HomeAddress"]  = a_normalised_street["home"][0];
 
 			if (a_normalised_street["home"].length > 1)
-				properties_to["HomeAddress2"] = this.arrayToSeparatedString(a_normalised_street["home"], ",", 1);
+				properties_to["HomeAddress2"] = hyphenate(",", a_normalised_street["home"].splice(1));
 
 			if (a_normalised_street["work"].length > 0)
 				properties_to["WorkAddress"]  = a_normalised_street["work"][0];
 
 			if (a_normalised_street["work"].length > 1)
-				properties_to["WorkAddress2"] = this.arrayToSeparatedString(a_normalised_street["work"], ",", 1);
+				properties_to["WorkAddress2"] = hyphenate(",", a_normalised_street["work"].splice(1));
 			break;
 
 		case FORMAT_ZM:
 			if (a_normalised_street["home"].length > 0)
-				properties_to["homeStreet"] = this.arrayToSeparatedString(a_normalised_street["home"], "\n", 0);
+				properties_to["homeStreet"] = hyphenate("\n", a_normalised_street["home"]);
 
 			if (a_normalised_street["work"].length > 0)
-				properties_to["workStreet"] = this.arrayToSeparatedString(a_normalised_street["work"], "\n", 0);
+				properties_to["workStreet"] = hyphenate("\n", a_normalised_street["work"]);
 			break;
 		default: zinAssert(false);
 	}
-}
-
-ContactConverter.prototype.arrayToSeparatedString = function(a, separator, startAt)
-{
-	var ret = "";
-
-	zinAssert(startAt < a.length);
-
-	for (var i = startAt; i < a.length; i++)
-	{
-		if (i != startAt)
-			ret += separator;
-
-		ret += a[i];
-	}
-
-	return ret;
-}
-
-ContactConverter.prototype.normaliseStreetLine = function(format_to, format_from, properties_from, key_from, a_normalised_street)
-{
+},
+normaliseStreetLine : function(format_to, format_from, properties_from, key_from, a_normalised_street) {
 	var i;
 
 	// this.m_logger.debug("normaliseStreetLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
 
-	switch(format_from)
-	{
+	switch(format_from) {
 		case FORMAT_TB: switch(key_from) {
 				case "HomeAddress":  a_normalised_street["home"][0] = properties_from[key_from];                             break;
 				case "WorkAddress":  a_normalised_street["work"][0] = properties_from[key_from];                             break;
@@ -347,9 +303,8 @@ ContactConverter.prototype.normaliseStreetLine = function(format_to, format_from
 
 	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[home]: " + a_normalised_street["home"].toString());
 	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[work]: " + a_normalised_street["work"].toString());
-}
-
-ContactConverter.prototype.lineTwoFromCommaSeparated = function(properties_from, key_from, a_line, type)
+},
+lineTwoFromCommaSeparated : function(properties_from, key_from, a_line, type)
 {
 	var a = properties_from[key_from].split(",");
 
@@ -357,60 +312,50 @@ ContactConverter.prototype.lineTwoFromCommaSeparated = function(properties_from,
 
 	for (var i = 0; i < a.length; i++)
 		a_line[type][i + 1] = a[i];
-}
-
-ContactConverter.prototype.lineFromNewlineSeparated = function(properties_from, key_from, a_line, type)
-{
-	var a = properties_from[key_from].split("\n");
+},
+lineFromNewlineSeparated : function(properties_from, key_from, a_line, type) {
+	let a = properties_from[key_from].split("\n");
 
 	// this.m_logger.debug("lineFromNewlineSeparated: type: " + type + " a: " + a.toString());
 
 	for (var i = 0; i < a.length; i++)
-	{
 		if (i == 0)
 			a_line[type][i] = a[i];
 		else
 			a_line[type][i] = a[i].replace(/,/, " "); // can't allow commas in line 2 and onwards
-	}
-}
-
-ContactConverter.prototype.isKeyConverted = function(format_to, format_from, key)
-{
+},
+isKeyConverted : function(format_to, format_from, key) {
 	zinAssert(isValidFormat(format_to) && isValidFormat(format_from));
 
-	var index_to = this.m_map[format_from][key];
+	let index_to = this.m_map[format_from][key];
 
 	return typeof(index_to) != 'undefined' && this.m_equivalents[index_to][format_to] != null;
-}
-
+},
 // We have to normalise the order in which we iterate through the properties so that two hashes with the same
 // keys result in the same crc.  We can't just iterate through the hash with for..in because that doesn't guarantee ordering
 // - the keys might not have been added to the hash in the same order.
 // We avoid a sort by relying on the fact that the keys are thunderbird contact properties.
 // The index into the Converter's table guarantees the ordering.
 //
-ContactConverter.prototype.crc32 = function(properties)
-{
-	var ret = 0;
-	var str = "";
-	var aSorted = new Array();
+crc32 : function(properties) {
+	let ret = 0;
+	let str = "";
+	let aSorted = new Array();
 
 	for (var i in properties)
-		if (properties[i].length > 0)
-		{
+		if (properties[i].length > 0) {
 			let index_to = this.m_map[FORMAT_TB][i];
 
 			if (typeof(index_to) != 'undefined')
 				aSorted[index_to] = true;
 			else
 				zinAssertAndLog(false, "properties: " + aToString(properties) + " i: " + i);
-
 		}
 
-	var context = this;
+	var self = this;
 
 	function callback_concat_str(element, index, array) {
-		var key = context.m_equivalents[index][FORMAT_TB];
+		let key = self.m_equivalents[index][FORMAT_TB];
 		str += key + ":" + properties[key];
 	}
 
@@ -423,21 +368,17 @@ ContactConverter.prototype.crc32 = function(properties)
 	// this.m_logger.debug("crc32: blah: returns: " + ret + " properties: " + aToString(properties));
 
 	return ret;
-}
-
-ContactConverter.prototype.removeKeysNotCommonToAllFormats = function(format_from, properties)
-{
+},
+removeKeysNotCommonToAllFormats : function(format_from, properties) {
 	var keys_to_remove = new Object();
 	var i, j, is_converted;
 
-	for (i in properties)
-	{
+	for (i in properties) {
 		is_converted = true;
 
 		for (j = 0; j < A_VALID_FORMATS.length;  j++)
 			if (format_from != A_VALID_FORMATS[j])
-				if (!this.isKeyConverted(A_VALID_FORMATS[j], format_from, i))
-				{
+				if (!this.isKeyConverted(A_VALID_FORMATS[j], format_from, i)) {
 					is_converted = false;
 					break;
 				}
@@ -451,14 +392,12 @@ ContactConverter.prototype.removeKeysNotCommonToAllFormats = function(format_fro
 
 	// this.m_logger.debug("removeKeysNotCommonToAllFormats: blah: keys_to_remove: " + aToString(keys_to_remove) +
 	//                     " leaving keys: " + keysToString(properties));
-}
-
+},
 // So for example:
 //	this.m_common_to[FORMAT_TB][FORMAT_GD] = PrimaryEmail : true, SecondEmail : true, WorkPhone        : true, ...
 //	this.m_common_to[FORMAT_GD][FORMAT_TB] = email1       : true, email2      : true, phoneNumber_work : true, ...
 //
-ContactConverter.prototype.initialise_common_to = function(format_to, format_from)
-{
+initialise_common_to : function(format_to, format_from) {
 	if (typeof this.m_common_to[format_to] != 'object')
 		this.m_common_to[format_to] = new Object();
 
@@ -468,14 +407,11 @@ ContactConverter.prototype.initialise_common_to = function(format_to, format_fro
 	for (i = 0; i < this.m_equivalents.length; i++)
 		if (this.m_equivalents[i][format_from] != null && this.m_equivalents[i][format_to] != null)
 			this.m_common_to[format_to][format_from][this.m_equivalents[i][format_to]] = true;
-}
-
-ContactConverter.prototype.normaliseStreetLine = function(format_to, format_from, properties_from, key_from, a_normalised_street)
-{
+},
+normaliseStreetLine : function(format_to, format_from, properties_from, key_from, a_normalised_street) {
 	// this.m_logger.debug("normaliseStreetLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
 
-	switch(format_from)
-	{
+	switch(format_from) {
 		case FORMAT_TB: switch(key_from) {
 				case "HomeAddress":  a_normalised_street["home"][0] = properties_from[key_from];                             break;
 				case "WorkAddress":  a_normalised_street["work"][0] = properties_from[key_from];                             break;
@@ -496,16 +432,13 @@ ContactConverter.prototype.normaliseStreetLine = function(format_to, format_from
 
 	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[home]: " + a_normalised_street["home"].toString());
 	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[work]: " + a_normalised_street["work"].toString());
-}
-
-ContactConverter.prototype.gdAddressInput = function(format_to, format_from, properties_from, key_from, a_gd_address_fields)
-{
+},
+gdAddressInput : function(format_to, format_from, properties_from, key_from, a_gd_address_fields) {
 	var left, right;
 
 	// this.m_logger.debug("gdAddressInput: blah: format_to: " + format_to + " format_from: " + format_from + " key_from: " + key_from);
 
-	switch(format_from)
-	{
+	switch(format_from) {
 		case FORMAT_TB:
 			// 4 is the length of Home and Work, so left == "Home" or "Work" and right == "Address" or "City" etc
 			// if/when the set of thunderbird fields expands, we'll have to use some regexp matching here, meantime this is adequate
@@ -523,19 +456,15 @@ ContactConverter.prototype.gdAddressInput = function(format_to, format_from, pro
 			break;
 		default: zinAssert(false);
 	}
-}
-
-ContactConverter.prototype.addSuffix = function(prefix, properties_to, properties_from)
-{
+},
+addSuffix : function(prefix, properties_to, properties_from) {
 	for (var i in properties_from)
-		if (isPropertyPresent(this.m_common_to[FORMAT_TB][FORMAT_GD], prefix + i))
+		if ((prefix + i) in this.m_common_to[FORMAT_TB][FORMAT_GD])
 			properties_to[prefix + i] = properties_from[i];
 		else
 			; // do nothing instead of properties_to[i] = properties_from[i]; // this is for <otheraddr>
-}
-
-ContactConverter.prototype.keysCommonToThatMatch = function(regexp, replace_with, format_from, format_to)
-{
+},
+keysCommonToThatMatch : function(regexp, replace_with, format_from, format_to) {
 	var ret = new Object();
 	var key;
 
@@ -551,14 +480,12 @@ ContactConverter.prototype.keysCommonToThatMatch = function(regexp, replace_with
 	                    " to: "   + this.m_bimap_format.lookup(format_to, null) +
 						" returns: " + keysToString(ret));
 	return ret;
-}
-
+},
 // This is a saved search of the conversions table...
 // m_converted["phoneNumber"]   == { home: null, work: null, work_fax: null, ... }
 // m_converted["postalAddress"] == { home: null, ... }
 //
-ContactConverter.prototype.gd_certain_keys_converted = function()
-{
+gd_certain_keys_converted : function() {
 	if (!this.m_gd_certain_keys_converted)
 		this.m_gd_certain_keys_converted = newObject(
 			"phoneNumber"  , this.keysCommonToThatMatch(/^phoneNumber_(.*)/,    "$1", FORMAT_GD, FORMAT_TB),
@@ -566,6 +493,7 @@ ContactConverter.prototype.gd_certain_keys_converted = function()
 
 	return this.m_gd_certain_keys_converted;
 }
+};
 
 var ContactConverterStatic = {
 	prefix_tb_property_in_zimbra    : "ZindusTb"
