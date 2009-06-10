@@ -86,9 +86,7 @@
 <!ENTITY zindus.cw.signup.page.3.label                  "Finished!">
 <!ENTITY zindus.cw.signup.will.create.label             "Continuing past this page will create your account. ">
 <!ENTITY zindus.cw.signup.tos.text                      "<html:strong > The Zindus Share Service is made available to you subject to terms of services, which contain certain restrictions, disclaimers of warranty, and limitations of liability. The full set of terms may be found <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;);'> here </html:a>.</html:strong>">
-<!ENTITY zindus.cw.signup.tos.agree.label               "I accept the terms of the Zindus Share Service">
-<!ENTITY zindus.cw.signup.tos.disagree.label            "I do NOT accept the terms of the Zindus Share Service">
-
+<!ENTITY zindus.cw.signup.tos.agreed.label              "I have read and agreed to the <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;)'>Terms of Service</html:a>">
 <!ENTITY zindus.cw.signup.finished.label                "Congratulations, your account is created!
 	<html:br/> <html:br/>
 	We've sent you an email to confirm your email address.
@@ -97,7 +95,7 @@
 	<html:br/> <html:br/>
 	Enjoy!">
 
-<!ENTITY zindus.cw.ss.overview.label                    "Zindus Share is a experimental online service from Toolware Pty Ltd.
+<!ENTITY zindus.ss.overview.label                    "Zindus Share is a experimental online service from Toolware Pty Ltd.
 	<html:br/><html:br/>
 	Using Zindus Share you can:
 	<html:ul>
@@ -106,3 +104,14 @@
 	<html:li>retrieve deleted contacts from an online Trash addressbook</html:li>
 	</html:ul> <html:br/> <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-faq&apos;)'> More Information.</html:a>">
 
+<!ENTITY zindus.ss.about.service.caption.label       "About Zindus Share">
+<!ENTITY zindus.ss.signup.button.label               "Sign Up - it's free and easy!">
+<!ENTITY zindus.ss.signup.button.accesskey            "S">
+
+<!ENTITY zindus.ss.shares.caption.label              "Shares">
+<!ENTITY zindus.ss.tree.col.email.label              "Address Book / email">
+<!ENTITY zindus.ss.tree.col.cn.label                 "name">
+<!ENTITY zindus.ss.tree.col.ro.label                 "r/o">
+<!ENTITY zindus.ss.tree.col.rw.label                 "r/w">
+<!ENTITY zindus.ss.tree.col.ro.tooltip               "read-only">
+<!ENTITY zindus.ss.tree.col.rw.tooltip               "read-write">
