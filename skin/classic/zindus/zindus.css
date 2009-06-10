@@ -27,3 +27,7 @@ toolbar[iconsize="small"] #zindus-toolbarbutton {
 .zindus-enclosing-vbox {
 	margin: 10px;
 }
+
+.hint {
+	font-size: 95%;
+}
