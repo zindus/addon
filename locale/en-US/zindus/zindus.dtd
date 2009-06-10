@@ -81,30 +81,10 @@
 <!ENTITY zindus.cw.captcha.reload.text                  "Reload">
 <!ENTITY zindus.cw.captcha.hint.label                   "Letters are not case-sensitive, spaces are optional.">
 <!ENTITY zindus.cw.try.again.text                       "Try again">
-
-<!ENTITY zindus.cw.intro.label                          "Welcome to the Zindus addon">
-<!ENTITY zindus.cw.intro.zindus.col1.label              "Zindus Share">
-<!ENTITY zindus.cw.intro.zindus.col2.label              "Share contacts with other Thunderbird users.<html:br/><html:br/>It is ok to use Zindus Share with Google.">
-
-<!ENTITY zindus.cw.setup.page.label                     "New Account">
-<!ENTITY zindus.cw.ss.page.label                        "Signup to use the service or configure your existing login">
-<!ENTITY zindus.cw.ss.overview.label                    "Zindus Share is a experimental online service from Toolware Pty Ltd.
-	<html:br/><html:br/>
-	Using Zindus Share you can:
-	<html:ul>
-	<html:li>share selected contacts with other Thunderbird users</html:li>
-	<html:li>sync contacts between Thunderbird on different computers</html:li>
-	<html:li>retrieve deleted contacts from an online Trash addressbook</html:li>
-	</html:ul> <html:br/> <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-faq&apos;)'> More Information.</html:a>">
-<!ENTITY zindus.cw.ss.signup.col1.label                 "Get Started">
-<!ENTITY zindus.cw.ss.signup.col2.label                 "Sign up with Zindus Share.">
-<!ENTITY zindus.cw.ss.configure.col1.label              "Configure">
-<!ENTITY zindus.cw.ss.configure.col2.label              "Create an account to use your existing Zindus Share login.">
-
 <!ENTITY zindus.cw.signup.page.1.label                  "Zindus Share Signup (page 1 of 3)">
 <!ENTITY zindus.cw.signup.page.2.label                  "Zindus Share Signup (page 2 of 3)">
 <!ENTITY zindus.cw.signup.page.3.label                  "Finished!">
-
+<!ENTITY zindus.cw.signup.will.create.label             "Continuing past this page will create your account. ">
 <!ENTITY zindus.cw.signup.tos.text                      "<html:strong > The Zindus Share Service is made available to you subject to terms of services, which contain certain restrictions, disclaimers of warranty, and limitations of liability. The full set of terms may be found <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;);'> here </html:a>.</html:strong>">
 <!ENTITY zindus.cw.signup.tos.agree.label               "I accept the terms of the Zindus Share Service">
 <!ENTITY zindus.cw.signup.tos.disagree.label            "I do NOT accept the terms of the Zindus Share Service">
@@ -116,4 +96,13 @@
 	Select 'Finish' then click General/Sync Now.
 	<html:br/> <html:br/>
 	Enjoy!">
-<!ENTITY zindus.cw.signup.will.create.label             "Continuing past this page will create your account. ">
+
+<!ENTITY zindus.cw.ss.overview.label                    "Zindus Share is a experimental online service from Toolware Pty Ltd.
+	<html:br/><html:br/>
+	Using Zindus Share you can:
+	<html:ul>
+	<html:li>share selected contacts with other Thunderbird users</html:li>
+	<html:li>sync contacts between Thunderbird on different computers</html:li>
+	<html:li>retrieve deleted contacts from an online Trash addressbook</html:li>
+	</html:ul> <html:br/> <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-faq&apos;)'> More Information.</html:a>">
+
