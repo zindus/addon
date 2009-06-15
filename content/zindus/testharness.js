@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.96 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: testharness.js,v 1.97 2009-06-15 06:18:12 cvsuser Exp $
 
 function TestHarness()
 {
@@ -40,8 +40,7 @@ TestHarness.prototype.run = function()
 {
 	var ret = true;
 
-	ret = ret && this.testRenameAddressBook();
-	return; // TODO
+	// ret = ret && this.testRenameAddressBook();
 	
 	ret = ret && this.testPreferencesHaveDefaults();
 	// ret = ret && this.testRemoveBadLogin();
@@ -60,20 +59,20 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testAddressBookBugzilla432145Compare();
 	// ret = ret && this.testAddressBookBugzilla432145Delete();
 	// ret = ret && this.testFeedCollection();
-	ret = ret && this.testPermFromZfi();
+	ret = ret && this.testStringBundleContainsContactProperties();
+	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
-	ret = ret && this.testContactGoogle1();
-	ret = ret && this.testContactGoogle2();
-	ret = ret && this.testContactGoogleIssue179();
-	ret = ret && this.testContactGoogleIssue185();
-	ret = ret && this.testContactGoogleIterators();
-	ret = ret && this.testContactGooglePostalAddress();
+	// ret = ret && this.testContactGoogle1();
+	// ret = ret && this.testContactGoogle2();
+	// ret = ret && this.testContactGoogleIssue179();
+	// ret = ret && this.testContactGoogleIssue185();
+	// ret = ret && this.testContactGoogleIterators();
+	// ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testBiMap();
-	// ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testAddCard();
 	// ret = ret && this.testDeleteCard();
 	// ret = ret && this.testFileLoggingTimes();
@@ -1672,8 +1671,10 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 	{
 		if (a_system_prefs[key] == 'char')
 			value = prefs.getCharPrefOrNull(prefs.defaultbranch(), key);
-		else
+		else if (a_system_prefs[key] == 'int')
 			value = prefs.getIntPrefOrNull(prefs.defaultbranch(), key);
+		else
+			value = prefs.getBoolPrefOrNull(prefs.defaultbranch(), key);
 
 		zinAssertAndLog(value, "key: " + key);
 	}
@@ -1740,6 +1741,13 @@ TestHarness.prototype.testStringBundleContainsContactProperties = function()
 
 	for (key in contact_converter.m_common_to[FORMAT_TB][FORMAT_GD])
 		zinAssertAndLog(stringBundleString("cc." + key).length > 0, "unable to load string for key: " + key);
+
+	if (false) {
+	var str;
+	this.m_logger.debug("pab: ja: " + stringAsUnicodeEscapeSequence(stringBundleString("cc.ja_description")));
+	this.m_logger.debug("pab: ko: " + stringAsUnicodeEscapeSequence(stringBundleString("cc.ko_description")));
+	this.m_logger.debug("pab: zn_cn: " + stringAsUnicodeEscapeSequence(stringBundleString("cc.zn_cn_description")));
+	}
 
 	return true;
 }

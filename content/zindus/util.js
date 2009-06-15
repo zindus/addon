@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.47 2009-06-09 07:11:18 cvsuser Exp $
+// $Id: util.js,v 1.48 2009-06-15 06:18:14 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1102,6 +1102,35 @@ function stripCharsToWorkaroundBug478905(str)
 {
 	return str.replace(/\u2028|\u2029/g, "");
 }
+
+function stringAsUnicodeEscapeSequence(str)
+{
+	zinAssert(str && str.length > 0);
+
+	function decimalToHex(d, padding) {
+		let hex = d.toString(16);
+		while (hex.length < padding)
+			hex = "0" + hex;
+		return hex;
+	}
+
+	var c;
+	var ret = "";
+
+	for (var i = 0; i < str.length; i++)
+	{
+		c = str.charCodeAt(i);
+
+		if ((c >= 0x20) && (c <= 0x007E))
+			ret += str.charAt(i);
+		else
+			ret += "\\u" + decimalToHex(c,4);
+	}
+
+	return ret;
+}
+
+
 
 function chunk_size(name, flex)
 {

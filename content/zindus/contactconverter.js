@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.38 2009-06-09 05:31:43 cvsuser Exp $
+// $Id: contactconverter.js,v 1.39 2009-06-15 06:18:08 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -278,8 +278,6 @@ outputNormalisedStreetLine : function(format_to, properties_to, a_normalised_str
 	}
 },
 normaliseStreetLine : function(format_to, format_from, properties_from, key_from, a_normalised_street) {
-	var i;
-
 	// this.m_logger.debug("normaliseStreetLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
 
 	switch(format_from) {
@@ -407,31 +405,6 @@ initialise_common_to : function(format_to, format_from) {
 	for (i = 0; i < this.m_equivalents.length; i++)
 		if (this.m_equivalents[i][format_from] != null && this.m_equivalents[i][format_to] != null)
 			this.m_common_to[format_to][format_from][this.m_equivalents[i][format_to]] = true;
-},
-normaliseStreetLine : function(format_to, format_from, properties_from, key_from, a_normalised_street) {
-	// this.m_logger.debug("normaliseStreetLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
-
-	switch(format_from) {
-		case FORMAT_TB: switch(key_from) {
-				case "HomeAddress":  a_normalised_street["home"][0] = properties_from[key_from];                             break;
-				case "WorkAddress":  a_normalised_street["work"][0] = properties_from[key_from];                             break;
-				case "HomeAddress2": this.lineTwoFromCommaSeparated(properties_from, key_from, a_normalised_street, "home"); break;
-				case "WorkAddress2": this.lineTwoFromCommaSeparated(properties_from, key_from, a_normalised_street, "work"); break;
-				default: zinAssert(false);
-			}
-			break;
-
-		case FORMAT_ZM: switch(key_from) {
-				case "homeStreet": this.lineFromNewlineSeparated(properties_from, key_from, a_normalised_street, "home"); break;
-				case "workStreet": this.lineFromNewlineSeparated(properties_from, key_from, a_normalised_street, "work"); break;
-				default: zinAssert(false);
-			}
-			break;
-		default: zinAssert(false);
-	}
-
-	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[home]: " + a_normalised_street["home"].toString());
-	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[work]: " + a_normalised_street["work"].toString());
 },
 gdAddressInput : function(format_to, format_from, properties_from, key_from, a_gd_address_fields) {
 	var left, right;

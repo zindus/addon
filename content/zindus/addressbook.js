@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.55 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: addressbook.js,v 1.56 2009-06-15 06:18:07 cvsuser Exp $
 
 function AddressBookTb2() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb2"); }
 function AddressBookTb3() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb3"); }
@@ -709,6 +709,11 @@ AddressBook.prototype.setupPab = function()
 	var ret       = null;
 	var msg;
 
+	if (PerLocaleStatic.general_useragent() in PerLocaleStatic["Personal Address Book"])
+		pabName = PerLocaleStatic["Personal Address Book"][PerLocaleStatic.general_useragent()];
+	else
+		pabName = "Personal Address Book";
+		
 	var functor_foreach_addressbook = {
 		run: function(elem) {
 
@@ -719,7 +724,7 @@ AddressBook.prototype.setupPab = function()
 				pabByUri.name = elem.dirName;
 			}
 
-			if (elem.dirName == "Personal Address Book")
+			if (elem.dirName == pabName)
 			{
 				pabByName      = new Object();
 				pabByName.uri  = context.directoryProperty(elem, "URI");

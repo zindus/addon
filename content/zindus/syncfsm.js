@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.177 2009-06-09 05:31:58 cvsuser Exp $
+// $Id: syncfsm.js,v 1.178 2009-06-15 06:18:10 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -28,6 +28,7 @@ includejs("zmcontact.js");
 includejs("xpath.js");
 includejs("gdaddressconverter.js");
 includejs("contactgoogle.js");
+includejs("perlocale.js");
 includejs("addressbook.js");
 includejs("contactconverter.js");
 includejs("folderconverter.js");

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: folderconverter.js,v 1.17 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: folderconverter.js,v 1.18 2009-06-15 06:18:09 cvsuser Exp $
 
 FolderConverter.PREFIX_CLASS_NONE     = 1;
 FolderConverter.PREFIX_CLASS_INTERNAL = 2;
@@ -48,27 +48,12 @@ function FolderConverter()
 	// A locale eg 'en-US' is made up of language (en) and nation/location (US)
 	// This list aims to be a superset of Zimbra's supported locales...
 	//
-	// Note - if any of these translations change, there will have to be code that migrates the old name to the new...
-	// TODO: update for new locales as per:
+	// Note - if any of the "Emailed Contacts" translations change, there will have to be code that migrates the old name to the new...
+	// FIXME: update for new locales as per:
 	//   http://www.zimbra.com/products/languages.html
 	//   http://wiki.zimbra.com/index.php?title=Translations
 	//
-	this.m_locale_map  =
-	{
-		da    : "Kontakter, der er sendt mail til",
-		de    : "Mailempf\u00e4nger",
-		es    : "Contactos respondidos",
-		fr    : "Personnes contact\u00e9es par mail", // Nation component removed - was fr_FR
-		it    : "Contatti usati per email",
-		ja    : "\u30e1\u30fc\u30eb\u3092\u9001\u4fe1\u3057\u305f\u9023\u7d61\u5148",
-		ko    : "\uc774\uba54\uc77c\ud55c \uc5f0\ub77d\ucc98",
-		pl    : "Kontakty e-mail",
-		pt    : "Contatos que receberam e-mail",      // Nation component removed - was pt_BR
-		ru    : "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043d\u044b\u0435 \u043f\u043e \u044d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u043d\u043e\u0439 \u043f\u043e\u0447\u0442\u0435 \u043a\u043e\u043d\u0442\u0430\u043a\u0442\u044b",
-		sv    : "E-postkontakter",
-		zh_CN : "\u7535\u5b50\u90ae\u4ef6\u8054\u7cfb\u4eba",
-		zh_HK : "\u96fb\u5b50\u90f5\u4ef6\u806f\u7d61\u4eba"
-	};
+	this.m_locale_map  = PerLocaleStatic["Emailed Contacts"];
 
 	this.m_locale_names_to_migrate = new Object();
 
@@ -181,15 +166,12 @@ FolderConverter.prototype.localised_emailed_contacts = function()
 FolderConverter.prototype.translate_emailed_contacts = function()
 {
 	var ret = ZM_FOLDER_EMAILED_CONTACTS;
-	var value;
-
-	var prefs = new MozillaPreferences("general.useragent.");
-	var locale;
+	var value, locale;
 	
 	if (arguments.length == 1)
 		locale = arguments[0]; // used by the testharness to force a locale
 	else
-		locale = prefs.getCharPrefOrNull(prefs.branch(), "locale");
+		locale = PerLocaleStatic.general_useragent();
 
 	this.m_logger.debug("translate_emailed_contacts: general.useragent.locale: " + locale);
 
