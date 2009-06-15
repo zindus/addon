@@ -87,13 +87,13 @@
 <!ENTITY zindus.cw.signup.will.create.label             "Continuing past this page will create your account. ">
 <!ENTITY zindus.cw.signup.tos.text                      "<html:strong > The Zindus Share Service is made available to you subject to terms of services, which contain certain restrictions, disclaimers of warranty, and limitations of liability. The full set of terms may be found <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;);'> here </html:a>.</html:strong>">
 <!ENTITY zindus.cw.signup.tos.agreed.label              "I have read and agreed to the <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;)'>Terms of Service</html:a>">
-<!ENTITY zindus.cw.signup.finished.label                "Congratulations, your account is created!
+<!ENTITY zindus.cw.signup.finished.1.label              "Congratulations, your account is created!
 	<html:br/> <html:br/>
 	We've sent you an email to confirm your email address.
 	<html:br/> <html:br/>
-	Select 'Finish' then click General/Sync Now.
-	<html:br/> <html:br/>
-	Enjoy!">
+	Enjoy!
+	">
+<!ENTITY zindus.cw.signup.finished.2.label              "Sync on finish">
 
 <!ENTITY zindus.ss.overview.label                    "Zindus Share is a experimental online service from Toolware Pty Ltd.
 	<html:br/><html:br/>

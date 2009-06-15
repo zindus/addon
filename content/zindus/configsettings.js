@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.38 2009-06-09 05:36:20 cvsuser Exp $
+// $Id: configsettings.js,v 1.39 2009-06-15 02:35:07 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -154,9 +154,11 @@ ConfigSettings.prototype.onAccept = function()
 
 ConfigSettings.prototype.onCommand = function(id_target)
 {
-	this.m_logger.debug("onCommand: target: " + id_target);
 	var is_accounts_changed = false;
+	var do_sync_now_after_wizard = false;
 	var rowid;
+
+	this.m_logger.debug("onCommand: target: " + id_target);
 
 	switch (id_target)
 	{
@@ -297,6 +299,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 						for (i = 0; i < payload.m_result_accounts.length; i++)
 							this.m_accounts.push(new Account(payload.m_result_accounts[i]));
 						}
+						do_sync_now_after_wizard = payload.m_result_sync_now;
 						break;
 
 					case "cs-account-add":
@@ -381,11 +384,15 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		this.updateView();
 
-		this.m_czss.initialiseView();
+		if (do_sync_now_after_wizard)
+			this.onCommand("cs-button-sync-now");
+		else
+			this.m_czss.initialiseView();
 
 		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete", "czss-share-signup-wizard" ]))
 			this.m_logger.debug("id_target: " + id_target + " m_accounts is: " + AccountStatic.arrayToString(this.m_accounts));
 	}
+
 }
 
 ConfigSettings.prototype.onTimerFire = function(context)
