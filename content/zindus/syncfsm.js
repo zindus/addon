@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.178 2009-06-15 06:18:10 cvsuser Exp $
+// $Id: syncfsm.js,v 1.179 2009-06-16 18:43:31 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2970,19 +2970,23 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 
 						// strip characters out of the notes field that aren't XML
 						// issue #151 and https://bugzilla.mozilla.org/show_bug.cgi?id=466545
-						// this really should get done on all fields but it's mostly the Notes field that has the problem.
 						//
-						if (isPropertyPresent(properties, "Notes") && properties["Notes"].length > 0)
-						{
-							var newstr = stripInvalidXMLCharsFromString(properties["Notes"]);
+						let is_changed = false;
 
-							if (newstr != properties["Notes"])
-							{
-								properties["Notes"] = newstr;
-								this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with invalid XML characters - removed: " + properties["Notes"]);
+						for (var key in properties)
+							if (properties[key].length > 0) {
+								let newstr = stripInvalidXMLCharsFromString(properties[key]);
 
-								this.state.m_addressbook.setCardProperties(abCard, uri, { Notes: properties["Notes"] } );
+								if (newstr != properties[key]) {
+									properties[key] = newstr;
+									is_changed = true;
+								}
 							}
+
+						if (is_changed) {
+							this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with invalid XML characters - removed: " + aToString(properties));
+
+							this.state.m_addressbook.setCardProperties(abCard, uri, properties);
 						}
 					}
 
