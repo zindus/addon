@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.97 2009-06-15 06:18:12 cvsuser Exp $
+// $Id: testharness.js,v 1.98 2009-06-18 05:14:08 cvsuser Exp $
 
 function TestHarness()
 {
@@ -43,6 +43,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testRenameAddressBook();
 	
 	ret = ret && this.testPreferencesHaveDefaults();
+	ret = ret && this.testStringBundleContainsContactProperties();
+
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
 	// ret = ret && this.testSuo();
@@ -59,14 +61,14 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testAddressBookBugzilla432145Compare();
 	// ret = ret && this.testAddressBookBugzilla432145Delete();
 	// ret = ret && this.testFeedCollection();
-	ret = ret && this.testStringBundleContainsContactProperties();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
 	// ret = ret && this.testContactGoogle1();
-	// ret = ret && this.testContactGoogle2();
+	ret = ret && this.testContactGoogle2();
+	// ret = ret && this.testContactGoogleIssue151();
 	// ret = ret && this.testContactGoogleIssue179();
 	// ret = ret && this.testContactGoogleIssue185();
 	// ret = ret && this.testContactGoogleIterators();
@@ -882,8 +884,10 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 {
 	var properties = new Object();
 
-	properties["title"] = "1";
-	properties["content"] = "2";
+	properties["content"] = "1";
+	properties["name_givenName"] = "2-givenName";
+	properties["name_familyName"] = "2-familyName";
+	properties["name_fullName"] = "2-fullName";
 	properties["organization_orgName"] = "3";
 	properties["organization_orgTitle"] = "4";
 	properties["phoneNumber_work"] = "5";
@@ -988,8 +992,10 @@ TestHarness.prototype.testContactGoogle1 = function()
 	{
 		contact = new ContactGoogle();
 		properties = {
-			'title' :                'a-title',
 			'content' :              'a-content',
+			'name_givenName':        'a-name-given',
+			'name_familyName':       'a-name-family',
+			'name_fullName':         'a-name-full',
 			'organization_orgName':  'a-org-name',
 			'organization_orgTitle': 'a-org-title',
 			'phoneNumber_home':      'a-phone-home',
@@ -1006,6 +1012,9 @@ TestHarness.prototype.testContactGoogle1 = function()
 
 		// delete some properties
 		//
+		delete properties['name_givenName'];
+		// delete properties['name_familyName'];
+		delete properties['name_fullName'];
 		delete properties['organization_orgName'];
 		delete properties['organization_orgTitle'];
 		delete properties['im_AIM'];
@@ -1024,7 +1033,7 @@ TestHarness.prototype.testContactGoogle1 = function()
 
 TestHarness.prototype.testContactGoogle2 = function()
 {
-	var i, key, meta, groups, new_groups, properties, xmlString, xmlStringEntry;
+	var i, key, meta, groups, new_groups, properties, xmlString, xmlStringEntry, contact, a_gd_contact, id;
 	var context = this;
 
 	properties = this.sampleContactGoogleProperties();
@@ -1048,6 +1057,11 @@ TestHarness.prototype.testContactGoogle2 = function()
 	<content type='text'>@@content@@</content> \
 	<link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0'/> \
 	<link rel='edit' type='application/atom+xml' href='@@edit@@'/>\
+	<gd:name>\
+		<gd:givenName>@@name_givenName@@</gd:givenName>\
+		<gd:familyName>@@name_familyName@@</gd:familyName>\
+		<gd:fullName>@@name_fullName@@</gd:fullName>\
+	</gd:name>\
 	<gd:organization rel='http://schemas.google.com/g/2005#work'>\
 		<gd:orgName>@@organization_orgName@@</gd:orgName>\
 		<gd:orgTitle>@@organization_orgTitle@@</gd:orgTitle>\
@@ -1086,17 +1100,17 @@ TestHarness.prototype.testContactGoogle2 = function()
 	for (key in meta)
 		xmlString = xmlString.replace("@@" + key + "@@", meta[key]);
 
-	var a_gd_contact = ContactGoogle.newContacts(xmlString);
+	function fresh_contact() {
+		let a_gd_contact = ContactGoogle.newContacts(xmlString);
 
-	for (var id in a_gd_contact)
-		this.m_logger.debug("contact: " + a_gd_contact[id].toString());
+		// for (var id in a_gd_contact)
+		//	this.m_logger.debug("contact: " + a_gd_contact[id].toString());
 
-	// 1. test that a contact can get parsed out of xml 
-	// this.m_logger.debug("testGoogleContacts1: 1. id: " + id + " contact: " + contact.toString());
-	zinAssertAndLog(aToLength(a_gd_contact) == 1, "length: " + aToLength(a_gd_contact));
+		zinAssertAndLog(aToLength(a_gd_contact) == 1, "length: " + aToLength(a_gd_contact));
 
-	var id = firstKeyInObject(a_gd_contact);
-	var contact = a_gd_contact[id];
+		let id = firstKeyInObject(a_gd_contact);
+		return a_gd_contact[id];
+	}
 
 	function remove_postal_properties(properties) {
 		var ret = cloneObject(properties);
@@ -1114,6 +1128,10 @@ TestHarness.prototype.testContactGoogle2 = function()
 		contact.mode(orig);
 	}
 
+	contact = fresh_contact();
+
+	this.m_logger.debug("contact: " + contact.toString());
+
 	// 2. test that everything was parsed out of the xml correctly with/without postal
 	//
 	match(contact, properties, meta, true);
@@ -1127,6 +1145,9 @@ TestHarness.prototype.testContactGoogle2 = function()
 	// 3. test that updating with no properties works
 	//
 	delete properties["content"];
+	delete properties["name_givenName"];
+	delete properties["name_familyName"];
+	delete properties["name_fullName"];
 	delete properties["organization_orgName"];
 	delete properties["organization_orgTitle"];
 	delete properties["phoneNumber_work"];
@@ -1181,9 +1202,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	// test postalAddressRemoveEmptyElements()
 	//
-	a_gd_contact = ContactGoogle.newContacts(xmlString);
-	id = firstKeyInObject(a_gd_contact);
-	contact = a_gd_contact[id];
+	contact = fresh_contact();
 
 	contact.m_entry.* += <gd:postalAddress xmlns:gd={Xpath.NS_GD} rel="http://schemas.google.com/g/2005#work"></gd:postalAddress>
 	this.m_logger.debug("testGoogleContacts1: 6.1. contact: " + contact.m_entry.toXMLString());
@@ -1234,8 +1253,34 @@ TestHarness.prototype.testContactGoogle2 = function()
 	zinAssert(!('organization_orgTitle' in contact.properties));
 	zinAssert(!('organization_orgName'  in contact.properties));
 
+	// test comparison of gd:name fields
+	//
+	contact = fresh_contact();
+	properties = contact.properties;
+	var contact2 = new ContactGoogle();
+	contact2.properties = properties;
+	zinAssert(isMatchObjects(contact.properties, contact2.properties));
+
+	delete properties['name_givenName'];
+
+	contact.properties = properties;
+
+	zinAssert(isMatchObjects(properties, contact.properties));
+
+	this.m_logger.debug("contact after removing name_given: " + contact.toString());
+
 	return true;
 }
+
+TestHarness.prototype.testContactGoogleIssue151 = function()
+{
+	let company = "ACME" + String.fromCharCode(0xf) + " Pty Ltd";
+
+	this.addCardTb2({ PrimaryEmail: "111-test@example.com", DisplayName: "111 test", Company: company });
+
+	return true;
+}
+
 
 TestHarness.prototype.testContactGoogleIssue179 = function()
 {

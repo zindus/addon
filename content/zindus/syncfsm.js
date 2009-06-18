@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.179 2009-06-16 18:43:31 cvsuser Exp $
+// $Id: syncfsm.js,v 1.180 2009-06-18 05:14:08 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -5441,7 +5441,7 @@ SyncFsm.prototype.entryActionConfirmOnErase = function(state, event, continuatio
 
 		this.debug("entryActionConfirmOnErase: c_at_google: " + c_at_google + " c_to_be_deleted: " + c_to_be_deleted);
 
-		if (c_to_be_deleted == c_at_google) {
+		if (c_to_be_deleted > 0 && (c_to_be_deleted == c_at_google)) {
 			if (this.state.m_is_attended) {
 				let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService);
 				let is_ok   = prompts.confirm(window, stringBundleString("brand.zindus"), stringBundleString("text.confirm.erase"));
@@ -6476,6 +6476,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				remote.body    = contact.toStringXml();
 				remote.sourceid_winner = sourceid_winner;
 				remote.luid_winner     = luid_winner;
+				remote.contact         = contact;
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_CN:
@@ -6517,6 +6518,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					remote.body    = contact.toStringXml();
 					remote.sourceid_winner = sourceid_winner;
 					remote.luid_winner     = luid_winner;
+					remote.contact         = contact;
 				}
 				break;
 
@@ -6586,6 +6588,19 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 	this.debug("exitActionUpdateGd: " + remote_update_package.remote.method + " " + remote_update_package.remote.url);
 
+	// Google's structured field processing for gd:name and gd:structuredPostalAddress
+	function get_updated(contact) {
+		let updated = contact.meta.updated;
+
+		let new_properties = contact.properties;
+		let old_properties = remote_update_package.remote.contact.properties;
+
+		if (!isMatchObjects(new_properties, old_properties))
+			updated = "1" + updated.substr(1); // set first digit of year to '1'
+
+		return updated;
+	}
+
 	if (this.state.m_http.is_http_status(HTTP_STATUS_2xx) ||
 	    (key_suo.bucket == (Suo.DEL | FeedItem.TYPE_CN) && this.state.m_http.is_http_status(HTTP_STATUS_404_NOT_FOUND)))
 		switch (key_suo.bucket)
@@ -6595,10 +6610,19 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 				{
 					let contact = ContactGoogle.newContact(this.state.m_http.m_xhr);
 					let id      = contact.meta.id;
-					let zfi     = this.newZfiCnGd(id, contact.meta.updated, contact.meta.edit, contact.meta.self,
-					                                  this.state.gd_luid_ab_in_gd);
+					let updated = contact.meta.updated;
+
+					let new_properties = contact.properties;
+					let old_properties = remote_update_package.remote.contact.properties;
 
 					msg += " created: contact id=" + id;
+
+					if (!isMatchObjects(new_properties, old_properties)) {
+						updated = "1" + updated.substr(1); // set first digit of year to '1'
+						msg += " google changed this contact - ticking backwards: updated: " + updated;
+					}
+
+					let zfi = this.newZfiCnGd(id, updated, contact.meta.edit, contact.meta.self, this.state.gd_luid_ab_in_gd);
 
 					SyncFsm.setLsoToGid(zfiGid, zfi);
 
@@ -7744,7 +7768,7 @@ function HttpStateGd(http_method, url, headers, authToken, body, on_error, log_r
 							  'Accept-Encoding': null,
 							  'Accept-Charset':  null,
 							  'User-Agent':      null,
-							  'GData-Version':   2
+							  'GData-Version':   3
 							  };
 	var http_headers = new Object();
 	var key;

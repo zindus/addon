@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mozillapreferences.js,v 1.30 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: mozillapreferences.js,v 1.31 2009-06-18 05:14:08 cvsuser Exp $
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
@@ -42,6 +42,7 @@ MozillaPreferences.AS_TIMER_DELAY_ON_START  = "system.as_timer_delay_on_start";
 MozillaPreferences.AS_ALLOW_PRE_RELEASE     = "system.as_allow_pre_release";
 MozillaPreferences.AS_PASSWORD_VERSION      = "system.as_password_version";
 MozillaPreferences.AS_SHARE_SERICE_API_URL  = "system.as_share_service_api_url";
+MozillaPreferences.AS_IGNORE_ON_SLOW_SYNC   = "system.as_ignore_on_slow_sync";
 MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
 MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
@@ -60,6 +61,7 @@ MozillaPreferences.getAllSystemPrefs = function()
 		MozillaPreferences.AS_TIMER_DELAY_ON_START,  'int',
 		MozillaPreferences.AS_PASSWORD_VERSION,      'char',
 		MozillaPreferences.AS_SHARE_SERICE_API_URL,  'char',
+		MozillaPreferences.AS_IGNORE_ON_SLOW_SYNC,   'char',
 		MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL,  'int',
 		MozillaPreferences.ZM_SYNC_GAL_IF_FEWER,     'int',
 		MozillaPreferences.ZM_SYNC_GAL_RECHECK,      'int',

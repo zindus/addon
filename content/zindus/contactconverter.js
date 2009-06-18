@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.39 2009-06-15 06:18:08 cvsuser Exp $
+// $Id: contactconverter.js,v 1.40 2009-06-18 05:14:08 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -37,6 +37,12 @@ function ContactConverter()
 	this.m_logger       = newLogger("ContactConverter");
 	this.m_gac          = new GdAddressConverter();
 	this.m_gd_certain_keys_converted = null;
+
+	this.m_ignore_on_slow_sync = new Object();
+	let str = preference(MozillaPreferences.AS_IGNORE_ON_SLOW_SYNC, 'char');
+	let a   = str.split(",");
+	for (var i = 0; i < a.length; i++)
+		this.m_ignore_on_slow_sync[a[i]] = true;
 }
 
 ContactConverter.eStyle = new ZinEnum( 'kBasic', 'kZmMapsAllTbProperties', 'kGdMapsPostalProperties' );
@@ -50,9 +56,12 @@ setup : function(style) {
 	var gd = function(key) { return ((style == ContactConverter.eStyle.kGdMapsPostalProperties) ? key : null); }
 
 	this.m_equivalents = new Array();
-	this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title"));
+	// this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null)); // name_givenName
+	// this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null)); // name_familyName
+	// this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title")); // name_fullName
+	this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, "name_givenName"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, "name_familyName"));
+	this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "name_fullName"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "NickName",        FORMAT_ZM, null,                FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "PrimaryEmail",    FORMAT_ZM, "email",             FORMAT_GD, "email1"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "SecondEmail",     FORMAT_ZM, "email2",            FORMAT_GD, "email2"));
@@ -372,14 +381,15 @@ removeKeysNotCommonToAllFormats : function(format_from, properties) {
 	var i, j, is_converted;
 
 	for (i in properties) {
-		is_converted = true;
+		is_converted = !(i in this.m_ignore_on_slow_sync);
 
-		for (j = 0; j < A_VALID_FORMATS.length;  j++)
-			if (format_from != A_VALID_FORMATS[j])
-				if (!this.isKeyConverted(A_VALID_FORMATS[j], format_from, i)) {
-					is_converted = false;
-					break;
-				}
+		if (is_converted)
+			for (j = 0; j < A_VALID_FORMATS.length;  j++)
+				if (format_from != A_VALID_FORMATS[j])
+					if (!this.isKeyConverted(A_VALID_FORMATS[j], format_from, i)) {
+						is_converted = false;
+						break;
+					}
 
 		if (!is_converted)
 			keys_to_remove[i] = true;

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.16 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.17 2009-06-18 05:14:08 cvsuser Exp $
 
 function ContactGoogle(xml, mode) {
 	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry();
@@ -82,8 +82,8 @@ make_mask_of_elements_in_entry: function () {
 	var ret = 0;
 	var i;
 
-	var reAtom = /title|content/;
-	var reGd   = /email|phoneNumber|postalAddress|organization|im/;
+	var reAtom = /content/;
+	var reGd   = /email|phoneNumber|postalAddress|name|organization|im/;
 
 	with (ContactGoogleStatic)
 		for (i = 0; i < children.length(); i++) {
@@ -97,16 +97,8 @@ make_mask_of_elements_in_entry: function () {
 	return ret;
 },
 warn_if_entry_isnt_valid : function() {
-	var entry = this.m_entry;
-
-	with (ContactGoogleStatic) {
-		// Curious to know whether <title> has a type attribute set to something other than 'text'. ATOM rfc says that 'html' is legal
-		//
-		let title = entry.nsAtom::title;
-	
-		if (title.@type.length() > 0 && title.@type != 'text')
-			logger().warn("ContactGoogle: unexpected: title: " + title.toXMLString());
-	}
+	// Google sometimes sends clients payloads that it won't accept back
+	// this method it to notice and warn about such things
 },
 groups_from_xml: function () {
 	var ret = new Array();
@@ -133,7 +125,6 @@ properties_from_xml: function () {
 	this.warn_if_entry_isnt_valid();
 
 	with (ContactGoogleStatic) {
-		if (imask & mask.title)   set_if(properties, 'title',    entry.nsAtom::title);
 		if (imask & mask.content) set_if(properties, 'content',  entry.nsAtom::content);
 
 		if (imask & mask.email) {
@@ -147,6 +138,12 @@ properties_from_xml: function () {
 
 		if (imask & mask.postalAddress && (this.m_mode & ContactGoogle.ePostal.kEnabled) )
 			set_for(properties, nsGd, entry, 'postalAddress');
+
+		if (imask & mask.name) {
+			set_if(properties, 'name_givenName',   entry.nsGd::name.nsGd::givenName);
+			set_if(properties, 'name_familyName',  entry.nsGd::name.nsGd::familyName);
+			set_if(properties, 'name_fullName',    entry.nsGd::name.nsGd::fullName);
+		}
 
 		if (imask & mask.organization) {
 			var list = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst);
@@ -206,6 +203,7 @@ set properties (properties_in) {
 	var imask        = this.make_mask_of_elements_in_entry();
 	var a_is_used    = new Object();
 	var organization = null;
+	var name         = null;
 	var i, key;
 
 	// ignore keys where the value is 100% whitespace
@@ -220,12 +218,6 @@ set properties (properties_in) {
 	// logger().debug("ContactGoogle: 1: properties: " + aToString(properties));
 
 	with (ContactGoogleStatic) {
-		if (imask & mask.title) {
-			// only ever modify - never add or delete <title> here
-			entry.nsAtom::title = ('title' in properties) ? properties['title'] : "";
-			a_is_used['title'] = true;
-		}
-
 		if (imask & mask.content)
 			modify_or_delete_child(entry.nsAtom::content, properties, 'content', a_is_used);
 
@@ -244,19 +236,28 @@ set properties (properties_in) {
 		else if (imask & mask.postalAddress)
 			this.postalAddressModifyFields(properties, a_is_used);
 
+		if (imask & mask.name) {
+			name = entry.nsGd::name;
+
+			modify_or_delete_child_if(name.nsGd::givenName,  properties, 'name_givenName',  a_is_used);
+			modify_or_delete_child_if(name.nsGd::familyName, properties, 'name_familyName', a_is_used);
+			modify_or_delete_child_if(name.nsGd::fullName,   properties, 'name_fullName',   a_is_used);
+
+			if (name.*.length() == 0) {
+				// logger().debug("ContactGoogle: deleting");
+				delete entry.*[name.childIndex()];
+				name = null;
+			}
+		}
+
 		if (imask & mask.organization) {
 			let is_found = false;
 
 			organization = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst);
 
 			if (organization.length() > 0) {
-				function modify_or_delete_child_if(e, key) {
-					if (e.length() > 0)
-						modify_or_delete_child(e, properties, key, a_is_used);
-				}
-
-				modify_or_delete_child_if(organization[0].nsGd::orgTitle, 'organization_orgTitle');
-				modify_or_delete_child_if(organization[0].nsGd::orgName, 'organization_orgName');
+				modify_or_delete_child_if(organization[0].nsGd::orgTitle, properties, 'organization_orgTitle', a_is_used);
+				modify_or_delete_child_if(organization[0].nsGd::orgName,  properties, 'organization_orgName',  a_is_used);
 				is_found = true;
 			}
 
@@ -282,17 +283,25 @@ set properties (properties_in) {
 		//
 		let l, r;
 		let is_added_organization = false;
+		let is_added_name = false;
 
 		for (key in cgopi.iterator(properties))
 			if (!(key in a_is_used)) {
 				// logger().debug("properties setter: adding key: " + key);
 
 				switch(key) {
-				case "title":
-					logger().error("ContactGoogle: shouldn't be adding a property with key: " + key);
-					break;
 				case "content":
 					entry.content = <atom:content xmlns:atom={Xpath.NS_ATOM} type='text'>{properties[key]}</atom:content>;
+					break;
+				case "name_givenName":
+				case "name_familyName":
+				case "name_fullName":
+					if (!name) {
+						name = <gd:name xmlns:gd={Xpath.NS_GD} />;
+						is_added_name = true;
+					}
+					r = rightOfChar(key, '_');
+					name.* += <gd:{r} xmlns:gd={Xpath.NS_GD} >{properties[key]}</gd:{r}>;
 					break;
 				case "organization_orgName":
 				case "organization_orgTitle":
@@ -332,6 +341,9 @@ set properties (properties_in) {
 					zinAssertAndLog(false, key);
 				}
 			}
+
+		if (is_added_name)
+			entry.* += name;
 
 		if (is_added_organization)
 			entry.* += organization;
@@ -621,7 +633,7 @@ var ContactGoogleStatic = {
 	nsGd       : Namespace(Xpath.NS_GD),
 	nsGContact : Namespace(Xpath.NS_GCONTACT),
 	mask       : {
-		title         : 0x01,
+		name          : 0x01,
 		content       : 0x02,
 		email         : 0x04,
 		phoneNumber   : 0x08,
@@ -696,6 +708,10 @@ var ContactGoogleStatic = {
 		for (var i = 0; i < list.length(); i++)
 			this.modify_or_delete_child(list[i], properties, this.get_hyphenation(prefix, rightOfChar(list[i].@rel)), a_is_used);
 	},
+	modify_or_delete_child_if : function(e, properties, key, a_is_used) {
+		if (e.length() > 0)
+			this.modify_or_delete_child(e, properties, key, a_is_used);
+	},
 	get_rel : function (suffix) {
 		if (!(suffix in this.m_a_rel))
 			this.m_a_rel[suffix] = Xpath.NS_GD + '#' + suffix;
@@ -754,7 +770,6 @@ var ContactGoogleStatic = {
 		                   xmlns:openSearch={Xpath.NS_OPENSEARCH}
 		                   xmlns:gContact={Xpath.NS_GCONTACT}>
 		              <atom:category scheme={Xpath.NS_GD + "#kind"} term={Xpath.NS_GCONTACT + "#group"}/>
-		              <atom:title type="text"/>
 		          </atom:entry>;
 	},
 	newXml : function(arg) {
