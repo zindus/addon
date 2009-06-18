@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.17 2009-06-18 05:14:08 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.18 2009-06-18 10:09:49 cvsuser Exp $
 
 function ContactGoogle(xml, mode) {
 	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry();
@@ -82,15 +82,18 @@ make_mask_of_elements_in_entry: function () {
 	var ret = 0;
 	var i;
 
-	var reAtom = /content/;
-	var reGd   = /email|phoneNumber|postalAddress|name|organization|im/;
+	var reAtom     = /content/;
+	var reGd       = /email|phoneNumber|postalAddress|name|organization|im/;
+	var reGContact = /website/;
 
 	with (ContactGoogleStatic)
 		for (i = 0; i < children.length(); i++) {
 			let name = children[i].name().localName;
 			let uri  = children[i].name().uri;
 
-			if ((uri == Xpath.NS_ATOM && reAtom.test(name)) || (uri == Xpath.NS_GD && reGd.test(name))) 
+			if ((uri == Xpath.NS_ATOM     && reAtom.test(name)) ||
+			    (uri == Xpath.NS_GD       && reGd.test(name))   ||
+			    (uri == Xpath.NS_GCONTACT && reGContact.test(name)))
 				ret |= mask[name];
 		}
 
@@ -120,7 +123,7 @@ properties_from_xml: function () {
 	var entry      = this.m_entry;
 	var imask      = this.make_mask_of_elements_in_entry();
 	let properties = new Object();
-	let i, j;
+	let i, j, list;
 
 	this.warn_if_entry_isnt_valid();
 
@@ -146,7 +149,7 @@ properties_from_xml: function () {
 		}
 
 		if (imask & mask.organization) {
-			var list = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst);
+			list = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst, 'organization');
 
 			if (list.length() > 0) {
 				set_if(properties, 'organization_orgTitle',  list[0].nsGd::orgTitle);
@@ -155,11 +158,19 @@ properties_from_xml: function () {
 		}
 
 		if (imask & mask.im) {
-			var list = get_elements_matching_attribute(entry.nsGd::im, 'protocol', ['AIM'], kMatchFirst);
+			list = get_elements_matching_attribute(entry.nsGd::im, 'protocol', ['AIM'], kMatchFirst, 'im');
 	
 			if (list.length() > 0)
 				properties['im_AIM'] = list[0].@address.toString();
 		}
+
+		if (imask & mask.website) {
+			list = get_elements_matching_attribute(entry.nsGContact::website, 'rel', a_fragment.website, kMatchFirst, 'website');
+	
+			for (i = 0; i < list.length(); i++)
+				set_if(properties, get_hyphenation('website', shorten_rel(list[i].@rel, 'website')), list[i].@href);
+		}
+
 	}
 
 	if (false)
@@ -224,7 +235,7 @@ set properties (properties_in) {
 		if (imask & mask.email) {
 			let key, xml;
 			for ( [ key, xml ] in cgei.iterator(entry))
-				modify_or_delete_child(xml, properties, key, a_is_used, true);
+				modify_or_delete_child(xml, properties, key, a_is_used, 'address');
 		}
 
 		if (imask & mask.phoneNumber)
@@ -253,7 +264,7 @@ set properties (properties_in) {
 		if (imask & mask.organization) {
 			let is_found = false;
 
-			organization = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst);
+			organization = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst, 'organization');
 
 			if (organization.length() > 0) {
 				modify_or_delete_child_if(organization[0].nsGd::orgTitle, properties, 'organization_orgTitle', a_is_used);
@@ -271,17 +282,20 @@ set properties (properties_in) {
 		}
 
 		if (imask & mask.im) {
-			let tmp = get_elements_matching_attribute(entry.nsGd::im, 'protocol', ['AIM'], kMatchFirst);
+			let tmp = get_elements_matching_attribute(entry.nsGd::im, 'protocol', ['AIM'], kMatchFirst, 'im');
 	
 			if (tmp.length() > 0)
-				modify_or_delete_child(tmp[0], properties, 'im_AIM', a_is_used, true);
+				modify_or_delete_child(tmp[0], properties, 'im_AIM', a_is_used, 'address');
 		}
+
+		if (imask & mask.website)
+			modify_or_delete_child_for(properties, nsGContact, entry, 'website', a_is_used, 'href');
 
 		// ADD properties...
 		// the choice of rel='other' for AIM and rel='home' for email* is arbitrary
 		// logger().debug("ContactGoogle: 2: properties: " + aToString(properties) + " a_is_used: " + aToString(a_is_used));
 		//
-		let l, r;
+		let l, r, value;
 		let is_added_organization = false;
 		let is_added_name = false;
 
@@ -330,12 +344,18 @@ set properties (properties_in) {
 				case "postalAddress_home":
 				case "postalAddress_work":
 					[l, r] = get_element_and_suffix(key);
-					let value = properties[key];
+					value = properties[key];
 					if (l == 'postalAddress') {
 						zinAssert(this.mode() & ContactGoogle.ePostal.kEnabled);
 						value = ContactGoogleStatic.add_whitespace_to_postal_properties(properties, key);
 					}
 					entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{value}</gd:{l}>;
+					break;
+				case "website_home":
+				case "website_work":
+					[l, r] = get_element_and_suffix(key);
+					let value = properties[key];
+					entry.* += <gContact:{l} xmlns:gContact={Xpath.NS_GCONTACT} rel={get_rel(r, l)} href={value}/>;
 					break;
 				default:
 					zinAssertAndLog(false, key);
@@ -353,7 +373,7 @@ set properties (properties_in) {
 },
 postalAddressModifyFields : function(properties, a_is_used) {
 	with (ContactGoogleStatic) {
-		let list = get_elements_matching_attribute(this.m_entry.nsGd::postalAddress, 'rel', a_fragment.postalAddress, kMatchFirst);
+		let list = get_elements_matching_attribute(this.m_entry.nsGd::postalAddress, 'rel', a_fragment.postalAddress, kMatchFirst, 'postalAddress');
 
 		for (var i = 0; i < list.length(); i++)
 			this.postalAddressModifyField(list[i], properties, rightOfChar(list[i].@rel, '#'), a_is_used);
@@ -625,6 +645,7 @@ __iterator__: function() {
 }
 };
 
+
 // ContactGoogleStatic
 // static objects and methods are in this separate object for with() convenience
 //
@@ -639,12 +660,20 @@ var ContactGoogleStatic = {
 		phoneNumber   : 0x08,
 		postalAddress : 0x10,
 		organization  : 0x20,
-		im            : 0x40
+		im            : 0x40,
+		website       : 0x80
 	},
 	a_fragment : {
 		organization  : [ 'work', 'other' ],
 		phoneNumber   : [ 'work', 'home', 'work_fax', 'pager', 'mobile' ],
-		postalAddress : [ 'work', 'home' ]
+		postalAddress : [ 'work', 'home' ],
+		website       : [ 'work', 'home' ]
+	},
+	ns_rel : {
+		organization  : Xpath.NS_GD,
+		phoneNumber   : Xpath.NS_GD,
+		postalAddress : Xpath.NS_GD,
+		website       : Xpath.NS_GCONTACT
 	},
 	m_a_rel                : new Object(),
 	m_a_element_and_suffix : new Object(),
@@ -663,6 +692,9 @@ var ContactGoogleStatic = {
 
 		return (length == 0) ? "" : xml.toString();
 	},
+	shorten_rel : function(value, element_name) {
+		return (element_name == 'website') ? value : rightOfChar(value);
+	},
 	set_if : function(properties, key, xml_value) {
 		try {
 			var value = xml_value.hasComplexContent() ? xml_value.child(0).toString() : xml_value.toString();
@@ -674,20 +706,21 @@ var ContactGoogleStatic = {
 		if (value.length > 0)
 			properties[key] = value;
 	},
-	set_for : function (properties, ns, entry, prefix) {
-		let list = this.get_elements_matching_attribute(entry.ns::[prefix], 'rel', this.a_fragment[prefix], this.kMatchFirst);
+	set_for : function (properties, ns, entry, element_name) {
+		let list = this.get_elements_matching_attribute(entry.ns::[element_name], 'rel', this.a_fragment[element_name],
+		                   this.kMatchFirst, element_name);
 
 		for (var i = 0; i < list.length(); i++)
-			this.set_if(properties, this.get_hyphenation(prefix, rightOfChar(list[i].@rel)), list[i]);
+			this.set_if(properties, this.get_hyphenation(element_name, this.shorten_rel(list[i].@rel, element_name)), list[i]);
 	},
-	modify_or_delete_child : function(xml, properties, key, a_is_used, is_address_attribute) {
+	modify_or_delete_child : function(xml, properties, key, a_is_used, attribute_to_set) {
 		// logger().debug("ContactGoogle: modify_or_delete_child: key: " + key);
 
 		if (key in properties && properties[key].length > 0) {
 			// logger().debug("ContactGoogle: modify key: " + key);
 
-			if (is_address_attribute)
-				xml.@address = properties[key];
+			if (attribute_to_set)
+				xml.@[attribute_to_set] = properties[key];
 			else
 				xml.* = properties[key];
 		}
@@ -702,21 +735,26 @@ var ContactGoogleStatic = {
 
 		a_is_used[key] = true;
 	},
-	modify_or_delete_child_for : function (properties, ns, entry, prefix, a_is_used) {
-		let list = this.get_elements_matching_attribute(entry.ns::[prefix], 'rel', this.a_fragment[prefix], this.kMatchFirst);
+	modify_or_delete_child_for : function (properties, ns, entry, element_name, a_is_used, attribute_to_set) {
+		let list = this.get_elements_matching_attribute(entry.ns::[element_name], 'rel', this.a_fragment[element_name], this.kMatchFirst, element_name);
 
 		for (var i = 0; i < list.length(); i++)
-			this.modify_or_delete_child(list[i], properties, this.get_hyphenation(prefix, rightOfChar(list[i].@rel)), a_is_used);
+			this.modify_or_delete_child(list[i], properties,
+				this.get_hyphenation(element_name, this.shorten_rel(list[i].@rel, element_name)), a_is_used, attribute_to_set);
 	},
 	modify_or_delete_child_if : function(e, properties, key, a_is_used) {
 		if (e.length() > 0)
 			this.modify_or_delete_child(e, properties, key, a_is_used);
 	},
-	get_rel : function (suffix) {
-		if (!(suffix in this.m_a_rel))
-			this.m_a_rel[suffix] = Xpath.NS_GD + '#' + suffix;
+	get_rel : function (suffix, element_name) {
+		// website is in gContact namespace, which don't use urls in rel values
+		let left_of = (element_name == "website") ? "" : (Xpath.NS_GD + '#');
+		let key     = element_name + '_' + suffix;
+			
+		if (!(key in this.m_a_rel))
+			this.m_a_rel[key] = left_of + suffix;
 
-		return this.m_a_rel[suffix];
+		return this.m_a_rel[key];
 	},
 	get_element_and_suffix : function (key) {
 		if (!(key in this.m_a_element_and_suffix)) {
@@ -727,7 +765,7 @@ var ContactGoogleStatic = {
 
 		return [this.m_a_element_and_suffix[key].l, this.m_a_element_and_suffix[key].r];
 	},
-	get_elements_matching_attribute : function (list, attribute, a_rel, style) {
+	get_elements_matching_attribute : function (list, attribute, a_rel, style, element_name) {
 		// the e4x formulation for matching attributes throws an exception if the element doesn't have a rel attribute:
 		// entry.nsGd::organization.(@rel==blah);
 		// We could catch the exception, but a) that seems clumsy and b) we may (in future) compose the list differently based on style
@@ -744,8 +782,7 @@ var ContactGoogleStatic = {
 
 			if (!(tmp in a_matched))
 				for (var j = 0; j < a_rel.length; j++)
-					if (tmp == this.get_rel(a_rel[j]))
-					{
+					if (tmp == this.get_rel(a_rel[j], element_name)) {
 						a_matched[tmp] = true;
 						ret += list[i];
 					}

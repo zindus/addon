@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.98 2009-06-18 05:14:08 cvsuser Exp $
+// $Id: testharness.js,v 1.99 2009-06-18 10:09:49 cvsuser Exp $
 
 function TestHarness()
 {
@@ -898,10 +898,12 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 	properties["email1"] = "10";
 	properties["email2"] = "11";
 	properties["im_AIM"] = "12";
-	// properties["postalAddress_home"] = "13";
-	// properties["postalAddress_work"] = "14";
-	properties["postalAddress_home"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>13</street></address>";
-	properties["postalAddress_work"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>14</street></address>";
+	properties["website_home"] = "13";
+	properties["website_work"] = "14";
+	// properties["postalAddress_home"] = "15";
+	// properties["postalAddress_work"] = "16";
+	properties["postalAddress_home"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>15</street></address>";
+	properties["postalAddress_work"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>16</street></address>";
 
 	return properties;
 }
@@ -1083,6 +1085,8 @@ TestHarness.prototype.testContactGoogle2 = function()
 	<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>@@postalAddress_home@@</gd:postalAddress>\
 	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>@@postalAddress_work@@</gd:postalAddress>\
 	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>@@postalAddress_work@@</gd:postalAddress>\
+	<gContact:website href='@@website_home@@' rel='home'/>\
+	<gContact:website href='@@website_work@@' rel='work'/>\
 	<gContact:groupMembershipInfo deleted='false' href='@@group-0@@'/>\
 	<gContact:groupMembershipInfo deleted='false' href='@@group-1@@'/>\
 	<gContact:groupMembershipInfo deleted='true' href='blah1'/>\
@@ -1131,7 +1135,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 	contact = fresh_contact();
 
 	this.m_logger.debug("contact: " + contact.toString());
-
+	
 	// 2. test that everything was parsed out of the xml correctly with/without postal
 	//
 	match(contact, properties, meta, true);
@@ -1158,6 +1162,8 @@ TestHarness.prototype.testContactGoogle2 = function()
 	delete properties["email1"]; // properties["PrimaryEmail"] = "";
 	delete properties["email2"];
 	delete properties["im_AIM"];
+	delete properties["website_home"];
+	delete properties["website_work"];
 
 	contact.properties = properties;
 
