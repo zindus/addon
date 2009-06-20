@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.180 2009-06-18 05:14:08 cvsuser Exp $
+// $Id: syncfsm.js,v 1.181 2009-06-20 23:23:04 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -5910,7 +5910,7 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 	var context = this;
 	var fn      = function(sourceid, bucket) { return (context.state.sources[sourceid]['format'] == FORMAT_ZM); }
 	var remote  = null;
-	var key_suo, suo, is_more_ops;
+	var a, key_suo, suo, is_more_ops;
 
 	this.state.stopwatch.mark(state);
 
@@ -5925,8 +5925,10 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		this.state.m_suo_last_in_bucket = new Object();
 		let bucket = null;
 
-		while (Boolean([key_suo, suo] = generator.next()))
+		while (Boolean(a = generator.next())) {
+			[key_suo, suo] = a;
 			this.state.m_suo_last_in_bucket[key_suo.bucket] = key_suo;
+		}
 
 		this.state.m_a_remote_update_package.m_c_total = Suo.count(this.state.aSuo, fn); // for observer
 	}
@@ -5935,9 +5937,11 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 	if (!this.state.stopFailCode && this.state.m_a_remote_update_package.length == 0) {
 		do {
-			is_more_ops = Boolean([key_suo, suo] = this.state.m_suo_generator.next());
+			is_more_ops = Boolean(a = this.state.m_suo_generator.next());
 
 			if (is_more_ops) {
+				[key_suo, suo] = a;
+
 				let remote_update_package = this.updateZmRemoteUpdatePackage(key_suo, suo);
 
 				if (remote_update_package)
@@ -6442,18 +6446,20 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 	if (!this.state.m_suo_generator)
 		this.state.m_suo_generator = this.state.m_suo_iterator.generator(fn);
 
-	var is_more_ops = !this.state.stopFailCode && Boolean([key_suo, suo] = this.state.m_suo_generator.next());
+	var is_more_ops = !this.state.stopFailCode && Boolean(a = this.state.m_suo_generator.next());
 
 	if (!is_more_ops)
 		this.state.m_suo_generator = null;
 	else
 	{
+		[key_suo, suo]  = a;
 		type            = this.feedItemTypeFromGid(suo.gid, suo.sourceid_winner);
 		sourceid_winner = suo.sourceid_winner;
 		sourceid_target = suo.sourceid_target;
 		zfcTarget       = this.zfc(suo.sourceid_target);
 		zfiGid          = this.state.zfcGid.get(suo.gid);
 		luid_winner     = zfiGid.get(suo.sourceid_winner);
+
 
 		this.debug("entryActionUpdateGd: " + " opcode: " + suo.opcodeAsString() + " type: " + FeedItem.typeAsString(type) +
 				                             " suo: "    + suo.toString());

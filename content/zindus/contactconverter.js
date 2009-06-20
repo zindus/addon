@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.41 2009-06-18 10:09:49 cvsuser Exp $
+// $Id: contactconverter.js,v 1.42 2009-06-20 23:23:03 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -37,6 +37,7 @@ function ContactConverter()
 	this.m_logger       = newLogger("ContactConverter");
 	this.m_gac          = new GdAddressConverter();
 	this.m_gd_certain_keys_converted = null;
+	this.m_is_tb_birthday_field = false;
 
 	this.m_ignore_on_slow_sync = new Object();
 	let str = preference(MozillaPreferences.AS_IGNORE_ON_SLOW_SYNC, 'char');
@@ -110,11 +111,18 @@ setup : function(style) {
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherPhone",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherFax",          FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "otherURL",          FORMAT_GD, null));
-	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "birthday",          FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "fileAs",            FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress1",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress2",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress3",        FORMAT_GD, null));
+
+	this.m_is_tb_birthday_field = nsIXULAppInfo().is_tb_birthday_field;
+
+	if (this.m_is_tb_birthday_field) {
+		this.m_equivalents.push(newObject(FORMAT_TB, "BirthDay",        FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
+		this.m_equivalents.push(newObject(FORMAT_TB, "BirthMonth",      FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
+		this.m_equivalents.push(newObject(FORMAT_TB, "BirthYear",       FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
+	}
 
 	// if we're creating equivalents for all tb properties, then for those tb properties that don't map to zimbra,
 	// create a mapping using the name of the TB field and a prefix
@@ -143,23 +151,33 @@ setup : function(style) {
 		"namePrefix", "nameSuffix", "initials", "email4", "email5", "email6", "email7", "office", "outlookUserField1"
 		);
 
+	if (!this.m_is_tb_birthday_field) {
+		this.m_dont_convert[FORMAT_ZM]['birthday'] = true;
+		this.m_dont_convert[FORMAT_GD]['birthday'] = true;
+	}
+
 	this.m_bimap_format = getBimapFormat('short');
 
-	this.m_zm_street_field = new Object();
-	this.m_zm_street_field[FORMAT_TB] = { "HomeAddress":  0, "HomeAddress2" : 0, "WorkAddress" : 0, "WorkAddress2" : 0 };
-	this.m_zm_street_field[FORMAT_GD] = { };
-	this.m_zm_street_field[FORMAT_ZM] = { "homeStreet" :  0, "workStreet"   : 0 };
-
-	this.m_gd_address_field = new Object();
-	this.m_gd_address_field[FORMAT_TB] = { "HomeAddress"  : 0, "WorkAddress"  : 0,
-	                                       "HomeAddress2" : 0, "WorkAddress2" : 0,
-	                                       "HomeCity"     : 0, "WorkCity"     : 0,
-										   "HomeState"    : 0, "WorkState"    : 0,
-										   "HomeZipCode"  : 0, "WorkZipCode"  : 0,
-										   "HomeCountry"  : 0, "WorkCountry"  : 0 };
-	this.m_gd_address_field[FORMAT_GD] = { "postalAddress_home" :  0, "postalAddress_work" : 0 };
-	this.m_gd_address_field[FORMAT_ZM] = { };
-
+	this.m_a_multiplexed = {
+		'zm_street' : newObject(
+			FORMAT_TB, newObjectWithKeys("HomeAddress", "HomeAddress2", "WorkAddress", "WorkAddress2"),
+			FORMAT_ZM, newObjectWithKeys("homeStreet", "workStreet"),
+			FORMAT_GD, { } ),
+		'gd_address' : newObject(
+			FORMAT_TB, newObjectWithKeys( "HomeAddress",  "WorkAddress",
+	                                       "HomeAddress2", "WorkAddress2",
+	                                       "HomeCity",     "WorkCity",
+										   "HomeState",    "WorkState",
+										   "HomeZipCode",  "WorkZipCode",
+										   "HomeCountry",  "WorkCountry"),
+			FORMAT_ZM, { },
+			FORMAT_GD, newObjectWithKeys("postalAddress_home", "postalAddress_work") ),
+		'tb_birthday' : newObject(
+			FORMAT_TB, newObjectWithKeys("BirthDay", "BirthMonth", "BirthYear"),
+			FORMAT_ZM, newObjectWithKeys("birthday"),
+			FORMAT_GD, newObjectWithKeys("birthday") )
+			};
+			
 	var i, j, k;
 	this.m_map = new Object();
 
@@ -196,8 +214,9 @@ setup : function(style) {
 			                                "][" + this.m_bimap_format.lookup(j, null) + "]: " + aToString(this.m_common_to[i][j]));
 },
 convert : function(format_to, format_from, properties_from) {
-	var a_zm_normalised_street = newObject("home", new Array(),  "work", new Array());
-	var a_gd_address_fields    = newObject("home", new Object(), "work", new Object());
+	var a_normalised_zm_street   = newObject("home", new Array(),  "work", new Array());
+	var a_normalised_gd_address  = newObject("home", new Object(), "work", new Object());
+	var a_normalised_tb_birthday = new Object();
 	var key_from, index_to, key_to;
 
 	zinAssert(isValidFormat(format_to) && isValidFormat(format_from));
@@ -219,30 +238,40 @@ convert : function(format_to, format_from, properties_from) {
 				//                     " key_from: " + key_from + " key_to: " + key_to);
 
 				if (key_to != null) {
-					if ((key_from in this.m_zm_street_field[format_from]) && (key_to in this.m_zm_street_field[format_to]))
-						this.normaliseStreetLine(format_to, format_from, properties_from, key_from, a_zm_normalised_street);
-					else if ((key_from in this.m_gd_address_field[format_from]) && (key_to in this.m_gd_address_field[format_to]))
-						this.gdAddressInput(format_to, format_from, properties_from, key_from, a_gd_address_fields);
+					if ((key_from in this.m_a_multiplexed['zm_street'][format_from]) &&
+					    (key_to   in this.m_a_multiplexed['zm_street'][format_to]))
+						this.zm_street_normalise(format_to, format_from, properties_from, key_from, a_normalised_zm_street);
+					else if ((key_from in this.m_a_multiplexed['gd_address'][format_from]) &&
+					         (key_to   in this.m_a_multiplexed['gd_address'][format_to]))
+						this.gd_address_normalise(format_to, format_from, properties_from, key_from, a_normalised_gd_address);
+					else if (this.m_is_tb_birthday_field && 
+					         ((key_from in this.m_a_multiplexed['tb_birthday'][format_from]) &&
+					          (key_to   in this.m_a_multiplexed['tb_birthday'][format_to]))) {
+						this.tb_birthday_normalise(format_to, format_from, properties_from, key_from, a_normalised_tb_birthday);
+					}
 					else
 						properties_to[key_to] = properties_from[key_from];
 				}
 			}
-			else if (!((format_from == FORMAT_GD && (key_from in this.m_gd_address_field[format_from]))))
+			else if (!((format_from == FORMAT_GD && (key_from in this.m_a_multiplexed['gd_address'][format_from]))))
 				this.m_logger.warn("Ignoring contact field that we don't have a mapping for: " +
 				                   "from: " + this.m_bimap_format.lookup(format_from, null) + " field: " + key_from);
 		}
 	}
 
-	if (a_zm_normalised_street["home"].length > 0 || a_zm_normalised_street["work"].length > 0)
-		this.outputNormalisedStreetLine(format_to, properties_to, a_zm_normalised_street);
+	if (a_normalised_zm_street["home"].length > 0 || a_normalised_zm_street["work"].length > 0)
+		this.zm_street_output(format_to, properties_to, a_normalised_zm_street);
 
 	for (var key in { "Home" : 0, "Work" : 0 })
-		if (aToLength(a_gd_address_fields[key.toLowerCase()]) > 0)
+		if (aToLength(a_normalised_gd_address[key.toLowerCase()]) > 0)
 			if (format_to == FORMAT_TB)
-				this.addSuffix(key, properties_to, a_gd_address_fields[key.toLowerCase()])
+				this.addSuffix(key, properties_to, a_normalised_gd_address[key.toLowerCase()])
 			else if (format_to == FORMAT_GD)
-				this.m_gac.convert(properties_to, "postalAddress_" + key.toLowerCase(), a_gd_address_fields[key.toLowerCase()],
+				this.m_gac.convert(properties_to, "postalAddress_" + key.toLowerCase(), a_normalised_gd_address[key.toLowerCase()],
 				                     GdAddressConverter.ADDR_TO_XML );
+
+	if (!isObjectEmpty(a_normalised_tb_birthday))
+		this.tb_birthday_output(format_to, properties_to, a_normalised_tb_birthday);
 
 	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
 	//                                  " properties_from: "       + aToString(properties_from) +
@@ -260,7 +289,7 @@ convert : function(format_to, format_from, properties_from) {
 // HomeAddress2: Melbourne, VIC, 3000                  Melbourne
 //                                                     VIC
 //                                                     3000
-outputNormalisedStreetLine : function(format_to, properties_to, a_normalised_street) {
+zm_street_output : function(format_to, properties_to, a_normalised_street) {
 	switch(format_to) {
 		case FORMAT_TB:
 			if (a_normalised_street["home"].length > 0)
@@ -286,8 +315,8 @@ outputNormalisedStreetLine : function(format_to, properties_to, a_normalised_str
 		default: zinAssert(false);
 	}
 },
-normaliseStreetLine : function(format_to, format_from, properties_from, key_from, a_normalised_street) {
-	// this.m_logger.debug("normaliseStreetLine: blah: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
+zm_street_normalise : function(format_to, format_from, properties_from, key_from, a_normalised_street) {
+	this.m_logger.debug("zm_street_normalise: AMHERE: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
 
 	switch(format_from) {
 		case FORMAT_TB: switch(key_from) {
@@ -308,8 +337,8 @@ normaliseStreetLine : function(format_to, format_from, properties_from, key_from
 		default: zinAssert(false);
 	}
 
-	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[home]: " + a_normalised_street["home"].toString());
-	// this.m_logger.debug("normaliseStreetLine: a_normalised_street[work]: " + a_normalised_street["work"].toString());
+	// this.m_logger.debug("zm_street_normalise: a_normalised_street[home]: " + a_normalised_street["home"].toString());
+	// this.m_logger.debug("zm_street_normalise: a_normalised_street[work]: " + a_normalised_street["work"].toString());
 },
 lineTwoFromCommaSeparated : function(properties_from, key_from, a_line, type)
 {
@@ -412,14 +441,14 @@ initialise_common_to : function(format_to, format_from) {
 	if (typeof this.m_common_to[format_to][format_from] != 'object')
 		this.m_common_to[format_to][format_from] = new Object();
 
-	for (i = 0; i < this.m_equivalents.length; i++)
+	for (var i = 0; i < this.m_equivalents.length; i++)
 		if (this.m_equivalents[i][format_from] != null && this.m_equivalents[i][format_to] != null)
 			this.m_common_to[format_to][format_from][this.m_equivalents[i][format_to]] = true;
 },
-gdAddressInput : function(format_to, format_from, properties_from, key_from, a_gd_address_fields) {
+gd_address_normalise : function(format_to, format_from, properties_from, key_from, a_normalised_gd_address) {
 	var left, right;
 
-	// this.m_logger.debug("gdAddressInput: blah: format_to: " + format_to + " format_from: " + format_from + " key_from: " + key_from);
+	// this.m_logger.debug("gd_address_normalise: AMHERE: format_to: " + format_to+" format_from: "+format_from+" key_from: " + key_from);
 
 	switch(format_from) {
 		case FORMAT_TB:
@@ -429,13 +458,13 @@ gdAddressInput : function(format_to, format_from, properties_from, key_from, a_g
 			left  = key_from.substring(0, 4).toLowerCase();
 			right = key_from.substring(4);
 
-			a_gd_address_fields[left][right] = properties_from[key_from];
+			a_normalised_gd_address[left][right] = properties_from[key_from];
 			break;
 
 		case FORMAT_GD:
 			left = rightOfChar(key_from, '_'); // "home" or "work"
-			zinAssertAndLog(left in a_gd_address_fields, left);
-			this.m_gac.convert(properties_from, key_from, a_gd_address_fields[left], GdAddressConverter.ADDR_TO_PROPERTIES );
+			zinAssertAndLog(left in a_normalised_gd_address, left);
+			this.m_gac.convert(properties_from, key_from, a_normalised_gd_address[left], GdAddressConverter.ADDR_TO_PROPERTIES );
 			break;
 		default: zinAssert(false);
 	}
@@ -446,6 +475,58 @@ addSuffix : function(prefix, properties_to, properties_from) {
 			properties_to[prefix + i] = properties_from[i];
 		else
 			; // do nothing instead of properties_to[i] = properties_from[i]; // this is for <otheraddr>
+},
+tb_birthday_normalise : function(format_to, format_from, properties_from, key_from, a_normalised_tb_birthday) {
+	// this.m_logger.debug("tb_birthday_normalise: AMHERE: format_to: "+format_to+" format_from: " + format_from+" key_from: " + key_from);
+
+	switch(format_from) {
+		case FORMAT_TB:
+			a_normalised_tb_birthday[key_from] = properties_from[key_from];
+			break;
+
+		case FORMAT_ZM:
+		case FORMAT_GD: {
+			let a = properties_from[key_from].split("-");
+
+			// this.m_logger.debug("AMHERE: a: length: " + a.length + " a: " + a.toString());
+
+			a_normalised_tb_birthday['BirthDay']   = a[a.length - 1];
+			a_normalised_tb_birthday['BirthMonth'] = a[a.length - 2];
+			a_normalised_tb_birthday['BirthYear']  = (a.length == 3) ? a[0] : "";
+
+			break;
+		}
+		default: zinAssert(false);
+	}
+},
+tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday) {
+	switch(format_to) {
+		case FORMAT_TB:
+			for (var key in a_normalised_tb_birthday)
+				properties_to[key] = a_normalised_tb_birthday[key];
+			break;
+
+		case FORMAT_ZM: {
+			let year = (Number(a_normalised_tb_birthday['BirthYear']) > 0) ? a_normalised_tb_birthday['BirthYear'] : "0000";
+			properties_to['birthday'] = year + "-" +
+			                            a_normalised_tb_birthday['BirthMonth'] + "-" +
+			                            a_normalised_tb_birthday['BirthDay'];
+			break;
+		}
+		case FORMAT_GD: {
+			let birthday = "-" + a_normalised_tb_birthday['BirthMonth'] +
+			               "-" + a_normalised_tb_birthday['BirthDay'];
+
+			if (Number(a_normalised_tb_birthday['BirthYear']) > 0)
+				birthday = a_normalised_tb_birthday['BirthYear'] + birthday;
+			else
+				birthday = "-" + birthday;
+
+			properties_to['birthday'] = birthday;
+			break;
+		}
+		default: zinAssert(false);
+	}
 },
 keysCommonToThatMatch : function(regexp, replace_with, format_from, format_to) {
 	var ret = new Object();

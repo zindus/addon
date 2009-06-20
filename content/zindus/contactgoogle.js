@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.18 2009-06-18 10:09:49 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.19 2009-06-20 23:23:04 cvsuser Exp $
 
 function ContactGoogle(xml, mode) {
 	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry();
@@ -84,7 +84,7 @@ make_mask_of_elements_in_entry: function () {
 
 	var reAtom     = /content/;
 	var reGd       = /email|phoneNumber|postalAddress|name|organization|im/;
-	var reGContact = /website/;
+	var reGContact = /website|birthday/;
 
 	with (ContactGoogleStatic)
 		for (i = 0; i < children.length(); i++) {
@@ -169,6 +169,10 @@ properties_from_xml: function () {
 	
 			for (i = 0; i < list.length(); i++)
 				set_if(properties, get_hyphenation('website', shorten_rel(list[i].@rel, 'website')), list[i].@href);
+		}
+
+		if (imask & mask.birthday) {
+			set_if(properties, 'birthday', entry.nsGContact::birthday.@when);
 		}
 
 	}
@@ -291,6 +295,13 @@ set properties (properties_in) {
 		if (imask & mask.website)
 			modify_or_delete_child_for(properties, nsGContact, entry, 'website', a_is_used, 'href');
 
+		if (imask & mask.birthday) {
+			let tmp = entry.nsGContact::birthday;
+
+			if (tmp.length() > 0)
+				modify_or_delete_child(tmp, properties, 'birthday', a_is_used, 'when');
+		}
+
 		// ADD properties...
 		// the choice of rel='other' for AIM and rel='home' for email* is arbitrary
 		// logger().debug("ContactGoogle: 2: properties: " + aToString(properties) + " a_is_used: " + aToString(a_is_used));
@@ -356,6 +367,9 @@ set properties (properties_in) {
 					[l, r] = get_element_and_suffix(key);
 					let value = properties[key];
 					entry.* += <gContact:{l} xmlns:gContact={Xpath.NS_GCONTACT} rel={get_rel(r, l)} href={value}/>;
+					break;
+				case "birthday":
+					entry.* += <gContact:birthday xmlns:gd={Xpath.NS_GCONTACT} when={properties[key]} />;
 					break;
 				default:
 					zinAssertAndLog(false, key);
@@ -654,14 +668,15 @@ var ContactGoogleStatic = {
 	nsGd       : Namespace(Xpath.NS_GD),
 	nsGContact : Namespace(Xpath.NS_GCONTACT),
 	mask       : {
-		name          : 0x01,
-		content       : 0x02,
-		email         : 0x04,
-		phoneNumber   : 0x08,
-		postalAddress : 0x10,
-		organization  : 0x20,
-		im            : 0x40,
-		website       : 0x80
+		name          : 0x0001,
+		content       : 0x0002,
+		email         : 0x0004,
+		phoneNumber   : 0x0008,
+		postalAddress : 0x0010,
+		organization  : 0x0020,
+		im            : 0x0040,
+		website       : 0x0080,
+		birthday      : 0x0100
 	},
 	a_fragment : {
 		organization  : [ 'work', 'other' ],

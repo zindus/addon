@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.69 2009-06-01 02:54:29 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.70 2009-06-20 23:23:04 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -194,7 +194,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	var ret = false;
 	var progress_count;
 	var percentage_progress_big_hand = 0;
-	var key;
+	var es, key;
 
 	this.m_logger.debug("update: fsmstate: " + (fsmstate ? fsmstate.toString() : "null"));
 
@@ -289,7 +289,6 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 				let self = this;
 				[ ret, percentage_progress_big_hand ] = this.updateStateBatch("get.many", context, function(type) {
 					let ret = (type == 'total') ? context.state.aContact.length : SyncFsm.GetContactZmNextBatch(context.state.aContact).length;
-					self.m_logger.debug("AMHERE: fn: type: " + type + " returns: " + ret);
 					return ret;
 				} );
 				this.m_logger.debug("updateState: after: ret: " + ret + " percentage_progress_big_hand: " + percentage_progress_big_hand);

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: lso.js,v 1.16 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: lso.js,v 1.17 2009-06-20 23:23:04 cvsuser Exp $
 
 // lso == Last Sync Object
 //
@@ -94,12 +94,12 @@ Lso.prototype.compareFormat = function()
 //
 Lso.prototype.compare = function(zfi)
 {
-	var ret;
 	var isExactMatch = true;
 	var isGreaterThan = null;
 	var aParts = Lso.aPartsZfi;
+	var ret;
 
-	for (i = 0; i < aParts.length && isExactMatch; i++)
+	for (var i = 0; i < aParts.length && isExactMatch; i++)
 	{
 		// logger.debug("blah: Lso.[i]: " + aParts[i] + " lhs: " + Lso.normalise(zfi, aParts[i]) + " rhs: " + this.m_properties[aParts[i]]);
 

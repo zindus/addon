@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.48 2009-06-15 06:18:14 cvsuser Exp $
+// $Id: util.js,v 1.49 2009-06-20 23:23:04 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -871,16 +871,15 @@ function openURL(url)
 function migratePrefName(a_map)
 {
 	var prefs = preferences();
+	var value;
 
-	for (var old in a_map)
-	{
+	for (var old in a_map) {
 		if (a_map[old].type == 'char')
 			value = prefs.getCharPrefOrNull(prefs.branch(), old);
 		else
 			value = prefs.getIntPrefOrNull(prefs.branch(), old);
 
-		if (value != null)
-		{
+		if (value != null) {
 			if (a_map[old].type == 'char')
 				prefs.branch().setCharPref(a_map[old].new, value);
 			else
@@ -895,7 +894,7 @@ function migratePrefName(a_map)
 
 function migratePrefValue(a_key, bimap)
 {
-	var key;
+	var key, value;
 
 	for (var i = 0; i < a_key.length; i++)
 	{
@@ -1181,4 +1180,35 @@ function str_with_trailing(str, chr)
 		str += '/';
 
 	return str;
+}
+
+function nsIXULAppInfo()
+{
+	const FF_ID = "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}";
+	const TB_ID = "{3550f703-e582-4d05-9a08-453d09bdfdc6}";
+	const SM_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
+
+	var ret = new Object();
+
+	var appInfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
+
+	if (appInfo.ID == FF_ID)
+  		ret.app_name = 'firefox';
+	else if (appInfo.ID == TB_ID)
+  		ret.appInfo = 'thunderbird';
+	else if (appInfo.ID == SM_ID)
+  		ret.appInfo = 'seamonkey';
+	else
+  		ret.appInfo = 'other';
+
+	ret.version = appInfo.version;
+
+	var versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
+
+	ret.is_tb_birthday_field = ((ret.appInfo == 'thunderbird' || ret.appInfo == 'seamonkey') &&
+	                            versionChecker.compare(appInfo.version, "3.0b3pre") >= 0)
+
+	logger().debug("nsIXULAppInfo: returns: " + aToString(ret)); // TODO
+
+	return ret;
 }
