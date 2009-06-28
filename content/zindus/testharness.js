@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.99 2009-06-18 10:09:49 cvsuser Exp $
+// $Id: testharness.js,v 1.100 2009-06-28 10:45:13 cvsuser Exp $
 
 function TestHarness()
 {
@@ -67,10 +67,11 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
 	// ret = ret && this.testContactGoogle1();
-	ret = ret && this.testContactGoogle2();
+	// ret = ret && this.testContactGoogle2();
 	// ret = ret && this.testContactGoogleIssue151();
 	// ret = ret && this.testContactGoogleIssue179();
 	// ret = ret && this.testContactGoogleIssue185();
+	ret = ret && this.testContactGoogleIssue202();
 	// ret = ret && this.testContactGoogleIterators();
 	// ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
@@ -1353,6 +1354,29 @@ TestHarness.prototype.testContactGoogleIssue185 = function()
 
 	return true;
 }
+
+TestHarness.prototype.testContactGoogleIssue202 = function()
+{
+	var xmlStringEntry = "\
+	<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'> \
+	<id>http://www.google.com/m8/feeds/contacts/example%40googlemail.com/base/d</id> \
+	<updated>2009-02-05T13:22:07.967Z</updated> \
+	<title>BTW</title><content>some content here </content> \
+	<link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/example%40googlemail.com/thin/d'/> \
+	<link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/example%40googlemail.com/thin/d'/> \
+	<gContact:groupMembershipInfo deleted='false' href='http://www.google.com/m8/feeds/groups/example%40googlemail.com/base/6'/> \
+	<gContact:groupMembershipInfo deleted='true' href='http://www.google.com/m8/feeds/groups/example%40googlemail.com/base/7'/> \
+	</entry>";
+
+	let contact = ContactGoogle.newContact(xmlStringEntry);
+
+	contact.modify(ContactGoogle.eModify.kRemoveDeletedGroupMembershipInfo);
+
+	this.m_logger.debug("contact: " + contact.toString());
+
+	return true;
+}
+
 
 TestHarness.prototype.testContactGoogleIterators = function()
 {

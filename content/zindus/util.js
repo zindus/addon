@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.49 2009-06-20 23:23:04 cvsuser Exp $
+// $Id: util.js,v 1.50 2009-06-28 10:45:13 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1058,6 +1058,7 @@ function url(key)
 		case 'roadmap-thunderbird-3': ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
 		case 'share-tos':             ret = 'http://www.zindus.com/service/tos.html';                            break;
 		case 'share-faq':             ret = 'http://www.zindus.com/faq-share';                                   break;
+		case 'google-issue-997':      ret = 'http://code.google.com/p/gdata-issues/issues/detail?id=997';        break;
 		default: zinAssertAndLog(false, key);
 	}
 
@@ -1192,20 +1193,18 @@ function nsIXULAppInfo()
 
 	var appInfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
 
-	if (appInfo.ID == FF_ID)
-  		ret.app_name = 'firefox';
-	else if (appInfo.ID == TB_ID)
-  		ret.appInfo = 'thunderbird';
-	else if (appInfo.ID == SM_ID)
-  		ret.appInfo = 'seamonkey';
-	else
-  		ret.appInfo = 'other';
+	switch(appInfo.ID) {
+		case FF_ID: ret.app_name = 'firefox';     break;
+		case TB_ID: ret.app_name = 'thunderbird'; break;
+		case SM_ID: ret.app_name = 'seamonkey';   break;
+		default:    ret.app_name = 'other';       break;
+	}
 
 	ret.version = appInfo.version;
 
 	var versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
 
-	ret.is_tb_birthday_field = ((ret.appInfo == 'thunderbird' || ret.appInfo == 'seamonkey') &&
+	ret.is_tb_birthday_field = ((ret.app_name == 'thunderbird' || ret.app_name == 'seamonkey') &&
 	                            versionChecker.compare(appInfo.version, "3.0b3pre") >= 0)
 
 	logger().debug("nsIXULAppInfo: returns: " + aToString(ret)); // TODO

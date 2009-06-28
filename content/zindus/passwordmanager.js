@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: passwordmanager.js,v 1.18 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: passwordmanager.js,v 1.19 2009-06-28 10:45:13 cvsuser Exp $
 
 function PasswordManagerTb2()
 {
@@ -252,7 +252,7 @@ PasswordLocator.prototype = {
 			pm.set(this.m_url, this.m_username, value);
 		}
 
-		// logger().debug("PasswordLocator: setPassword: AMHERE: url: "+this.m_url+" username: "+this.m_username+" bool: "+Boolean(value));
+		// logger().debug("PasswordLocator: setPassword: url: "+this.m_url+" username: "+this.m_username+" bool: "+Boolean(value));
 	},
 	getPassword : function() {
 		var ret = null;
@@ -262,7 +262,7 @@ PasswordLocator.prototype = {
 			ret = pm.get(this.m_url, this.m_username);
 		}
 
-		// logger().debug("PasswordLocator: getPassword: AMHERE: url: " + this.m_url + " username: " + this.m_username +
+		// logger().debug("PasswordLocator: getPassword: url: " + this.m_url + " username: " + this.m_username +
 		//                 " as bool: " + Boolean(this.m_url && this.m_username) + " returns pw of length: " + ret.length);
 
 		return ret;

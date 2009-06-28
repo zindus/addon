@@ -23,7 +23,10 @@
   
   ***** END LICENSE BLOCK ***** -->
 
+<!--
+IS_DEVELOPER_MODE
 <?xul-overlay href="chrome://zindus/content/share_service/configzss.xul"?>
+-->
 
 <?xml-stylesheet href="chrome://global/skin" type="text/css"?>
 <?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
@@ -48,13 +51,15 @@
 
 	<stringbundleset>
 		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
-		<stringbundle id="zindus-cw-stringbundle" src="chrome://zindus/content/share_service/configwizard.properties" /> <!-- TODO change to locale -->
 	</stringbundleset>
 
 	<tabbox id="zindus-cs-tabbox" orient="vertical" flex="1" >
 		<tabs>
-			<tab id="zindus-cs-tab-accounts"  label="General" />
-			<tab id="zindus-cs-tab-share"     label="Sharing"  />
+			<tab id="zindus-cs-tab-accounts"  label="&zindus.cs.general.settings.label;" />
+			<!--
+			IS_DEVELOPER_MODE
+			<tab id="zindus-cs-tab-share"     label="&zindus.cs.sharing.label;"  />
+			-->
 		</tabs>
 
 		<tabpanels flex="1">
@@ -120,8 +125,10 @@
 	</vbox>
 	</tabpanel>
 
-	<tabpanel id="cs-share-tabpanel" > <!-- Share -->
-	</tabpanel>
+	<!--
+		IS_DEVELOPER_MODE
+		<tabpanel id="cs-share-tabpanel" />
+	-->
 	</tabpanels>
 </tabbox>
 </dialog>

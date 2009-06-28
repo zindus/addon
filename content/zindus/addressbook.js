@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.57 2009-06-15 22:05:18 cvsuser Exp $
+// $Id: addressbook.js,v 1.58 2009-06-28 10:45:13 cvsuser Exp $
 
 function AddressBookTb2() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb2"); }
 function AddressBookTb3() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb3"); }
@@ -180,6 +180,8 @@ AddressBook.prototype.getAddressBookNameByUri = function(uri)
 
 AddressBook.prototype.forEachAddressBook = function(functor)
 {
+	zinAssert(typeof(Ci.nsIAbDirectory) != 'undefined');
+
 	var root      = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Ci.nsIAbDirectory);
 	var nodes     = root.childNodes;
 	var fContinue = true;
@@ -502,7 +504,7 @@ AddressBookTb3.prototype.addCard = function(uri, properties, attributes)
 	zinAssert(attributes != null);
 
 	if (false)
-		this.m_logger.debug("addCard: AMHERE: uri: " + uri + " properties: "+aToString(properties)+" attributes: " + aToString(attributes));
+		this.m_logger.debug("addCard: uri: " + uri + " properties: "+aToString(properties)+" attributes: " + aToString(attributes));
 
 	var dir    = this.nsIAbDirectory(uri);
 	var abCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Ci.nsIAbCard);

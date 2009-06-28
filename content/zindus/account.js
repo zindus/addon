@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: account.js,v 1.15 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: account.js,v 1.16 2009-06-28 10:45:13 cvsuser Exp $
 
 var eAccount = new ZinEnum( {
 	sourceid            : 'sourceid',
@@ -210,14 +210,10 @@ var AccountStatic = {
 		var a_failed      = new Object();
 		var i, account;
 
-		// logger().debug("arrayLoadFromPrefset: AMHERE: 1: a_sourceid: " + a_sourceid.toString());
-
 		for (var i = 0; i < a_sourceid.length; i++)
 			a_sourceid[i] = Number(a_sourceid[i]);
 
 		a_sourceid.sort(numeric_compare);
-
-		// logger().debug("arrayLoadFromPrefset: AMHERE: 2: a_sourceid: " + a_sourceid.toString());
 
 		// accounts have integrity:
 		// - if the keys are 0, 1, 2 etc, offset as per indexToSourceId()

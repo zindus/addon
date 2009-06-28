@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.42 2009-06-20 23:23:03 cvsuser Exp $
+// $Id: contactconverter.js,v 1.43 2009-06-28 10:45:13 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -316,7 +316,7 @@ zm_street_output : function(format_to, properties_to, a_normalised_street) {
 	}
 },
 zm_street_normalise : function(format_to, format_from, properties_from, key_from, a_normalised_street) {
-	this.m_logger.debug("zm_street_normalise: AMHERE: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
+	// this.m_logger.debug("zm_street_normalise: format_to: " + format_to +" format_from: " +format_from + " key_from: " + key_from);
 
 	switch(format_from) {
 		case FORMAT_TB: switch(key_from) {
@@ -448,7 +448,7 @@ initialise_common_to : function(format_to, format_from) {
 gd_address_normalise : function(format_to, format_from, properties_from, key_from, a_normalised_gd_address) {
 	var left, right;
 
-	// this.m_logger.debug("gd_address_normalise: AMHERE: format_to: " + format_to+" format_from: "+format_from+" key_from: " + key_from);
+	// this.m_logger.debug("gd_address_normalise: format_to: " + format_to+" format_from: "+format_from+" key_from: " + key_from);
 
 	switch(format_from) {
 		case FORMAT_TB:
@@ -477,7 +477,7 @@ addSuffix : function(prefix, properties_to, properties_from) {
 			; // do nothing instead of properties_to[i] = properties_from[i]; // this is for <otheraddr>
 },
 tb_birthday_normalise : function(format_to, format_from, properties_from, key_from, a_normalised_tb_birthday) {
-	// this.m_logger.debug("tb_birthday_normalise: AMHERE: format_to: "+format_to+" format_from: " + format_from+" key_from: " + key_from);
+	// this.m_logger.debug("tb_birthday_normalise: format_to: "+format_to+" format_from: " + format_from+" key_from: " + key_from);
 
 	switch(format_from) {
 		case FORMAT_TB:
@@ -487,8 +487,6 @@ tb_birthday_normalise : function(format_to, format_from, properties_from, key_fr
 		case FORMAT_ZM:
 		case FORMAT_GD: {
 			let a = properties_from[key_from].split("-");
-
-			// this.m_logger.debug("AMHERE: a: length: " + a.length + " a: " + a.toString());
 
 			a_normalised_tb_birthday['BirthDay']   = a[a.length - 1];
 			a_normalised_tb_birthday['BirthMonth'] = a[a.length - 2];

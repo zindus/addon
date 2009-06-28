@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.181 2009-06-20 23:23:04 cvsuser Exp $
+// $Id: syncfsm.js,v 1.182 2009-06-28 10:45:13 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -343,19 +343,18 @@ SyncFsmZm.prototype.entryActionAuthSelect = function(state, event, continuation)
 		zinAssert(this.state.zidbag.isPrimaryUser());
 
 		this.state.zidbag.push(null);
-		this.state.zidbag.set(null, eAccount.url, this.account().url);
-
-		var soapURL = url;
-		var prefset = prefsetMatchWithPreAuth(soapURL);
+		this.state.zidbag.set(null, eAccount.url, url);
+		let prefset = prefsetMatchWithPreAuth(url);
 
 		if (prefset)
 		{
-			this.state.preauthURL  = soapURL.replace(/^(https?:\/\/.+?\/).*$/, "$1") + prefset.getProperty(PrefSet.PREAUTH_URI_HIER_PART);
+			url                    = url.replace(/^(https?:\/\/.+?\/).*$/, "$1");
+			this.state.preauthURL  = url + prefset.getProperty(PrefSet.PREAUTH_URI_HIER_PART);
 			this.state.preauthBody = prefset.getProperty(PrefSet.PREAUTH_POST_BODY);
 			this.state.preauthBody = this.state.preauthBody.replace(/\%username\%/, username);
 			this.state.preauthBody = this.state.preauthBody.replace(/\%password\%/, password);
 
-			this.debug("entryActionAuthSelect: matched: " + soapURL + " against: " + prefset.getProperty(PrefSet.PREAUTH_REGEXP)
+			this.debug("entryActionAuthSelect: matched: " + url + " against: " + prefset.getProperty(PrefSet.PREAUTH_REGEXP)
 			                                              + " preauth url: " + this.state.preauthURL);
 
 			nextEvent = 'evPreAuth';
@@ -2430,7 +2429,7 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 	if (!post_id || pre_prefid != post_prefid)    // no folder by this name or it changed since last sync
 	{
 		this.state.stopFailCode    = 'failon.folder.reserved.changed';
-		this.state.stopFailArg     = [ name ];  // FIXME - this name is internal-facing ie zindus_pab
+		this.state.stopFailArg     = [ name ];  // TODO - this name is internal-facing ie zindus_pab
 		this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 	}
 
@@ -5951,8 +5950,6 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		         this.state.m_a_remote_update_package.length < MAX_BATCH_SIZE &&
 				 !key_suo.isEqual(this.state.m_suo_last_in_bucket[key_suo.bucket]));
 
-		this.debug("entryActionUpdateZm: 2: " + " m_a_remote_update_package.length: " + this.state.m_a_remote_update_package.length); // TODO
-
 		if (this.state.m_a_remote_update_package.length != 0) {
 			// work out how many we're going to process in the next batch - the observer reports this in the UI.
 			// TODO stop when you hit a foreign delete
@@ -6423,7 +6420,7 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 								     [ remote.method + " " + aToString(remote.arg) ] );
 	}
 	else {
-		this.debug("exitAction: AMHERE: shifting: " + this.state.m_a_remote_update_package.m_c_used_in_current_batch);
+		this.debug("exitActionUpdateZmHttp: shifting: " + this.state.m_a_remote_update_package.m_c_used_in_current_batch);
 
 		for (var i = 0; i < this.state.m_a_remote_update_package.m_c_used_in_current_batch; i++)
 			this.state.m_a_remote_update_package.shift();
@@ -6439,7 +6436,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 	var fn        = function(sourceid, bucket) { return (context.state.sources[sourceid]['format'] == FORMAT_GD); }
 	var remote    = newObject('method', null);
 	var sourceid_winner, sourceid_target, luid_winner, luid_target, properties, contact, zfcTarget, zfiTarget, zfiGid;
-	var type, suo, key_suo;
+	var a, type, suo, key_suo;
 
 	this.state.stopwatch.mark(state);
 
@@ -6490,7 +6487,18 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				luid_target    = zfiGid.get(sourceid_target);
 				properties     = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
 
-				zinAssertAndLog(isPropertyPresent(this.state.a_gd_contact, luid_target), "luid_target=" + luid_target);
+				if (!(luid_target in this.state.a_gd_contact)) {
+					// FIXME remove this code once google fixes:
+					// http://code.google.com/p/gdata-issues/issues/detail?id=997
+					//
+					// zinAssertAndLog(isPropertyPresent(this.state.a_gd_contact, luid_target), "luid_target=" + luid_target);
+					//
+					this.state.stopFailCode    = 'failon.known.bug';
+					this.state.stopFailArg     = [ stringBundleString("brand.google"), url("google-issue-997") ];
+					this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
+
+					break;
+				}
 
 				contact = this.state.a_gd_contact[luid_target];
 
@@ -6505,7 +6513,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				// convert the properties to a gd contact so that transformations apply before the identity test
 				//
 				contact.properties = properties;
-				contact.postalAddressRemoveEmptyElements(); // see issue #160
+				contact.postalAddressRemoveEmptyElements(); // issue #160
+				contact.modify(ContactGoogle.eModify.kRemoveDeletedGroupMembershipInfo); // issue #202
 
 				if (isMatchObjects(properties_pre_update, contact.properties))
 				{
@@ -7397,9 +7406,9 @@ SyncFsm.prototype.setupHttpGd = function(state, eventOnResponse, http_method, ur
 SyncFsm.prototype.setupHttpZm = function(state, eventOnResponse, url, zid, method)
 {
 	if (false)
-	this.state.m_logger.debug("setupHttpZm: AMHERE: " +
-	                          " state: " + state + " eventOnResponse: " + eventOnResponse + " url: " + url +
-	                          " method: " + method + " evNext will be: " + this.fsm.m_transitions[state][eventOnResponse]);
+		this.state.m_logger.debug("setupHttpZm: " +
+		                          " state: " + state + " eventOnResponse: " + eventOnResponse + " url: " + url +
+		                          " method: " + method + " evNext will be: " + this.fsm.m_transitions[state][eventOnResponse]);
 
 	zinAssert(url != null);
 
@@ -7806,10 +7815,11 @@ HttpStateGd.AUTH_REGEXP_PATTERN = /Auth=(.+?)(\s|$)/;
 
 HttpStateGd.prototype.toStringFiltered = function()
 {
-	// enabled verbose debugging for issue #156 // return this.m_http_method + " " + this.m_url;
-	return this.m_http_method + " " + this.m_url
-					          + " " + ((this.m_url != eGoogleLoginUrl.kClientLogin &&
-							            this.m_url != eGoogleLoginUrl.kAuthToken ) ? this.httpBody() : "");
+	let str = (this.m_url != eGoogleLoginUrl.kClientLogin && this.m_url != eGoogleLoginUrl.kAuthToken ) ? this.httpBody() : "";
+
+	str = str.replace(/login=.*password.*$/,   "login-and-password-suppressed");
+
+	return this.m_http_method + " " + this.m_url + " " + str;
 }
 
 HttpStateGd.prototype.httpBody = function()
@@ -7917,7 +7927,13 @@ SyncFsm.prototype.initialise = function(id_fsm, is_attended, sfcd)
 
 SyncFsm.zimbraSoapUrl = function(url) 
 {
-	return str_with_trailing(url, '/') + "service/soap/";
+	url = url.replace(/^(https?:\/\/.+?\/).*$/, "$1"); // if the user provided http;//zimbra.example.com/blah ... strip off "blah"
+
+	let ret = str_with_trailing(url, '/') + "service/soap/";
+
+	// logger().debug("zimbraSoapUrl: returns: " + ret);
+
+	return ret;
 }
 
 function FsmState()

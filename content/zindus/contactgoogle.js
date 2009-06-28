@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.19 2009-06-20 23:23:04 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.20 2009-06-28 10:45:13 cvsuser Exp $
 
 function ContactGoogle(xml, mode) {
 	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry();
@@ -35,6 +35,7 @@ function ContactGoogle(xml, mode) {
 ContactGoogle.eMeta      = new ZinEnum( 'id', 'updated', 'edit', 'self', 'deleted' );
 ContactGoogle.ePostal    = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
 ContactGoogle.eTransform = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
+ContactGoogle.eModify    = new ZinEnum( { 'kRemoveDeletedGroupMembershipInfo' : 0x01 } );
 
 ContactGoogle.prototype = {
 meta_initialise_getters : function () {
@@ -483,6 +484,19 @@ postalAddressRemoveEmptyElements : function () {
 },
 is_empty : function() {
 	return isObjectEmpty(this.properties);
+},
+modify : function( mods ) {
+	with (ContactGoogleStatic) {
+		if (mods | ContactGoogle.eModify.kRemoveDeletedGroupMembershipInfo) {
+			// issue #202 POSTed contacts should not contain deleted groupMembershipInfo elements.
+			//
+			let groups = this.m_entry.nsGContact::groupMembershipInfo;
+
+			for (var i = groups.length() - 1; i >= 0; i--)
+				if (groups[i].@deleted == 'true')
+					delete groups[i];
+		}
+	}
 },
 toString : function() {
 	var ret = "\n";

@@ -20,11 +20,11 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.39 2009-06-15 02:35:07 cvsuser Exp $
+// $Id: configsettings.js,v 1.40 2009-06-28 10:45:13 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
-includejs('share_service/configzss.js');
+// includejs('share_service/configzss.js'); // IS_DEVELOPER_MODE
 
 const WINDOW_FEATURES = "chrome,centerscreen,modal=yes,dependent=yes";
 
@@ -44,18 +44,18 @@ function ConfigSettings()
 	this.m_timer_functor        = null;
 	this.m_maestro              = null;
 	this.m_is_fsm_running       = false;
-	this.is_developer_mode      = preference("system.as_developer_mode", 'bool');
+	this.m_is_developer_mode    = preference("system.as_developer_mode", 'bool');
 	this.m_console_listener     = Logger.nsIConsoleListener();
 	this.m_payload              = null;
 	this.m_accounts             = null;
 	this.m_logger               = newLogger("ConfigSettings"); // this.m_logger.level(Logger.NONE);
 	this.m_addressbook          = AddressBook.new();
-	this.m_czss                 = new ConfigZss();
+	this.m_czss                 = (false) ? new ConfigZss() : null;  // IS_DEVELOPER_MODE
 }
 
 ConfigSettings.prototype.onLoad = function(target)
 {
-	if (this.is_developer_mode)
+	if (this.m_is_developer_mode)
 		xulSetAttribute('hidden', false, "cs-button-test-harness", "cs-button-run-timer");
 
 	this.m_prefset_general.load();
@@ -71,7 +71,8 @@ ConfigSettings.prototype.onLoad = function(target)
 	}
 	payload.m_account  = this.m_accounts.length == 0 ? null : this.m_accounts[0];
 	payload.m_localised_pab = this.m_addressbook.getPabName();
-	this.m_czss.onLoad(payload);
+	if (this.m_czss)
+		this.m_czss.onLoad(payload);
 }
 
 ConfigSettings.prototype.maestroRegister = function()
@@ -114,7 +115,8 @@ ConfigSettings.prototype.onCancel = function()
 	else
 		this.m_logger.debug("no syncwindow active");
 
-	this.m_czss.onCancel();
+	if (this.m_czss)
+		this.m_czss.onCancel();
 
 	this.m_prefset_general_orig.save();
 
@@ -127,7 +129,7 @@ ConfigSettings.prototype.onAccept = function()
 {
 	this.m_logger.debug("onAccept: enters");
 
-	let ret = this.m_czss.onAccept();
+	let ret = this.m_czss ? this.m_czss.onAccept() : true;
 
 	if (ret) {
 		this.updatePrefsetsFromDocument();
@@ -223,7 +225,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 					zinAlert('cs.sync.title', msg, window);
 			}
 
-			this.m_czss.initialiseView();
+			if (this.m_czss)
+				this.m_czss.initialiseView();
 
 			this.m_payload = null;
 			break;
@@ -243,7 +246,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			Filesystem.removeZfcs();
 			Filesystem.removeLogfile();
 			StatusBarState.update();
-			this.m_czss.initialiseView();
+			if (this.m_czss)
+				this.m_czss.initialiseView();
 			break;
 
 		case "cs-button-advanced":
@@ -384,10 +388,11 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		this.updateView();
 
-		if (do_sync_now_after_wizard)
-			this.onCommand("cs-button-sync-now");
-		else
-			this.m_czss.initialiseView();
+		if (this.m_czss)
+			if (do_sync_now_after_wizard)
+				this.onCommand("cs-button-sync-now");
+			else
+				this.m_czss.initialiseView();
 
 		if (isInArray(id_target, [ "cs-account-add", "cs-account-edit", "cs-account-delete", "czss-share-signup-wizard" ]))
 			this.m_logger.debug("id_target: " + id_target + " m_accounts is: " + AccountStatic.arrayToString(this.m_accounts));
@@ -506,12 +511,14 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 
 		// Addressbook
 		//
-		if (account.format_xx() == FORMAT_GD)
-			value = account.gd_sync_with == 'zg' ? FolderConverter.PREFIX_PRIMARY_ACCOUNT : this.m_addressbook.getPabName();
-		else
-			value = "        *";
+		if (nsIXULAppInfo().app_name != 'firefox') {
+			if (account.format_xx() == FORMAT_GD)
+				value = account.gd_sync_with == 'zg' ? FolderConverter.PREFIX_PRIMARY_ACCOUNT : this.m_addressbook.getPabName();
+			else
+				value = "        *";
 
-		ConfigSettingsStatic.appendCell(treerow, value);
+			ConfigSettingsStatic.appendCell(treerow, value);
+		}
 
 		this.m_logger.debug("accountsTreeRefresh: treeitem at rowid: " + rowid + " account: " + account.username + " " + account.get('format'));
 
