@@ -38,6 +38,16 @@
     </em:targetApplication>
 
 	<em:targetApplication>
+	  <!-- Postbox -->
+	  <Description>
+	    <em:id>postbox@postbox-inc.com</em:id>
+	    <em:minVersion>1.0b13</em:minVersion>
+	    <em:maxVersion>1.0.*</em:maxVersion>
+	  </Description>
+	</em:targetApplication>
+
+
+	<em:targetApplication>
 	  <!-- Spicebird -->
 	  <Description>
 	    <em:id>{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}</em:id>

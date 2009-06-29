@@ -20,13 +20,17 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.58 2009-06-28 10:45:13 cvsuser Exp $
+// $Id: addressbook.js,v 1.59 2009-06-29 01:34:14 cvsuser Exp $
 
 function AddressBookTb2() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb2"); }
 function AddressBookTb3() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb3"); }
+function AddressBookPb()  { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Pb");  }
+function AddressBookSb()  { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Sb");  }
 
 AddressBookTb2.prototype = new AddressBook();
 AddressBookTb3.prototype = new AddressBook();
+AddressBookPb.prototype  = new AddressBookTb3();
+AddressBookSb.prototype  = new AddressBookTb3();
 
 const kPABDirectory           = 2;                               // dirType ==> mork address book
 const kMDBDirectoryRoot       = "moz-abmdbdirectory://";         // see: nsIAbMDBDirectory.idl
@@ -48,25 +52,38 @@ function AddressBook()
 	// until it's needed (ie. when the derived class get constructed).
 }
 
-AddressBook.TB2 = "TB2";
-AddressBook.TB3 = "TB3";
+var eAddressBookVersion = new ZinEnum( 'TB2', 'TB3', 'PB', 'SB' );
 
 AddressBook.version = function()
 {
-	var contract_id = "@mozilla.org/abmanager;1";
+	let app_name = nsIXULAppInfo().app_name;
 	var ret;
 
-	if (contract_id in Cc)
-		ret = AddressBook.TB3;
+	if (app_name == 'thunderbird' || app_name == 'seamonkey')
+		ret = ("@mozilla.org/abmanager;1" in Cc) ? eAddressBookVersion.TB3 : eAddressBookVersion.TB2;
+	else if (app_name == 'postbox')
+		ret = eAddressBookVersion.PB;
 	else
-		ret = AddressBook.TB2;
+		ret = eAddressBookVersion.TB2;
 
 	return ret;
 }
 
 AddressBook.new = function()
 {
-	return (AddressBook.version() == AddressBook.TB2) ? new AddressBookTb2() : new AddressBookTb3();
+	var ret;
+
+	switch (AddressBook.version()) {
+		case eAddressBookVersion.TB2: ret = new AddressBookTb2(); break;
+		case eAddressBookVersion.TB3: ret = new AddressBookTb3(); break;
+		case eAddressBookVersion.PB:  ret = new AddressBookPb();  break;
+		case eAddressBookVersion.SB:  ret = new AddressBookSb();  break;
+		default:                      ret = new AddressBookTb2(); break;
+	}
+
+	// return (AddressBook.version() == eAddressBookVersion.TB2) ? new AddressBookTb2() : new AddressBookTb3();
+
+	return ret;
 }
 
 AddressBook.prototype.contact_converter = function()
@@ -274,6 +291,8 @@ AddressBookTb2.prototype.nsIAddressBook = function()
 
 AddressBookTb3.prototype.nsIAbManager = function()
 {
+	zinAssert("@mozilla.org/abmanager;1" in Cc);
+
 	return Cc["@mozilla.org/abmanager;1"].getService(Ci.nsIAbManager);
 }
 
@@ -334,6 +353,17 @@ AddressBookTb2.prototype.newAddressBook = function(name)
 AddressBookTb3.prototype.newAddressBook = function(name)
 {
 	var prefkey = this.nsIAbManager().newAddressBook(name, "", kPABDirectory); // FIXME - what does this do if it fails?
+	var prefs   = new MozillaPreferences("");
+	var uri     = kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
+
+	AddressBook.prototype.newAddressBook.call(this);
+
+	return new AddressBookImportantProperties(uri, prefkey);
+}
+
+AddressBookPb.prototype.newAddressBook = function(name)
+{
+	var prefkey = this.nsIAddressBook().newAddressBook(name, "", kPABDirectory);
 	var prefs   = new MozillaPreferences("");
 	var uri     = kMDBDirectoryRoot + prefs.getCharPrefOrNull(prefs.branch(), prefkey + ".filename");
 
@@ -550,7 +580,8 @@ AddressBookTb2.prototype.updateCard = function(abCard, uri, properties, attribut
 	AddressBook.prototype.updateCard.call(this, abCard, uri, properties, attributes, format);
 
 	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
-	mdbCard.editCardToDatabase(uri);
+
+	this.writeCardToDatabase(mdbCard, uri);
 
 	return abCard;
 }
@@ -628,12 +659,11 @@ AddressBookTb3.prototype.getCardAttributes = function(abCard)
 AddressBookTb2.prototype.setCardAttributes = function(abCard, uri, collection)
 {
 	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
-	zinAssert(typeof mdbCard.editCardToDatabase == 'function');
 
 	for (var key in collection)
 		mdbCard.setStringAttribute(key, collection[key]);
 
-	mdbCard.editCardToDatabase(uri);
+	this.writeCardToDatabase(mdbCard, uri);
 }
 
 AddressBookTb3.prototype.setCardAttributes = function(abCard, uri, collection)
@@ -656,7 +686,23 @@ AddressBookTb2.prototype.setCardProperties = function(abCard, uri, properties)
 		abCard.setCardValue(key, properties[key]);
 
 	var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
+
+	this.writeCardToDatabase(mdbCard, uri);
+}
+
+AddressBookTb2.prototype.writeCardToDatabase = function(mdbCard, uri)
+{
+	zinAssert(typeof mdbCard.editCardToDatabase == 'function');
+
 	mdbCard.editCardToDatabase(uri);
+}
+
+AddressBookPb.prototype.writeCardToDatabase = function(mdbCard, uri)
+{
+	var dir    = this.nsIAbDirectory(uri);
+	var abCard = mdbCard.QueryInterface(Ci.nsIAbCard);
+
+	dir.modifyCard(abCard);
 }
 
 AddressBookTb2.prototype.lookupCard = function(uri, key, value)
@@ -679,6 +725,22 @@ AddressBookTb3.prototype.lookupCard = function(uri, key, value)
 
 	var dir    = this.nsIAbDirectory(uri);
 	var abCard = dir.database.getCardFromAttribute(dir, key, value, false);
+
+	// this.m_logger.debug("lookupCard: blah: uri: " + uri + " key: " + key + " value: " + value +
+	//                     " returns: " + this.nsIAbCardToPrintableVerbose(abCard));
+
+	return abCard; // an nsIABCard
+}
+
+AddressBookPb.prototype.lookupCard = function(uri, key, value)
+{
+	zinAssert(uri);
+	zinAssert(key);
+	zinAssert(value);
+
+	var dir    = this.nsIAbDirectory(uri);
+	var mdbdir = dir.QueryInterface(Ci.nsIAbMDBDirectory);
+	var abCard = mdbdir.database.getCardFromAttribute(dir, key, value, false);
 
 	// this.m_logger.debug("lookupCard: blah: uri: " + uri + " key: " + key + " value: " + value +
 	//                     " returns: " + this.nsIAbCardToPrintableVerbose(abCard));
@@ -861,6 +923,15 @@ AddressBookTb2.prototype.directoryProperty = function(elem, property)
 AddressBookTb3.prototype.directoryProperty = function(elem, property)
 {
 	return elem[property];
+}
+
+// AddressBookPb methods that come from Tb2
+{
+	let a_pb_tb2_methods = newObjectWithKeys('nsIAbDirectory', 'nsIAddressBook', 'addCard', 'updateCard', 'setCardProperties', 'setCardAttributes', 'getCardAttributes', 'getCardProperty', 'deleteAddressBook', 'deleteCards');
+	let i;
+
+	for (i in a_pb_tb2_methods)
+		AddressBookPb.prototype[i] = AddressBookTb2.prototype[i];
 }
 
 function AddressBookImportantProperties(uri, prefId)

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.182 2009-06-28 10:45:13 cvsuser Exp $
+// $Id: syncfsm.js,v 1.183 2009-06-29 01:34:14 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1027,7 +1027,7 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 	var aUri = new Object();
 	var a_ids_to_remove;
 
-	if (AddressBook.version() == AddressBook.TB3)
+	if (AddressBook.version() != eAddressBookVersion.TB2)
 		a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, null, TBCARD_ATTRIBUTE_LUID_ITER, null);
 	else
 		a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, null);
@@ -2844,7 +2844,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 			// This will get a lot simpler when Tb3 cards get a unique id.
 			// And even simpler when we don't need three passes to identify mailing list cards.
 			//
-			if (AddressBook.version() == AddressBook.TB3 && !abCard.isMailList
+			if (AddressBook.version() != eAddressBookVersion.TB2 && !abCard.isMailList
 			                                             && !is_card_attribute_valid(attributes, TBCARD_ATTRIBUTE_LUID))
 			{
 				this.state.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_LUID_ITER, this.m_tb3_luid_iter));
@@ -2859,7 +2859,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 
 			// was debugging garcha here
 			if (false)
-				if (AddressBook.version() == AddressBook.TB3)
+				if (AddressBook.version() != eAddressBookVersion.TB2)
 					this.state.m_logger.debug("loadTbCards: pass 1: key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) +
 					                           " for card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 
