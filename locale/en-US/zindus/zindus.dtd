@@ -29,6 +29,8 @@
 <!ENTITY zindus.cs.title                                "Zindus Configuration Settings">
 <!ENTITY zindus.cs.buttonlabelextra2                    "Help">
 
+<!ENTITY zindus.cs.sharing.label                        "Sharing">
+
 <!ENTITY zindus.cs.account.add.label                    "Add">
 <!ENTITY zindus.cs.account.add.accesskey                "A">
 <!ENTITY zindus.cs.account.edit.label                   "Edit">

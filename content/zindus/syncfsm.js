@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.183 2009-06-29 01:34:14 cvsuser Exp $
+// $Id: syncfsm.js,v 1.184 2009-06-30 02:56:16 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3058,7 +3058,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(aUri)
 							var ret = false;
 							var key;
 
-							for (key in context.state.m_contact_converter_style_gd_postal.m_gd_address_field[FORMAT_TB])
+							for (key in context.state.m_contact_converter_style_gd_postal.m_a_multiplexed['gd_address'][FORMAT_TB])
 								if (isPropertyPresent(properties, key))
 								{
 									ret = true;
