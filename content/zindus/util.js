@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.51 2009-06-29 01:34:15 cvsuser Exp $
+// $Id: util.js,v 1.52 2009-06-30 00:33:56 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -132,7 +132,7 @@ function stringBundleStringFrom(string_bundle_id, id_string, args)
 
 	if (stringbundle == null)
 	{
-		ret = "Unable to load string-bundle: " + string_bundle_id;
+		ret = "Unable to load string bundle: " + string_bundle_id + " " + executionStackAsString();
 
 		if (isSingletonInScope())
 			logger().error(ret);

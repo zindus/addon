@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.59 2009-06-29 01:34:14 cvsuser Exp $
+// $Id: addressbook.js,v 1.60 2009-06-30 00:33:55 cvsuser Exp $
 
 function AddressBookTb2() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb2"); }
 function AddressBookTb3() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb3"); }
@@ -63,6 +63,8 @@ AddressBook.version = function()
 		ret = ("@mozilla.org/abmanager;1" in Cc) ? eAddressBookVersion.TB3 : eAddressBookVersion.TB2;
 	else if (app_name == 'postbox')
 		ret = eAddressBookVersion.PB;
+	else if (app_name == 'spicebird')
+		ret = eAddressBookVersion.SB;
 	else
 		ret = eAddressBookVersion.TB2;
 
@@ -697,7 +699,7 @@ AddressBookTb2.prototype.writeCardToDatabase = function(mdbCard, uri)
 	mdbCard.editCardToDatabase(uri);
 }
 
-AddressBookPb.prototype.writeCardToDatabase = function(mdbCard, uri)
+AddressBookTb3.prototype.writeCardToDatabase = function(mdbCard, uri)
 {
 	var dir    = this.nsIAbDirectory(uri);
 	var abCard = mdbCard.QueryInterface(Ci.nsIAbCard);
@@ -925,13 +927,30 @@ AddressBookTb3.prototype.directoryProperty = function(elem, property)
 	return elem[property];
 }
 
-// AddressBookPb methods that come from Tb2
+// Postbox and SpiceBird forked Thunderbird somewhere in between Tb2 and Tb3
+// here we adjust methods in each AddressBook subclass to suit.
 {
-	let a_pb_tb2_methods = newObjectWithKeys('nsIAbDirectory', 'nsIAddressBook', 'addCard', 'updateCard', 'setCardProperties', 'setCardAttributes', 'getCardAttributes', 'getCardProperty', 'deleteAddressBook', 'deleteCards');
 	let i;
+	let a_tb2_methods = newObjectWithKeys('nsIAbDirectory', 'nsIAddressBook', 'addCard', 'updateCard', 'setCardProperties',
+	                                  'setCardAttributes', 'getCardAttributes', 'getCardProperty', 'deleteAddressBook', 'deleteCards');
 
-	for (i in a_pb_tb2_methods)
+	// Postbox
+	//
+	for (i in a_tb2_methods)
 		AddressBookPb.prototype[i] = AddressBookTb2.prototype[i];
+
+	// SpiceBird
+	//
+	delete a_tb2_methods['deleteCards'];
+	delete a_tb2_methods['deleteAddressBook'];
+
+	for (i in a_tb2_methods)
+		AddressBookSb.prototype[i] = AddressBookTb2.prototype[i];
+
+	let a_pb_methods = newObjectWithKeys('lookupCard');
+
+	for (i in a_pb_methods)
+		AddressBookSb.prototype[i] = AddressBookPb.prototype[i];
 }
 
 function AddressBookImportantProperties(uri, prefId)

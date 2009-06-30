@@ -1,8 +1,14 @@
-#zindus-toolbarbutton {
-	list-style-image: url("chrome://zindus/skin/zindus24x24.gif");
+/*
+ * typeid selectors are only relevant to SpiceBird
+ */
+
+#zindus-toolbarbutton,
+[typeid="zindus-toolbarbutton"] {
+	list-style-image: url("chrome://zindus/skin/zindus24x24-tmp.gif");
 }
 
-toolbar[iconsize="small"] #zindus-toolbarbutton {
+toolbar[iconsize="small"] #zindus-toolbarbutton,
+toolbar[iconsize="small"] [type-id="zindus-toolbarbutton"] {
 	list-style-image: url("chrome://zindus/skin/zindus16x16.gif");
 }
 

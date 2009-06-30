@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.55 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.56 2009-06-30 00:33:56 cvsuser Exp $
 
 function ZinMailWindowOverlay()
 {
@@ -39,7 +39,12 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 {
 	try
 	{
-		var messengerWindow = document.getElementById("messengerWindow");
+		let messengerWindow;
+
+		if (nsIXULAppInfo().app_name == 'spicebird')
+			messengerWindow = document.getElementById("framework-window");
+		else
+			messengerWindow = document.getElementById("messengerWindow");
 
 		if (messengerWindow)
 		{

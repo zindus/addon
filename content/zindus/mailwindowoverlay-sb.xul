@@ -16,25 +16,40 @@
   
   The Initial Developer of the Original Code is Toolware Pty Ltd.
  
-  Portions created by Initial Developer are Copyright (C) 2007-2009
+  Portions created by Initial Developer are Copyright (C) 2007
   the Initial Developer. All Rights Reserved.
  
   Contributor(s): Leni Mayo
   
   ***** END LICENSE BLOCK ***** -->
 
-<!-- experimenting with spicebird -->
-
-<?xul-overlay href="chrome://zindus/content/statusbaroverlay.xul" ?>
-
 <?xml-stylesheet href="chrome://zindus/skin/zindus.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
-<overlay id="zindus-mailwindowoverlay-tb" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
+<?xul-overlay href="chrome://zindus/content/statusbaroverlay.xul"?>
+<?xul-overlay href="chrome://zindus/content/mailwindowoverlay-sm.xul"?>
 
-	<toolbox id="mail-toolbox" class="toolbox-top" mode="full">
-		<toolbarpalette id="MailToolbarPalette">
+<overlay id="zindus-mailwindowoverlay-sb" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
+
+	<script type="application/x-javascript;version=1.7"> <![CDATA[
+		window.addEventListener('load',
+			function() {
+				// with (ZindusScopeRegistry.getScope()) { StatusBarState.update(); }
+			}, false);
+	]]> </script>
+
+	<stringbundleset id="framework-stringbundleset" >
+		<stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" />
+	</stringbundleset>
+
+	<menupopup id="tools-menupopup">
+		<menuitem label="&zindus.mo.menuitem.label;" accesskey="&zindus.mo.menuitem.accesskey;"
+		          insertafter="javaScriptConsole" oncommand="with (ZindusScopeRegistry.getScope()) { ConfigSettings.open(); }" />
+	</menupopup>
+
+	<toolbox id="framework-toolbox">
+		<toolbarpalette id="framework-toolpalette">
 			<toolbarbutton id="zindus-toolbarbutton"
 			               class="toolbarbutton-1"
 			               label="&zindus.mo.menuitem.label;"
@@ -43,13 +58,5 @@
 		</toolbarpalette>
 	</toolbox>	
 
-	<statusbar id="status-bar" app="home,mailnews,contacts" >
-		<statusbarpanel id="zindus-statusbar-progress" hidden="true" insertbefore="totalMessageCount" app="home,mailnews,contacts" />
-		<statusbarpanel id="zindus-statusbar-state"    hidden="true" insertbefore="totalMessageCount" app="home,mailnews,contacts" 
-		                tooltiptext="" class="statusbarpanel-iconic" >
-			<menupopup id="zindus-statusbar-menu" app="home,mailnews,contacts" />
-		</statusbarpanel>
-	</statusbar>
-
-
 </overlay>
+
