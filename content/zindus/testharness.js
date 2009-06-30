@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.101 2009-06-29 01:34:15 cvsuser Exp $
+// $Id: testharness.js,v 1.102 2009-06-30 06:15:55 cvsuser Exp $
 
 function TestHarness()
 {
@@ -44,11 +44,6 @@ TestHarness.prototype.run = function()
 	
 	ret = ret && this.testPreferencesHaveDefaults();
 	ret = ret && this.testStringBundleContainsContactProperties();
-
-	if (false)
-	for (i in Cc)
-		if (/addressbook/.test(i))
-			this.m_logger.debug(i);
 
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
