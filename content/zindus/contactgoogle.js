@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.20 2009-06-28 10:45:13 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.21 2009-06-30 06:15:51 cvsuser Exp $
 
 function ContactGoogle(xml, mode) {
 	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry();
@@ -370,7 +370,7 @@ set properties (properties_in) {
 					entry.* += <gContact:{l} xmlns:gContact={Xpath.NS_GCONTACT} rel={get_rel(r, l)} href={value}/>;
 					break;
 				case "birthday":
-					entry.* += <gContact:birthday xmlns:gd={Xpath.NS_GCONTACT} when={properties[key]} />;
+					entry.* += <gContact:birthday xmlns:gContact={Xpath.NS_GCONTACT} when={properties[key]} />;
 					break;
 				default:
 					zinAssertAndLog(false, key);

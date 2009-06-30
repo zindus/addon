@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.43 2009-06-28 10:45:13 cvsuser Exp $
+// $Id: contactconverter.js,v 1.44 2009-06-30 06:15:51 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -498,6 +498,8 @@ tb_birthday_normalise : function(format_to, format_from, properties_from, key_fr
 	}
 },
 tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday) {
+	function pad_dd(x) { return String("0" + x).slice(-2); }
+
 	switch(format_to) {
 		case FORMAT_TB:
 			for (var key in a_normalised_tb_birthday)
@@ -512,8 +514,8 @@ tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday
 			break;
 		}
 		case FORMAT_GD: {
-			let birthday = "-" + a_normalised_tb_birthday['BirthMonth'] +
-			               "-" + a_normalised_tb_birthday['BirthDay'];
+			let birthday = "-" + pad_dd(a_normalised_tb_birthday['BirthMonth']) +
+			               "-" + pad_dd(a_normalised_tb_birthday['BirthDay']);
 
 			if (Number(a_normalised_tb_birthday['BirthYear']) > 0)
 				birthday = a_normalised_tb_birthday['BirthYear'] + birthday;
