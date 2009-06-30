@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.184 2009-06-30 02:56:16 cvsuser Exp $
+// $Id: syncfsm.js,v 1.185 2009-06-30 23:42:06 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -689,6 +689,7 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 				this.state.a_zm_tested_soapurls = str.split(",");
 
 			// put the server version string in the logfile - helpful for diagnosis
+			//
 			str = zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('zm_version')
 			this.debug("entryActionLoad: zimbraVersion: " + (str ? str : "unknown"));
 		}
@@ -7783,7 +7784,7 @@ function HttpStateGd(http_method, url, headers, authToken, body, on_error, log_r
 							  'Accept-Encoding': null,
 							  'Accept-Charset':  null,
 							  'User-Agent':      null,
-							  'GData-Version':   3
+							  'GData-Version':   GD_API_VERSION
 							  };
 	var http_headers = new Object();
 	var key;

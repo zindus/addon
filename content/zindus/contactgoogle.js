@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.21 2009-06-30 06:15:51 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.22 2009-06-30 23:42:06 cvsuser Exp $
 
 function ContactGoogle(xml, mode) {
 	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry();
@@ -81,11 +81,19 @@ mode : function (value) {
 make_mask_of_elements_in_entry: function () {
 	var children = this.m_entry.*;
 	var ret = 0;
-	var i;
+	var i, reAtom, reGd, reGContact;
 
-	var reAtom     = /content/;
-	var reGd       = /email|phoneNumber|postalAddress|name|organization|im/;
-	var reGContact = /website|birthday/;
+	if (GD_API_VERSION == 2) {
+		reAtom     = /title|content/;
+		reGd       = /email|phoneNumber|postalAddress|organization|im/;
+		reGContact = /blablahblahblah/;
+	}
+	else {
+		zinAssert(GD_API_VERSION == 3);
+		reAtom     = /content/;
+		reGd       = /email|phoneNumber|postalAddress|name|organization|im/;
+		reGContact = /website|birthday/;
+	}
 
 	with (ContactGoogleStatic)
 		for (i = 0; i < children.length(); i++) {
@@ -129,6 +137,7 @@ properties_from_xml: function () {
 	this.warn_if_entry_isnt_valid();
 
 	with (ContactGoogleStatic) {
+		if (imask & mask.title)   set_if(properties, 'title',    entry.nsAtom::title);
 		if (imask & mask.content) set_if(properties, 'content',  entry.nsAtom::content);
 
 		if (imask & mask.email) {
@@ -234,6 +243,12 @@ set properties (properties_in) {
 	// logger().debug("ContactGoogle: 1: properties: " + aToString(properties));
 
 	with (ContactGoogleStatic) {
+		if (imask & mask.title) {
+			// only ever modify - never add or delete <title> here
+			entry.nsAtom::title = ('title' in properties) ? properties['title'] : "";
+			a_is_used['title'] = true;
+		}
+
 		if (imask & mask.content)
 			modify_or_delete_child(entry.nsAtom::content, properties, 'content', a_is_used);
 
@@ -316,6 +331,9 @@ set properties (properties_in) {
 				// logger().debug("properties setter: adding key: " + key);
 
 				switch(key) {
+				case "title":
+					logger().error("ContactGoogle: shouldn't be adding a property with key: " + key);
+					break;
 				case "content":
 					entry.content = <atom:content xmlns:atom={Xpath.NS_ATOM} type='text'>{properties[key]}</atom:content>;
 					break;
@@ -353,15 +371,23 @@ set properties (properties_in) {
 				case "phoneNumber_pager":
 				case "phoneNumber_work":
 				case "phoneNumber_work_fax":
+					[l, r] = get_element_and_suffix(key);
+					value = properties[key];
+					entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{value}</gd:{l}>;
+					break;
 				case "postalAddress_home":
 				case "postalAddress_work":
 					[l, r] = get_element_and_suffix(key);
 					value = properties[key];
-					if (l == 'postalAddress') {
-						zinAssert(this.mode() & ContactGoogle.ePostal.kEnabled);
-						value = ContactGoogleStatic.add_whitespace_to_postal_properties(properties, key);
-					}
+
+					zinAssert(this.mode() & ContactGoogle.ePostal.kEnabled);
+					value = ContactGoogleStatic.add_whitespace_to_postal_properties(properties, key);
+
 					entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{value}</gd:{l}>;
+
+					// v3
+					// entry.* += <gd:structuredPostalAddress xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>
+					//               <gd:formattedAddress>{value}</gd:formattedAddress></gd:structuredPostalAddress>
 					break;
 				case "website_home":
 				case "website_work":
@@ -682,15 +708,16 @@ var ContactGoogleStatic = {
 	nsGd       : Namespace(Xpath.NS_GD),
 	nsGContact : Namespace(Xpath.NS_GCONTACT),
 	mask       : {
-		name          : 0x0001,
-		content       : 0x0002,
-		email         : 0x0004,
-		phoneNumber   : 0x0008,
-		postalAddress : 0x0010,
-		organization  : 0x0020,
-		im            : 0x0040,
-		website       : 0x0080,
-		birthday      : 0x0100
+		title         : 0x0001,
+		name          : 0x0002,
+		content       : 0x0004,
+		email         : 0x0008,
+		phoneNumber   : 0x0010,
+		postalAddress : 0x0020,
+		organization  : 0x0040,
+		im            : 0x0080,
+		website       : 0x0100,
+		birthday      : 0x0200
 	},
 	a_fragment : {
 		organization  : [ 'work', 'other' ],
@@ -831,12 +858,17 @@ var ContactGoogleStatic = {
 		return this.m_a_hyphenation[left][right];
 	},
 	newEntry : function() {
-		return <atom:entry xmlns:atom={Xpath.NS_ATOM}
+		let ret = <atom:entry xmlns:atom={Xpath.NS_ATOM}
 		                   xmlns:gd={Xpath.NS_GD}
 		                   xmlns:openSearch={Xpath.NS_OPENSEARCH}
 		                   xmlns:gContact={Xpath.NS_GCONTACT}>
 		              <atom:category scheme={Xpath.NS_GD + "#kind"} term={Xpath.NS_GCONTACT + "#group"}/>
 		          </atom:entry>;
+
+		if (GD_API_VERSION == 2)
+			ret.* += <atom:title xmlns:atom={Xpath.NS_ATOM} type="text"/>
+
+		return ret;
 	},
 	newXml : function(arg) {
 		zinAssert((arg instanceof String) || (typeof(arg) == 'string') || (arg instanceof XMLHttpRequest));

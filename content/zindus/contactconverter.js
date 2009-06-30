@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.44 2009-06-30 06:15:51 cvsuser Exp $
+// $Id: contactconverter.js,v 1.45 2009-06-30 23:42:06 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -36,8 +36,9 @@ function ContactConverter()
 	this.m_common_to    = null; // associative array of [format1][format2] is a hash - the keys are the format1 props that map to format2
 	this.m_logger       = newLogger("ContactConverter");
 	this.m_gac          = new GdAddressConverter();
+
 	this.m_gd_certain_keys_converted = null;
-	this.m_is_tb_birthday_field = false;
+	this.m_is_tb_birthday_field      = false;
 
 	this.m_ignore_on_slow_sync = new Object();
 	let str = preference(MozillaPreferences.AS_IGNORE_ON_SLOW_SYNC, 'char');
@@ -57,12 +58,34 @@ setup : function(style) {
 	var gd = function(key) { return ((style == ContactConverter.eStyle.kGdMapsPostalProperties) ? key : null); }
 
 	this.m_equivalents = new Array();
-	// this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null)); // name_givenName
-	// this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null)); // name_familyName
-	// this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title")); // name_fullName
-	this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, "name_givenName"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, "name_familyName"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "name_fullName"));
+
+	if (GD_API_VERSION == 2) {
+		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
+		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
+		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title"));
+
+		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, null));
+		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, null));
+	}
+	else {
+		zinAssert (GD_API_VERSION == 3);
+
+		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, "name_givenName"));
+		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, "name_familyName"));
+		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "name_fullName"));
+
+		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, "website_work"));
+		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, "website_home"));
+
+		this.m_is_tb_birthday_field = nsIXULAppInfo().is_tb_birthday_field;
+
+		if (this.m_is_tb_birthday_field) {
+			this.m_equivalents.push(newObject(FORMAT_TB, "BirthDay",        FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
+			this.m_equivalents.push(newObject(FORMAT_TB, "BirthMonth",      FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
+			this.m_equivalents.push(newObject(FORMAT_TB, "BirthYear",       FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
+		}
+	}
+
 	this.m_equivalents.push(newObject(FORMAT_TB, "NickName",        FORMAT_ZM, null,                FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "PrimaryEmail",    FORMAT_ZM, "email",             FORMAT_GD, "email1"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "SecondEmail",     FORMAT_ZM, "email2",            FORMAT_GD, "email2"));
@@ -86,8 +109,7 @@ setup : function(style) {
 	this.m_equivalents.push(newObject(FORMAT_TB, "JobTitle",        FORMAT_ZM, "jobTitle",          FORMAT_GD, "organization_orgTitle"));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Department",      FORMAT_ZM, "department",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Company",         FORMAT_ZM, "company",           FORMAT_GD, "organization_orgName"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, "website_work"));
-	this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, "website_home"));
+	// WebPage1 and WebPage2 go here
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom1",         FORMAT_ZM, null,                FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom2",         FORMAT_ZM, null,                FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, "Custom3",         FORMAT_ZM, null,                FORMAT_GD, null));
@@ -115,14 +137,6 @@ setup : function(style) {
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress1",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress2",        FORMAT_GD, null));
 	this.m_equivalents.push(newObject(FORMAT_TB, null,              FORMAT_ZM, "imAddress3",        FORMAT_GD, null));
-
-	this.m_is_tb_birthday_field = nsIXULAppInfo().is_tb_birthday_field;
-
-	if (this.m_is_tb_birthday_field) {
-		this.m_equivalents.push(newObject(FORMAT_TB, "BirthDay",        FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
-		this.m_equivalents.push(newObject(FORMAT_TB, "BirthMonth",      FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
-		this.m_equivalents.push(newObject(FORMAT_TB, "BirthYear",       FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
-	}
 
 	// if we're creating equivalents for all tb properties, then for those tb properties that don't map to zimbra,
 	// create a mapping using the name of the TB field and a prefix
