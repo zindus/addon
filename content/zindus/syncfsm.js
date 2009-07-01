@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.186 2009-07-01 22:22:09 cvsuser Exp $
+// $Id: syncfsm.js,v 1.187 2009-07-01 22:41:36 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -5968,10 +5968,10 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 			this.state.m_a_remote_update_package.m_c_used_in_current_batch = i;
 
-			this.debug("entryActionUpdateZm: m_a_remote_update_package: " + aToString(this.state.m_a_remote_update_package)); // TODO
+			this.debug("entryActionUpdateZm: m_a_remote_update_package: " + aToString(this.state.m_a_remote_update_package));
 
 			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch != 0);
-			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch < MAX_BATCH_SIZE);
+			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch <= MAX_BATCH_SIZE);
 		}
 		else
 			this.state.m_a_remote_update_package.m_c_used_in_current_batch = 0;
