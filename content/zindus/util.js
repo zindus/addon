@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.53 2009-06-30 06:15:55 cvsuser Exp $
+// $Id: util.js,v 1.54 2009-07-01 22:22:10 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1213,7 +1213,7 @@ function nsIXULAppInfo()
 		                           (((ret.app_name == 'thunderbird' || ret.app_name == 'seamonkey') &&
 		                            versionChecker.compare(appInfo.version, "3.0b3pre") >= 0))
 
-		logger().debug("nsIXULAppInfo: returns: " + aToString(ret)); // TODO
+		logger().debug("nsIXULAppInfo: returns: " + aToString(ret));
 
 		nsIXULAppInfo.ret = ret;
 	}

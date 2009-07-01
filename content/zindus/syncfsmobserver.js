@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.70 2009-06-20 23:23:04 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.71 2009-07-01 22:22:10 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -524,8 +524,6 @@ SyncFsmObserver.prototype.updateStateBatch = function(stringid, context, fn)
 		else {
 			let lo      = this.m_batch_count;
 			let hi      = ZinMin(this.m_batch_count + c_batch - 1, this.m_batch_max);
-
-			this.m_logger.debug("updateStateBatch: c_batch: " + c_batch); // TODO
 
 			if (lo == hi)
 				this.set(SyncFsmObserver.PROG_CNT, lo);

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.185 2009-06-30 23:42:06 cvsuser Exp $
+// $Id: syncfsm.js,v 1.186 2009-07-01 22:22:09 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2429,8 +2429,10 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 
 	if (!post_id || pre_prefid != post_prefid)    // no folder by this name or it changed since last sync
 	{
+		let ab_name = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(name));
+
 		this.state.stopFailCode    = 'failon.folder.reserved.changed';
-		this.state.stopFailArg     = [ name ];  // TODO - this name is internal-facing ie zindus_pab
+		this.state.stopFailArg     = [ ab_name ];
 		this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 	}
 
@@ -5933,8 +5935,6 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		this.state.m_a_remote_update_package.m_c_total = Suo.count(this.state.aSuo, fn); // for observer
 	}
 
-	this.debug("entryActionUpdateZm: 1: stopFailCode: " + this.state.stopFailCode + " m_a_remote_update_package.length: " + this.state.m_a_remote_update_package.length); // TODO
-
 	if (!this.state.stopFailCode && this.state.m_a_remote_update_package.length == 0) {
 		do {
 			is_more_ops = Boolean(a = this.state.m_suo_generator.next());
@@ -5952,16 +5952,26 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 				 !key_suo.isEqual(this.state.m_suo_last_in_bucket[key_suo.bucket]));
 
 		if (this.state.m_a_remote_update_package.length != 0) {
-			// work out how many we're going to process in the next batch - the observer reports this in the UI.
-			// TODO stop when you hit a foreign delete
+			// work out how many we're going to process in the next batch
 			//
-			let zid = this.state.m_a_remote_update_package[0].remote.zid;
-			for (var i = 0; (i < MAX_BATCH_SIZE) &&
-		            	(i < this.state.m_a_remote_update_package.length) &&
-						(zid == this.state.m_a_remote_update_package[i].remote.zid); i++)
-				;
+			let i;
+			if (this.state.m_a_remote_update_package[0].remote.method == "ForeignContactDelete")
+				i = 1; // do these one at a time
+			else {
+				let zid = this.state.m_a_remote_update_package[0].remote.zid;
+
+				for (i = 0; (i < this.state.m_a_remote_update_package.length) &&
+						    (zid == this.state.m_a_remote_update_package[i].remote.zid) &&
+						    (this.state.m_a_remote_update_package[i].remote.method != "ForeignContactDelete"); i++)
+					;
+			}
 
 			this.state.m_a_remote_update_package.m_c_used_in_current_batch = i;
+
+			this.debug("entryActionUpdateZm: m_a_remote_update_package: " + aToString(this.state.m_a_remote_update_package)); // TODO
+
+			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch != 0);
+			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch < MAX_BATCH_SIZE);
 		}
 		else
 			this.state.m_a_remote_update_package.m_c_used_in_current_batch = 0;
@@ -5974,15 +5984,23 @@ SyncFsm.prototype.entryActionUpdateZmHttp = function(state, event, continuation)
 {
 	var nextEvent;
 
-	this.debug("entryActionUpdateZmHttp: stopFailCode: " + this.state.stopFailCode + " m_a_remote_update_package.length: " + this.state.m_a_remote_update_package.length); // TODO
+	this.debug("entryActionUpdateZmHttp: stopFailCode: " + this.state.stopFailCode + " m_a_remote_update_package.length: " + this.state.m_a_remote_update_package.length);
 
 	if (!this.state.stopFailCode && this.state.m_a_remote_update_package.length > 0) {
-		let remote        = new Object();
-		remote.zid    = this.state.m_a_remote_update_package[0].remote.zid;
-		remote.method = "Batch";
-		remote.arg = { a_remote_update_package: this.state.m_a_remote_update_package };
+		let remote = this.state.m_a_remote_update_package[0].remote;
+		let zid    = remote.zid;
+		let method, arg;
 
-		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(remote.zid), remote.zid, remote.method, remote.arg);
+		if (remote.method == "ForeignContactDelete") {
+			method = remote.method;
+			arg    = remote.arg;
+		}
+		else {
+			method = "Batch";
+			arg    = { a_remote_update_package: this.state.m_a_remote_update_package };
+		}
+
+		this.setupHttpZm(state, 'evRepeat', this.state.zidbag.soapUrl(zid), zid, method, arg);
 
 		nextEvent = 'evHttpRequest';
 	}
@@ -6422,6 +6440,8 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 	}
 	else {
 		this.debug("exitActionUpdateZmHttp: shifting: " + this.state.m_a_remote_update_package.m_c_used_in_current_batch);
+
+		zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch != 0);
 
 		for (var i = 0; i < this.state.m_a_remote_update_package.m_c_used_in_current_batch; i++)
 			this.state.m_a_remote_update_package.shift();
@@ -7406,7 +7426,7 @@ SyncFsm.prototype.setupHttpGd = function(state, eventOnResponse, http_method, ur
 //
 SyncFsm.prototype.setupHttpZm = function(state, eventOnResponse, url, zid, method)
 {
-	if (false)
+	if (true)
 		this.state.m_logger.debug("setupHttpZm: " +
 		                          " state: " + state + " eventOnResponse: " + eventOnResponse + " url: " + url +
 		                          " method: " + method + " evNext will be: " + this.fsm.m_transitions[state][eventOnResponse]);

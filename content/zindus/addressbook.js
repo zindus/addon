@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.60 2009-06-30 00:33:55 cvsuser Exp $
+// $Id: addressbook.js,v 1.61 2009-07-01 22:22:09 cvsuser Exp $
 
 function AddressBookTb2() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb2"); }
 function AddressBookTb3() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb3"); }
@@ -35,7 +35,7 @@ AddressBookSb.prototype  = new AddressBookTb3();
 const kPABDirectory           = 2;                               // dirType ==> mork address book
 const kMDBDirectoryRoot       = "moz-abmdbdirectory://";         // see: nsIAbMDBDirectory.idl
 const kPersonalAddressbookURI = kMDBDirectoryRoot + "abook.mab"; // see: resources/content/abCommon.js
-const a_card_attributes       = [ TBCARD_ATTRIBUTE_LUID, TBCARD_ATTRIBUTE_CHECKSUM, TBCARD_ATTRIBUTE_EXPIRED_ON,
+const A_TB_CARD_ATTRIBUTES    = [ TBCARD_ATTRIBUTE_LUID, TBCARD_ATTRIBUTE_CHECKSUM, TBCARD_ATTRIBUTE_EXPIRED_ON,
                                   TBCARD_ATTRIBUTE_LUID_ITER ];
 
 function AddressBook()
@@ -629,12 +629,12 @@ AddressBookTb2.prototype.getCardAttributes = function(abCard)
 	var ret     = new Object();
 	var i, value;
 
-	for (i = 0; i < a_card_attributes.length; i++)
+	for (i = 0; i < A_TB_CARD_ATTRIBUTES.length; i++)
 	{
-		value = mdbCard.getStringAttribute(a_card_attributes[i]);
+		value = mdbCard.getStringAttribute(A_TB_CARD_ATTRIBUTES[i]);
 
 		if (value)
-			ret[a_card_attributes[i]] = value;
+			ret[A_TB_CARD_ATTRIBUTES[i]] = value;
 	}
 
 	return ret;
@@ -645,14 +645,13 @@ AddressBookTb3.prototype.getCardAttributes = function(abCard)
 	var ret = new Object();
 	var i, value;
 
-	for (i = 0; i < a_card_attributes.length; i++)
-	{
-		zinAssert(typeof(abCard.getProperty) == 'function'); // TODO remove me after debugging finished
+	zinAssert(typeof(abCard.getProperty) == 'function');
 
-		value = abCard.getProperty(a_card_attributes[i], null);
+	for (i = 0; i < A_TB_CARD_ATTRIBUTES.length; i++) {
+		value = abCard.getProperty(A_TB_CARD_ATTRIBUTES[i], null);
 
 		if (value)
-			ret[a_card_attributes[i]] = value;
+			ret[A_TB_CARD_ATTRIBUTES[i]] = value;
 	}
 
 	return ret;

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zmsoapdocument.js,v 1.15 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: zmsoapdocument.js,v 1.16 2009-07-01 22:22:10 cvsuser Exp $
 
 function ZmSoapDocument()
 {
@@ -331,9 +331,10 @@ ZmSoapDocument.prototype.ForeignContactDelete = function(args)
 	var elCn      = this.doc.createElementNS(Xpath.NS_ZMAIL,  "cn");
 	var i, elA;
 
-	zinAssert(isPropertyPresent(args, 'properties') && aToLength(args.properties) > 0 &&
-	          isPropertyPresent(args, 'zid') &&
-	          isPropertyPresent(args, 'id') );
+	var f = function () { return "args is: " + aToString(args); };
+	zinAssertAndLog(('properties' in args) && aToLength(args.properties) > 0, f);
+	zinAssertAndLog(('zid' in args), f);
+	zinAssertAndLog(('id' in args), f);
 
 	elRequest.setAttribute("onerror", "stop");
 
