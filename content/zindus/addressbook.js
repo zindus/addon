@@ -20,12 +20,12 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.61 2009-07-01 22:22:09 cvsuser Exp $
+// $Id: addressbook.js,v 1.62 2009-07-02 23:50:50 cvsuser Exp $
 
-function AddressBookTb2() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb2"); }
-function AddressBookTb3() { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Tb3"); }
-function AddressBookPb()  { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Pb");  }
-function AddressBookSb()  { AddressBook.call(this); this.m_logger = newLogger("AddressBook"); this.m_logger.debug("Sb");  }
+function AddressBookTb2() { AddressBook.call(this); }
+function AddressBookTb3() { AddressBook.call(this); }
+function AddressBookPb()  { AddressBook.call(this); }
+function AddressBookSb()  { AddressBook.call(this); }
 
 AddressBookTb2.prototype = new AddressBook();
 AddressBookTb3.prototype = new AddressBook();
@@ -43,13 +43,10 @@ function AddressBook()
 	this.m_contact_converter = null;
 	this.m_pab_name = null;
 	this.m_pab_uri  = null;
+	this.m_logger   = null;
 
 	this.m_nsIRDFService = null;
 	this.m_map_name_to_uri = null;
-	
-	// used to construct m_logger here but since this constructor is called at .js file load time
-	// and we don't want to hold open a reference to the logfile, better to delay the logger construction
-	// until it's needed (ie. when the derived class get constructed).
 }
 
 var eAddressBookVersion = new ZinEnum( 'TB2', 'TB3', 'PB', 'SB' );
@@ -73,9 +70,10 @@ AddressBook.version = function()
 
 AddressBook.new = function()
 {
-	var ret;
+	let ret;
+	let version = AddressBook.version();
 
-	switch (AddressBook.version()) {
+	switch (version) {
 		case eAddressBookVersion.TB2: ret = new AddressBookTb2(); break;
 		case eAddressBookVersion.TB3: ret = new AddressBookTb3(); break;
 		case eAddressBookVersion.PB:  ret = new AddressBookPb();  break;
@@ -83,9 +81,20 @@ AddressBook.new = function()
 		default:                      ret = new AddressBookTb2(); break;
 	}
 
-	// return (AddressBook.version() == eAddressBookVersion.TB2) ? new AddressBookTb2() : new AddressBookTb3();
+	ret.logger().debug("new Addressbook: " + eAddressBookVersion.keyFromValue(version));
 
 	return ret;
+}
+
+AddressBook.prototype.logger = function()
+{
+	// constructor is called at .js file load time which on installation happens before the zindus directory get created
+	// better to delay construction
+	// 
+	if (!this.m_logger)
+		this.m_logger = newLogger("AddressBook"); 
+
+	return this.m_logger;
 }
 
 AddressBook.prototype.contact_converter = function()
@@ -126,7 +135,7 @@ AddressBook.prototype.populateNameToUriMap = function()
 		this.m_map_name_to_uri = new Object();
 		this.forEachAddressBook(functor);
 
-		// this.m_logger.debug("AddressBook.populateNameToUriMap: blah: " + this.getNameToUriMapAsString());
+		// this.logger().debug("AddressBook.populateNameToUriMap: blah: " + this.getNameToUriMapAsString());
 	}
 }
 
@@ -157,7 +166,7 @@ AddressBook.prototype.getAddressBooksByPattern = function(pat)
 		if (pat.test(key))
 			ret[key] = this.m_map_name_to_uri[key];
 
-	// this.m_logger.debug("AddressBook.getAddressBooksByPattern: pat: " + pat + " ret: " + aToString(ret));
+	// this.logger().debug("AddressBook.getAddressBooksByPattern: pat: " + pat + " ret: " + aToString(ret));
 			
 	return ret;
 }
@@ -173,7 +182,7 @@ AddressBook.prototype.getAddressBookUriByName = function(name)
 	if ((name in this.m_map_name_to_uri) && this.m_map_name_to_uri[name].length == 1)
 		ret = this.m_map_name_to_uri[name][0].uri();
 
-	// this.m_logger.debug("getAddressBookUriByName: returns: " + ret + " when: " + this.getNameToUriMapAsString());
+	// this.logger().debug("getAddressBookUriByName: returns: " + ret + " when: " + this.getNameToUriMapAsString());
 
 	return ret;
 }
@@ -192,7 +201,7 @@ AddressBook.prototype.getAddressBookNameByUri = function(uri)
 				break;
 			}
 
-	// this.m_logger.debug("getAddressBookNameByUri: uri: " + uri + " returns: " + ret);
+	// this.logger().debug("getAddressBookNameByUri: uri: " + uri + " returns: " + ret);
 
 	return ret;
 }
@@ -217,7 +226,7 @@ AddressBook.prototype.forEachAddressBook = function(functor)
 			fContinue = functor.run(elem);
 
 		if (isPropertyPresent(aUri, uri))
-			this.m_logger.warn("forEachAddressBook: avoid calling functor twice on uri: " + uri);
+			this.logger().warn("forEachAddressBook: avoid calling functor twice on uri: " + uri);
 
 		aUri[uri] = true;
 
@@ -472,9 +481,9 @@ AddressBook.prototype.deleteCardsArray = function(dir, cardsArray)
 	var ret = (error_name == null);
 
 	if (error_msg)
-		this.m_logger.debug(error_msg);
+		this.logger().debug(error_msg);
 
-	this.m_logger.debug("deleteCards: " + (ret ? "succeeded" : "failed"));
+	this.logger().debug("deleteCards: " + (ret ? "succeeded" : "failed"));
 
 	return ret;
 }
@@ -518,7 +527,7 @@ AddressBookTb2.prototype.addCard = function(uri, properties, attributes)
 	zinAssert(attributes != null);
 
 	if (false)
-		this.m_logger.debug("addCard: uri: " + uri + " properties: " + aToString(properties) + " attributes: " + aToString(attributes));
+		this.logger().debug("addCard: uri: " + uri + " properties: " + aToString(properties) + " attributes: " + aToString(attributes));
 
 	var dir          = this.nsIAbDirectory(uri);
 	var abstractCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Ci.nsIAbCard);
@@ -536,7 +545,7 @@ AddressBookTb3.prototype.addCard = function(uri, properties, attributes)
 	zinAssert(attributes != null);
 
 	if (false)
-		this.m_logger.debug("addCard: uri: " + uri + " properties: "+aToString(properties)+" attributes: " + aToString(attributes));
+		this.logger().debug("addCard: uri: " + uri + " properties: "+aToString(properties)+" attributes: " + aToString(attributes));
 
 	var dir    = this.nsIAbDirectory(uri);
 	var abCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Ci.nsIAbCard);
@@ -608,7 +617,7 @@ AddressBook.prototype.getCardProperties = function(abCard)
 	var ret = new Object();
 	var i, value;
 
-	// this.m_logger.debug("AddressBook.getCardProperties: abCard:" (abCard ? "non-null" : "null"));
+	// this.logger().debug("AddressBook.getCardProperties: abCard:" (abCard ? "non-null" : "null"));
 
 	for (i in this.m_contact_converter.m_map[FORMAT_TB])
 	{
@@ -618,7 +627,7 @@ AddressBook.prototype.getCardProperties = function(abCard)
 			ret[i] = value;
 	}
 
-	// this.m_logger.debug("getCardProperties: blah: returns: " + aToString(ret));
+	// this.logger().debug("getCardProperties: blah: returns: " + aToString(ret));
 
 	return ret;
 }
@@ -727,7 +736,7 @@ AddressBookTb3.prototype.lookupCard = function(uri, key, value)
 	var dir    = this.nsIAbDirectory(uri);
 	var abCard = dir.database.getCardFromAttribute(dir, key, value, false);
 
-	// this.m_logger.debug("lookupCard: blah: uri: " + uri + " key: " + key + " value: " + value +
+	// this.logger().debug("lookupCard: blah: uri: " + uri + " key: " + key + " value: " + value +
 	//                     " returns: " + this.nsIAbCardToPrintableVerbose(abCard));
 
 	return abCard; // an nsIABCard
@@ -743,7 +752,7 @@ AddressBookPb.prototype.lookupCard = function(uri, key, value)
 	var mdbdir = dir.QueryInterface(Ci.nsIAbMDBDirectory);
 	var abCard = mdbdir.database.getCardFromAttribute(dir, key, value, false);
 
-	// this.m_logger.debug("lookupCard: blah: uri: " + uri + " key: " + key + " value: " + value +
+	// this.logger().debug("lookupCard: blah: uri: " + uri + " key: " + key + " value: " + value +
 	//                     " returns: " + this.nsIAbCardToPrintableVerbose(abCard));
 
 	return abCard; // an nsIABCard
@@ -805,18 +814,18 @@ AddressBook.prototype.setupPab = function()
 	{
 		this.m_pab_uri  = String(pabByUri.uri);
 		this.m_pab_name = String(pabByUri.name);
-		this.m_logger.debug("m_pab_uri selected by uri: uri: " + this.m_pab_uri + " name: " + this.m_pab_name);
+		this.logger().debug("m_pab_uri selected by uri: uri: " + this.m_pab_uri + " name: " + this.m_pab_name);
 	}
 	else if (pabByName)
 	{
 		this.m_pab_uri  = String(pabByName.uri);  // create a primitive string so that typeof() == "string" not "object"
 		this.m_pab_name = String(pabByName.name);
-		this.m_logger.debug("m_pab_uri selected by name: uri: " + this.m_pab_uri + " name: " + this.m_pab_name);
+		this.logger().debug("m_pab_uri selected by name: uri: " + this.m_pab_uri + " name: " + this.m_pab_name);
 	}
 	else
 	{
-		this.m_logger.error("Couldn't find Personal Address Book");
-		this.m_logger.debug("m_pab_uri couldn't be identified! addressbooks: " + this.addressbooksToString());
+		this.logger().error("Couldn't find Personal Address Book");
+		this.logger().debug("m_pab_uri couldn't be identified! addressbooks: " + this.addressbooksToString());
 	}
 }
 
