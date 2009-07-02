@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.187 2009-07-01 22:41:36 cvsuser Exp $
+// $Id: syncfsm.js,v 1.188 2009-07-02 20:06:24 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6515,7 +6515,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					// zinAssertAndLog(isPropertyPresent(this.state.a_gd_contact, luid_target), "luid_target=" + luid_target);
 					//
 					this.state.stopFailCode    = 'failon.known.bug';
-					this.state.stopFailArg     = [ stringBundleString("brand.google"), url("google-issue-997") ];
+					this.state.stopFailArg     = [ stringBundleString("brand.google"), url("google-bug-997") ];
 					this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 
 					break;

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.54 2009-07-01 22:22:10 cvsuser Exp $
+// $Id: util.js,v 1.55 2009-07-02 20:06:25 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1058,7 +1058,7 @@ function url(key)
 		case 'roadmap-thunderbird-3': ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
 		case 'share-tos':             ret = 'http://www.zindus.com/service/tos.html';                            break;
 		case 'share-faq':             ret = 'http://www.zindus.com/faq-share';                                   break;
-		case 'google-issue-997':      ret = 'http://code.google.com/p/gdata-issues/issues/detail?id=997';        break;
+		case 'google-bug-997':        ret = 'http://zindus.com/i/google-bug-997/';                               break;
 		default: zinAssertAndLog(false, key);
 	}
 
