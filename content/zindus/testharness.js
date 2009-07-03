@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.102 2009-06-30 06:15:55 cvsuser Exp $
+// $Id: testharness.js,v 1.103 2009-07-03 01:03:37 cvsuser Exp $
 
 function TestHarness()
 {
@@ -40,8 +40,6 @@ TestHarness.prototype.run = function()
 {
 	var ret = true;
 
-	// ret = ret && this.testRenameAddressBook();
-	
 	ret = ret && this.testPreferencesHaveDefaults();
 	ret = ret && this.testStringBundleContainsContactProperties();
 
@@ -71,7 +69,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testContactGoogleIssue151();
 	// ret = ret && this.testContactGoogleIssue179();
 	// ret = ret && this.testContactGoogleIssue185();
-	ret = ret && this.testContactGoogleIssue202();
+	// ret = ret && this.testContactGoogleIssue202();
 	// ret = ret && this.testContactGoogleIterators();
 	// ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
@@ -2194,7 +2192,7 @@ TestHarness.prototype.testRenameAddressBook = function()
 {
 	var addressbook = AddressBook.new();
 	var abName      = "Personal Address Book";
-	var abNameNew   = "zindus/Emailed Contacts";
+	var abNameNew   = "fred";
 
 	// var abip = addressbook.newAddressBook(abName);
 	// uri = abip.m_uri
@@ -2204,9 +2202,9 @@ TestHarness.prototype.testRenameAddressBook = function()
 	uri  = "moz-abmdbdirectory://abook.mab";
 	name = addressbook.getAddressBookNameByUri(uri);
 
-	if (name == abNameNew) {
-		addressbook.renameAddressBook(uri, abName);
-		uri = addressbook.getAddressBookUriByName(abName)
+	if (name == abName) {
+		addressbook.renameAddressBook(uri, abNameNew);
+		uri = addressbook.getAddressBookUriByName(abNameNew)
 	}
 
 	this.m_logger.debug("testRenameAddressBook: abName: " + abName+ " uri: " + uri);
