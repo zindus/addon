@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.189 2009-07-03 05:08:27 cvsuser Exp $
+// $Id: syncfsm.js,v 1.190 2009-07-03 07:34:44 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1888,7 +1888,7 @@ SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 	{
 		var SyncGalMdInterval = this.getIntPref(MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL);
 		var SyncMd = parseInt(zfcLastSync.get(sourceid_pr).getOrNull('SyncMd'));
-		var isSyncGalEnabledChanged = this.account().zm_sync_gal_enabled != zfcLastSync.get(sourceid_pr).getOrNull('SyncGalEnabled');
+		var isSyncGalEnabledChanged = this.account().zm_sync_gal_enabled != zfcLastSync.get(sourceid_pr).getOrNull('zm_sync_gal_enabled');
 
 		this.state.m_logger.debug("entryActionGalConsider:" +
 												 " isSyncGalEnabledChanged: " + isSyncGalEnabledChanged +
@@ -6995,7 +6995,7 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 		for (var zid in this.state.zidbag.m_properties)
 			zfcLastSync.get(sourceid_pr).set(Zuio.key('SyncToken', zid), this.state.zidbag.get(zid, 'SyncToken'));
 
-		zfcLastSync.get(sourceid_pr).set('SyncGalEnabled', this.account().zm_sync_gal_enabled);
+		zfcLastSync.get(sourceid_pr).set('zm_sync_gal_enabled', this.account().zm_sync_gal_enabled);
 		zfcLastSync.get(sourceid_pr).set('zm_emailed_contacts', this.account().zm_emailed_contacts);
 
 		zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).set('zm_tested_soapurls', hyphenate(",", this.state.a_zm_tested_soapurls));
