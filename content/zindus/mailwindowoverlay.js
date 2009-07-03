@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.56 2009-06-30 00:33:56 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.57 2009-07-03 05:08:27 cvsuser Exp $
 
 function ZinMailWindowOverlay()
 {
@@ -332,12 +332,15 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	//
 	if (true)
 		for (i = 0; i < accounts.length; i++)
-			if ((accounts[i].format_xx() == FORMAT_ZM) && (!accounts[i].zm_emailed_contacts || !accounts[i].zm_emailed_contacts.match(/true|false/)))
-			{
-				this.m_logger.debug("about to set 'zm_emailed_contacts': current zm_emailed_contacts: " + accounts[i].zm_emailed_contacts + " toString: " + accounts[i].toString());
+			if ((accounts[i].format_xx() == FORMAT_ZM) &&
+			    (!accounts[i].zm_emailed_contacts || !accounts[i].zm_emailed_contacts.match(/true|false/))) {
+				let account = accounts[i];
 
-				accounts[i].zm_emailed_contacts = 'true';
-				accounts[i].save();
+				this.m_logger.debug("set 'zm_emailed_contacts': current zm_emailed_contacts: " +
+				                      account.zm_emailed_contacts + " toString: " + account.toString());
+
+				account.zm_emailed_contacts = 'true';
+				account.save();
 			}
 }
 

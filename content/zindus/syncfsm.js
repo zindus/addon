@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.188 2009-07-02 20:06:24 cvsuser Exp $
+// $Id: syncfsm.js,v 1.189 2009-07-03 05:08:27 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -611,6 +611,11 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	      " \n this sync soapURL:  "          + this.account().url +
 	      " \n this sync username: "          + this.account().username +
 	      " \n this sync account_signature: " + sfcd.signature() );
+
+	this.debug("entryActionLoad: AMHERE: " +
+	      " \n filename_pr :  "          + filename_pr +
+	      " \n filename_pr path :  "     + a_zfc[filename_pr].nsifile().path +
+	      " \n is_file_exists_pr :  "    + is_file_exists_pr);
 
 	if (is_file_exists_pr)
 		a_zfc[filename_pr].load()
