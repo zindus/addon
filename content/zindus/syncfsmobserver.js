@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.71 2009-07-01 22:22:10 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.72 2009-07-04 22:32:41 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -89,7 +89,7 @@ SyncFsmObserver.prototype.sourceName = function(sourceid)
 {
 	zinAssertAndLog(sourceid in this.state.sources, sourceid);
 
-	return this.state.sources[sourceid]['format'] == FORMAT_TB ? stringBundleString("brand.thunderbird").toLowerCase() :
+	return this.state.sources[sourceid]['format'] == FORMAT_TB ? format_xx_to_localisable_string(FORMAT_TB).toLowerCase() :
 	                                                             stringBundleString("brand.server").toLowerCase();
 }
 

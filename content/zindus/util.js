@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.55 2009-07-02 20:06:25 cvsuser Exp $
+// $Id: util.js,v 1.56 2009-07-04 22:32:41 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -543,6 +543,11 @@ function format_xx_to_localisable_string(format_xx)
 
 	switch(format_xx)
 	{
+		case FORMAT_TB: {
+			let app_name = nsIXULAppInfo().app_name;
+			ret = app_name.substr(0,1).toUpperCase() + app_name.substr(1).toLowerCase();
+			break;
+		}
 		case FORMAT_GD: ret = stringBundleString("brand.google"); break;
 		case FORMAT_ZM: ret = stringBundleString("brand.zimbra"); break;
 		default:        zinAssertAndLog(false, "mismatched: format_xx: " + format_xx);

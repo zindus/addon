@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.190 2009-07-03 07:34:44 cvsuser Exp $
+// $Id: syncfsm.js,v 1.191 2009-07-04 22:32:40 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4573,7 +4573,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 					var context = this;
 					function getSourceName(sourceid) {
 						return context.state.sources[sourceid]['format'] == FORMAT_TB ?
-				           		stringBundleString("brand.thunderbird").toLowerCase() :
+				           		format_xx_to_localisable_string(FORMAT_TB).toLowerCase() :
 				           		stringBundleString("brand.server").toLowerCase();
 					};
 
