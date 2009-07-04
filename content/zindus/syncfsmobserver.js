@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.72 2009-07-04 22:32:41 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.73 2009-07-04 22:53:58 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -239,7 +239,12 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 
 		switch(fsmstate.newstate)
 		{
-			case 'start':            this.progressReportOn("load.thunderbird");                              break;
+			case 'start':
+				// this.progressReportOn("load.addressbooks");
+				this.set( SyncFsmObserver.OP, stringBundleString(this.tweakStringId("load.addressbooks"),
+				             [ format_xx_to_localisable_string(FORMAT_TB) ]));
+				this.set(SyncFsmObserver.PROG_MAX, 0);
+				break;
 			case 'stAuthSelect':
 			case 'stAuthLogin':
 			case 'stAuthPreAuth':
