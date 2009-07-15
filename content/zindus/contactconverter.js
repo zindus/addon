@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.45 2009-06-30 23:42:06 cvsuser Exp $
+// $Id: contactconverter.js,v 1.46 2009-07-15 01:18:14 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -304,6 +304,13 @@ convert : function(format_to, format_from, properties_from) {
 //                                                     VIC
 //                                                     3000
 zm_street_output : function(format_to, properties_to, a_normalised_street) {
+	// if line one was empty and line two was populated, we set array element [0] to the empty string rather than leaving it undefined
+	//
+	for (var type in { "home":0, "work":0 })
+		for (var i = 0; i < a_normalised_street[type].length; i++)
+			if (typeof(a_normalised_street[type][i]) == 'undefined')
+				a_normalised_street[type][i] = "";
+
 	switch(format_to) {
 		case FORMAT_TB:
 			if (a_normalised_street["home"].length > 0)

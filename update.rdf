@@ -6,23 +6,23 @@
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:maxVersion="3.0b3"
                    em:minVersion="2.0b2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.11-tb+sm.xpi"
-                   em:updateHash="sha256:6cac41d0859ea09b7c0e3a94c82f11c4815c0b447309854371af3a8e1367e520" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.11.20090715.114525-tb+sm.xpi"
+                   em:updateHash="sha256:6b4d572217e70e22bd459298f2f136de95518240b8d03074c2ec9cda716e9319" />
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAHME0Yq3jl0fITBoHaRKw7f3c+1Gh2te0sorLulm4XwGAHqavGOf+LN6I6CVOE4zmpGzdBYZbLfKbQlQXGFHWh+wUwKDjetg++n9alx+x++6g0vqVkTm/OuNF8qfD7GffOJa+YyeIHeGCS7Dwmjg6lB0qlifTHQBSRrCEEf4Xjxz">
+    <em:updates RDF:resource="rdf:#$qjjRS2"/>
+  </RDF:Description>
   <RDF:Seq RDF:about="rdf:#$qjjRS2">
     <RDF:li RDF:resource="rdf:#$rjjRS2"/>
   </RDF:Seq>
-  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAEovSoocthcneFQGNB6MY4BHHQ8bjLjtbigFrSXAVO5W/1WKi6gR5SJBIiVY3tdB4UXgz/UMSSA4PinBMNIoQDeDES14OasCELlb3z9pOZkCi799t7md9ZuI4QJu//Tz9xHnH1GMQPktw+5auaAXdGDkIswc5zFzh83fvgA94Ya/">
-    <em:updates RDF:resource="rdf:#$qjjRS2"/>
-  </RDF:Description>
   <RDF:Description RDF:about="rdf:#$ujjRS2"
                    em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
                    em:maxVersion="2.0a2"
                    em:minVersion="2.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.11-tb+sm.xpi"
-                   em:updateHash="sha256:6cac41d0859ea09b7c0e3a94c82f11c4815c0b447309854371af3a8e1367e520" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.11.20090715.114525-tb+sm.xpi"
+                   em:updateHash="sha256:6b4d572217e70e22bd459298f2f136de95518240b8d03074c2ec9cda716e9319" />
   <RDF:Description RDF:about="rdf:#$rjjRS2"
-                   em:version="0.8.11">
+                   em:version="0.8.11.20090715.114525">
     <em:targetApplication RDF:resource="rdf:#$ujjRS2"/>
     <em:targetApplication RDF:resource="rdf:#$BjjRS2"/>
   </RDF:Description>
