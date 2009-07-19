@@ -6,24 +6,24 @@
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
                    em:maxVersion="3.0b3"
                    em:minVersion="2.0b2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.11.20090715.114525-tb+sm.xpi"
-                   em:updateHash="sha256:6b4d572217e70e22bd459298f2f136de95518240b8d03074c2ec9cda716e9319" />
-  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAHME0Yq3jl0fITBoHaRKw7f3c+1Gh2te0sorLulm4XwGAHqavGOf+LN6I6CVOE4zmpGzdBYZbLfKbQlQXGFHWh+wUwKDjetg++n9alx+x++6g0vqVkTm/OuNF8qfD7GffOJa+YyeIHeGCS7Dwmjg6lB0qlifTHQBSRrCEEf4Xjxz">
-    <em:updates RDF:resource="rdf:#$qjjRS2"/>
-  </RDF:Description>
-  <RDF:Seq RDF:about="rdf:#$qjjRS2">
-    <RDF:li RDF:resource="rdf:#$rjjRS2"/>
-  </RDF:Seq>
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12-tb+sm.xpi"
+                   em:updateHash="sha256:60c4a8adbe82b59bcdcb8b9f9aaba8070f954f3e2fb0994f130523a6e4bbe400" />
   <RDF:Description RDF:about="rdf:#$ujjRS2"
                    em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
                    em:maxVersion="2.0a2"
                    em:minVersion="2.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.11.20090715.114525-tb+sm.xpi"
-                   em:updateHash="sha256:6b4d572217e70e22bd459298f2f136de95518240b8d03074c2ec9cda716e9319" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12-tb+sm.xpi"
+                   em:updateHash="sha256:60c4a8adbe82b59bcdcb8b9f9aaba8070f954f3e2fb0994f130523a6e4bbe400" />
   <RDF:Description RDF:about="rdf:#$rjjRS2"
-                   em:version="0.8.11.20090715.114525">
+                   em:version="0.8.12">
     <em:targetApplication RDF:resource="rdf:#$ujjRS2"/>
     <em:targetApplication RDF:resource="rdf:#$BjjRS2"/>
+  </RDF:Description>
+  <RDF:Seq RDF:about="rdf:#$qjjRS2">
+    <RDF:li RDF:resource="rdf:#$rjjRS2"/>
+  </RDF:Seq>
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAJcGlrbMQvL3ZCG7UDtiVK1wJYQoAOudPWtLowU5Ejt+pR1qwVmwHNJz1XVYWglsr1/qQzUe1kxs3hlv3rCMtuOjcx5cdHyJ/q+fjOw9X3GziWB1XOw6ZXXGKnRVJ/c20iXC2TI8bvS4gftw2myl+j5by/Ek5q9KdTU4jO7/94B8">
+    <em:updates RDF:resource="rdf:#$qjjRS2"/>
   </RDF:Description>
 </RDF:RDF>
