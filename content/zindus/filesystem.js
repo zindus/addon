@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.21 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: filesystem.js,v 1.22 2009-08-03 00:40:30 cvsuser Exp $
 
 var Filesystem = {
 	m_a_directory        : new Object(),
@@ -36,7 +36,7 @@ var Filesystem = {
 		LASTSYNC  : 'lastsync.txt',
 		GID       : 'gid.txt',
 		STATUS    : 'status.txt',
-		SHARE     : 'share.txt'
+		CONTACTS  : 'contacts.sqlite'
 	}),
 	ePerm : new ZinEnum( {     // from prio.h
 		PR_IRUSR  : 0400,      // Read    by owner
@@ -151,10 +151,12 @@ var Filesystem = {
 				file.remove(false);
 		}
 	},
-	removeZfcs : function(a_exclude) {
+	removeZfcs : function(re_exclude) {
+		re_exclude = re_exclude ? re_exclude : /sqlite/;
+
 		var directory_data = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
 
-		logger().debug("removeZfcs: " + (a_exclude ? ("excluding: " + aToString(a_exclude)) : ""));
+		logger().debug("removeZfcs: re_exclude: " + re_exclude.toString());
 
 		// remove files in the data directory
 		//
@@ -164,7 +166,7 @@ var Filesystem = {
 			while (iter.hasMoreElements()) {
 				let file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
 
-				if (!a_exclude || !isPropertyPresent(a_exclude, file.leafName))
+				if (!re_exclude.test(file.leafName))
 					file.remove(false);
 			}
 		}

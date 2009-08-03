@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.45 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: feed.js,v 1.46 2009-08-03 00:40:30 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -32,8 +32,9 @@ FeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the o
 FeedItem.KEY_STATUSBAR           = "2#zindus-housekeeping"; // this key is used in the StatusBar's FeedCollection
 FeedItem.KEY_LASTSYNC_COMMON     = "3#zindus-housekeeping"; // this key is used in lastsync.txt for attributes common to all accounts
 FeedItem.KEY_SHARE_JSON          = "4#zindus-housekeeping"; // this key is used in the share zimbra feed to map zid's to common name.
+FeedItem.KEY_ZIMBRA_GAL_IDS      = "5#zindus-housekeeping"; // this key is maps zimbra gal <cn> ids to tb luids
 FeedItem.KEYS_RESERVED           = newObjectWithKeys(FeedItem.KEY_AUTO_INCREMENT,  FeedItem.KEY_STATUSBAR,
-                                                     FeedItem.KEY_LASTSYNC_COMMON, FeedItem.KEY_SHARE_JSON);
+                                                     FeedItem.KEY_LASTSYNC_COMMON, FeedItem.KEY_SHARE_JSON, FeedItem.KEY_ZIMBRA_GAL_IDS);
 
 FeedItem.TOSTRING_EOL_NL         = 0x01;
 FeedItem.TOSTRING_EOL_SP         = 0x02;
@@ -64,7 +65,10 @@ FeedItem.ATTR_CS   = 'cs';   // checksum
 FeedItem.ATTR_FXMS = 'fxms'; // fix the ms attribute after a batch update (because change token is high-water, not per-contact/folder)
 FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
-// FeedItem.ATTR_INGP = 'ingp'; // is the contact in a google group: yes/no?  Only used when not syncing with Suggested Contacts
+FeedItem.ATTR_JSON = 'json'; // json
+FeedItem.ATTR_GGSG = 'ggsg'; // corresponds with a Google Group <gContact:systemGroup id="Contacts"/> element
+FeedItem.ATTR_XGID = 'xgid'; // this item doesn't map to anything in in the gid - TODO
+
 // FeedItem.ATTR_EMPT = 'empt'; // true iff the contact is empty when mapped to the other side
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
@@ -74,14 +78,17 @@ FeedItem.TYPE_CN   = 0x01; // contact
 FeedItem.TYPE_FL   = 0x02; // folder
 FeedItem.TYPE_LN   = 0x04; // link
 FeedItem.TYPE_SF   = 0x08; // link-folder - a hybrid of <link> and remote <folder> managed by zindus
-FeedItem.TYPE_MASK = (FeedItem.TYPE_CN | FeedItem.TYPE_FL | FeedItem.TYPE_LN | FeedItem.TYPE_SF);
+FeedItem.TYPE_GG   = 0x10; // google group
+FeedItem.TYPE_MASK = (FeedItem.TYPE_CN | FeedItem.TYPE_FL | FeedItem.TYPE_LN | FeedItem.TYPE_SF | FeedItem.TYPE_GG);
 
 FeedItem.DO_FIRST                = newObject(FeedItem.ATTR_TYPE, 0, FeedItem.ATTR_KEY, 0, FeedItem.ATTR_ID, 0, FeedItem.ATTR_L, 0,
                                              FeedItem.ATTR_NAME, 0, FeedItem.ATTR_LS, 0,  FeedItem.ATTR_MS, 0, FeedItem.ATTR_REV, 0);
 
+FeedItem.FAKE_ZID_FOR_AB = "ab";
+
 FeedItem.TYPE_BIMAP = new BiMap(
-		[FeedItem.TYPE_CN, FeedItem.TYPE_FL, FeedItem.TYPE_LN, FeedItem.TYPE_SF],
-		['cn',             'fl',             'ln',             'sf'            ]);
+		[FeedItem.TYPE_CN, FeedItem.TYPE_FL, FeedItem.TYPE_LN, FeedItem.TYPE_SF, FeedItem.TYPE_GG],
+		['cn',             'fl',             'ln',             'sf'            , 'gg'            ]);
 
 function FeedCollection()
 {
@@ -308,6 +315,7 @@ FeedCollection.prototype.generateZfis = function(yield_count)
 	var a_key = new Object();
 	var a_sort_order = [ null,
 						 FeedItem.typeAsString(FeedItem.TYPE_FL),
+						 FeedItem.typeAsString(FeedItem.TYPE_GG),
 						 FeedItem.typeAsString(FeedItem.TYPE_LN),
 	                     FeedItem.typeAsString(FeedItem.TYPE_SF),
 						 FeedItem.typeAsString(FeedItem.TYPE_CN) ];
@@ -478,7 +486,7 @@ FeedItem.prototype.isForeign = function()
 {
 	var zuio = new Zuio(this.get(FeedItem.ATTR_KEY));
 
-	return (zuio.zid() != null);
+	return (zuio.zid() != null && zuio.zid() != FeedItem.FAKE_ZID_FOR_AB);
 }
 
 FeedItem.prototype.type = function()
@@ -562,7 +570,9 @@ FeedItem.prototype.decrement = function(key)
 
 FeedItem.typeAsString = function(type)
 {
-	return FeedItem.TYPE_BIMAP.lookup(type, null);
+	let ret = FeedItem.TYPE_BIMAP.lookup(type, null);
+	zinAssertAndLog(ret, type);
+	return ret;
 }
 
 FeedItem.attributesForType = function(type)

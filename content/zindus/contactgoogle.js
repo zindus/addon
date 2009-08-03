@@ -20,31 +20,30 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.22 2009-06-30 23:42:06 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.23 2009-08-03 00:40:30 cvsuser Exp $
 
-function ContactGoogle(xml, mode) {
-	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry();
-	this.m_mode       = mode ? mode : ContactGoogle.ePostal.kDisabled;
+function GoogleData()
+{
 	this.m_properties = null;             // associative array populated by the getter
-	this.m_groups     = null;             //             array populated by the getter
 
-	this.meta  = new Object();
+	this.meta         = new Object();
+	this.m_meta_cache = new Object();
+
 	this.meta_initialise_getters();
+
+	this.__defineGetter__("properties", function()  { return this.get_properties();  });
+	this.__defineSetter__("properties", function(p) { return this.set_properties(p); });
 }
 
-ContactGoogle.eMeta      = new ZinEnum( 'id', 'updated', 'edit', 'self', 'deleted' );
-ContactGoogle.ePostal    = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
-ContactGoogle.eTransform = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
-ContactGoogle.eModify    = new ZinEnum( { 'kRemoveDeletedGroupMembershipInfo' : 0x01 } );
+GoogleData.eMeta    = new ZinEnum( 'id', 'updated', 'edit', 'self', 'deleted' );
+GoogleData.eElement = new ZinEnum( 'contact', 'group' );
 
-ContactGoogle.prototype = {
+GoogleData.prototype = {
 meta_initialise_getters : function () {
 	let fn, key, value;
 
-	this.m_cache_meta  = new ContactPropertyCache();
-
-	for each ([key, value] in ContactGoogle.eMeta) {
-		with (ContactGoogle.eMeta) { with (ContactGoogleStatic) {
+	for each ([key, value] in GoogleData.eMeta) {
+		with (GoogleData.eMeta) { with (ContactGoogleStatic) {
 			switch(value) {
 				case id:      fn = function(entry) { return to_string(entry.nsAtom::id); };                            break;
 				case updated: fn = function(entry) { return to_string(entry.nsAtom::updated); };                       break;
@@ -59,13 +58,105 @@ meta_initialise_getters : function () {
 	}
 },
 meta_make_getter: function(key, fn) {
-	var context = this;
+	var self = this;
 	return function() {
-		let ret = context.m_cache_meta.get(key);
-		
-		return ret !== null ? ret : fn(context.m_entry);
+		zinAssert(self.m_entry);
+		if (!(key in self.m_meta_cache))
+			self.m_meta_cache[key] = fn(self.m_entry);
+				
+		return self.m_meta_cache[key];
 	};
 },
+get_properties : function() {
+	if (!this.m_properties)
+		this.m_properties = this.properties_from_xml();
+	return this.m_properties;
+},
+set_properties : function(p) {
+	zinAssert(false);
+},
+toString : function() {
+	var ret = "\n";
+	var key, value;
+
+	ret += " meta:       ";
+	for ([key, value] in GoogleData.eMeta)
+		ret += " " + key + ": " + this.meta[key];
+	ret += "\n"
+
+	ret += " properties: ";
+	for (key in this.properties)
+		ret += " " + key + ": " + this.properties[key];
+
+	return ret;
+},
+toStringXml : function() {
+	return this.m_entry.toXMLString();
+}
+};
+
+GoogleData.element_type_from_instance = function(x) {
+	let ret;
+	if (x instanceof ContactGoogle)
+		ret = GoogleData.eElement.contact;
+	else if (x instanceof GroupGoogle)
+		ret = GoogleData.eElement.group;
+	else zinAssertAndLog(false, x);
+	return ret;
+}
+
+GoogleData.new = function(arg, mode) {
+	let entry    = (typeof(arg) == "xml") ? arg : ContactGoogleStatic.newXml(arg);
+	let nsAtom   = ContactGoogleStatic.nsAtom;
+	let category = entry.nsAtom::category;
+	let right_of = rightOfChar(category.@term);
+	let ret;
+
+	zinAssert(category.length() == 1);
+
+	if (category.@scheme == Xpath.NS_GD + "#kind")
+		switch(right_of) {
+			case 'contact': ret = new ContactGoogle(entry, mode); break;
+			case 'group':   ret = new GroupGoogle(entry);         break;
+			default:        zinAssertAndLog(false, arg);
+		}
+
+	return ret;
+}
+
+GoogleData.new_from_feed = function(arg, a_gd, mode) {
+	var feed    = ContactGoogleStatic.newXml(arg);
+	var nsAtom  = ContactGoogleStatic.nsAtom;
+	var entries = feed.nsAtom::entry;
+	var ret     = a_gd ? a_gd : new Object();
+
+	for (var i = 0; i < entries.length(); i++) {
+		let gd = GoogleData.new(entries[i], mode);
+		ret[gd.meta.id] = gd;
+	}
+
+	return ret;
+}
+
+function ContactGoogle(xml, mode) {
+	GoogleData.call(this);
+
+	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry(GoogleData.eElement.contact);
+	this.m_mode       = mode ? mode : ContactGoogle.ePostal.kDisabled;
+	this.m_groups     = null;             //             array populated by the getter
+
+	this.__defineGetter__("groups", function()  { return this.get_groups(); });
+	this.__defineSetter__("groups", function(g) { return this.set_groups(g); });
+}
+
+ContactGoogle.ePostal      = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
+ContactGoogle.eTransform   = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
+ContactGoogle.eModify      = new ZinEnum( { 'kRemoveDeletedGroupMembershipInfo' : 0x01 } );
+ContactGoogle.eSystemGroup = new ZinEnum( newObjectWithKeysMatchingValues('Contacts', 'Friends', 'Family', 'Coworkers') );
+
+function ContactGoogleProto() {}
+
+ContactGoogleProto.prototype = {
 groups_initialise_getter_and_setter: function() {
 	var fn_getter
 },
@@ -79,6 +170,8 @@ mode : function (value) {
 	return this.m_mode;
 },
 make_mask_of_elements_in_entry: function () {
+	zinAssert(this.m_entry);
+
 	var children = this.m_entry.*;
 	var ret = 0;
 	var i, reAtom, reGd, reGContact;
@@ -114,6 +207,8 @@ warn_if_entry_isnt_valid : function() {
 },
 groups_from_xml: function () {
 	var ret = new Array();
+
+	zinAssert(this.m_entry);
 
 	with (ContactGoogleStatic)
 		var groups = this.m_entry.nsGContact::groupMembershipInfo;
@@ -193,12 +288,12 @@ properties_from_xml: function () {
 
 	return properties;
 },
-get groups () {
+get_groups : function() {
 	if (!this.m_groups)
 		this.m_groups = this.groups_from_xml();
 	return this.m_groups;
 },
-set groups (groups) {
+set_groups : function(groups) {
 	zinAssert(groups instanceof Array);
 	var entry = this.m_entry;
 
@@ -211,12 +306,7 @@ set groups (groups) {
 
 	this.m_groups = null;
 },
-get properties () {
-	if (!this.m_properties)
-		this.m_properties = this.properties_from_xml();
-	return this.m_properties;
-},
-set properties (properties_in) {
+set_properties : function(properties_in) {
 	// Here's how the contact is updated:
 	// - iterate through the children of <entry>
 	//   - for each child of <entry> that we're interested in:
@@ -525,46 +615,9 @@ modify : function( mods ) {
 	}
 },
 toString : function() {
-	var ret = "\n";
-	var key, value;
-
-	ret += " meta:       ";
-	for ([key, value] in ContactGoogle.eMeta)
-		ret += " " + key + ": " + this.meta[key];
-	ret += "\n"
-
-	ret += " groups:     " + this.groups.toString() + "\n";
-
-	ret += " properties: ";
-	for (key in this.properties)
-		ret += " " + key + ": " + this.properties[key];
-
-	return ret;
-},
-toStringXml : function() {
-	return this.m_entry.toXMLString();
+	return GoogleData.prototype.toString.call(this) + "\n groups:     " + this.groups.toString() + "\n";
 }
 };
-
-// factory methods
-//
-ContactGoogle.newContact = function(arg, mode) {
-	var xml = ContactGoogleStatic.newXml(arg);
-	return new ContactGoogle(xml, mode);
-}
-ContactGoogle.newContacts = function(arg, a_contact, mode) {
-	var feed    = ContactGoogleStatic.newXml(arg);
-	var nsAtom  = ContactGoogleStatic.nsAtom;
-	var entries = feed.nsAtom::entry;
-	var ret     = a_contact ? a_contact : new Object();
-
-	for (var i = 0; i < entries.length(); i++) {
-		let contact = new ContactGoogle(entries[i], mode);
-		ret[contact.meta.id] = contact;
-	}
-
-	return ret;
-}
 
 ContactGoogle.transformTbProperties = function(transform, properties)
 {
@@ -597,27 +650,6 @@ ContactGoogle.transformTbPropertyTo = function(transform, value)
 
 	return ret;
 }
-
-function ContactPropertyCache()
-{
-	this.reset();
-	this.m_is_active = true;
-}
-
-ContactPropertyCache.prototype = {
-get : function (key) {
-	return (this.m_is_active && (key in this.m_properties)) ? this.m_properties[key] : null;
-},
-is_active : function (arg) {
-	if (arg)
-		this.m_is_active = arg;
-
-	return this.m_is_active;
-},
-reset : function () {
-	this.m_properties = new Object();
-}
-};
 
 // Here's how the <email> elements map to email1, email2 properties:
 // - email1 is the first <email> element that has a primary attribute, 
@@ -857,15 +889,19 @@ var ContactGoogleStatic = {
 
 		return this.m_a_hyphenation[left][right];
 	},
-	newEntry : function() {
+	newEntry : function(type) {
+		zinAssert(GoogleData.eElement.isPresent(type));
+
+		let term_fragment = (type == GoogleData.eElement.contact) ? "#contact" : "#group";
+			
 		let ret = <atom:entry xmlns:atom={Xpath.NS_ATOM}
-		                   xmlns:gd={Xpath.NS_GD}
-		                   xmlns:openSearch={Xpath.NS_OPENSEARCH}
-		                   xmlns:gContact={Xpath.NS_GCONTACT}>
-		              <atom:category scheme={Xpath.NS_GD + "#kind"} term={Xpath.NS_GCONTACT + "#group"}/>
+		                      xmlns:gd={Xpath.NS_GD}
+		                      xmlns:openSearch={Xpath.NS_OPENSEARCH}
+		                      xmlns:gContact={Xpath.NS_GCONTACT}>
+					<atom:category xmlns:atom={Xpath.NS_ATOM} scheme={Xpath.NS_GD + "#kind"} term={Xpath.NS_GCONTACT + term_fragment}/>
 		          </atom:entry>;
 
-		if (GD_API_VERSION == 2)
+		if (type == GoogleData.eElement.group || GD_API_VERSION == 2)
 			ret.* += <atom:title xmlns:atom={Xpath.NS_ATOM} type="text"/>
 
 		return ret;
@@ -877,7 +913,7 @@ var ContactGoogleStatic = {
 		var text = (arg instanceof XMLHttpRequest) ? arg.responseText : arg;
 
 		try {
-			var xml = new XML(stripCharsToWorkaroundBug478905(text).replace(reXmlDeclaration,""));
+			var xml = new XML(stripCharsToWorkaroundBug478905(text).replace(re_xml_declaration,""));
 			is_text_parsed = true;
 		}
 		catch (ex) {
@@ -912,3 +948,35 @@ var ContactGoogleStatic = {
 		return properties_out[key];
 	}
 };
+
+function GroupGoogle(xml) {
+	GoogleData.call(this);
+
+	this.m_entry = xml ? xml : ContactGoogleStatic.newEntry(GoogleData.eElement.group);
+}
+
+function GroupGoogleProto() {}
+
+GroupGoogleProto.prototype = {
+systemGroup : function() {
+	let nsGContact = ContactGoogleStatic.nsGContact;
+	let el = this.m_entry.nsGContact::systemGroup;
+	return el.length() > 0 ? el.@id.toString() : false;
+},
+properties_from_xml: function () {
+	let nsAtom = ContactGoogleStatic.nsAtom;
+	return newObject('title', this.m_entry.nsAtom::title.toString());
+},
+set_properties : function(properties_in) {
+	zinAssert('title' in properties_in && properties_in['title'].length > 0);
+	let nsAtom                 = ContactGoogleStatic.nsAtom;
+	this.m_entry.nsAtom::title = properties_in['title'];
+	this.m_properties          = null;
+},
+toString : function() {
+	return GoogleData.prototype.toString.call(this) + "\n systemGroup: " + this.systemGroup() + "\n";
+}
+};
+
+ContactGoogle.prototype = new GoogleData(); AddToPrototype(ContactGoogle, ContactGoogleProto);
+GroupGoogle.prototype   = new GoogleData(); AddToPrototype(GroupGoogle,   GroupGoogleProto);

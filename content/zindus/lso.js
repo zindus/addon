@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: lso.js,v 1.17 2009-06-20 23:23:04 cvsuser Exp $
+// $Id: lso.js,v 1.18 2009-08-03 00:40:30 cvsuser Exp $
 
 // lso == Last Sync Object
 //
@@ -37,6 +37,7 @@ function Lso(arg)
 	{
 		case 'object': // populate properties from the (ms, md etc) attributes of a zfi object
 			var zfi = arg;
+			zinAssert(zfi);
 			for (i = 0; i < Lso.aPartsZfi.length; i++)
 				if (zfi.isPresent(Lso.aPartsZfi[i]))	
 					this.m_properties[Lso.aPartsZfi[i]] = zfi.get(Lso.aPartsZfi[i]);

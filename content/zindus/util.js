@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.56 2009-07-04 22:32:41 cvsuser Exp $
+// $Id: util.js,v 1.57 2009-08-03 00:40:31 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -421,6 +421,16 @@ function newObjectWithKeys()
 
 	for (var i = 0; i < arguments.length; i++)
 		ret[arguments[i]] = 0;
+
+	return ret;
+}
+
+function newObjectWithKeysMatchingValues()
+{
+	var ret = new Object();
+
+	for (var i = 0; i < arguments.length; i++)
+		ret[arguments[i]] = arguments[i];
 
 	return ret;
 }
@@ -1224,4 +1234,18 @@ function nsIXULAppInfo()
 	}
 
 	return nsIXULAppInfo.ret;
+}
+
+// the status + progress panels are visibile and updated in windows containing these ids.
+//
+function show_status_panel_in()
+{
+	return (nsIXULAppInfo().app_name == 'firefox') ? [ 'browser-bottombox' ] : [ 'folderPaneBox', 'addressbookWindow' ];
+}
+
+function AddToPrototype(o, p) {
+  for (var i in p.prototype) {
+	logger().debug("AddToPrototype: copying: " + i + " typeof: " + typeof(p.prototype[i])); // TODO
+    o.prototype[i] = p.prototype[i];
+  }
 }

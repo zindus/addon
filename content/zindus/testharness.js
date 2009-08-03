@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.103 2009-07-03 01:03:37 cvsuser Exp $
+// $Id: testharness.js,v 1.104 2009-08-03 00:40:30 cvsuser Exp $
 
 function TestHarness()
 {
@@ -58,12 +58,14 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testAddressBookBugzilla432145Create();
 	// ret = ret && this.testAddressBookBugzilla432145Compare();
 	// ret = ret && this.testAddressBookBugzilla432145Delete();
+	// ret = ret && this.testAddressBookFf();
 	// ret = ret && this.testFeedCollection();
 	// ret = ret && this.testPermFromZfi();
-	// ret = ret && this.testFolderConverter();
+	ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
+	// ret = ret && this.testGroupGoogle();
 	// ret = ret && this.testContactGoogle1();
 	// ret = ret && this.testContactGoogle2();
 	// ret = ret && this.testContactGoogleIssue151();
@@ -281,7 +283,7 @@ TestHarness.prototype.testContactConverterGdPostalAddress = function()
 	var context = this;
 
 	function new_contact(str) {
-		return ContactGoogle.newContact(context.m_entry_as_xml_char.replace("@@postal@@", str ), ContactGoogle.ePostal.kEnabled);
+		return GoogleData.new(context.m_entry_as_xml_char.replace("@@postal@@", str ), ContactGoogle.ePostal.kEnabled);
 	}
 
 	this.setupFixtureGdPostalAddress();
@@ -439,8 +441,8 @@ TestHarness.prototype.testFolderConverter = function()
 
 	this.testFolderConverterSuiteOne(converter, "convertForPublic");
 
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == pabname);
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == pabname);
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfi_from_name(TB_PAB))             == pabname);
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfi_from_name(ZM_FOLDER_CONTACTS)) == pabname);
 
 	var localised_emailed_contacts;
 
@@ -452,16 +454,25 @@ TestHarness.prototype.testFolderConverter = function()
 
 	// test localisation by language
 	//
-	converter.localised_emailed_contacts(converter.translate_emailed_contacts("fr"));
+	let translation;
+
+	translation = PerLocaleStatic.translation_of_locale(ZM_FOLDER_EMAILED_CONTACTS, "fr");
+	converter.localised_emailed_contacts(translation);
 	localised_emailed_contacts = "Personnes contact\u00e9es par mail";
 
 	this.testFolderConverterSuiteTwo(converter, localised_emailed_contacts);
 
 	// test localisation by language and location
 	//
-	converter.localised_emailed_contacts(converter.translate_emailed_contacts("fr_FR"));
+	translation = PerLocaleStatic.translation_of_locale(ZM_FOLDER_EMAILED_CONTACTS, "fr_FR");
+	converter.localised_emailed_contacts(translation);
 
 	this.testFolderConverterSuiteTwo(converter, localised_emailed_contacts);
+
+	// test the Google conversions
+	let email_address = "xxx@gmail.com";
+	converter.gd_account_email_address(email_address);
+	this.testFolderConverterSuiteThree(converter, email_address);
 
 	this.m_logger.debug("testFolderConverter: finish");
 
@@ -472,26 +483,26 @@ TestHarness.prototype.testFolderConverterSuiteOne = function(converter, method)
 {
 	// test convertForMap
 	//
-	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(""))                 == FolderConverter.PREFIX_PRIMARY_ACCOUNT);
+	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfi_from_name(""))                 == FolderConverter.PREFIX_PRIMARY_ACCOUNT);
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName("fred"))             == "fred");
-	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName("x"))                == FolderConverter.PREFIX_PRIMARY_ACCOUNT + "x");
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "fred");
-	zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName("zindus/fred"))      == "zindus/fred");
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfi_from_name("fred"))             == "fred");
+	zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfi_from_name("x"))                == FolderConverter.PREFIX_PRIMARY_ACCOUNT + "x");
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfi_from_name("zindus/fred"))      == "fred");
+	zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfi_from_name("zindus/fred"))      == "zindus/fred");
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == ZM_FOLDER_CONTACTS);
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == ZM_FOLDER_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfi_from_name(TB_PAB))             == ZM_FOLDER_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfi_from_name(ZM_FOLDER_CONTACTS)) == ZM_FOLDER_CONTACTS);
 
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == ZM_FOLDER_EMAILED_CONTACTS);
-	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == ZM_FOLDER_EMAILED_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_TB, SyncFsm.zfi_from_name(TB_EMAILED_CONTACTS))        == ZM_FOLDER_EMAILED_CONTACTS);
+	zinAssert(converter[method](FORMAT_ZM, FORMAT_ZM, SyncFsm.zfi_from_name(ZM_FOLDER_EMAILED_CONTACTS)) == ZM_FOLDER_EMAILED_CONTACTS);
 
 	if (method != "convertForPublic") // these are tested separately
 	{
-		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_PAB))             == TB_PAB);
-		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_CONTACTS)) == TB_PAB);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfi_from_name(TB_PAB))             == TB_PAB);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfi_from_name(ZM_FOLDER_CONTACTS)) == TB_PAB);
 
-		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == TB_EMAILED_CONTACTS);
-		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == TB_EMAILED_CONTACTS);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_TB, SyncFsm.zfi_from_name(TB_EMAILED_CONTACTS))        == TB_EMAILED_CONTACTS);
+		zinAssert(converter[method](FORMAT_TB, FORMAT_ZM, SyncFsm.zfi_from_name(ZM_FOLDER_EMAILED_CONTACTS)) == TB_EMAILED_CONTACTS);
 	}
 
 	return true;
@@ -501,8 +512,30 @@ TestHarness.prototype.testFolderConverterSuiteTwo = function(converter, localise
 {
 	var prefix = FolderConverter.PREFIX_PRIMARY_ACCOUNT;
 
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfiFromName(TB_EMAILED_CONTACTS))        == prefix + localised_emailed_contacts);
-	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfiFromName(ZM_FOLDER_EMAILED_CONTACTS)) == prefix + localised_emailed_contacts);
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_TB, SyncFsm.zfi_from_name(TB_EMAILED_CONTACTS))        == prefix + localised_emailed_contacts);
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_ZM, SyncFsm.zfi_from_name(ZM_FOLDER_EMAILED_CONTACTS)) == prefix + localised_emailed_contacts);
+}
+
+TestHarness.prototype.testFolderConverterSuiteThree = function(converter, email_address)
+{
+	function munge(x) { return "zindus/" + email_address + ":" + x; }
+
+	let tb_name = ContactGoogle.eSystemGroup.Contacts;
+	// let zfi = SyncFsm.zfi_from_name(munge(tb_name));
+	// let x = converter.convertForPublic(FORMAT_GD, FORMAT_TB, zfi);
+	// let zfi = SyncFsm.zfi_from_name("zindus-" + email_address + ":fred");
+
+	let zfi = SyncFsm.zfi_from_name_gd(ContactGoogle.eSystemGroup.Contacts);
+	let x   = converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi);
+
+	this.m_logger.debug("x: " + x + " zfi: " + zfi.toString());
+
+	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name(munge("fred"))) == "zindus/fred");
+	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name("zindus-" + email_address + ":fred"))== "zindus-fred");
+	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name(munge(ContactGoogle.eSystemGroup.Contacts))) == ContactGoogle.eSystemGroup.Contacts);
+
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_GD, SyncFsm.zfi_from_name_gd("zindus/fred")) == munge("fred"));
+	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_GD, SyncFsm.zfi_from_name_gd(ContactGoogle.eSystemGroup.Contacts)) == munge(ContactGoogle.eSystemGroup.Contacts));
 }
 
 TestHarness.prototype.testPropertyDelete = function()
@@ -727,9 +760,11 @@ TestHarness.prototype.testAddressBook1 = function()
 
 	zinAssert(!addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid)); // test card shouldn't exist before the test starts
 
-	var abCardIn = addressbook.addCard(uri, properties, attributes);
+	var abfCardIn = addressbook.addCard(uri, properties, attributes);
+	var abfCardOut = addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
 
-	var abCardOut = addressbook.lookupCard(uri, TBCARD_ATTRIBUTE_LUID, luid);
+	var abCardIn  = abfCardIn.abCard();
+	var abCardOut = abfCardOut.abCard();
 
 	this.m_logger.debug("abCardIn: "  + addressbook.nsIAbCardToPrintableVerbose(abCardIn));
 	this.m_logger.debug("abCardOut: " + addressbook.nsIAbCardToPrintableVerbose(abCardOut));
@@ -785,13 +820,13 @@ TestHarness.prototype.testAddressBookBugzilla432145Create = function()
 	var properties = new Object();
 	var attributes = new Object();
 	var luid = "1";
-	var count, abCardIn, abCardOut;
+	var count;
 
 	for (count = 0; count < this.m_bugzilla_432145_count; count++)
 	{
 		this.testAddressBookBugzilla432145Populate(properties, attributes, luid);
 
-		abCardIn = addressbook.addCard(this.testAddressBookBugzilla432145Uri(count), properties, attributes);
+		addressbook.addCard(this.testAddressBookBugzilla432145Uri(count), properties, attributes);
 
 		luid++;
 	}
@@ -859,24 +894,95 @@ TestHarness.prototype.testAddressBookBugzilla432145Populate = function(propertie
 	attributes[TBCARD_ATTRIBUTE_LUID] = luid;
 }
 
-TestHarness.prototype.sampleGoogleContactProperties = function()
+TestHarness.prototype.testAddressBookFf = function()
 {
-	var properties = new Object();
+	zinAssert(AddressBook.version() == eAddressBookVersion.FF);
 
-	properties["title"] = "1";
-	properties["content"] = "2";
-	properties["organization#orgName"] = "3";
-	properties["organization#orgTitle"] = "4";
-	properties["phoneNumber#work"] = "5";
-	properties["phoneNumber#home"] = "6";
-	properties["phoneNumber#work_fax"] = "7";
-	properties["phoneNumber#pager"] = "8";
-	properties["phoneNumber#mobile"] = "9";
-	properties["PrimaryEmail"] = "10";
-	properties["SecondEmail"] = "11";
-	properties["im#AIM"] = "12";
+	if (!AddressBookFfStatic.db_is_healthy())
+		AddressBookFfStatic.db_drop_and_create();
 
-	return properties;
+	return true;
+
+	let addressbook = AddressBook.new();
+	let contact_converter = this.newContactConverter();
+	let ab_name = 'fred';
+	let functor, abCard, abfCard;
+
+	addressbook.contact_converter(contact_converter);
+
+	// clean up after a previous test that failed
+	//
+	functor = {
+		run: function(elem) {
+			if (elem.dirName == ab_name)
+				addressbook.deleteAddressBook(elem.URI);
+			return true;
+		}
+	};
+
+	addressbook.forEachAddressBook(functor);
+
+	let abip = addressbook.newAddressBook(ab_name);
+
+	function is_match_p_a(abCard, properties, attributes) {
+		zinAssert(addressbook.getCardProperty(abCard, 'PrimaryEmail') == properties['PrimaryEmail']);
+		zinAssert(isMatchObjects(addressbook.getCardProperties(abCard), properties));
+		zinAssert(addressbook.getCardAttributes(abCard)['zindus-xxx'] == attributes['zindus-xxx']);
+	}
+
+	// TODO test that deleting an abook deletes all it's contacts
+	//
+	let properties = { PrimaryEmail : 'a@b.com', Notes : 'hello world 1' };
+	let attributes = { 'zindus-xxx' : '123' };
+
+	abfCard = addressbook.addCard(abip.uri(), properties, { 'zindus-xxx' : '123' });
+	abCard = abfCard.abCard();
+
+	is_match_p_a(abCard, properties, attributes);
+
+	abfCard = addressbook.addCard(abip.uri(), { PrimaryEmail : 'c@d.com', Notes : 'hello world 2' }, { 'zindus-xxx' : '456' });
+	abCard = abfCard.abCard();
+
+	let properties2 = { PrimaryEmail : 'f@updated.com' };
+	let attributes2 = { 'zindus-xxx' : '111' };
+	addressbook.updateCard(abCard, abip.uri(), properties2, attributes2, FORMAT_TB);
+	is_match_p_a(abCard, properties2, attributes2);
+
+	let attrs = addressbook.getCardAttributes(abCard);
+	// this.m_logger.debug("getCardAttributes: abCard: " + abCard.toString() + " is: " + aToString(attrs));
+	abCard = addressbook.lookupCard(abip.uri(), TBCARD_ATTRIBUTE_LUID, attrs[TBCARD_ATTRIBUTE_LUID]);
+	is_match_p_a(abCard, properties2, attributes2);
+
+	this.m_logger.debug("lookupCard: returns: " + (abCard ? abCard.toString() : "null"));
+
+	abfCard = addressbook.addCard(abip.uri(), { PrimaryEmail : 'to-be-deleted@d.com' }, { 'zindus-xxx' : '111' });
+	abCard = abfCard.abCard();
+	let abfCard2 = addressbook.addCard(abip.uri(), { PrimaryEmail : 'to-be-deleted-2@dd.com' }, { 'zindus-xxx' : '222' });
+	let abCard2 = abfCard2.abCard();
+	addressbook.deleteCards(abip.uri(), [ abCard, abCard2 ]);
+
+	var functor_card = {
+		run: function(uri, card) {
+			logger().debug("card: " + card.toString());
+			return true;
+		}
+	};
+
+	functor = {
+		run: function(elem) {
+			logger().debug("elem: " + elem.toString());
+			addressbook.forEachCard(elem.URI, functor_card);
+			return true;
+		}
+	};
+
+	addressbook.forEachAddressBook(functor);
+
+	addressbook.renameAddressBook(abip.uri(), "joe");
+	abCard = addressbook.addCard(abip.uri(), { PrimaryEmail : 'to-be-deleted@d.com' }, { 'zindus-xxx' : '111' });
+	addressbook.deleteAddressBook(abip.uri());
+
+	return true;
 }
 
 TestHarness.prototype.sampleContactGoogleProperties = function()
@@ -884,9 +990,6 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 	var properties = new Object();
 
 	properties["content"] = "1";
-	properties["name_givenName"] = "2-givenName";
-	properties["name_familyName"] = "2-familyName";
-	properties["name_fullName"] = "2-fullName";
 	properties["organization_orgName"] = "3";
 	properties["organization_orgTitle"] = "4";
 	properties["phoneNumber_work"] = "5";
@@ -897,12 +1000,21 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 	properties["email1"] = "10";
 	properties["email2"] = "11";
 	properties["im_AIM"] = "12";
-	properties["website_home"] = "13";
-	properties["website_work"] = "14";
 	// properties["postalAddress_home"] = "15";
 	// properties["postalAddress_work"] = "16";
 	properties["postalAddress_home"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>15</street></address>";
 	properties["postalAddress_work"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>16</street></address>";
+
+	if (GD_API_VERSION == 2) {
+		properties["title"] = "2-title";
+	} else if (GD_API_VERSION == 3) {
+		properties["name_givenName"] = "2-givenName";
+		properties["name_familyName"] = "2-familyName";
+		properties["name_fullName"] = "2-fullName";
+		properties["website_home"] = "13";
+		properties["website_work"] = "14";
+	}
+	else zinAssert(false);
 
 	return properties;
 }
@@ -951,7 +1063,7 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 
 TestHarness.prototype.testContactGoogle1 = function()
 {
-	var xmlString = "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005' gd:etag='&quot;SXo5cTVSLyp7ImA9WxRaE08KRAw.&quot;'><id>http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96</id><updated>2008-05-05T21:13:38.158Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>rr rr</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/a2ghbe%40gmail.com/base/606f624c0ebd2b96/1210022018158000'/> \
+	var xmlString = "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005' gd:etag='&quot;SXo5cTVSLyp7ImA9WxRaE08KRAw.&quot;'><id>http://www.google.com/m8/feeds/contacts/xxx%40gmail.com/base/606f624c0ebd2b96</id><updated>2008-05-05T21:13:38.158Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>rr rr</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/xxx%40gmail.com/base/606f624c0ebd2b96'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/xxx%40gmail.com/base/606f624c0ebd2b96/1210022018158000'/> \
 	<gd:email rel='http://schemas.google.com/g/2005#home' address='rr.rr.rr.rr@example.com' primary='true' /> \
 	<gd:email rel='http://schemas.google.com/g/2005#home' address='be@example.com' /> \
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>111111</gd:phoneNumber><gd:postalAddress rel='http://schemas.google.com/g/2005#work'>123 acme st</gd:postalAddress><gd:deleted/><gd:organization primary='true' rel='http://schemas.google.com/g/2005#other'><gd:orgName>Bloggs org name</gd:orgName><gd:orgTitle>an org title</gd:orgTitle></gd:organization><gd:im address='aim-im-2' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/></entry>";
@@ -973,11 +1085,11 @@ TestHarness.prototype.testContactGoogle1 = function()
 	if (true)
 	{
 		// contact = new ContactGoogle(xml);
-		contact = ContactGoogle.newContact(xmlString);
+		contact = GoogleData.new(xmlString);
 
 		this.m_logger.debug("contact.meta.id: " + contact.meta.id);
 
-		generator = ContactGoogle.eMeta.generator();
+		generator = GoogleData.eMeta.generator();
 
 		while (Boolean([key, value] = generator.next()))
 			this.m_logger.debug("contact.meta." + key + ": " + contact.meta[key]);
@@ -994,9 +1106,6 @@ TestHarness.prototype.testContactGoogle1 = function()
 		contact = new ContactGoogle();
 		properties = {
 			'content' :              'a-content',
-			'name_givenName':        'a-name-given',
-			'name_familyName':       'a-name-family',
-			'name_fullName':         'a-name-full',
 			'organization_orgName':  'a-org-name',
 			'organization_orgTitle': 'a-org-title',
 			'phoneNumber_home':      'a-phone-home',
@@ -1004,6 +1113,13 @@ TestHarness.prototype.testContactGoogle1 = function()
 			'email1':                'email1@e.com',
 			'email2':                'email2@e.com'
 		};
+
+		if (GD_API_VERSION == 3) {
+			properties['name_givenName']  = 'a-name-given';
+			properties['name_familyName'] = 'a-name-family';
+			properties['name_fullName']   = 'a-name-full';
+		}
+
 		// set all properties
 		contact.properties = properties;
 		this.m_logger.debug("contact.xml: " + contact.m_entry.toXMLString());
@@ -1058,11 +1174,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 	<content type='text'>@@content@@</content> \
 	<link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username-goes-here%40gmail.com/base/0'/> \
 	<link rel='edit' type='application/atom+xml' href='@@edit@@'/>\
-	<gd:name>\
-		<gd:givenName>@@name_givenName@@</gd:givenName>\
-		<gd:familyName>@@name_familyName@@</gd:familyName>\
-		<gd:fullName>@@name_fullName@@</gd:fullName>\
-	</gd:name>\
+	@@api_version@@\
 	<gd:organization rel='http://schemas.google.com/g/2005#work'>\
 		<gd:orgName>@@organization_orgName@@</gd:orgName>\
 		<gd:orgTitle>@@organization_orgTitle@@</gd:orgTitle>\
@@ -1084,8 +1196,6 @@ TestHarness.prototype.testContactGoogle2 = function()
 	<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>@@postalAddress_home@@</gd:postalAddress>\
 	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>@@postalAddress_work@@</gd:postalAddress>\
 	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>@@postalAddress_work@@</gd:postalAddress>\
-	<gContact:website href='@@website_home@@' rel='home'/>\
-	<gContact:website href='@@website_work@@' rel='work'/>\
 	<gContact:groupMembershipInfo deleted='false' href='@@group-0@@'/>\
 	<gContact:groupMembershipInfo deleted='false' href='@@group-1@@'/>\
 	<gContact:groupMembershipInfo deleted='true' href='blah1'/>\
@@ -1094,6 +1204,16 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	xmlString = xmlString.replace("@@entry@@", xmlStringEntry);
 
+	let api_version = (GD_API_VERSION == 2) ? "" : "<gd:name>\
+		<gd:givenName>@@name_givenName@@</gd:givenName>\
+		<gd:familyName>@@name_familyName@@</gd:familyName>\
+		<gd:fullName>@@name_fullName@@</gd:fullName>\
+	</gd:name>\
+	<gContact:website href='@@website_home@@' rel='home'/>\
+	<gContact:website href='@@website_work@@' rel='work'/>";
+	xmlString = xmlString.replace("@@api_version@@", api_version);
+
+	this.m_logger.debug("AMHERE: properties: " + aToString(properties)); // TODO
 	for (key in properties)
 		xmlString = xmlString.replace("@@" + key + "@@", properties[key]);
 
@@ -1104,15 +1224,9 @@ TestHarness.prototype.testContactGoogle2 = function()
 		xmlString = xmlString.replace("@@" + key + "@@", meta[key]);
 
 	function fresh_contact() {
-		let a_gd_contact = ContactGoogle.newContacts(xmlString);
-
-		// for (var id in a_gd_contact)
-		//	this.m_logger.debug("contact: " + a_gd_contact[id].toString());
-
-		zinAssertAndLog(aToLength(a_gd_contact) == 1, "length: " + aToLength(a_gd_contact));
-
-		let id = firstKeyInObject(a_gd_contact);
-		return a_gd_contact[id];
+		let a_contact = GoogleData.new_from_feed(xmlString);
+		let id = firstKeyInObject(a_contact);
+		return a_contact[id];
 	}
 
 	function remove_postal_properties(properties) {
@@ -1252,7 +1366,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 	//
 	var xmlStringTwo = xmlString.replace("organization rel='http://schemas.google.com/g/2005#work'", 
 	                                     "organization ");
-	a_gd_contact = ContactGoogle.newContacts(xmlStringTwo);
+	a_gd_contact = GoogleData.new_from_feed(xmlStringTwo);
 	id = firstKeyInObject(a_gd_contact);
 	contact = a_gd_contact[id];
 	zinAssert(!('organization_orgTitle' in contact.properties));
@@ -1317,7 +1431,7 @@ TestHarness.prototype.testContactGoogleIssue179 = function()
 	<gContact:groupMembershipInfo deleted='false' href='http://www.google.com/m8/feeds/groups/example%40googlemail.com/base/6'/> \
 	</entry>";
 
-	let contact = ContactGoogle.newContact(xmlStringEntry);
+	let contact = GoogleData.new(xmlStringEntry);
 
 	this.m_logger.debug("contact: " + contact.toString());
 
@@ -1357,6 +1471,7 @@ TestHarness.prototype.testContactGoogleIssue202 = function()
 {
 	var xmlStringEntry = "\
 	<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'> \
+	<category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/> \
 	<id>http://www.google.com/m8/feeds/contacts/example%40googlemail.com/base/d</id> \
 	<updated>2009-02-05T13:22:07.967Z</updated> \
 	<title>BTW</title><content>some content here </content> \
@@ -1366,7 +1481,8 @@ TestHarness.prototype.testContactGoogleIssue202 = function()
 	<gContact:groupMembershipInfo deleted='true' href='http://www.google.com/m8/feeds/groups/example%40googlemail.com/base/7'/> \
 	</entry>";
 
-	let contact = ContactGoogle.newContact(xmlStringEntry);
+
+	let contact = GoogleData.new(xmlStringEntry);
 
 	contact.modify(ContactGoogle.eModify.kRemoveDeletedGroupMembershipInfo);
 
@@ -1427,6 +1543,101 @@ TestHarness.prototype.testContactGoogleIterators = function()
 	i = 1;
 	for (key in cgopi.iterator(newObjectWithKeys('email1', 'email2')))
 		zinAssertAndLog(key == ('email' + i++), "key: " + key);
+
+	return true;
+}
+
+TestHarness.prototype.testGroupGoogle = function()
+{
+	var ns = "xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'";
+	var g1txt = "<entry gd:etag='&quot;YDwqeyI.&quot;' " + ns + "><id>http://www.google.com/m8/feeds/groups/xxxx%40gmail.com/base/6</id><updated>1970-01-01T00:00:00.000Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#group'/><title>System Group: My Contacts</title><content>System Group: My Contacts</content><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/groups/xxxx%40gmail.com/thin/6'/><gContact:systemGroup id='Contacts'/></entry>";
+	var g2txt = "<entry gd:etag='&quot;RHo-ejVSLyp7ImA9WxJWGEwDQwY.&quot;' " + ns + "><id>http://www.google.com/m8/feeds/groups/xxxx%40gmail.com/base/7e0da48588f12162</id><updated>2009-06-24T04:57:05.452Z</updated><app:edited xmlns:app='http://www.w3.org/2007/app'>2009-06-24T04:57:05.452Z</app:edited><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#group'/><title>zindus-fred</title><content>Fred</content><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/groups/xxxx%40gmail.com/thin/7e0da48588f12162'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/groups/xxxx%40gmail.com/thin/7e0da48588f12162'/></entry>";
+
+
+	this.m_logger.debug("testContactGoogle: g1: " + g1txt);
+
+	var g1xml = new XML(g1txt);
+	var g2xml = new XML(g2txt);
+
+	this.m_logger.debug("testContactGoogle: g1xml: " + g1xml.toXMLString());
+
+	var g1 = new GroupGoogle(g1xml);
+	var g2 = new GroupGoogle(g2xml);
+
+	this.m_logger.debug("testContactGoogle: g1: " + g1.toString());
+	this.m_logger.debug("testContactGoogle: g2: " + g2.toString());
+
+	g2.properties = { title : "joe" };
+
+	this.m_logger.debug("testContactGoogle: g2: " + g2.toString());
+	this.m_logger.debug("testContactGoogle: g2: " + g2.toStringXml());
+
+	if (false)
+	{
+		str = new String(xml.nsAtom::xxx);
+		b   = Boolean(xml.nsAtom::ie);
+		x   = xml.nsAtom::id;
+		this.m_logger.debug("testContactGoogle: xml: " + str + " str.length: " + str.length + " b: " + b + " x.length: " + x.length());
+	}
+
+	if (false)
+	{
+		// contact = new ContactGoogle(xml);
+		contact = GoogleData.new(xmlString);
+
+		this.m_logger.debug("contact.meta.id: " + contact.meta.id);
+
+		generator = GoogleData.eMeta.generator();
+
+		while (Boolean([key, value] = generator.next()))
+			this.m_logger.debug("contact.meta." + key + ": " + contact.meta[key]);
+	}
+	
+	if (false)
+	{
+		contact = new ContactGoogle(xml);
+		this.m_logger.debug("contact.properties: " + aToString(contact.properties));
+	}
+
+	if (false)
+	{
+		contact = new ContactGoogle();
+		properties = {
+			'content' :              'a-content',
+			'name_givenName':        'a-name-given',
+			'name_familyName':       'a-name-family',
+			'name_fullName':         'a-name-full',
+			'organization_orgName':  'a-org-name',
+			'organization_orgTitle': 'a-org-title',
+			'phoneNumber_home':      'a-phone-home',
+			'im_AIM':                'a-im-AIM',
+			'email1':                'email1@e.com',
+			'email2':                'email2@e.com'
+		};
+		// set all properties
+		contact.properties = properties;
+		this.m_logger.debug("contact.xml: " + contact.m_entry.toXMLString());
+		this.m_logger.debug("contact.properties: " + aToString(contact.properties));
+		this.m_logger.debug("properties: " + aToString(properties));
+		zinAssert(isMatchObjects(properties, contact.properties));
+
+		// delete some properties
+		//
+		delete properties['name_givenName'];
+		// delete properties['name_familyName'];
+		delete properties['name_fullName'];
+		delete properties['organization_orgName'];
+		delete properties['organization_orgTitle'];
+		delete properties['im_AIM'];
+		delete properties['email2'];
+		delete properties['title'];
+		// delete properties['phoneNumber_home'];
+		properties['phoneNumber_home'] = "";
+		contact.properties = properties;
+		this.m_logger.debug("contact.xml: " + contact.m_entry.toXMLString());
+		if (properties['phoneNumber_home'] == "") delete properties['phoneNumber_home'];
+		zinAssertAndLog(isMatchObjects(properties, contact.properties), "\n properties: " + aToString(properties) + "\n contact: " + aToString(contact.properties));
+	}
 
 	return true;
 }
@@ -1587,7 +1798,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	var context = this;
 
 	function new_contact(str) {
-		return ContactGoogle.newContact(context.m_entry_as_xml_char.replace("@@postal@@", str ), ContactGoogle.ePostal.kEnabled);
+		return GoogleData.new(context.m_entry_as_xml_char.replace("@@postal@@", str ), ContactGoogle.ePostal.kEnabled);
 	}
 
 	this.m_logger.debug("testContactGooglePostalAddress: start");
@@ -1669,7 +1880,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	this.setupFixtureGdPostalAddress();
 
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
-	contact = ContactGoogle.newContact(context.m_entry_as_xml_char.replace("@@postal@@", "" ), ContactGoogle.ePostal.kDisabled);
+	contact = GoogleData.new(context.m_entry_as_xml_char.replace("@@postal@@", "" ), ContactGoogle.ePostal.kDisabled);
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 	contact.properties = gd_properties;
@@ -2494,7 +2705,8 @@ TestHarness.prototype.testTb3CardUuid = function()
 	// for (var i in Components.interfaces)
 	//	this.m_logger.debug(i);
 
-	var abCard = addressbook.addCard(uri, contact.properties, attributes);
+	var abfCard = addressbook.addCard(uri, contact.properties, attributes);
+	var abCard = abfCard.abCard();
 	// var mdbCard = abCard.QueryInterface(Ci.nsIAbMDBCard);
 	// var mdbCard = abCard.QueryInterface(Ci.nsAbMDBCard);
 	// var dbRowID = mdbCard.getProperty("DBRowID", null);

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: gdaddressconverter.js,v 1.10 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: gdaddressconverter.js,v 1.11 2009-08-03 00:40:30 cvsuser Exp $
 
 function GdAddressConverter()
 {
@@ -49,7 +49,7 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 
 	if (dirn & GdAddressConverter.ADDR_TO_PROPERTIES)
 	{
-		var xml_as_char = a_xml[key].replace(reXmlDeclaration, ""); // bug 336551
+		var xml_as_char = a_xml[key].replace(re_xml_declaration, ""); // bug 336551
 
 		address = this.string_to_e4x(xml_as_char);
 

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: statusbar.js,v 1.12 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: statusbar.js,v 1.13 2009-08-03 00:40:30 cvsuser Exp $
 
 // Bits of "exit status" reported to the outside world:
 // - last sync success: (time, maybe other stuff like conflicts...)
@@ -191,7 +191,7 @@ var StatusBarState = {
 		logger().debug("StatusBarState: update: status: " + obj[status] + " (" + status + ") tooltip: " + tooltip);
 
 		if (arguments.length == 0) {
-			zwc = new WindowCollection(SHOW_STATUS_PANEL_IN);
+			zwc = new WindowCollection(show_status_panel_in());
 			zwc.populate();
 		}
 

@@ -20,14 +20,14 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: suo.js,v 1.19 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: suo.js,v 1.20 2009-08-03 00:40:30 cvsuser Exp $
 
 // suo == Source Update Operation
 //
-Suo.ADD  = 0x10; // these are OR-ed with FeedItem.TYPE_*
-Suo.MOD  = 0x20;
-Suo.DEL  = 0x40;
-Suo.MDU  = 0x80; // this is a fake operation - it only applies to winners and it bumps the gid VER and luid LS attributes
+Suo.ADD  = 0x1000; // these are OR-ed with FeedItem.TYPE_*
+Suo.MOD  = 0x2000;
+Suo.DEL  = 0x4000;
+Suo.MDU  = 0x8000; // this is a fake operation - it only applies to winners and it bumps the gid VER and luid LS attributes
 Suo.MASK = (Suo.ADD | Suo.MOD | Suo.DEL | Suo.MDU);
 
 Suo.bimap_opcode = new BiMap(
@@ -39,12 +39,12 @@ Suo.bimap_opcode_UI = new BiMap(
 	[ 'suo.add', 'suo.modify', 'suo.delete' ]);  // these are string ids from zindus.properties
 
 Suo.ORDER_SOURCE_UPDATE = [
-	Suo.MOD | FeedItem.TYPE_FL, Suo.MOD | FeedItem.TYPE_SF,
-	Suo.ADD | FeedItem.TYPE_FL, Suo.ADD | FeedItem.TYPE_SF, 
+	Suo.MOD | FeedItem.TYPE_FL, Suo.MOD | FeedItem.TYPE_SF, Suo.MOD | FeedItem.TYPE_GG,
+	Suo.ADD | FeedItem.TYPE_FL, Suo.ADD | FeedItem.TYPE_SF, Suo.ADD | FeedItem.TYPE_GG,
 	Suo.DEL | FeedItem.TYPE_CN,
 	Suo.MOD | FeedItem.TYPE_CN,
 	Suo.ADD | FeedItem.TYPE_CN,
-	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF
+	Suo.DEL | FeedItem.TYPE_FL, Suo.DEL | FeedItem.TYPE_SF, Suo.DEL | FeedItem.TYPE_GG
 ];
 
 function Suo(gid, sourceid_winner, sourceid_target, opcode)
@@ -160,6 +160,7 @@ __iterator__: function(is_keys_only) {
 						key.sourceid = sourceid;
 						key.bucket   = bucket;
 						key.id       = id;
+						logger().debug("SuoIterator: AMHERE yielding key: " + aToString(key) + " suo: " + aToString(suo)); // TODO remove
 						logger().debug("SuoIterator: yielding key: " + key.toString() + " suo: " + suo.toString());
 						yield is_keys_only ? suo : [ cloneObject(key), suo ]; // clone the key so that the user can keep a reference
 					}

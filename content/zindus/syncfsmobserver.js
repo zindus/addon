@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.73 2009-07-04 22:53:58 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.74 2009-08-03 00:40:30 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -141,13 +141,15 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 	var a_states_gd = {
 		stAuth:           { count: 1 },
 		stAuthCheck:      { },
+		stGetGroupsGd1:   { count: 1 },
+		stGetGroupsGd2:   { },
 		stGetContactGd1:  { count: 1 },
 		stGetContactGd2:  { count: 1 },
 		stGetContactGd3:  { count: 1 },
 		stDeXmlifyAddrGd: { },
 		stConfirmOnErase: { },
+		stGetGroupPuGd:   { count: 1 },
 		stGetContactPuGd: { count: 1 },
-		stGetGroupGd:     { }, // no need to show progress for this, because UI will still reflect stGetContactPuGd
 		stUpdateGd:       { count: 1 }
 	};
 
@@ -254,6 +256,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 			case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "account.info"); break;
 			case 'stSync':          
 			case 'stSyncResponse':
+			case 'stGetGroupsGd1':
 			case 'stGetContactGd1':
 			case 'stGetContactGd2': this.progressReportOnSource(context.state.sourceid_pr, "remote.sync");  break;
 			case 'stGalSync':        
@@ -318,23 +321,26 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					ret = false; // no need to update the UI
 				break;
 
-			case 'stGetContactPuGd':
-				if (context.state.a_gd_contact_to_get && context.state.a_gd_contact_to_get.length > 0)
+			case 'stGetGroupPuGd':
+			case 'stGetContactPuGd': {
+				let type = fsmstate.newstate == 'stGetGroupPuGd' ? 'group' : 'contact';
+				if (context.state.a_gd_to_get[type] && context.state.a_gd_to_get[type].length > 0)
 				{
 					var op = this.buildOp(context.state.sourceid_pr, "get.many");
 
 					if (this.get(SyncFsmObserver.OP) != op)
 					{
-						this.progressReportOnSource(context.state.sourceid_pr, "get.many", context.state.a_gd_contact_to_get.length);
+						this.progressReportOnSource(context.state.sourceid_pr, "get.many", context.state.a_gd_to_get[type].length);
 						this.set(SyncFsmObserver.PROG_CNT, 0);
 					}
 
 					progress_count = this.get(SyncFsmObserver.PROG_CNT) + 1;
 					this.set(SyncFsmObserver.PROG_CNT, progress_count);
-					percentage_progress_big_hand = progress_count / context.state.a_gd_contact_to_get.length;
+					percentage_progress_big_hand = progress_count / context.state.a_gd_to_get[type].length;
 				}
 				else
 					ret = false; // no need to update the UI
+				}
 				break;
 
 			case 'stUpdateZmHttp':

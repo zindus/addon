@@ -20,14 +20,14 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: timer.js,v 1.44 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: timer.js,v 1.45 2009-08-03 00:40:31 cvsuser Exp $
 
 function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {
 	zinAssert(arguments.length == 3);
 
 	this.m_logger                 = newLogger("TimerFunctor"); // this.m_logger.level(Logger.NONE);
-	this.m_zwc                    = new WindowCollection(SHOW_STATUS_PANEL_IN);
+	this.m_zwc                    = new WindowCollection(show_status_panel_in());
 	this.m_a_zwc_functor          = new Object();
 	this.m_id_fsm_functor         = id_fsm_functor;
 	this.m_on_finish_function     = on_finish_function;

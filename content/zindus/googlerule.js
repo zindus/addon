@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: googlerule.js,v 1.16 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: googlerule.js,v 1.17 2009-08-03 00:40:30 cvsuser Exp $
 
 function GoogleRuleTrash(addressbook)
 {
@@ -325,7 +325,7 @@ GoogleRuleTrash.prototype.expire = function(abName)
 					}
 				}
 				else
-					context.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_EXPIRED_ON, now));
+					context.m_addressbook.updateCard(abCard, uri, null, newObject(TBCARD_ATTRIBUTE_EXPIRED_ON, now), FORMAT_TB);
 
 				count_cards++;
 

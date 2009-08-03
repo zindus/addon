@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: folderconverter.js,v 1.18 2009-06-15 06:18:09 cvsuser Exp $
+// $Id: folderconverter.js,v 1.19 2009-08-03 00:40:30 cvsuser Exp $
 
 FolderConverter.PREFIX_CLASS_NONE     = 1;
 FolderConverter.PREFIX_CLASS_INTERNAL = 2;
@@ -40,31 +40,11 @@ function FolderConverter()
 	this.m_bimap_emailed_contacts = new BiMap( [FORMAT_TB,           FORMAT_ZM                  ],
 	                                           [TB_EMAILED_CONTACTS, ZM_FOLDER_EMAILED_CONTACTS ]);
 
-	this.m_prefix_length = FolderConverter.PREFIX_PRIMARY_ACCOUNT.length;  // and we assume that all prefixes have the same length
+	this.m_prefix_length = FolderConverter.PREFIX_PRIMARY_ACCOUNT.length;  // all prefixes have the same length
 
-	this.m_localised_pab = null;               // the localised equivalent of "Personal Address Book" eg "Adresses Personnelles"
+	this.m_localised_pab              = null;  // the localised equivalent of "Personal Address Book" eg "Adresses Personnelles"
 	this.m_localised_emailed_contacts = null;  // the localised equivalent of "Emailed Contacts"      eg "Personnes contactées par mail"
-
-	// A locale eg 'en-US' is made up of language (en) and nation/location (US)
-	// This list aims to be a superset of Zimbra's supported locales...
-	//
-	// Note - if any of the "Emailed Contacts" translations change, there will have to be code that migrates the old name to the new...
-	// FIXME: update for new locales as per:
-	//   http://www.zimbra.com/products/languages.html
-	//   http://wiki.zimbra.com/index.php?title=Translations
-	//
-	this.m_locale_map  = PerLocaleStatic["Emailed Contacts"];
-
-	this.m_locale_names_to_migrate = new Object();
-
-	// add any deprecated translations here...
-
-	this.m_locale_names_to_migrate["Emailed Contacts"] = true;
-
-	// add the current set of translations...
-	//
-	for (var i in this.m_locale_map)
-		this.m_locale_names_to_migrate[this.m_locale_map[i]] = true;
+	this.m_gd_account_email_address   = null;
 
 	this.m_logger = newLogger("FolderConverter");
 }
@@ -83,8 +63,10 @@ FolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
 	zinAssert(arguments.length == 3); // catch programming errors
 	zinAssertAndLog(typeof(zfi) == 'object', " zfi ain't an FeedItem object: " + zfi);
 
-	zinAssertAndLog((zfi.type() == FeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == FeedItem.TYPE_SF,
-	                  "can't convertForMap zfi: " + zfi.toString());
+	zinAssertAndLog((zfi.type() == FeedItem.TYPE_FL && !zfi.isForeign()) ||
+	                 zfi.type() == FeedItem.TYPE_SF ||
+					 zfi.type() == FeedItem.TYPE_GG,
+	                  function () { return "can't convertForMap zfi: " + zfi.toString(); } );
 
 	var name = zfi.get(FeedItem.ATTR_NAME);
 
@@ -94,15 +76,28 @@ FolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
 		ret = this.m_bimap_emailed_contacts.lookup(format_to, null);  // this will assert if FORMAT_GD ... as it should ...
 	else if (format_from == format_to)
 		ret = name;
-	else if (format_to == FORMAT_TB)
-		ret = this.selectPrefix(zfi) + name;
-	else // format_to == FORMAT_ZM
+	else if (format_from == FORMAT_ZM && format_to == FORMAT_TB)
+		ret = this.tb_from_zm_zfi(zfi) + name;
+	else if (format_from == FORMAT_GD && format_to == FORMAT_TB)
+		ret = this.tb_from_gd_zfi(zfi);
+	else
 	{
 		zinAssertAndLog(this.prefixClass(name) != FolderConverter.PREFIX_CLASS_NONE, name);
 		ret = name.substring(this.m_prefix_length)
+
+		if (format_to == FORMAT_GD) {
+			// return what's to the right of the ':'
+			let colon = ret.indexOf(':');
+			zinAssert(colon >= 0);
+			let right = ret.substring(colon + 1);
+			if (ContactGoogle.eSystemGroup.isPresent(right))
+				ret = right;
+			else
+				ret = name.substring(0, this.m_prefix_length) + ret.substring(colon + 1);
+		}
 	}
 
-	// this.m_logger.debug("FolderConverter.convert: name: " + name + " from: " + format_from +" to: " + format_to + " returns: " + ret);
+	// this.m_logger.debug("convertForMap: name: " + name + " from: " + format_from +" to: " + format_to + " returns: " + ret);
 
 	return ret;
 }
@@ -115,8 +110,8 @@ FolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
 FolderConverter.prototype.convertForPublic = function(format_to, format_from, zfi)
 {
 	// catch programming errors
-	zinAssertAndLog(arguments.length == 3 && this.m_localised_pab,
-	                " arguments.length: " + arguments.length + " m_localised_pab: " + this.m_localised_pab + " zfi: " + zfi.toString());
+	zinAssertAndLog(arguments.length == 3 && this.m_localised_pab, function () {
+			return " arguments.length: " + arguments.length + " m_localised_pab: " + this.m_localised_pab + " zfi: " + zfi.toString(); });
 
 	var ret = this.convertForMap(format_to, format_from, zfi);
 
@@ -158,64 +153,24 @@ FolderConverter.prototype.localised_emailed_contacts = function()
 	return this.m_localised_emailed_contacts;
 }
 
-// Use logic that's similar to zimbra's (see soap.txt)
-// 1. notused: zimbraPrefLocale of the target account if it is present 
-// 2. Thunderbird's "general.useragent.locale" preference (if set)
-// 3. "Emailed Contacts"
-//
-FolderConverter.prototype.translate_emailed_contacts = function()
+FolderConverter.prototype.gd_account_email_address = function()
 {
-	var ret = ZM_FOLDER_EMAILED_CONTACTS;
-	var value, locale;
-	
 	if (arguments.length == 1)
-		locale = arguments[0]; // used by the testharness to force a locale
-	else
-		locale = PerLocaleStatic.general_useragent();
-
-	this.m_logger.debug("translate_emailed_contacts: general.useragent.locale: " + locale);
-
-	// if (this.state.zimbraPrefLocale && value = this.emailed_contacts_per_locale(this.state.zimbraPrefLocale))
-	// {
-	// 	ret = value;
-	// 	this.m_logger.debug("translate_emailed_contacts: selected on the basis of zimbraPrefLocale");
-	// }
-
-	if (locale && (value = this.emailed_contacts_per_locale(locale)))
 	{
-		ret = value;
+		this.m_gd_account_email_address = arguments[0];
 
-		this.m_logger.debug("translate_emailed_contacts: selected on the basis of general.useragent.locale");
+		this.m_logger.debug("gd_account_email_address: set to: " + this.m_gd_account_email_address);
 	}
 
-	this.m_logger.debug("translate_emailed_contacts: returns: " + ret);
-
-	return ret;
+	return this.m_gd_account_email_address;
 }
 
-FolderConverter.prototype.emailed_contacts_per_locale = function(key)
-{
-	var ret = null;
-
-	if (key in this.m_locale_map)
-		ret = this.m_locale_map[key];
-	else
-	{
-		key = key.substr(0, 2);
-
-		if (key in this.m_locale_map)
-			ret = this.m_locale_map[key];
-	}
-
-	return ret;
-}
-
-FolderConverter.prototype.selectPrefix = function(zfi)
+FolderConverter.prototype.tb_from_zm_zfi = function(zfi)
 {
 	var ret;
 
 	zinAssertAndLog((zfi.type() == FeedItem.TYPE_FL && !zfi.isForeign()) || zfi.type() == FeedItem.TYPE_SF,
-	                  "can't selectPrefix zfi: " + zfi.toString());
+	                  function () { return "can't tb_from_zm_zfi zfi: " + zfi.toString(); });
 	
 	if (zfi.type() == FeedItem.TYPE_FL)
 		ret = FolderConverter.PREFIX_PRIMARY_ACCOUNT;
@@ -228,11 +183,34 @@ FolderConverter.prototype.selectPrefix = function(zfi)
 		else if (perm & ZM_PERM_READ)
 			ret = FolderConverter.PREFIX_FOREIGN_READONLY;
 		else
-			zinAssertAndLog(false, "unable to selectPrefix zfi: " + zfi.toString());
+			zinAssertAndLog(false, "unable to tb_from_zm_zfi zfi: " + zfi.toString());
 	}
 
 	return ret;
+}
 
+FolderConverter.prototype.tb_from_gd_zfi = function(zfi)
+{
+	var ret;
+
+	zinAssertAndLog(zfi.type() == FeedItem.TYPE_GG, function () { return "expected TYPE_GG: zfi: " + zfi.toString(); });
+	
+	let name = zfi.get(FeedItem.ATTR_NAME);
+	if (zfi.isPresent(FeedItem.ATTR_GGSG))
+		ret = this.tb_ab_name_for_gd_group("/", PerLocaleStatic.translation_of(name));
+	else {
+		zinAssert(this.prefixClass(name) != FolderConverter.PREFIX_CLASS_NONE);
+		ret = this.tb_ab_name_for_gd_group(name.substr(this.m_prefix_length - 1, 1), name.substring(this.m_prefix_length));
+	}
+
+	this.m_logger.debug("tb_from_gd_zfi: returns: " + ret + " zfi: " + zfi.toString()); // TODO remove me
+
+	return ret;
+}
+
+FolderConverter.prototype.tb_ab_name_for_gd_group = function(separator, group_name)
+{
+	return APP_NAME + separator + this.gd_account_email_address() + ":" + group_name;
 }
 
 FolderConverter.prototype.prefixClass = function(str)

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncwindow.js,v 1.45 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: syncwindow.js,v 1.46 2009-08-03 00:40:30 cvsuser Exp $
 
 function SyncWindow()
 {
@@ -31,7 +31,7 @@ function SyncWindow()
 	this.m_logger.debug("constructor starts");
 
 	this.m_payload   = null; // we keep it around so that we can pass the results back
-	this.m_zwc       = new WindowCollection(SHOW_STATUS_PANEL_IN);
+	this.m_zwc       = new WindowCollection(show_status_panel_in());
 	this.m_sfcd      = null;
 	this.m_grr       = new GoogleRuleRepeater();
 

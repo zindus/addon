@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: enum.js,v 1.6 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: enum.js,v 1.7 2009-08-03 00:40:30 cvsuser Exp $
 
 // Two styles of argument to the constructor:
 // var enm = new ZinEnum(kA, kB, kC) or
@@ -53,22 +53,6 @@ function ZinEnum() {
 }
 
 ZinEnum.prototype = {
-	initialise: function(properties) {
-		zinAssert(typeof(properties) == 'object');
-		var key;
-
-		this.m_properties = properties;
-		this.m_reverse = new Object();
-
-		for (key in this.m_properties) {
-			this.__defineGetter__(key, this.getter(key));
-
-			let value = this.m_properties[key];
-
-			zinAssertAndLog(!(value in this.m_reverse), value);
-			this.m_reverse[value] = key;
-		}
-	},
 	getter: function(key) {
 		return function() { return this.m_properties[key]; };
 	},
