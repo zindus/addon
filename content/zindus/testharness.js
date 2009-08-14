@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.104 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: testharness.js,v 1.105 2009-08-14 06:45:39 cvsuser Exp $
 
 function TestHarness()
 {
@@ -66,8 +66,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
 	// ret = ret && this.testGroupGoogle();
-	// ret = ret && this.testContactGoogle1();
-	// ret = ret && this.testContactGoogle2();
+	ret = ret && this.testContactGoogle1();
+	ret = ret && this.testContactGoogle2();
 	// ret = ret && this.testContactGoogleIssue151();
 	// ret = ret && this.testContactGoogleIssue179();
 	// ret = ret && this.testContactGoogleIssue185();
@@ -1005,16 +1005,23 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 	properties["postalAddress_home"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>15</street></address>";
 	properties["postalAddress_work"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>16</street></address>";
 
-	if (GD_API_VERSION == 2) {
+	if (GD_API_VERSION == 2 || GD_API_VERSION == '3-new-fields-only') {
 		properties["title"] = "2-title";
-	} else if (GD_API_VERSION == 3) {
+	}
+	
+	if (String(GD_API_VERSION).substr(0,1) == 3) {
+		properties["website_home"] = "13";
+		properties["website_work"] = "14";
+		properties["birthday"]     = "1933-04-05";
+	}
+
+	if (false) {
+		// this is for when google gets structured names working
+		//
 		properties["name_givenName"] = "2-givenName";
 		properties["name_familyName"] = "2-familyName";
 		properties["name_fullName"] = "2-fullName";
-		properties["website_home"] = "13";
-		properties["website_work"] = "14";
 	}
-	else zinAssert(false);
 
 	return properties;
 }
@@ -1114,7 +1121,7 @@ TestHarness.prototype.testContactGoogle1 = function()
 			'email2':                'email2@e.com'
 		};
 
-		if (GD_API_VERSION == 3) {
+		if (false) { // was: GD_API_VERSION == 3
 			properties['name_givenName']  = 'a-name-given';
 			properties['name_familyName'] = 'a-name-family';
 			properties['name_fullName']   = 'a-name-full';
@@ -1204,16 +1211,24 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	xmlString = xmlString.replace("@@entry@@", xmlStringEntry);
 
-	let api_version = (GD_API_VERSION == 2) ? "" : "<gd:name>\
-		<gd:givenName>@@name_givenName@@</gd:givenName>\
-		<gd:familyName>@@name_familyName@@</gd:familyName>\
-		<gd:fullName>@@name_fullName@@</gd:fullName>\
-	</gd:name>\
-	<gContact:website href='@@website_home@@' rel='home'/>\
-	<gContact:website href='@@website_work@@' rel='work'/>";
+	let api_version = "";
+	
+	if (false) // a later GD_API_VERSION
+		api_version += "<gd:name>\
+			<gd:givenName>@@name_givenName@@</gd:givenName>\
+			<gd:familyName>@@name_familyName@@</gd:familyName>\
+			<gd:fullName>@@name_fullName@@</gd:fullName>\
+		</gd:name>";
+
+	if (String(GD_API_VERSION).substr(0,1) == '3')
+		api_version += "<gContact:website href='@@website_home@@' rel='home'/>\
+		                <gContact:website href='@@website_work@@' rel='work'/>\
+						<gContact:birthday when='@@birthday@@'/>";
+
 	xmlString = xmlString.replace("@@api_version@@", api_version);
 
-	this.m_logger.debug("AMHERE: properties: " + aToString(properties)); // TODO
+	// this.m_logger.debug("AMHERE: properties: " + aToString(properties)); // TODO
+
 	for (key in properties)
 		xmlString = xmlString.replace("@@" + key + "@@", properties[key]);
 
@@ -1981,8 +1996,7 @@ TestHarness.prototype.testPreferencesHaveDefaults = function()
 
 		// this.m_logger.debug("prefset: " + a_prefset[i].parent + " is: " + prefset.toString());
 
-		for (j = 0; j < a_prefset[i].properties.length; j++)
-		{
+		for (j = 0; j < a_prefset[i].properties.length; j++) {
 			key = a_prefset[i].properties[j];
 			zinAssertAndLog(prefset.getProperty(key), "parent: " + a_prefset[i].parent + " key: " + key);
 		}

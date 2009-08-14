@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.47 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: contactconverter.js,v 1.48 2009-08-14 06:45:39 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -38,13 +38,11 @@ function ContactConverter()
 	this.m_gac          = new GdAddressConverter();
 
 	this.m_gd_certain_keys_converted = null;
-	this.m_is_tb_birthday_field      = false;
+	this.m_properties_being_migrated = null;
 
-	this.m_ignore_on_slow_sync = new Object();
-	let str = preference(MozillaPreferences.AS_IGNORE_ON_SLOW_SYNC, 'char');
-	let a   = str.split(",");
-	for (var i = 0; i < a.length; i++)
-		this.m_ignore_on_slow_sync[a[i]] = true;
+	this.properties_being_migrated(); // TODO remove me
+
+	this.is_birthday_field_converted(nsIXULAppInfo().is_tb_birthday_field && String(GD_API_VERSION).substr(0,1) == 3);
 }
 
 ContactConverter.eStyle = new ZinEnum( 'kBasic', 'kZmMapsAllTbProperties', 'kGdMapsPostalProperties' );
@@ -60,30 +58,35 @@ setup : function(style) {
 	this.m_equivalents = new Array();
 
 	if (GD_API_VERSION == 2) {
-		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
-		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
-		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title"));
-
 		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, null));
 		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, null));
 	}
 	else {
-		zinAssert (GD_API_VERSION == 3);
-
-		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, "name_givenName"));
-		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, "name_familyName"));
-		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "name_fullName"));
+		zinAssert(String(GD_API_VERSION).substr(0,1) == 3);
 
 		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, "website_work"));
 		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, "website_home"));
 
-		this.m_is_tb_birthday_field = nsIXULAppInfo().is_tb_birthday_field;
-
-		if (this.m_is_tb_birthday_field) {
+		if (this.is_birthday_field_converted()) {
 			this.m_equivalents.push(newObject(FORMAT_TB, "BirthDay",        FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
 			this.m_equivalents.push(newObject(FORMAT_TB, "BirthMonth",      FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
 			this.m_equivalents.push(newObject(FORMAT_TB, "BirthYear",       FORMAT_ZM, "birthday",            FORMAT_GD, "birthday"));
 		}
+	}
+
+	if (GD_API_VERSION == 2 || GD_API_VERSION == '3-new-fields-only') {
+		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
+		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
+		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title"));
+	}
+	else {
+		zinAssert(false);
+		// Google removed the structured name and address features after release.
+		// http://groups.google.com/group/google-contacts-api/browse_thread/thread/ea623b18efb16963?hl=en#
+		//
+		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, "name_givenName"));
+		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, "name_familyName"));
+		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "name_fullName"));
 	}
 
 	this.m_equivalents.push(newObject(FORMAT_TB, "NickName",        FORMAT_ZM, null,                FORMAT_GD, null));
@@ -165,7 +168,7 @@ setup : function(style) {
 		"namePrefix", "nameSuffix", "initials", "email4", "email5", "email6", "email7", "office", "outlookUserField1"
 		);
 
-	if (!this.m_is_tb_birthday_field) {
+	if (!this.is_birthday_field_converted()) {
 		this.m_dont_convert[FORMAT_ZM]['birthday'] = true;
 		this.m_dont_convert[FORMAT_GD]['birthday'] = true;
 	}
@@ -227,6 +230,12 @@ setup : function(style) {
 			this.m_logger.debug("m_common_to: [" + this.m_bimap_format.lookup(i, null) +
 			                                "][" + this.m_bimap_format.lookup(j, null) + "]: " + aToString(this.m_common_to[i][j]));
 },
+is_birthday_field_converted : function (f) {
+	if (arguments.length == 1)
+		this.m_is_birthday_field_converted = f;
+
+	return this.m_is_birthday_field_converted;
+},
 convert : function(format_to, format_from, properties_from) {
 	var a_normalised_zm_street   = newObject("home", new Array(),  "work", new Array());
 	var a_normalised_gd_address  = newObject("home", new Object(), "work", new Object());
@@ -258,7 +267,7 @@ convert : function(format_to, format_from, properties_from) {
 					else if ((key_from in this.m_a_multiplexed['gd_address'][format_from]) &&
 					         (key_to   in this.m_a_multiplexed['gd_address'][format_to]))
 						this.gd_address_normalise(format_to, format_from, properties_from, key_from, a_normalised_gd_address);
-					else if (this.m_is_tb_birthday_field && 
+					else if (this.is_birthday_field_converted() && 
 					         ((key_from in this.m_a_multiplexed['tb_birthday'][format_from]) &&
 					          (key_to   in this.m_a_multiplexed['tb_birthday'][format_to]))) {
 						this.tb_birthday_normalise(format_to, format_from, properties_from, key_from, a_normalised_tb_birthday);
@@ -422,7 +431,7 @@ crc32 : function(properties) {
 
 	ret = crc32(str);
 
-	// this.m_logger.debug("crc32: blah: returns: " + ret + " properties: " + aToString(properties));
+	// this.m_logger.debug("crc32: returns: " + ret + " properties: " + aToString(properties));
 
 	return ret;
 },
@@ -431,7 +440,7 @@ removeKeysNotCommonToAllFormats : function(format_from, properties) {
 	var i, j, is_converted;
 
 	for (i in properties) {
-		is_converted = !(i in this.m_ignore_on_slow_sync);
+		is_converted = !(i in this.properties_being_migrated());
 
 		if (is_converted)
 			for (j = 0; j < A_VALID_FORMATS.length;  j++)
@@ -448,7 +457,7 @@ removeKeysNotCommonToAllFormats : function(format_from, properties) {
 	for (i in keys_to_remove)
 		delete properties[i];
 
-	// this.m_logger.debug("removeKeysNotCommonToAllFormats: blah: keys_to_remove: " + aToString(keys_to_remove) +
+	// this.m_logger.debug("removeKeysNotCommonToAllFormats: keys_to_remove: " + aToString(keys_to_remove) +
 	//                     " leaving keys: " + keysToString(properties));
 },
 // So for example:
@@ -577,6 +586,30 @@ gd_certain_keys_converted : function() {
 			"postalAddress", this.keysCommonToThatMatch(/^(postalAddress_.*$)/, "$1", FORMAT_GD, FORMAT_TB));
 
 	return this.m_gd_certain_keys_converted;
+},
+properties_being_migrated : function() {
+	if (!this.m_properties_being_migrated) {
+		let a_keys = preferences().getImmediateChildren(preferences().branch(), MozillaPreferences.AS_MIGRATION + '.');
+		let i, j;
+
+		this.m_properties_being_migrated = new Object();
+
+		for (i in a_keys) {
+			let a_str = preference(MozillaPreferences.AS_MIGRATION + '.' + i, 'char').split(':');
+
+			zinAssert(a_str.length == 2);
+
+			if (Number(a_str[0]) < 8) {
+				let a_fields = a_str[1].split(',');
+				for (j = 0; j < a_fields.length; j++)
+					this.m_properties_being_migrated[a_fields[j]] = true;
+			}
+		}
+
+		this.m_logger.debug("m_properties_being_migrated: " + aToString(this.m_properties_being_migrated));
+	}
+
+	return this.m_properties_being_migrated;
 }
 };
 

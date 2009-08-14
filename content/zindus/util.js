@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.57 2009-08-03 00:40:31 cvsuser Exp $
+// $Id: util.js,v 1.58 2009-08-14 06:45:39 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -333,7 +333,7 @@ function isMatchObjects(obj1, obj2)
 {
 	var is_match = true;
 
-	is_match = is_match &&isMatchObjectKeys(obj1, obj2);
+	is_match = is_match && isMatchObjectKeys(obj1, obj2);
 
 	if (is_match)
 		for (var i in obj1)
@@ -1243,9 +1243,8 @@ function show_status_panel_in()
 	return (nsIXULAppInfo().app_name == 'firefox') ? [ 'browser-bottombox' ] : [ 'folderPaneBox', 'addressbookWindow' ];
 }
 
-function AddToPrototype(o, p) {
-  for (var i in p.prototype) {
-	logger().debug("AddToPrototype: copying: " + i + " typeof: " + typeof(p.prototype[i])); // TODO
+function AddToPrototype(o, p)
+{
+  for (var i in p.prototype)
     o.prototype[i] = p.prototype[i];
-  }
 }

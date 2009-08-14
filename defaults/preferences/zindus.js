@@ -9,7 +9,7 @@ pref("extensions.zindus.system.as_timer_delay_on_repeat", 43200);    // how long
 pref("extensions.zindus.system.as_allow_pre_release",     false);    // allow the addon to run in a pre-release Thunderbird
 pref("extensions.zindus.system.as_password_version",      "notset"); // pm-2, lm-2
 pref("extensions.zindus.system.as_share_service_api_url", "xxx");    // 
-pref("extensions.zindus.system.as_ignore_on_slow_sync",   "FirstName,LastName,WebPage1,WebPage2");
+pref("extensions.zindus.system.as_migration.0",           "0:BirthDay,BirthMonth,BirthYear,WebPage1,WebPage2");
 pref("extensions.zindus.system.zm_sync_gal_md_interval",  604800);   // how often the entire GAL is requested
 pref("extensions.zindus.system.zm_sync_gal_recheck",      2);        // how many zm_sync_gal_md_interval's before if_fewer is retested
 pref("extensions.zindus.system.zm_sync_gal_if_fewer",     500);      // sync gal if it contains less than this many contacts
@@ -19,6 +19,7 @@ pref("extensions.zindus.system.gd_data_transfer_scheme",  "https");  // the sche
 pref("extensions.zindus.system.gd_trash_expire_seconds",  604800);   // cards in zindus/ToBeDeleted older than this are deleted
 pref("extensions.zindus.system.gd_contacts_per_request",  3000);     // given as an argument to ?max-results=nnnn
 pref("extensions.zindus.system.gd_confirm_on_erase",      true);     // require user intervention if all google contacts are to be deleted
+
 
 pref("extensions.zindus.preauth.0.name",                  "free.fr");
 pref("extensions.zindus.preauth.0.regexp",                "^https?://zimbra\.free\.fr\/?");

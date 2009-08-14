@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.23 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.24 2009-08-14 06:45:39 cvsuser Exp $
 
 function GoogleData()
 {
@@ -182,9 +182,18 @@ make_mask_of_elements_in_entry: function () {
 		reGContact = /blablahblahblah/;
 	}
 	else {
-		zinAssert(GD_API_VERSION == 3);
-		reAtom     = /content/;
-		reGd       = /email|phoneNumber|postalAddress|name|organization|im/;
+		zinAssert(String(GD_API_VERSION).substr(0,1) == 3);
+
+		if (GD_API_VERSION == '3-new-fields-only') {
+			reAtom     = /title|content/;
+			reGd       = /email|phoneNumber|postalAddress|organization|im/;
+		}
+		else {
+			zinAssert(false); // this is for when google supports structured names
+			reAtom     = /title|content/;
+			reGd       = /email|phoneNumber|postalAddress|name|organization|im/;
+		}
+
 		reGContact = /website|birthday/;
 	}
 
@@ -901,7 +910,7 @@ var ContactGoogleStatic = {
 					<atom:category xmlns:atom={Xpath.NS_ATOM} scheme={Xpath.NS_GD + "#kind"} term={Xpath.NS_GCONTACT + term_fragment}/>
 		          </atom:entry>;
 
-		if (type == GoogleData.eElement.group || GD_API_VERSION == 2)
+		if (type == GoogleData.eElement.group || GD_API_VERSION == 2 || GD_API_VERSION == '3-new-fields-only')
 			ret.* += <atom:title xmlns:atom={Xpath.NS_ATOM} type="text"/>
 
 		return ret;

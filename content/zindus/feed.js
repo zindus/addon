@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.46 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: feed.js,v 1.47 2009-08-14 06:45:39 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -67,12 +67,14 @@ FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
 FeedItem.ATTR_JSON = 'json'; // json
 FeedItem.ATTR_GGSG = 'ggsg'; // corresponds with a Google Group <gContact:systemGroup id="Contacts"/> element
-FeedItem.ATTR_XGID = 'xgid'; // this item doesn't map to anything in in the gid - TODO
+FeedItem.ATTR_XGID = 'xgid'; // this item doesn't map to anything in in the gid
+FeedItem.ATTR_GDAU = 'gdau'; // a google 'authoritative' contact - TODO
 
 // FeedItem.ATTR_EMPT = 'empt'; // true iff the contact is empty when mapped to the other side
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
 FeedItem.ATTR_TBPA = 'tbpa'; // temporary (not persisted) - thunderbird contact has data in a postal field
+FeedItem.ATTR_TBFM = 'tbfm'; // temporary (not persisted) - thunderbird contact has data in a field that is being migrated
 
 FeedItem.TYPE_CN   = 0x01; // contact
 FeedItem.TYPE_FL   = 0x02; // folder
