@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: suo.js,v 1.20 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: suo.js,v 1.21 2009-09-01 04:28:00 cvsuser Exp $
 
 // suo == Source Update Operation
 //
@@ -160,7 +160,6 @@ __iterator__: function(is_keys_only) {
 						key.sourceid = sourceid;
 						key.bucket   = bucket;
 						key.id       = id;
-						logger().debug("SuoIterator: AMHERE yielding key: " + aToString(key) + " suo: " + aToString(suo)); // TODO remove
 						logger().debug("SuoIterator: yielding key: " + key.toString() + " suo: " + suo.toString());
 						yield is_keys_only ? suo : [ cloneObject(key), suo ]; // clone the key so that the user can keep a reference
 					}

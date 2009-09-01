@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.193 2009-08-14 06:45:39 cvsuser Exp $
+// $Id: syncfsm.js,v 1.194 2009-09-01 04:28:00 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -885,7 +885,7 @@ SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 
 			// all items in a source must be of interest
 			//
-			if (result.is_consistent && !SyncFsm.isOfInterest(zfc, luid))
+			if (result.is_consistent && !zfi.isPresent(FeedItem.ATTR_XGID) && !SyncFsm.isOfInterest(zfc, luid))
 			{
 				error_msg += "inconsistency: item not of interest: sourceid: " + sourceid + " luid: " + luid + " zfi: " + zfi.toString();
 				result.is_consistent = false;
@@ -893,7 +893,8 @@ SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 
 			// all items in a source must be in the gid (tested via reference to aReverse)
 			//
-			if (result.is_consistent && SyncFsm.isRelevantToGid(zfc, luid) && !isPropertyPresent(this.state.aReverseGid[sourceid], luid))
+			if (result.is_consistent && !zfi.isPresent(FeedItem.ATTR_XGID) && SyncFsm.isRelevantToGid(zfc, luid) &&
+			    !(luid in this.state.aReverseGid[sourceid]))
 			{
 				error_msg += "inconsistency vs gid: sourceid: " + sourceid + " luid: " + luid;
 				result.is_consistent = false;
@@ -7133,7 +7134,9 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 					zfi.del(FeedItem.ATTR_TBFM);
 				}
 
-				if (zfi.isPresent(FeedItem.ATTR_KEEP))
+				if (zfi.isPresent(FeedItem.ATTR_XGID))
+					msg += " - kept";
+				else if (zfi.isPresent(FeedItem.ATTR_KEEP))
 				{
 					// if a Thunderbird contact was deleted and the remote update failed for a reason that's likely to be temporary
 					// (eg a Google MOD/DEL conflict where the update will work once we've got the right edit url)
@@ -8590,7 +8593,6 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 
 						if (is_xgid)
 							zfi.set(FeedItem.ATTR_XGID, '1');
-
 					}
 					else {
 						zfi.set(FeedItem.ATTR_NAME, group.properties.title);
@@ -8986,7 +8988,7 @@ SyncFsmGd.prototype.entryActionDeXmlifyAddrGd = function(state, event, continuat
 
 			contact.mode(ContactGoogle.ePostal.kEnabled);
 
-			for (key in this.state.m_contact_converter_style_gd_postal.gd_certain_keys_converted()["postalAddress"])
+			for (key in this.state.m_contact_converter_style_gd_postal.gd_certain_keys_converted()[ContactGoogleStatic.postalWord()])
 				if (key in contact.properties)
 				{
 					if (!postal_properties)

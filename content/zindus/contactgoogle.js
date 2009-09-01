@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.24 2009-08-14 06:45:39 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.25 2009-09-01 04:28:00 cvsuser Exp $
 
 function GoogleData()
 {
@@ -184,16 +184,8 @@ make_mask_of_elements_in_entry: function () {
 	else {
 		zinAssert(String(GD_API_VERSION).substr(0,1) == 3);
 
-		if (GD_API_VERSION == '3-new-fields-only') {
-			reAtom     = /title|content/;
-			reGd       = /email|phoneNumber|postalAddress|organization|im/;
-		}
-		else {
-			zinAssert(false); // this is for when google supports structured names
-			reAtom     = /title|content/;
-			reGd       = /email|phoneNumber|postalAddress|name|organization|im/;
-		}
-
+		reAtom     = /content/;
+		reGd       = /email|phoneNumber|structuredPostalAddress|name|organization|im/;
 		reGContact = /website|birthday/;
 	}
 
@@ -256,10 +248,17 @@ properties_from_xml: function () {
 		if (imask & mask.postalAddress && (this.m_mode & ContactGoogle.ePostal.kEnabled) )
 			set_for(properties, nsGd, entry, 'postalAddress');
 
+		if (imask & mask.structuredPostalAddress && (this.m_mode & ContactGoogle.ePostal.kEnabled) ) {
+			list = get_elements_matching_attribute(entry.nsGd::structuredPostalAddress, 'rel', a_fragment.structuredPostalAddress, kMatchFirst, 'structuredPostalAddress');
+
+			for (var i = 0; i < list.length(); i++)
+				set_if(properties, get_hyphenation('structuredPostalAddress', shorten_rel(list[i].@rel, 'structuredPostalAddress')), list[i].nsGd::formattedAddress);
+		}
+
 		if (imask & mask.name) {
-			set_if(properties, 'name_givenName',   entry.nsGd::name.nsGd::givenName);
-			set_if(properties, 'name_familyName',  entry.nsGd::name.nsGd::familyName);
-			set_if(properties, 'name_fullName',    entry.nsGd::name.nsGd::fullName);
+			// set_if(properties, 'name_givenName',   entry.nsGd::name.nsGd::givenName);
+			// set_if(properties, 'name_familyName',  entry.nsGd::name.nsGd::familyName);
+			set_if(properties,    'name_fullName',    entry.nsGd::name.nsGd::fullName);
 		}
 
 		if (imask & mask.organization) {
@@ -339,7 +338,8 @@ set_properties : function(properties_in) {
 			properties[key] = value;
 	}
 
-	// logger().debug("ContactGoogle: 1: properties: " + aToString(properties));
+	logger().debug("ContactGoogle: set_properties: 1: properties: " + aToString(properties));
+	logger().debug("ContactGoogle: set_properties: 1: contact: " + this.toStringXml()); // TODO 
 
 	with (ContactGoogleStatic) {
 		if (imask & mask.title) {
@@ -362,21 +362,29 @@ set_properties : function(properties_in) {
 
 		if (!(this.m_mode & ContactGoogle.ePostal.kEnabled)) // ensure that postalAddress elements aren't touched
 			for (i = 0; i < a_fragment.postalAddress.length; i++)
-				a_is_used[get_hyphenation('postalAddress', a_fragment.postalAddress[i])] = true;
-		else if (imask & mask.postalAddress)
+				a_is_used[get_hyphenation(postalWord(), a_fragment[postalWord()][i])] = true;
+		else if ((imask & mask.postalAddress) || (imask & mask.structuredPostalAddress))
 			this.postalAddressModifyFields(properties, a_is_used);
 
 		if (imask & mask.name) {
 			name = entry.nsGd::name;
 
-			modify_or_delete_child_if(name.nsGd::givenName,  properties, 'name_givenName',  a_is_used);
-			modify_or_delete_child_if(name.nsGd::familyName, properties, 'name_familyName', a_is_used);
-			modify_or_delete_child_if(name.nsGd::fullName,   properties, 'name_fullName',   a_is_used);
+			// explicity clear the flavour that we don't use - triggering google mutation
+			// as per: http://groups.google.com/group/google-contacts-api/browse_thread/thread/ea623b18efb16963?hl=en
+			//
+			logger().debug("AMHEREX: modifying name: before: " + name.toXMLString()); // TODO
+
+			modify_or_delete_child_if(name.nsGd::givenName,  {name_givenName: ""},  'name_givenName',  {});
+			modify_or_delete_child_if(name.nsGd::familyName, {name_familyName: ""}, 'name_familyName', {});
+			modify_or_delete_child_if(name.nsGd::fullName,   properties,            'name_fullName',   a_is_used);
+
+			logger().debug("AMHEREX: modifying name: after: " + name.toXMLString()); // TODO
 
 			if (name.*.length() == 0) {
 				// logger().debug("ContactGoogle: deleting");
 				delete entry.*[name.childIndex()];
 				name = null;
+				logger().debug("AMHEREX: name: set to null: "); // TODO
 			}
 		}
 
@@ -427,7 +435,7 @@ set_properties : function(properties_in) {
 
 		for (key in cgopi.iterator(properties))
 			if (!(key in a_is_used)) {
-				// logger().debug("properties setter: adding key: " + key);
+				logger().debug("properties setter: adding key: " + key); // TODO
 
 				switch(key) {
 				case "title":
@@ -436,8 +444,8 @@ set_properties : function(properties_in) {
 				case "content":
 					entry.content = <atom:content xmlns:atom={Xpath.NS_ATOM} type='text'>{properties[key]}</atom:content>;
 					break;
-				case "name_givenName":
-				case "name_familyName":
+				// case "name_givenName":
+				// case "name_familyName":
 				case "name_fullName":
 					if (!name) {
 						name = <gd:name xmlns:gd={Xpath.NS_GD} />;
@@ -474,6 +482,8 @@ set_properties : function(properties_in) {
 					value = properties[key];
 					entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{value}</gd:{l}>;
 					break;
+				case "structuredPostalAddress_home":
+				case "structuredPostalAddress_work":
 				case "postalAddress_home":
 				case "postalAddress_work":
 					[l, r] = get_element_and_suffix(key);
@@ -482,11 +492,13 @@ set_properties : function(properties_in) {
 					zinAssert(this.mode() & ContactGoogle.ePostal.kEnabled);
 					value = ContactGoogleStatic.add_whitespace_to_postal_properties(properties, key);
 
-					entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{value}</gd:{l}>;
-
-					// v3
-					// entry.* += <gd:structuredPostalAddress xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>
-					//               <gd:formattedAddress>{value}</gd:formattedAddress></gd:structuredPostalAddress>
+					if (GD_API_VERSION == 2) {
+						entry.* += <gd:{l} xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>{value}</gd:{l}>;
+					}
+					else { // v3
+						entry.* += <gd:structuredPostalAddress xmlns:gd={Xpath.NS_GD} rel={get_rel(r)}>
+						               <gd:formattedAddress>{value}</gd:formattedAddress></gd:structuredPostalAddress>
+					}
 					break;
 				case "website_home":
 				case "website_work":
@@ -511,9 +523,13 @@ set_properties : function(properties_in) {
 
 	this.m_properties = null;
 },
+postalEntry : function() {
+	let nsGd = ContactGoogleStatic.nsGd;
+	return (GD_API_VERSION == 2) ? this.m_entry.nsGd::postalAddress : this.m_entry.nsGd::structuredPostalAddress;
+},
 postalAddressModifyFields : function(properties, a_is_used) {
 	with (ContactGoogleStatic) {
-		let list = get_elements_matching_attribute(this.m_entry.nsGd::postalAddress, 'rel', a_fragment.postalAddress, kMatchFirst, 'postalAddress');
+		let list = get_elements_matching_attribute(this.postalEntry(), 'rel', a_fragment[postalWord()], kMatchFirst, postalWord());
 
 		for (var i = 0; i < list.length(); i++)
 			this.postalAddressModifyField(list[i], properties, rightOfChar(list[i].@rel, '#'), a_is_used);
@@ -525,12 +541,17 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 	//
 	zinAssert((this.m_mode & ContactGoogle.ePostal.kEnabled));
 
+	logger().debug("postalAddressModifyField: enters: xml: " + xml.toXMLString() + " properties: " + aToString(properties) + " suffix: " + suffix); // TODO
+	logger().debug("postalAddressModifyField: enters: contact: " + this.toString()); // TODO
+
 	with (ContactGoogleStatic) {
-		var key                = get_hyphenation('postalAddress', suffix);
+		var key                = get_hyphenation(postalWord(), suffix);
 		var is_property_postal = false;
 		var otheraddr          = this.postalAddressOtherAddr(key);
 		var a_gac_properties   = { };
 		var new_properties;
+
+		logger().debug("postalAddressModifyField: otheraddr: " + otheraddr); // TODO
 
 		if (key in properties)
 			is_property_postal = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
@@ -541,29 +562,50 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 			new_properties = { key : null };
 
 			if (otheraddr && otheraddr.length > 0) // the postalAddress of the contact is xml
+			{
+				logger().debug("postalAddressModifyField: postalAddress of the contact is xml"); // TODO
 				a_gac_properties["otheraddr"] = otheraddr;
+			}
 			else if (otheraddr == null)            // the postalAddress of the contact is text
-				a_gac_properties["otheraddr"] = xml.toString();
+			{
+				logger().debug("postalAddressModifyField: postalAddress of the contact is text"); // TODO
+				a_gac_properties["otheraddr"] = (GD_API_VERSION == 2) ? xml.toString() : xml.nsGd::formattedAddress.toString();
+			}
 			else
 				;                                  // the postalAddress of the contact is xml with an empty <otheraddr> element
 
+			logger().debug("postalAddressModifyField: a_gac_properties before: " + aToString(a_gac_properties)); // TODO
+
 			for (var i in a_gac_properties)
 				a_gac_properties[i] = ContactGoogleStatic.add_whitespace_to_postal_line(a_gac_properties[i]);
+
+			logger().debug("postalAddressModifyField: a_gac_properties after: " + aToString(a_gac_properties)); // TODO
 
 			gac.convert(new_properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
 		}
 		else
 			new_properties = properties;
 
-		// logger().debug("ContactGoogle: key: " + key + " new_properties: " + aToString(new_properties));
+		logger().debug("postalAddressModifyField: key: " + key + " new_properties: " + aToString(new_properties)); // TODO
 
-		modify_or_delete_child(xml, new_properties, key, a_is_used);
+		if (GD_API_VERSION == 2)
+			modify_or_delete_child(xml, new_properties, key, a_is_used);
+		else {
+			modify_or_delete_child(xml.nsGd::formattedAddress, new_properties, key, a_is_used);
+
+			if (xml.nsGd::formattedAddress.length() == 0)
+				delete xml.parent().*[xml.childIndex()];
+		}
 	}
+
+	logger().debug("postalAddressModifyField: exits: xml: " + xml.toXMLString()); // TODO
 },
 postalAddressOtherAddr : function(key) {
 	zinAssert(this.m_mode & ContactGoogle.ePostal.kEnabled);
 
 	var is_parsed = key in this.properties;
+
+	logger().debug("postalAddressOtherAddr: key: " + key + " is_parsed: " + is_parsed + " contact: " + this.toString()); // TODO
 
 	if (is_parsed) {
 		var str = this.properties[key];
@@ -572,6 +614,8 @@ postalAddressOtherAddr : function(key) {
 		var a_out = new Object();
 	
 		is_parsed = is_parsed && ContactGoogleStatic.gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
+
+		logger().debug("postalAddressOtherAddr: gac.convert returns is_parsed: " + is_parsed + " str: " + str + " a_out: " + aToString(a_out)); // TODO
 	}
 
 	if (!is_parsed)                                 // it wasn't xml
@@ -589,8 +633,8 @@ isAnyPostalAddressInXml : function() {
 	zinAssert(this.mode() & ContactGoogle.ePostal.kEnabled); // it only makes sense to call this method in this mode
 
 	with (ContactGoogleStatic)
-		for (var i = 0; i < a_fragment.postalAddress.length && !ret; i++) {
-			let key = get_hyphenation('postalAddress', a_fragment.postalAddress[i]);
+		for (var i = 0; i < a_fragment[postalWord()].length && !ret; i++) {
+			let key = get_hyphenation(postalWord(), a_fragment[postalWord()][i]);
 
 			if (key in this.properties)
 				ret = (this.postalAddressOtherAddr(key) != null);
@@ -749,28 +793,31 @@ var ContactGoogleStatic = {
 	nsGd       : Namespace(Xpath.NS_GD),
 	nsGContact : Namespace(Xpath.NS_GCONTACT),
 	mask       : {
-		title         : 0x0001,
-		name          : 0x0002,
-		content       : 0x0004,
-		email         : 0x0008,
-		phoneNumber   : 0x0010,
-		postalAddress : 0x0020,
-		organization  : 0x0040,
-		im            : 0x0080,
-		website       : 0x0100,
-		birthday      : 0x0200
+		title                   : 0x0001,
+		name                    : 0x0002,
+		content                 : 0x0004,
+		email                   : 0x0008,
+		phoneNumber             : 0x0010,
+		postalAddress           : 0x0020,
+		structuredPostalAddress : 0x0040,
+		organization            : 0x0080,
+		im                      : 0x0100,
+		website                 : 0x0200,
+		birthday                : 0x0400
 	},
 	a_fragment : {
-		organization  : [ 'work', 'other' ],
-		phoneNumber   : [ 'work', 'home', 'work_fax', 'pager', 'mobile' ],
-		postalAddress : [ 'work', 'home' ],
-		website       : [ 'work', 'home' ]
+		organization            : [ 'work', 'other' ],
+		phoneNumber             : [ 'work', 'home', 'work_fax', 'pager', 'mobile' ],
+		postalAddress           : [ 'work', 'home' ],
+		structuredPostalAddress : [ 'work', 'home' ],
+		website                 : [ 'work', 'home' ]
 	},
 	ns_rel : {
-		organization  : Xpath.NS_GD,
-		phoneNumber   : Xpath.NS_GD,
-		postalAddress : Xpath.NS_GD,
-		website       : Xpath.NS_GCONTACT
+		organization            : Xpath.NS_GD,
+		phoneNumber             : Xpath.NS_GD,
+		postalAddress           : Xpath.NS_GD,
+		structuredPostalAddress : Xpath.NS_GD,
+		website                 : Xpath.NS_GCONTACT
 	},
 	m_a_rel                : new Object(),
 	m_a_element_and_suffix : new Object(),
@@ -910,7 +957,7 @@ var ContactGoogleStatic = {
 					<atom:category xmlns:atom={Xpath.NS_ATOM} scheme={Xpath.NS_GD + "#kind"} term={Xpath.NS_GCONTACT + term_fragment}/>
 		          </atom:entry>;
 
-		if (type == GoogleData.eElement.group || GD_API_VERSION == 2 || GD_API_VERSION == '3-new-fields-only')
+		if (type == GoogleData.eElement.group || GD_API_VERSION == 2)
 			ret.* += <atom:title xmlns:atom={Xpath.NS_ATOM} type="text"/>
 
 		return ret;
@@ -955,6 +1002,9 @@ var ContactGoogleStatic = {
 		}
 
 		return properties_out[key];
+	},
+	postalWord : function() {
+		return (GD_API_VERSION == 2) ? 'postalAddress' : 'structuredPostalAddress';
 	}
 };
 

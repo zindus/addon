@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.105 2009-08-14 06:45:39 cvsuser Exp $
+// $Id: testharness.js,v 1.106 2009-09-01 04:28:00 cvsuser Exp $
 
 function TestHarness()
 {
@@ -68,12 +68,12 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testGroupGoogle();
 	ret = ret && this.testContactGoogle1();
 	ret = ret && this.testContactGoogle2();
-	// ret = ret && this.testContactGoogleIssue151();
-	// ret = ret && this.testContactGoogleIssue179();
-	// ret = ret && this.testContactGoogleIssue185();
-	// ret = ret && this.testContactGoogleIssue202();
-	// ret = ret && this.testContactGoogleIterators();
-	// ret = ret && this.testContactGooglePostalAddress();
+	ret = ret && this.testContactGoogleIssue151();
+	ret = ret && this.testContactGoogleIssue179();
+	ret = ret && this.testContactGoogleIssue185();
+	ret = ret && this.testContactGoogleIssue202();
+	ret = ret && this.testContactGoogleIterators();
+	ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testBiMap();
 	// ret = ret && this.testAddCard();
@@ -320,7 +320,7 @@ TestHarness.prototype.testContactConverterGdPostalAddress = function()
 	zinAssert(!isPropertyPresent(properties, "otheraddr"));
 
 	var gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, properties);
-	xml_as_char = gd_properties["postalAddress_home"];
+	xml_as_char = gd_properties[this.postal_key("home")];
 
 	var gd_address = new XML(xml_as_char);
 	var ns = Namespace(Xpath.NS_ZINDUS_ADDRESS);
@@ -400,8 +400,9 @@ TestHarness.prototype.testContactConverter1 = function()
 	//
 	contact_converter = this.newContactConverter(ContactConverter.eStyle.kGdMapsPostalProperties);
 
-	var a_postalAddress = contact_converter.keysCommonToThatMatch(/^postalAddress_(.*)$/, "$1", FORMAT_GD, FORMAT_TB);
-	zinAssert(isPropertyPresent(a_postalAddress, "home") && isPropertyPresent(a_postalAddress, "work"));
+	var a_postalAddress = contact_converter.keysCommonToThatMatch(
+		new RegExp("^" + ContactGoogleStatic.postalWord() + "_(.*)$"), "$1", FORMAT_GD, FORMAT_TB);
+	zinAssert(("home" in a_postalAddress) && ("work" in a_postalAddress));
 
 	return true;
 }
@@ -985,6 +986,13 @@ TestHarness.prototype.testAddressBookFf = function()
 	return true;
 }
 
+
+TestHarness.prototype.postal_key = function(rel)
+{
+	with (ContactGoogleStatic)
+		return get_hyphenation(postalWord(), rel);
+}
+
 TestHarness.prototype.sampleContactGoogleProperties = function()
 {
 	var properties = new Object();
@@ -1000,14 +1008,13 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 	properties["email1"] = "10";
 	properties["email2"] = "11";
 	properties["im_AIM"] = "12";
-	// properties["postalAddress_home"] = "15";
-	// properties["postalAddress_work"] = "16";
-	properties["postalAddress_home"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>15</street></address>";
-	properties["postalAddress_work"] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>16</street></address>";
+	properties[this.postal_key("home")] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>15</street></address>";
+	properties[this.postal_key("work")] = "<address xmlns='http://schemas.zindus.com/sync/2008'><street>16</street></address>";
 
-	if (GD_API_VERSION == 2 || GD_API_VERSION == '3-new-fields-only') {
+	if (GD_API_VERSION == 2)
 		properties["title"] = "2-title";
-	}
+	else
+		properties["name_fullName"] = "2-name_fullName";
 	
 	if (String(GD_API_VERSION).substr(0,1) == 3) {
 		properties["website_home"] = "13";
@@ -1020,7 +1027,6 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 		//
 		properties["name_givenName"] = "2-givenName";
 		properties["name_familyName"] = "2-familyName";
-		properties["name_fullName"] = "2-fullName";
 	}
 
 	return properties;
@@ -1029,11 +1035,13 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, is_match_postal)
 {
 	var key;
+	var re_postal = new RegExp(ContactGoogleStatic.postalWord() + ".*$");
+
 	zinAssert(contact && contact.properties);
 
 	function try_match_postal(key) {
 
-		if (/postalAddress.*$/.test(key) && is_match_postal)
+		if (re_postal.test(key) && is_match_postal)
 		{
 			var re = /[ \r\n'"]/mg;
 			var left  = contact.properties[key].replace(re,"")
@@ -1047,7 +1055,7 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 	this.m_logger.debug("matchContactGoogle: blah: \ncontact xml: " + contact.toStringXml());
 
 	for (key in properties)
-		if (!/postalAddress.*$/.test(key))
+		if (!re_postal.test(key))
 			zinAssertAndLog(contact.properties[key] == properties[key], "key: " + key + " value in contact: " + contact.properties[key] + " expected: " + properties[key]);
 		else
 			try_match_postal(key);
@@ -1058,7 +1066,7 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 
 	if (contact.properties)
 		for (key in contact.properties)
-			if (!/postalAddress.*$/.test(key))
+			if (!re_postal.test(key))
 				zinAssertAndLog(contact.properties[key] == properties[key], "key: " + key);
 			else
 				try_match_postal(key);
@@ -1073,7 +1081,8 @@ TestHarness.prototype.testContactGoogle1 = function()
 	var xmlString = "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005' gd:etag='&quot;SXo5cTVSLyp7ImA9WxRaE08KRAw.&quot;'><id>http://www.google.com/m8/feeds/contacts/xxx%40gmail.com/base/606f624c0ebd2b96</id><updated>2008-05-05T21:13:38.158Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>rr rr</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/xxx%40gmail.com/base/606f624c0ebd2b96'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/xxx%40gmail.com/base/606f624c0ebd2b96/1210022018158000'/> \
 	<gd:email rel='http://schemas.google.com/g/2005#home' address='rr.rr.rr.rr@example.com' primary='true' /> \
 	<gd:email rel='http://schemas.google.com/g/2005#home' address='be@example.com' /> \
-	<gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>111111</gd:phoneNumber><gd:postalAddress rel='http://schemas.google.com/g/2005#work'>123 acme st</gd:postalAddress><gd:deleted/><gd:organization primary='true' rel='http://schemas.google.com/g/2005#other'><gd:orgName>Bloggs org name</gd:orgName><gd:orgTitle>an org title</gd:orgTitle></gd:organization><gd:im address='aim-im-2' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/></entry>";
+	<gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>111111</gd:phoneNumber> \
+	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>123 acme st</gd:postalAddress><gd:deleted/><gd:organization primary='true' rel='http://schemas.google.com/g/2005#other'><gd:orgName>Bloggs org name</gd:orgName><gd:orgTitle>an org title</gd:orgTitle></gd:organization><gd:im address='aim-im-2' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/></entry>";
 
 	var xml    = new XML(xmlString);
 	var nsAtom = Namespace(Xpath.NS_ATOM);
@@ -1200,9 +1209,6 @@ TestHarness.prototype.testContactGoogle2 = function()
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#mobile'>@@phoneNumber_mobile@@</gd:phoneNumber>\
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#work_fax'>@@phoneNumber_work_fax@@</gd:phoneNumber>\
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#work'>@@phoneNumber_work@@</gd:phoneNumber>\
-	<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>@@postalAddress_home@@</gd:postalAddress>\
-	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>@@postalAddress_work@@</gd:postalAddress>\
-	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>@@postalAddress_work@@</gd:postalAddress>\
 	<gContact:groupMembershipInfo deleted='false' href='@@group-0@@'/>\
 	<gContact:groupMembershipInfo deleted='false' href='@@group-1@@'/>\
 	<gContact:groupMembershipInfo deleted='true' href='blah1'/>\
@@ -1213,12 +1219,23 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	let api_version = "";
 	
-	if (false) // a later GD_API_VERSION
+	if (String(GD_API_VERSION).substr(0,1) == '3')
 		api_version += "<gd:name>\
 			<gd:givenName>@@name_givenName@@</gd:givenName>\
 			<gd:familyName>@@name_familyName@@</gd:familyName>\
 			<gd:fullName>@@name_fullName@@</gd:fullName>\
 		</gd:name>";
+
+	if (GD_API_VERSION == '2')
+		api_version += " \
+			<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>@@postalAddress_home@@</gd:postalAddress>\
+			<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>@@postalAddress_work@@</gd:postalAddress>\
+			<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>@@postalAddress_work@@</gd:postalAddress>";
+	else
+		api_version += " \
+			<gd:structuredPostalAddress rel='http://schemas.google.com/g/2005#home'><gd:formattedAddress>@@structuredPostalAddress_home@@</gd:formattedAddress></gd:structuredPostalAddress>\
+			<gd:structuredPostalAddress rel='http://schemas.google.com/g/2005#work'><gd:formattedAddress>@@structuredPostalAddress_work@@</gd:formattedAddress></gd:structuredPostalAddress>\
+			<gd:structuredPostalAddress rel='http://schemas.google.com/g/2005#work'><gd:formattedAddress>@@structuredPostalAddress_work@@</gd:formattedAddress></gd:structuredPostalAddress>";
 
 	if (String(GD_API_VERSION).substr(0,1) == '3')
 		api_version += "<gContact:website href='@@website_home@@' rel='home'/>\
@@ -1246,8 +1263,11 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	function remove_postal_properties(properties) {
 		var ret = cloneObject(properties);
-		if ('postalAddress_home' in ret) delete ret['postalAddress_home'];
-		if ('postalAddress_work' in ret) delete ret['postalAddress_work'];
+		for (i in newObjectWithKeysAndValues("home", "work")) {
+			let key = ContactGoogleStatic.get_hypenation(ContactGoogleStatic.postalWord(), i);
+			if (key in ret)
+				delete ret[key];
+		}
 		return ret;
 	}
 	function match(contact, properties, meta) {
@@ -1294,6 +1314,10 @@ TestHarness.prototype.testContactGoogle2 = function()
 	delete properties["website_work"];
 
 	contact.properties = properties;
+	// contact.properties = {};
+	// this.m_logger.debug("AMHERE: contact with no properties: " + aToString(contact.properties));
+	// this.m_logger.debug("AMHERE: contact with no properties: " + contact.toString());
+	// this.m_logger.debug("AMHERE: contact with no properties: " + contact.toStringXml());
 
 	properties["email1"]           = "john.smith.home.2@example.com"; // the first <email> element
 	properties["email2"]           = "john.smith.other@example.com";  // the second...
@@ -1305,7 +1329,11 @@ TestHarness.prototype.testContactGoogle2 = function()
 	// test modifying a contact
 	//
 	properties = this.sampleContactGoogleProperties();
+	this.m_logger.debug("AMHERE: contact before: " + contact.toStringXml());
 	contact.properties = properties;
+	this.m_logger.debug("AMHERE: properties: " + aToString(properties));
+	this.m_logger.debug("AMHERE: contact: " + contact.toString());
+	this.m_logger.debug("AMHERE: contact: " + contact.toStringXml());
 	match(contact, properties, null);
 
 	// test adding all properties to a new contact
@@ -1322,8 +1350,9 @@ TestHarness.prototype.testContactGoogle2 = function()
 	contact = new ContactGoogle();
 	contact.mode(ContactGoogle.ePostal.kDisabled);
 	contact.properties = properties;
+	let re_postal = new RegExp(ContactGoogleStatic.postalWord() + ".*$");
 	for (var key in properties)
-		if (/postalAddress.*$/.test(key))
+		if (re_postal.test(key))
 			delete properties[key];
 	match(contact, properties, null);
 
@@ -1338,13 +1367,19 @@ TestHarness.prototype.testContactGoogle2 = function()
 	//
 	contact = fresh_contact();
 
-	contact.m_entry.* += <gd:postalAddress xmlns:gd={Xpath.NS_GD} rel="http://schemas.google.com/g/2005#work"></gd:postalAddress>
+	if (GD_API_VERSION == 2)
+		contact.m_entry.* += <gd:postalAddress xmlns:gd={Xpath.NS_GD} rel="http://schemas.google.com/g/2005#work"></gd:postalAddress>;
+	else
+		contact.m_entry.* += <gd:structuredPostalAddress xmlns:gd={Xpath.NS_GD} rel='http://schemas.google.com/g/2005#work'><gd:formattedAddress></gd:formattedAddress></gd:structuredPostalAddress>;
+
 	this.m_logger.debug("testGoogleContacts1: 6.1. contact: " + contact.m_entry.toXMLString());
-	var length  = contact.m_entry.postalAddress.length();
+	let length, length2;
+	length  = (GD_API_VERSION == 2) ? contact.m_entry.postalAddress.length() : contact.m_entry.structuredPostalAddress.length();
 
 	contact.postalAddressRemoveEmptyElements();
 	this.m_logger.debug("testGoogleContacts1: 6.2. contact: " + contact.m_entry.toXMLString());
-	zinAssert(length == contact.m_entry.postalAddress.length());
+	length2 = (GD_API_VERSION == 2) ? contact.m_entry.postalAddress.length() : contact.m_entry.structuredPostalAddress.length();
+	zinAssert(length == length2);
 
 	// test groups
 	//
@@ -1391,7 +1426,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 	//
 	contact = fresh_contact();
 	properties = contact.properties;
-	var contact2 = new ContactGoogle();
+	let contact2 = new ContactGoogle();
 	contact2.properties = properties;
 	zinAssert(isMatchObjects(contact.properties, contact2.properties));
 
@@ -1399,9 +1434,21 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	contact.properties = properties;
 
-	zinAssert(isMatchObjects(properties, contact.properties));
+	key = (GD_API_VERSION == '2') ? 'title' : 'name_fullName';
 
-	this.m_logger.debug("contact after removing name_given: " + contact.toString());
+	zinAssert(isMatchObjects(properties, contact.properties));
+	properties[key] = "123 blah";
+	contact.properties = properties;
+	zinAssert(!isMatchObjects(contact.properties, contact2.properties));
+
+	properties[key] = "";
+	contact.properties = properties;
+
+	properties[key] = contact2.properties[key];
+	contact.properties = properties;
+	zinAssert(isMatchObjects(contact.properties, contact2.properties));
+
+	// this.m_logger.debug("contact after setting name to empty: " + contact.toStringXml());
 
 	return true;
 }
@@ -1441,8 +1488,6 @@ TestHarness.prototype.testContactGoogleIssue179 = function()
 	<gd:email rel='http://schemas.google.com/g/2005#other' address='btw@example.com'/> \
 	<gd:phoneNumber label='work mobile'>123456789</gd:phoneNumber> \
 	<gd:phoneNumber rel='http://schemas.google.com/g/2005#home'>123456789</gd:phoneNumber> \
-	<gd:postalAddress rel='http://schemas.google.com/g/2005#work'>xxxxx</gd:postalAddress> \
-	<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>lskjdflkjsdflkjsdf </gd:postalAddress> \
 	<gContact:groupMembershipInfo deleted='false' href='http://www.google.com/m8/feeds/groups/example%40googlemail.com/base/6'/> \
 	</entry>";
 
@@ -1457,7 +1502,6 @@ TestHarness.prototype.testContactGoogleIssue185 = function()
 {
 	var contact = new ContactGoogle();
 	var properties = {
-			'title' :                'a-title', // TODO try me with a space too
 			'content' :              ' ',
 			'organization_orgName':  ' ',
 			'organization_orgTitle': ' ',
@@ -1466,6 +1510,11 @@ TestHarness.prototype.testContactGoogleIssue185 = function()
 			'email1':                ' ',
 			'email2':                ' '
 		};
+
+	if (GD_API_VERSION == '2')
+		properties['title'] = 'a-title'; // TODO try me with a space too
+	else
+		properties['name_fullName'] = 'a-title';
 
 	// set all properties
 	contact.properties = properties;
@@ -1476,7 +1525,11 @@ TestHarness.prototype.testContactGoogleIssue185 = function()
 	// ContactGoogle.transformTbProperties(ContactGoogle.eTransform.kAll, properties_transformed);
 	// this.m_logger.debug("properties_transformed: " + aToString(properties_transformed));
 
-	zinAssert('title' in contact.properties);
+	if (GD_API_VERSION == '2')
+		zinAssert('title' in contact.properties);
+	else
+		zinAssert('name_fullName' in contact.properties);
+
 	zinAssert(!('im_AIM' in contact.properties));
 
 	return true;
@@ -1784,11 +1837,20 @@ TestHarness.prototype.testGdAddressConverter = function()
 
 TestHarness.prototype.setupFixtureGdPostalAddress = function()
 {
+	let api_version="";
+
 	this.m_entry_as_xml_char = "<?xml version='1.0' encoding='UTF-8'?><entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005'><id>http://www.google.com/m8/feeds/contacts/username%40@gmail.com/base/7ae485588d2b6b50</id><updated>2008-04-26T01:58:35.904Z</updated><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title type='text'>77</title><link rel='self' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50'/><link rel='edit' type='application/atom+xml' href='http://www.google.com/m8/feeds/contacts/username%40gmail.com/base/7ae485588d2b6b50/1209175115904000'/> \
 		<gd:email rel='http://schemas.google.com/g/2005#other' address='77@example.com' primary='true'/>\
-		<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>@@postal@@</gd:postalAddress>\
+		@@api_version@@ \
 		<gd:im address='@@im#AIM@@' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/>\
 		</entry>";
+
+	if (GD_API_VERSION == '2')
+		api_version += "<gd:postalAddress rel='http://schemas.google.com/g/2005#home'>@@postal@@</gd:postalAddress>"
+	else
+		api_version += "<gd:structuredPostalAddress rel='http://schemas.google.com/g/2005#home'><gd:formattedAddress>@@postal@@</gd:formattedAddress></gd:structuredPostalAddress>";
+
+	this.m_entry_as_xml_char = this.m_entry_as_xml_char.replace("@@api_version@@", api_version);
 
 	this.m_street1 = "Apartment 2";
 	this.m_street2 = "123 Collins st";
@@ -1833,7 +1895,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 
 	zinAssert(!contact.isAnyPostalAddressInXml());
 
-	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should preverse <otheraddr>
+	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should preserve <otheraddr>
 	//
 	contact = new_contact(this.m_address_as_xml_entity);
 
@@ -1845,9 +1907,15 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 
+	this.m_logger.debug("contact before update: " + contact.toStringXml()); // TODO
+	this.m_logger.debug("contact properties before update: " + contact.toString()); // TODO
+	this.m_logger.debug("tb_properties: " + aToString(tb_properties));  // TODO
+	let postal_home = this.postal_key("home");
 	contact.properties = gd_properties;
-	// this.m_logger.debug("contact after update: " + contact.toString());
-	zinAssert(contact.postalAddressOtherAddr("postalAddress_home") == this.m_otheraddr);
+	this.m_logger.debug("contact after update: " + contact.toString()); // TODO
+	this.m_logger.debug("this.m_otheraddr: " + this.m_otheraddr);       // TODO
+	this.m_logger.debug("gd_properties: " + aToString(gd_properties));  // TODO
+	zinAssert(contact.postalAddressOtherAddr(postal_home) == this.m_otheraddr);
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	zinAssert(tb_properties["HomeAddress2"] == this.m_street2);
@@ -1863,7 +1931,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 
 	// this.m_logger.debug("blah: contact after update: " + contact.toString());
 
-	zinAssert(contact.postalAddressOtherAddr("postalAddress_home") == this.m_otheraddr);
+	zinAssert(contact.postalAddressOtherAddr(postal_home) == this.m_otheraddr);
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	zinAssert(tb_properties["HomeAddress2"] == this.m_street2);
@@ -1881,9 +1949,10 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	this.m_logger.debug("testing xmlify");
 	this.m_logger.debug("tb_properties:  " + aToString(tb_properties));
 	this.m_logger.debug("gd_properties:  " + aToString(gd_properties));
-	this.m_logger.debug("contact before update: " + contact.toString());
+	this.m_logger.debug("contact before update: " + contact.toString() + " contact in xml: " + contact.toStringXml());
 	contact.properties = gd_properties;
-	zinAssert(contact.postalAddressOtherAddr("postalAddress_home") == this.m_otheraddr);
+	this.m_logger.debug("contact after update: " + contact.toString());
+	zinAssert(contact.postalAddressOtherAddr(postal_home) == this.m_otheraddr);
 	var tb_properties_2 = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	this.m_logger.debug("contact after update: " + contact.toString());
 	this.m_logger.debug("tb_properties_2:  " + aToString(tb_properties_2));
@@ -1925,8 +1994,8 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 	contact.properties = gd_properties;
-	// this.m_logger.debug("contact.postalAddressOtherAddr: " + contact.postalAddressOtherAddr("postalAddress_home"));
-	zinAssert(contact.postalAddressOtherAddr("postalAddress_home") == this.m_otheraddr);
+	// this.m_logger.debug("contact.postalAddressOtherAddr: " + contact.postalAddressOtherAddr(postal_home));
+	zinAssert(contact.postalAddressOtherAddr(postal_home) == this.m_otheraddr);
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", test creating and matching a contact from xml that contains entities
 	// 
@@ -1946,7 +2015,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	// this.m_logger.debug("addWhitespaceToPostalProperties: before: " + aToString(gd_properties));
 	var properties_with_postal_whitespace = ContactGoogle.addWhitespaceToPostalProperties(gd_properties);
 	this.m_logger.debug("addWhitespaceToPostalProperties: after: " + aToString(properties_with_postal_whitespace));
-	zinAssert(new RegExp(' ' + this.m_street1 + ' ').test(properties_with_postal_whitespace['postalAddress_home']))
+	zinAssert(new RegExp(' ' + this.m_street1 + ' ').test(properties_with_postal_whitespace[postal_home]))
 	zinAssert(gd_properties['email1'] == properties_with_postal_whitespace['email1']);
 	}
 
