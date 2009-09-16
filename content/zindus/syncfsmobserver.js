@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.74 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.75 2009-09-16 06:45:47 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -208,7 +208,8 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	// this.m_logger.debug("updateState: blah: a_states: " +      aToString(a_states));
 	// this.m_logger.debug("updateState: blah: m_transitions: " + aToString(context.fsm.m_transitions));
 
-	zinAssert(isMatchObjectKeys(a_states, context.fsm.m_transitions));
+	key = firstDifferingObjectKey(a_states, context.fsm.m_transitions);
+	zinAssertAndLog(!key, key);
 
 	this.m_a_states_seen[fsmstate.newstate] = true;
 	var count_states_seen = 0;

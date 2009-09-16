@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.47 2009-08-14 06:45:39 cvsuser Exp $
+// $Id: feed.js,v 1.48 2009-09-16 06:45:47 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -53,6 +53,7 @@ FeedItem.ATTR_ID   = 'id';
 FeedItem.ATTR_L    = 'l';
 FeedItem.ATTR_TPI  = 'tpi';  // thunderbird pref id - see http://www.xulplanet.com/references/xpcomref/ifaces/nsIAbDirectory.html
 FeedItem.ATTR_TYPE = 'type';
+FeedItem.ATTR_STYP = 'styp';
 FeedItem.ATTR_NAME = 'name';
 FeedItem.ATTR_RID  = 'rid';  // <link> elements have this attribute - it's the id of the object in the remote users's account
 FeedItem.ATTR_ZID  = 'zid';  // <link> elements have this attribute - it's the remote user's zimbraId
@@ -67,8 +68,10 @@ FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
 FeedItem.ATTR_JSON = 'json'; // json
 FeedItem.ATTR_GGSG = 'ggsg'; // corresponds with a Google Group <gContact:systemGroup id="Contacts"/> element
+FeedItem.ATTR_GGID = 'ggid'; // TYPE_GG items have this attribute - the <id> element from the group's <entry>
 FeedItem.ATTR_XGID = 'xgid'; // this item doesn't map to anything in in the gid
-FeedItem.ATTR_GDAU = 'gdau'; // a google 'authoritative' contact - TODO
+FeedItem.ATTR_GDGP = 'gdgp'; // comma-separated list of google group ids for which this contact is a member
+FeedItem.ATTR_GDID = 'gdid'; // gdau items have this attribute - value is the id of the authoritative contact
 
 // FeedItem.ATTR_EMPT = 'empt'; // true iff the contact is empty when mapped to the other side
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
@@ -83,10 +86,12 @@ FeedItem.TYPE_SF   = 0x08; // link-folder - a hybrid of <link> and remote <folde
 FeedItem.TYPE_GG   = 0x10; // google group
 FeedItem.TYPE_MASK = (FeedItem.TYPE_CN | FeedItem.TYPE_FL | FeedItem.TYPE_LN | FeedItem.TYPE_SF | FeedItem.TYPE_GG);
 
-FeedItem.DO_FIRST                = newObject(FeedItem.ATTR_TYPE, 0, FeedItem.ATTR_KEY, 0, FeedItem.ATTR_ID, 0, FeedItem.ATTR_L, 0,
-                                             FeedItem.ATTR_NAME, 0, FeedItem.ATTR_LS, 0,  FeedItem.ATTR_MS, 0, FeedItem.ATTR_REV, 0);
+FeedItem.DO_FIRST  = newObjectWithKeys(FeedItem.ATTR_TYPE, FeedItem.ATTR_KEY, FeedItem.ATTR_ID, FeedItem.ATTR_L, 
+                                             FeedItem.ATTR_NAME, FeedItem.ATTR_LS, FeedItem.ATTR_MS, FeedItem.ATTR_REV, FeedItem.ATTR_DEL);
 
 FeedItem.FAKE_ZID_FOR_AB = "ab";
+
+FeedItem.eStyp = new ZinEnum( newObjectWithKeysMatchingValues('gdau', 'gdci') );
 
 FeedItem.TYPE_BIMAP = new BiMap(
 		[FeedItem.TYPE_CN, FeedItem.TYPE_FL, FeedItem.TYPE_LN, FeedItem.TYPE_SF, FeedItem.TYPE_GG],
@@ -494,6 +499,11 @@ FeedItem.prototype.isForeign = function()
 FeedItem.prototype.type = function()
 {
 	return FeedItem.TYPE_BIMAP.lookup(null, this.get(FeedItem.ATTR_TYPE));
+}
+
+FeedItem.prototype.styp = function()
+{
+	return this.getOrNull(FeedItem.ATTR_STYP);
 }
 
 FeedItem.prototype.setWhenPresent = function(properties, key)

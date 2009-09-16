@@ -82,24 +82,45 @@
 		<groupbox pack="center" >
 			<caption label="&zindus.ca.group.pap.label;" />
 			<deck id="ca-pap-deck" >
-				<hbox>
+				<vbox> <!-- google -->
 					<vbox id="ca-gd-vbox" pack="center" >
-						<label value="&zindus.ca.google.sync.with.label;" />
-						<radiogroup id="ca-gd-syncwith-radiogroup" >
-							<radio id="ca-gd-syncwith-pab" label="&zindus.ca.google.sync.with.pab.label;" selected="true" />
-							<radio id="ca-gd-syncwith-zg" style="min-width:20em"   />
-						</radiogroup>
+						<groupbox>
+							<caption label="&zindus.ca.google.sync.with.label;" />
+							<!--
+							<label value="&zindus.ca.google.sync.with.label;" class="zindus-gd-account-grid" />
+							-->
+							<radiogroup id="ca-gd-syncwith-radiogroup" orient="horizontal" >
+								<radio id="ca-gd-syncwith-pab" label="&zindus.ca.google.sync.with.pab.label;" selected="true" class="zindus-gd-account-grid" />
+								<radio id="ca-gd-syncwith-zg" style="min-width:20em"   />
+							</radiogroup>
+						</groupbox>
+						<groupbox>
+							<caption label="&zindus.ca.google.suggested.contacts.label;" />
+							<!--
+							<label value="&zindus.ca.google.suggested.contacts.label;" class="zindus-gd-account-grid" />
+							-->
+							<radiogroup id="ca-gd-suggested-radiogroup" orient="horizontal" >
+								<radio id="ca-gd-suggested-include" label="&zindus.ca.google.suggested.include.label;" selected="true" class="zindus-gd-account-grid" />
+								<radio id="ca-gd-suggested-ignore" label="&zindus.ca.google.suggested.ignore.label;" />
+							</radiogroup>
+						</groupbox>
+						<!--
+						<spacer class="zindus-spacer" flex="1"/>
+						-->
+						<groupbox>
+							<!-- TODO clean this up and use entitiies -->
+							<caption id="ca-gd-gr-as-ab-caption" label="Sync Google Groups with Thunderbird addressbooks" />
+							<!--
+							<label value="Google Groups as addressbooks" class="zindus-gd-account-grid" />
+							-->
+							<radiogroup id="ca-gd-gr-as-ab-radiogroup" orient="horizontal" >
+								<radio id="ca-gd-gr-as-ab-no" label="&zindus.ca.zimbra.gal.no.label;" selected="true" class="zindus-gd-account-grid" />
+								<radio id="ca-gd-gr-as-ab-yes" label="&zindus.ca.zimbra.gal.yes.label;" />
+							</radiogroup>
+						</groupbox>
 					</vbox>
-					<vbox>
-						<label value="&zindus.ca.google.suggested.contacts.label;" />
-						<radiogroup id="ca-gd-suggested-radiogroup" >
-							<radio id="ca-gd-suggested-include" label="&zindus.ca.google.suggested.include.label;" selected="true" />
-							<radio id="ca-gd-suggested-ignore" label="&zindus.ca.google.suggested.ignore.label;" />
-						</radiogroup>
-					</vbox>
-					<spacer flex="1"/> 
-				</hbox>
-				<hbox>
+				</vbox>
+				<hbox> <!-- zimbra -->
 					<vbox id="ca-zm-vbox" >
 						<label value="&zindus.ca.zimbra.gal.label;" />
 						<menulist id="ca-zm-gal-menulist" >

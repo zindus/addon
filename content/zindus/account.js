@@ -20,15 +20,16 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: account.js,v 1.16 2009-06-28 10:45:13 cvsuser Exp $
+// $Id: account.js,v 1.17 2009-09-16 06:45:46 cvsuser Exp $
 
 var eAccount = new ZinEnum( {
 	sourceid            : 'sourceid',
 	format              : 'format',
 	url                 : 'url',
 	username            : 'username',
-	gd_sync_with        : 'gd_sync_with',
+	gd_gr_as_ab         : 'gd_gr_as_ab',
 	gd_suggested        : 'gd_suggested',
+	gd_sync_with        : 'gd_sync_with',
 	zm_sync_gal_enabled : 'zm_sync_gal_enabled',
 	zm_emailed_contacts : 'zm_emailed_contacts',
 	passwordlocator     : 'passwordlocator'
@@ -160,8 +161,8 @@ Account.prototype = {
 };
 
 var AccountStatic = {
-	m_keys_optional      : newObjectWithKeys( eAccount.gd_sync_with, eAccount.gd_suggested, eAccount.zm_sync_gal_enabled,
-	                                          eAccount.zm_emailed_contacts ),
+	m_keys_optional      : newObjectWithKeys( eAccount.gd_sync_with, eAccount.gd_suggested, eAccount.gd_gr_as_ab,
+	                                          eAccount.zm_sync_gal_enabled, eAccount.zm_emailed_contacts ),
 	m_keys_required      : newObjectWithKeys( eAccount.url, eAccount.username, eAccount.format),
 	m_bimap_format       : getBimapFormat('long'),
 	m_prefset_properties : eAccount.toArray(),

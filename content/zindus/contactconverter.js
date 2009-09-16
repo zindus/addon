@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.49 2009-09-01 04:28:00 cvsuser Exp $
+// $Id: contactconverter.js,v 1.50 2009-09-16 06:45:46 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -39,8 +39,6 @@ function ContactConverter()
 
 	this.m_gd_certain_keys_converted = null;
 	this.m_properties_being_migrated = null;
-
-	this.properties_being_migrated(); // TODO remove me
 
 	this.is_birthday_field_converted(nsIXULAppInfo().is_tb_birthday_field && String(GD_API_VERSION).substr(0,1) == 3);
 
@@ -306,10 +304,9 @@ convert : function(format_to, format_from, properties_from) {
 	if (!isObjectEmpty(a_normalised_tb_birthday))
 		this.tb_birthday_output(format_to, properties_to, a_normalised_tb_birthday);
 
-	// TODO comment this out
-	this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
-	                                 " properties_from: "       + aToString(properties_from) +
-	                                 " returns properties_to: " + aToString(properties_to));
+	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
+	//                                  " properties_from: "       + aToString(properties_from) +
+	//                                  " returns properties_to: " + aToString(properties_to));
 
 	return properties_to;
 },
@@ -489,7 +486,7 @@ initialise_common_to : function(format_to, format_from) {
 gd_address_normalise : function(format_to, format_from, properties_from, key_from, a_normalised_gd_address) {
 	var left, right;
 
-	this.m_logger.debug("gd_address_normalise: format_to: " + format_to+" format_from: "+format_from+" key_from: " + key_from); // TODO
+	// this.m_logger.debug("gd_address_normalise: format_to: " + format_to+" format_from: "+format_from+" key_from: " + key_from);
 
 	switch(format_from) {
 		case FORMAT_TB:

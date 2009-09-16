@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.31 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: configaccount.js,v 1.32 2009-09-16 06:45:46 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -34,10 +34,12 @@ function ConfigAccount()
 	this.m_gal_radio_ids        = [ "ca-zm-gal-yes", "ca-zm-gal-if-fewer", "ca-zm-gal-no" ];
 	this.m_gal_radio_bimap      = new BiMap(this.m_gal_radio_values, this.m_gal_radio_ids);
 
-	this.m_gd_sync_with_bimap   = new BiMap( [ 'zg',                      'pab'                    ], 
-	                                         [ "ca-gd-syncwith-zg",       "ca-gd-syncwith-pab"     ] );
-	this.m_gd_suggested_bimap   = new BiMap( [ 'include',                 'ignore'                 ], 
-	                                         [ "ca-gd-suggested-include", "ca-gd-suggested-ignore" ] );
+	this.m_gd_gr_as_ab_bimap    = new BiMap( [ 'true',                       'false'                     ], 
+	                                         [ 'ca-gd-gr-as-ab-yes',         'ca-gd-gr-as-ab-no'         ] );
+	this.m_gd_suggested_bimap   = new BiMap( [ 'include',                    'ignore'                    ], 
+	                                         [ "ca-gd-suggested-include",    "ca-gd-suggested-ignore"    ] );
+	this.m_gd_sync_with_bimap   = new BiMap( [ 'zg',                         'pab'                       ], 
+	                                         [ "ca-gd-syncwith-zg",          "ca-gd-syncwith-pab"        ] );
 
 	this.m_logger               = newLogger("ConfigAccount"); // this.m_logger.level(Logger.NONE);
 	this.m_payload_caller       = null;
@@ -224,8 +226,9 @@ ConfigAccount.prototype = {
 				dId("ca-username").value = account.username;
 				dId("ca-password").value = account.passwordlocator ? account.passwordlocator.getPassword() : "";
 
-				v = account.gd_sync_with;        setRadio("ca-gd-syncwith-radiogroup",  self.m_gd_sync_with_bimap, v ? v : 'pab');
+				v = account.gd_gr_as_ab;         setRadio("ca-gd-gr-as-ab-radiogroup",  self.m_gd_gr_as_ab_bimap,  v ? v : 'false');
 				v = account.gd_suggested;        setRadio("ca-gd-suggested-radiogroup", self.m_gd_suggested_bimap, v ? v : 'include');
+				v = account.gd_sync_with;        setRadio("ca-gd-syncwith-radiogroup",  self.m_gd_sync_with_bimap, v ? v : 'pab');
 				v = account.zm_sync_gal_enabled; setRadio("ca-zm-gal-menulist",         self.m_gal_radio_bimap,    v ? v : 'if-fewer');
 			}
 		}
@@ -362,8 +365,9 @@ ConfigAccount.prototype = {
 			account.passwordlocator.setPassword(zinTrim(dId("ca-password").value));
 
 			if (account.format_xx() == FORMAT_GD) {
-				account.gd_sync_with = getValueFromRadio("ca-gd-syncwith-radiogroup", this.m_gd_sync_with_bimap);
+				account.gd_gr_as_ab  = getValueFromRadio("ca-gd-gr-as-ab-radiogroup",  this.m_gd_gr_as_ab_bimap);
 				account.gd_suggested = getValueFromRadio("ca-gd-suggested-radiogroup", this.m_gd_suggested_bimap);
+				account.gd_sync_with = getValueFromRadio("ca-gd-syncwith-radiogroup",  this.m_gd_sync_with_bimap);
 			}
 			else {
 				account.zm_sync_gal_enabled = getValueFromRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap);

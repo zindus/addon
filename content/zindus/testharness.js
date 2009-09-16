@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.106 2009-09-01 04:28:00 cvsuser Exp $
+// $Id: testharness.js,v 1.107 2009-09-16 06:45:47 cvsuser Exp $
 
 function TestHarness()
 {
@@ -52,7 +52,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	// ret = ret && this.testContactConverter();
+	ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testAddressBookBugzilla432145Create();
@@ -74,7 +74,7 @@ TestHarness.prototype.run = function()
 	ret = ret && this.testContactGoogleIssue202();
 	ret = ret && this.testContactGoogleIterators();
 	ret = ret && this.testContactGooglePostalAddress();
-	// ret = ret && this.testGdAddressConverter();
+	ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testBiMap();
 	// ret = ret && this.testAddCard();
 	// ret = ret && this.testDeleteCard();
@@ -409,7 +409,8 @@ TestHarness.prototype.testContactConverter1 = function()
 
 TestHarness.prototype.testContactConverterPropertyMatch = function(obj1, obj2)
 {
-	zinAssert(isMatchObjectKeys(obj1, obj2));
+	let x = firstDifferingObjectKey(obj1, obj2);
+	zinAssertAndLog(!x, x);
 
 	for (var i in obj1)
 		zinAssert(obj1[i] == obj2[i]);
@@ -1244,7 +1245,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	xmlString = xmlString.replace("@@api_version@@", api_version);
 
-	// this.m_logger.debug("AMHERE: properties: " + aToString(properties)); // TODO
+	// this.m_logger.debug("AMHERE: properties: " + aToString(properties));
 
 	for (key in properties)
 		xmlString = xmlString.replace("@@" + key + "@@", properties[key]);
@@ -1512,9 +1513,9 @@ TestHarness.prototype.testContactGoogleIssue185 = function()
 		};
 
 	if (GD_API_VERSION == '2')
-		properties['title'] = 'a-title'; // TODO try me with a space too
+		properties['title'] = 'a-title';
 	else
-		properties['name_fullName'] = 'a-title';
+		properties['name_fullName'] = 'a title';
 
 	// set all properties
 	contact.properties = properties;
@@ -1799,7 +1800,7 @@ TestHarness.prototype.testGdAddressConverter = function()
 
 	// this.m_logger.debug("testGdAddressConverter: a_fields: " + aToString(a_fields));
 
-	zinAssertAndLog(isMatchObjectKeys(a_fields, a_fields_orig), "a_fields keys: " + keysToString(a_fields) + " orig keys: " + keysToString(a_fields_orig));
+	zinAssertAndLog(!firstDifferingObjectKey(a_fields, a_fields_orig), "a_fields keys: " + keysToString(a_fields) + " orig keys: " + keysToString(a_fields_orig));
 
 	for (var key in a_fields)
 		zinAssertAndLog(zinTrim(a_fields[key]) == zinTrim(a_fields_orig[key]), "mismatch for key: " + key);
@@ -1907,14 +1908,8 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
 
-	this.m_logger.debug("contact before update: " + contact.toStringXml()); // TODO
-	this.m_logger.debug("contact properties before update: " + contact.toString()); // TODO
-	this.m_logger.debug("tb_properties: " + aToString(tb_properties));  // TODO
 	let postal_home = this.postal_key("home");
 	contact.properties = gd_properties;
-	this.m_logger.debug("contact after update: " + contact.toString()); // TODO
-	this.m_logger.debug("this.m_otheraddr: " + this.m_otheraddr);       // TODO
-	this.m_logger.debug("gd_properties: " + aToString(gd_properties));  // TODO
 	zinAssert(contact.postalAddressOtherAddr(postal_home) == this.m_otheraddr);
 
 	tb_properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);

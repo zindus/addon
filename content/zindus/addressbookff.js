@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbookff.js,v 1.1 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: addressbookff.js,v 1.2 2009-09-16 06:45:46 cvsuser Exp $
 includejs("json.js");
 
 function AddressBookFf()
@@ -105,7 +105,7 @@ AddressBookFf.prototype.newAddressBook = function(name)
 
 	let id = this.conn().lastInsertRowID;
 
-	logger().debug("newAddressBook: id: " + id + " name: " + name); // TODO
+	AddressBookFfStatic.debug("newAddressBook: id: " + id + " name: " + name);
 
 	AddressBook.prototype.newAddressBook.call(this);
 
@@ -152,7 +152,7 @@ AddressBookFf.prototype.deleteAddressBook = function(uri)
 
 	AddressBook.prototype.deleteAddressBook.call(this);
 
-	logger().debug("deleteAddressBook: uri: " + uri); // TODO
+	AddressBookFfStatic.debug("deleteAddressBook: uri: " + uri);
 }
 
 AddressBookFf.prototype.renameAddressBook = function(uri, name)
@@ -169,7 +169,7 @@ AddressBookFf.prototype.renameAddressBook = function(uri, name)
 	stmt.reset();
 	stmt.finalize();
 
-	logger().debug("renameAddressBook: uri: " + uri + " to: " + name); // TODO
+	AddressBookFfStatic.debug("renameAddressBook: uri: " + uri + " to: " + name);
 
 	AddressBook.prototype.renameAddressBook.call(this);
 }
@@ -216,7 +216,7 @@ AddressBookFf.prototype.addCard = function(uri, properties, attributes)
 		stmt.finalize();
 	}
 
-	logger().debug("addCard: id_contact: " + id_contact); // TODO
+	AddressBookFfStatic.debug("addCard: id_contact: " + id_contact);
 
 	abCard.id(id_contact);
 
@@ -227,7 +227,7 @@ AddressBookFf.prototype.setCardProperties = function(abCard, uri, properties)
 {
 	let stmt, query, rc;
 
-	this.logger().debug("setCardProperties: uri: " + uri + " properties: " + aToString(properties)); // TODO
+	AddressBookFfStatic.debug("setCardProperties: uri: " + uri + " properties: " + aToString(properties));
 
 	abCard.properties(properties);
 
@@ -241,7 +241,7 @@ AddressBookFf.prototype.setCardProperties = function(abCard, uri, properties)
 	stmt.reset();
 	stmt.finalize();
 
-	this.logger().debug("setCardProperties: uri: " + uri + " abCard: " + abCard.toString()); // TODO
+	AddressBookFfStatic.debug("setCardProperties: uri: " + uri + " abCard: " + abCard.toString());
 
 	return abCard;
 }
@@ -292,7 +292,7 @@ AddressBookFf.prototype.deleteCards = function(uri, aCards)
 		stmt2.finalize();
 	}
 
-	this.logger().debug("deleteCards: ids: " + a_ids.toString()); // TODO
+	AddressBookFfStatic.debug("deleteCards: ids: " + a_ids.toString());
 
 	return true;
 }
@@ -335,8 +335,6 @@ AddressBookFf.prototype.getCardElements = function(abCard, type)
 		if ((type == 'properties' && !is_zindus_prefix) || (type == 'attributes' && is_zindus_prefix))
 			ret[key] = properties[key];
 	}
-
-	// this.m_logger.debug("getCardElements: type: " + type + " returns: " + aToString(ret));
 
 	return ret;
 }
@@ -425,11 +423,11 @@ AddressBookFfCard.prototype = {
 				if (key == TBCARD_ATTRIBUTE_LUID)
 					; // do nothing
 				else if (p[key] && p[key].length > 0) {
-					logger().debug("FfCard setting property: key: " + key + " value: " + p[key]);
+					// logger().debug("FfCard setting property: key: " + key + " value: " + p[key]);
 					this.m_properties[key] = p[key];
 				}
 				else if (key in this.m_properties) {
-					logger().debug("FfCard deleting property: key: " + key);
+					// logger().debug("FfCard deleting property: key: " + key);
 					delete this.m_properties[key];
 				}
 			}
@@ -468,7 +466,7 @@ var AddressBookFfStatic = {
 		let nsifile = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
 		nsifile.append("contacts.sqlite");
 
-		logger().debug("AddressBookFfStatic.db_new_conn: path: " + nsifile.path);
+		this.debug("db_new_conn: path: " + nsifile.path);
 
 		let storageService = Cc["@mozilla.org/storage/service;1"].getService(Ci.mozIStorageService);
 		return storageService.openDatabase(nsifile);
@@ -498,7 +496,7 @@ var AddressBookFfStatic = {
 
 		ret = !isAnyValue(a_reason, false);
 
-		logger().debug("db_is_healthy: returns: " + ret + " a_reason: " + aToString(a_reason));
+		this.debug("db_is_healthy: returns: " + ret + " a_reason: " + aToString(a_reason));
 
 		conn.close();
 
@@ -571,11 +569,11 @@ CREATE INDEX index_member ON member (id_contact, id_group);";
 
 		stmt.finalize();
 
-		logger().debug("db_drop_and_create: file: " + conn.databaseFile.path);
+		this.debug("db_drop_and_create: file: " + conn.databaseFile.path);
 
 		conn.close();
 
-		logger().debug("db_drop_and_create: done: ");
+		this.debug("db_drop_and_create: done: ");
 	},
 	executeStep : function(conn, stmt, msg_on_fail) {
 		let ret;
@@ -589,5 +587,12 @@ CREATE INDEX index_member ON member (id_contact, id_group);";
 		}
 
 		return ret;
+	},
+	debug : function(msg) {
+		if (!this.m_logger) // delay construction
+			this.m_logger = newLogger("AddressBookFf"); 
+
+		if (true) // TODO
+			this.m_logger.debug(msg);
 	}
 };

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.2 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: perlocale.js,v 1.3 2009-09-16 06:45:47 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -138,4 +138,6 @@ PerLocaleStatic.m_translation[ContactGoogle.eSystemGroup.Friends] = {
 PerLocaleStatic.m_translation[ContactGoogle.eSystemGroup.Family] = {
 	};
 PerLocaleStatic.m_translation[ContactGoogle.eSystemGroup.Coworkers] = {
+	};
+PerLocaleStatic.m_translation[GD_SUGGESTED] = {
 	};

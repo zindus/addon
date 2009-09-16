@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.58 2009-08-14 06:45:39 cvsuser Exp $
+// $Id: util.js,v 1.59 2009-09-16 06:45:47 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -211,6 +211,8 @@ function aToString(obj)
 		ret.concat("Null");
 	else if (typeof(obj) == 'function' && typeof(obj.QueryInterface) == 'function')
 		ret.concat("xpcom object");
+	else if (obj instanceof Suo)
+		ret.concat(obj.toString());
 	else
 		for (var x in obj)
 		{
@@ -299,28 +301,24 @@ function isPropertyPresent(obj, property)
 	return (!isObjectEmpty(obj) && typeof(obj[property]) != 'undefined');
 }
 
-// return true iff the keys in both objects match
-//
-function isMatchObjectKeys(obj1, obj2)
+function firstDifferingObjectKey(obj1, obj2)
 {
+	var ret = null;
 	var i;
-	var ret = true;
 
-	if (ret)
+	if (!ret)
 		for (i in obj1)
 			if (!(i in obj2))
 			{
-				ret = false;
-				// newLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
+				ret = i;
 				break;
 			}
 
-	if (ret)
+	if (!ret)
 		for (i in obj2)
 			if (!(i in obj1))
 			{
-				ret = false;
-				// newLogger("Utils").debug("isMatchObjectKeys: mismatched key: " + i);
+				ret = i;
 				break;
 			}
 
@@ -333,7 +331,7 @@ function isMatchObjects(obj1, obj2)
 {
 	var is_match = true;
 
-	is_match = is_match && isMatchObjectKeys(obj1, obj2);
+	is_match = is_match && (firstDifferingObjectKey(obj1, obj2) == null);
 
 	if (is_match)
 		for (var i in obj1)

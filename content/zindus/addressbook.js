@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.63 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: addressbook.js,v 1.64 2009-09-16 06:45:46 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -257,20 +257,9 @@ AddressBook.prototype.qiCard = function(item)
 	return item.QueryInterface(Ci.nsIAbCard);
 }
 
-AddressBook.prototype.newAddressBook = function()
-{
-	this.m_map_name_to_uri = null;
-}
-
-AddressBook.prototype.deleteAddressBook = function()
-{
-	this.m_map_name_to_uri = null;
-}
-
-AddressBook.prototype.renameAddressBook = function()
-{
-	this.m_map_name_to_uri = null;
-}
+AddressBook.prototype.newAddressBook    = function() { this.m_map_name_to_uri = null; }
+AddressBook.prototype.deleteAddressBook = function() { this.m_map_name_to_uri = null; }
+AddressBook.prototype.renameAddressBook = function() { this.m_map_name_to_uri = null; }
 
 AddressBook.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {

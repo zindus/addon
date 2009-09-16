@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zuio.js,v 1.11 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: zuio.js,v 1.12 2009-09-16 06:45:47 cvsuser Exp $
 
 // zuio == Zimbra Uniquely Identified Object
 //
@@ -63,7 +63,7 @@ Zuio.prototype = {
 		else if (a.length == 2)
 			this.setFromPair(a[0], a[1]);
 		else 
-			zinAssert(false);
+			zinAssertAndLog(false, key_as_string);
 	},
 	id : function() {
 		return this.m_id;

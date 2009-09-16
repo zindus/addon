@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.25 2009-09-01 04:28:00 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.26 2009-09-16 06:45:47 cvsuser Exp $
 
 function GoogleData()
 {
@@ -35,7 +35,7 @@ function GoogleData()
 	this.__defineSetter__("properties", function(p) { return this.set_properties(p); });
 }
 
-GoogleData.eMeta    = new ZinEnum( 'id', 'updated', 'edit', 'self', 'deleted' );
+GoogleData.eMeta    = new ZinEnum( 'id', 'id_as_url', 'updated', 'edit', 'self', 'deleted' );
 GoogleData.eElement = new ZinEnum( 'contact', 'group' );
 
 GoogleData.prototype = {
@@ -45,11 +45,12 @@ meta_initialise_getters : function () {
 	for each ([key, value] in GoogleData.eMeta) {
 		with (GoogleData.eMeta) { with (ContactGoogleStatic) {
 			switch(value) {
-				case id:      fn = function(entry) { return to_string(entry.nsAtom::id); };                            break;
-				case updated: fn = function(entry) { return to_string(entry.nsAtom::updated); };                       break;
-				case edit:    fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="edit").@href); };     break;
-				case self:    fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="self").@href); };     break;
-				case deleted: fn = function(entry) { return to_bool(entry.nsGd::deleted); };                           break;
+				case id_as_url: fn = function(entry) { return to_string(entry.nsAtom::id); };                            break;
+				case id:        fn = function(entry) { return to_id(entry.nsAtom::id); };                                break;
+				case updated:   fn = function(entry) { return to_string(entry.nsAtom::updated); };                       break;
+				case edit:      fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="edit").@href); };     break;
+				case self:      fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="self").@href); };     break;
+				case deleted:   fn = function(entry) { return to_bool(entry.nsGd::deleted); };                           break;
 				default: zinAssertAndLog(false, key);
 			};
 		} }
@@ -152,7 +153,7 @@ function ContactGoogle(xml, mode) {
 ContactGoogle.ePostal      = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
 ContactGoogle.eTransform   = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
 ContactGoogle.eModify      = new ZinEnum( { 'kRemoveDeletedGroupMembershipInfo' : 0x01 } );
-ContactGoogle.eSystemGroup = new ZinEnum( newObjectWithKeysMatchingValues('Contacts', 'Friends', 'Family', 'Coworkers') );
+ContactGoogle.eSystemGroup = new ZinEnum( newObjectWithKeysMatchingValues('Contacts', 'Friends', 'Family', 'Coworkers', GD_SUGGESTED) );
 
 function ContactGoogleProto() {}
 
@@ -207,19 +208,20 @@ warn_if_entry_isnt_valid : function() {
 	// this method it to notice and warn about such things
 },
 groups_from_xml: function () {
-	var ret = new Array();
+	let ret = new Array();
 
 	zinAssert(this.m_entry);
 
-	with (ContactGoogleStatic)
-		var groups = this.m_entry.nsGContact::groupMembershipInfo;
+	with (ContactGoogleStatic) {
+		let groups = this.m_entry.nsGContact::groupMembershipInfo;
 
-	for (var i = 0; i < groups.length(); i++)
-		if (groups[i].@deleted != 'true') {
-			let href = groups[i].@href.toString();
+		for (var i = 0; i < groups.length(); i++)
+			if (groups[i].@deleted != 'true') {
+				let href = groups[i].@href.toString();
 
-			if (href.length > 0)
-				ret.push(href);
+				if (href.length > 0)
+					ret.push(to_id(href));
+			}
 		}
 
 	return ret;
@@ -338,8 +340,7 @@ set_properties : function(properties_in) {
 			properties[key] = value;
 	}
 
-	logger().debug("ContactGoogle: set_properties: 1: properties: " + aToString(properties));
-	logger().debug("ContactGoogle: set_properties: 1: contact: " + this.toStringXml()); // TODO 
+	// logger().debug("ContactGoogle: set_properties: 1: properties: " + aToString(properties));
 
 	with (ContactGoogleStatic) {
 		if (imask & mask.title) {
@@ -372,19 +373,14 @@ set_properties : function(properties_in) {
 			// explicity clear the flavour that we don't use - triggering google mutation
 			// as per: http://groups.google.com/group/google-contacts-api/browse_thread/thread/ea623b18efb16963?hl=en
 			//
-			logger().debug("AMHEREX: modifying name: before: " + name.toXMLString()); // TODO
-
 			modify_or_delete_child_if(name.nsGd::givenName,  {name_givenName: ""},  'name_givenName',  {});
 			modify_or_delete_child_if(name.nsGd::familyName, {name_familyName: ""}, 'name_familyName', {});
 			modify_or_delete_child_if(name.nsGd::fullName,   properties,            'name_fullName',   a_is_used);
-
-			logger().debug("AMHEREX: modifying name: after: " + name.toXMLString()); // TODO
 
 			if (name.*.length() == 0) {
 				// logger().debug("ContactGoogle: deleting");
 				delete entry.*[name.childIndex()];
 				name = null;
-				logger().debug("AMHEREX: name: set to null: "); // TODO
 			}
 		}
 
@@ -435,7 +431,7 @@ set_properties : function(properties_in) {
 
 		for (key in cgopi.iterator(properties))
 			if (!(key in a_is_used)) {
-				logger().debug("properties setter: adding key: " + key); // TODO
+				// logger().debug("properties setter: adding key: " + key);
 
 				switch(key) {
 				case "title":
@@ -541,8 +537,7 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 	//
 	zinAssert((this.m_mode & ContactGoogle.ePostal.kEnabled));
 
-	logger().debug("postalAddressModifyField: enters: xml: " + xml.toXMLString() + " properties: " + aToString(properties) + " suffix: " + suffix); // TODO
-	logger().debug("postalAddressModifyField: enters: contact: " + this.toString()); // TODO
+	// logger().debug("postalAddressModifyField: enters: xml: " + xml.toXMLString() + " properties: " + aToString(properties) + " suffix: " + suffix);
 
 	with (ContactGoogleStatic) {
 		var key                = get_hyphenation(postalWord(), suffix);
@@ -551,7 +546,7 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 		var a_gac_properties   = { };
 		var new_properties;
 
-		logger().debug("postalAddressModifyField: otheraddr: " + otheraddr); // TODO
+		// logger().debug("postalAddressModifyField: otheraddr: " + otheraddr);
 
 		if (key in properties)
 			is_property_postal = gac.convert(properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_PROPERTIES);
@@ -562,35 +557,34 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 			new_properties = { key : null };
 
 			if (otheraddr && otheraddr.length > 0) // the postalAddress of the contact is xml
-			{
-				logger().debug("postalAddressModifyField: postalAddress of the contact is xml"); // TODO
 				a_gac_properties["otheraddr"] = otheraddr;
-			}
 			else if (otheraddr == null)            // the postalAddress of the contact is text
-			{
-				logger().debug("postalAddressModifyField: postalAddress of the contact is text"); // TODO
 				a_gac_properties["otheraddr"] = (GD_API_VERSION == 2) ? xml.toString() : xml.nsGd::formattedAddress.toString();
-			}
 			else
 				;                                  // the postalAddress of the contact is xml with an empty <otheraddr> element
 
-			logger().debug("postalAddressModifyField: a_gac_properties before: " + aToString(a_gac_properties)); // TODO
+			// logger().debug("postalAddressModifyField: a_gac_properties before: " + aToString(a_gac_properties));
 
 			for (var i in a_gac_properties)
 				a_gac_properties[i] = ContactGoogleStatic.add_whitespace_to_postal_line(a_gac_properties[i]);
 
-			logger().debug("postalAddressModifyField: a_gac_properties after: " + aToString(a_gac_properties)); // TODO
+			// logger().debug("postalAddressModifyField: a_gac_properties after: " + aToString(a_gac_properties));
 
 			gac.convert(new_properties, key, a_gac_properties, GdAddressConverter.ADDR_TO_XML | GdAddressConverter.PRETTY_XML );
 		}
 		else
 			new_properties = properties;
 
-		logger().debug("postalAddressModifyField: key: " + key + " new_properties: " + aToString(new_properties)); // TODO
+		// logger().debug("postalAddressModifyField: key: " + key + " new_properties: " + aToString(new_properties));
 
 		if (GD_API_VERSION == 2)
 			modify_or_delete_child(xml, new_properties, key, a_is_used);
 		else {
+			// note - strictly speaking when we modify formattedAddress we'd want to remove the structured fields
+			// to trigger google's destructuring parsing
+			// but - their parsing isn't going to support zindus xml, so no point.  If the user has both
+			// zindus xml and the structured fields, they probably want exactly that (for thunderbird and phone).
+			//
 			modify_or_delete_child(xml.nsGd::formattedAddress, new_properties, key, a_is_used);
 
 			if (xml.nsGd::formattedAddress.length() == 0)
@@ -598,14 +592,14 @@ postalAddressModifyField : function(xml, properties, suffix, a_is_used) {
 		}
 	}
 
-	logger().debug("postalAddressModifyField: exits: xml: " + xml.toXMLString()); // TODO
+	// logger().debug("postalAddressModifyField: exits: xml: " + xml.toXMLString());
 },
 postalAddressOtherAddr : function(key) {
 	zinAssert(this.m_mode & ContactGoogle.ePostal.kEnabled);
 
 	var is_parsed = key in this.properties;
 
-	logger().debug("postalAddressOtherAddr: key: " + key + " is_parsed: " + is_parsed + " contact: " + this.toString()); // TODO
+	// logger().debug("postalAddressOtherAddr: key: " + key + " is_parsed: " + is_parsed + " contact: " + this.toString());
 
 	if (is_parsed) {
 		var str = this.properties[key];
@@ -615,7 +609,7 @@ postalAddressOtherAddr : function(key) {
 	
 		is_parsed = is_parsed && ContactGoogleStatic.gac.convert(a_in, 'x', a_out, GdAddressConverter.ADDR_TO_PROPERTIES);
 
-		logger().debug("postalAddressOtherAddr: gac.convert returns is_parsed: " + is_parsed + " str: " + str + " a_out: " + aToString(a_out)); // TODO
+		// logger().debug("postalAddressOtherAddr: gac.convert returns is_parsed: " + is_parsed + " str: " + str + " a_out: " + aToString(a_out));
 	}
 
 	if (!is_parsed)                                 // it wasn't xml
@@ -668,7 +662,7 @@ modify : function( mods ) {
 	}
 },
 toString : function() {
-	return GoogleData.prototype.toString.call(this) + "\n groups:     " + this.groups.toString() + "\n";
+	return GoogleData.prototype.toString.call(this) + "\n groups:      " + this.groups.toString() + "\n";
 }
 };
 
@@ -835,6 +829,15 @@ var ContactGoogleStatic = {
 		zinAssertAndLog(length == 0 || length == 1, function () { return "length: " + length + " string: " + xml.toString(); });
 
 		return (length == 0) ? "" : xml.toString();
+	},
+	to_id : function(str) {
+		let ret     = str;
+		let a_match = str.match(/\/(contacts|groups)\/.*base\/(.*)$/);
+
+		if (a_match && a_match.length > 0)
+			ret = ((a_match[1] == 'contacts') ? "c:" : "g:") + a_match[2];
+
+		return ret;
 	},
 	shorten_rel : function(value, element_name) {
 		return (element_name == 'website') ? value : rightOfChar(value);

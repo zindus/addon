@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: gdaddressconverter.js,v 1.12 2009-09-01 04:28:00 cvsuser Exp $
+// $Id: gdaddressconverter.js,v 1.13 2009-09-16 06:45:47 cvsuser Exp $
 
 function GdAddressConverter()
 {
@@ -147,8 +147,6 @@ GdAddressConverter.prototype.is_e4x_address = function(e4x_xml)
 	// this.m_logger.debug("e4x_xml.namespace(): " + e4x_xml.namespace());
 
 	let ret = typeof(e4x_xml) == 'xml' && e4x_xml.localName() == "address" && e4x_xml.namespace() == Xpath.NS_ZINDUS_ADDRESS;
-
-	this.m_logger.debug("is_e4x_address: e4x_xml: " + e4x_xml.toXMLString() + " returns: " + ret); // TODO
 
 	return ret;
 }
