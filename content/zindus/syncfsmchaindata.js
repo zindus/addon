@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmchaindata.js,v 1.12 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: syncfsmchaindata.js,v 1.13 2009-09-16 22:28:51 cvsuser Exp $
 
 // An instance of this class is passed from SyncFsm to SyncFsm - carrying state from one to the next
 //
@@ -45,7 +45,7 @@ function SyncFsmChainData(a_accounts)
 		for (var j in SyncFsmChainData.ITEM_KEYS)
 			this.m_a_item[i][j] = SyncFsmChainData.ITEM_KEYS[j]();
 
-		if (!isPropertyPresent(this.m_a_first_of_format, account.format_xx()))
+		if (!(account.format_xx() in this.m_a_first_of_format))
 			this.m_a_first_of_format[account.format_xx()] = i;
 
 		this.m_a_last_of_format[account.format_xx()] = i;
@@ -55,6 +55,7 @@ function SyncFsmChainData(a_accounts)
 }
 
 SyncFsmChainData.ITEM_KEYS = {
+	is_repeated:      function() { return false;        },
 	is_slow_sync:     function() { return false;        },
 	a_failcodes_seen: function() { return new Object(); }
 };

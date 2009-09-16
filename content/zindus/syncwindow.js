@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncwindow.js,v 1.46 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: syncwindow.js,v 1.47 2009-09-16 22:28:51 cvsuser Exp $
 
 function SyncWindow()
 {
@@ -60,7 +60,7 @@ SyncWindow.prototype.onLoad = function()
 	{
 		this.m_sfcd = new SyncFsmChainData(this.m_payload.m_a_accounts);
 
-		this.m_logger.debug("onLoad: blah: sfcd: " + this.m_sfcd.toString());
+		this.m_logger.debug("onLoad: sfcd: " + this.m_sfcd.toString());
 
 		logger('info').info(getInfoMessage('start', this.m_sfcd.signature()));
 
@@ -160,14 +160,12 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var is_repeat = false;
 			
 			if (this.m_sfcd.account().format_xx() == FORMAT_GD)
-				is_repeat = this.m_grr.resolve_if_appropriate(this.m_logger, this.m_payload.m_es, this.m_sfcd);
+				is_repeat = this.m_grr.resolve_if_appropriate(this.m_logger, this.m_payload.m_es, this.m_sfcd) ||
+				            (this.m_payload.m_es.m_exit_status == 0 && this.m_payload.m_es.m_is_gd_group_mod);
 
 			if (is_repeat)
-			{
 				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().username));
-			}
-
-			if (!is_repeat)
+			else
 			{
 				this.m_zwc.forEach(this.zwc_functor(true));
 

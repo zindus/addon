@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.195 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: syncfsm.js,v 1.196 2009-09-16 22:28:51 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6880,6 +6880,17 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 		zinAssert((type == FeedItem.TYPE_FL) ? (this.account().gd_gr_as_ab == 'true') : true);
 
+		if (type == FeedItem.TYPE_CN && this.account().gd_gr_as_ab == 'true') {
+			let sfcd = this.state.m_sfcd;
+			if (!sfcd.sourceid(this.state.sourceid_pr, 'is_repeated')) {
+				this.state.m_is_gd_group_mod = true;
+				// the is_repeated stuff is only here for defensive reasons - to ensure that we repeat once at most
+				sfcd.sourceid(this.state.sourceid_pr, 'is_repeated', true);
+			}
+			else
+				this.debug("warn: we would have set m_is_gd_group_mod except that we did it on the previous sync - so why would we need to repeat twice?  This might be correct if there was a simultaneous update at google - or it might point to a bug");
+		}
+
 		function set_remote_for_add_from(gd) {
 			let type = GoogleData.element_type_from_instance(gd);
 			remote.method          = "POST";
@@ -7065,8 +7076,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				zfiTarget      = zfcTarget.get(luid_target);
 				let luid_target_au = (type == FeedItem.TYPE_FL) ? null : zfiTarget.get(FeedItem.ATTR_GDID);
 
-				if ((type == FeedItem.TYPE_CN) && zfcTarget.get(luid_target_au).isPresent(FeedItem.ATTR_DEL)) {
-					msg += " but since this gdau contact has already been deleted, we mark the gdci contact as deleted and skip update ";
+				if ((type == FeedItem.TYPE_CN) && (luid_target_au in this.state.a_gd_contacts_deleted)) {
+					msg += " the gdau contact was already deleted, so we mark the gdci contact as deleted and skip update ";
 					zfiTarget.set(FeedItem.ATTR_DEL, 1);
 					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
 					suo.is_processed = true;
@@ -7270,8 +7281,13 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 					zfiTarget.set(FeedItem.ATTR_DEL, 1);
 
+ 					// Set a_gd_contacts_deleted - if instead we set the DEL attribute on the gdau then it'd get
+					// cleaned up and any gdci that reference it would be left dangling.
+					// This way, all those other gdci's get deleted during the next sync.
+					// zfcTarget.get(zfiTarget.get(FeedItem.ATTR_GDID)).set(FeedItem.ATTR_DEL, 1);
+					//
 					if (zfiTarget.type() == FeedItem.TYPE_CN)
-						zfcTarget.get(zfiTarget.get(FeedItem.ATTR_GDID)).set(FeedItem.ATTR_DEL, 1);
+						this.state.a_gd_contacts_deleted[zfiTarget.get(FeedItem.ATTR_GDID)] = true;
 
 					msg += " marking as deleted: id=" + luid_target;
 
@@ -8611,6 +8627,7 @@ SyncFsm.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd
 	state.m_progress_count    = 0;
 	state.m_progress_yield_text = null;
 	state.m_is_attended       = is_attended;
+	state.m_is_gd_group_mod   = false;
 
 	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
 	state.remote_update_package    = null;    // maintains state between an server update request and the response
@@ -8678,6 +8695,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.a_gd_luid_ab_in_tb            = null;         // luids of the parent addressbook in zfcTb
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
+	state.a_gd_contacts_deleted         = new Object();
 
 	// this contact_converter is used when we're syncing postalAddress with Google, but the _style_basic version is still called
 	// from the slow sync checksum code because we don't want to include Google postalAddress in the checksum/isTwin comparison
