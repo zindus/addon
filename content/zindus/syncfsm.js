@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.196 2009-09-16 22:28:51 cvsuser Exp $
+// $Id: syncfsm.js,v 1.197 2009-09-16 22:50:50 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -268,6 +268,7 @@ SyncFsm.prototype.cancel = function(timeoutID)
 SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 {
 	var nextEvent = null;
+	let sfcd      = this.state.m_sfcd;
 
 	this.state.stopwatch.mark(state + " 1");
 
@@ -305,7 +306,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		this.state.stopFailArg  = [ url('roadmap-thunderbird-3') ];
 		nextEvent = 'evLackIntegrity';
 	}
-	else if (this.state.m_sfcd.is_first_in_chain() && this.testForAccountsIntegrity())
+	else if (sfcd.is_first_in_chain() && this.testForAccountsIntegrity())
 	{
 		nextEvent = 'evLackIntegrity';
 	}
@@ -342,6 +343,14 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 			nextEvent = 'evSkip';
 			this.debug("authentication: skip ClientLogin in favour of the cached authToken for: " + passwordlocator.username());
 		}
+	}
+
+	if (this.formatPr() == FORMAT_GD)
+	{
+		let c_repeat_after_gd_group_mod = sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod');
+
+		if (c_repeat_after_gd_group_mod == 1) // ensure that we don't repeat a second time
+			sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod', ++c_repeat_after_gd_group_mod);
 	}
 
 	if (!nextEvent)
@@ -6882,13 +6891,12 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 		if (type == FeedItem.TYPE_CN && this.account().gd_gr_as_ab == 'true') {
 			let sfcd = this.state.m_sfcd;
-			if (!sfcd.sourceid(this.state.sourceid_pr, 'is_repeated')) {
-				this.state.m_is_gd_group_mod = true;
-				// the is_repeated stuff is only here for defensive reasons - to ensure that we repeat once at most
-				sfcd.sourceid(this.state.sourceid_pr, 'is_repeated', true);
-			}
-			else
-				this.debug("warn: we would have set m_is_gd_group_mod except that we did it on the previous sync - so why would we need to repeat twice?  This might be correct if there was a simultaneous update at google - or it might point to a bug");
+			let c_repeat_after_gd_group_mod = sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod');
+
+			if (c_repeat_after_gd_group_mod == 1)
+				this.debug("warn: this is odd: we're updating google twice in succession.  Why?  This might be correct if there was a simultaneous update at google - or it might point to a bug");
+
+			sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod', ++c_repeat_after_gd_group_mod);
 		}
 
 		function set_remote_for_add_from(gd) {
@@ -8627,7 +8635,6 @@ SyncFsm.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd
 	state.m_progress_count    = 0;
 	state.m_progress_yield_text = null;
 	state.m_is_attended       = is_attended;
-	state.m_is_gd_group_mod   = false;
 
 	state.a_folders_deleted        = null;    // an associative array: key is gid of folder being deleted, value is an array of contact gids
 	state.remote_update_package    = null;    // maintains state between an server update request and the response

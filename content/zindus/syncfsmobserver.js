@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.76 2009-09-16 22:28:51 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.77 2009-09-16 22:50:52 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -453,7 +453,6 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					this.m_logger.info("conflict: " + context.state.aConflicts[i]);
 
 				es.m_count_conflicts = context.state.aConflicts.length;
-				es.m_is_gd_group_mod = context.state.m_is_gd_group_mod;
 
 				this.m_logger.debug("exit status: " + es.toString());
 

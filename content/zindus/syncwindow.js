@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncwindow.js,v 1.47 2009-09-16 22:28:51 cvsuser Exp $
+// $Id: syncwindow.js,v 1.48 2009-09-16 22:50:52 cvsuser Exp $
 
 function SyncWindow()
 {
@@ -160,8 +160,10 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			var is_repeat = false;
 			
 			if (this.m_sfcd.account().format_xx() == FORMAT_GD)
-				is_repeat = this.m_grr.resolve_if_appropriate(this.m_logger, this.m_payload.m_es, this.m_sfcd) ||
-				            (this.m_payload.m_es.m_exit_status == 0 && this.m_payload.m_es.m_is_gd_group_mod);
+				is_repeat =
+					this.m_grr.resolve_if_appropriate(this.m_logger, this.m_payload.m_es, this.m_sfcd) ||
+					(this.m_payload.m_es.m_exit_status == 0 &&
+					 this.m_sfcd.sourceid(AccountStatic.indexToSourceId(this.m_sfcd.m_account_index), 'c_repeat_after_gd_group_mod') == 1)
 
 			if (is_repeat)
 				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().username));

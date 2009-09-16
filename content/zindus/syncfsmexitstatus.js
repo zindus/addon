@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmexitstatus.js,v 1.44 2009-09-16 22:28:51 cvsuser Exp $
+// $Id: syncfsmexitstatus.js,v 1.45 2009-09-16 22:50:52 cvsuser Exp $
 
 function SyncFsmExitStatus()
 {
@@ -30,7 +30,6 @@ function SyncFsmExitStatus()
 	this.m_fail_trailer     = null;
 	this.m_fail_fsmoldstate = null;
 	this.m_count_conflicts  = 0;
-	this.m_is_gd_group_mod  = false;
 	this.m_logger           = newLogger("SyncFsmExitStatus");
 
 	this.m_a_valid_code = {
@@ -85,7 +84,6 @@ SyncFsmExitStatus.prototype.toString = function()
 	}
 
 	ret += " count_conflicts: " + this.m_count_conflicts;
-	ret += " is_gd_group_mod: " + this.m_is_gd_group_mod;
 
 	return ret;
 }
