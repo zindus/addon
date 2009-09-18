@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.197 2009-09-16 22:50:50 cvsuser Exp $
+// $Id: syncfsm.js,v 1.198 2009-09-18 07:39:37 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2316,8 +2316,6 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 	let re_gd_ab_names = (this.formatPr() == FORMAT_GD) ?
 		new RegExp("^(" + gd_ab_name_public + "|" + this.state.m_folder_converter.tb_ab_name_for_gd_group(".", ".*")+")$") : null;
 
-	this.debug("re_gd_ab_names: " + re_gd_ab_names.toString());
-
 	let tb_cc_meta = this.loadTbAddressBooks(re_gd_ab_names);           // 4. merge the current tb luid map with the current addressbook(s)
 
 	if (this.formatPr() == FORMAT_GD)
@@ -2783,22 +2781,17 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 		}
 
 	if (this.is_slow_sync() && this.account().gd_gr_as_ab != 'true') {
-		// rename out of the way any addressbooks that correspond to google groups if they aren't actually being synced
-		//
+		let gct   = new GoogleRuleTrash(this.state.m_addressbook);
 		let re    = new RegExp(this.state.m_folder_converter.tb_ab_name_for_gd_group('.', ''));
-		let a_uri = this.state.m_addressbook.getAddressBooksByPattern(re);
-		let i, ab_name;
+		let a_ab  = this.state.m_addressbook.getAddressBooksByPattern(re);
+		let a_uri = new Object();
+		let i;
 
-		for (ab_name in a_uri)
-			for (i = 0; i < a_uri[ab_name].length; i++) {
-				msg += " ab_name: " + ab_name + " uri: " + uri;
+		for (ab_name in a_ab)
+			for (i = 0; i < a_ab[ab_name].length; i++)
+				a_uri[a_ab[ab_name][i].uri()] = true;
 
-				let new_name = stringBundleString("text.backup") + dateSuffixForFolder() + " " + ab_name;
-
-				this.state.m_addressbook.renameAddressBook(a_uri[ab_name][i].uri(), new_name);
-
-				msg += " renamed to " + new_name + " uri: " + this.state.m_addressbook.getAddressBookUriByName(new_name);
-			}
+		gct.moveToTrashAbs(this.contact_converter(), a_uri);
 	}
 				
 	this.debug(msg);
@@ -2948,12 +2941,13 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 	var zfcTb              = this.zfcTb();
 	var a_uuid_of_new_card = new Object();
 	var ab_has_uuids       = this.state.m_addressbook.has_uuids();
+	var a_cards_drag_drop  = new Array();
 	var self               = this;
+	var tb3_luid_iter      = 1;
 	var i, msg, uri, functor_foreach_card, generator;
 
 	functor_foreach_card = {
 		state: this.state,
-		m_tb3_luid_iter: 1,
 		run: function(uri, item)
 		{
 			var abCard     = this.state.m_addressbook.qiCard(item);
@@ -2993,6 +2987,12 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 						delete attributes[TBCARD_ATTRIBUTE_LUID]; // delete the id from attributes to force temporary luid assignment below
 					}
 				}
+				else if (zfcTb.get(id).type() == FeedItem.TYPE_CN) {
+					let luid_l = tb_cc_meta.find('uri', uri, 'luid_tb');
+					zinAssertAndLog(luid_l, uri);
+					if (zfcTb.get(id).get(FeedItem.ATTR_L) != luid_l)
+						a_cards_drag_drop.push(newObject('m_uri', uri, 'm_luid', id));
+				}
 				else if (zfcTb.get(id).type() != FeedItem.TYPE_CN)
 				{
 					this.state.m_logger.error("card had attribute luid=" + id + " but this luid isn't a contact!  zfi: " +
@@ -3020,14 +3020,14 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 			                                             && !is_card_attribute_valid(attributes, TBCARD_ATTRIBUTE_LUID))
 			{
 				this.state.m_addressbook.updateCard(abCard, uri, null,
-				                                    newObject(TBCARD_ATTRIBUTE_LUID_ITER, this.m_tb3_luid_iter), FORMAT_TB);
+				                                    newObject(TBCARD_ATTRIBUTE_LUID_ITER, tb3_luid_iter), FORMAT_TB);
 
 				// was debugging garcha here
 				if (false)
 					this.state.m_logger.debug("loadTbCards: pass 1: assigning: " +
-				        " tb3_luid_iter: " + this.m_tb3_luid_iter + " to card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
+				        " tb3_luid_iter: " + tb3_luid_iter + " to card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 
-				this.m_tb3_luid_iter++;
+				tb3_luid_iter++;
 			}
 
 			// was debugging garcha here
@@ -3050,7 +3050,41 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 	if (this.state.stopFailCode == null)
 	{
-		this.state.m_logger.debug("loadTbCards pass 1: tb_cc_meta: " + aToString(tb_cc_meta) + " aMailListUri: " + aToString(aMailListUri));
+		this.debug("loadTbCards pass 1: tb_cc_meta: " + aToString(tb_cc_meta) + " aMailListUri: " + aToString(aMailListUri));
+
+		this.debug("loadTbCards: a_cards_drag_drop: " + aToString(a_cards_drag_drop)); // TODO remove me
+
+		// supporting tb3 drag and drop as a contact-move would introduce a whole bunch of complexity.
+		// instead, this code simulates tb2-style behaviour which involves turning a tb3 drag+drop into a delete+add
+		//
+		for (i = 0; i < a_cards_drag_drop.length; i++)
+		{
+			let is_deleted = false;
+			let luid       = a_cards_drag_drop[i].m_luid;
+			let uri_from   = a_cards_drag_drop[i].m_uri;
+			let abCardFrom = this.state.m_addressbook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid);
+
+			if (!abCardFrom)
+				this.m_logger.warn("Unable to find or move card with luid: " + luid);
+
+			let properties = this.state.m_addressbook.getCardProperties(abCardFrom);
+
+			this.debug("loadTbCards: card was drag/dropped - turning it into a delete/add: " + aToString(properties));
+
+			let attributes = {};
+			if (!ab_has_uuids && AddressBook.version() != eAddressBookVersion.TB2)
+				attributes = newObject(TBCARD_ATTRIBUTE_LUID_ITER, tb3_luid_iter++);
+
+			abCardTo = this.state.m_addressbook.addCard(uri_from, properties, attributes);
+
+			if (abCardTo)
+				is_deleted = this.state.m_addressbook.deleteCards(uri_from, [ abCardFrom ]);
+			else
+				this.m_logger.error("loadTbCardsGenerator: addCard failed: luid: " + luid);
+
+			if (abCardTo && !is_deleted)
+				this.m_logger.error("loadTbCardsGenerator: deleteCard failed: luid: " + luid);
+		}
 
 		// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
 		//
@@ -3109,9 +3143,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 				                          " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
 				                          " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
 				                          " attributes: " + aToString(this.state.m_addressbook.getCardAttributes(abCard)) +
-				                          " lastModifiedDate: " + abCard.lastModifiedDate +
-				                          " checksum: " +
-										   self.contact_converter().crc32(this.state.m_addressbook.getCardProperties(abCard)));
+				                          " lastModifiedDate: " + abCard.lastModifiedDate);
 
 				if (isInTopLevelFolder)
 				{
@@ -3131,7 +3163,6 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 					// first, we do subtle transformations on cards.
 					// 
-
 					if (is_new_card)
 					{
 						// these problems only arise when cards are imported - they can't be created via the tb UI.
@@ -3189,9 +3220,9 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 					if (is_changed)
 						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
 
-					var checksum = self.contact_converter().crc32(properties);
-					let luid_l   = tb_cc_meta.find('uri', uri, 'luid_tb');
-					zinAssert(luid_l);
+					let luid_l = tb_cc_meta.find('uri', uri, 'luid_tb');
+					zinAssertAndLog(luid_l, uri);
+					var checksum = self.contact_converter().crc32(properties, { l: luid_l }); // added l to checksum so that tb3 drag+drop is seen as a change
 
 					if (is_new_card)
 					{
@@ -4978,7 +5009,7 @@ SyncFsm.prototype.suoGdTurnCiOpsIntooAuOps = function()
 
 	// for MODs - ensure rationality:
 	// 	a) maximum of one MOD per gdau contact and
-	//	b) no MODs for contacts whose group membership is changing
+	//	b) no MODs for contacts whose group membership changed because of a DEL
 	//
 	let a_seen_mod = new Object();
 
@@ -5947,12 +5978,12 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 
 				msg += " properties: " + aToString(properties) + " and attributes: " + aToString(attributes);
 
-				checksum = this.contact_converter().crc32(properties);
 				l_winner = SyncFsm.keyParentRelevantToGid(zfcWinner, zfiWinner.key()); // luid of the parent folder in the source
 				l_gid    = this.state.aReverseGid[sourceid_winner][l_winner];          // gid  of the parent folder
 				l_target = zfcGid.get(l_gid).get(sourceid_target);                     // luid of the parent folder in the target
 				uri      = addressbook.getAddressBookUriByName(this.getTbAddressbookNameFromLuid(sourceid_target, l_target));
 				abfCard  = addressbook.addCard(uri, properties, attributes);
+				checksum = this.contact_converter().crc32(properties, { l : l_target } );
 
 				luid_target = abfCard.id();
 
@@ -6114,7 +6145,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				else if (abCard)
 				{
 					properties = addressbook.getCardProperties(abCard);
-					checksum   = this.contact_converter().crc32(properties);
+					checksum   = this.contact_converter().crc32(properties, { l : l_target });
 					zfcTarget.set(new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY, luid_target,
 					                                             FeedItem.ATTR_CS,  checksum,
 					                                             FeedItem.ATTR_L,   l_target));
@@ -6889,15 +6920,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 		zinAssert((type == FeedItem.TYPE_FL) ? (this.account().gd_gr_as_ab == 'true') : true);
 
-		if (type == FeedItem.TYPE_CN && this.account().gd_gr_as_ab == 'true') {
-			let sfcd = this.state.m_sfcd;
-			let c_repeat_after_gd_group_mod = sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod');
-
-			if (c_repeat_after_gd_group_mod == 1)
-				this.debug("warn: this is odd: we're updating google twice in succession.  Why?  This might be correct if there was a simultaneous update at google - or it might point to a bug");
-
-			sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod', ++c_repeat_after_gd_group_mod);
-		}
+		if (type == FeedItem.TYPE_CN && this.account().gd_gr_as_ab == 'true')
+			this.state.gd_repeat_after_gd_group_mod = true;
 
 		function set_remote_for_add_from(gd) {
 			let type = GoogleData.element_type_from_instance(gd);
@@ -6911,8 +6935,10 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 		}
 
 		function set_remote_for_mod(gd, properties_pre_update) {
-			let type = GoogleData.element_type_from_instance(gd);
-			if (isMatchObjects(properties_pre_update, gd.properties) && !(gd.meta.id in self.state.gd_au_group_for_mod)) {
+			let type     = GoogleData.element_type_from_instance(gd);
+			let is_match = isMatchObjects(properties_pre_update, gd.properties) && !(gd.meta.id in self.state.gd_au_group_for_mod);
+
+			if (is_match) {
 				// ... a no-op ... no need to contact Google
 				//
 				zfiTarget  = zfcTarget.get(luid_target);
@@ -7039,6 +7065,10 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				           "\n contact.properties before update: " + aToString(properties_pre_update) +
 				           "\n contact.properties after update: " + aToString(contact.properties));
 
+				// TODO AMHERE before leaving
+				// - handle tb3 drag and drop ==> either support it as a move OR don't support it ie treat it as delete+add as per tb2
+				// - test what happens when a tb group-as-addressbook gets deleted ==> it should a) remove the group and b) adjust the membership of the contained contacts
+				//
 				if (luid_target_au in this.state.gd_au_group_for_mod) {
 					// the MOD is a change of group membership, not of properties
 					//
@@ -7056,13 +7086,13 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 						suo.is_processed = true;
 					}
 					else {
-					for (i = 0; i < a_group.length; i++)
-						groups.push(zfcTarget.get(a_group[i]).get(FeedItem.ATTR_GGID));
+						for (i = 0; i < a_group.length; i++)
+							groups.push(zfcTarget.get(a_group[i]).get(FeedItem.ATTR_GGID));
 
-					// contact.properties are unchanged... we're just changing group membership
-					contact.groups = groups;
+						// contact.properties are unchanged... we're just changing group membership
+						contact.groups = groups;
 
-					a_group.m_is_done = true;
+						a_group.m_is_done = true;
 					}
 				}
 				else
@@ -7608,6 +7638,17 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 		zfcLastSync.get(sourceid_pr).set(eAccount.gd_gr_as_ab,  this.account().gd_gr_as_ab);
 		zfcLastSync.get(sourceid_pr).set(eAccount.gd_suggested, this.account().gd_suggested);
 		zfcLastSync.get(sourceid_pr).set(eAccount.gd_sync_with, this.account().gd_sync_with);
+
+		if (this.state.gd_repeat_after_gd_group_mod) {
+			let c_repeat_after_gd_group_mod = sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod');
+
+			if (c_repeat_after_gd_group_mod == 1)
+				this.debug("warn: this is odd: we're updating google twice in succession.  Why?  This might be correct if there was a simultaneous update at google - or it might point to a bug");
+
+			sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod', ++c_repeat_after_gd_group_mod);
+		}
+
+		this.debug("c_repeat_after_gd_group_mod: " + sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod'));
 	}
 
 	if (sfcd.first_sourceid_of_format(FORMAT_GD) == this.state.sourceid_pr) // if this is the first GD source...
@@ -8703,6 +8744,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
 	state.a_gd_contacts_deleted         = new Object();
+	state.gd_repeat_after_gd_group_mod  = false;
 
 	// this contact_converter is used when we're syncing postalAddress with Google, but the _style_basic version is still called
 	// from the slow sync checksum code because we don't want to include Google postalAddress in the checksum/isTwin comparison

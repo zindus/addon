@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.50 2009-09-16 06:45:46 cvsuser Exp $
+// $Id: contactconverter.js,v 1.51 2009-09-18 07:39:37 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -405,13 +405,14 @@ isKeyConverted : function(format_to, format_from, key) {
 
 	return typeof(index_to) != 'undefined' && this.m_equivalents[index_to][format_to] != null;
 },
+
 // We have to normalise the order in which we iterate through the properties so that two hashes with the same
 // keys result in the same crc.  We can't just iterate through the hash with for..in because that doesn't guarantee ordering
 // - the keys might not have been added to the hash in the same order.
 // We avoid a sort by relying on the fact that the keys are thunderbird contact properties.
 // The index into the Converter's table guarantees the ordering.
 //
-crc32 : function(properties) {
+crc32 : function(properties, a_extra) {
 	let ret = 0;
 	let str = "";
 	let aSorted = new Array();
@@ -436,6 +437,10 @@ crc32 : function(properties) {
 	// after this, str == FirstName:FredLastName:BloggsDisplayName:Fred BloggsPrimaryEmail:fred.bloggs@example.com
 	//
 	aSorted.forEach(callback_concat_str);
+
+	if (a_extra)
+		for (i in a_extra)
+			str += i + ":" + a_extra[i];
 
 	ret = crc32(str);
 

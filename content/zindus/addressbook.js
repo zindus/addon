@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.64 2009-09-16 06:45:46 cvsuser Exp $
+// $Id: addressbook.js,v 1.65 2009-09-18 07:39:37 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -625,7 +625,9 @@ AddressBookTb2.prototype.addCard = function(uri, properties, attributes)
 
 	this.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
 
-	return new AddressBookFacadeCard(abCard, attributes[TBCARD_ATTRIBUTE_LUID]);
+	let id = (TBCARD_ATTRIBUTE_LUID in attributes) ? attributes[TBCARD_ATTRIBUTE_LUID] : null; // GoogleRuleTrash deals with cards w/o ids
+
+	return new AddressBookFacadeCard(abCard, id);
 }
 
 AddressBookTb2.prototype.updateCard = function(abCard, uri, properties, attributes, format)
@@ -807,11 +809,11 @@ AddressBookTb3.prototype.addCard = function(uri, properties, attributes)
 	for (key in attributes)
 		abCard.setProperty(key, attributes[key]);
 
-	zinAssert(TBCARD_ATTRIBUTE_LUID in attributes);
+	let id = (TBCARD_ATTRIBUTE_LUID in attributes) ? attributes[TBCARD_ATTRIBUTE_LUID] : null; // GoogleRuleTrash deals with cards w/o ids
 
 	abCard = dir.addCard(abCard);
 
-	return new AddressBookFacadeCard(abCard, attributes[TBCARD_ATTRIBUTE_LUID]);
+	return new AddressBookFacadeCard(abCard, id);
 }
 
 AddressBookTb3.prototype.deleteCards = function(uri, aCards)
@@ -1015,7 +1017,6 @@ AddressBookImportantProperties.prototype = {
 function AddressBookFacadeCard(abCard, id)
 {
 	zinAssert(abCard);
-	zinAssert(id);
 
 	this.m_abCard = abCard;
 	this.m_id     = id;

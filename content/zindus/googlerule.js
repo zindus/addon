@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: googlerule.js,v 1.17 2009-08-03 00:40:30 cvsuser Exp $
 
 function GoogleRuleTrash(addressbook)
 {
@@ -270,6 +269,55 @@ GoogleRuleTrash.prototype.moveToTrashCardsGd = function(a_gcch)
 		}
 }
 
+// iterate through the tobedeleted ab, remember the checksums
+// iterate through each of the given abs, and if the checksum doesn't exist in the trash, move the contact there
+// 
+GoogleRuleTrash.prototype.moveToTrashAbs = function(contact_converter, a_uri)
+{
+	let a_checksum = new Object();
+	let self       = this;
+	let uri;
+
+	this.m_logger.debug("moveToTrashAbs: a_uri: " + aToString(a_uri));
+
+	this.getOrCreateTrashAddressbook();
+
+	let functor_foreach_card = {
+		run: function(uri, item) {
+			let abCard  = item.QueryInterface(Ci.nsIAbCard);
+			let properties = self.m_addressbook.getCardProperties(abCard);
+
+			a_checksum[contact_converter.crc32(properties)] = true;
+
+			return true;
+		}
+	};
+			
+	this.m_addressbook.forEachCard(this.m_uri_trash, functor_foreach_card);
+
+	functor_foreach_card = {
+		run: function(uri, item) {
+			let abCardFrom = item.QueryInterface(Ci.nsIAbCard);
+			let properties = self.m_addressbook.getCardProperties(abCardFrom);
+			let checksum   = contact_converter.crc32(properties);
+
+			if (!isObjectEmpty(properties) && !(checksum in a_checksum)) {
+				self.m_addressbook.addCard(self.m_uri_trash, properties, {});
+				a_checksum[checksum] = true;
+				self.m_logger.debug("moveToTrashAbs: moved to trash: " + self.m_addressbook.nsIAbCardToPrintable(abCardFrom));
+			}
+
+			return true;
+		}
+	};
+
+	for (uri in a_uri)
+		this.m_addressbook.forEachCard(uri, functor_foreach_card);
+
+	for (uri in a_uri)
+		this.m_addressbook.deleteAddressBook(uri);
+}
+
 // this method doesn't use abCard.lastModifiedDate because during a slow sync, luid attributes are given to cards,
 // which updates .lastModifiedDate.  That would cause cards only to expire when older than expire_seconds of unbroken fast syncs.
 // That's too wierd to explain to users - the semantics of TBCARD_ATTRIBUTE_EXPIRED_ON are straightforward.
@@ -325,7 +373,7 @@ GoogleRuleTrash.prototype.expire = function(abName)
 					}
 				}
 				else
-					context.m_addressbook.updateCard(abCard, uri, null, newObject(TBCARD_ATTRIBUTE_EXPIRED_ON, now), FORMAT_TB);
+					context.m_addressbook.setCardAttributes(abCard, uri, newObject(TBCARD_ATTRIBUTE_EXPIRED_ON, now));
 
 				count_cards++;
 
