@@ -37,3 +37,7 @@ toolbar[iconsize="small"] [type-id="zindus-toolbarbutton"] {
 .hint {
 	font-size: 95%;
 }
+
+.zindus-gd-account-grid {
+	min-width: 13em;
+}
