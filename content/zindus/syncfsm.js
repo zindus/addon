@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.200 2009-10-01 22:25:49 cvsuser Exp $
+// $Id: syncfsm.js,v 1.201 2009-10-01 22:30:54 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2995,7 +2995,6 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 	var zfcTb              = this.zfcTb();
 	var a_uuid_of_new_card = new Object();
 	var ab_has_uuids       = this.state.m_addressbook.has_uuids();
-	var a_cards_drag_drop  = new Array();
 	var self               = this;
 	var tb3_luid_iter      = 1;
 	var i, msg, uri, functor_foreach_card, generator;
@@ -3040,12 +3039,6 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 						delete attributes[TBCARD_ATTRIBUTE_LUID]; // delete the id from attributes to force temporary luid assignment below
 					}
-				}
-				else if (zfcTb.get(id).type() == FeedItem.TYPE_CN) {
-					let luid_l = tb_cc_meta.find('uri', uri, 'luid_tb');
-					zinAssertAndLog(luid_l, uri);
-					if (zfcTb.get(id).get(FeedItem.ATTR_L) != luid_l)
-						a_cards_drag_drop.push(newObject('m_uri', uri, 'm_luid', id));
 				}
 				else if (zfcTb.get(id).type() != FeedItem.TYPE_CN)
 				{
@@ -3105,41 +3098,6 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 	if (!this.state.stopFailCode)
 	{
 		this.debug("loadTbCards pass 1: tb_cc_meta: " + aToString(tb_cc_meta) + " aMailListUri: " + aToString(aMailListUri));
-
-		this.debug("loadTbCards: a_cards_drag_drop: " + aToString(a_cards_drag_drop)); // TODO remove me
-
-		// supporting tb3 drag and drop as a contact-move would introduce a whole bunch of complexity.
-		// instead, this code simulates tb2-style behaviour which involves turning a tb3 drag+drop into a delete+add
-		//
-		if (false) // TODO remove this stuff when we support drag and drop
-		for (i = 0; i < a_cards_drag_drop.length; i++)
-		{
-			let is_deleted = false;
-			let luid       = a_cards_drag_drop[i].m_luid;
-			let uri_from   = a_cards_drag_drop[i].m_uri;
-			let abCardFrom = this.state.m_addressbook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid);
-
-			if (!abCardFrom)
-				this.m_logger.warn("Unable to find or move card with luid: " + luid);
-
-			let properties = this.state.m_addressbook.getCardProperties(abCardFrom);
-
-			this.debug("loadTbCards: card was drag/dropped - turning it into a delete/add: " + aToString(properties));
-
-			let attributes = {};
-			if (!ab_has_uuids && AddressBook.version() != eAddressBookVersion.TB2)
-				attributes = newObject(TBCARD_ATTRIBUTE_LUID_ITER, tb3_luid_iter++);
-
-			abCardTo = this.state.m_addressbook.addCard(uri_from, properties, attributes);
-
-			if (abCardTo)
-				is_deleted = this.state.m_addressbook.deleteCards(uri_from, [ abCardFrom ]);
-			else
-				this.m_logger.error("loadTbCardsGenerator: addCard failed: luid: " + luid);
-
-			if (abCardTo && !is_deleted)
-				this.m_logger.error("loadTbCardsGenerator: deleteCard failed: luid: " + luid);
-		}
 
 		// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
 		//
@@ -5012,16 +4970,12 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 	let ret             = new Array();
 	let gp_id;
 
-	this.debug("gdGroupsFromTbState: a_group: " + keysToString(a_group)); // TODO
-
 	for (gp_id in a_group) {
 		let luid_gd_ci = SyncFsmGd.gdci_id_from_pair(luid_gd_au, gp_id);
 		zinAssertAndLog(luid_gd_ci in this.state.aReverseGid[sourceid_pr], luid_gd_ci);
 
 		let gid       = this.state.aReverseGid[sourceid_pr][luid_gd_ci];
 		let luid_tb   = this.state.zfcGid.get(gid).get(sourceid_tb);
-
-		this.debug("gdGroupsFromTbState: luid_tb: " + luid_tb); // TODO
 
 		if (!this.zfcTb().get(luid_tb).isPresent(FeedItem.ATTR_DEL)) {
 			let luid_tb_l = this.zfcTb().get(luid_tb).get(FeedItem.ATTR_L);
@@ -5030,8 +4984,6 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 			let gid_l     = this.state.aReverseGid[sourceid_tb][luid_tb_l];
 			let luid_gd_l = this.state.zfcGid.get(gid_l).get(sourceid_pr);
 
-			this.debug("gdGroupsFromTbState: luid_tb_l: " + luid_tb_l + " luid_gd_l: " + luid_gd_l); // TODO
-		
 			if (luid_gd_l != id_gd_pab && luid_gd_l != id_gd_suggested)
 				ret.push(luid_gd_l);
 		}
@@ -5136,118 +5088,6 @@ SyncFsm.prototype.suoGdTurnCiOpsIntooAuOps = function()
 			" a_turn_del_into_mod: "    + aToString(a_turn_del_into_mod) + "\n" +
 			" a_gd_au_group_for_mod: "  + aToString(a_gd_au_group_for_mod)     + "\n" +
 			" a_seen_del: "             + aToString(a_seen_del)          + "\n" +
-			" aSuo: "                   + ((a_suo_to_delete.length > 0) ? aToString(this.state.aSuo) : " unchanged") );
-}
-
-
-// TODO NOTUSED
-SyncFsm.prototype.NOTUSED_suoGdTurnCiOpsIntooAuOps = function()
-{
-	let zfc             = this.zfcPr();
-	let self            = this;
-	let a_suo_to_delete = new Array();
-	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
-	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
-	let sourceid_pr     = this.state.sourceid_pr;
-	let fn_del          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.DEL | FeedItem.TYPE_CN)); }
-	let fn_mod          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.MOD | FeedItem.TYPE_CN)); }
-	let a_seen_del      = new Object();
-	let a_turn_del_into_mod   = new Object();
-	let a_gd_au_group_for_mod = this.state.gd_au_group_for_mod;
-	let i, key, suo, luid_au, luid_l, luid_target, zfiTarget;
-
-	zinAssert(this.formatPr() == FORMAT_GD && this.account().gd_gr_as_ab == 'true');
-
-	function get_au_l() {
-		let luid_target = self.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
-		let zfiTarget   = zfc.get(luid_target);
-		return [ zfiTarget.get(FeedItem.ATTR_GDID), zfiTarget.get(FeedItem.ATTR_L) ];
-	}
-
-	function set_a_group_for_mod(luid_au) {
-		let gps = zfc.get(luid_au).get(FeedItem.ATTR_GDGP);
-		a_gd_au_group_for_mod[luid_au] = (gps.length > 0) ? gps.split(",") : [];
-		zinAssertAndLog(a_gd_au_group_for_mod[luid_au].length > 0, luid_au); // because we shouldn't be here for suggested contacts
-	}
-
-	// for DELs in pab or suggested...
-	//
-	for ([key, suo] in this.state.m_suo_iterator.iterator(fn_del)) {
-		[ luid_au, luid_l ] = get_au_l();
-
-		if (luid_l == id_gd_pab || luid_l == id_gd_suggested)
-			a_seen_del[luid_au] = true;
-	}
-
-	// for DELs in the 'group' folders:
-	// 	turn all DELs into MODs because:
-	// 	a) the first one really is a MOD - it's a change of group membership and
-	// 	b) other DELs have to be MODs not DELs because suo's are processed in bucket order and we want to 
-	//	   iterate through them in the same order here as in UpdateGd and avoid depending on Suo sort order.
-	//  c) start with the group membership of the gdau contact, treat DELs as membership removals, and
-	//     remember the result for later use in the entryAction
-	//
-	for ([key, suo] in this.state.m_suo_iterator.iterator(fn_del)) {
-		[ luid_au, luid_l ] = get_au_l();
-
-		if (luid_l != id_gd_pab && luid_l != id_gd_suggested && !(luid_au in a_seen_del)) { 
-			if (!(luid_au in a_gd_au_group_for_mod)) {
-				set_a_group_for_mod(luid_au);
-				a_turn_del_into_mod[luid_au] = new Array();
-				a_turn_del_into_mod[luid_au].push(key);
-			}
-			else
-				a_turn_del_into_mod[luid_au].push(key);
-
-			let index_of = a_gd_au_group_for_mod[luid_au].indexOf(luid_l);
-			zinAssertAndLog(index_of >= 0);
-			a_gd_au_group_for_mod[luid_au].splice(index_of, 1);
-		}
-	}
-
-	// for MODs - ensure rationality:
-	// 	a) maximum of one MOD per gdau contact and
-	//	b) no MODs for contacts whose group membership changed because of a DEL
-	//
-	let a_seen_mod = new Object();
-
-	for ([key, suo] in this.state.m_suo_iterator.iterator(fn_mod)) {
-		[ luid_au, luid_l ] = get_au_l();
-
-		if (luid_au in a_turn_del_into_mod)
-			a_suo_to_delete.push(key);
-		else if (!(luid_au in a_seen_mod))
-			a_seen_mod[luid_au] = true;
-		else
-			a_suo_to_delete.push(key);
-	}
-
-	// Turn DELs into MODs - note that this means that the entryAction MOD code needs to cope with the winner not existing...
-	//
-	for (luid_au in a_turn_del_into_mod)
-		for (i = 0; i < a_turn_del_into_mod[luid_au].length; i++) {
-		key        = a_turn_del_into_mod[luid_au][i];
-		suo        = this.state.aSuo[key.sourceid][key.bucket][key.id];
-		suo.opcode = Suo.MOD;
-		a_suo_to_delete.push(key);
-
-		let key_new = new SuoKey(key.sourceid, Suo.MOD | FeedItem.TYPE_CN, key.id);
-		if (!(key_new.bucket in this.state.aSuo[key_new.sourceid]))
-			this.state.aSuo[key_new.sourceid][key_new.bucket] = new Object();
-		this.state.aSuo[key_new.sourceid][key_new.bucket][key_new.id] = suo;
-	}
-
-	for (var i = 0; i < a_suo_to_delete.length; i++) {
-		key = a_suo_to_delete[i];
-		delete this.state.aSuo[key.sourceid][key.bucket][key.id];
-	}
-
-	this.debug("suoGdTurnCiOpsIntooAuOps: " + "\n" +
-			" keys removed from aSuo: " + a_suo_to_delete.toString()     + "\n" +
-			" a_turn_del_into_mod: "    + aToString(a_turn_del_into_mod) + "\n" +
-			" a_gd_au_group_for_mod: "  + aToString(a_gd_au_group_for_mod)     + "\n" +
-			" a_seen_del: "             + aToString(a_seen_del)          + "\n" +
-			" a_seen_mod: "             + aToString(a_seen_mod)          + "\n" +
 			" aSuo: "                   + ((a_suo_to_delete.length > 0) ? aToString(this.state.aSuo) : " unchanged") );
 }
 
@@ -6689,6 +6529,9 @@ SyncFsm.prototype.updateZmRemoteUpdatePackage = function(key_suo, suo)
 			break;
 
 		case Suo.ADD | FeedItem.TYPE_CN:
+			// TODO
+			// support tb3 drag and drop as a contact-move for zimbra
+
 			l_winner    = SyncFsm.keyParentRelevantToGid(zfcWinner, zfiWinner.key());
 			l_gid       = this.state.aReverseGid[sourceid_winner][l_winner];
 			l_target    = this.state.zfcGid.get(l_gid).get(sourceid_target);
@@ -7266,10 +7109,6 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				           "\n contact.properties before update: " + aToString(properties_pre_update) +
 				           "\n contact.properties after update: " + aToString(contact.properties));
 
-				// TODO AMHERE before leaving
-				// - handle tb3 drag and drop ==> either support it as a move OR don't support it ie treat it as delete+add as per tb2
-				// - test what happens when a tb group-as-addressbook gets deleted ==> it should a) remove the group and b) adjust the membership of the contained contacts
-				//
 				if (luid_target_au in this.state.gd_au_group_for_mod) {
 					// the MOD may be a change of group membership, or properties, or both
 					//

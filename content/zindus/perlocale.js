@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.5 2009-10-01 22:24:25 cvsuser Exp $
+// $Id: perlocale.js,v 1.6 2009-10-01 22:30:54 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -57,7 +57,7 @@ var PerLocaleStatic = {
 		else if (locale && locale.length > 2)
 			ret = this.translation_of_locale(key, locale.substr(0, 2));
 
-		logger().debug("translation_of_locale: key: " + key + " locale: " + locale + " returns: " + ret); // TODO
+		// logger().debug("translation_of_locale: key: " + key + " locale: " + locale + " returns: " + ret);
 
 		return ret;
 	},
@@ -112,10 +112,8 @@ var PerLocaleStatic = {
 				catch (e) {
 				}
 
-				logger().debug("AMHERE: key: " + key + " str: " + str); // TODO
-
 				if (str && str != system_group_name) {
-					logger().debug("AMHERE: set translation of key: " + key + " to: " + str); // TODO
+					logger().debug("initialise_google_system_group_translations: set translation of key: " + key + " to: " + str);
 					PerLocaleStatic.m_translation[system_group_name][locale] = str;
 				}
 			}
