@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.198 2009-09-18 07:39:37 cvsuser Exp $
+// $Id: syncfsm.js,v 1.199 2009-10-01 21:29:20 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -484,7 +484,7 @@ SyncFsm.prototype.runEntryActionGenerator = function(state, event, generator_fac
 
 	nextEvent = this.state.m_generator.next() ? 'evRepeat' : 'evNext';
 
-	if (this.state.stopFailCode != null)
+	if (this.state.stopFailCode)
 	{
 		this.debug("runEntryActionGenerator: stopFailCode: " + this.state.stopFailCode);
 		nextEvent = 'evLackIntegrity';
@@ -845,11 +845,9 @@ SyncFsm.prototype.isConsistentGidParse = function(aReverseOut)
 		aReverse[sourceid] = new Object();
 
 	var functor_each_gid_mapitem = {
-		run: function(sourceid, luid)
-		{
+		run: function(sourceid, luid) {
 			if (sourceid in self.state.sources) {
-				if (luid in aReverse[sourceid])
-				{
+				if (luid in aReverse[sourceid]) {
 					self.debug("isConsistentGidParse: sourceid/luid " + sourceid + "/" + luid +
 					              " appears in the gid twice! in this gid: " + gid + " and this gid: " + aReverse[sourceid][luid]);
 					is_consistent = false;
@@ -860,6 +858,7 @@ SyncFsm.prototype.isConsistentGidParse = function(aReverseOut)
 				if (self.state.sources[sourceid]['format'] == FORMAT_GD) {
 					// gid mapitems never point to gdau contacts
 					//
+					zinAssertAndLog(self.zfc(sourceid).isPresent(luid), function() { return "gid: " + gid + " sourceid: " + sourceid + " luid: " + luid; } );
 					let zfi = self.zfc(sourceid).get(luid);
 					if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() != FeedItem.eStyp.gdci) {
 						self.debug("isConsistentGidParse: sourceid/luid " + sourceid + "/" + luid +
@@ -874,8 +873,7 @@ SyncFsm.prototype.isConsistentGidParse = function(aReverseOut)
 	};
 
 	var functor_foreach_gid = {
-		run: function(zfi)
-		{
+		run: function(zfi) {
 			gid = zfi.key();
 
 			zfi.forEach(functor_each_gid_mapitem, FeedItem.ITER_GID_ITEM);
@@ -901,15 +899,12 @@ SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 
 	var functor_foreach_luid = {
 		state: this.state,
-
-		run: function(zfi)
-		{
+		run: function(zfi) {
 			var luid = zfi.key();
 
 			// all items in a source must be of interest
 			//
-			if (result.is_consistent && !zfi.isPresent(FeedItem.ATTR_XGID) && !SyncFsm.isOfInterest(zfc, luid))
-			{
+			if (result.is_consistent && !zfi.isPresent(FeedItem.ATTR_XGID) && !SyncFsm.isOfInterest(zfc, luid)) {
 				error_msg += "inconsistency: item not of interest: sourceid: " + sourceid + " luid: " + luid + " zfi: " + zfi.toString();
 				result.is_consistent = false;
 			}
@@ -925,8 +920,7 @@ SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 
 			if (result.is_consistent)
 				for (var i = 0; i < a_not_persisted.length; i++)
-					if (zfi.isPresent(a_not_persisted[i]))
-					{
+					if (zfi.isPresent(a_not_persisted[i])) {
 						error_msg += "inconsistency re: " + a_not_persisted[i] + ": sourceid: " + sourceid + " luid: " + luid;
 						result.is_consistent = false;
 						break;
@@ -946,8 +940,7 @@ SyncFsm.prototype.isConsistentSourcesGenerator = function(result)
 		}
 	};
 
-	for (sourceid in this.state.sources)
-	{
+	for (sourceid in this.state.sources) {
 		this.state.stopwatch.mark("isConsistentSources sourceid: " + sourceid + " starts");
 
 		zfc    = this.zfc(sourceid);
@@ -2478,16 +2471,16 @@ SyncFsm.prototype.testForFolderPresentInZfcTb = function(name)
 
 SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 {
-	var zfcTbPre  = this.state.zfcTbPreMerge;
-	var zfcTbPost = this.zfcTb();
-	var ret;
+	let zfcTbPre  = this.state.zfcTbPreMerge;
+	let zfcTbPost = this.zfcTb();
+	let ret;
 
 	zinAssert(!this.state.stopFailCode && !this.is_slow_sync());
 
-	var pre_id  = SyncFsm.zfcFindFirstFolder(zfcTbPre, name);
-	var post_id = SyncFsm.zfcFindFirstFolder(zfcTbPost, name);
-	var pre_prefid  = pre_id  ? zfcTbPre.get(pre_id).get(FeedItem.ATTR_TPI) : null;
-	var post_prefid = post_id ? zfcTbPost.get(post_id).get(FeedItem.ATTR_TPI) : null;
+	let pre_id      = SyncFsm.zfcFindFirstFolder(zfcTbPre, name);
+	let post_id     = SyncFsm.zfcFindFirstFolder(zfcTbPost, name);
+	let pre_prefid  = pre_id  ? zfcTbPre.get(pre_id).get(FeedItem.ATTR_TPI) : null;
+	let post_prefid = post_id ? zfcTbPost.get(post_id).get(FeedItem.ATTR_TPI) : null;
 
 	this.state.m_logger.debug("testForReservedFolderInvariant: name: " + name +
 		" pre_id=" + pre_id + " post_id=" + post_id + 
@@ -2534,6 +2527,58 @@ SyncFsm.prototype.testForTbAbPresentAndInvariant = function(id, name)
 	this.debug(msg + " passed: " + passed);
 
 	return passed;
+}
+
+SyncFsmGd.prototype.testForTbAbGdCiIntegrity = function()
+{
+	let self        = this;
+	let sourceid_tb = this.state.sourceid_tb;
+	let sourceid_pr = this.state.sourceid_pr;
+	let zfcPr       = this.zfcPr();
+	let a_gd_au_in_tb_ab = new Object();
+
+	zinAssert(self.formatPr() == FORMAT_GD);
+
+	let functor = {
+		run: function(zfi) {
+			let ret = true;
+
+			if (zfi.type() == FeedItem.TYPE_CN && (zfi.key() in self.state.aReverseGid[sourceid_tb])) {
+				let gid = self.state.aReverseGid[sourceid_tb][zfi.key()];
+
+				if (self.state.zfcGid.get(gid).isPresent(sourceid_pr)) {
+					let luid_gd   = self.state.zfcGid.get(gid).get(sourceid_pr);
+					let l         = zfi.get(FeedItem.ATTR_L);
+
+					if (!(l in a_gd_au_in_tb_ab))
+						a_gd_au_in_tb_ab[l] = new Object();
+				
+					zinAssert(zfcPr.get(luid_gd).styp() == FeedItem.eStyp.gdci);
+
+					let gdid = zfcPr.get(luid_gd).get(FeedItem.ATTR_GDID);
+
+					if (gdid in a_gd_au_in_tb_ab[l]) {
+						self.state.stopFailCode    = 'failon.folder.reserved.changed';
+						let ab_name                = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, self.zfcTb().get(l));
+						self.state.stopFailArg     = [ ab_name ];
+						self.state.stopFailTrailer = stringBundleString("status.failon.gd.moved.lost.sync") + "\n\n" +
+						                             stringBundleString("text.suggest.reset");
+
+						ret = false;
+					}
+					else
+						a_gd_au_in_tb_ab[l][gdid] = true;
+				}
+			}
+
+			return ret;
+		}
+	};
+
+	if (this.account().gd_gr_as_ab == 'true' && !this.is_slow_sync())
+		this.zfcTb().forEach(functor);
+
+	return !this.state.stopFailCode;
 }
 
 // The ui should not allow these conditions, so if these errors are triggered, then
@@ -2755,7 +2800,6 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 		}
 	}
 
-	// TODO this needs testing!
 	// migrate any old translations of the mapped system groups to their localised name
 	//
 	if (this.account().gd_gr_as_ab == 'true')
@@ -2764,8 +2808,7 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 
 			if (!uri)
 				for (var old_translation in PerLocaleStatic.all_translations_of(system_group_name)) {
-					zfi                  = SyncFsm.zfi_from_name_gd(old_translation);
-					let old_localised_ab = this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi);
+					let old_localised_ab = this.state.m_folder_converter.tb_ab_name_for_gd_group("/", old_translation);
 					uri                  = this.state.m_addressbook.getAddressBookUriByName(old_localised_ab);
 
 					if (uri) {
@@ -2774,6 +2817,12 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 						this.state.m_addressbook.renameAddressBook(uri, ab_localised);
 
 						msg += " renamed to " + ab_localised + " uri: " + this.state.m_addressbook.getAddressBookUriByName(ab_localised);
+
+						// twiddle the pre so that we pass testForReservedFolderInvariant
+						let zfcTbPre  = this.state.zfcTbPreMerge;
+						let pre_id      = SyncFsm.zfcFindFirstFolder(zfcTbPre, old_localised_ab);
+						if (pre_id)
+							zfcTbPre.get(pre_id).set(FeedItem.ATTR_NAME, ab_localised);
 
 						break;
 					}
@@ -3048,7 +3097,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 			yield true;
 	}
 
-	if (this.state.stopFailCode == null)
+	if (!this.state.stopFailCode)
 	{
 		this.debug("loadTbCards pass 1: tb_cc_meta: " + aToString(tb_cc_meta) + " aMailListUri: " + aToString(aMailListUri));
 
@@ -3057,6 +3106,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 		// supporting tb3 drag and drop as a contact-move would introduce a whole bunch of complexity.
 		// instead, this code simulates tb2-style behaviour which involves turning a tb3 drag+drop into a delete+add
 		//
+		if (false) // TODO remove this stuff when we support drag and drop
 		for (i = 0; i < a_cards_drag_drop.length; i++)
 		{
 			let is_deleted = false;
@@ -4943,7 +4993,150 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 	return aSuoResult;
 }
 
+SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
+{
+	// TODO - we need to be sure that we're not:
+	// a) modifying tb following a gd change and
+	// b) modifying gd following a tb change
+
+	let a_group         = this.gdciLuidsForGroups(this.zfcPr().get(luid_gd_au));
+	let sourceid_pr     = this.state.sourceid_pr;
+	let sourceid_tb     = this.state.sourceid_tb;
+	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
+	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
+	let ret             = new Array();
+	let gp_id;
+
+	this.debug("gdGroupsFromTbState: a_group: " + keysToString(a_group)); // TODO
+
+	for (gp_id in a_group) {
+		let luid_gd_ci = SyncFsmGd.gdci_id_from_pair(luid_gd_au, gp_id);
+		zinAssertAndLog(luid_gd_ci in this.state.aReverseGid[sourceid_pr], luid_gd_ci);
+
+		let gid       = this.state.aReverseGid[sourceid_pr][luid_gd_ci];
+		let luid_tb   = this.state.zfcGid.get(gid).get(sourceid_tb);
+
+		this.debug("gdGroupsFromTbState: luid_tb: " + luid_tb); // TODO
+
+		if (!this.zfcTb().get(luid_tb).isPresent(FeedItem.ATTR_DEL)) {
+			let luid_tb_l = this.zfcTb().get(luid_tb).get(FeedItem.ATTR_L);
+
+			zinAssertAndLog(luid_tb_l in this.state.aReverseGid[sourceid_tb], luid_tb_l);
+			let gid_l     = this.state.aReverseGid[sourceid_tb][luid_tb_l];
+			let luid_gd_l = this.state.zfcGid.get(gid_l).get(sourceid_pr);
+
+			this.debug("gdGroupsFromTbState: luid_tb_l: " + luid_tb_l + " luid_gd_l: " + luid_gd_l); // TODO
+		
+			if (luid_gd_l != id_gd_pab && luid_gd_l != id_gd_suggested)
+				ret.push(luid_gd_l);
+		}
+	}
+
+	this.debug("gdGroupsFromTbState: luid_gd_au: " + luid_gd_au + " returns: " + ret.toString()); // TODO
+
+	return ret;
+}
+
 SyncFsm.prototype.suoGdTurnCiOpsIntooAuOps = function()
+{
+	let zfc             = this.zfcPr();
+	let self            = this;
+	let a_suo_to_delete = new Array();
+	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
+	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
+	let sourceid_pr     = this.state.sourceid_pr;
+	let fn_del          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.DEL | FeedItem.TYPE_CN)); }
+	let fn_mod          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.MOD | FeedItem.TYPE_CN)); }
+	let a_seen_del      = new Object();
+	let a_turn_del_into_mod   = new Object();
+	let a_gd_au_group_for_mod = this.state.gd_au_group_for_mod;
+	let i, key, suo, luid_au, luid_l, luid_target, zfiTarget;
+
+	zinAssert(this.formatPr() == FORMAT_GD && this.account().gd_gr_as_ab == 'true');
+
+	function get_au_l() {
+		let luid_target = self.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
+		let zfiTarget   = zfc.get(luid_target);
+		return [ zfiTarget.get(FeedItem.ATTR_GDID), zfiTarget.get(FeedItem.ATTR_L) ];
+	}
+
+	// for DELs in pab or suggested...
+	//
+	for ([key, suo] in this.state.m_suo_iterator.iterator(fn_del)) {
+		[ luid_au, luid_l ] = get_au_l();
+
+		if (luid_l == id_gd_pab || luid_l == id_gd_suggested)
+			a_seen_del[luid_au] = true;
+	}
+
+	// for DELs in the 'group' folders:
+	// 	turn all DELs into MODs because:
+	// 	a) the first one really is a MOD - it's a change of group membership and
+	// 	b) other DELs have to be MODs not DELs because suo's are processed in bucket order and we want to 
+	//	   iterate through them in the same order here as in UpdateGd and avoid depending on Suo sort order.
+	//  we have to iterate through the suo's twice:
+	//  1) once to identify those contacts that are really being deleted, and
+	//  2) secondly, to turn DELs into MODs those contacts not identified in (1)
+	//
+
+	for ([key, suo] in this.state.m_suo_iterator.iterator(fn_del)) {
+		[ luid_au, luid_l ] = get_au_l();
+
+		if (!(luid_au in a_seen_del)) { 
+			if (!(luid_au in a_gd_au_group_for_mod)) {
+				a_gd_au_group_for_mod[luid_au] = false;
+				a_turn_del_into_mod[luid_au] = new Array();
+				a_turn_del_into_mod[luid_au].push(key);
+			}
+			else
+				a_turn_del_into_mod[luid_au].push(key);
+		}
+	}
+
+	// Turn DELs into MODs - note that this means that the entryAction MOD code needs to cope with the winner not existing...
+	//
+	for (luid_au in a_turn_del_into_mod)
+		for (i = 0; i < a_turn_del_into_mod[luid_au].length; i++) {
+			key        = a_turn_del_into_mod[luid_au][i];
+			a_suo_to_delete.push(key);
+
+			let key_new = new SuoKey(key.sourceid, Suo.MOD | FeedItem.TYPE_CN, key.id);
+			if (!(key_new.bucket in this.state.aSuo[key_new.sourceid]))
+				this.state.aSuo[key_new.sourceid][key_new.bucket] = new Object();
+
+			suo        = this.state.aSuo[key.sourceid][key.bucket][key.id];
+			suo.opcode = Suo.MOD;
+
+			this.state.aSuo[key_new.sourceid][key_new.bucket][key_new.id] = suo;
+		}
+
+	for (var i = 0; i < a_suo_to_delete.length; i++) {
+		key = a_suo_to_delete[i];
+		delete this.state.aSuo[key.sourceid][key.bucket][key.id];
+	}
+
+	// for MODs - just identify them
+	//
+	let a_seen_mod = new Object();
+
+	for ([key, suo] in this.state.m_suo_iterator.iterator(fn_mod)) {
+		[ luid_au, luid_l ] = get_au_l();
+
+		if (!(luid_au in a_seen_del) && !(luid_au in a_gd_au_group_for_mod))
+			a_gd_au_group_for_mod[luid_au] = false;
+	}
+
+	this.debug("suoGdTurnCiOpsIntooAuOps: " + "\n" +
+			" keys removed from aSuo: " + a_suo_to_delete.toString()     + "\n" +
+			" a_turn_del_into_mod: "    + aToString(a_turn_del_into_mod) + "\n" +
+			" a_gd_au_group_for_mod: "  + aToString(a_gd_au_group_for_mod)     + "\n" +
+			" a_seen_del: "             + aToString(a_seen_del)          + "\n" +
+			" aSuo: "                   + ((a_suo_to_delete.length > 0) ? aToString(this.state.aSuo) : " unchanged") );
+}
+
+
+// TODO NOTUSED
+SyncFsm.prototype.NOTUSED_suoGdTurnCiOpsIntooAuOps = function()
 {
 	let zfc             = this.zfcPr();
 	let self            = this;
@@ -5696,13 +5889,16 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 	if (this.formatPr() == FORMAT_ZM && this.account().zm_emailed_contacts == "true")
 		passed = passed && this.testForTbAbPresentAndInvariant(ZM_ID_FOLDER_AUTO_CONTACTS, TB_EMAILED_CONTACTS);
-	else if (this.formatPr() == FORMAT_GD)
+	else if (this.formatPr() == FORMAT_GD) {
 		for (var i = 0; i < this.state.gd_cc_meta.m_a.length; i++) {
 			let zfi = this.zfcPr().get(this.state.gd_cc_meta.m_a[i].luid_gd);
 			if (zfi.isPresent(FeedItem.ATTR_GGSG) && !zfi.isPresent(FeedItem.ATTR_XGID))
 				passed = passed && this.testForTbAbPresentAndInvariant(zfi.key(),
 					this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, SyncFsm.zfi_from_name_gd(zfi.name())));
 		}
+
+		passed = passed && this.testForTbAbGdCiIntegrity();
+	}
 
 	this.state.stopwatch.mark(state + " Converge: updateGidDoChecksums: " + this.state.m_progress_count++);
 
@@ -6952,8 +7148,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				remote.url             = gdAdjustHttpHttps(gd.meta.edit);
 				remote.headers         = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT", "If-Match","*");
 				remote.body            = gd.toStringXml();
-				// modify doesn't need these to be set: remote.sourceid_winner = sourceid_winner;
-				// modify doesn't need these to be set: remote.luid_winner     = luid_winner;
+				remote.sourceid_winner = sourceid_winner;
+				remote.luid_winner     = luid_winner;
 				remote.gd              = gd;
 			}
 		}
@@ -7070,29 +7266,30 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				// - test what happens when a tb group-as-addressbook gets deleted ==> it should a) remove the group and b) adjust the membership of the contained contacts
 				//
 				if (luid_target_au in this.state.gd_au_group_for_mod) {
-					// the MOD is a change of group membership, not of properties
+					// the MOD may be a change of group membership, or properties, or both
 					//
 					let groups = [ ];
 					let i;
-					let a_group = this.state.gd_au_group_for_mod[luid_target_au];
 
-					if (typeof(a_group.m_is_done) == 'boolean') {
-						zinAssertAndLog(zfiWinner.isPresent(FeedItem.ATTR_DEL), function() { return zfiWinner.toString(); });
-
+					if (this.state.gd_au_group_for_mod[luid_target_au]) {
 						msg += " have already modified group membership for this gdau contact, so this MOD representing membership change mark the gdci contact as deleted and skip update ";
 						zfiTarget = zfcTarget.get(luid_target);
-						zfiTarget.set(FeedItem.ATTR_DEL, 1);
+						if (zfiWinner.isPresent(FeedItem.ATTR_DEL)) // TODO is this nec? or do the ci's get updated following the au mod?
+							zfiTarget.set(FeedItem.ATTR_DEL, 1);
 						SyncFsm.setLsoToGid(zfiGid, zfiTarget);
 						suo.is_processed = true;
 					}
 					else {
+						let a_group = this.gdGroupsFromTbState(luid_target_au);
 						for (i = 0; i < a_group.length; i++)
 							groups.push(zfcTarget.get(a_group[i]).get(FeedItem.ATTR_GGID));
 
-						// contact.properties are unchanged... we're just changing group membership
-						contact.groups = groups;
+						if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+							; // contact.properties are unchanged... we're just changing group membership
+						else
+							contact.properties = properties;
 
-						a_group.m_is_done = true;
+						contact.groups = groups;
 					}
 				}
 				else
@@ -7198,6 +7395,10 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 		if (type == GoogleData.eElement.contact)
 			zfiTarget.set(FeedItem.ATTR_GDGP, g.groups.toString());
+		else {
+			zinAssert(!g.systemGroup());
+			zfiTarget.set(FeedItem.ATTR_NAME, g.properties.title);
+		}
 
 		is_response_processed = true;
 
@@ -7222,12 +7423,7 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 						msg += " google changed this group - ticking backwards: updated: " + updated;
 					}
 
-					let zfi = new FeedItem(FeedItem.TYPE_GG, FeedItem.ATTR_KEY,  id,
-					                                         FeedItem.ATTR_L,    '1',
-					                                         FeedItem.ATTR_REV,  updated,
-					                                         FeedItem.ATTR_NAME, group.properties.title,
-					                                         FeedItem.ATTR_EDIT, group.meta.edit,
-					                                         FeedItem.ATTR_SELF, group.meta.self);
+					let zfi = this.newZfiGroup(group);
 
 					SyncFsm.setLsoToGid(zfiGid, zfi);
 
@@ -7279,11 +7475,11 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 			case Suo.MOD | FeedItem.TYPE_FL:
 				if (this.state.m_http.is_http_status(HTTP_STATUS_200_OK)) {
-					modify_zfi(new GroupGoogle(ContactGoogleStatic.newXml(this.state.m_http.m_xhr)));
+					let zfiTarget = modify_zfi(new GroupGoogle(ContactGoogleStatic.newXml(this.state.m_http.m_xhr)));
 
 					SyncFsm.setLsoToGid(self.state.zfcGid.get(suo.gid), zfiTarget);
 
-					msg += " map updated: zfi: " + zfcTarget.get(luid_target);
+					msg += " map updated: zfi: " + zfiTarget.toString();
 				}
 				break;
 
@@ -7294,13 +7490,34 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 					let zfi_au      = modify_zfi(contact);
 					let zfi_ci      = zfcTarget.get(luid_target);
 					let a_groups    = this.gdciLuidsForGroups(zfi_au);
+					let zfiWinner   = this.zfc(remote_update_package.remote.sourceid_winner).get(remote_update_package.remote.luid_winner);
 
-					if (!(zfi_ci.get(FeedItem.ATTR_L) in a_groups)) {
+					if (zfiWinner.isPresent(FeedItem.ATTR_DEL)) {
 						zfi_ci.set(FeedItem.ATTR_DEL, 1);
 						msg += " group membership removed, set DEL attribute on zfi: " + zfi_ci.toString();
 					}
-					else
-						zfi_ci = this.newZfiCnGdCi(zfi_au.key(), zfi_ci.get(FeedItem.ATTR_L));
+					else {
+						let luid_tb_l = zfiWinner.get(FeedItem.ATTR_L);
+
+						zinAssertAndLog(luid_tb_l in this.state.aReverseGid[this.state.sourceid_tb], luid_tb_l);
+						let gid_l     = this.state.aReverseGid[this.state.sourceid_tb][luid_tb_l];
+						let luid_gd_l = this.state.zfcGid.get(gid_l).get(this.state.sourceid_pr);
+
+						if (luid_gd_l != zfi_ci.get(FeedItem.ATTR_L)) {
+							// if the 'l' attribute changed, we delete the old zfi_ci and create a new one
+							//
+							let zfi_ci_new = this.newZfiCnGdCi(zfi_au.key(), luid_gd_l);
+							zfcTarget.set(zfi_ci_new);
+							msg += " map updated: zfi: " + zfi_ci_new.toString();
+
+							zfcTarget.del(zfi_ci.key());
+							delete this.state.aReverseGid[suo.sourceid_target][zfi_ci.key()];
+							this.state.aReverseGid[suo.sourceid_target][zfi_ci_new.key()] = suo.gid;
+							this.state.zfcGid.get(suo.gid).set(suo.sourceid_target, zfi_ci_new.key());
+
+							zfi_ci = zfi_ci_new;
+						}
+					}
 
 					SyncFsm.setLsoToGid(self.state.zfcGid.get(suo.gid), zfi_ci);
 				}
@@ -7319,11 +7536,10 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 					zfiTarget.set(FeedItem.ATTR_DEL, 1);
 
- 					// Set a_gd_contacts_deleted - if instead we set the DEL attribute on the gdau then it'd get
-					// cleaned up and any gdci that reference it would be left dangling.
-					// This way, all those other gdci's get deleted during the next sync.
-					// zfcTarget.get(zfiTarget.get(FeedItem.ATTR_GDID)).set(FeedItem.ATTR_DEL, 1);
-					//
+					// We don't set the DEL attribute on the gdau here because there might be some gdci's
+					// and if the gdau got cleaned up, any gdci's that referenced it would be left dangling.
+					// All those other gdci's get deleted during the next sync.
+
 					if (zfiTarget.type() == FeedItem.TYPE_CN)
 						this.state.a_gd_contacts_deleted[zfiTarget.get(FeedItem.ATTR_GDID)] = true;
 
@@ -7456,25 +7672,49 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 		//  delete the mapping between a gid and an luid when the luid is not of interest
 		//
 		var functor_foreach_luid = {
-			state: this.state,
 			run: function(zfi)
 			{
 				let luid = zfi.key();
 				let zfc  = self.zfc(sourceid);
-				let gid  = (luid in this.state.aReverseGid[sourceid]) ? this.state.aReverseGid[sourceid][luid] : null;
+				let gid  = (luid in self.state.aReverseGid[sourceid]) ? self.state.aReverseGid[sourceid][luid] : null;
 				let msg  = " gid=" + gid + " " + sourceid + "/=" + luid;
 
-				if (self.formatPr() == FORMAT_GD && self.is_slow_sync(this.state.sourceid_pr)
+				if (self.formatPr() == FORMAT_GD && self.is_slow_sync(self.state.sourceid_pr)
 				                                    && self.state.gd_is_sync_postal_address
-					                                && sourceid == this.state.sourceid_tb 
+					                                && sourceid == self.state.sourceid_tb 
 													&& zfi.isPresent(FeedItem.ATTR_TBPA))
 				{
 					zfi.del(FeedItem.ATTR_TBPA); // ATTR_TBPA won't be present if the zfi is the folder or if it was added by UpdateTb
 				}
 
-				if (self.is_slow_sync() && sourceid == this.state.sourceid_tb && zfi.isPresent(FeedItem.ATTR_TBFM))
+				if (self.is_slow_sync() && sourceid == self.state.sourceid_tb && zfi.isPresent(FeedItem.ATTR_TBFM))
 				{
 					zfi.del(FeedItem.ATTR_TBFM);
+				}
+
+				if (self.formatPr() == FORMAT_GD && zfi.getOrNull(FeedItem.ATTR_STYP) == FeedItem.eStyp.gdau)
+				{
+					let a_group = self.gdciLuidsForGroups(zfi);
+					let is_one_alive = false;
+					let gp_id;
+
+					for (gp_id in a_group) {
+						let luid_gd_ci = SyncFsmGd.gdci_id_from_pair(zfi.key(), gp_id);
+
+						// TODO - do this differently - better if the gdci is there after the ADD so we don't need to special-case it
+						//
+						// the isPresent is here because if a contact got added to google, the gdci may not exist until the next sync.
+						//
+						if (!self.zfcPr().isPresent(luid_gd_ci) || !self.zfcPr().get(luid_gd_ci).isPresent(FeedItem.ATTR_DEL)) {
+							is_one_alive = true;
+							break;
+						}
+					}
+
+					if (!is_one_alive) {
+						zfi.set(FeedItem.ATTR_DEL, '1');
+						msg += " - all gdci's deleted so marking the gdau as deleted too";
+					}
 				}
 
 				if (zfi.isPresent(FeedItem.ATTR_XGID) && !zfi.isPresent(FeedItem.ATTR_DEL))
@@ -7501,12 +7741,12 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 
 					if (gid)
 					{
-						var luid_in_gid = this.state.zfcGid.get(gid).get(sourceid);
+						var luid_in_gid = self.state.zfcGid.get(gid).get(sourceid);
 
 						if (luid_in_gid == luid)
 						{
 							msg += " and deleted gid's reference to sourceid";
-							this.state.zfcGid.get(gid).del(sourceid);
+							self.state.zfcGid.get(gid).del(sourceid);
 						}
 						else
 						{
@@ -7517,7 +7757,7 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 							msg += " but didn't delete gid reference to sourceid because it had changed to luid=" + luid_in_gid;
 						}
 
-						delete this.state.aReverseGid[sourceid][luid];
+						delete self.state.aReverseGid[sourceid][luid];
 					}
 				}
 
@@ -7545,18 +7785,14 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 		//
 		var functor_count_luids_in_gid = {
 			count: 0,
-			run: function(sourceid, luid)
-			{
+			run: function(sourceid, luid) {
 				this.count++;
-
 				return true;
 			}
 		};
 
 		var functor_foreach_gid = {
-			state: this.state,
-			run: function(zfi)
-			{
+			run: function(zfi) {
 				functor_count_luids_in_gid.count = 0;
 
 				zfi.forEach(functor_count_luids_in_gid, FeedItem.ITER_GID_ITEM);
@@ -7566,7 +7802,7 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 				if (functor_count_luids_in_gid.count == 0)
 				{
 					msg += " had no luid properties - deleted.";
-					this.state.zfcGid.del(zfi.key());
+					self.state.zfcGid.del(zfi.key());
 				}
 
 				self.debug_continue(msg);
@@ -7593,18 +7829,18 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 			this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 		}
 
-		
-		for (var suo in this.state.m_suo_iterator.iterator(function() { return true; } ))
-			if (!suo.is_processed)
-			{
-				this.state.m_logger.error("Internal error: failed to process suo: " + suo.toString());
-				this.state.stopFailCode    = 'failon.integrity.data.store.out'; // this indicates a bug in our code
-				this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
-				break;
-			}
+		if (!this.state.stopFailCode)
+			for (var suo in this.state.m_suo_iterator.iterator(function() { return true; } ))
+				if (!suo.is_processed)
+				{
+					this.state.m_logger.error("Internal error: failed to process suo: " + suo.toString());
+					this.state.stopFailCode    = 'failon.integrity.data.store.out'; // this indicates a bug in our code
+					this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+					break;
+				}
 	}
 
-	if (this.state.stopFailCode != null)
+	if (this.state.stopFailCode)
 		nextEvent = 'evLackIntegrity';
 
 	yield false;
@@ -7743,7 +7979,7 @@ SyncFsm.prototype.is_slow_sync = function(sourceid)
 
 SyncFsm.prototype.zfc = function(sourceid)
 {
-	zinAssertAndLog(isPropertyPresent(this.state.sources, sourceid), sourceid);
+	zinAssertAndLog(sourceid in this.state.sources, sourceid);
 
 	return this.state.sources[sourceid]['zfcLuid'];
 }
@@ -8944,22 +9180,12 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 					}
 				}
 				else if (!is_ignored) {
-					zfi = new FeedItem(FeedItem.TYPE_GG, FeedItem.ATTR_KEY,id, FeedItem.ATTR_REV, rev, FeedItem.ATTR_L, '1', FeedItem.ATTR_GGID, group.meta.id_as_url);
+					zfi = self.newZfiGroup(group);
 
-					if (group.systemGroup()) {
-						zfi.set(FeedItem.ATTR_NAME, group.systemGroup());
-						zfi.set(FeedItem.ATTR_GGSG, '1');
-
-						if (is_xgid)
-							zfi.set(FeedItem.ATTR_XGID, '1');
-					}
-					else {
-						zfi.set(FeedItem.ATTR_NAME, group.properties.title);
-						zfi.set(FeedItem.ATTR_EDIT, group.meta.edit);
-						zfi.set(FeedItem.ATTR_SELF, group.meta.self);
-					}
+					if (group.systemGroup() && is_xgid)
+						zfi.set(FeedItem.ATTR_XGID, '1');
 					
-					zfcPr.set(zfi); // add new
+					zfcPr.set(zfi);
 					msg += " added: ";
 				}
 				else
@@ -9269,6 +9495,27 @@ SyncFsmGd.prototype.newZfiCnGdCi = function(cn_id, gp_id)
 	// this.debug("newZfiCnGdCi: zfi: " + zfi.toString());
 
 	return zfi;
+}
+
+SyncFsmGd.prototype.newZfiGroup = function(group)
+{
+	let ret = new FeedItem(FeedItem.TYPE_GG,
+	                       FeedItem.ATTR_KEY,  group.meta.id,
+	                       FeedItem.ATTR_REV,  group.meta.updated,
+	                       FeedItem.ATTR_L,    '1',
+	                       FeedItem.ATTR_GGID, group.meta.id_as_url);
+
+	if (group.systemGroup()) {
+		ret.set(FeedItem.ATTR_NAME, group.systemGroup());
+		ret.set(FeedItem.ATTR_GGSG, '1');
+	}
+	else {
+		ret.set(FeedItem.ATTR_NAME, group.properties.title);
+		ret.set(FeedItem.ATTR_EDIT, group.meta.edit);
+		ret.set(FeedItem.ATTR_SELF, group.meta.self);
+	}
+
+	return ret;
 }
 
 SyncFsmGd.prototype.gdciLuidsForGroups = function(zfi)

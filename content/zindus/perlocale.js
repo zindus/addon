@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.3 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: perlocale.js,v 1.4 2009-10-01 21:29:20 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -31,12 +31,11 @@
 //
 
 var PerLocaleStatic = {
-	m_general_useragent : null,
-	m_translation : new Object(),
+	m_general_useragent   : null,
+	m_translation         : new Object(),
 	m_all_translations_of : new Object(),
-	// any locale we've got any kind of translation for goes here
-	m_locale_superset : newObjectWithKeys( "cs", "da", "de", "es", "fr", "hu", "it", "ja", "ko", "nl", "pl", "pt", "ru", "sv",
-	                                       "tr", "uk", "zh_CN", "zh_HK"),
+	m_locale_superset     : newObjectWithKeys( "cs", "da", "de", "es", "fr", "hu", "it", "ja", "ko", "nl", "pl", "pt", "ru", "sv",
+	                                           "tr", "uk", "zh_CN", "zh_HK"), // any locale we've got any kind of translation of goes here
 	general_useragent : function() {
 		if (!this.m_general_useragent) {
 			let prefs = new MozillaPreferences("general.useragent.");
@@ -48,12 +47,17 @@ var PerLocaleStatic = {
 	},
 	translation_of_locale : function(key, locale) {
 		let ret = null;
+
+		this.initialise_google_system_group_translations();
+
 		zinAssertAndLog(key in this.m_translation, key);
 
 		if (locale in this.m_translation[key])
 			ret = this.m_translation[key][locale];
 		else if (locale && locale.length > 2)
 			ret = this.translation_of_locale(key, locale.substr(0, 2));
+
+		logger().debug("translation_of_locale: key: " + key + " locale: " + locale + " returns: " + ret); // TODO
 
 		return ret;
 	},
@@ -90,6 +94,25 @@ var PerLocaleStatic = {
 		}
 
 		return this.m_all_translations_of[key];
+	},
+	initialise_google_system_group_translations : function() {
+		if (!(GD_SUGGESTED in PerLocaleStatic.m_translation)) {
+			let locale = PerLocaleStatic.general_useragent();
+
+			for (var system_group_name in ContactGoogle.eSystemGroup) {
+				PerLocaleStatic.m_translation[system_group_name] = new Object();
+
+				let key = (system_group_name == GD_SUGGESTED) ? "suggestedcontacts" : system_group_name.toLowerCase();
+				key = "gd.systemgroup." + key;
+				let str = stringBundleString(key);
+				logger().debug("AMHERE: key: " + key + " str: " + str); // TODO
+
+				if (str != system_group_name) {
+					logger().debug("AMHERE: set translation of key: " + key + " to: " + str); // TODO
+					PerLocaleStatic.m_translation[system_group_name][locale] = str;
+				}
+			}
+		}
 	}
 };
 
@@ -129,15 +152,4 @@ PerLocaleStatic.m_translation[TB_PAB_FULLNAME] = {
 		tr    : "Ki\u015Fisel adres defteri",
 		uk    : "\u041E\u0441\u043E\u0431\u0438\u0441\u0442\u0430 \u0430\u0434\u0440\u0435\u0441\u043D\u0430 \u043A\u043D\u0438\u0433\u0430",
 		zh_CN : "\u4e2a\u4eba\u901a\u8baf\u5f55"
-	};
-
-PerLocaleStatic.m_translation[ContactGoogle.eSystemGroup.Contacts] = {
-	};
-PerLocaleStatic.m_translation[ContactGoogle.eSystemGroup.Friends] = {
-	};
-PerLocaleStatic.m_translation[ContactGoogle.eSystemGroup.Family] = {
-	};
-PerLocaleStatic.m_translation[ContactGoogle.eSystemGroup.Coworkers] = {
-	};
-PerLocaleStatic.m_translation[GD_SUGGESTED] = {
 	};

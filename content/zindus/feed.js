@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.48 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: feed.js,v 1.49 2009-10-01 21:29:20 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -71,7 +71,7 @@ FeedItem.ATTR_GGSG = 'ggsg'; // corresponds with a Google Group <gContact:system
 FeedItem.ATTR_GGID = 'ggid'; // TYPE_GG items have this attribute - the <id> element from the group's <entry>
 FeedItem.ATTR_XGID = 'xgid'; // this item doesn't map to anything in in the gid
 FeedItem.ATTR_GDGP = 'gdgp'; // comma-separated list of google group ids for which this contact is a member
-FeedItem.ATTR_GDID = 'gdid'; // gdau items have this attribute - value is the id of the authoritative contact
+FeedItem.ATTR_GDID = 'gdid'; // gdci items have this attribute - value is the id of the authoritative contact
 
 // FeedItem.ATTR_EMPT = 'empt'; // true iff the contact is empty when mapped to the other side
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
@@ -164,7 +164,7 @@ FeedCollection.prototype.set = function(zfi)
 {
 	zinAssert(zfi != null && typeof(zfi) == 'object');
 
-	// migration-note: remove ATTR_ID when xpi update indicates that no clients are on versions earlier than 0.6.19.20080320.111511
+	// FIXME: remove ATTR_ID when xpi update indicates that no clients are on versions earlier than 0.6.19.20080320.111511
 	// ATTR_ID is only in the assertion below to allow status.txt versions pre 0.6.19.20080320.111511 to load - they had an id= but no key=
 	//
 	zinAssertAndLog(zfi.isPresent(FeedItem.ATTR_KEY) ||

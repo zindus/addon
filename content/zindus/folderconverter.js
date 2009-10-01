@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: folderconverter.js,v 1.20 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: folderconverter.js,v 1.21 2009-10-01 21:29:20 cvsuser Exp $
 
 FolderConverter.PREFIX_CLASS_NONE     = 1;
 FolderConverter.PREFIX_CLASS_INTERNAL = 2;
@@ -196,6 +196,7 @@ FolderConverter.prototype.tb_from_gd_zfi = function(zfi)
 	zinAssertAndLog(zfi.type() == FeedItem.TYPE_GG, function () { return "expected TYPE_GG: zfi: " + zfi.toString(); });
 	
 	let name = zfi.get(FeedItem.ATTR_NAME);
+
 	if (zfi.isPresent(FeedItem.ATTR_GGSG))
 		ret = this.tb_ab_name_for_gd_group("/", PerLocaleStatic.translation_of(name));
 	else {
