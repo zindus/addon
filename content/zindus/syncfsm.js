@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.199 2009-10-01 21:29:20 cvsuser Exp $
+// $Id: syncfsm.js,v 1.200 2009-10-01 22:25:49 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -320,7 +320,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		if (pab_name)
 			msg += "\n getAddressBookUriByName: " + this.state.m_addressbook.getAddressBookUriByName(pab_name) +
 			           " is: " + Boolean(this.state.m_addressbook.getAddressBookUriByName(pab_name)) +
-			           "\n match: " + Boolean(pab_name.match(new RegExp("^" + APP_NAME, "i")));
+			           "\n match zindus prefix and therefore fail: " + Boolean(pab_name.match(new RegExp("^" + APP_NAME, "i")));
 
 		this.debug(msg);
 
@@ -345,12 +345,13 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		}
 	}
 
-	if (this.formatPr() == FORMAT_GD)
+	if (this.formatPr() == FORMAT_GD && (this.state.id_fsm in Maestro.FSM_GROUP_TWOWAY))
 	{
-		let c_repeat_after_gd_group_mod = sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod');
+		let sourceid = this.account().sourceid;
+		let c_repeat_after_gd_group_mod = sfcd.sourceid(sourceid, 'c_repeat_after_gd_group_mod');
 
 		if (c_repeat_after_gd_group_mod == 1) // ensure that we don't repeat a second time
-			sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod', ++c_repeat_after_gd_group_mod);
+			sfcd.sourceid(sourceid, 'c_repeat_after_gd_group_mod', ++c_repeat_after_gd_group_mod);
 	}
 
 	if (!nextEvent)
@@ -2818,11 +2819,15 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 
 						msg += " renamed to " + ab_localised + " uri: " + this.state.m_addressbook.getAddressBookUriByName(ab_localised);
 
-						// twiddle the pre so that we pass testForReservedFolderInvariant
-						let zfcTbPre  = this.state.zfcTbPreMerge;
-						let pre_id      = SyncFsm.zfcFindFirstFolder(zfcTbPre, old_localised_ab);
-						if (pre_id)
-							zfcTbPre.get(pre_id).set(FeedItem.ATTR_NAME, ab_localised);
+						// twiddle zfcTb and the pre so that we pass testForReservedFolderInvariant
+						//
+						function twiddle_zfc(zfc) {
+							let pre_id      = SyncFsm.zfcFindFirstFolder(zfc, old_localised_ab);
+							if (pre_id)
+								zfc.get(pre_id).set(FeedItem.ATTR_NAME, ab_localised);
+						}
+						twiddle_zfc(this.state.zfcTbPreMerge);
+						twiddle_zfc(this.zfcTb());
 
 						break;
 					}
