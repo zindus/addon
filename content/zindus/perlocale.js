@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.4 2009-10-01 21:29:20 cvsuser Exp $
+// $Id: perlocale.js,v 1.5 2009-10-01 22:24:25 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -102,12 +102,19 @@ var PerLocaleStatic = {
 			for (var system_group_name in ContactGoogle.eSystemGroup) {
 				PerLocaleStatic.m_translation[system_group_name] = new Object();
 
-				let key = (system_group_name == GD_SUGGESTED) ? "suggestedcontacts" : system_group_name.toLowerCase();
-				key = "gd.systemgroup." + key;
-				let str = stringBundleString(key);
+				let key          = (system_group_name == GD_SUGGESTED) ? "suggestedcontacts" : system_group_name.toLowerCase();
+				let stringbundle = dId("zindus-stringbundle");
+				let str          = null;
+
+				try {
+					str = stringbundle.getString(APP_NAME + "." + "gd.systemgroup." + key);
+				}
+				catch (e) {
+				}
+
 				logger().debug("AMHERE: key: " + key + " str: " + str); // TODO
 
-				if (str != system_group_name) {
+				if (str && str != system_group_name) {
 					logger().debug("AMHERE: set translation of key: " + key + " to: " + str); // TODO
 					PerLocaleStatic.m_translation[system_group_name][locale] = str;
 				}
