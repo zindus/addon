@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.201 2009-10-01 22:30:54 cvsuser Exp $
+// $Id: syncfsm.js,v 1.202 2009-10-04 22:20:16 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3216,9 +3216,8 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 					{ 
 						// If SecondEmail is populated and PrimaryEmail isn't, move SecondEmail to PrimaryEmail
 						//
-						if ((!isPropertyPresent(properties, "PrimaryEmail") || properties["PrimaryEmail"].length == 0
-							                                                || zinIsWhitespace(properties["PrimaryEmail"])) &&
-					          isPropertyPresent(properties, "SecondEmail"))
+						if (("SecondEmail" in properties) && (!("PrimaryEmail" in properties) ||
+						      properties["PrimaryEmail"].length == 0 || zinIsWhitespace(properties["PrimaryEmail"])))
 						{
 							properties["PrimaryEmail"] = properties["SecondEmail"];
 							properties["SecondEmail"] = "";
@@ -3229,7 +3228,6 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 						}
 					}
 
-					// TODO test these cases above since replacing setProperties with updateCard
 					if (is_changed)
 						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
 
@@ -3494,10 +3492,9 @@ SyncFsm.prototype.loadTbTestForEmptyCards = function(tb_cc_meta)
 
 		grd.m_empty = new Object();
 		
-		// TODO test this since the change to tb_cc_meta
 		for (var luid in a_empty_contacts)
 			grd.m_empty[luid] = new GoogleRuleContactHandle(FORMAT_TB, luid, a_empty_contacts[luid],
-			                                { uri: tb_cc_meta.find('luid_tb', luid, 'uri') } );
+			                                { uri: tb_cc_meta.find('luid_tb', this.zfcTb().get(luid).get(FeedItem.ATTR_L), 'uri') } );
 	}
 
 	return this.state.stopFailCode == null;
@@ -3518,7 +3515,7 @@ SyncFsm.prototype.setTwin = function(sourceid, luid, sourceid_tb, luid_tb, rever
 {
 	var zfcGid = this.state.zfcGid;
 
-	zinAssertAndLog(isPropertyPresent(reverse[sourceid_tb], luid_tb), "sourceid_tb: " + sourceid_tb + " luid_tb: " + luid_tb);
+	zinAssertAndLog((luid_tb in reverse[sourceid_tb]), "sourceid_tb: " + sourceid_tb + " luid_tb: " + luid_tb);
 
 	var gid = reverse[sourceid_tb][luid_tb];
 	zfcGid.get(gid).set(sourceid, luid);
@@ -3609,6 +3606,8 @@ SyncFsm.prototype.twiddleMapsForImmutables = function()
 					msg += " folder: " + zfi.name() + " changed!  sourceid: " + sourceid_pr + " and luid_pr=" + luid_pr;
 				}
 			}
+			else
+				zinAssert(false);
 		}
 
 	this.debug(msg);
@@ -3941,9 +3940,6 @@ SyncFsm.prototype.updateGidFromSourcesSanityCheck = function()
 	this.debug("updateGidFromSourcesSanityCheck : reverse: " + aToString(this.state.aReverseGid));
 }
 
-// TODO - we need to bump APP_VERSION_DATA_CONSISTENT_WITH to force a slow sync on upgrade to this version
-// TODO - test this
-//
 // Migration of the new fields associated with Google API v3: birthday, web url etc
 // This code runs only once - the MozillaPreferences.AS_MIGRATION preferences stops it from running again
 //
@@ -4958,9 +4954,10 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 
 SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 {
-	// TODO - we need to be sure that we're not:
-	// a) modifying tb following a gd change and
-	// b) modifying gd following a tb change
+	// TODO - what if we simultaneously:
+	// a) modify tb following a gd change and
+	// b) modify gd following a tb change
+	// does that break this method?
 
 	let a_group         = this.gdciLuidsForGroups(this.zfcPr().get(luid_gd_au));
 	let sourceid_pr     = this.state.sourceid_pr;
@@ -4989,7 +4986,7 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 		}
 	}
 
-	this.debug("gdGroupsFromTbState: luid_gd_au: " + luid_gd_au + " returns: " + ret.toString()); // TODO
+	this.debug("gdGroupsFromTbState: luid_gd_au: " + luid_gd_au + " returns: " + ret.toString());
 
 	return ret;
 }
@@ -5869,43 +5866,83 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	yield false;
 }
 
-SyncFsm.prototype.entryActionConfirmOnErase = function(state, event, continuation)
+// TODO do the reverse - ie test whether all the tb contacts are about to be deleted
+
+SyncFsmGd.prototype.entryActionConfirmOnErase = function(state, event, continuation)
 {
 	let is_confirm_on_erase = preference(MozillaPreferences.GD_CONFIRM_ON_ERASE, 'bool');
-	let nextEvent = 'evNext';
+	let nextEvent           = 'evNext';
+	let id_gd_pab           = this.state.gd_cc_meta.find('name', GD_PAB, 'luid_gd')
+	let id_gd_suggested     = (this.account().gd_gr_as_ab == 'true') ? this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd') : null;
+	let self                = this;
 
 	if (is_confirm_on_erase) {
-		let c_at_google = 0;
-		let functor = {
-			run: function(zfi) {
-				if (zfi.type() == FeedItem.TYPE_CN && !zfi.isPresent(FeedItem.ATTR_DEL))
-					c_at_google++;
-				return true;
-			}
-		};
+		function do_count(zfc, functor, format)
+		{
+			zfc.forEach(functor);
+			let fn = function(sourceid, bucket) { return (self.state.sources[sourceid]['format'] == format) && (bucket & Suo.DEL); }
+			return [ functor.count, Suo.count(self.state.aSuo, fn) ];
+		}
 
-		this.zfcPr().forEach(functor);
-
-		let self = this;
-		let fn = function(sourceid, bucket) { return (self.state.sources[sourceid]['format'] == FORMAT_GD) && (bucket & Suo.DEL); }
-		let c_to_be_deleted = Suo.count(this.state.aSuo, fn);
-
-		this.debug("entryActionConfirmOnErase: c_at_google: " + c_at_google + " c_to_be_deleted: " + c_to_be_deleted);
-
-		if (c_to_be_deleted > 0 && (c_to_be_deleted == c_at_google)) {
-			if (this.state.m_is_attended) {
+		function do_cancel(string_arg) {
+			if (self.state.m_is_attended) {
 				let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService);
-				let is_ok   = prompts.confirm(window, stringBundleString("brand.zindus"), stringBundleString("text.confirm.erase"));
-				nextEvent = is_ok ? 'evNext' : 'evCancel';
+				let msg     = stringBundleString("text.confirm.erase.1", [ string_arg ]);
+				let is_ok   = prompts.confirm(window, stringBundleString("brand.zindus"), msg);
+				nextEvent   = is_ok ? 'evNext' : 'evCancel';
+
+				if (!is_ok)
+					prompts.alert(window, stringBundleString("brand.zindus"), stringBundleString("text.confirm.erase.2"));
 			}
 			else
 				nextEvent = 'evCancel';
 		}
+
+		let functor_gd = {
+			count : 0,
+			run: function(zfi) {
+				if (zfi.type() == FeedItem.TYPE_CN &&
+				    zfi.styp() == FeedItem.eStyp.gdci &&
+					!zfi.isPresent(FeedItem.ATTR_DEL))
+				{
+					if (zfi.get(FeedItem.ATTR_L) == id_gd_pab)
+						this.count++;
+
+					if ((self.account().gd_suggested == 'ignore') &&
+					    self.account().gd_gr_as_ab == 'true' &&
+					    zfi.get(FeedItem.ATTR_L) == id_gd_suggested)
+						this.count++;
+				}
+				return true;
+			}
+		};
+
+		let functor_tb = {
+			count : 0,
+			run: function(zfi) {
+				if (zfi.type() == FeedItem.TYPE_CN && !zfi.isPresent(FeedItem.ATTR_DEL))
+					this.count++;
+				return true;
+			}
+		};
+
+		let c_at_gd, c_at_tb, c_to_be_deleted_gd, c_to_be_deleted_tb;
+
+		[ c_at_gd, c_to_be_deleted_gd ] = do_count(this.zfcPr(), functor_gd, FORMAT_GD);
+		[ c_at_tb, c_to_be_deleted_tb ] = do_count(this.zfcTb(), functor_tb, FORMAT_TB);
+		
+		this.debug("entryActionConfirmOnErase: " +
+		           " c_at_gd: " + c_at_gd + " c_to_be_deleted_gd: " + c_to_be_deleted_gd +
+		           " c_at_tb: " + c_at_tb + " c_to_be_deleted_tb: " + c_to_be_deleted_tb);
+
+		if (c_to_be_deleted_gd > 0 && (c_to_be_deleted_gd == c_at_gd))
+			do_cancel(stringBundleString("brand.google"));
+		else if (c_to_be_deleted_tb > 0 && (c_to_be_deleted_tb == c_at_tb))
+			do_cancel(nsIXULAppInfo().app_name);
 	}
 
 	continuation(nextEvent);
 }
-
 
 // Add the ATTR_KEEP attribute to deleted tb mapitems when the gid has references to sources that aren't being synced.
 // This drives deletion of the items in those sources when they get synced because the deleted tb item wins.
@@ -7112,19 +7149,19 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				if (luid_target_au in this.state.gd_au_group_for_mod) {
 					// the MOD may be a change of group membership, or properties, or both
 					//
-					let groups = [ ];
-					let i;
-
 					if (this.state.gd_au_group_for_mod[luid_target_au]) {
-						msg += " have already modified group membership for this gdau contact, so this MOD representing membership change mark the gdci contact as deleted and skip update ";
+						msg += " have already modified this gdau contact, so skip update for this MOD";
 						zfiTarget = zfcTarget.get(luid_target);
-						if (zfiWinner.isPresent(FeedItem.ATTR_DEL)) // TODO is this nec? or do the ci's get updated following the au mod?
-							zfiTarget.set(FeedItem.ATTR_DEL, 1);
+						if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+							zfiTarget..set(FeedItem.ATTR_DEL, 1);
 						SyncFsm.setLsoToGid(zfiGid, zfiTarget);
 						suo.is_processed = true;
 					}
 					else {
 						let a_group = this.gdGroupsFromTbState(luid_target_au);
+						let groups  = [ ];
+						let i;
+
 						for (i = 0; i < a_group.length; i++)
 							groups.push(zfcTarget.get(a_group[i]).get(FeedItem.ATTR_GGID));
 
@@ -7303,8 +7340,8 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 
 					let zfi_au = this.newZfiCnGdAu(id, updated, contact.meta.edit, contact.meta.self, contact.groups);
 					zfcTarget.set(zfi_au);
-
 					let zfi_ci = this.newZfiCnGdCi(id, remote_update_package.remote.l_target);
+					zfcTarget.set(zfi_ci);
 
 					SyncFsm.setLsoToGid(zfiGid, zfi_ci);
 
@@ -7545,10 +7582,6 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 					for (gp_id in a_group) {
 						let luid_gd_ci = SyncFsmGd.gdci_id_from_pair(zfi.key(), gp_id);
 
-						// TODO - do this differently - better if the gdci is there after the ADD so we don't need to special-case it
-						//
-						// the isPresent is here because if a contact got added to google, the gdci may not exist until the next sync.
-						//
 						if (!self.zfcPr().isPresent(luid_gd_ci) || !self.zfcPr().get(luid_gd_ci).isPresent(FeedItem.ATTR_DEL)) {
 							is_one_alive = true;
 							break;

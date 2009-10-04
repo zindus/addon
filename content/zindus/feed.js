@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.49 2009-10-01 21:29:20 cvsuser Exp $
+// $Id: feed.js,v 1.50 2009-10-04 22:20:16 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -73,7 +73,6 @@ FeedItem.ATTR_XGID = 'xgid'; // this item doesn't map to anything in in the gid
 FeedItem.ATTR_GDGP = 'gdgp'; // comma-separated list of google group ids for which this contact is a member
 FeedItem.ATTR_GDID = 'gdid'; // gdci items have this attribute - value is the id of the authoritative contact
 
-// FeedItem.ATTR_EMPT = 'empt'; // true iff the contact is empty when mapped to the other side
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
 FeedItem.ATTR_TBPA = 'tbpa'; // temporary (not persisted) - thunderbird contact has data in a postal field

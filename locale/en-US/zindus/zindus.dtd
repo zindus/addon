@@ -21,6 +21,7 @@
 <!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Contacts">
 <!ENTITY zindus.ca.google.suggested.include.label       "Include">
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ignore">
+<!ENTITY zindus.ca.google.group.as.ab.label             "Sync Google Groups with Thunderbird addressbooks">
 <!ENTITY zindus.ca.zimbra.gal.label                     "Global Address List (GAL): ">
 <!ENTITY zindus.ca.zimbra.gal.yes.label                 "Yes">
 <!ENTITY zindus.ca.zimbra.gal.no.label                  "No">

@@ -196,7 +196,7 @@ GoogleRuleTrash.prototype.moveToTrashCardsTb = function(a_gcch)
 
 	this.getOrCreateTrashAddressbook();
 
-	this.m_logger.debug("moveToTrashCardsTb: a_gcch: " + keysToString(a_gcch));
+	this.m_logger.debug("moveToTrashCardsTb: a_gcch: " + aToString(a_gcch));
 
 	if (this.m_uri_trash)
 		for (key in a_gcch)
@@ -208,12 +208,13 @@ GoogleRuleTrash.prototype.moveToTrashCardsTb = function(a_gcch)
 			//
 			attributes = newObject(TBCARD_ATTRIBUTE_EXPIRED_ON, parseInt(Date.now()/1000));
 
-			this.m_logger.debug("moveToTrashCardsTb: properties: " + aToString(properties) + " attributes: " + aToString(attributes));
-
 			is_deleted = false;
 
-			luid       = a_gcch[key].m_luid;
-			uri_from   = a_gcch[key].m_uri;
+			luid     = a_gcch[key].m_luid;
+			uri_from = a_gcch[key].m_uri;
+
+			this.m_logger.debug("moveToTrashCardsTb: luid: " + luid + " uri_from: " + uri_from);
+
 			abCardFrom = this.m_addressbook.lookupCard(uri_from, TBCARD_ATTRIBUTE_LUID, luid);
 
 			if (!abCardFrom)
