@@ -20,7 +20,11 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.202 2009-10-04 22:20:16 cvsuser Exp $
+// $Id: syncfsm.js,v 1.203 2009-10-05 04:59:02 cvsuser Exp $
+
+// TODO - if you delete a contact from google, then slow sync:
+// - it'll get added to google
+// - on the next sync it'll get re-added to tb and you'll have a duplicate!
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
