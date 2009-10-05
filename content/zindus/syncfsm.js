@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.203 2009-10-05 04:59:02 cvsuser Exp $
+// $Id: syncfsm.js,v 1.204 2009-10-05 06:15:57 cvsuser Exp $
 
 // TODO - if you delete a contact from google, then slow sync:
 // - it'll get added to google
@@ -2566,7 +2566,7 @@ SyncFsmGd.prototype.testForTbAbGdCiIntegrity = function()
 						self.state.stopFailCode    = 'failon.folder.reserved.changed';
 						let ab_name                = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, self.zfcTb().get(l));
 						self.state.stopFailArg     = [ ab_name ];
-						self.state.stopFailTrailer = stringBundleString("status.failon.gd.moved.lost.sync") + "\n\n" +
+						self.state.stopFailTrailer = stringBundleString("status.failon.gd.lost.sync") + "\n\n" +
 						                             stringBundleString("text.suggest.reset");
 
 						ret = false;
