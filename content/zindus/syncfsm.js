@@ -20,11 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.204 2009-10-05 06:15:57 cvsuser Exp $
-
-// TODO - if you delete a contact from google, then slow sync:
-// - it'll get added to google
-// - on the next sync it'll get re-added to tb and you'll have a duplicate!
+// $Id: syncfsm.js,v 1.205 2009-10-05 23:17:35 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3650,7 +3646,7 @@ SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 					checksum = self.contact_converter().crc32(a_properties);
 					var key = hyphenate('-', sourceid, a_parent_in_map, checksum);
 
-					if (!isPropertyPresent(this.state.aHasChecksum, key))
+					if (!(key in this.state.aHasChecksum))
 						this.state.aHasChecksum[key] = new Object();
 
 					this.state.aHasChecksum[key][luid] = true;
@@ -4995,7 +4991,7 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 	return ret;
 }
 
-SyncFsm.prototype.suoGdTurnCiOpsIntooAuOps = function()
+SyncFsmGd.prototype.suoGdTweakCiOps = function()
 {
 	let zfc             = this.zfcPr();
 	let self            = this;
@@ -5003,8 +4999,9 @@ SyncFsm.prototype.suoGdTurnCiOpsIntooAuOps = function()
 	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
 	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
 	let sourceid_pr     = this.state.sourceid_pr;
-	let fn_del          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.DEL | FeedItem.TYPE_CN)); }
+	let fn_add          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.ADD | FeedItem.TYPE_CN)); }
 	let fn_mod          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.MOD | FeedItem.TYPE_CN)); }
+	let fn_del          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.DEL | FeedItem.TYPE_CN)); }
 	let a_seen_del      = new Object();
 	let a_turn_del_into_mod   = new Object();
 	let a_gd_au_group_for_mod = this.state.gd_au_group_for_mod;
@@ -5068,6 +5065,36 @@ SyncFsm.prototype.suoGdTurnCiOpsIntooAuOps = function()
 			this.state.aSuo[key_new.sourceid][key_new.bucket][key_new.id] = suo;
 		}
 
+	// When it's a slow sync and this.account().gd_gr_as_ab == 'true', we run the risk of duplicates because if google doesn't have
+	// any contacts, ADDs get generated both for tb_pab and the 'group' addressbooks.
+	//
+	// So here, we remove ADDs where the winning addressbook is tb_pab so that only one contact is added to google.
+	// On the next sync twiddleMapsToPairNewMatchingContacts pairs the added contact with the one in tb_pab which is why we don't
+	// get duplicates there.
+	// 
+	// If there's a contact in tb_pab but not the ':Contacts' addressbook, then:
+	// - although the ADD is removed on the slow sync
+	// - on the subsequent fast sync, an ADD operation is generated
+	// - and on the next fast sync it appears in the :Contacts addressbook.  Strictly speaking, we should set c_repeat_after_gd_group_mod
+	//   back to force sync to go around again but it's a minor edge case and it works out correctly on the next sync anyway.
+	//
+	if (this.is_slow_sync(sourceid_pr) && this.account().gd_gr_as_ab == 'true') {
+		let gid_pab   = this.state.aReverseGid[sourceid_pr][id_gd_pab];
+		let id_tb_pab = this.state.zfcGid.get(gid_pab).get(this.state.sourceid_tb);
+
+		this.debug("AMHERE: id_tb_pab: " + id_tb_pab); // TODO
+
+		for ([key, suo] in this.state.m_suo_iterator.iterator(fn_add)) {
+			let luid_winner = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
+			let l           = this.zfc(suo.sourceid_winner).get(luid_winner).get(FeedItem.ATTR_L);
+
+			if (l == id_tb_pab) {
+				a_suo_to_delete.push(key);
+				this.debug("AMHERE: adding to a_suo_to_delete: " + key.toString()); // TODO
+			}
+		}
+	}
+
 	for (var i = 0; i < a_suo_to_delete.length; i++) {
 		key = a_suo_to_delete[i];
 		delete this.state.aSuo[key.sourceid][key.bucket][key.id];
@@ -5084,7 +5111,7 @@ SyncFsm.prototype.suoGdTurnCiOpsIntooAuOps = function()
 			a_gd_au_group_for_mod[luid_au] = false;
 	}
 
-	this.debug("suoGdTurnCiOpsIntooAuOps: " + "\n" +
+	this.debug("suoGdTweakCiOps: " + "\n" +
 			" keys removed from aSuo: " + a_suo_to_delete.toString()     + "\n" +
 			" a_turn_del_into_mod: "    + aToString(a_turn_del_into_mod) + "\n" +
 			" a_gd_au_group_for_mod: "  + aToString(a_gd_au_group_for_mod)     + "\n" +
@@ -5852,7 +5879,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 		if (this.formatPr() == FORMAT_GD) {
 			if (this.account().gd_gr_as_ab == 'true')
-				this.suoGdTurnCiOpsIntooAuOps();                      // 9. 
+				this.suoGdTweakCiOps();                      // 9. 
 		}
 		else if (this.formatPr() == FORMAT_ZM) {
 			this.state.stopwatch.mark(state + " Converge: suoRemoveContactOpsWhenFolderIsBeingDeleted: " + this.state.m_progress_count++);
@@ -5870,8 +5897,6 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	yield false;
 }
 
-// TODO do the reverse - ie test whether all the tb contacts are about to be deleted
-
 SyncFsmGd.prototype.entryActionConfirmOnErase = function(state, event, continuation)
 {
 	let is_confirm_on_erase = preference(MozillaPreferences.GD_CONFIRM_ON_ERASE, 'bool');
@@ -5881,8 +5906,7 @@ SyncFsmGd.prototype.entryActionConfirmOnErase = function(state, event, continuat
 	let self                = this;
 
 	if (is_confirm_on_erase) {
-		function do_count(zfc, functor, format)
-		{
+		function do_count(zfc, functor, format) {
 			zfc.forEach(functor);
 			let fn = function(sourceid, bucket) { return (self.state.sources[sourceid]['format'] == format) && (bucket & Suo.DEL); }
 			return [ functor.count, Suo.count(self.state.aSuo, fn) ];
@@ -7798,7 +7822,7 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 	                              " account_signature: " + sfcd.signature());
 
 	if (false)
-	this.state.m_logger.debug("entryActionCommit: stopwatch: " +
+	this.debug("entryActionCommit: stopwatch: " +
 		" SyncFsm.isOfInterest: " +
 		" count: "   + SyncFsm.isOfInterest._count +
 		" elapsed: " + SyncFsm.isOfInterest._elapsed);
@@ -8856,7 +8880,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.gd_sync_token                 = null;
 	state.gd_updated_group              = null;
 	state.gd_cc_meta                    = new ContactCollectionMeta();
-	state.gd_au_group_for_mod           = new Object(); // set by suoGdTurnCiOpsIntooAuOps, used by entryAction MOD code
+	state.gd_au_group_for_mod           = new Object(); // set by suoGdTweakCiOps, used by entryAction MOD code
 	state.a_gd_luid_ab_in_tb            = null;         // luids of the parent addressbook in zfcTb
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
