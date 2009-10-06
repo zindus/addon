@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zmsoapdocument.js,v 1.16 2009-07-01 22:22:10 cvsuser Exp $
+// $Id: zmsoapdocument.js,v 1.17 2009-10-06 22:08:34 cvsuser Exp $
 
 function ZmSoapDocument()
 {
@@ -43,10 +43,9 @@ ZmSoapDocument.nsFromMethod = function(method)
 		CreateFolder:   "zm", 
 		GetContacts:    "zm",
 		FolderAction:   "zm", 
-		ModifyContact:  "zm",
 		FakeHead:       "zm",
 		Sync:           "zm",
-		Batch:          "z",  // used in ForeignContactDelete
+		Batch:          "z",  // used in ForeignContactDelete and ContactMove
 		last_notused:   null
 	};
 
@@ -54,6 +53,8 @@ ZmSoapDocument.nsFromMethod = function(method)
 
 	return aMethod[method];
 }
+
+ZmSoapDocument.complexMethod = newObjectWithKeys("ForeignContactDelete", "ContactMove");
 
 ZmSoapDocument.prototype.setElementAsBody = function(element)
 {
@@ -280,7 +281,16 @@ ZmSoapDocument.prototype.ActionRequest = function(name, args)
 	var elAction  = this.doc.createElementNS(Xpath.NS_ZMAIL, "action");
 
 	for (var i in args)
-		elAction.setAttribute(i, args[i]); // attributes passed in here include: id, op, l and name
+		if (i != 'properties')
+			elAction.setAttribute(i, args[i]); // attributes passed in here include: id, op, l and name
+		else {
+			for (var j in args[i]) {
+				let elA = this.doc.createElementNS(Xpath.NS_ZMAIL, "a");
+				elA.setAttribute("n", j);
+				elA.textContent = args[i][j];
+				elAction.appendChild(elA);
+			}
+		}
 
 	elRequest.appendChild(elAction);
 
@@ -290,36 +300,6 @@ ZmSoapDocument.prototype.ActionRequest = function(name, args)
 ZmSoapDocument.prototype.FakeHead = function(args)
 {
 	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "FakeHeadRequest");
-
-	return this.setElementAsBody(elRequest);
-}
-
-ZmSoapDocument.prototype.ModifyContact = function(args)
-{
-	var elRequest = this.doc.createElementNS(Xpath.NS_ZMAIL, "ModifyContactRequest");
-	var elCn      = this.doc.createElementNS(Xpath.NS_ZMAIL, "cn");
-	var i, elA;
-
-	zinAssert(isPropertyPresent(args, 'properties') &&
-	          isPropertyPresent(args, 'l') &&
-			  isPropertyPresent(args, 'id') && aToLength(args.properties) > 0);
-
-	elCn.setAttribute("id", args.id);
-	elCn.setAttribute("l", args.l);
-
-	for (i in args.properties)
-	{
-		elA = this.doc.createElementNS(Xpath.NS_ZMAIL, "a");
-
-		elA.setAttribute("n", i);
-
-		if (args.properties[i])
-			elA.textContent = args.properties[i];
-
-		elCn.appendChild(elA);
-	}
-
-	elRequest.appendChild(elCn);
 
 	return this.setElementAsBody(elRequest);
 }

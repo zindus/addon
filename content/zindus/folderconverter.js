@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: folderconverter.js,v 1.21 2009-10-01 21:29:20 cvsuser Exp $
+// $Id: folderconverter.js,v 1.22 2009-10-06 22:08:34 cvsuser Exp $
 
 FolderConverter.PREFIX_CLASS_NONE     = 1;
 FolderConverter.PREFIX_CLASS_INTERNAL = 2;
@@ -87,7 +87,7 @@ FolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
 
 		if (format_to == FORMAT_GD) {
 			// return what's to the right of the ':'
-			let colon = ret.indexOf(':');
+			let colon = ret.indexOf(gd_gr_as_ab_separator);
 			zinAssert(colon >= 0);
 			let right = ret.substring(colon + 1);
 			if (ContactGoogle.eSystemGroup.isPresent(right))
@@ -209,7 +209,7 @@ FolderConverter.prototype.tb_from_gd_zfi = function(zfi)
 
 FolderConverter.prototype.tb_ab_name_for_gd_group = function(separator, group_name)
 {
-	return APP_NAME + separator + this.gd_account_email_address() + ":" + group_name;
+	return APP_NAME + separator + this.gd_account_email_address() + gd_gr_as_ab_separator + group_name;
 }
 
 FolderConverter.prototype.prefixClass = function(str)

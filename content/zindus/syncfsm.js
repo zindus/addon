@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.205 2009-10-05 23:17:35 cvsuser Exp $
+// $Id: syncfsm.js,v 1.206 2009-10-06 22:08:34 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1555,10 +1555,9 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 					{
 						var isInterestingPreUpdate = SyncFsm.isOfInterest(zfcZm, key);
 
-						// When a contact is updated on the server the rev attribute returned with <ModifyContactResponse>
-						// is written to the map.
+						// When a contact is updated on the server the rev attribute returned with the response is written to the map.
 						// The <cn> element returned with the next <SyncResponse> doesn't have a rev attribute -
-						// perhaps the zimbra server figures it already gave the client the rev attribute with the <ModifyContactResponse>.
+						// perhaps the zimbra server figures it already gave the client the rev attribute with the <ContactActionResponse>.
 						// In the absence of a rev attribute on the <cn> element we use the token attribute in the <change> element
 						// in the soap header to decide whether our rev of the contact is the same as that on the server.
 						// Note: <SyncResponse> also has a token attribute - no idea whether this merely duplicates the one in the header
@@ -3567,7 +3566,7 @@ SyncFsm.prototype.twiddleMapsForImmutables = function()
 	if (this.formatPr() == FORMAT_GD)
 		for (var i = 0; i < this.state.gd_cc_meta.m_a.length; i++) {
 			let luid = this.state.gd_cc_meta.m_a[i].luid_gd;
-			if (!this.zfcPr().get(luid).isPresent(FeedItem.ATTR_XGID))
+			if (this.zfcPr().get(luid).isPresent(FeedItem.ATTR_GGSG) || this.state.gd_cc_meta.m_a[i].name == GD_PAB)
 				a_luid[luid] = true;
 		}
 	else if (this.formatPr() == FORMAT_ZM) {
@@ -3577,7 +3576,6 @@ SyncFsm.prototype.twiddleMapsForImmutables = function()
 			a_luid[ZM_ID_FOLDER_AUTO_CONTACTS] = true;
 	}
 
-	// TODO this needs testing
 	for (luid_pr in a_luid)
 		if (zfcPr.isPresent(luid_pr) && zfcPr.get(luid_pr).isPresent(FeedItem.ATTR_LS)) {
 			zinAssertAndLog(luid_pr in reverse[sourceid_pr], luid_pr);
@@ -5072,7 +5070,7 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 	// On the next sync twiddleMapsToPairNewMatchingContacts pairs the added contact with the one in tb_pab which is why we don't
 	// get duplicates there.
 	// 
-	// If there's a contact in tb_pab but not the ':Contacts' addressbook, then:
+	// If there's a contact in tb_pab but not the '#Contacts' addressbook, then:
 	// - although the ADD is removed on the slow sync
 	// - on the subsequent fast sync, an ADD operation is generated
 	// - and on the next fast sync it appears in the :Contacts addressbook.  Strictly speaking, we should set c_repeat_after_gd_group_mod
@@ -5081,8 +5079,7 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 	if (this.is_slow_sync(sourceid_pr) && this.account().gd_gr_as_ab == 'true') {
 		let gid_pab   = this.state.aReverseGid[sourceid_pr][id_gd_pab];
 		let id_tb_pab = this.state.zfcGid.get(gid_pab).get(this.state.sourceid_tb);
-
-		this.debug("AMHERE: id_tb_pab: " + id_tb_pab); // TODO
+		let msg = "";
 
 		for ([key, suo] in this.state.m_suo_iterator.iterator(fn_add)) {
 			let luid_winner = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
@@ -5090,9 +5087,12 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 
 			if (l == id_tb_pab) {
 				a_suo_to_delete.push(key);
-				this.debug("AMHERE: adding to a_suo_to_delete: " + key.toString()); // TODO
+				msg += " " + key.toString();
 			}
 		}
+
+		if (msg.length > 0)
+			this.debug("suoGdTweakCiOps: ADD ops marked for removal from id_tb_pab: " + msg);
 	}
 
 	for (var i = 0; i < a_suo_to_delete.length; i++) {
@@ -6426,12 +6426,9 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 //   <CreateFolderResponse><folder view="contact" l="482" name="ab-1" id="630"/>
 // case Suo.MOD:
 // contact:
-//	change of content:
-//    <ModifyContactRequest replace="1" force="1"><cn id="600"><a n="email">blah@example.com</a><a n="fileAs">1</a></cn>
-//    <ModifyContactResponse><cn md="1168231780" fileAsStr="blah-1, blah-f" l="481" id="600" rev="3032"/>
-//	move only:
-//    <ContactActionRequest><action id="348" op="move" l="482"/>
-//    <ContactActionResponse><action op="move" id="348"/>
+//    <ContactActionRequest><action id="348" op="update" l="482"><a n="email">blah@example.com</a><a n="fileAs">1</a>
+//    <ContactActionResponse><action op="update" id="348"/>
+//    id may be "707cac8a-fa68-4da1-a99e-4a571c51a354:776" if the contact was remote
 // folder:
 //	rename:
 //    <FolderActionRequest><action id="631" op="move" l="1"/>
@@ -6493,14 +6490,14 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 			// work out how many we're going to process in the next batch
 			//
 			let i;
-			if (this.state.m_a_remote_update_package[0].remote.method == "ForeignContactDelete")
+			if (this.state.m_a_remote_update_package[0].remote.method in ZmSoapDocument.complexMethod)
 				i = 1; // do these one at a time
 			else {
 				let zid = this.state.m_a_remote_update_package[0].remote.zid;
 
 				for (i = 0; (i < this.state.m_a_remote_update_package.length) &&
 						    (zid == this.state.m_a_remote_update_package[i].remote.zid) &&
-						    (this.state.m_a_remote_update_package[i].remote.method != "ForeignContactDelete"); i++)
+						    !(this.state.m_a_remote_update_package[i].remote.method in ZmSoapDocument.complexMethod); i++)
 					;
 			}
 
@@ -6529,7 +6526,7 @@ SyncFsm.prototype.entryActionUpdateZmHttp = function(state, event, continuation)
 		let zid    = remote.zid;
 		let method, arg;
 
-		if (remote.method == "ForeignContactDelete") {
+		if (remote.method in ZmSoapDocument.complexMethod) {
 			method = remote.method;
 			arg    = remote.arg;
 		}
@@ -6594,9 +6591,6 @@ SyncFsm.prototype.updateZmRemoteUpdatePackage = function(key_suo, suo)
 			break;
 
 		case Suo.ADD | FeedItem.TYPE_CN:
-			// TODO
-			// support tb3 drag and drop as a contact-move for zimbra
-
 			l_winner    = SyncFsm.keyParentRelevantToGid(zfcWinner, zfiWinner.key());
 			l_gid       = this.state.aReverseGid[sourceid_winner][l_winner];
 			l_target    = this.state.zfcGid.get(l_gid).get(sourceid_target);
@@ -6643,42 +6637,18 @@ SyncFsm.prototype.updateZmRemoteUpdatePackage = function(key_suo, suo)
 			zuio_target = new Zuio(luid_target);
 			l_zuio      = new Zuio(l_target);
 
+			properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
+
+			// populate properties with the contact attributes that must be deleted on the server...
+			//
+			for (key in this.contact_converter().m_common_to[FORMAT_ZM][FORMAT_TB])
+				if (!isPropertyPresent(properties, key))
+					properties[key] = null;
+
 			msg          += " modify contact: ";
 			remote.zid    = zuio_target.zid();
-			remote.method = null;
-
-			if (this.state.sources[sourceid_winner]['format'] == FORMAT_TB) // always a content update in Tb2 - may not be so in Tb3.
-				remote.method = "ModifyContact";
-			else
-			{
-				// look at the pre-update zfi:
-				// if rev was bumped ==> content update  ==> ModifyContactRequest ==> load content from zc
-				// if ms  was bumped ==> attributes only ==> ContactActionRequest ==> load content from zc
-				//
-				var zfi = this.state.zfcPreUpdateWinners.get(suo.gid);
-				var lso = new Lso(zfi.get(FeedItem.ATTR_LS));
-
-				remote.method = (zfi.get(FeedItem.ATTR_REV) > lso.get(FeedItem.ATTR_REV)) ? "ModifyContact" : "ContactAction";
-			}
-
-			if (remote.method == "ModifyContact")
-			{
-				properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_ZM);
-
-				// populate properties with the contact attributes that must be deleted on the server...
-				//
-				for (key in this.contact_converter().m_common_to[FORMAT_ZM][FORMAT_TB])
-					if (!isPropertyPresent(properties, key))
-						properties[key] = null;
-
-				remote.arg   = newObject('id', zuio_target.id(), 'properties', properties, FeedItem.ATTR_L, l_zuio.id());
-			}
-			else if (remote.method == "ContactAction")
-			{
-				remote.arg   = newObject('id', zuio_target.id(), 'op', 'move', FeedItem.ATTR_L, l_zuio.id());
-			}
-			else
-				zinAssert(false);
+			remote.method = "ContactAction";
+			remote.arg    = newObject('id', zuio_target.id(), 'op', 'update', FeedItem.ATTR_L, l_zuio.id(), 'properties', properties);
 			break;
 
 		case Suo.DEL | FeedItem.TYPE_FL:
@@ -6780,8 +6750,6 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 				msg += " created: <folder id=" + id + " l=" + l + " name='" + attribute['name'] + "'>";
 			else if (remote.method == "CreateContact")
 				msg += " created: <cn id=" + id +" l=" + l + ">";
-			else if (remote.method == "ModifyContact")
-				msg += " modified: <cn id=" + id + ">";
 
 			if (change.acct)
 				msg += " in acct zid: " + change.acct;
@@ -6797,29 +6765,16 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 
 				attribute[FeedItem.ATTR_KEY] = key;
 
-				if (remote.method == "ModifyContact")
-				{
-					zfi = zfcTarget.get(key);
-					zfi.set(attribute)
-					zfi.set(FeedItem.ATTR_MS, change.token);
-					zfi.set(FeedItem.ATTR_FXMS, '1');
-					SyncFsm.setLsoToGid(zfiGid, zfi);
-					msg += " - updated luid and gid"; 
-				}
-				else
-				{
-					zfi = new FeedItem(type, attribute);
-					zfi.set(FeedItem.ATTR_MS, change.token);
-					zfi.set(FeedItem.ATTR_FXMS, '1');
-					SyncFsm.setLsoToGid(zfiGid, zfi);
+				zfi = new FeedItem(type, attribute);
+				zfi.set(FeedItem.ATTR_MS, change.token);
+				zfi.set(FeedItem.ATTR_FXMS, '1');
+				SyncFsm.setLsoToGid(zfiGid, zfi);
 
-					zfcTarget.set(zfi);
+				zfcTarget.set(zfi);
 
-					zfiGid.set(suo.sourceid_target, key);
-					this.state.aReverseGid[suo.sourceid_target][key] = suo.gid;
-					msg += " - added luid and gid"; 
-				}
-
+				zfiGid.set(suo.sourceid_target, key);
+				this.state.aReverseGid[suo.sourceid_target][key] = suo.gid;
+				msg += " - added luid and gid"; 
 			}
 		}
 	};
@@ -6843,7 +6798,7 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 				var zfcTarget   = self.zfc(suo.sourceid_target);
 				var luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 				var zfiTarget   = zfcTarget.get(luid_target);
-				var key         = Zuio.key(id, change.acct);
+				var key         = Zuio.key((id.indexOf(':') == -1) ? id : rightOfChar(id, ':'), change.acct);
 				var zfiRelevantToGid;
 
 				if (isPropertyPresent(remote, 'luid_target'))
@@ -6927,16 +6882,8 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 					functor = functor_action_response;
 					break;
 				case Suo.MOD | FeedItem.TYPE_CN:
-					if (remote.method == "ModifyContact") {
-						xpath_query = xprefix +"/zm:ModifyContactResponse[@requestId='" + j + "']/zm:cn";
-						functor = functor_create_blah_response;
-					}
-					else if (remote.method == "ContactAction") {
-						xpath_query = xprefix +"/zm:ContactActionResponse[@requestId='" + j + "']/zm:action";
-						functor = functor_action_response;
-					}
-					else
-						zinAssert(false);
+					xpath_query = xprefix +"/zm:ContactActionResponse[@requestId='" + j + "']/zm:action";
+					functor = functor_action_response;
 					break;
 				case Suo.DEL | FeedItem.TYPE_FL:
 					xpath_query = xprefix +"/zm:FolderActionResponse[@requestId='" + j + "']/zm:action";
@@ -7048,7 +6995,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 			let is_match = isMatchObjects(properties_pre_update, gd.properties) && !(gd.meta.id in self.state.gd_au_group_for_mod);
 
 			if (is_match) {
-				// ... a no-op ... no need to contact Google
+				// for groups we could get in here because a) we sync with both zimbra and google and b) the sync
+				// with zimbra causes the gid's ver to get bumped ==> that'll generate a modify operation for google
 				//
 				zfiTarget  = zfcTarget.get(luid_target);
 				msg       += " the local mod doesn't affect the remote " + GoogleData.eElement.keyFromValue(type) +
@@ -7110,16 +7058,6 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_FL:
-				// TODO test this - this was here before we support real modifies - how to handle?
-				// we could get in here because a) if we're syncing with both zimbra and google and the sync
-				// with zimbra causes the gid's ver to get bumped, that'll generate a modify operation
-				// msg       += " handling the modify addressbook as a no-op";
-				// luid_target = zfiGid.get(sourceid_target);
-				// zfiTarget   = zfcTarget.get(luid_target);
-				// SyncFsm.setLsoToGid(zfiGid, zfiTarget);
-				// suo.is_processed = true;
-				// break;
-
 				msg           += " about to modify group: ";
 				luid_target    = zfiGid.get(sourceid_target);
 				name_winner    = this.state.m_folder_converter.convertForPublic(FORMAT_GD, format_winner, zfiWinner);
@@ -8249,7 +8187,7 @@ SyncFsm.prototype.setupHttpZm = function(state, eventOnResponse, url, zid, metho
 
 	this.state.m_http = new HttpStateZm(url, this.state.m_logger);
 	this.state.m_http.m_method = method;
-	this.state.m_http.m_zsd.context(this.state.authToken, zid, (method != "ForeignContactDelete"));
+	this.state.m_http.m_zsd.context(this.state.authToken, zid, !(method in ZmSoapDocument.complexMethod));
 	this.state.m_http.m_zsd[method].apply(this.state.m_http.m_zsd, arrayFromArguments(arguments, SyncFsm.prototype.setupHttpZm.length));
 
 	this.setupHttpCommon(state, eventOnResponse);
@@ -8573,7 +8511,7 @@ HttpStateZm.prototype.handleResponse = function()
 		nextEvent = 'evNext';
 	else if (response && !this.m_fault_element_xml)
 	{
-		var method = (this.m_method == "ForeignContactDelete") ? "Batch" : this.m_method;
+		var method = (this.m_method in ZmSoapDocument.complexMethod) ? "Batch" : this.m_method;
 		var node = Xpath.getOneNode(Xpath.queryFromMethod(method), response, response);
 
 		if (node)
