@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmchaindata.js,v 1.14 2009-09-16 22:50:52 cvsuser Exp $
+// $Id: syncfsmchaindata.js,v 1.15 2009-10-08 17:20:51 cvsuser Exp $
 
 // An instance of this class is passed from SyncFsm to SyncFsm - carrying state from one to the next
 //
@@ -62,13 +62,13 @@ SyncFsmChainData.ITEM_KEYS = {
 
 SyncFsmChainData.prototype = {
 	toString : function() {
-		var ret = "SyncFsmChainData:" + "\n" +
-		          " account_index: " + this.m_account_index +
+		var ret = "SyncFsmChainData:" + 
+		          " account_index: "     + this.m_account_index +
 			      " a_first_of_format: " + aToString(this.m_a_first_of_format) +
 			      " a_last_of_format: "  + aToString(this.m_a_last_of_format);
 
 		for (var i = 0; i < this.m_a_item.length; i++) {
-			ret += "\n account: "      + this.account(i).toString();
+			ret += "\n account: " + i + " : " + this.account(i).toString();
 
 			for (var j in SyncFsmChainData.ITEM_KEYS)
 				if (typeof(this.sourceid(AccountStatic.indexToSourceId(i), j)) == 'object')
@@ -86,7 +86,7 @@ SyncFsmChainData.prototype = {
 		return this.m_account_index == this.m_a_item.length - 1;
 	},
 	account : function(index) {
-		if (index)
+		if (arguments.length == 1)
 			zinAssertAndLog(index < this.m_a_item.length, index);
 		else
 			index = this.m_account_index;
