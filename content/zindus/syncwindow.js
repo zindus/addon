@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncwindow.js,v 1.48 2009-09-16 22:50:52 cvsuser Exp $
+// $Id: syncwindow.js,v 1.49 2009-10-08 17:21:58 cvsuser Exp $
 
 function SyncWindow()
 {
@@ -165,8 +165,12 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 					(this.m_payload.m_es.m_exit_status == 0 &&
 					 this.m_sfcd.sourceid(AccountStatic.indexToSourceId(this.m_sfcd.m_account_index), 'c_repeat_after_gd_group_mod') == 1)
 
-			if (is_repeat)
+			if (is_repeat) {
 				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().username));
+
+				if (this.m_sfcd.account(0).format_xx() == FORMAT_ZM)
+					this.m_sfcd.m_account_index = 0;
+			}
 			else
 			{
 				this.m_zwc.forEach(this.zwc_functor(true));

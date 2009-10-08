@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.206 2009-10-06 22:08:34 cvsuser Exp $
+// $Id: syncfsm.js,v 1.207 2009-10-08 17:21:57 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4952,11 +4952,6 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 
 SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 {
-	// TODO - what if we simultaneously:
-	// a) modify tb following a gd change and
-	// b) modify gd following a tb change
-	// does that break this method?
-
 	let a_group         = this.gdciLuidsForGroups(this.zfcPr().get(luid_gd_au));
 	let sourceid_pr     = this.state.sourceid_pr;
 	let sourceid_tb     = this.state.sourceid_tb;
@@ -4967,21 +4962,34 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 
 	for (gp_id in a_group) {
 		let luid_gd_ci = SyncFsmGd.gdci_id_from_pair(luid_gd_au, gp_id);
+		
 		zinAssertAndLog(luid_gd_ci in this.state.aReverseGid[sourceid_pr], luid_gd_ci);
 
-		let gid       = this.state.aReverseGid[sourceid_pr][luid_gd_ci];
-		let luid_tb   = this.state.zfcGid.get(gid).get(sourceid_tb);
+		let gid = this.state.aReverseGid[sourceid_pr][luid_gd_ci];
 
-		if (!this.zfcTb().get(luid_tb).isPresent(FeedItem.ATTR_DEL)) {
-			let luid_tb_l = this.zfcTb().get(luid_tb).get(FeedItem.ATTR_L);
+		if (this.state.zfcGid.get(gid).isPresent(sourceid_tb)) {
+			let luid_tb = this.state.zfcGid.get(gid).get(sourceid_tb);
 
-			zinAssertAndLog(luid_tb_l in this.state.aReverseGid[sourceid_tb], luid_tb_l);
-			let gid_l     = this.state.aReverseGid[sourceid_tb][luid_tb_l];
-			let luid_gd_l = this.state.zfcGid.get(gid_l).get(sourceid_pr);
+			if (!this.zfcTb().get(luid_tb).isPresent(FeedItem.ATTR_DEL)) {
+				let luid_tb_l = this.zfcTb().get(luid_tb).get(FeedItem.ATTR_L);
 
-			if (luid_gd_l != id_gd_pab && luid_gd_l != id_gd_suggested)
-				ret.push(luid_gd_l);
+				zinAssertAndLog(luid_tb_l in this.state.aReverseGid[sourceid_tb], luid_tb_l);
+				let gid_l     = this.state.aReverseGid[sourceid_tb][luid_tb_l];
+				let luid_gd_l = this.state.zfcGid.get(gid_l).get(sourceid_pr);
+
+				if (luid_gd_l != id_gd_pab && luid_gd_l != id_gd_suggested)
+					ret.push(luid_gd_l);
+			}
 		}
+		// else we've got a conflict b/n a group-mod at google and tb
+		// eg. if in the same sync, the user simultaneously (1) at google: added a group and put a contact into it and
+		// (b) in tb: the user dragged+dropped from one ab to another
+		// in which case
+		// But, if the user (1) at google removed a contact's group membership simultaneously with (2) a tb: drag/drop
+		// then there's a conflict but the google group removal is respected.  That's ok, but we could mount an argument
+		// that this outcome is in contrast to how the addon generally handles conflicts, ie: tb always wins.
+		// The right way to implement this would be to keep a zfcPrPreMerge and pass that to gdciLuidsForGroups
+		// but that'd suck up a whole heap more memory in return for conflict-resolution correctness in one very infrequent edge case.
 	}
 
 	this.debug("gdGroupsFromTbState: luid_gd_au: " + luid_gd_au + " returns: " + ret.toString());
@@ -7501,6 +7509,7 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 	if (!this.state.stopFailCode)
 	{
 		var aGidsToDelete = new Array();
+		var format;
 
 		this.keepCertainDeletedTbMapItems();
 
@@ -7539,7 +7548,7 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 					zfi.del(FeedItem.ATTR_TBFM);
 				}
 
-				if (self.formatPr() == FORMAT_GD && zfi.getOrNull(FeedItem.ATTR_STYP) == FeedItem.eStyp.gdau)
+				if (format == FORMAT_GD && zfi.getOrNull(FeedItem.ATTR_STYP) == FeedItem.eStyp.gdau)
 				{
 					let a_group = self.gdciLuidsForGroups(zfi);
 					let is_one_alive = false;
@@ -7612,6 +7621,8 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 
 		for (sourceid in this.state.sources)
 		{
+			format = this.state.sources[sourceid]['format'];
+
 			this.state.stopwatch.mark(state + " 3: sourceid: " + sourceid);
 			this.state.m_progress_yield_text = "for-source-" + sourceid;
 			yield true;
@@ -9361,6 +9372,8 @@ SyncFsmGd.prototype.newZfiGroup = function(group)
 	return ret;
 }
 
+// given the zfi for a (gdau) contact, return the luids of the corresponding groups/folders in which the contact should appear
+//
 SyncFsmGd.prototype.gdciLuidsForGroups = function(zfi)
 {
 	let self    = this;

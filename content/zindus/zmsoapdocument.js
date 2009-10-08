@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zmsoapdocument.js,v 1.17 2009-10-06 22:08:34 cvsuser Exp $
+// $Id: zmsoapdocument.js,v 1.18 2009-10-08 17:21:58 cvsuser Exp $
 
 function ZmSoapDocument()
 {
@@ -45,7 +45,7 @@ ZmSoapDocument.nsFromMethod = function(method)
 		FolderAction:   "zm", 
 		FakeHead:       "zm",
 		Sync:           "zm",
-		Batch:          "z",  // used in ForeignContactDelete and ContactMove
+		Batch:          "z",  // used in ForeignContactDelete
 		last_notused:   null
 	};
 
@@ -54,7 +54,7 @@ ZmSoapDocument.nsFromMethod = function(method)
 	return aMethod[method];
 }
 
-ZmSoapDocument.complexMethod = newObjectWithKeys("ForeignContactDelete", "ContactMove");
+ZmSoapDocument.complexMethod = newObjectWithKeys("ForeignContactDelete");
 
 ZmSoapDocument.prototype.setElementAsBody = function(element)
 {

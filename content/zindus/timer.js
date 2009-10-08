@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: timer.js,v 1.47 2009-09-16 22:50:52 cvsuser Exp $
+// $Id: timer.js,v 1.48 2009-10-08 17:21:58 cvsuser Exp $
 
 function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {
@@ -147,6 +147,9 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			{
 				// don't bother putting anything in the UI here - it flies by too fast for the user to see it
 				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().username));
+
+				if (this.m_sfcd.account(0).format_xx() == FORMAT_ZM)
+					this.m_sfcd.m_account_index = 0;
 			}
 
 			if (!is_repeat)
