@@ -20,7 +20,9 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.107 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: testharness.js,v 1.108 2009-10-09 00:57:37 cvsuser Exp $
+
+// TODO retest tests!
 
 function TestHarness()
 {
@@ -42,6 +44,10 @@ TestHarness.prototype.run = function()
 
 	ret = ret && this.testPreferencesHaveDefaults();
 	ret = ret && this.testStringBundleContainsContactProperties();
+
+	includejs("infodlg.js");
+	InfoDlg.show('<a href="http://zindus.com">hello world</a>');
+	return;
 
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
@@ -520,12 +526,12 @@ TestHarness.prototype.testFolderConverterSuiteTwo = function(converter, localise
 
 TestHarness.prototype.testFolderConverterSuiteThree = function(converter, email_address)
 {
-	function munge(x) { return "zindus/" + email_address + ":" + x; }
+	function munge(x) { return "zindus/" + email_address + gd_gr_as_ab_separator + x; }
 
 	let tb_name = ContactGoogle.eSystemGroup.Contacts;
 	// let zfi = SyncFsm.zfi_from_name(munge(tb_name));
 	// let x = converter.convertForPublic(FORMAT_GD, FORMAT_TB, zfi);
-	// let zfi = SyncFsm.zfi_from_name("zindus-" + email_address + ":fred");
+	// let zfi = SyncFsm.zfi_from_name("zindus-" + email_address + gd_gr_as_ab_separator + "fred");
 
 	let zfi = SyncFsm.zfi_from_name_gd(ContactGoogle.eSystemGroup.Contacts);
 	let x   = converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi);
@@ -533,7 +539,7 @@ TestHarness.prototype.testFolderConverterSuiteThree = function(converter, email_
 	this.m_logger.debug("x: " + x + " zfi: " + zfi.toString());
 
 	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name(munge("fred"))) == "zindus/fred");
-	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name("zindus-" + email_address + ":fred"))== "zindus-fred");
+	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name("zindus-" + email_address + gd_gr_as_ab_separator + "fred"))== "zindus-fred");
 	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name(munge(ContactGoogle.eSystemGroup.Contacts))) == ContactGoogle.eSystemGroup.Contacts);
 
 	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_GD, SyncFsm.zfi_from_name_gd("zindus/fred")) == munge("fred"));
