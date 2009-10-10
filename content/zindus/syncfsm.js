@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.207 2009-10-08 17:21:57 cvsuser Exp $
+// $Id: syncfsm.js,v 1.208 2009-10-10 14:06:12 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -154,8 +154,8 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stGetContactGd2:  { evCancel: 'final', evNext: 'stGetContactGd3',  evRepeat:      'stGetContactGd1', evLackIntegrity: 'final'     },
 		stGetContactGd3:  { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge',      evRepeat: 'stGetContactGd3'  },
 		stDeXmlifyAddrGd: { evCancel: 'final', evNext: 'stConverge',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stDeXmlifyAddrGd' },
-		stConverge:       { evCancel: 'final', evNext: 'stConfirmOnErase', evRepeat:      'stConverge',      evLackIntegrity: 'final'     },
-		stConfirmOnErase: { evCancel: 'final', evNext: 'stGetGroupPuGd'                                                                   },
+		stConverge:       { evCancel: 'final', evNext: 'stConfirmUI',      evRepeat:      'stConverge',      evLackIntegrity: 'final'     },
+		stConfirmUI:      { evCancel: 'final', evNext: 'stGetGroupPuGd'                                                                   },
 		stGetGroupPuGd:   { evCancel: 'final', evNext: 'stGetContactPuGd', evHttpRequest: 'stHttpRequest',   evRepeat: 'stGetGroupPuGd'   },
 		stGetContactPuGd: { evCancel: 'final', evNext: 'stUpdateGd',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stGetContactPuGd' },
 		stUpdateGd:       { evCancel: 'final', evNext: 'stUpdateTb',       evHttpRequest: 'stHttpRequest',   evRepeat: 'stUpdateGd',
@@ -183,7 +183,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stGetContactGd3:        this.entryActionGetContactGd3,
 		stDeXmlifyAddrGd:       this.entryActionDeXmlifyAddrGd,
 		stConverge:             this.entryActionConverge,
-		stConfirmOnErase:       this.entryActionConfirmOnErase,
+		stConfirmUI:            this.entryActionConfirmUI,
 		stGetGroupPuGd:         this.entryActionGetGroupPuGd,
 		stGetContactPuGd:       this.entryActionGetContactPuGd,
 		stUpdateGd:             this.entryActionUpdateGd,
@@ -3862,7 +3862,9 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 		var functorx  = {
 			run: function(zfi) {
 				var key          = zfi.key();
-				var is_suggested = (key in self.state.a_gd_contact) && (self.state.a_gd_contact[key].groups.length == 0);
+				var is_suggested = (zfi.styp() == FeedItem.eStyp.gdci) && 
+				                   (zfi.get(FeedItem.ATTR_GDID) in self.state.a_gd_contact) &&
+								   (self.state.a_gd_contact[zfi.get(FeedItem.ATTR_GDID)].groups.length == 0);
 				var ret;
 				if ((pass_number == 1 && !is_suggested) || (pass_number == 2 && is_suggested))
 					ret = functor.run(zfi);
@@ -5905,7 +5907,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	yield false;
 }
 
-SyncFsmGd.prototype.entryActionConfirmOnErase = function(state, event, continuation)
+SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 {
 	let is_confirm_on_erase = preference(MozillaPreferences.GD_CONFIRM_ON_ERASE, 'bool');
 	let nextEvent           = 'evNext';
@@ -5913,68 +5915,87 @@ SyncFsmGd.prototype.entryActionConfirmOnErase = function(state, event, continuat
 	let id_gd_suggested     = (this.account().gd_gr_as_ab == 'true') ? this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd') : null;
 	let self                = this;
 
-	if (is_confirm_on_erase) {
-		function do_count(zfc, functor, format) {
-			zfc.forEach(functor);
-			let fn = function(sourceid, bucket) { return (self.state.sources[sourceid]['format'] == format) && (bucket & Suo.DEL); }
-			return [ functor.count, Suo.count(self.state.aSuo, fn) ];
-		}
+	function do_count(zfc, functor, format) {
+		zfc.forEach(functor);
+		let fn = function(sourceid, bucket) { return (self.state.sources[sourceid]['format'] == format) && (bucket & Suo.DEL); }
+		return [ functor.count, Suo.count(self.state.aSuo, fn) ];
+	}
 
+	let functor_gd = {
+		count : 0,
+		run: function(zfi) {
+			if (zfi.type() == FeedItem.TYPE_CN &&
+			    zfi.styp() == FeedItem.eStyp.gdci &&
+				!zfi.isPresent(FeedItem.ATTR_DEL))
+			{
+				if (zfi.get(FeedItem.ATTR_L) == id_gd_pab)
+					this.count++;
+
+				if ((self.account().gd_suggested == 'ignore') &&
+				    self.account().gd_gr_as_ab == 'true' &&
+				    zfi.get(FeedItem.ATTR_L) == id_gd_suggested)
+					this.count++;
+			}
+			return true;
+		}
+	};
+
+	let functor_tb = {
+		count : 0,
+		run: function(zfi) {
+			if (zfi.type() == FeedItem.TYPE_CN && !zfi.isPresent(FeedItem.ATTR_DEL) && self.isInScopeTbLuid(zfi.key()))
+				this.count++;
+			return true;
+		}
+	};
+
+	let c_at_gd, c_at_tb, c_to_be_deleted_gd, c_to_be_deleted_tb;
+
+	[ c_at_gd, c_to_be_deleted_gd ] = do_count(this.zfcPr(), functor_gd, FORMAT_GD);
+	[ c_at_tb, c_to_be_deleted_tb ] = do_count(this.zfcTb(), functor_tb, FORMAT_TB);
+	
+	this.debug("entryActionConfirmUI: " +
+	           " c_at_gd: " + c_at_gd + " c_to_be_deleted_gd: " + c_to_be_deleted_gd +
+	           " c_at_tb: " + c_at_tb + " c_to_be_deleted_tb: " + c_to_be_deleted_tb);
+
+	let slow_sync_txt  = stringBundleString("text.slow.sync");
+	let slow_sync_html = "<a href='" + url('slow-sync') + "'>" + slow_sync_txt + "</a>";
+	let slow_sync_info = stringBundleString("text.more.information.on", [ slow_sync_html ]);
+
+	if (is_confirm_on_erase) {
 		function do_cancel(string_arg) {
 			if (self.state.m_is_attended) {
-				let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService);
+				// TODO test this
 				let msg     = stringBundleString("text.confirm.erase.1", [ string_arg ]);
-				let is_ok   = prompts.confirm(window, stringBundleString("brand.zindus"), msg);
-				nextEvent   = is_ok ? 'evNext' : 'evCancel';
+				let button  = InfoDlg.show(msg, "accept,cancel");
+				nextEvent   = (button == 'accept') ? 'evNext' : 'evCancel';
 
-				if (!is_ok)
-					prompts.alert(window, stringBundleString("brand.zindus"), stringBundleString("text.confirm.erase.2"));
+				if (button != 'accept') {
+					msg = stringBundleString("text.confirm.erase.2", [ slow_sync_txt, slow_sync_info ]);
+					InfoDlg.show(stringBundleString("brand.zindus"), msg);
+				}
 			}
 			else
 				nextEvent = 'evCancel';
 		}
 
-		let functor_gd = {
-			count : 0,
-			run: function(zfi) {
-				if (zfi.type() == FeedItem.TYPE_CN &&
-				    zfi.styp() == FeedItem.eStyp.gdci &&
-					!zfi.isPresent(FeedItem.ATTR_DEL))
-				{
-					if (zfi.get(FeedItem.ATTR_L) == id_gd_pab)
-						this.count++;
-
-					if ((self.account().gd_suggested == 'ignore') &&
-					    self.account().gd_gr_as_ab == 'true' &&
-					    zfi.get(FeedItem.ATTR_L) == id_gd_suggested)
-						this.count++;
-				}
-				return true;
-			}
-		};
-
-		let functor_tb = {
-			count : 0,
-			run: function(zfi) {
-				if (zfi.type() == FeedItem.TYPE_CN && !zfi.isPresent(FeedItem.ATTR_DEL))
-					this.count++;
-				return true;
-			}
-		};
-
-		let c_at_gd, c_at_tb, c_to_be_deleted_gd, c_to_be_deleted_tb;
-
-		[ c_at_gd, c_to_be_deleted_gd ] = do_count(this.zfcPr(), functor_gd, FORMAT_GD);
-		[ c_at_tb, c_to_be_deleted_tb ] = do_count(this.zfcTb(), functor_tb, FORMAT_TB);
-		
-		this.debug("entryActionConfirmOnErase: " +
-		           " c_at_gd: " + c_at_gd + " c_to_be_deleted_gd: " + c_to_be_deleted_gd +
-		           " c_at_tb: " + c_at_tb + " c_to_be_deleted_tb: " + c_to_be_deleted_tb);
-
 		if (c_to_be_deleted_gd > 0 && (c_to_be_deleted_gd == c_at_gd))
 			do_cancel(stringBundleString("brand.google"));
 		else if (c_to_be_deleted_tb > 0 && (c_to_be_deleted_tb == c_at_tb))
 			do_cancel(nsIXULAppInfo().app_name);
+	}
+
+	let is_firstrun = preference(MozillaPreferences.AS_IS_FIRSTRUN, 'bool');
+
+	if (this.state.m_is_attended && is_firstrun && this.is_slow_sync() && c_at_tb != 0 && c_at_gd != 0) {
+		let msg    = stringBundleString("text.firstrun.message", [ slow_sync_txt, slow_sync_info ]) 
+		let button = InfoDlg.show(msg, "accept,cancel");
+		nextEvent  = (button == 'accept') ? 'evNext' : 'evCancel';
+	}
+
+	if (nextEvent == 'evNext') {
+		let prefs   = new MozillaPreferences();
+		prefs.setBoolPref(prefs.branch(), MozillaPreferences.AS_IS_FIRSTRUN, false);
 	}
 
 	continuation(nextEvent);
@@ -9424,6 +9445,8 @@ SyncFsmGd.prototype.gdciExpandZfi = function(zfi)
 		let zfi_new = self.newZfiCnGdCi(zfi.key(), gp_id);
 		ret.push(zfi_new.key());
 	}
+
+	this.debug("gdciExpandZfi: expanded zfi: " + zfi.toString() + " into the following keys: " + ret.toString());
 
 	return ret;
 }

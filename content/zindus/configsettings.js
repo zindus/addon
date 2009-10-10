@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.40 2009-06-28 10:45:13 cvsuser Exp $
+// $Id: configsettings.js,v 1.41 2009-10-10 14:06:11 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -164,9 +164,9 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 	switch (id_target)
 	{
-		case "cs-button-sync-now":
+		case "cs-button-sync-now": {
 			this.updatePrefsetsFromDocument();
-			var stopwatch = new StopWatch("Configsettings");
+			let stopwatch = new StopWatch("Configsettings");
 			stopwatch.mark("start")
 
 			this.m_payload = new Payload();
@@ -229,6 +229,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				this.m_czss.initialiseView();
 
 			this.m_payload = null;
+			}
 			break;
 
 		case "cs-button-test-harness": {

@@ -36,7 +36,7 @@
 	ondialogcancel="return window.wd.onCancel();"
 	ondialogaccept="return window.wd.onAccept();"
 	buttons="accept,cancel"
-	style="min-width: 29em; min-height: 8.5em"
+	style="width: 35em; min-height: 8.5em"
 	>
 
 	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/scoperegistry.js"/>

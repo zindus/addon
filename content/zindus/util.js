@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.59 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: util.js,v 1.60 2009-10-10 14:06:13 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1072,6 +1072,7 @@ function url(key)
 		case 'share-tos':             ret = 'http://www.zindus.com/service/tos.html';                            break;
 		case 'share-faq':             ret = 'http://www.zindus.com/faq-share';                                   break;
 		case 'google-bug-997':        ret = 'http://zindus.com/i/google-bug-997/';                               break;
+		case 'slow-sync':             ret = 'http://zindus.com/i/slow-sync';                                     break;
 		default: zinAssertAndLog(false, key);
 	}
 

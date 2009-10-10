@@ -20,9 +20,10 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.108 2009-10-09 00:57:37 cvsuser Exp $
+// $Id: testharness.js,v 1.109 2009-10-10 14:06:13 cvsuser Exp $
 
 // TODO retest tests!
+// rationalise use of 'email address' in zindus.properties and zindus.dtd
 
 function TestHarness()
 {
@@ -45,9 +46,8 @@ TestHarness.prototype.run = function()
 	ret = ret && this.testPreferencesHaveDefaults();
 	ret = ret && this.testStringBundleContainsContactProperties();
 
-	includejs("infodlg.js");
-	InfoDlg.show('<a href="http://zindus.com">hello world</a>');
-	return;
+	ret = ret && this.testInfoDig();
+	return; // TODO
 
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
@@ -100,6 +100,11 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testLoginManager();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
+}
+
+TestHarness.prototype.testInfoDig = function()
+{
+	InfoDlg.show('<a href="http://zindus.com">hello world</a>');
 }
 
 TestHarness.prototype.testSuo = function()

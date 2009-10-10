@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mozillapreferences.js,v 1.33 2009-09-01 04:28:00 cvsuser Exp $
+// $Id: mozillapreferences.js,v 1.34 2009-10-10 14:06:12 cvsuser Exp $
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
@@ -43,6 +43,7 @@ MozillaPreferences.AS_ALLOW_PRE_RELEASE     = "system.as_allow_pre_release";
 MozillaPreferences.AS_PASSWORD_VERSION      = "system.as_password_version";
 MozillaPreferences.AS_SHARE_SERICE_API_URL  = "system.as_share_service_api_url";
 MozillaPreferences.AS_MIGRATION             = "system.as_migration";
+MozillaPreferences.AS_IS_FIRSTRUN           = "system.as_is_firstrun";
 MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
 MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: infodlg.js,v 1.1 2009-10-09 00:57:37 cvsuser Exp $
+// $Id: infodlg.js,v 1.2 2009-10-10 14:06:12 cvsuser Exp $
 
 function InfoDlg()
 {
@@ -40,6 +40,11 @@ InfoDlg.prototype = {
 		this.m_payload = window.arguments[0];
 
 		xulSetHtml("zindus-infodlg-description", this.m_payload.m_args.msg);
+
+		if (!/accept/.test(this.m_payload.m_args.buttons))
+			dId("zindus-infodlg").getButton('accept').hidden = true;
+		else if (!/cancel/.test(this.m_payload.m_args.buttons))
+			dId("zindus-infodlg").getButton('cancel').hidden = true;
 
 		this.m_logger.debug("onLoad: exits");
 	},
@@ -64,15 +69,19 @@ InfoDlg.prototype = {
 	}
 };
 
-InfoDlg.show = function(msg)
+InfoDlg.show = function(msg, buttons)
 {
 	logger().debug("InfoDlg.show: msg: " + msg);
 
+	if (!buttons)
+		buttons = 'accept';
+
 	let payload = new Payload();
-	payload.m_args = newObject('msg', msg);
+	payload.m_args = newObject('msg', msg, 'buttons', buttons);
 
 	window.openDialog("chrome://zindus/content/infodlg.xul", "_blank", WINDOW_FEATURES, payload);
 
 	logger().debug("InfoDlg.show: result: " + payload.m_result);
-}
 
+	return payload.m_result;
+}
