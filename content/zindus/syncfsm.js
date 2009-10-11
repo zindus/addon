@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.208 2009-10-10 14:06:12 cvsuser Exp $
+// $Id: syncfsm.js,v 1.209 2009-10-11 01:01:30 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -5965,15 +5965,12 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	if (is_confirm_on_erase) {
 		function do_cancel(string_arg) {
 			if (self.state.m_is_attended) {
-				// TODO test this
-				let msg     = stringBundleString("text.confirm.erase.1", [ string_arg ]);
-				let button  = InfoDlg.show(msg, "accept,cancel");
-				nextEvent   = (button == 'accept') ? 'evNext' : 'evCancel';
+				let msg    = stringBundleString("text.confirm.erase.1", [ string_arg ]);
+				let button = InfoDlg.show(msg, "accept,cancel");
+				nextEvent  = (button == 'accept') ? 'evNext' : 'evCancel';
 
-				if (button != 'accept') {
-					msg = stringBundleString("text.confirm.erase.2", [ slow_sync_txt, slow_sync_info ]);
-					InfoDlg.show(stringBundleString("brand.zindus"), msg);
-				}
+				if (button != 'accept')
+					InfoDlg.show(stringBundleString("text.confirm.erase.2", [ slow_sync_txt, slow_sync_info ]));
 			}
 			else
 				nextEvent = 'evCancel';
@@ -9446,7 +9443,7 @@ SyncFsmGd.prototype.gdciExpandZfi = function(zfi)
 		ret.push(zfi_new.key());
 	}
 
-	this.debug("gdciExpandZfi: expanded zfi: " + zfi.toString() + " into the following keys: " + ret.toString());
+	// this.debug("gdciExpandZfi: expanded zfi: " + zfi.toString() + " into the following keys: " + ret.toString());
 
 	return ret;
 }
