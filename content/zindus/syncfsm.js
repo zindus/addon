@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.211 2009-10-11 10:36:12 cvsuser Exp $
+// $Id: syncfsm.js,v 1.212 2009-10-11 18:16:07 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -325,7 +325,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		this.debug(msg);
 
 		this.state.stopFailCode = 'failon.no.pab.2';
-		this.state.stopFailArg  = [ AppInfo.app_name('first_letter_cap') ];
+		this.state.stopFailArg  = [ AppInfo.app_name(AppInfo.firstcap) ];
 
 		nextEvent = 'evLackIntegrity';
 	}
@@ -3410,7 +3410,7 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 	if (!isObjectEmpty(a_empty_folder_names))
 	{
 		this.state.stopFailCode = 'failon.zm.empty.contact';
-		this.state.stopFailArg  = [ AppInfo.app_name('first_letter_cap'), keysToString(a_empty_folder_names) ];
+		this.state.stopFailArg  = [ AppInfo.app_name(AppInfo.firstcap), keysToString(a_empty_folder_names) ];
 	}
 
 	return this.state.stopFailCode == null;
@@ -5444,7 +5444,7 @@ SyncFsm.prototype.testForCreateSharedAddressbook = function()
 		if (!(name in a_name[this.state.sourceid_pr]))
 		{
 			this.state.stopFailCode   = 'failon.folder.cant.create.shared';
-			this.state.stopFailArg    = [ AppInfo.app_name('first_letter_cap'), name ];
+			this.state.stopFailArg    = [ AppInfo.app_name(AppInfo.firstcap), name ];
 			break;
 		}
 
@@ -8945,7 +8945,7 @@ SyncFsm.prototype.entryActionAuthCheck = function(state, event, continuation)
 	if (!this.state.authToken)
 	{
 		this.state.stopFailCode   = 'failon.auth';
-		this.state.stopFailArg  = [ AppInfo.app_name('first_letter_cap') ];
+		this.state.stopFailArg  = [ AppInfo.app_name(AppInfo.firstcap) ];
 		this.state.stopFailTrailer = stringBundleString("text.http.status.code", [ this.state.m_http.m_http_status_code ]);
 
 		nextEvent = 'evLackIntegrity';  // this isn't really a lack of integrity, but it's processed in the same way

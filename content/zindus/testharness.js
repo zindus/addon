@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.111 2009-10-11 10:36:13 cvsuser Exp $
+// $Id: testharness.js,v 1.112 2009-10-11 18:16:08 cvsuser Exp $
 
 function TestHarness()
 {
@@ -1118,8 +1118,9 @@ TestHarness.prototype.testContactGoogle1 = function()
 
 		generator = GoogleData.eMeta.generator();
 
-		while (Boolean([key, value] = generator.next()))
-			this.m_logger.debug("contact.meta." + key + ": " + contact.meta[key]);
+		let a; // a[0] == key a[1] == value
+		while (Boolean(a = generator.next()))
+			this.m_logger.debug("contact.meta." + a[0] + ": " + contact.meta[a[0]]);
 	}
 	
 	if (false)
@@ -1461,7 +1462,12 @@ TestHarness.prototype.testContactGoogleIssue151 = function()
 {
 	let company = "ACME" + String.fromCharCode(0xf) + " Pty Ltd";
 
-	this.addCardTb2({ PrimaryEmail: "111-test@example.com", DisplayName: "111 test", Company: company });
+	let addressbook = AddressBook.new();
+	let contact_converter = this.newContactConverter();
+	addressbook.contact_converter(contact_converter);
+
+	let uri    = "moz-abmdbdirectory://abook.mab";
+	let abCard = addressbook.addCard(uri, { PrimaryEmail: "111-test@example.com", DisplayName: "111 test", Company: company }, {});
 
 	return true;
 }
@@ -2130,6 +2136,8 @@ TestHarness.prototype.addCardTb2 = function(properties, uri)
 
 	if (typeof(properties) == 'undefined')
 		properties = { PrimaryEmail: "111-test@example.com", DisplayName: "111 test" };
+
+	zinAssert(typeof(abCard.setCardValue) == 'function'); // otherwise we're not running in tb2
 	
 	for (var key in properties)
 		abCard.setCardValue(key, properties[key]);
@@ -2454,7 +2462,7 @@ TestHarness.prototype.testExitStatusMessages = function()
 		'failon.multiple.ln'                  : { 'trailer': 'address book names go here' },
 		'failon.gd.forbidden'                 : {},
 		'failon.gd.syncwith'                  : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },
-		'failon.zm.empty.contact'             : { 'arg':    [ 'Joe', 'fred' ] },
+		'failon.zm.empty.contact'             : { 'arg':    [ 'Joe', 'ThunderbirdX' ] },
 		'failon.unauthorized'                 : { },
 		'failon.auth'                         :  { 'trailer': stringBundleString("text.http.status.code", [ 403 ]), 'arg': ['Thunderbird']},
 		'': {}

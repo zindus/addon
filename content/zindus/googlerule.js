@@ -591,7 +591,7 @@ GoogleRuleEmpty.prototype.onLoad = function()
 
 	xulSetHtml('gr-description',
 		stringBundleString("gr.description.empty.value",
-			[ AppInfo.app_name('first_letter_cap'),
+			[ AppInfo.app_name(AppInfo.firstcap),
 			  stringBundleString("gr.more.information", [ GoogleRuleTrash.failCodeToHref(this.m_es.failcode()) ]) ]));
 
 	this.refreshRows();
