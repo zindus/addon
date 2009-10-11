@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.78 2009-10-10 14:06:12 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.79 2009-10-11 10:36:13 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -442,7 +442,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 						es.m_fail_trailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
 				}
 				else if (es.failcode() == 'failon.service')
-					es.m_fail_trailer = stringBundleString("status.failon.service.detail");
+					es.m_fail_trailer = stringBundleString("status.failon.service.detail", [ AppInfo.app_name('first_letter_cap') ]);
 				else if (es.failcode() == 'failon.cancel')
 					es.m_fail_trailer = stringBundleString("status.failon.cancel.detail");
 

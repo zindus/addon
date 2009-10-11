@@ -20,10 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.110 2009-10-11 09:21:08 cvsuser Exp $
-
-// TODO retest tests!
-// rationalise use of 'email address' in zindus.properties and zindus.dtd
+// $Id: testharness.js,v 1.111 2009-10-11 10:36:13 cvsuser Exp $
 
 function TestHarness()
 {
@@ -46,9 +43,7 @@ TestHarness.prototype.run = function()
 	ret = ret && this.testPreferencesHaveDefaults();
 	ret = ret && this.testStringBundleContainsContactProperties();
 
-	ret = ret && this.testInfoDig();
-	return; // TODO
-
+	// ret = ret && this.testInfoDig();
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
 	// ret = ret && this.testSuo();
@@ -67,7 +62,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testAddressBookFf();
 	// ret = ret && this.testFeedCollection();
 	// ret = ret && this.testPermFromZfi();
-	ret = ret && this.testFolderConverter();
+	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
@@ -1074,7 +1069,8 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 
 	if (meta)
 		for (key in meta)
-			zinAssertAndLog(contact.meta[key] == meta[key], "key: " + key + " contact.meta[key]: " + contact.meta[key] + " meta[key]: " + meta[key]);
+			if (key == 'id')
+			zinAssertAndLog(contact.meta['id_as_url'] == meta[key], "key: " + key + " contact.meta[key]: " + contact.meta[key] + " meta[key]: " + meta[key]);
 
 	if (contact.properties)
 		for (key in contact.properties)
@@ -1085,7 +1081,10 @@ TestHarness.prototype.matchContactGoogle = function(contact, properties, meta, i
 
 	if (meta)
 		for (key in contact.meta)
-			zinAssertAndLog(contact.meta[key] == meta[key], "key: " + key);
+			if (key == 'id' || key == 'id_as_url')
+				zinAssertAndLog(contact.meta['id_as_url'] == meta['id'], "key: " + key);
+			else
+				zinAssertAndLog(contact.meta[key] == meta[key], "key: " + key);
 }
 
 TestHarness.prototype.testContactGoogle1 = function()
@@ -2445,19 +2444,19 @@ TestHarness.prototype.testExitStatusMessages = function()
 		'failon.folder.reserved.changed'      : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },
 		'failon.folder.name.clash'            : { 'arg':    [ 'fred' ] },
 		'failon.folder.source.update'         : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },
-		'failon.folder.cant.create.shared'    : { 'arg':    [ 'fred' ] },
+		'failon.folder.cant.create.shared'    : { 'arg':    [ 'fred', 'Fred' ] },
 		'failon.unable.to.update.server'      : { 'trailer': stringBundleString("text.zm.soap.method", [ "Auth: some args" ]) },
 		'failon.unable.to.update.thunderbird' : { 'trailer': stringBundleString("status.failon.unable.to.update.thunderbird.detail1",
 		                                                     [ 'fred' ]) },
 		'failon.no.xpath'                     : {},
 		'failon.no.tbpre'                     : {},
-		'failon.no.pab.2'                     : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) },
+		'failon.no.pab.2'                     : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]),'arg':['Thunderbird']},
 		'failon.multiple.ln'                  : { 'trailer': 'address book names go here' },
 		'failon.gd.forbidden'                 : {},
 		'failon.gd.syncwith'                  : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },
-		'failon.zm.empty.contact'             : { 'arg':    [ 'fred' ] },
+		'failon.zm.empty.contact'             : { 'arg':    [ 'Joe', 'fred' ] },
 		'failon.unauthorized'                 : { },
-		'failon.auth':  { 'trailer': stringBundleString("text.http.status.code", [ 403 ])     },
+		'failon.auth'                         :  { 'trailer': stringBundleString("text.http.status.code", [ 403 ]), 'arg': ['Thunderbird']},
 		'': {}
 	};
 

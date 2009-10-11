@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmexitstatus.js,v 1.45 2009-09-16 22:50:52 cvsuser Exp $
+// $Id: syncfsmexitstatus.js,v 1.46 2009-10-11 10:36:13 cvsuser Exp $
 
 function SyncFsmExitStatus()
 {
@@ -51,20 +51,20 @@ function SyncFsmExitStatus()
 	'failon.folder.reserved.changed'       : { 'trailer' : 1, 'arglength': 1 }, //    
 	'failon.folder.name.clash'             : { 'trailer' : 1, 'arglength': 1 }, //     a folder name entered from both tb and zm sides
 	'failon.folder.source.update'          : { 'trailer' : 1, 'arglength': 1 }, //     the source update operations can't be applied
-	'failon.folder.cant.create.shared'     : { 'trailer' : 0, 'arglength': 1 }, //    
+	'failon.folder.cant.create.shared'     : { 'trailer' : 0, 'arglength': 2 }, //    
 	'failon.unable.to.update.server'       : { 'trailer' : 1, 'arglength': 0 }, // 20. couldn't make sense of the http/soap response
 	'failon.unable.to.update.thunderbird'  : { 'trailer' : 1, 'arglength': 0 }, //     
 	'failon.no.xpath'                      : { 'trailer' : 0, 'arglength': 0 }, //    
 	'failon.no.tbpre'                      : { 'trailer' : 0, 'arglength': 1 }, //    
-	'failon.no.pab.2'                      : { 'trailer' : 0, 'arglength': 0 }, //     
+	'failon.no.pab.2'                      : { 'trailer' : 0, 'arglength': 1 }, //     
 	'failon.multiple.ln'                   : { 'trailer' : 1, 'arglength': 0 }, //      
 	'failon.gd.conflict.4'                 : { 'trailer' : 0, 'arglength': 0 }, //    
 	'failon.gd.forbidden'                  : { 'trailer' : 0, 'arglength': 0 }, //    
 	'failon.gd.syncwith'                   : { 'trailer' : 1, 'arglength': 1 }, //     
 	'failon.gd.get'                        : { 'trailer' : 0, 'arglength': 0 }, //     
-	'failon.zm.empty.contact'              : { 'trailer' : 0, 'arglength': 1 }, // 30.
+	'failon.zm.empty.contact'              : { 'trailer' : 0, 'arglength': 2 }, // 30.
 	'failon.unauthorized'                  : { 'trailer' : 0, 'arglength': 0 }, //     server 401 - did a proxy remove the 'Authorized' hdr?
-	'failon.auth'                          : { 'trailer' : 1, 'arglength': 0 }, //     Login attempt failed
+	'failon.auth'                          : { 'trailer' : 1, 'arglength': 1 }, //     Login attempt failed
 	'failon.known.bug'                     : { 'trailer' : 1, 'arglength': 2 }  //     Known bug
 	};
 }

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.210 2009-10-11 09:21:06 cvsuser Exp $
+// $Id: syncfsm.js,v 1.211 2009-10-11 10:36:12 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -325,6 +325,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		this.debug(msg);
 
 		this.state.stopFailCode = 'failon.no.pab.2';
+		this.state.stopFailArg  = [ AppInfo.app_name('first_letter_cap') ];
 
 		nextEvent = 'evLackIntegrity';
 	}
@@ -3409,7 +3410,7 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 	if (!isObjectEmpty(a_empty_folder_names))
 	{
 		this.state.stopFailCode = 'failon.zm.empty.contact';
-		this.state.stopFailArg  = [ keysToString(a_empty_folder_names) ];
+		this.state.stopFailArg  = [ AppInfo.app_name('first_letter_cap'), keysToString(a_empty_folder_names) ];
 	}
 
 	return this.state.stopFailCode == null;
@@ -5440,10 +5441,10 @@ SyncFsm.prototype.testForCreateSharedAddressbook = function()
 	                   " Tb: " + aToString(a_name[this.state.sourceid_tb]) + " Zm: " + aToString(a_name[this.state.sourceid_pr]));
 
 	for (var name in a_name[this.state.sourceid_tb])
-		if (!isPropertyPresent(a_name[this.state.sourceid_pr], name))
+		if (!(name in a_name[this.state.sourceid_pr]))
 		{
 			this.state.stopFailCode   = 'failon.folder.cant.create.shared';
-			this.state.stopFailArg    = [ name ];
+			this.state.stopFailArg    = [ AppInfo.app_name('first_letter_cap'), name ];
 			break;
 		}
 
@@ -8470,6 +8471,8 @@ HttpStateZm.prototype.failCode = function()
 	if (ret == 'failon.unexpected')
 		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
 
+	ret = 'failon.service';
+
 	return ret;
 }
 
@@ -8942,6 +8945,7 @@ SyncFsm.prototype.entryActionAuthCheck = function(state, event, continuation)
 	if (!this.state.authToken)
 	{
 		this.state.stopFailCode   = 'failon.auth';
+		this.state.stopFailArg  = [ AppInfo.app_name('first_letter_cap') ];
 		this.state.stopFailTrailer = stringBundleString("text.http.status.code", [ this.state.m_http.m_http_status_code ]);
 
 		nextEvent = 'evLackIntegrity';  // this isn't really a lack of integrity, but it's processed in the same way

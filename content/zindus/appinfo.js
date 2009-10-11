@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.1 2009-10-11 09:21:05 cvsuser Exp $
+// $Id: appinfo.js,v 1.2 2009-10-11 10:36:12 cvsuser Exp $
 
 var AppInfo = {
 	m_version              : null,
@@ -51,6 +51,8 @@ var AppInfo = {
 				default:    this.m_app_name = 'other';       break;
 			}
 		}
+		if (arg == 'first_letter_cap') // TODO
+			return 'fred';
 		return (arg == 'first_letter_cap') ?
 		         (this.app_name().substr(0,1).toUpperCase() + this.app_name().substr(1).toLowerCase()) :
 		         this.m_app_name;
