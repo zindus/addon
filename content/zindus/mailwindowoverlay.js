@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.59 2009-10-11 09:21:06 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.60 2009-10-11 23:23:19 cvsuser Exp $
 
 function ZinMailWindowOverlay()
 {
@@ -345,6 +345,21 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 				account.zm_emailed_contacts = 'true';
 				account.save();
 			}
+
+	// 0.8.13
+	// - add gd_gr_as_ab == 'false' to google accounts if necessary
+	//
+	if (true)
+		for (i = 0; i < accounts.length; i++)
+			if ((accounts[i].format_xx() == FORMAT_GD) && (!accounts[i].gd_gr_as_ab || !accounts[i].gd_gr_as_ab.match(/true|false/)))
+			{
+				let account = accounts[i];
+				this.m_logger.debug("set 'gd_gr_as_ab': current gd_gr_as_ab: " + account.gd_gr_as_ab + " toString: " + account.toString());
+
+				account.gd_gr_as_ab = 'false';
+				account.save();
+			}
+
 }
 
 ZinMailWindowOverlay.prototype.migratePasswords = function()
