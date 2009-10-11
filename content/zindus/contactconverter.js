@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.51 2009-09-18 07:39:37 cvsuser Exp $
+// $Id: contactconverter.js,v 1.52 2009-10-11 09:21:06 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -40,7 +40,7 @@ function ContactConverter()
 	this.m_gd_certain_keys_converted = null;
 	this.m_properties_being_migrated = null;
 
-	this.is_birthday_field_converted(nsIXULAppInfo().is_tb_birthday_field && String(GD_API_VERSION).substr(0,1) == 3);
+	this.is_birthday_field_converted(AppInfo.is_tb_birthday_field() && String(GD_API_VERSION).substr(0,1) == 3);
 
 	this.m_postal_word = ContactGoogleStatic.postalWord(); // postalAddress or structuredPostalAddress
 }

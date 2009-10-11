@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.209 2009-10-11 01:01:30 cvsuser Exp $
+// $Id: syncfsm.js,v 1.210 2009-10-11 09:21:06 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -213,7 +213,7 @@ SyncFsmGdAuth.prototype.initialiseFsm = function()
 {
 	SyncFsmGd.prototype.initialiseFsm.call(this);
 
-	if (nsIXULAppInfo().app_name == 'firefox')
+	if (AppInfo.app_name() == 'firefox')
 	{
 		// TODO - this code is/was toying with the idea that "test connection" in firefox should also get the google groups..
 		//
@@ -5979,7 +5979,7 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 		if (c_to_be_deleted_gd > 0 && (c_to_be_deleted_gd == c_at_gd))
 			do_cancel(stringBundleString("brand.google"));
 		else if (c_to_be_deleted_tb > 0 && (c_to_be_deleted_tb == c_at_tb))
-			do_cancel(nsIXULAppInfo().app_name);
+			do_cancel(AppInfo.app_name());
 	}
 
 	let is_firstrun = preference(MozillaPreferences.AS_IS_FIRSTRUN, 'bool');

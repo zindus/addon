@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.65 2009-09-18 07:39:37 cvsuser Exp $
+// $Id: addressbook.js,v 1.66 2009-10-11 09:21:05 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -55,7 +55,7 @@ var eAddressBookVersion = new ZinEnum( 'TB2', 'TB3', 'FF', 'PB', 'SB' );
 
 AddressBook.version = function()
 {
-	let app_name = nsIXULAppInfo().app_name;
+	let app_name = AppInfo.app_name();
 	var ret;
 
 	switch(app_name) {

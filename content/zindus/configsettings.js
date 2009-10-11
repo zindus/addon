@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.41 2009-10-10 14:06:11 cvsuser Exp $
+// $Id: configsettings.js,v 1.42 2009-10-11 09:21:06 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -512,7 +512,7 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 
 		// Addressbook
 		//
-		if (nsIXULAppInfo().app_name != 'firefox') {
+		if (AppInfo.app_name() != 'firefox') {
 			if (account.format_xx() == FORMAT_GD)
 				value = account.gd_sync_with == 'zg' ? FolderConverter.PREFIX_PRIMARY_ACCOUNT : this.m_addressbook.getPabName();
 			else

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.109 2009-10-10 14:06:13 cvsuser Exp $
+// $Id: testharness.js,v 1.110 2009-10-11 09:21:08 cvsuser Exp $
 
 // TODO retest tests!
 // rationalise use of 'email address' in zindus.properties and zindus.dtd
@@ -1256,7 +1256,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	xmlString = xmlString.replace("@@api_version@@", api_version);
 
-	// this.m_logger.debug("AMHERE: properties: " + aToString(properties));
+	// this.m_logger.debug("properties: " + aToString(properties));
 
 	for (key in properties)
 		xmlString = xmlString.replace("@@" + key + "@@", properties[key]);
@@ -1327,9 +1327,6 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	contact.properties = properties;
 	// contact.properties = {};
-	// this.m_logger.debug("AMHERE: contact with no properties: " + aToString(contact.properties));
-	// this.m_logger.debug("AMHERE: contact with no properties: " + contact.toString());
-	// this.m_logger.debug("AMHERE: contact with no properties: " + contact.toStringXml());
 
 	properties["email1"]           = "john.smith.home.2@example.com"; // the first <email> element
 	properties["email2"]           = "john.smith.other@example.com";  // the second...
@@ -1341,11 +1338,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 	// test modifying a contact
 	//
 	properties = this.sampleContactGoogleProperties();
-	this.m_logger.debug("AMHERE: contact before: " + contact.toStringXml());
 	contact.properties = properties;
-	this.m_logger.debug("AMHERE: properties: " + aToString(properties));
-	this.m_logger.debug("AMHERE: contact: " + contact.toString());
-	this.m_logger.debug("AMHERE: contact: " + contact.toStringXml());
 	match(contact, properties, null);
 
 	// test adding all properties to a new contact

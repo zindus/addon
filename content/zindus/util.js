@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.60 2009-10-10 14:06:13 cvsuser Exp $
+// $Id: util.js,v 1.61 2009-10-11 09:21:08 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -551,13 +551,9 @@ function format_xx_to_localisable_string(format_xx)
 
 	switch(format_xx)
 	{
-		case FORMAT_TB: {
-			let app_name = nsIXULAppInfo().app_name;
-			ret = app_name.substr(0,1).toUpperCase() + app_name.substr(1).toLowerCase();
-			break;
-		}
-		case FORMAT_GD: ret = stringBundleString("brand.google"); break;
-		case FORMAT_ZM: ret = stringBundleString("brand.zimbra"); break;
+		case FORMAT_TB: ret = AppInfo.app_name('first_letter_cap'); break;
+		case FORMAT_GD: ret = stringBundleString("brand.google");   break;
+		case FORMAT_ZM: ret = stringBundleString("brand.zimbra");   break;
 		default:        zinAssertAndLog(false, "mismatched: format_xx: " + format_xx);
 	}
 
@@ -1197,49 +1193,11 @@ function str_with_trailing(str, chr)
 	return str;
 }
 
-function nsIXULAppInfo()
-{
-	if (typeof(nsIXULAppInfo.ret) == 'undefined') {
-		const FF_ID = "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}";
-		const TB_ID = "{3550f703-e582-4d05-9a08-453d09bdfdc6}";
-		const SM_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
-		const PB_ID = "postbox@postbox-inc.com";
-		const SB_ID = "{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}";
-
-		var ret = new Object();
-
-		var appInfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
-
-		switch(appInfo.ID) {
-			case FF_ID: ret.app_name = 'firefox';     break;
-			case TB_ID: ret.app_name = 'thunderbird'; break;
-			case SM_ID: ret.app_name = 'seamonkey';   break;
-			case PB_ID: ret.app_name = 'postbox';     break;
-			case SB_ID: ret.app_name = 'spicebird';   break;
-			default:    ret.app_name = 'other';       break;
-		}
-
-		ret.version = appInfo.version;
-
-		var versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
-
-		ret.is_tb_birthday_field = (ret.app_name == 'postbox') ||
-		                           (((ret.app_name == 'thunderbird' || ret.app_name == 'seamonkey') &&
-		                            versionChecker.compare(appInfo.version, "3.0b3pre") >= 0))
-
-		logger().debug("nsIXULAppInfo: returns: " + aToString(ret));
-
-		nsIXULAppInfo.ret = ret;
-	}
-
-	return nsIXULAppInfo.ret;
-}
-
 // the status + progress panels are visibile and updated in windows containing these ids.
 //
 function show_status_panel_in()
 {
-	return (nsIXULAppInfo().app_name == 'firefox') ? [ 'browser-bottombox' ] : [ 'folderPaneBox', 'addressbookWindow' ];
+	return (AppInfo.app_name() == 'firefox') ? [ 'browser-bottombox' ] : [ 'folderPaneBox', 'addressbookWindow' ];
 }
 
 function AddToPrototype(o, p)

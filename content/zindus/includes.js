@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: includes.js,v 1.13 2009-10-10 14:06:12 cvsuser Exp $
+// $Id: includes.js,v 1.14 2009-10-11 09:21:06 cvsuser Exp $
 
 with (ZindusScopeRegistry.getScope())
 {
@@ -48,4 +48,5 @@ with (ZindusScopeRegistry.getScope())
 	ZindusScopeRegistry.includejs("configsettings.js");
 	ZindusScopeRegistry.includejs("googlerule.js");
 	ZindusScopeRegistry.includejs("infodlg.js");
+	ZindusScopeRegistry.includejs("appinfo.js");
 }
