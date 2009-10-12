@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.112 2009-10-11 18:16:08 cvsuser Exp $
+// $Id: testharness.js,v 1.113 2009-10-12 07:18:11 cvsuser Exp $
 
 function TestHarness()
 {
@@ -53,13 +53,13 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	ret = ret && this.testContactConverter();
+	// ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testAddressBookBugzilla432145Create();
 	// ret = ret && this.testAddressBookBugzilla432145Compare();
 	// ret = ret && this.testAddressBookBugzilla432145Delete();
-	// ret = ret && this.testAddressBookFf();
+	ret = ret && this.testAddressBookFf();
 	// ret = ret && this.testFeedCollection();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
@@ -67,15 +67,15 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testZuio();
 	// ret = ret && this.testZinEnum();
 	// ret = ret && this.testGroupGoogle();
-	ret = ret && this.testContactGoogle1();
-	ret = ret && this.testContactGoogle2();
-	ret = ret && this.testContactGoogleIssue151();
-	ret = ret && this.testContactGoogleIssue179();
-	ret = ret && this.testContactGoogleIssue185();
-	ret = ret && this.testContactGoogleIssue202();
-	ret = ret && this.testContactGoogleIterators();
-	ret = ret && this.testContactGooglePostalAddress();
-	ret = ret && this.testGdAddressConverter();
+	// ret = ret && this.testContactGoogle1();
+	// ret = ret && this.testContactGoogle2();
+	// ret = ret && this.testContactGoogleIssue151();
+	// ret = ret && this.testContactGoogleIssue179();
+	// ret = ret && this.testContactGoogleIssue185();
+	// ret = ret && this.testContactGoogleIssue202();
+	// ret = ret && this.testContactGoogleIterators();
+	// ret = ret && this.testContactGooglePostalAddress();
+	// ret = ret && this.testGdAddressConverter();
 	// ret = ret && this.testBiMap();
 	// ret = ret && this.testAddCard();
 	// ret = ret && this.testDeleteCard();
@@ -909,8 +909,6 @@ TestHarness.prototype.testAddressBookFf = function()
 	if (!AddressBookFfStatic.db_is_healthy())
 		AddressBookFfStatic.db_drop_and_create();
 
-	return true;
-
 	let addressbook = AddressBook.new();
 	let contact_converter = this.newContactConverter();
 	let ab_name = 'fred';
@@ -938,8 +936,6 @@ TestHarness.prototype.testAddressBookFf = function()
 		zinAssert(addressbook.getCardAttributes(abCard)['zindus-xxx'] == attributes['zindus-xxx']);
 	}
 
-	// TODO test that deleting an abook deletes all it's contacts
-	//
 	let properties = { PrimaryEmail : 'a@b.com', Notes : 'hello world 1' };
 	let attributes = { 'zindus-xxx' : '123' };
 
@@ -957,17 +953,26 @@ TestHarness.prototype.testAddressBookFf = function()
 	is_match_p_a(abCard, properties2, attributes2);
 
 	let attrs = addressbook.getCardAttributes(abCard);
-	// this.m_logger.debug("getCardAttributes: abCard: " + abCard.toString() + " is: " + aToString(attrs));
 	abCard = addressbook.lookupCard(abip.uri(), TBCARD_ATTRIBUTE_LUID, attrs[TBCARD_ATTRIBUTE_LUID]);
 	is_match_p_a(abCard, properties2, attributes2);
-
 	this.m_logger.debug("lookupCard: returns: " + (abCard ? abCard.toString() : "null"));
 
+	// lookup by id
+	//
+	abCard = addressbook.lookupCard(abip.uri(), TBCARD_ATTRIBUTE_LUID, abCard.id());
+	is_match_p_a(abCard, properties2, attributes2);
+
+	// test deleteCard
+	//
 	abfCard = addressbook.addCard(abip.uri(), { PrimaryEmail : 'to-be-deleted@d.com' }, { 'zindus-xxx' : '111' });
 	abCard = abfCard.abCard();
+	let id1 = abfCard.id();
 	let abfCard2 = addressbook.addCard(abip.uri(), { PrimaryEmail : 'to-be-deleted-2@dd.com' }, { 'zindus-xxx' : '222' });
 	let abCard2 = abfCard2.abCard();
+	let id2 = abfCard2.id();
 	addressbook.deleteCards(abip.uri(), [ abCard, abCard2 ]);
+	zinAssert(!addressbook.lookupCard(abip.uri(), TBCARD_ATTRIBUTE_LUID, id1));
+	zinAssert(!addressbook.lookupCard(abip.uri(), TBCARD_ATTRIBUTE_LUID, id2));
 
 	var functor_card = {
 		run: function(uri, card) {
@@ -986,9 +991,21 @@ TestHarness.prototype.testAddressBookFf = function()
 
 	addressbook.forEachAddressBook(functor);
 
-	addressbook.renameAddressBook(abip.uri(), "joe");
+	// test renameAddressBook
+	//
+	let ab_name2 = "joe";
+	addressbook.renameAddressBook(abip.uri(), ab_name2);
+	zinAssert(addressbook.getAddressBookUriByName(ab_name2));
+	zinAssert(addressbook.getAddressBookUriByName(ab_name2) == abip.uri());
+	zinAssert(!addressbook.getAddressBookUriByName(ab_name));
+
+	// test deleteAddressBook
+	//
 	abCard = addressbook.addCard(abip.uri(), { PrimaryEmail : 'to-be-deleted@d.com' }, { 'zindus-xxx' : '111' });
+	let id3 = abCard.id();
 	addressbook.deleteAddressBook(abip.uri());
+	zinAssert(!addressbook.getAddressBookUriByName(ab_name2));
+	zinAssert(!addressbook.lookupCard(abip.uri(), TBCARD_ATTRIBUTE_LUID, id3));
 
 	return true;
 }
