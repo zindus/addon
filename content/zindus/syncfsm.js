@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.212 2009-10-11 18:16:07 cvsuser Exp $
+// $Id: syncfsm.js,v 1.213 2009-10-12 06:21:32 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -213,7 +213,7 @@ SyncFsmGdAuth.prototype.initialiseFsm = function()
 {
 	SyncFsmGd.prototype.initialiseFsm.call(this);
 
-	if (AppInfo.app_name() == 'firefox')
+	if (false && AppInfo.app_name() == 'firefox')
 	{
 		// TODO - this code is/was toying with the idea that "test connection" in firefox should also get the google groups..
 		//

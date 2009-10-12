@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbookff.js,v 1.2 2009-09-16 06:45:46 cvsuser Exp $
+// $Id: addressbookff.js,v 1.3 2009-10-12 06:21:32 cvsuser Exp $
 includejs("json.js");
 
 function AddressBookFf()
@@ -75,7 +75,7 @@ AddressBookFf.prototype.forEachCardGenerator = function(uri, functor, yield_coun
 	stmt.params.uri = uri;
 
 	while (stmt.executeStep() && is_continue) {
-		let item = new AddressBookFfCard(JSON.fromString(stmt.row.properties), newObject(TBCARD_ATTRIBUTE_LUID, stmt.row.id)); // TODO
+		let item = new AddressBookFfCard(JSON.fromString(stmt.row.properties), newObject(TBCARD_ATTRIBUTE_LUID, stmt.row.id));
 
 		is_continue = functor.run(uri, item);
 
@@ -367,6 +367,8 @@ AddressBookFf.prototype.has_uuids = function(item)
 
 function AddressBookFfDirectoryElem(row)
 {
+	zinAssert(typeof(row) != 'undefined');
+
 	this.m_id           = row.id
 	this.m_name         = row.name
 	this.m_last_updated = row.last_updated;
@@ -459,7 +461,7 @@ AddressBookFfCard.prototype = {
 var AddressBookFfStatic = {
 	elem_properties : newObjectWithKeys("URI", "dirName", "dirType", "dirPrefId", "fileName", "position"),
 	card_properties : newObjectWithKeys("isMailList", "mailListURI", "lastModifiedDate" ),
-	db_table_name   : newObjectWithKeys("contact", "groupt", "member" ),
+	db_table_name   : newObjectWithKeys("contact", "groupt", "member", "master" ),
 	db_index_name   : newObjectWithKeys("index_group", "index_member" ),
 	db_new_conn : function() {
 
@@ -488,15 +490,47 @@ var AddressBookFfStatic = {
 		for (i in this.db_index_name)
 			set_a_reason(i, conn.indexExists(i));
 
-		// TODO - we probably need some sort of:
-		// - schema versioning arrangement
-		// - integrity checks: 
-		//   - Personal Address Book exists
-		//   - referential integrity and no dangling references
-
 		ret = !isAnyValue(a_reason, false);
 
 		this.debug("db_is_healthy: returns: " + ret + " a_reason: " + aToString(a_reason));
+
+		if (ret) {
+			let query, stmt;
+
+			// PAB must be present in groupt
+			//
+			query = "SELECT * from groupt where name = :name";
+			stmt  = conn.createStatement(query);
+			stmt.params.name = TB_PAB_FULLNAME;
+			zinAssert(stmt.executeStep());
+			stmt.finalize();
+
+			// schema_version must be present in master
+			//
+			query = "SELECT * from master where key = :key";
+			stmt  = conn.createStatement(query);
+			stmt.params.key = 'schema_version';
+			zinAssert(stmt.executeStep());
+			stmt.finalize();
+
+			// referential integrity
+			// - every row in member must refer to a row in contact and groupt
+			//
+			function do_ref_check(key, query) {
+				stmt  = conn.createStatement(query);
+				let msg = "";
+				while (stmt.executeStep())
+					msg += stmt.row[key] + " ";
+				stmt.finalize();
+				zinAssertAndLog(msg.length == 0, query + ": " + msg);
+			}
+			do_ref_check("id_contact", "SELECT id_contact from member where id_contact NOT IN (SELECT distinct id FROM contact)");
+			do_ref_check("id_group",   "SELECT id_group   from member where id_group   NOT IN (SELECT distinct id FROM groupt)");
+
+			// test for dangling references - ie that contacts must be a member of a group
+			//
+			do_ref_check("id", "SELECT id from contact where id NOT IN (SELECT distinct id_contact FROM member)");
+		}
 
 		conn.close();
 
@@ -538,6 +572,9 @@ CREATE TABLE groupt (                                                     \
 CREATE TABLE member (                                                     \
   id_contact   INTEGER,                                                   \
   id_group     INTEGER );                                                 \
+CREATE TABLE master (                                                     \
+  key          TINYTEXT UNIQUE NOT NULL,                                  \
+  value        BLOB NOT NULL );                                           \
 CREATE INDEX index_group ON groupt (name);                                \
 CREATE INDEX index_member ON member (id_contact, id_group);";
 
@@ -555,7 +592,16 @@ CREATE INDEX index_member ON member (id_contact, id_group);";
 
 		AddressBookFfStatic.executeStep(conn, stmt, "unable to create groupt with name: " + TB_PAB_FULLNAME);
 
-		stmt.reset();
+		stmt.finalize();
+
+		query = "INSERT INTO master (key, value) VALUES (:key, :value)";
+		stmt  = conn.createStatement(query);
+		stmt.params.key = 'schema_version';
+		stmt.params.value = '1';
+
+		AddressBookFfStatic.executeStep(conn, stmt, "unable to insert schema_version into master");
+
+		stmt.finalize();
 
 		if (false) {
 		query = "";
@@ -565,15 +611,13 @@ CREATE INDEX index_member ON member (id_contact, id_group);";
 
 		query += "DELETE FROM contact;";
 		do_sql(query);
-		}
 
 		stmt.finalize();
+		}
 
 		this.debug("db_drop_and_create: file: " + conn.databaseFile.path);
 
 		conn.close();
-
-		this.debug("db_drop_and_create: done: ");
 	},
 	executeStep : function(conn, stmt, msg_on_fail) {
 		let ret;
@@ -592,7 +636,7 @@ CREATE INDEX index_member ON member (id_contact, id_group);";
 		if (!this.m_logger) // delay construction
 			this.m_logger = newLogger("AddressBookFf"); 
 
-		if (true) // TODO
+		if (true)
 			this.m_logger.debug(msg);
 	}
 };
