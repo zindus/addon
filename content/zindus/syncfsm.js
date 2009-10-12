@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.213 2009-10-12 06:21:32 cvsuser Exp $
+// $Id: syncfsm.js,v 1.214 2009-10-12 22:11:19 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1126,10 +1126,10 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 	let aUri        = new Object();
 	let a_ids_to_remove;
 
-	switch (AddressBook.version()) {
-		case eAddressBookVersion.FF:  a_ids_to_remove = null;                                                                 break;
-		case eAddressBookVersion.TB2: a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "");                                 break;
-		default:                      a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "", TBCARD_ATTRIBUTE_LUID_ITER, ""); break;
+	switch (AppInfo.ab_version()) {
+		case 'firefox':      a_ids_to_remove = null;                                                                 break;
+		case 'thunderbird2': a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "");                                 break;
+		default:             a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "", TBCARD_ATTRIBUTE_LUID_ITER, ""); break;
 	}
 
  	var functor_foreach_card = {
@@ -3063,7 +3063,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 			// This will get a lot simpler when Tb3 cards get a unique id.
 			// And even simpler when we don't need three passes to identify mailing list cards.
 			//
-			if (!ab_has_uuids && AddressBook.version() != eAddressBookVersion.TB2 && !abCard.isMailList
+			if (!ab_has_uuids && AppInfo.ab_version() != 'thunderbird2' && !abCard.isMailList
 			                                             && !is_card_attribute_valid(attributes, TBCARD_ATTRIBUTE_LUID))
 			{
 				this.state.m_addressbook.updateCard(abCard, uri, null,
@@ -3079,7 +3079,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 			// was debugging garcha here
 			if (false)
-				if (AddressBook.version() != eAddressBookVersion.TB2)
+				if (AppInfo.ab_version() != 'thunderbird2')
 					this.state.m_logger.debug("loadTbCards: pass 1: key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) +
 					                           " for card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 

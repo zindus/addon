@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.42 2009-10-11 09:21:06 cvsuser Exp $
+// $Id: configsettings.js,v 1.43 2009-10-12 22:11:19 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -245,6 +245,8 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		case "cs-button-reset":
 			Filesystem.removeZfcs();
+			if (AppInfo.app_name == 'firefox')
+				AddressBookFfStatic.db_drop_and_create();
 			Filesystem.removeLogfile();
 			StatusBarState.update();
 			if (this.m_czss)

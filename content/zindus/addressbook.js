@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.66 2009-10-11 09:21:05 cvsuser Exp $
+// $Id: addressbook.js,v 1.67 2009-10-12 22:11:18 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -51,49 +51,27 @@ function AddressBook()
 	this.m_map_name_to_uri   = null;
 }
 
-var eAddressBookVersion = new ZinEnum( 'TB2', 'TB3', 'FF', 'PB', 'SB' );
-
-AddressBook.version = function()
-{
-	let app_name = AppInfo.app_name();
-	var ret;
-
-	switch(app_name) {
-		case 'thunderbird':
-		case 'seamonkey':
-			ret = ("@mozilla.org/abmanager;1" in Cc) ? eAddressBookVersion.TB3 : eAddressBookVersion.TB2;
-			break;
-		case 'firefox':   ret = eAddressBookVersion.FF;  break;
-		case 'postbox':   ret = eAddressBookVersion.PB;  break;
-		case 'spicebird': ret = eAddressBookVersion.SB;  break;
-		default:          ret = eAddressBookVersion.TB2; break;
-	}
-
-	return ret;
-}
-
 AddressBook.new = function()
 {
+	let version = AppInfo.ab_version();
 	let ret;
-	let version = AddressBook.version();
 
-	if (version == eAddressBookVersion.FF && !AddressBookFfStatic.db_is_healthy()) {
-		// TODO - make a backup of the db?  Or use some other strategy?
-		// sync needs to know that db has been recreated so as to force a slow sync
+	if (version == 'firefox' && !AddressBookFfStatic.db_is_healthy()) {
+		// this is effectively a reset...
 		Filesystem.removeZfcs();
 		AddressBookFfStatic.db_drop_and_create();
 	}
 
 	switch (version) {
-		case eAddressBookVersion.TB2: ret = new AddressBookTb2(); break;
-		case eAddressBookVersion.TB3: ret = new AddressBookTb3(); break;
-		case eAddressBookVersion.FF:  ret = new AddressBookFf();  break;
-		case eAddressBookVersion.PB:  ret = new AddressBookPb();  break;
-		case eAddressBookVersion.SB:  ret = new AddressBookSb();  break;
-		default:                      ret = new AddressBookTb2(); break;
+		case 'thunderbird2': ret = new AddressBookTb2(); break;
+		case 'thunderbird3': ret = new AddressBookTb3(); break;
+		case 'firefox':      ret = new AddressBookFf();  break;
+		case 'postbox':      ret = new AddressBookPb();  break;
+		case 'spicebird':    ret = new AddressBookSb();  break;
+		default:             ret = new AddressBookTb2(); break;
 	}
 
-	ret.logger().debug("new Addressbook: " + eAddressBookVersion.keyFromValue(version));
+	ret.logger().debug("new Addressbook: " + version);
 
 	return ret;
 }

@@ -20,20 +20,20 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.3 2009-10-11 18:16:07 cvsuser Exp $
+// $Id: appinfo.js,v 1.4 2009-10-12 22:11:19 cvsuser Exp $
 
 var AppInfo = {
-	m_version              : null,
+	m_app_version          : null,
 	m_is_tb_birthday_field : null,
 	m_app_name             : null,
 	m_app_name_capital     : null,
 	firstcap               : 1, // const ==> first letter capitalised
-	version : function() {
-		if (!this.m_version) {
+	app_version : function() {
+		if (!this.m_app_version) {
 			let appInfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
-			this.m_version = appInfo.version;
+			this.m_app_version = appInfo.version;
 		}
-		return this.m_version;
+		return this.m_app_version;
 	},
 	app_name : function(arg) {
 		if (!this.m_m_app_name) {
@@ -59,6 +59,15 @@ var AppInfo = {
 	is_tb_birthday_field : function() {
 		let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
 		return (this.app_name() == 'postbox') || (((this.app_name() == 'thunderbird' || this.app_name() == 'seamonkey') &&
-		                            versionChecker.compare(this.version(), "3.0b3pre") >= 0));
+		                            versionChecker.compare(this.app_version(), "3.0b3pre") >= 0));
+	},
+	ab_version : function() {
+		let app_name = this.app_name();
+		let ret      = app_name;
+
+		if (app_name == 'thunderbird' || app_name == 'seamonkey')
+			ret = ("@mozilla.org/abmanager;1" in Cc) ? 'thunderbird3' : 'thunderbird2';
+
+		return ret;
 	}
 };
