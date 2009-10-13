@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.62 2009-10-11 18:16:08 cvsuser Exp $
+// $Id: util.js,v 1.63 2009-10-13 22:21:23 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -211,7 +211,7 @@ function aToString(obj)
 		ret.concat("Null");
 	else if (typeof(obj) == 'function' && typeof(obj.QueryInterface) == 'function')
 		ret.concat("xpcom object");
-	else if (obj instanceof Suo)
+	else if ((obj instanceof Suo) || (obj instanceof SuoKey))
 		ret.concat(obj.toString());
 	else
 		for (var x in obj)

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: suo.js,v 1.21 2009-09-01 04:28:00 cvsuser Exp $
+// $Id: suo.js,v 1.22 2009-10-13 22:21:22 cvsuser Exp $
 
 // suo == Source Update Operation
 //
@@ -79,6 +79,29 @@ Suo.opcodeAsStringForUI = function(opcode)
 	return stringBundleString(Suo.bimap_opcode_UI.lookup(opcode));
 }
 
+Suo.arrayToString = function(aSuo)
+{
+	let iter      = new SuoIterator(aSuo);
+	let fn        = function(sourceid, bucket) { return true; }
+	let generator = iter.generator(fn);
+	let ret       = new BigString();
+	let a, suo;
+
+	while (Boolean(a = generator.next())) {
+		let key = a[0];
+		let suo = a[1];
+		let opcode = key.bucket & Suo.MASK;
+		let type   = key.bucket & FeedItem.TYPE_MASK;
+
+		ret.concat("\n " + strPadTo(key.toString(), 60) + " suo: " + suo.toString() );
+					// ret.concat("\n sourceid: " + key.sourceid +
+		             // " bucket: " + strPadTo(Suo.opcodeAsString(opcode) + '|' + FeedItem.typeAsString(type), 10) +
+					 // " id: " + key.id +
+	}
+
+	return ret.toString();
+}
+
 // return a comparison function for use with SuoIterator
 //
 Suo.match_with_bucket = function() {
@@ -108,12 +131,16 @@ function SuoKey(sourceid, bucket, id)
 }
 
 SuoKey.prototype = {
+	clone : function() {
+		return new SuoKey(this.sourceid, this.bucket, this.id);  // so that (object instanceof xxx) == true
+	},
 	isEqual : function(key_suo) {
 		return (this.sourceid == key_suo.sourceid && this.bucket == key_suo.bucket && this.id == key_suo.id);
 	},
 	toString : function() {
 		return "sourceid: " + this.sourceid +
-		       " bucket: "  + Suo.opcodeAsString(this.bucket & Suo.MASK) + '|' + FeedItem.typeAsString(this.bucket & FeedItem.TYPE_MASK) +
+		       " bucket: "  + strPadTo( Suo.opcodeAsString(this.bucket & Suo.MASK) + '|' +
+			                            FeedItem.typeAsString(this.bucket & FeedItem.TYPE_MASK), 9) +
 	           " id: "      + this.id;
 	}
 };
@@ -161,7 +188,7 @@ __iterator__: function(is_keys_only) {
 						key.bucket   = bucket;
 						key.id       = id;
 						logger().debug("SuoIterator: yielding key: " + key.toString() + " suo: " + suo.toString());
-						yield is_keys_only ? suo : [ cloneObject(key), suo ]; // clone the key so that the user can keep a reference
+						yield is_keys_only ? suo : [ key.clone(), suo ]; // clone the key so that the user can keep a reference
 					}
 			}
 }

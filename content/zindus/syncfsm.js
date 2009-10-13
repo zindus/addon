@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.215 2009-10-13 04:56:03 cvsuser Exp $
+// $Id: syncfsm.js,v 1.216 2009-10-13 22:21:22 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3204,7 +3204,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 									properties[key] = newstr;
 									is_changed = true;
 
-									this.debug("loadTbCards pass 3: transform: found a card with invalid XML characters: key: "
+									self.debug("loadTbCards pass 3: transform: found a card with invalid XML characters: key: "
 									              + key + " new value: " + properties[key]);
 								}
 							}
@@ -5106,8 +5106,11 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 			this.debug("suoGdTweakCiOps: ADD ops marked for removal from id_tb_pab: " + msg);
 	}
 
+	let keys_deleted_in_loop_msg = "";
+
 	for (var i = 0; i < a_suo_to_delete.length; i++) {
 		key = a_suo_to_delete[i];
+		keys_deleted_in_loop_msg += " " + key.toString();
 		delete this.state.aSuo[key.sourceid][key.bucket][key.id];
 	}
 
@@ -5123,11 +5126,12 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 	}
 
 	this.debug("suoGdTweakCiOps: " + "\n" +
-			" keys removed from aSuo: " + a_suo_to_delete.toString()     + "\n" +
-			" a_turn_del_into_mod: "    + aToString(a_turn_del_into_mod) + "\n" +
-			" a_gd_au_group_for_mod: "  + aToString(a_gd_au_group_for_mod)     + "\n" +
-			" a_seen_del: "             + aToString(a_seen_del)          + "\n" +
-			" aSuo: "                   + ((a_suo_to_delete.length > 0) ? aToString(this.state.aSuo) : " unchanged") );
+			" keys removed from aSuo: "   + a_suo_to_delete.toString()     + "\n" +
+			" keys_deleted_in_loop_msg: " + keys_deleted_in_loop_msg  + "\n" +
+			" a_turn_del_into_mod: "      + aToString(a_turn_del_into_mod) + "\n" +
+			" a_gd_au_group_for_mod: "    + aToString(a_gd_au_group_for_mod)     + "\n" +
+			" a_seen_del: "               + aToString(a_seen_del)          + "\n" +
+			" aSuo: "                     + ((a_suo_to_delete.length > 0) ? Suo.arrayToString(this.state.aSuo) : " unchanged") );
 }
 
 // Here we remove Suo's that delete contacts when there is already a Suo to delete the parent folder because:

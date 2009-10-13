@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.115 2009-10-13 04:56:03 cvsuser Exp $
+// $Id: testharness.js,v 1.116 2009-10-13 22:21:22 cvsuser Exp $
 
 function TestHarness()
 {
@@ -46,7 +46,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testInfoDig();
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
-	// ret = ret && this.testSuo();
+	ret = ret && this.testSuo();
 	// ret = ret && this.testAccount();
 	// ret = ret && this.testCrc32();
 	// ret = ret && this.testLogging();
@@ -73,7 +73,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testContactGoogleIssue179();
 	// ret = ret && this.testContactGoogleIssue185();
 	// ret = ret && this.testContactGoogleIssue202();
-	ret = ret && this.testContactGoogleIssue211();
+	// ret = ret && this.testContactGoogleIssue211();
 	// ret = ret && this.testContactGoogleIterators();
 	// ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
@@ -179,6 +179,12 @@ TestHarness.prototype.testSuo = function()
 	zinAssert(/ADD/.test(str) && /MOD/.test(str) && /DEL/.test(str));
 
 		// this.m_logger.debug("key: " + aToString(key) + " suo: " + suo.toString());
+
+	aSuo[SOURCEID_TB][Suo.ADD | FeedItem.TYPE_FL][1] = new Suo(1234, 1, 2, Suo.ADD);
+	aSuo[SOURCEID_AA][Suo.MOD | FeedItem.TYPE_CN][2] = new Suo(1235, 3, 4, Suo.MOD);
+	aSuo[SOURCEID_AA][Suo.DEL | FeedItem.TYPE_CN][2] = new Suo(1236, 3, 4, Suo.DEL);
+
+	this.m_logger.debug("aSuo: " + Suo.arrayToString(aSuo));
 
 	return true;
 }
