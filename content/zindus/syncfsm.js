@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.214 2009-10-12 22:11:19 cvsuser Exp $
+// $Id: syncfsm.js,v 1.215 2009-10-13 04:56:03 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3204,8 +3204,8 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 									properties[key] = newstr;
 									is_changed = true;
 
-									this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with invalid XML characters" +
-									                          " - removed: " + aToString(properties));
+									this.debug("loadTbCards pass 3: transform: found a card with invalid XML characters: key: "
+									              + key + " new value: " + properties[key]);
 								}
 							}
 					}
@@ -8471,8 +8471,6 @@ HttpStateZm.prototype.failCode = function()
 	if (ret == 'failon.unexpected')
 		this.m_logger.debug("failCode: " + ret + " and this: " + this.toString());
 
-	ret = 'failon.service';
-
 	return ret;
 }
 
@@ -8563,7 +8561,7 @@ HttpStateZm.prototype.handleResponse = function()
 	}
 	else 
 	{
-		msg += " - SOAP error: method: " + this.m_method;  // note that we didn't say "fault" here - could be a sending/service error
+		msg += "\n SOAP error: method: " + this.m_method;  // note that we didn't say "fault" here - could be a sending/service error
 
 		if (this.m_http_status_code != null && this.m_http_status_code != HTTP_STATUS_200_OK)
 			msg += " m_http_status_code == " + this.m_http_status_code;
@@ -8577,6 +8575,16 @@ HttpStateZm.prototype.handleResponse = function()
 	this.m_logger.debug(msg);
 
 	return nextEvent;
+}
+
+HttpStateZm.prototype.isFailed = function()
+{
+	let ret = HttpState.prototype.isFailed.call(this);
+
+	if (!ret)
+		ret = this.is_mismatched_response || this.m_fault_element_xml;
+
+	return ret;
 }
 
 function HttpStateGd(http_method, url, headers, authToken, body, on_error, log_response, logger)

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.114 2009-10-12 22:11:20 cvsuser Exp $
+// $Id: testharness.js,v 1.115 2009-10-13 04:56:03 cvsuser Exp $
 
 function TestHarness()
 {
@@ -59,7 +59,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testAddressBookBugzilla432145Create();
 	// ret = ret && this.testAddressBookBugzilla432145Compare();
 	// ret = ret && this.testAddressBookBugzilla432145Delete();
-	ret = ret && this.testAddressBookFf();
+	// ret = ret && this.testAddressBookFf();
 	// ret = ret && this.testFeedCollection();
 	// ret = ret && this.testPermFromZfi();
 	// ret = ret && this.testFolderConverter();
@@ -73,6 +73,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testContactGoogleIssue179();
 	// ret = ret && this.testContactGoogleIssue185();
 	// ret = ret && this.testContactGoogleIssue202();
+	ret = ret && this.testContactGoogleIssue211();
 	// ret = ret && this.testContactGoogleIterators();
 	// ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
@@ -1584,6 +1585,30 @@ TestHarness.prototype.testContactGoogleIssue202 = function()
 	this.m_logger.debug("contact: " + contact.toString());
 
 	return true;
+}
+
+TestHarness.prototype.testContactGoogleIssue211 = function()
+{
+	// create a card that contains an invalid xml character in an email address
+	//
+	let addressbook = AddressBook.new();
+	let contact_converter = this.newContactConverter();
+
+	addressbook.contact_converter(contact_converter);
+
+	let abname = "zindus/a.b@gdomain.zindus.net";
+	let uri = addressbook.getAddressBookUriByName(abname);
+
+	zinAssert(uri);
+
+	let prefix = "zindus-test-";
+	let c1a    = "\u001a";
+	let properties = { DisplayName: prefix + "1", "PrimaryEmail": "1-blah" + c1a + "@example.com"  };
+	let attributes = {};
+
+	this.m_logger.debug("c1a: length: " + c1a.length + "  charCodeAt(0): " + c1a.charCodeAt(0));
+
+	let abCard = addressbook.addCard(uri, properties, attributes);
 }
 
 
