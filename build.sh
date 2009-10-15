@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.19 2009-10-15 19:19:33 cvsuser Exp $
+# $Id: build.sh,v 1.20 2009-10-15 23:49:48 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -108,23 +108,26 @@ done
 #set +x
 DOWNLOAD_DIR=http://www.zindus.com/download/xpi
 app[0]='tb';
-app[1]='ff';
-app[2]='sm';
-app[3]='pb';
-app[4]='sb';
+app[1]='sm';
+app[2]='pb';
+app[3]='sb';
+# app[4]='ff';
 
 app_id[0]='\{3550f703-e582-4d05-9a08-453d09bdfdc6\}';
-app_id[1]='\{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}';
-app_id[2]='\{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a\}';
-app_id[3]='postbox@postbox-inc.com';
-app_id[4]='\{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c\}';
+app_id[1]='\{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a\}';
+app_id[2]='postbox@postbox-inc.com';
+app_id[3]='\{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c\}';
+# app_id[4]='\{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}';
+# when you get around to adding firefox: (1) uncomment above (2) change app_indexes (3) add a stanza to update.rdf (4) add to install.rdf
 
-for i in 0 1 2 3 4; do
+app_indexes="0 1 2 3"
+
+for i in $app_indexes; do
   minversion[$i]=`sed -r "s#<em:minVersion>(.*)</em:minVersion>.*${app[$i]}#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
   maxversion[$i]=`sed -r "s#<em:maxVersion>(.*)</em:maxVersion>.*${app[$i]}#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
 done
 
-for i in 0 1 2 3 4; do
+for i in $app_indexes; do
   sed -i -r "s#em:id=\"${app_id[$i]}\"#em:id=\"${app_id[$i]}\" em:maxVersion=\"${maxversion[$i]}\" em:minVersion=\"${minversion[$i]}\"#" update.rdf
 done
 
