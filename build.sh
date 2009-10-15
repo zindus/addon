@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.18 2008-11-23 05:46:57 cvsuser Exp $
+# $Id: build.sh,v 1.19 2009-10-15 19:19:33 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -104,21 +104,35 @@ done
 
 # update.rdf
 #
-set -x
-MINVERSION_TB=`sed -r "s#<em:minVersion>(.*)</em:minVersion>.*tb#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
-MAXVERSION_TB=`sed -r "s#<em:maxVersion>(.*)</em:maxVersion>.*tb#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
-MINVERSION_SM=`sed -r "s#<em:minVersion>(.*)</em:minVersion>.*sm#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
-MAXVERSION_SM=`sed -r "s#<em:maxVersion>(.*)</em:maxVersion>.*sm#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
+#set -x
+#set +x
 DOWNLOAD_DIR=http://www.zindus.com/download/xpi
-set +x
-sed -i -r "s#em:version=\"(.*)\"#em:version=\"$APP_VERSION_NUMBER\"#" update.rdf
-sed -i -r "s#em:updateLink=\"(.*)\"#em:updateLink=\"$DOWNLOAD_DIR/$XPI_FILE_NAME\"#" update.rdf
+app[0]='tb';
+app[1]='ff';
+app[2]='sm';
+app[3]='pb';
+app[4]='sb';
 
-sed -i -r "s#em:id=\"\{3550f703-e582-4d05-9a08-453d09bdfdc6\}\"#em:id=\"\{3550f703-e582-4d05-9a08-453d09bdfdc6\}\" em:maxVersion=\"$MAXVERSION_TB\" em:minVersion=\"$MINVERSION_TB\"#" update.rdf
-sed -i -r "s#em:id=\"\{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a\}\"#em:id=\"\{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a\}\" em:maxVersion=\"$MAXVERSION_SM\" em:minVersion=\"$MINVERSION_SM\"#" update.rdf
+app_id[0]='\{3550f703-e582-4d05-9a08-453d09bdfdc6\}';
+app_id[1]='\{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}';
+app_id[2]='\{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a\}';
+app_id[3]='postbox@postbox-inc.com';
+app_id[4]='\{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c\}';
+
+for i in 0 1 2 3 4; do
+  minversion[$i]=`sed -r "s#<em:minVersion>(.*)</em:minVersion>.*${app[$i]}#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
+  maxversion[$i]=`sed -r "s#<em:maxVersion>(.*)</em:maxVersion>.*${app[$i]}#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
+done
+
+for i in 0 1 2 3 4; do
+  sed -i -r "s#em:id=\"${app_id[$i]}\"#em:id=\"${app_id[$i]}\" em:maxVersion=\"${maxversion[$i]}\" em:minVersion=\"${minversion[$i]}\"#" update.rdf
+done
 
 sed -i -r "/  em:maxVersion/d#" update.rdf
 sed -i -r "/  em:minVersion/d#" update.rdf
+
+sed -i -r "s#em:version=\"(.*)\"#em:version=\"$APP_VERSION_NUMBER\"#" update.rdf
+sed -i -r "s#em:updateLink=\"(.*)\"#em:updateLink=\"$DOWNLOAD_DIR/$XPI_FILE_NAME\"#" update.rdf
 
 # install.rdf
 #

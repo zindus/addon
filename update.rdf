@@ -2,28 +2,49 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="rdf:#$BjjRS2"
+  <RDF:Description RDF:about="rdf:#$AjjRS2"
                    em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
-                   em:maxVersion="3.0b3"
+                   em:maxVersion="3.0.*"
                    em:minVersion="2.0b2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12-tb+sm.xpi"
-                   em:updateHash="sha256:60c4a8adbe82b59bcdcb8b9f9aaba8070f954f3e2fb0994f130523a6e4bbe400" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12.20091016.053351-tb+sm.xpi"
+                   em:updateHash="sha256:81723b630b0373f4ece20f54d079234fde35a18528ac5763826dc3d89cb20c2c" />
+  <RDF:Description RDF:about="rdf:#$BjjRS2"
+                   em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+                   em:maxVersion="3.5.*"
+                   em:minVersion="3.5"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12.20091016.053351-tb+sm.xpi"
+                   em:updateHash="sha256:81723b630b0373f4ece20f54d079234fde35a18528ac5763826dc3d89cb20c2c" />
   <RDF:Description RDF:about="rdf:#$ujjRS2"
                    em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
-                   em:maxVersion="2.0a2"
+                   em:maxVersion="2.0b1"
                    em:minVersion="2.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12-tb+sm.xpi"
-                   em:updateHash="sha256:60c4a8adbe82b59bcdcb8b9f9aaba8070f954f3e2fb0994f130523a6e4bbe400" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12.20091016.053351-tb+sm.xpi"
+                   em:updateHash="sha256:81723b630b0373f4ece20f54d079234fde35a18528ac5763826dc3d89cb20c2c" />
+  <RDF:Description RDF:about="rdf:#$CjjRS2"
+                   em:id="postbox@postbox-inc.com"
+                   em:maxVersion="1.0.*"
+                   em:minVersion="1.0b13"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12.20091016.053351-tb+sm.xpi"
+                   em:updateHash="sha256:81723b630b0373f4ece20f54d079234fde35a18528ac5763826dc3d89cb20c2c" />
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAFu0F8Y30bHI0+4ToAl7/T3iIARF8Fx9vCJEKxGkK7f0MJ21mFjiXHJyRoCqmciqEtw9tZCrnInFfpAQ050gFpN/f3LSQkcI5wPp6jk+ZS0zWSfegLBu9Sn42GR6jlyMbiRP9AdDY2/75uP9wXKNABIZHbgJ+ezYRrtp27WbT2Rq">
+    <em:updates RDF:resource="rdf:#$qjjRS2"/>
+  </RDF:Description>
   <RDF:Description RDF:about="rdf:#$rjjRS2"
-                   em:version="0.8.12">
+                   em:version="0.8.12.20091016.053351">
     <em:targetApplication RDF:resource="rdf:#$ujjRS2"/>
     <em:targetApplication RDF:resource="rdf:#$BjjRS2"/>
+    <em:targetApplication RDF:resource="rdf:#$AjjRS2"/>
+    <em:targetApplication RDF:resource="rdf:#$CjjRS2"/>
+    <em:targetApplication RDF:resource="rdf:#$DjjRS2"/>
   </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$DjjRS2"
+                   em:id="{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}"
+                   em:maxVersion="0.7.*"
+                   em:minVersion="0.4"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.12.20091016.053351-tb+sm.xpi"
+                   em:updateHash="sha256:81723b630b0373f4ece20f54d079234fde35a18528ac5763826dc3d89cb20c2c" />
   <RDF:Seq RDF:about="rdf:#$qjjRS2">
     <RDF:li RDF:resource="rdf:#$rjjRS2"/>
   </RDF:Seq>
-  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAJcGlrbMQvL3ZCG7UDtiVK1wJYQoAOudPWtLowU5Ejt+pR1qwVmwHNJz1XVYWglsr1/qQzUe1kxs3hlv3rCMtuOjcx5cdHyJ/q+fjOw9X3GziWB1XOw6ZXXGKnRVJ/c20iXC2TI8bvS4gftw2myl+j5by/Ek5q9KdTU4jO7/94B8">
-    <em:updates RDF:resource="rdf:#$qjjRS2"/>
-  </RDF:Description>
 </RDF:RDF>
