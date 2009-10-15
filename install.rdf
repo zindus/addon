@@ -6,7 +6,7 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.8.12.20091016.053351</em:version>  <!-- version populated by build script -->
+    <em:version>0.8.12.20091003.171120</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <!-- Thunderbird -->
@@ -19,11 +19,12 @@
 
     <!-- Firefox Experiment...
 		 our use of certain mozStorage features requires gecko 1.9.1 ==> firefox 3.5
+		 FIXME: add the ff comment to support build/install/update.rdf
     <em:targetApplication>
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
-        <em:minVersion>3.5</em:minVersion>    <!-- ff -->
-        <em:maxVersion>3.5.*</em:maxVersion>  <!-- ff -->
+        <em:minVersion>3.0</em:minVersion>
+        <em:maxVersion>3.5.*</em:maxVersion>
       </Description>
     </em:targetApplication>
 	  -->
