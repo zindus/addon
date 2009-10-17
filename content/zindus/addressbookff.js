@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbookff.js,v 1.3 2009-10-12 06:21:32 cvsuser Exp $
+// $Id: addressbookff.js,v 1.4 2009-10-17 07:04:36 cvsuser Exp $
 includejs("json.js");
 
 function AddressBookFf()
@@ -319,6 +319,9 @@ AddressBookFf.prototype.lookupCard = function(uri, key, value)
 
 	return abCard;
 }
+
+// TODO: note how this differs from the base class getCardProperties which references the contact converter
+// just to be defensive, we probably want to filter out the properties that aren't in the contactconverter's map.
 
 AddressBookFf.prototype.getCardProperties = function(abCard) { return this.getCardElements(abCard, 'properties'); }
 AddressBookFf.prototype.getCardAttributes = function(abCard) { return this.getCardElements(abCard, 'attributes'); }

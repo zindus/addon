@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.217 2009-10-13 22:52:12 cvsuser Exp $
+// $Id: syncfsm.js,v 1.218 2009-10-17 07:04:37 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3208,6 +3208,12 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 									              + key + " new value: " + properties[key]);
 								}
 							}
+
+						// normalise the birthday fields
+						//
+						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthYear');
+						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthMonth');
+						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthDay')
 					}
 
 					// if this addressbook is being synced with google...
@@ -4440,8 +4446,12 @@ SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b, cont
 
 	is_twin = length_a == cMatch;
 
-	// this.state.m_logger.debug("isTwin: blah: returns: " + is_twin + " sourceid/luid: " + sourceid_a + "/=" + luid_a
-	//                                                               + " sourceid/luid: " + sourceid_b + "/=" + luid_b);
+	if (false)
+	this.debug("isTwin: returns: " + is_twin +
+		" sourceid/luid: " + sourceid_a + "/=" + luid_a +
+		" sourceid/luid: " + sourceid_b + "/=" + luid_b +
+		"\n properties a: " + aToString(a) +
+		"\n properties b: " + aToString(b));
 
 	return is_twin;
 }
@@ -4464,7 +4474,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 	var functor_delete_other_candidate_mapitems = {
 		run: function(key, value)
 		{
-			if (isPropertyPresent(self.state.sources, key) && key != FeedItem.ATTR_VER && key != sourceid)
+			if ((key in self.state.sources) && key != FeedItem.ATTR_VER && key != sourceid)
 				aZfcCandidate[key].del(value);
 
 			return true;

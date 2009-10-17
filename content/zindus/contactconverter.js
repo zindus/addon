@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.52 2009-10-11 09:21:06 cvsuser Exp $
+// $Id: contactconverter.js,v 1.53 2009-10-17 07:04:37 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -541,27 +541,47 @@ tb_birthday_normalise : function(format_to, format_from, properties_from, key_fr
 	}
 },
 tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday) {
-	function pad_dd(x) { return String("0" + x).slice(-2); }
+	const empty_year = "0000";
+
+	function pad_dd(x)   { return String("0" + x).slice(-2);        }
+	function pad_yyyy(x) { return String(empty_year + x).slice(-4); }
 
 	switch(format_to) {
 		case FORMAT_TB:
-			for (var key in a_normalised_tb_birthday)
-				properties_to[key] = a_normalised_tb_birthday[key];
+		 	// the TB form is: three properties with keys BirthYear, BirthMonth and BirthDay
+			// - if no year is given, the BirthYear property isn't present
+			// - no value has leading 0's
+			//
+			let key;
+			for (key in a_normalised_tb_birthday)
+				if (!(key == 'BirthYear' && (a_normalised_tb_birthday[key] == empty_year || (a_normalised_tb_birthday[key].length == 0))))
+					properties_to[key] = a_normalised_tb_birthday[key];
+			ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties_to, 'BirthYear');
+			ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties_to, 'BirthMonth');
+			ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties_to, 'BirthDay');
 			break;
 
 		case FORMAT_ZM: {
-			let year = (Number(a_normalised_tb_birthday['BirthYear']) > 0) ? a_normalised_tb_birthday['BirthYear'] : "0000";
-			properties_to['birthday'] = year + "-" +
-			                            a_normalised_tb_birthday['BirthMonth'] + "-" +
-			                            a_normalised_tb_birthday['BirthDay'];
+		 	// the ZM form is: "yyyy-mm-dd"
+			// - each of yyyy, mm, and dd are padded with leading zeroes.
+			// - if no year is given, then yyyy is 0000
+			//
+			let year = (Number(a_normalised_tb_birthday['BirthYear']) > 0) ? a_normalised_tb_birthday['BirthYear'] : empty_year;
+			properties_to['birthday'] = pad_yyyy(year) + "-" +
+			                            pad_dd(a_normalised_tb_birthday['BirthMonth']) + "-" +
+			                            pad_dd(a_normalised_tb_birthday['BirthDay']);
 			break;
 		}
 		case FORMAT_GD: {
+		 	// the GD form is: "yyyy-mm-dd"
+			// - each of yyyy, mm, and dd are padded with leading zeroes.
+			// - if no year is given, then "--mm-dd"
+			//
 			let birthday = "-" + pad_dd(a_normalised_tb_birthday['BirthMonth']) +
 			               "-" + pad_dd(a_normalised_tb_birthday['BirthDay']);
 
 			if (Number(a_normalised_tb_birthday['BirthYear']) > 0)
-				birthday = a_normalised_tb_birthday['BirthYear'] + birthday;
+				birthday = pad_yyyy(a_normalised_tb_birthday['BirthYear']) + birthday;
 			else
 				birthday = "-" + birthday;
 
@@ -627,5 +647,9 @@ properties_being_migrated : function() {
 };
 
 var ContactConverterStatic = {
-	prefix_tb_property_in_zimbra    : "ZindusTb"
+	prefix_tb_property_in_zimbra    : "ZindusTb",
+	tb_birthday_trim_leading_zeroes : function(properties, x) {
+		if (x in properties)
+			properties[x] = properties[x].replace(/^0+/g, "");
+	}
 };
