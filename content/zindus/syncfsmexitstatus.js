@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmexitstatus.js,v 1.46 2009-10-11 10:36:13 cvsuser Exp $
+// $Id: syncfsmexitstatus.js,v 1.47 2009-10-17 07:14:23 cvsuser Exp $
 
 function SyncFsmExitStatus()
 {
@@ -99,7 +99,7 @@ SyncFsmExitStatus.prototype.failCodeStringId = function()
 
 	var failcode = this.failcode();
 
-	if (isPropertyPresent(map, failcode))
+	if (failcode in map)
 		failcode = map[failcode];
 
 	var stringid = 'status.' + failcode;
@@ -112,7 +112,7 @@ SyncFsmExitStatus.prototype.failcode = function()
 	if (arguments.length == 1)
 	{
 		this.m_fail_code = arguments[0];
-		zinAssertAndLog(isPropertyPresent(this.m_a_valid_code, this.m_fail_code), this.m_fail_code);
+		zinAssertAndLog(this.m_fail_code in this.m_a_valid_code, this.m_fail_code);
 	}
 
 	return this.m_fail_code;

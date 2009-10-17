@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.26 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.27 2009-10-17 07:14:23 cvsuser Exp $
 
 function GoogleData()
 {
@@ -612,11 +612,11 @@ postalAddressOtherAddr : function(key) {
 		// logger().debug("postalAddressOtherAddr: gac.convert returns is_parsed: " + is_parsed + " str: " + str + " a_out: " + aToString(a_out));
 	}
 
-	if (!is_parsed)                                 // it wasn't xml
+	if (!is_parsed)                  // it wasn't xml
 		ret = null;
-	else if (isPropertyPresent(a_out, "otheraddr")) // it was xml and there was an <otheraddr> element
+	else if ("otheraddr" in a_out)   // it was xml and there was an <otheraddr> element
 		ret = a_out["otheraddr"];
-	else                                            // it was xml but didn't have an <otheraddr> element
+	else                             // it was xml but didn't have an <otheraddr> element
 		ret = "";
 
 	return ret;

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmchaindata.js,v 1.15 2009-10-08 17:20:51 cvsuser Exp $
+// $Id: syncfsmchaindata.js,v 1.16 2009-10-17 07:14:23 cvsuser Exp $
 
 // An instance of this class is passed from SyncFsm to SyncFsm - carrying state from one to the next
 //
@@ -129,7 +129,7 @@ SyncFsmChainData.prototype = {
 		var index = AccountStatic.sourceIdToIndex(sourceid);
 
 		zinAssertAndLog(index >= 0 && index < this.m_a_item.length, "sourceid: " + sourceid);
-		zinAssertAndLog(isPropertyPresent(SyncFsmChainData.ITEM_KEYS, key), "not a valid key: " + key);
+		zinAssertAndLog(key in SyncFsmChainData.ITEM_KEYS, "not a valid key: " + key);
 
 		var item = this.m_a_item[index];
 

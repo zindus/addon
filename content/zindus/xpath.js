@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: xpath.js,v 1.20 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: xpath.js,v 1.21 2009-10-17 07:14:23 cvsuser Exp $
 
 function Xpath()
 {
@@ -55,7 +55,7 @@ Xpath.nsResolver = function(prefix)
 			zindusaddr: Xpath.NS_ZINDUS_ADDRESS
 	};
 
-	zinAssertAndLog(isPropertyPresent(map, prefix), "prefix: " + prefix);
+	zinAssertAndLog((prefix in map), "prefix: " + prefix);
 
 	return map[prefix];
 };

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zmsoapdocument.js,v 1.18 2009-10-08 17:21:58 cvsuser Exp $
+// $Id: zmsoapdocument.js,v 1.19 2009-10-17 07:14:23 cvsuser Exp $
 
 function ZmSoapDocument()
 {
@@ -49,7 +49,7 @@ ZmSoapDocument.nsFromMethod = function(method)
 		last_notused:   null
 	};
 
-	zinAssertAndLog(isPropertyPresent(aMethod, method), "method missing from namespace table: " + method);
+	zinAssertAndLog(method in aMethod, "method missing from namespace table: " + method);
 
 	return aMethod[method];
 }
@@ -226,7 +226,7 @@ ZmSoapDocument.prototype.CreateFolder = function(folder)
 
 	elFolder = this.doc.createElementNS(Xpath.NS_ZMAIL, "folder");
 
-	zinAssert(isPropertyPresent(folder, 'name') && isPropertyPresent(folder, 'l') && folder.name.length > 0)
+	zinAssert(('name' in folder) && ('l' in folder) && folder.name.length > 0)
 
 	elFolder.setAttribute("name", folder.name);
 	elFolder.setAttribute("l",    folder.l);
@@ -247,8 +247,8 @@ ZmSoapDocument.prototype.CreateContact = function(args)
 	// lets allow the creation of completely empty contacts in support of zindus/ToBeDeleted
 	// && aToLength(args.properties) > 0
 	//
-	zinAssertAndLog(isPropertyPresent(args, 'properties') && isPropertyPresent(args, 'l') && aToLength(args.properties) > 0,
-	                        "properties: " + aToString(args));
+	zinAssertAndLog(('properties' in args) && ('l' in args) && aToLength(args.properties) > 0,
+	               function () { return "properties: " + aToString(args); } );
 
 	elCn.setAttribute("l", args.l);
 

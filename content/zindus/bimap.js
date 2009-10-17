@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: bimap.js,v 1.12 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: bimap.js,v 1.13 2009-10-17 07:14:23 cvsuser Exp $
 
 function BiMap(array_a, array_b)
 {
@@ -38,8 +38,8 @@ BiMap.prototype = {
 		for (var i = 0; i < array_a.length; i++) {
 			zinAssert(typeof(array_a[i]) == 'string' || typeof(array_a[i]) == 'number');
 			zinAssert(typeof(array_b[i]) == 'string' || typeof(array_b[i]) == 'number');
-			zinAssert(!isPropertyPresent(this.m_a, array_a[i]));  // no duplicates allowed in either array
-			zinAssert(!isPropertyPresent(this.m_b, array_b[i]));
+			zinAssert(!(array_a[i] in this.m_a));  // no duplicates allowed in either array
+			zinAssert(!(array_b[i] in this.m_b));
 
 			this.m_a[array_a[i]] = array_b[i];
 			this.m_b[array_b[i]] = array_a[i];
