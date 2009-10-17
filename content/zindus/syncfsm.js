@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.218 2009-10-17 07:04:37 cvsuser Exp $
+// $Id: syncfsm.js,v 1.219 2009-10-17 09:16:02 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1476,7 +1476,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 						msg += " new: need to do another <SyncRequest>";
 					}
 
-					if (!isPropertyPresent(attribute, "ms"))
+					if (!("ms" in attribute))
 					{
 						// see issue #126
 						msg += " WARNING: folder didn't have an 'ms' attribute - giving it a fake one";
@@ -1534,7 +1534,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 				// otherwise just add it to the map
 				//
 
-				if (!isPropertyPresent(attribute, 'id') || !isPropertyPresent(attribute, FeedItem.ATTR_L))
+				if (!('id' in attribute) || !(FeedItem.ATTR_L in attribute))
 					this.state.m_logger.error("<cn> element received from server without an 'id' or 'l' attribute.  Unexpected.  Ignoring: " + aToString(attribute));
 				else
 				{
@@ -1565,9 +1565,9 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 						// or whether it serves a different purpose
 						//
 						var rev_attr = null;
-						if (isPropertyPresent(attribute, FeedItem.ATTR_REV))
+						if (FeedItem.ATTR_REV in attribute)
 							rev_attr = attribute[FeedItem.ATTR_REV];
-						else if (isPropertyPresent(change, 'token'))
+						else if ('token' in change)
 							rev_attr = change['token'];
 
 						var isRevChange = !rev_attr ||
@@ -1685,7 +1685,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 				run: function(zfi)
 				{
 					if (zfi.type() == FeedItem.TYPE_FL && zfi.isForeign() && (new Zuio(zfi.key())).zid() == change.acct
-					                                                      && !isPropertyPresent(a_foreign_folder_present, zfi.key()))
+					                                                      && !(zfi.key() in a_foreign_folder_present))
 					{
 						zfi.set(FeedItem.ATTR_DEL, 1);
 						this.state.m_logger.debug("foreign folder change detection: marked deleted: " + zfi.toString());
@@ -1754,7 +1754,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 				msg = "zidbag:";
 
 				for (var zid in this.state.zidbag.m_properties)
-					if (isPropertyPresent(functor.aNewLink, zid))
+					if (zid in functor.aNewLink)
 					{
 						this.state.zidbag.set(zid, 'SyncToken', null);
 						msg += "\n " + zid + ": null (because a new link element was found)";
@@ -1775,10 +1775,10 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 		Xpath.setConditional(SyncResponse, 'SyncMd',   "/soap:Envelope/soap:Body/zm:SyncResponse/attribute::md",         response, null);
 		Xpath.setConditional(SyncResponse, 'SyncToken',"/soap:Envelope/soap:Body/zm:SyncResponse/attribute::token",      response, null);
 
-		if (isPropertyPresent(SyncResponse, 'SyncMd'))
+		if ('SyncMd' in SyncResponse)
 			this.state.SyncMd = SyncResponse.SyncMd;
 
-		if (isPropertyPresent(SyncResponse, 'SyncToken'))
+		if ('SyncToken' in SyncResponse)
 			this.state.zidbag.set(change.acct, 'SyncToken', SyncResponse.SyncToken);
 
 		if (nextEvent == 'evRedo')
@@ -2604,7 +2604,7 @@ SyncFsm.prototype.testForAccountsIntegrity = function()
 		if (account.format_xx() == FORMAT_ZM)
 			cZimbra++;
 
-		if (isPropertyPresent(a_keys, key))
+		if (keys in a_keys)
 			index_identical = i;
 		else
 			a_keys[key] = true;
@@ -2916,7 +2916,7 @@ SyncFsm.prototype.loadTbAddressBooks = function(re_gd_ab_names)
 
 				msg = "addressbook of interest to zindus: " + msg;
 
-				if (!isPropertyPresent(mapTbFolderTpiToId, prefid))
+				if (!(prefid in mapTbFolderTpiToId))
 				{
 					key = Zuio.key(zfcTb.get(FeedItem.KEY_AUTO_INCREMENT).increment('next'), FeedItem.FAKE_ZID_FOR_AB);
 
@@ -3146,8 +3146,8 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 				var isInTopLevelFolder = false;
 
-				if (!abCard.isMailList && ( !isPropertyPresent(aCardKeysToExclude, key) ||
-				                            (isPropertyPresent(aCardKeysToExclude, key) && aCardKeysToExclude[key] != uri)))
+				if (!abCard.isMailList && ( !(key in aCardKeysToExclude) ||
+				                            ((key in aCardKeysToExclude) && aCardKeysToExclude[key] != uri)))
 						isInTopLevelFolder = true;
 
 				if (false)
@@ -3184,7 +3184,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 						// replace \r\n with \n - issue #121 and https://bugzilla.mozilla.org/show_bug.cgi?id=456678
 						// 
-						if (isPropertyPresent(properties, "Notes") && properties["Notes"].match(/\r\n/))
+						if (("Notes" in properties) && properties["Notes"].match(/\r\n/))
 						{
 							properties["Notes"] = properties["Notes"].replace(new RegExp("\r\n", "mg"), "\n");
 							is_changed = true;
@@ -3446,7 +3446,7 @@ SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 				if (zinTrim(name).length == 0)
 					this.a_folder_violation[name] = 'failon.folder.name.empty';
 
-				if (!isPropertyPresent(this.a_folder_count, name))
+				if (!(name in this.a_folder_count))
 					this.a_folder_count[name] = true;
 				else
 					this.a_folder_violation[name] = 'failon.folder.name.duplicate';
@@ -3457,7 +3457,7 @@ SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 				if (SyncFsm.isZmFolderContainsInvalidCharacter(name))
 					this.a_folder_violation[name] = 'failon.folder.name.invalid';
 
-				if (isPropertyPresent(this.a_folder_violation, name))
+				if (name in this.a_folder_violation)
 					ret = false; // stop at the first violation
 
 				// this.state.m_logger.debug("testForLegitimateFolderNames: zfi: " + zfi + " name: " + name + " " +
@@ -3795,7 +3795,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 					var key = hyphenate('-', sourceid_tb, this.name_parent(luid_parent), checksum);
 					// this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: testing twin key: " + key);
 
-					if (isPropertyPresent(this.state.aHasChecksum, key) && !isObjectEmpty(this.state.aHasChecksum[key]))
+					if ((key in this.state.aHasChecksum) && !isObjectEmpty(this.state.aHasChecksum[key]))
 						for (var luid_possible in this.state.aHasChecksum[key])
 							if (this.state.aHasChecksum[key][luid_possible] &&
 						    	self.isTwin(sourceid_tb, sourceid, luid_possible, luid, self.state.m_contact_converter_style_basic))
@@ -3838,7 +3838,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 
 			if (action == 'copy')
 			{
-				if (!isPropertyPresent(this.m_perf.a_mark, key))
+				if (!(key in this.m_perf.a_mark))
 					this.m_perf.a_mark[key] = 0;
 
 				this.m_perf.a_mark[key] += elapsed - this.m_perf.a_start[key];
@@ -3849,7 +3849,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 		},
 		name_parent: function(luid_parent)
 		{
-			if (!isPropertyPresent(this.a_name_parent, luid_parent))
+			if (!(luid_parent in this.a_name_parent))
 				this.a_name_parent[luid_parent] = self.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfc.get(luid_parent));
 
 			return this.a_name_parent[luid_parent];
@@ -4306,7 +4306,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 		{
 			var checksum = self.contact_converter().crc32(properties);
 
-			if (!isPropertyPresent(a_checksum, checksum))
+			if (!(checksum in a_checksum))
 				a_checksum[checksum] = new Object();
 
 			a_checksum[checksum][sourceid] = luid;
@@ -4440,7 +4440,7 @@ SyncFsm.prototype.isTwin = function(sourceid_a, sourceid_b, luid_a, luid_b, cont
 	if (is_twin)
 	{
 		for (var i in a)
-			if (isPropertyPresent(b, i) && a[i] == b[i])
+			if ((i in b) && a[i] == b[i])
 				cMatch++;
 	}
 
@@ -4501,7 +4501,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 				skip_msg = "not relevant";
 			else
 			{
-				zinAssert(isPropertyPresent(reverse, sourceid) && isPropertyPresent(reverse[sourceid], luid));
+				zinAssert((sourceid in reverse) && (luid in reverse[sourceid]));
 
 				gid = reverse[sourceid][luid];
 
@@ -4538,7 +4538,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 
 				run: function(sourceid, luid)
 				{
-					if (!isPropertyPresent(this.state.sources, sourceid) || sourceid == FeedItem.ATTR_VER)
+					if (!(sourceid in this.state.sources) || sourceid == FeedItem.ATTR_VER)
 						return true;
 
 					var zfi = aZfcCandidate[sourceid].get(luid);
@@ -4625,7 +4625,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 				{
 					// if this assertion fails, you want to look elsewhere for the cause eg issue #85
 					//
-					zinAssertAndLog(isPropertyPresent(aVerMatchesGid, sourceid_tb), function() { return buildgcs_msg + "\n" + msg; } );
+					zinAssertAndLog((sourceid_tb in aVerMatchesGid), function() { return buildgcs_msg + "\n" + msg; } );
 					ret = new Gcs(sourceid_tb, eGcs.win);
 				}
 			}
@@ -4774,7 +4774,7 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 						}
 						else
 						{
-							if (!isPropertyPresent(a_no_change, aGcs[gid].sourceid))
+							if (!(aGcs[gid].sourceid in a_no_change))
 								a_no_change[aGcs[gid].sourceid] = new Array();
 
 							a_no_change[aGcs[gid].sourceid].push(gid);
@@ -4864,7 +4864,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 				}
 				else if (this.isLsoVerMatch(gid, zfcTarget.get(zfcGid.get(gid).get(sourceid))))
 				{
-					if (!isPropertyPresent(a_winner_matches_gid, sourceid))
+					if (!(sourceid in a_winner_matches_gid))
 						a_winner_matches_gid[sourceid] = new Array();
 
 					a_winner_matches_gid[sourceid].push(gid); // msg = " winner matches gid - no change";
@@ -5305,17 +5305,17 @@ SyncFsm.prototype.shortLabelForContactProperties = function(properties)
 
 	key = 'DisplayName';
 
-	if (isPropertyPresent(properties, key))
+	if ((key in properties))
 		ret += "<" + properties[key] + "> ";
 
 	key = 'PrimaryEmail';
 
-	if (isPropertyPresent(properties, key))
+	if ((key in properties))
 		ret += properties[key];
 
 	key = 'SecondEmail';
 
-	if (ret == "" && isPropertyPresent(properties, key))
+	if (ret == "" && (key in properties))
 		ret += key + ": " + properties[key];
 
 	return ret;
@@ -5342,7 +5342,7 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 
 			name = this.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
 
-			if (isPropertyPresent(aFolderName, name))
+			if ((name in aFolderName))
 			{
 				this.state.stopFailCode    = 'failon.folder.name.clash';
 				this.state.stopFailArg  = [ name ]; // FIXME - this is an internal facing name ie zindus_pab
@@ -5572,7 +5572,7 @@ SyncFsm.prototype.sharedFoldersUpdateZm = function()
 			{
 				var keyFl = Zuio.key(zfi.get(FeedItem.ATTR_RID), zfi.get(FeedItem.ATTR_ZID));
 
-				if (isPropertyPresent(this.a_key_fl, keyFl))
+				if (keyFl in this.a_key_fl)
 					this.a_key_fl[keyFl].push(zfi.key())
 				else
 					this.a_key_fl[keyFl] = new Array(zfi.key());
@@ -6032,7 +6032,7 @@ SyncFsm.prototype.keepCertainDeletedTbMapItems = function()
 		run: function(zfi) {
 			if (zfi.isPresent(FeedItem.ATTR_DEL)) {
 				var luid = zfi.key();
-				var gid  = isPropertyPresent(aReverseGid[sourceid_tb], luid) ? aReverseGid[sourceid_tb][luid] : null;
+				var gid  = (luid in aReverseGid[sourceid_tb]) ? aReverseGid[sourceid_tb][luid] : null;
 
 				is_a_source_in_gid_not_being_synced = false;
 
@@ -6410,7 +6410,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 					// mark as deleted any contacts that are children of the deleted addressbook
 					// and leave the map as if the contacts were actually deleted (which they are!)
 					//
-					zinAssertAndLog(isPropertyPresent(this.state.a_folders_deleted, gid), gid);
+					zinAssertAndLog((gid in this.state.a_folders_deleted), gid);
 
 					var a_suo = this.state.a_folders_deleted[gid];
 					var zfi_gid_cn, luid_cn;
@@ -6679,7 +6679,7 @@ SyncFsm.prototype.updateZmRemoteUpdatePackage = function(key_suo, suo)
 			// populate properties with the contact attributes that must be deleted on the server...
 			//
 			for (key in this.contact_converter().m_common_to[FORMAT_ZM][FORMAT_TB])
-				if (!isPropertyPresent(properties, key))
+				if (!(key in properties))
 					properties[key] = null;
 
 			msg          += " modify contact: ";
@@ -6828,7 +6828,7 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 
 			is_response_understood = true;
 
-			if (!isPropertyPresent(attribute, 'id'))
+			if (!('id' in attribute))
 				this.state.m_logger.error("<action> element received seems to be missing an 'id' attribute - ignoring: " + aToString(attribute));
 			else
 			{
@@ -6838,7 +6838,7 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 				var key         = Zuio.key((id.indexOf(':') == -1) ? id : rightOfChar(id, ':'), change.acct);
 				var zfiRelevantToGid;
 
-				if (isPropertyPresent(remote, 'luid_target'))
+				if ('luid_target' in remote)
 					zfiTarget = zfcTarget.get(remote.luid_target);  // used in MOD | TYPE_FL
 
 				if (key_suo.bucket == (Suo.DEL | FeedItem.TYPE_FL) ||
@@ -6886,7 +6886,7 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 	Xpath.setConditional(change, 'token', "/soap:Envelope/soap:Header/z:context/z:change/attribute::token", response, null);
 	Xpath.setConditional(change, 'acct',  "/soap:Envelope/soap:Header/z:context/z:change/attribute::acct",  response, null);
 
-	if (!isPropertyPresent(change, 'token'))
+	if (!('token' in change))
 	{
 		// for safety's sake, we could also check that change.acct matches the zid in remote_update_package - don't bother at the mo...
 		this.state.m_logger.error("No change token found.  This shouldn't happen.  Ignoring soap response.");
@@ -7503,7 +7503,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 			break;
 
 		case FORMAT_ZM:
-			if (isPropertyPresent(this.state.aSyncContact, luid))
+			if (luid in this.state.aSyncContact, luid)
 				ret = this.contact_converter().convert(format_to, FORMAT_ZM, this.state.aSyncContact[luid].element);
 
 			break;
