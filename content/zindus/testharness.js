@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.116 2009-10-13 22:21:22 cvsuser Exp $
+// $Id: testharness.js,v 1.117 2009-10-17 09:16:02 cvsuser Exp $
 
 function TestHarness()
 {
@@ -310,11 +310,11 @@ TestHarness.prototype.testContactConverterGdPostalAddress = function()
 	//
 	contact = new_contact("line 1\n\n\nline 4");
 	properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
-	zinAssert(!isPropertyPresent(properties, "HomeAddress"));
+	zinAssert(!("HomeAddress" in properties));
 
 	contact = new_contact(xml_as_char);
 	properties = contact_converter.convert(FORMAT_TB, FORMAT_GD, contact.properties);
-	zinAssert(!isPropertyPresent(properties, "HomeAddress"));
+	zinAssert(!("HomeAddress" in properties));
 
 	// With PrefSet.GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", address should convert to/from Thunderbird fields
 	// but the <otheraddr> element from Google doesn't become a Thunderbird property
@@ -328,9 +328,9 @@ TestHarness.prototype.testContactConverterGdPostalAddress = function()
 	// this.m_logger.debug("xmlInput: "   + xmlInput);
 	// this.m_logger.debug("properties: " + aToString(properties));
 
-	zinAssert(isPropertyPresent(properties, "HomeAddress")  && properties["HomeAddress"]  == this.m_street1);
-	zinAssert(isPropertyPresent(properties, "HomeAddress2") && properties["HomeAddress2"] == this.m_street2);
-	zinAssert(!isPropertyPresent(properties, "otheraddr"));
+	zinAssert(("HomeAddress" in properties)  && properties["HomeAddress"]  == this.m_street1);
+	zinAssert(("HomeAddress2" in properties) && properties["HomeAddress2"] == this.m_street2);
+	zinAssert(!("otheraddr" in properties));
 
 	var gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, properties);
 	xml_as_char = gd_properties[this.postal_key("home")];
@@ -821,7 +821,7 @@ TestHarness.prototype.testAddressBookBugzilla432145Uri = function(count)
 {
 	var index = parseInt( (count * this.m_bugzilla_432145_uri.length) / this.m_bugzilla_432145_count );
 
-	zinAssertAndLog(isPropertyPresent(this.m_bugzilla_432145_uri, index), "index: " + index);
+	zinAssertAndLog(index in this.m_bugzilla_432145_uri, "index: " + index);
 
 	return this.m_bugzilla_432145_uri[index];
 }
@@ -2523,10 +2523,10 @@ TestHarness.prototype.testExitStatusMessages = function()
 		{
 			es.failcode(failcode);
 
-			if (isPropertyPresent(a[failcode], 'trailer'))
+			if ('trailer' in a[failcode])
 				es.m_fail_trailer = a[failcode].trailer;
 
-			if (isPropertyPresent(a[failcode], 'arg'))
+			if ('arg' in a[failcode])
 				es.m_fail_arg = a[failcode].arg;
 
 			this.m_logger.debug("testExitStatusMessages: failcode: " + failcode + " message:\n" +

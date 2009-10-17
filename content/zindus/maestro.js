@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: maestro.js,v 1.24 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: maestro.js,v 1.25 2009-10-17 09:16:02 cvsuser Exp $
 
 // FIXME: this class needs to be refactored into a component
 // that observes notifications from fsms and reflects them back to clients.
@@ -109,10 +109,10 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 		switch (data)
 		{
 			case this.DO_FUNCTOR_REGISTER:
-				zinAssert(isPropertyPresent(subject, 'id_functor'));
-				zinAssert(isPropertyPresent(subject, 'a_id_fsm'));
-				zinAssert(isPropertyPresent(subject, 'functor'));
-				zinAssert(isPropertyPresent(subject, 'context'));
+				zinAssert('id_functor' in subject);
+				zinAssert('a_id_fsm' in subject);
+				zinAssert('functor' in subject);
+				zinAssert('context' in subject);
 
 				var id_functor = subject['id_functor'];
 
@@ -128,17 +128,17 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 				break;
 
 			case this.DO_FUNCTOR_UNREGISTER:
-				zinAssert(isPropertyPresent(subject, 'id_functor'));
+				zinAssert('id_functor' in subject);
 				var id_functor = subject['id_functor'];
 				delete this.m_a_functor[id_functor]; // clients register and unregister functors with unique ids
 				// logger().debug("Maestro: observe: after unregister: " + id_functor + " maestro: " + this.toString() );
 				break;
 
 			case this.DO_FSM_STATE_UPDATE:
-				zinAssert(isPropertyPresent(subject, 'fsmstate'));
+				zinAssert('fsmstate' in subject);
 				var id_fsm = subject.fsmstate.id_fsm;
 
-				// if (!isPropertyPresent(this.m_a_fsmstate, id_fsm) && !subject.fsmstate.isFinal())
+				// if (!(id_fsm in this.m_a_fsmstate) && !subject.fsmstate.isFinal())
 				//	logger().debug("Maestro: observe: adding to m_a_fsmstate: " + id_fsm);
 					
 				this.m_a_fsmstate[id_fsm] = subject.fsmstate;
@@ -147,7 +147,7 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 
 				this.functorNotifyAll(id_fsm);
 
-				zinAssertAndLog(isPropertyPresent(this.m_a_fsmstate, id_fsm), id_fsm);
+				zinAssertAndLog((id_fsm in this.m_a_fsmstate), id_fsm);
 
 				if (this.m_a_fsmstate[id_fsm].isFinal())
 				{
@@ -175,11 +175,11 @@ Maestro.prototype.functorNotifyAll = function(id_fsm)
 
 		// var msg = "functorNotifyAll: " + " id_functor: " + id_functor + " a_id_fsm: " + aToString(a_id_fsm);
 
-		if (isPropertyPresent(a_id_fsm, id_fsm))
+		if (id_fsm in a_id_fsm)
 		{
 			var functor = this.m_a_functor[id_functor]['functor'];
 			var context = this.m_a_functor[id_functor]['context'];
-			var args    = isPropertyPresent(this.m_a_fsmstate, id_fsm) ? this.m_a_fsmstate[id_fsm] : null;
+			var args    = (id_fsm in this.m_a_fsmstate) ? this.m_a_fsmstate[id_fsm] : null;
 
 			// logger().debug("Maestro: functorNotifyAll: status of: " + id_fsm + " has changed - about to notify: " + id_functor + " passing arg: " + (args ? "fsmstate" : "null"));
 

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.63 2009-10-13 22:21:23 cvsuser Exp $
+// $Id: util.js,v 1.64 2009-10-17 09:16:03 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -291,14 +291,6 @@ function isInArray(item, a)
 	zinAssert(typeof a == 'object' && typeof a.indexOf == 'function');
 
 	return a.indexOf(item) != -1;
-}
-
-function isPropertyPresent(obj, property)
-{
-	zinAssertAndLog(typeof(obj) == 'object', "argument[0] of this function should be a hash!"); // catch programming errors
-	zinAssertAndLog(arguments.length == 2,   "this function takes two arguments!");
-
-	return (!isObjectEmpty(obj) && typeof(obj[property]) != 'undefined');
 }
 
 function firstDifferingObjectKey(obj1, obj2)
@@ -855,7 +847,7 @@ function dId() // variable arguments: either: (win, id) or (id)
 	else
 		zinAssert(false); // programming error
 
-	if (!isPropertyPresent(doc, 'getElementById'))
+	if (!('getElementById' in doc))
 		zinAssertAndLog(false, executionStackAsString());
 
 	return doc.getElementById(id);

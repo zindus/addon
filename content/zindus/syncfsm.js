@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.219 2009-10-17 09:16:02 cvsuser Exp $
+// $Id: syncfsm.js,v 1.220 2009-10-17 09:20:00 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2604,7 +2604,7 @@ SyncFsm.prototype.testForAccountsIntegrity = function()
 		if (account.format_xx() == FORMAT_ZM)
 			cZimbra++;
 
-		if (keys in a_keys)
+		if (key in a_keys)
 			index_identical = i;
 		else
 			a_keys[key] = true;

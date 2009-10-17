@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: prefset.js,v 1.25 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: prefset.js,v 1.26 2009-10-17 09:16:02 cvsuser Exp $
 
 function PrefSet(prefprefix, a)
 {
@@ -145,11 +145,6 @@ PrefSet.prototype.toString = function()
 	ret += " }";
 
 	return ret;
-}
-
-PrefSet.prototype.isPropertyPresent = function(property)
-{
-	return (typeof(this.m_properties[property]) != "undefined");
 }
 
 PrefSet.prototype.getProperty = function(property)
