@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncwindow.js,v 1.49 2009-10-08 17:21:58 cvsuser Exp $
+// $Id: syncwindow.js,v 1.50 2009-10-17 07:07:59 cvsuser Exp $
 
 function SyncWindow()
 {
@@ -175,7 +175,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			{
 				this.m_zwc.forEach(this.zwc_functor(true));
 
-				if (isPropertyPresent(Maestro.FSM_GROUP_TWOWAY, fsmstate.context.state.id_fsm))
+				if (fsmstate.context.state.id_fsm in Maestro.FSM_GROUP_TWOWAY)
 				{
 					StatusBarState.save(this.m_payload.m_es);
 					StatusBarState.update();

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.80 2009-10-11 18:16:07 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.81 2009-10-17 07:07:59 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -168,8 +168,8 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 
 	for (var state in a_states_common)
 	{
-		zinAssertAndLog(!isPropertyPresent(a_states_zm, state), "state: " + state);
-		zinAssertAndLog(!isPropertyPresent(a_states_gd, state), "state: " + state);
+		zinAssertAndLog(!(state in a_states_zm), "state: " + state);
+		zinAssertAndLog(!(state in a_states_gd), "state: " + state);
 		a_states_zm[state] = a_states_common[state];
 		a_states_gd[state] = a_states_common[state];
 	}
@@ -216,9 +216,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	var count_states_all = 0;
 
 	for (key in a_states)
-		if (isPropertyPresent(a_states[key], 'count'))
+		if ('count' in a_states[key])
 		{
-			if (isPropertyPresent(this.m_a_states_seen, key))
+			if (key in this.m_a_states_seen)
 				count_states_seen += a_states[key]['count'];
 
 			count_states_all += a_states[key]['count'];
@@ -229,7 +229,7 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 	                    "a_states_seen: " + aToString(this.m_a_states_seen) + "\n" +
 	                    " count_states_seen: " + count_states_seen + " count_states_all: " + count_states_all );
 
-	if (fsmstate.newstate && isPropertyPresent(a_states[fsmstate.newstate], 'count')) // fsmstate.newstate == null when oldstate == 'final'
+	if (fsmstate.newstate && ('count' in a_states[fsmstate.newstate])) // fsmstate.newstate == null when oldstate == 'final'
 	{
 		ret = true;
 		
@@ -424,9 +424,9 @@ SyncFsmObserver.prototype.updateState = function(fsmstate, a_states)
 					if (context.state.stopFailTrailer)
 						es.m_fail_trailer = context.state.stopFailTrailer;
 				}
-				else if (context.state.authToken && isPropertyPresent(Maestro.FSM_GROUP_AUTHONLY, context.state.id_fsm))
+				else if (context.state.authToken && (context.state.id_fsm in Maestro.FSM_GROUP_AUTHONLY))
 					es.m_exit_status = 0;
-				else if (fsmstate.event == 'evNext' && isPropertyPresent(Maestro.FSM_GROUP_TWOWAY, context.state.id_fsm))
+				else if (fsmstate.event == 'evNext' && (context.state.id_fsm in Maestro.FSM_GROUP_TWOWAY))
 					es.m_exit_status = 0;
 				else
 					zinAssert(false); // ensure that all cases are covered above
