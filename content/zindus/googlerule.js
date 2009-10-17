@@ -405,7 +405,7 @@ GoogleRuleTrash.prototype.getUri = function(name)
 {
 	var a_match = this.m_addressbook.getAddressBooksByPattern(new RegExp( "^" + name + "$" ));
 
-	return (isPropertyPresent(a_match, name) && a_match[name].length == 1) ? a_match[name][0].uri() : null;
+	return ((name in a_match) && a_match[name].length == 1) ? a_match[name][0].uri() : null;
 }
 
 GoogleRuleTrash.getTrashName = function(type)
@@ -761,7 +761,7 @@ GoogleRuleRepeater.prototype.resolve_if_appropriate = function(logger, es, sfcd)
 		var failcode         = es.failcode();
 		var a_failcodes_seen = sfcd.sourceid(AccountStatic.indexToSourceId(sfcd.m_account_index), 'a_failcodes_seen');
 		var is_dont_ask      = GoogleRuleTrash.isDontAsk(failcode);
-		var is_failcode_seen = isPropertyPresent(a_failcodes_seen, failcode);
+		var is_failcode_seen = (failcode in a_failcodes_seen);
 		is_repeat            = isInArray(failcode, GoogleRuleTrash.FAIL_CODES) && is_dont_ask && !is_failcode_seen;
 
 		logger.debug("resolve_if_appropriate: isFinal: es: " + es.toString() + " failcode: " + failcode +

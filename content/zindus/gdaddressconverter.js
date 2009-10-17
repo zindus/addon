@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: gdaddressconverter.js,v 1.13 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: gdaddressconverter.js,v 1.14 2009-10-17 07:20:26 cvsuser Exp $
 
 function GdAddressConverter()
 {
@@ -80,13 +80,13 @@ GdAddressConverter.prototype.convert = function(a_xml, key, a_fields, dirn)
 		address = "<address xmlns='" + Xpath.NS_ZINDUS_ADDRESS + "'>";
 		var tag;
 
-		if (!isPropertyPresent(a_fields, "Address") && isPropertyPresent(a_fields, "Address2"))
+		if (!("Address" in a_fields) && ("Address2" in a_fields))
 			a_fields["Address"] = "";
 
 		var pretty_char = (dirn & GdAddressConverter.PRETTY_XML) ? " " : "";
 
 		for (var i = 0; i < this.a_suffix_all.length; i++)
-			if (isPropertyPresent(a_fields, this.a_suffix_all[i]))
+			if (this.a_suffix_all[i] in a_fields)
 			{
 				tag = null
 

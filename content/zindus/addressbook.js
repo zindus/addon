@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.67 2009-10-12 22:11:18 cvsuser Exp $
+// $Id: addressbook.js,v 1.68 2009-10-17 07:20:25 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -113,7 +113,7 @@ AddressBook.prototype.populateNameToUriMap = function()
 				if (key == context.getPabName())
 					uri = context.getPabURI();
 		
-				if (!isPropertyPresent(context.m_map_name_to_uri, key))
+				if (!(key in context.m_map_name_to_uri))
 					context.m_map_name_to_uri[key] = new Array();
 
 				context.m_map_name_to_uri[key].push(new AddressBookImportantProperties(uri, elem.dirPrefId));
@@ -210,10 +210,10 @@ AddressBook.prototype.forEachAddressBook = function(functor)
 
 		uri = this.directoryProperty(elem, "URI");
 
-		if (this.directoryProperty(elem, "dirType") == kPABDirectory && !isPropertyPresent(aUri, uri))
+		if (this.directoryProperty(elem, "dirType") == kPABDirectory && !(uri in aUri))
 			fContinue = functor.run(elem);
 
-		if (isPropertyPresent(aUri, uri))
+		if (uri in aUri)
 			this.logger().warn("forEachAddressBook: avoid calling functor twice on uri: " + uri);
 
 		aUri[uri] = true;

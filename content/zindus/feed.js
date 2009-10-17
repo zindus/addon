@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.50 2009-10-04 22:20:16 cvsuser Exp $
+// $Id: feed.js,v 1.51 2009-10-17 07:20:25 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -234,7 +234,7 @@ FeedCollection.prototype.forEachDoOne = function(functor, key, flavour)
 	zinAssert(flavour == FeedCollection.ITER_ALL || flavour == FeedCollection.ITER_NON_RESERVED);
 	zinAssert(this.isPresent(key));
 
-	if (flavour == FeedCollection.ITER_NON_RESERVED && (isPropertyPresent(FeedItem.KEYS_RESERVED, key)))
+	if (flavour == FeedCollection.ITER_NON_RESERVED && (key in FeedItem.KEYS_RESERVED))
 		ret = true;
 	else
 		ret = functor.run(this.m_collection[key]);
@@ -340,7 +340,7 @@ FeedCollection.prototype.generateZfis = function(yield_count)
 
 		zuio = new Zuio(zfi.get(FeedItem.ATTR_KEY));
 
-		if (!isPropertyPresent(a_key[type], zuio.zid()))
+		if (!(zuio.zid() in a_key[type]))
 			a_key[type][zuio.zid()] = new Array();
 
 		a_key[type][zuio.zid()].push(isNaN(zuio.id()) ? zuio.id() : Number(zuio.id()));
@@ -386,7 +386,7 @@ function FeedItem()
 
 	if (arguments.length == 2)
 	{
-		zinAssert(arguments[0] && typeof(arguments[1]) == 'object' && isPropertyPresent(arguments[1], FeedItem.ATTR_KEY));
+		zinAssert(arguments[0] && typeof(arguments[1]) == 'object' && (FeedItem.ATTR_KEY in arguments[1]));
 
 		this.set(FeedItem.ATTR_TYPE, FeedItem.typeAsString(arguments[0]));
 		this.set(arguments[1]);
@@ -402,9 +402,9 @@ function FeedItem()
 			this.m_properties[arguments[i]] = arguments[i+1];
 		}
 
-		zinAssert(!isPropertyPresent(this.m_properties, FeedItem.ATTR_TYPE));
-		zinAssertAndLog(isPropertyPresent(this.m_properties, FeedItem.ATTR_KEY),
-		                   " ATTR_KEY missing from: " + aToString(this.m_properties));
+		zinAssert(!(FeedItem.ATTR_TYPE in this.m_properties));
+		zinAssertAndLog(FeedItem.ATTR_KEY in this.m_properties,
+		                 function() { return " ATTR_KEY missing from: " + aToString(this.m_properties); });
 
 		if (arguments[0] != null)
 			this.m_properties[FeedItem.ATTR_TYPE] = FeedItem.typeAsString(arguments[0]);
@@ -445,9 +445,7 @@ FeedItem.prototype.set = function(arg1, arg2)
 	{
 		// this is handy for creating/updating an existing FeedItem based on a response from a zimbra server
 		//
-		zinAssert(this.isPresent(FeedItem.ATTR_TYPE) &&
-		          isPropertyPresent(arg1, FeedItem.ATTR_KEY) &&
-				  !isPropertyPresent(arg1, FeedItem.ATTR_TYPE));
+		zinAssert(this.isPresent(FeedItem.ATTR_TYPE) && (FeedItem.ATTR_KEY in arg1) && !(FeedItem.ATTR_TYPE in arg1));
 
 		for each (var j in FeedItem.attributesForType(this.type()))
 			this.setWhenPresent(arg1, j);

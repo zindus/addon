@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: fsm.js,v 1.18 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: fsm.js,v 1.19 2009-10-17 07:20:25 cvsuser Exp $
 
 // Notes:
 // - only entry actions should call continuation() - not sure what happens
@@ -28,7 +28,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.18 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: fsm.js,v 1.19 2009-10-17 07:20:25 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -55,7 +55,7 @@ function fsmTransitionDo(fsmstate)
 				if (fsm.m_a_exit[newstate])
 					fsm.m_a_exit[newstate].call(context, newstate, nextEvent);
             
-				zinAssert(isPropertyPresent(context.fsm.m_transitions, newstate));
+				zinAssert(newstate in context.fsm.m_transitions);
 
 				var nextState = context.fsm.m_transitions[newstate][nextEvent];
 

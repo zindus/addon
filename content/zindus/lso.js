@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: lso.js,v 1.18 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: lso.js,v 1.19 2009-10-17 07:20:26 cvsuser Exp $
 
 // lso == Last Sync Object
 //
@@ -161,14 +161,14 @@ Lso.prototype.compare = function(zfi)
 
 Lso.prototype.get = function(key)
 {
-	zinAssert(isPropertyPresent(this.m_properties, key) && this.m_properties[key] != null);
+	zinAssert((key in this.m_properties) && this.m_properties[key] != null);
 
 	return this.m_properties[key];
 }
 
 Lso.prototype.set = function(key, value)
 {
-	zinAssert(isPropertyPresent(this.m_properties, key));
+	zinAssert(key in this.m_properties);
 
 	this.m_properties[key] = value;
 }
