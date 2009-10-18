@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmchaindata.js,v 1.16 2009-10-17 07:14:23 cvsuser Exp $
+// $Id: syncfsmchaindata.js,v 1.17 2009-10-18 02:51:26 cvsuser Exp $
 
 // An instance of this class is passed from SyncFsm to SyncFsm - carrying state from one to the next
 //
@@ -55,9 +55,11 @@ function SyncFsmChainData(a_accounts)
 }
 
 SyncFsmChainData.ITEM_KEYS = {
-	c_repeat_after_gd_group_mod: function() { return 0;            },
-	is_slow_sync:                function() { return false;        },
-	a_failcodes_seen:            function() { return new Object(); }
+	c_start:            function() { return 0;            },
+	is_gd_group_mod:    function() { return false;        },
+	is_tb_changed:      function() { return false;        },
+	is_slow_sync:       function() { return false;        },
+	a_failcodes_seen:   function() { return new Object(); }
 };
 
 SyncFsmChainData.prototype = {

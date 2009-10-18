@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: timer.js,v 1.48 2009-10-08 17:21:58 cvsuser Exp $
+// $Id: timer.js,v 1.49 2009-10-18 02:51:26 cvsuser Exp $
 
 function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {
@@ -135,31 +135,48 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		if (fsmstate.isFinal())
 		{
-			var is_repeat = false;
+			let sfcd     = this.m_sfcd;
+			let es       = this.m_es;
+			let sourceid = AccountStatic.indexToSourceId(sfcd.m_account_index);
+			let is_repeat_current = false;
+			let is_repeat_all     = false;
 			
-			if (this.m_sfcd.account().format_xx() == FORMAT_GD)
-				is_repeat =
-					this.m_grr.resolve_if_appropriate(this.m_logger, this.m_es, this.m_sfcd) ||
-					(this.m_es.m_exit_status == 0 &&
-					 this.m_sfcd.sourceid(AccountStatic.indexToSourceId(this.m_sfcd.m_account_index), 'c_repeat_after_gd_group_mod') == 1)
+			if (sfcd.account().format_xx() == FORMAT_GD)
+				is_repeat_current =
+					(sfcd.sourceid(sourceid, 'c_start') < MAX_SYNC_START) &&
+					(this.m_grr.resolve_if_appropriate(this.m_logger, es, sfcd) ||
+					 (es.m_exit_status == 0 && sfcd.sourceid(sourceid, 'is_gd_group_mod')));
 
-			if (is_repeat)
-			{
-				// don't bother putting anything in the UI here - it flies by too fast for the user to see it
-				logger('info').info(getInfoMessage('repeat', this.m_sfcd.account().username));
+			sfcd.sourceid(sourceid, 'is_gd_group_mod', false)
 
-				if (this.m_sfcd.account(0).format_xx() == FORMAT_ZM)
-					this.m_sfcd.m_account_index = 0;
+			if (!is_repeat_current && sfcd.is_last_in_chain() && (sfcd.account(0).format_xx() == FORMAT_ZM) && (es.m_exit_status == 0)) {
+				let i;
+				let sourceid_for_account;
+				for (i = 1; i < sfcd.m_a_item.length; i++) { // start at 1 so as to exclude the zimbra account
+					sourceid_for_account = AccountStatic.indexToSourceId(i);
+					if (sfcd.sourceid(sourceid_for_account, 'is_tb_changed') &&
+					    (sfcd.sourceid(sourceid_for_account, 'c_start') < MAX_SYNC_START))
+						is_repeat_all = true;
+					sfcd.sourceid(sourceid_for_account, 'is_tb_changed', false)
+				}
 			}
 
-			if (!is_repeat)
+			if (is_repeat_current || is_repeat_all)
+			{
+				// don't bother putting anything in the UI here - it flies by too fast for the user to see it
+				logger('info').info(getInfoMessage('repeat', sfcd.account().username));
+
+				if (is_repeat_all)
+					sfcd.m_account_index = 0;
+			}
+			else
 			{
 				StatusBarState.save(this.m_es);
 
-				this.m_sfcd.m_account_index++;
+				sfcd.m_account_index++;
 			}
 
-			if (is_repeat || (this.m_es.m_exit_status == 0 && this.m_sfcd.m_account_index < this.m_sfcd.length()))
+			if (is_repeat_current || is_repeat_all || (this.m_es.m_exit_status == 0 && sfcd.m_account_index < sfcd.length()))
 				window.setTimeout(this.onTimerFire, 0, this);
 			else
 			{

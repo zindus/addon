@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.220 2009-10-17 09:20:00 cvsuser Exp $
+// $Id: syncfsm.js,v 1.221 2009-10-18 02:51:23 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -346,14 +346,10 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		}
 	}
 
-	if (this.formatPr() == FORMAT_GD && (this.state.id_fsm in Maestro.FSM_GROUP_TWOWAY))
-	{
-		let sourceid = this.account().sourceid;
-		let c_repeat_after_gd_group_mod = sfcd.sourceid(sourceid, 'c_repeat_after_gd_group_mod');
-
-		if (c_repeat_after_gd_group_mod == 1) // ensure that we don't repeat a second time
-			sfcd.sourceid(sourceid, 'c_repeat_after_gd_group_mod', ++c_repeat_after_gd_group_mod);
-	}
+	let sourceid = this.account().sourceid;
+	let c_start  = sfcd.sourceid(sourceid, 'c_start');
+	sfcd.sourceid(sourceid, 'c_start', ++c_start);
+	zinAssert(c_start <= MAX_SYNC_START);
 
 	if (!nextEvent)
 		nextEvent = 'evNext';
@@ -5094,7 +5090,7 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 	// If there's a contact in tb_pab but not the '#Contacts' addressbook, then:
 	// - although the ADD is removed on the slow sync
 	// - on the subsequent fast sync, an ADD operation is generated
-	// - and on the next fast sync it appears in the :Contacts addressbook.  Strictly speaking, we should set c_repeat_after_gd_group_mod
+	// - and on the next fast sync it appears in the :Contacts addressbook.  Strictly speaking, we should set is_gd_group_mod
 	//   back to force sync to go around again but it's a minor edge case and it works out correctly on the next sync anyway.
 	//
 	if (this.is_slow_sync(sourceid_pr) && this.account().gd_gr_as_ab == 'true') {
@@ -6098,6 +6094,8 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 		zinAssert(!suo.is_processed);
 		suo.is_processed = true;
 
+		this.state.m_sfcd.sourceid(this.state.sourceid_pr, 'is_tb_changed', true);
+
 		if (type == FeedItem.TYPE_FL)  // sanity check that we never add/mod/del these folders
 			zinAssert(zfiWinner.name() != TB_PAB && zfiWinner.name() != ZM_FOLDER_CONTACTS);
 
@@ -7014,7 +7012,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 		zinAssert((type == FeedItem.TYPE_FL) ? (this.account().gd_gr_as_ab == 'true') : true);
 
 		if (type == FeedItem.TYPE_CN && this.account().gd_gr_as_ab == 'true')
-			this.state.gd_repeat_after_gd_group_mod = true;
+			this.state.m_sfcd.sourceid(this.state.sourceid_pr, 'is_gd_group_mod', true);
 
 		function set_remote_for_add_from(gd) {
 			let type = GoogleData.element_type_from_instance(gd);
@@ -7757,17 +7755,6 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 		zfcLastSync.get(sourceid_pr).set(eAccount.gd_gr_as_ab,  this.account().gd_gr_as_ab);
 		zfcLastSync.get(sourceid_pr).set(eAccount.gd_suggested, this.account().gd_suggested);
 		zfcLastSync.get(sourceid_pr).set(eAccount.gd_sync_with, this.account().gd_sync_with);
-
-		if (this.state.gd_repeat_after_gd_group_mod) {
-			let c_repeat_after_gd_group_mod = sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod');
-
-			if (c_repeat_after_gd_group_mod == 1)
-				this.debug("warn: this is odd: we're updating google twice in succession.  Why?  This might be correct if there was a simultaneous update at google - or it might point to a bug");
-
-			sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod', ++c_repeat_after_gd_group_mod);
-		}
-
-		this.debug("c_repeat_after_gd_group_mod: " + sfcd.sourceid(this.state.sourceid_pr, 'c_repeat_after_gd_group_mod'));
 	}
 
 	if (sfcd.first_sourceid_of_format(FORMAT_GD) == this.state.sourceid_pr) // if this is the first GD source...
@@ -8873,7 +8860,6 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
 	state.a_gd_contacts_deleted         = new Object();
-	state.gd_repeat_after_gd_group_mod  = false;
 
 	// this contact_converter is used when we're syncing postalAddress with Google, but the _style_basic version is still called
 	// from the slow sync checksum code because we don't want to include Google postalAddress in the checksum/isTwin comparison
