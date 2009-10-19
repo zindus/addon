@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.221 2009-10-18 02:51:23 cvsuser Exp $
+// $Id: syncfsm.js,v 1.222 2009-10-19 04:54:41 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -346,10 +346,13 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 		}
 	}
 
-	let sourceid = this.account().sourceid;
-	let c_start  = sfcd.sourceid(sourceid, 'c_start');
-	sfcd.sourceid(sourceid, 'c_start', ++c_start);
-	zinAssert(c_start <= MAX_SYNC_START);
+	if (this.state.id_fsm in Maestro.FSM_GROUP_TWOWAY) {
+		// auth fsm's don't have accounts yet
+		let sourceid = this.account().sourceid;
+		let c_start  = sfcd.sourceid(sourceid, 'c_start');
+		sfcd.sourceid(sourceid, 'c_start', ++c_start);
+		zinAssert(c_start <= MAX_SYNC_START);
+	}
 
 	if (!nextEvent)
 		nextEvent = 'evNext';
@@ -3517,7 +3520,7 @@ SyncFsm.prototype.setTwin = function(sourceid, luid, sourceid_tb, luid_tb, rever
 {
 	var zfcGid = this.state.zfcGid;
 
-	zinAssertAndLog((luid_tb in reverse[sourceid_tb]), "sourceid_tb: " + sourceid_tb + " luid_tb: " + luid_tb);
+	zinAssertAndLog(luid_tb in reverse[sourceid_tb], function() { return "sourceid_tb: " + sourceid_tb + " luid_tb: " + luid_tb; });
 
 	var gid = reverse[sourceid_tb][luid_tb];
 	zfcGid.get(gid).set(sourceid, luid);
@@ -3758,7 +3761,8 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 				if (zfi.type() == FeedItem.TYPE_FL || zfi.type() == FeedItem.TYPE_SF || zfi.type() == FeedItem.TYPE_GG)
 				{
 					this.perf('b', 'mark');
-					zinAssertAndLog((zfi.type() != FeedItem.TYPE_FL) || !zfi.isForeign(), "foreign folder? zfi: " + zfi.toString());
+					zinAssertAndLog((zfi.type() != FeedItem.TYPE_FL) || !zfi.isForeign(),
+					                 function() { "foreign folder? zfi: " + zfi.toString(); } );
 
 					var abName = self.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
 
@@ -6848,7 +6852,8 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 					zfiTarget.set(remote.arg);
 				}
 
-				zfiTarget.set(FeedItem.ATTR_MS, change.token);
+				zfiTarget.set(FeedItem.ATTR_MS,  change.token);
+				zfiTarget.set(FeedItem.ATTR_REV, change.token);
 				zfiTarget.set(FeedItem.ATTR_FXMS, '1');
 
 				if (zfiTarget.type() == FeedItem.TYPE_LN)
@@ -7385,23 +7390,23 @@ SyncFsmGd.prototype.exitActionUpdateGd = function(state, event)
 						let gid_l     = this.state.aReverseGid[this.state.sourceid_tb][luid_tb_l];
 						let luid_gd_l = this.state.zfcGid.get(gid_l).get(this.state.sourceid_pr);
 
+						let zfi_ci_new = this.newZfiCnGdCi(zfi_au.key(), luid_gd_l);
+						zfcTarget.set(zfi_ci_new);
+
 						if (luid_gd_l != zfi_ci.get(FeedItem.ATTR_L)) {
 							// if the 'l' attribute changed, we delete the old zfi_ci and create a new one
 							//
-							let zfi_ci_new = this.newZfiCnGdCi(zfi_au.key(), luid_gd_l);
-							zfcTarget.set(zfi_ci_new);
-							msg += " map updated: zfi: " + zfi_ci_new.toString();
-
 							zfcTarget.del(zfi_ci.key());
 							delete this.state.aReverseGid[suo.sourceid_target][zfi_ci.key()];
 							this.state.aReverseGid[suo.sourceid_target][zfi_ci_new.key()] = suo.gid;
 							this.state.zfcGid.get(suo.gid).set(suo.sourceid_target, zfi_ci_new.key());
-
-							zfi_ci = zfi_ci_new;
 						}
+
+						zfi_ci = zfi_ci_new;
 					}
 
 					SyncFsm.setLsoToGid(self.state.zfcGid.get(suo.gid), zfi_ci);
+					msg += " map updated: zfi: " + zfi_ci.toString();
 				}
 				break;
 
@@ -7478,7 +7483,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 	var zfi         = zfc.get(luid);
 	var ret         = null;
 
-	zinAssertAndLog(zfi && zfi.type() == FeedItem.TYPE_CN, "sourceid: " + sourceid + " luid=" + luid);
+	zinAssertAndLog(zfi && zfi.type() == FeedItem.TYPE_CN, function() { "sourceid: " + sourceid + " luid=" + luid; });
 	zinAssert(isValidFormat(format_to));
 
 	switch(format_from)
@@ -8383,7 +8388,7 @@ HttpState.prototype.isPreResponse = function()
 
 HttpState.prototype.is_http_status = function(arg)
 {
-	zinAssertAndLog(arguments.length == 1);
+	zinAssert(arguments.length == 1);
 	var ret;
 
 	if (typeof(arg) == 'number')
