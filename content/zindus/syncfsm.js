@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.223 2009-10-22 00:05:09 cvsuser Exp $
+// $Id: syncfsm.js,v 1.224 2009-10-22 05:56:24 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2312,13 +2312,13 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 
 	if (this.formatPr() == FORMAT_GD)
 	{
+		// loadTbAddressBooks tests the addressbooks for public names to know whether they're relevant to google
+		// a_gd_luid_ab_in_tb (which drives isInScopeTbLuid) is populated from names in the map because that catches keeps in scope
+		// addressbooks that might have been deleted during a zimbra sync (so they're no longer in tb) but they remain in
+		// the tb luid map because the deletes are yet to propagate to google.
+		//
 		this.state.a_gd_luid_ab_in_tb = new Object();
 		let self = this;
-		// loadTbAddressBooks tests the addressbooks for public names to know whether they're relevant to google
-		// a_gd_luid_ab_in_tb is tested against names in the map because that catches tb addressbooks that might have
-		// been deleted during a zimbra sync (so they're no longer in tb) but they remain in the tb luid map because
-		// the deletes are yet to propagate to google.
-		//
 		let functor = {
 			run: function(zfi) {
 				if (zfi.type() == FeedItem.TYPE_FL &&
@@ -4581,7 +4581,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 								}
 							}
 							else
-								msg += " not added to aBlah";
+								msg += " not added to any assoc array";
 						}
 						else
 							msg += " gid ver != lso ver: " + lso.get(FeedItem.ATTR_VER);
@@ -5149,12 +5149,10 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 //
 SyncFsm.prototype.suoRemoveContactOpsWhenFolderIsBeingDeleted = function()
 {
-	var fn              = function (sourceid, bucket) { return bucket & FeedItem.TYPE_CN; }
-	var a_suo_to_delete = new Array();
-	var msg             = "";
-	var key, suo;
-
-	zinAssert(this.formatPr() == FORMAT_ZM);
+	let fn              = function (sourceid, bucket) { return bucket & FeedItem.TYPE_CN; }
+	let a_suo_to_delete = new Array();
+	let msg             = "";
+	let key, suo;
 
 	this.state.a_folders_deleted = new Object();
 
@@ -5216,10 +5214,8 @@ SyncFsm.prototype.suoTestForConflictingUpdateOperations = function()
 	var self    = this;
 	var a_name  = new Object(); // a_name[sourceid][folder-name] == 1 or 2;
 	var msg     = "";
-	var fn      = function (sourceid, bucket) { return bucket & (FeedItem.TYPE_FL | FeedItem.TYPE_SF); }
+	var fn      = function (sourceid, bucket) { return bucket & (FeedItem.TYPE_FL | FeedItem.TYPE_SF | FeedItem.TYPE_GG); }
 	var key, suo;
-
-	zinAssert(this.formatPr() == FORMAT_ZM);
 
 	function count_folder_names() {
 		// When working out a name:
@@ -5497,6 +5493,7 @@ SyncFsm.prototype.fakeDelOnUninterestingContacts = function()
 // But we've used that as the MS attribute (and therefore the LS attribute) of each and every item in the batch.
 // So unless we do something, the ms attribute in the subsequent <SyncResponse> will appear to have gone backwards!
 // Here, we reset the LS attribute to what it'd be if we udpated the items on the server without using batch.
+// and since we now write the REV attribute on the ZmUpdate too, we twiddle rev here too, along with ms
 //
 SyncFsm.prototype.twiddleZmFxMs = function()
 {
@@ -5515,6 +5512,8 @@ SyncFsm.prototype.twiddleZmFxMs = function()
 
 				if (ms <= lsoms) {
 					lso.set(FeedItem.ATTR_MS, ms);
+					if (zfi.type() != FeedItem.TYPE_LN && zfi.type() != FeedItem.TYPE_FL)
+						lso.set(FeedItem.ATTR_REV, Number(zfi.get(FeedItem.ATTR_REV)));
 					let str = lso.toString();
 					zfi.set(FeedItem.ATTR_LS, str);
 					bigmsg.concat("\n key=" + zfi.key() + " reset ATTR_LS: " + str);
@@ -5531,7 +5530,7 @@ SyncFsm.prototype.twiddleZmFxMs = function()
 
 	zfcZm.forEach(functor);
 
-	this.state.m_logger.debug(bigmsg.toString());
+	this.debug(bigmsg.toString());
 }
 
 // In zfcZm:
@@ -5898,14 +5897,15 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 			if (this.account().gd_gr_as_ab == 'true')
 				this.suoGdTweakCiOps();                      // 9. 
 		}
-		else if (this.formatPr() == FORMAT_ZM) {
+
+		passed = this.suoTestForConflictingUpdateOperations();// 11. abort if any update ops could lead to potential inconsistency
+
+		if (passed) {
 			this.state.stopwatch.mark(state + " Converge: suoRemoveContactOpsWhenFolderIsBeingDeleted: " + this.state.m_progress_count++);
 			this.state.m_progress_yield_text = "prepare-to-update";
 			yield true;
 
 			this.suoRemoveContactOpsWhenFolderIsBeingDeleted();   // 10. remove contact ops when folder is being deleted
-
-			passed = this.suoTestForConflictingUpdateOperations();// 11. abort if any update ops could lead to potential inconsistency
 		}
 	}
 
