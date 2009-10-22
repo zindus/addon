@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.27 2009-10-17 07:14:23 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.28 2009-10-22 00:05:09 cvsuser Exp $
 
 function GoogleData()
 {
@@ -158,8 +158,8 @@ ContactGoogle.eSystemGroup = new ZinEnum( newObjectWithKeysMatchingValues('Conta
 function ContactGoogleProto() {}
 
 ContactGoogleProto.prototype = {
-groups_initialise_getter_and_setter: function() {
-	var fn_getter
+copy : function () {
+	return new ContactGoogle(ContactGoogleStatic.newXml(this.m_entry.toXMLString()), this.m_mode);
 },
 mode : function (value) {
 	if (value) {
@@ -1020,6 +1020,9 @@ function GroupGoogle(xml) {
 function GroupGoogleProto() {}
 
 GroupGoogleProto.prototype = {
+copy : function () {
+	return new GroupGoogle(ContactGoogleStatic.newXml(this.m_entry.toXMLString()));
+},
 systemGroup : function() {
 	let nsGContact = ContactGoogleStatic.nsGContact;
 	let el = this.m_entry.nsGContact::systemGroup;

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.222 2009-10-19 04:54:41 cvsuser Exp $
+// $Id: syncfsm.js,v 1.223 2009-10-22 00:05:09 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2263,6 +2263,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 
 	var gd_ab_name_internal = null;
 	var gd_ab_name_public   = null;
+	var re_gd_ab_names      = null;
 	var passed              = true;
 	let ab_name;
 
@@ -2302,22 +2303,26 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 
 		gd_ab_name_internal = this.gdAddressbookName('internal');
 		gd_ab_name_public   = this.gdAddressbookName('public');
+		re_gd_ab_names      = new RegExp("^" + this.state.m_folder_converter.tb_ab_name_for_gd_group(".", ".*") + "$");
 
 		this.debug("loadTb: gd_ab_name_public: " + gd_ab_name_public + " gd_ab_name_internal: " + gd_ab_name_internal);
 	}
 
-	let re_gd_ab_names = (this.formatPr() == FORMAT_GD) ?
-		new RegExp("^(" + gd_ab_name_public + "|" + this.state.m_folder_converter.tb_ab_name_for_gd_group(".", ".*")+")$") : null;
-
-	let tb_cc_meta = this.loadTbAddressBooks(re_gd_ab_names);           // 4. merge the current tb luid map with the current addressbook(s)
+	let tb_cc_meta = this.loadTbAddressBooks(re_gd_ab_names);  // 4. merge the current tb luid map with the current addressbook(s)
 
 	if (this.formatPr() == FORMAT_GD)
 	{
 		this.state.a_gd_luid_ab_in_tb = new Object();
 		let self = this;
+		// loadTbAddressBooks tests the addressbooks for public names to know whether they're relevant to google
+		// a_gd_luid_ab_in_tb is tested against names in the map because that catches tb addressbooks that might have
+		// been deleted during a zimbra sync (so they're no longer in tb) but they remain in the tb luid map because
+		// the deletes are yet to propagate to google.
+		//
 		let functor = {
 			run: function(zfi) {
-				if (zfi.type() == FeedItem.TYPE_FL && re_gd_ab_names.test(zfi.name()))
+				if (zfi.type() == FeedItem.TYPE_FL &&
+				    (zfi.name() == gd_ab_name_internal || (self.account().gd_gr_as_ab  == 'true' && re_gd_ab_names.test(zfi.name()))))
 					self.state.a_gd_luid_ab_in_tb[zfi.key()] = true;
 				return true;
 			}
@@ -2325,7 +2330,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 
 		this.zfcTb().forEach(functor, FeedCollection.ITER_NON_RESERVED);
 
-		this.debug("loadTb: a_gd_luid_ab_in_tb: " + aToString(this.state.a_gd_luid_ab_in_tb));
+		this.debug("loadTb: a_gd_luid_ab_in_tb: " + keysToString(this.state.a_gd_luid_ab_in_tb));
 			
 		if (this.account().gd_sync_with == 'zg') {
 			// altering m_folder_converter here means that we can't use it in a zm sync...
@@ -2416,7 +2421,7 @@ SyncFsm.prototype.get_foreach_card_functor = function()
 	return functor;
 }
 
-SyncFsm.prototype.gdAddressbookName = function(arg)
+SyncFsmGd.prototype.gdAddressbookName = function(arg)
 {
 	zinAssertAndLog(this.account().gd_sync_with == 'zg' || this.account().gd_sync_with == 'pab', this.account().gd_sync_with);
 
@@ -2897,7 +2902,8 @@ SyncFsm.prototype.loadTbAddressBooks = function(re_gd_ab_names)
 				is_process = is_elem_pab || (self.state.m_folder_converter.prefixClass(dirname) != FolderConverter.PREFIX_CLASS_NONE &&
 				                                dirname.indexOf("/", self.state.m_folder_converter.m_prefix_length) == -1);
 			else
-				is_process = re_gd_ab_names.test(dirname);
+				is_process = (self.account().gd_gr_as_ab  == 'true' && re_gd_ab_names.test(dirname)) ||
+				             (dirname == self.gdAddressbookName('public'));
 
 			let msg = "addressbook:" +
 			          " dirName: "              + dirname +
@@ -2959,7 +2965,7 @@ SyncFsm.prototype.loadTbAddressBooks = function(re_gd_ab_names)
 
 	this.state.m_addressbook.forEachAddressBook(functor_foreach_addressbook);
 
-	this.state.m_logger.debug("loadTbAddressBooks: returns tb_cc_meta: " + aToString(tb_cc_meta));
+	this.debug("loadTbAddressBooks: returns tb_cc_meta: " + aToString(tb_cc_meta));
 
 	stopwatch.mark("loadTbAddressBooks: 2");
 
@@ -3487,7 +3493,7 @@ SyncFsm.prototype.loadTbTestForEmptyCards = function(tb_cc_meta)
 {
 	var a_empty_contacts = this.state.foreach_tb_card_functor.m_a_empty_contacts;
 
-	this.debug("loadTbTestForEmptyCards: gd_sync_with: " + this.account().gd_sync_with + "a_email_luid: " + aToString(a_empty_contacts));
+	this.debug("loadTbTestForEmptyCards: gd_sync_with: " + this.account().gd_sync_with + " a_email_luid: " + aToString(a_empty_contacts));
 
 	if (!isObjectEmpty(a_empty_contacts))
 	{
@@ -3706,8 +3712,6 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 	var sourceid, zfc, format, event, generator;
 
 	var functor_foreach_luid_fast_sync = {
-		state: this.state,
-
 		run: function(zfi)
 		{
 			let luid = zfi.key();
@@ -3735,7 +3739,6 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 
 	var functor_foreach_luid_slow_sync = {
 		mapTbFolderNameToId: SyncFsm.getTopLevelFolderHash(this.zfcTb(), FeedItem.ATTR_NAME, FeedItem.ATTR_KEY),
-		state: this.state,
 		a_name_parent : new Object(),
 		m_perf : newObject('a_mark', new Object(), 'a_start', new Object()),
 
@@ -3743,7 +3746,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 		{
 			let luid        = zfi.key();
 			let msg         = "slow_sync: " + sourceid + "/=" + luid;
-			let sourceid_tb = this.state.sourceid_tb;
+			let sourceid_tb = self.state.sourceid_tb;
 			let luid_tb     = null;
 			let gid;
 
@@ -3786,18 +3789,18 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 					this.perf('c', 'mark');
 
 					zinAssert(zfi.type() == FeedItem.TYPE_CN);
-					zinAssert((sourceid in this.state.aChecksum) && (luid in this.state.aChecksum[sourceid]));
+					zinAssert((sourceid in self.state.aChecksum) && (luid in self.state.aChecksum[sourceid]));
 
 					this.perf('d', 'mark');
-					var checksum    = this.state.aChecksum[sourceid][luid];
+					var checksum    = self.state.aChecksum[sourceid][luid];
 					var luid_parent = SyncFsm.keyParentRelevantToGid(zfc, luid);
 
 					var key = hyphenate('-', sourceid_tb, this.name_parent(luid_parent), checksum);
-					// this.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: testing twin key: " + key);
+					// self.state.m_logger.debug("functor_foreach_luid_slow_sync: blah: testing twin key: " + key);
 
-					if ((key in this.state.aHasChecksum) && !isObjectEmpty(this.state.aHasChecksum[key]))
-						for (var luid_possible in this.state.aHasChecksum[key])
-							if (this.state.aHasChecksum[key][luid_possible] &&
+					if ((key in self.state.aHasChecksum) && !isObjectEmpty(self.state.aHasChecksum[key]))
+						for (var luid_possible in self.state.aHasChecksum[key])
+							if (self.state.aHasChecksum[key][luid_possible] &&
 						    	self.isTwin(sourceid_tb, sourceid, luid_possible, luid, self.state.m_contact_converter_style_basic))
 							{
 								luid_tb = luid_possible;
@@ -3812,7 +3815,7 @@ SyncFsm.prototype.updateGidFromSourcesGenerator = function()
 						msg += " twin: contact with tb luid=" + luid_tb + " at gid=" + gid + " tb contact: " + 
 									self.shortLabelForLuid(sourceid_tb, luid_tb);
 
-						delete this.state.aHasChecksum[key][luid_tb];
+						delete self.state.aHasChecksum[key][luid_tb];
 					}
 					else
 					{
@@ -3926,20 +3929,15 @@ SyncFsm.prototype.updateGidFromSourcesSanityCheck = function()
 {
 	// sanity check that that all gid's have been visited
 	//
-	var functor_foreach_gid = {
-		state: this.state,
-
-		run: function(zfi)
-		{
+	let functor_foreach_gid = {
+		run: function(zfi) {
 			if (zfi.isPresent(FeedItem.ATTR_PRES))
 				zfi.del(FeedItem.ATTR_PRES);
 			else
 				zinAssertAndLog(false, function() { return "Found a gid not referenced by any sourceid/luids.  zfi: " + zfi.toString(); });
-
 			return true;
 		}
 	};
-
 
 	this.state.zfcGid.forEach(functor_foreach_gid);
 
@@ -5123,8 +5121,6 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 
 	// for MODs - just identify them
 	//
-	let a_seen_mod = new Object();
-
 	for ([key, suo] in this.state.m_suo_iterator.iterator(fn_mod)) {
 		[ luid_au, luid_l ] = get_au_l();
 
@@ -7030,9 +7026,12 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 			remote.gd              = gd;
 		}
 
-		function set_remote_for_mod(gd, properties_pre_update) {
+		function set_remote_for_mod(gd, old_gd) {
 			let type     = GoogleData.element_type_from_instance(gd);
-			let is_match = isMatchObjects(properties_pre_update, gd.properties) && !(gd.meta.id in self.state.gd_au_group_for_mod);
+			let is_match = isMatchObjects(gd.properties, old_gd.properties);
+
+			if (type == GoogleData.eElement.contact)
+				is_match = is_match && gd.groups.slice().sort().toString() == old_gd.groups.slice().sort().toString();
 
 			if (is_match) {
 				// for groups we could get in here because a) we sync with both zimbra and google and b) the sync
@@ -7040,7 +7039,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				//
 				zfiTarget  = zfcTarget.get(luid_target);
 				msg       += " the local mod doesn't affect the remote " + GoogleData.eElement.keyFromValue(type) +
-				             " - skip update: " + aToString(properties_pre_update);
+				             " - skip update: " + old_gd.toString();
 				SyncFsm.setLsoToGid(zfiGid, zfiTarget);
 				suo.is_processed = true;
 			}
@@ -7097,7 +7096,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				}
 				break;
 
-			case Suo.MOD | FeedItem.TYPE_FL:
+			case Suo.MOD | FeedItem.TYPE_FL: {
 				msg           += " about to modify group: ";
 				luid_target    = zfiGid.get(sourceid_target);
 				name_winner    = this.state.m_folder_converter.convertForPublic(FORMAT_GD, format_winner, zfiWinner);
@@ -7116,11 +7115,12 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 				zinAssert(!group.systemGroup());
 
-				var properties_pre_update = group.properties;
+				let old_group = group.copy();
 
 				group.properties = { title: name_winner };
 
-				set_remote_for_mod(group, properties_pre_update);
+				set_remote_for_mod(group, old_group);
+				}
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_CN: {
@@ -7140,8 +7140,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				}
 
 				contact = this.state.a_gd_contact[luid_target_au];
-
-				let properties_pre_update = contact.properties;
+				let old_contact = contact.copy();
 
 				if (!zfiWinner.isPresent(FeedItem.ATTR_DEL))
 					properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_GD);
@@ -7149,45 +7148,43 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				if (false)
 				this.debug("\n winning properties: " + aToString(properties) +
 				           "\n contact.mode: " + contact.mode() +
-				           "\n contact.properties before update: " + aToString(properties_pre_update) +
+				           "\n contact.properties before update: " + aToString(old_contact.properties) +
 				           "\n contact.properties after update: " + aToString(contact.properties));
 
-				if (luid_target_au in this.state.gd_au_group_for_mod) {
-					// the MOD may be a change of group membership, or properties, or both
-					//
-					if (this.state.gd_au_group_for_mod[luid_target_au]) {
-						msg += " have already modified this gdau contact, so skip update for this MOD";
-						zfiTarget = zfcTarget.get(luid_target);
-						if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
-							zfiTarget..set(FeedItem.ATTR_DEL, 1);
-						SyncFsm.setLsoToGid(zfiGid, zfiTarget);
-						suo.is_processed = true;
-					}
-					else {
-						let a_group = this.gdGroupsFromTbState(luid_target_au);
-						let groups  = [ ];
-						let i;
-
-						for (i = 0; i < a_group.length; i++)
-							groups.push(zfcTarget.get(a_group[i]).get(FeedItem.ATTR_GGID));
-
-						if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
-							; // contact.properties are unchanged... we're just changing group membership
-						else
-							contact.properties = properties;
-
-						contact.groups = groups;
-					}
+				// the MOD may be a change of group membership, or properties, or both
+				//
+				if (this.state.gd_au_group_for_mod[luid_target_au]) {
+					msg += " have already modified this gdau contact, so skip update for this MOD";
+					zfiTarget = zfcTarget.get(luid_target);
+					if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+						zfiTarget..set(FeedItem.ATTR_DEL, 1);
+					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
+					suo.is_processed = true;
 				}
-				else
-					contact.properties = properties;
+				else {
+					let a_group = this.gdGroupsFromTbState(luid_target_au);
+					let groups  = [ ];
+					let i;
+
+					for (i = 0; i < a_group.length; i++)
+						groups.push(zfcTarget.get(a_group[i]).get(FeedItem.ATTR_GGID));
+
+					if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+						; // contact.properties are unchanged... we're just changing group membership
+					else
+						contact.properties = properties;
+
+					contact.groups = groups;
+
+					this.state.gd_au_group_for_mod[luid_target_au] = true;
+				}
 
 				// convert the properties to a gd contact so that transformations apply before the identity test
 				//
 				contact.postalAddressRemoveEmptyElements(); // issue #160
 				contact.modify(ContactGoogle.eModify.kRemoveDeletedGroupMembershipInfo); // issue #202
 
-				set_remote_for_mod(contact, properties_pre_update);
+				set_remote_for_mod(contact, old_contact);
 				}
 				break;
 
@@ -8861,7 +8858,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.gd_updated_group              = null;
 	state.gd_cc_meta                    = new ContactCollectionMeta();
 	state.gd_au_group_for_mod           = new Object(); // set by suoGdTweakCiOps, used by entryAction MOD code
-	state.a_gd_luid_ab_in_tb            = null;         // luids of the parent addressbook in zfcTb
+	state.a_gd_luid_ab_in_tb            = null;         // luids of the addressbooks in zfcTb that are syncing with Google
 	state.gd_is_sync_postal_address     = null;         // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
 	state.a_gd_contacts_deleted         = new Object();
