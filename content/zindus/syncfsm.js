@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.224 2009-10-22 05:56:24 cvsuser Exp $
+// $Id: syncfsm.js,v 1.225 2009-10-23 05:25:29 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4291,7 +4291,11 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 				do_lookup = do_lookup && SyncFsm.isOfInterest(self.zfc(sourceid), luid);
 				do_lookup = do_lookup && SyncFsm.isRelevantToGid(self.zfc(sourceid), luid);
 
-				if (do_lookup)
+				// when a group gets deleted at google, contacts that were in that group might become suggested
+				// but they won't appear in the contacts feed (because they haven't changed).
+				// so we won't have any properties for them - don't try to look them up.
+				//
+				if (do_lookup && !self.is_suggested_candidate(sourceid, luid))
 					properties = self.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_style_basic);
 
 				if (properties) // a contact with no properties will never be part of a twin so don't bother
@@ -4330,6 +4334,23 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 		}
 
 	this.debug(msg);
+}
+
+SyncFsm.prototype.is_suggested_candidate = function(sourceid, luid)
+{
+	let zfc = this.zfc(sourceid);
+	let zfi = zfc.get(luid);
+	let ret = false;
+	
+	if (zfi.styp() == FeedItem.eStyp.gdci) {
+		let luid_au = zfi.get(FeedItem.ATTR_GDID);
+		let zfi_au  = zfc.get(luid_au);
+		let a_group = this.gd_groups_in_scope(zfi_au);
+
+		ret = (a_group.length == 0);
+	}
+
+	return ret;
 }
 
 SyncFsm.prototype.getContactParentInMap = function(sourceid, luid)
@@ -6404,25 +6425,27 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 					addressbook.deleteAddressBook(uri);
 					zfcTarget.get(luid_target).set(FeedItem.ATTR_DEL, 1);
 
-					// partner with suoRemoveContactOpsWhenFolderIsBeingDeleted...
-					// mark as deleted any contacts that are children of the deleted addressbook
-					// and leave the map as if the contacts were actually deleted (which they are!)
-					//
-					zinAssertAndLog((gid in this.state.a_folders_deleted), gid);
+					if (this.state.a_folders_deleted) {
+						// partner with suoRemoveContactOpsWhenFolderIsBeingDeleted...
+						// mark as deleted any contacts that are children of the deleted addressbook
+						// and leave the map as if the contacts were actually deleted (which they are!)
+						//
+						zinAssertAndLog((gid in this.state.a_folders_deleted), gid);
 
-					var a_suo = this.state.a_folders_deleted[gid];
-					var zfi_gid_cn, luid_cn;
+						let a_suo = this.state.a_folders_deleted[gid];
+						let zfi_gid_cn, luid_cn, j;
 
-					if (a_suo.length > 0)
-						msg += " setting DEL attribute on contact luids: ";
+						if (a_suo.length > 0)
+							msg += " setting DEL attribute on contact luids: ";
 
-					for (var j = 0; j < a_suo.length; j++)
-					{
-						zfi_gid_cn = zfcGid.get(a_suo[j].gid);
-						luid_cn    = zfi_gid_cn.get(a_suo[j].sourceid_target);
-						zfcTarget.get(luid_cn).set(FeedItem.ATTR_DEL, 1);
-						SyncFsm.setLsoToGid(zfi_gid_cn, zfcTarget.get(luid_cn)); 
-						msg += " =" + luid_cn;
+						for (j = 0; j < a_suo.length; j++)
+						{
+							zfi_gid_cn = zfcGid.get(a_suo[j].gid);
+							luid_cn    = zfi_gid_cn.get(a_suo[j].sourceid_target);
+							zfcTarget.get(luid_cn).set(FeedItem.ATTR_DEL, 1);
+							SyncFsm.setLsoToGid(zfi_gid_cn, zfcTarget.get(luid_cn)); 
+							msg += " =" + luid_cn;
+						}
 					}
 				}
 				else
@@ -7012,7 +7035,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 		zinAssert((type == FeedItem.TYPE_FL) ? (this.account().gd_gr_as_ab == 'true') : true);
 
-		if (type == FeedItem.TYPE_CN && this.account().gd_gr_as_ab == 'true')
+		if (this.account().gd_gr_as_ab == 'true')
 			this.state.m_sfcd.sourceid(this.state.sourceid_pr, 'is_gd_group_mod', true);
 
 		function set_remote_for_add_from(gd) {
@@ -7190,7 +7213,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 
 			case Suo.DEL | FeedItem.TYPE_FL:
 			case Suo.DEL | FeedItem.TYPE_CN: {
-				msg           += " about to delete contact: ";
+				msg           += " about to delete: ";
 				luid_target    = zfiGid.get(sourceid_target);
 				zfiTarget      = zfcTarget.get(luid_target);
 				let luid_target_au = (type == FeedItem.TYPE_FL) ? null : zfiTarget.get(FeedItem.ATTR_GDID);
@@ -9400,6 +9423,24 @@ SyncFsmGd.prototype.newZfiGroup = function(group)
 	return ret;
 }
 
+SyncFsmGd.prototype.gd_groups_in_scope = function(zfi)
+{
+	zinAssertAndLog(zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau, function () { return zfi.toString(); });
+
+	let zfc     = this.zfcPr();
+	let gps     = zfi.get(FeedItem.ATTR_GDGP);
+	let a_group = (gps.length > 0) ? gps.split(",") : [];
+	let ret     = new Array();
+	let i;
+
+	for (i = 0; i < a_group.length; i++)
+		if (zfc.isPresent(a_group[i]) && !zfc.get(a_group[i]).isPresent(FeedItem.ATTR_XGID)
+		                              && !zfc.get(a_group[i]).isPresent(FeedItem.ATTR_DEL))
+			ret.push(a_group[i]);
+
+	return ret;
+}
+
 // given the zfi for a (gdau) contact, return the luids of the corresponding groups/folders in which the contact should appear
 //
 SyncFsmGd.prototype.gdciLuidsForGroups = function(zfi)
@@ -9408,10 +9449,10 @@ SyncFsmGd.prototype.gdciLuidsForGroups = function(zfi)
 	let zfc     = this.zfcPr();
 	let ret     = new Object();
 	let key     = zfi.key();
-	let gps     = zfi.get(FeedItem.ATTR_GDGP);
-	let a_group = (gps.length > 0) ? gps.split(",") : [];
+	let a_group = this.gd_groups_in_scope(zfi);
 	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
 	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
+	let i;
 
 	// GD_PAB
 	//
@@ -9430,7 +9471,7 @@ SyncFsmGd.prototype.gdciLuidsForGroups = function(zfi)
 	// the groups to which the contact belongs
 	//
 	if (self.account().gd_gr_as_ab == 'true')
-		for (var i = 0; i < a_group.length; i++)
+		for (i = 0; i < a_group.length; i++)
 			if (zfc.isPresent(a_group[i]) && !zfc.get(a_group[i]).isPresent(FeedItem.ATTR_XGID))
 				ret[a_group[i]] = true;
 
@@ -9532,10 +9573,11 @@ SyncFsmGd.prototype.entryActionGetPuGd = function(state, event, continuation, ty
 		let feed_item_type = type == GoogleData.eElement.contact ? FeedItem.TYPE_CN : FeedItem.TYPE_FL;
 		let a_gd           = type == GoogleData.eElement.contact ? this.state.a_gd_contact : this.state.a_gd_group;
 		let fn             = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.MOD | feed_item_type)); }
+		let suo;
 
 		this.state.a_gd_to_get[type] = new Array();
 
-		for (var suo in this.state.m_suo_iterator.iterator(fn))
+		for (suo in this.state.m_suo_iterator.iterator(fn))
 		{
 			let luid_target = this.state.zfcGid.get(suo.gid).get(suo.sourceid_target);
 
@@ -9544,6 +9586,25 @@ SyncFsmGd.prototype.entryActionGetPuGd = function(state, event, continuation, ty
 
 			if (!(luid_target in a_gd) && (this.state.a_gd_to_get[type].indexOf(luid_target) == -1))
 				this.state.a_gd_to_get[type].push(luid_target);
+		}
+
+		if (type == GoogleData.eElement.contact) {
+			fn = function(sourceid, bucket) { return (bucket == (Suo.ADD | feed_item_type)); }
+
+			for (suo in this.state.m_suo_iterator.iterator(fn))
+			{
+				if (this.state.sources[suo.sourceid_winner]['format'] ==  FORMAT_GD) {
+					let luid_winner_ci = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
+					let luid_winner_au = this.zfcPr().get(luid_winner_ci).get(FeedItem.ATTR_GDID);
+
+					if (!(luid_winner_au in a_gd)) {
+						zinAssert(this.is_suggested_candidate(sourceid_pr, luid_winner_ci))
+					
+						if (this.state.a_gd_to_get[type].indexOf(luid_winner_au) == -1)
+							this.state.a_gd_to_get[type].push(luid_winner_au);
+					}
+				}
+			}
 		}
 
 		this.debug("entryActionGetPuGd: a_gd_to_get[" + GoogleData.eElement.keyFromValue(type) + "]: " +
