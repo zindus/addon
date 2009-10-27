@@ -20,23 +20,17 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: infodlg.js,v 1.2 2009-10-10 14:06:12 cvsuser Exp $
+// $Id: infodlg.js,v 1.3 2009-10-27 23:53:41 cvsuser Exp $
 
 function InfoDlg()
 {
 	this.m_logger = newLogger("InfoDlg");
 
-	this.m_logger.debug("constructor starts");
-
 	this.m_payload   = null; // we keep it around so that we can pass the results back
-
-	this.m_logger.debug("constructor ends");
 }
 
 InfoDlg.prototype = {
 	onLoad : function() {
-		this.m_logger.debug("onLoad: enters: ");
-
 		this.m_payload = window.arguments[0];
 
 		xulSetHtml("zindus-infodlg-description", this.m_payload.m_args.msg);
@@ -45,25 +39,14 @@ InfoDlg.prototype = {
 			dId("zindus-infodlg").getButton('accept').hidden = true;
 		else if (!/cancel/.test(this.m_payload.m_args.buttons))
 			dId("zindus-infodlg").getButton('cancel').hidden = true;
-
-		this.m_logger.debug("onLoad: exits");
 	},
 	onAccept : function() {
-		this.m_logger.debug("onAccept: enters");
-
 		this.m_payload.m_result = 'accept';
-
-		this.m_logger.debug("onAccept: exits");
 
 		return true;
 	},
 	onCancel : function() {
-		this.m_logger.debug("onCancel: enters");
-
 		this.m_payload.m_result = 'cancel';
-
-		// don't reference logger here because logger.js is out of scope after the window is closed...
-		// this.m_logger.debug("onCancel: exits");
 
 		return true;
 	}

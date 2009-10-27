@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.225 2009-10-23 05:25:29 cvsuser Exp $
+// $Id: syncfsm.js,v 1.226 2009-10-27 23:53:41 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4232,55 +4232,49 @@ SyncFsm.prototype.backdateZfcForcingItToLose = function(sourceid, luid)
 // This routine written to support issue #89
 // It supplies "forward error recovery" in the event that the previous sync added a bunch of contacts before failing to complete.
 //
+// TODO AMHERE the problem with this routine is that if you've got multiple identical checksums then it doesn't work completely -
+// it only works for the first one.
+//
 SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 {
 	var sourceid_tb = this.state.sourceid_tb;
-	var sourceid_gd = this.state.sourceid_pr;
+	var sourceid_pr = this.state.sourceid_pr;
 	var reverse     = this.state.aReverseGid;
 	var zfcGid      = this.state.zfcGid;
 	var msg         = "twiddleMapsToPairNewMatchingContacts:";
 	var self        = this;
 	var a_checksum  = {};
-	var gid, old_gid, luid_gd, luid_tb;
 
 	zinAssert(!this.is_slow_sync());
 
 	var functor_foreach_gid = {
-		state: this.state,
-
-		run: function(zfi)
-		{
-			var a_luid = newObject(sourceid_tb, null, sourceid_gd, null);
+		run: function(zfi) {
+			var a_luid = newObject(sourceid_tb, false, sourceid_pr, false);
+			var count  = 0;
 			var luid, sourceid, zfc;
-			var count = 0;
 
-			for (sourceid in a_luid) 
-			{
-				if (zfi.isPresent(sourceid))
-				{
+			for (sourceid in a_luid) {
+				if (zfi.isPresent(sourceid)) {
 					zfc  = self.zfc(sourceid);
 					luid = zfi.get(sourceid);
 
-					if (zfc.get(luid).type() == FeedItem.TYPE_CN)
-					{
-						if (zfc.get(luid).isPresent(FeedItem.ATTR_DEL))
-						{
+					if (zfc.get(luid).type() == FeedItem.TYPE_CN) {
+						if (zfc.get(luid).isPresent(FeedItem.ATTR_DEL)) {
 							count = 0;
 							break;
 						}
-						else
-						{
+						else {
 							count++;
 							a_luid[sourceid] = luid;
 						}
-
 					}
 				}
 			}
 
-			if (count == 1)
-			{
-				sourceid       = a_luid[sourceid_tb] ? sourceid_tb : sourceid_gd;
+			self.debug("AMHERE: gid: " + zfi.toString() + " count: " + count + " a_luid: " + aToString(a_luid)); // TODO
+
+			if (count == 1) {
+				sourceid       = a_luid[sourceid_tb] ? sourceid_tb : sourceid_pr;
 				luid           = a_luid[sourceid];
 				let properties = null;
 				let do_lookup  = true;
@@ -4296,7 +4290,9 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 				// so we won't have any properties for them - don't try to look them up.
 				//
 				if (do_lookup && !self.is_suggested_candidate(sourceid, luid))
-					properties = self.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_style_basic);
+					properties = self.getContactPropertiesNormalised(sourceid, luid, self.state.m_contact_converter_style_basic);
+
+				self.debug("AMHERE: 4: " + (properties ? aToString(properties) : "null")); // TODO
 
 				if (properties) // a contact with no properties will never be part of a twin so don't bother
 					this.add_to_a_checksum(sourceid, luid, properties);
@@ -4304,34 +4300,73 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 
 			return true;
 		},
-		add_to_a_checksum: function(sourceid, luid, properties)
-		{
-			var checksum = self.contact_converter().crc32(properties);
+		add_to_a_checksum: function(sourceid, luid, properties) {
+			let checksum = self.contact_converter().crc32(properties);
 
 			if (!(checksum in a_checksum))
-				a_checksum[checksum] = new Object();
+				a_checksum[checksum] = new Array();
 
-			a_checksum[checksum][sourceid] = luid;
+			let l     = SyncFsm.keyParentRelevantToGid(self.zfc(sourceid), luid);
+			let l_gid = reverse[sourceid][l];
+
+			a_checksum[checksum].push(newObject('sourceid', sourceid, 'luid', luid, 'l_gid', l_gid, 'is_processed', false));
 		}
 	};
 
 	zfcGid.forEach(functor_foreach_gid);
 
-	for (var checksum in a_checksum)
-		if (aToLength(a_checksum[checksum]) == 2)
-		{
-			luid_tb = a_checksum[checksum][sourceid_tb];
-			luid_gd = a_checksum[checksum][sourceid_gd];
-			old_gid = reverse[sourceid_gd][luid_gd]; // setTwin uses the gid belonging to sourceid_tb
+	this.debug("AMHERE: a_checksum: " + aToString(a_checksum)); // TODO
 
-			delete reverse[sourceid_gd][luid_gd];
+	function mark_as_processed(i) {
+		a_checksum[checksum][i].is_processed = true;
+	}
 
-			zfcGid.del(old_gid);
+	let contact_converter = this.state.m_contact_converter_style_basic;
+	let checksum, i;
 
-			gid = this.setTwin(sourceid_gd, luid_gd, sourceid_tb, luid_tb, reverse);
+	for (checksum in a_checksum) {
+		while (a_checksum[checksum].length > 1) {
+			let a_new = new Array();
+			let first = a_checksum[checksum][0];
 
-			msg += "\n ADD by twinning: tb: " + sourceid_tb + "/=" + luid_tb + " and gd: " + sourceid_gd + "/=" + luid_gd + " gid=" + gid;
+			mark_as_processed(0);
+
+			for (i = 1; i < a_checksum[checksum].length; i++) {
+				let current = a_checksum[checksum][i];
+
+				if (!current.is_processed && (first.l_gid == current.l_gid) && (first.sourceid != current.sourceid) &&
+				    this.isTwin(first.sourceid, current.sourceid, first.luid, current.luid, contact_converter)) {
+					let luid_tb, luid_pr;
+
+					mark_as_processed(i);
+
+					if (first.sourceid == sourceid_tb) {
+						luid_tb = first.luid;
+						luid_pr = current.luid;
+					}
+					else {
+						luid_tb = current.luid;
+						luid_pr = first.luid;
+					}
+
+					let old_gid = reverse[sourceid_pr][luid_pr]; // setTwin uses the gid belonging to sourceid_tb
+
+					delete reverse[sourceid_pr][luid_pr];
+
+					zfcGid.del(old_gid);
+
+					let gid = this.setTwin(sourceid_pr, luid_pr, sourceid_tb, luid_tb, reverse);
+
+					msg += "\n ADD by twinning: tb: " + sourceid_tb + "/=" + luid_tb + " and gd: " + sourceid_pr + "/=" + luid_pr + " gid=" + gid;
+				}
+
+				if (!a_checksum[checksum][i].is_processed)
+					a_new.push(a_checksum[checksum][i]);
+			}
+
+			a_checksum[checksum] = a_new;
 		}
+	}
 
 	this.debug(msg);
 }
@@ -4345,7 +4380,7 @@ SyncFsm.prototype.is_suggested_candidate = function(sourceid, luid)
 	if (zfi.styp() == FeedItem.eStyp.gdci) {
 		let luid_au = zfi.get(FeedItem.ATTR_GDID);
 		let zfi_au  = zfc.get(luid_au);
-		let a_group = this.gd_groups_in_scope(zfi_au);
+		let a_group = this.gd_groups_in_zfi(zfi_au, false);
 
 		ret = (a_group.length == 0);
 	}
@@ -5067,6 +5102,7 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 	// 	a) the first one really is a MOD - it's a change of group membership and
 	// 	b) other DELs have to be MODs not DELs because suo's are processed in bucket order and we want to 
 	//	   iterate through them in the same order here as in UpdateGd and avoid depending on Suo sort order.
+	//
 	//  we have to iterate through the suo's twice:
 	//  1) once to identify those contacts that are really being deleted, and
 	//  2) secondly, to turn DELs into MODs those contacts not identified in (1)
@@ -5127,12 +5163,93 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 
 			if (l == id_tb_pab) {
 				a_suo_to_delete.push(key);
-				msg += " " + key.toString();
+				msg += "\n key: " + key.toString() + "suo: " + suo.toString();
 			}
 		}
 
 		if (msg.length > 0)
 			this.debug("suoGdTweakCiOps: ADD ops marked for removal from id_tb_pab: " + msg);
+	}
+
+	// Here, we turn:
+	// - two ADDs of identical contacts in separate 'group' addressbooks into:
+	// - one ADD of a contact that's a member of the relevant groups
+	//
+	if (this.is_slow_sync(sourceid_pr) && this.account().gd_gr_as_ab == 'true') {
+		function get_a_luid_gp_abs() {
+			// return associative array of the luids of the tb addressbooks that correspond with google groups
+			let gd_ab_name_internal = self.gdAddressbookName('internal');
+			let zfi_suggested       = SyncFsm.zfi_from_name_gd(GD_SUGGESTED);
+			let name_gd_suggested   = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi_suggested);
+			let ret                 = new Object();
+
+			for (var key in self.state.a_gd_luid_ab_in_tb) {
+				let ab_name = self.zfcTb().get(key).name();
+
+				if (ab_name != gd_ab_name_internal && ab_name != name_gd_suggested)
+						ret[key] = new Object();
+			}
+			// self.debug("get_a_luid_gp_abs: returns: " + keysToString(ret)); // TODO
+			return ret;
+		}
+
+		let contact_converter = this.state.m_contact_converter_style_basic;
+		let a_luid_gp_abs     = get_a_luid_gp_abs();
+		let a_checksum        = new Object();
+		let key, checksum, i, gid;
+
+		for ([key, suo] in this.state.m_suo_iterator.iterator(fn_add))
+			if (this.state.sources[suo.sourceid_target]['format'] == FORMAT_GD) {
+				let sourceid = suo.sourceid_winner;
+				let luid     = this.state.zfcGid.get(suo.gid).get(suo.sourceid_winner);
+				let l        = this.zfc(suo.sourceid_winner).get(luid).get(FeedItem.ATTR_L);
+
+				if (l in a_luid_gp_abs) {
+					checksum = this.state.aChecksum[sourceid][luid];
+
+					if (!(checksum in a_checksum))
+						a_checksum[checksum] = new Array();
+
+					a_checksum[checksum].push(newObject('sourceid', sourceid, 'luid', luid, 'gid', suo.gid, 'l', l, 'key', key, 'is_processed', false));
+				}
+			}
+
+		function mark_as_processed(i) {
+			let item = a_checksum[checksum][i];
+			item.is_processed = true;
+			self.state.gd_au_group_for_add[gid][item.l] = true;
+		}
+
+		// this.debug("a_checksum: " + aToString(a_checksum));
+
+		for (checksum in a_checksum) {
+			while (a_checksum[checksum].length > 0) {
+				let a_new = new Array();
+				let first = a_checksum[checksum][0];
+				gid       = first.gid;
+
+				zinAssertAndLog(!(gid in self.state.gd_au_group_for_add), gid);
+
+				self.state.gd_au_group_for_add[gid] = new Object();
+
+				mark_as_processed(0);
+
+				for (i = 1; i < a_checksum[checksum].length; i++) {
+					let current = a_checksum[checksum][i];
+
+					if (!current.is_processed && !(current.l in self.state.gd_au_group_for_add[gid]) && 
+					    this.isTwin(first.sourceid, current.sourceid, first.luid, current.luid, contact_converter)) {
+						mark_as_processed(i);
+						a_suo_to_delete.push(current.key);
+					}
+
+					if (!a_checksum[checksum][i].is_processed)
+						a_new.push(a_checksum[checksum][i]);
+				}
+
+				a_checksum[checksum] = a_new;
+			}
+		}
 	}
 
 	for (i = 0; i < a_suo_to_delete.length; i++) {
@@ -5150,10 +5267,11 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 	}
 
 	this.debug("suoGdTweakCiOps: " + "\n" +
-			" keys removed from aSuo: "   + a_suo_to_delete.toString()       + "\n" +
-			" a_turn_del_into_mod:    "   + aToString(a_turn_del_into_mod)   + "\n" +
-			" a_gd_au_group_for_mod:  "   + aToString(a_gd_au_group_for_mod) + "\n" +
-			" a_seen_del: "               + aToString(a_seen_del)            + "\n" +
+			" keys removed from aSuo: "   + a_suo_to_delete.toString()                + "\n" +
+			" a_turn_del_into_mod:    "   + aToString(a_turn_del_into_mod)            + "\n" +
+			" gd_au_group_for_add:  "     + aToString(this.state.gd_au_group_for_add) + "\n" +
+			" a_gd_au_group_for_mod:  "   + aToString(a_gd_au_group_for_mod)          + "\n" +
+			" a_seen_del: "               + aToString(a_seen_del)                     + "\n" +
 			" aSuo: "                     + ((a_suo_to_delete.length > 0) ? Suo.arrayToString(this.state.aSuo) : " unchanged") );
 }
 
@@ -7111,6 +7229,21 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					contact.groups = [ zfcTarget.get(id_gd_my_contacts).get(FeedItem.ATTR_GGID) ];
 				else if (l_target == id_gd_suggested)
 					contact.groups = [];
+				else if (suo.gid in this.state.gd_au_group_for_add) {
+					let luid_gp_in_tb;
+					let a_groups = [];
+
+					for (luid_gp_in_tb in this.state.gd_au_group_for_add[suo.gid]) {
+						let gid_gp        = this.state.aReverseGid[suo.sourceid_winner][luid_gp_in_tb];
+						let luid_gp_in_gd = this.state.zfcGid.get(gid_gp).get(suo.sourceid_target);
+
+						this.debug("AMHERE: 3: " + " gid_gp: " + gid_gp + " luid_gp_in_gd: " + luid_gp_in_gd); // TODO
+
+						a_groups.push(zfcTarget.get(luid_gp_in_gd).get(FeedItem.ATTR_GGID));
+					}
+
+					contact.groups = a_groups;
+				}
 				else
 					contact.groups = [ zfcTarget.get(l_target).get(FeedItem.ATTR_GGID) ];
 
@@ -8041,7 +8174,6 @@ SyncFsm.prototype.logZfc = function(zfc, text)
 			this.debug_continue(zfi.toString(FeedItem.TOSTRING_RET_FIRST_ONLY));
 }
 
-
 SyncFsm.keyParentRelevantToGid = function(zfc, key)
 {
 	var format = zfc.format();
@@ -8880,6 +9012,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.gd_sync_token                 = null;
 	state.gd_updated_group              = null;
 	state.gd_cc_meta                    = new ContactCollectionMeta();
+	state.gd_au_group_for_add           = new Object(); // set by suoGdTweakCiOps, used by entryAction ADD code
 	state.gd_au_group_for_mod           = new Object(); // set by suoGdTweakCiOps, used by entryAction MOD code
 	state.a_gd_luid_ab_in_tb            = null;         // luids of the addressbooks in zfcTb that are syncing with Google
 	state.gd_is_sync_postal_address     = null;         // true/false
@@ -9423,7 +9556,7 @@ SyncFsmGd.prototype.newZfiGroup = function(group)
 	return ret;
 }
 
-SyncFsmGd.prototype.gd_groups_in_scope = function(zfi)
+SyncFsmGd.prototype.gd_groups_in_zfi = function(zfi, is_only_groups_in_gid)
 {
 	zinAssertAndLog(zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau, function () { return zfi.toString(); });
 
@@ -9433,10 +9566,20 @@ SyncFsmGd.prototype.gd_groups_in_scope = function(zfi)
 	let ret     = new Array();
 	let i;
 
-	for (i = 0; i < a_group.length; i++)
-		if (zfc.isPresent(a_group[i]) && !zfc.get(a_group[i]).isPresent(FeedItem.ATTR_XGID)
-		                              && !zfc.get(a_group[i]).isPresent(FeedItem.ATTR_DEL))
-			ret.push(a_group[i]);
+	for (i = 0; i < a_group.length; i++) {
+		let gp_id  = a_group[i];
+		let is_add = zfc.isPresent(gp_id);
+
+		if (is_only_groups_in_gid)
+			is_add = is_add && !zfc.get(gp_id).isPresent(FeedItem.ATTR_XGID);
+
+		is_add = is_add && !zfc.get(gp_id).isPresent(FeedItem.ATTR_DEL);
+
+		if (is_add)
+			ret.push(gp_id);
+	}
+
+	// this.debug("gd_groups_in_zfi: returns: " + ret.toString() + " for zfi: " + zfi.toString());
 
 	return ret;
 }
@@ -9449,15 +9592,16 @@ SyncFsmGd.prototype.gdciLuidsForGroups = function(zfi)
 	let zfc     = this.zfcPr();
 	let ret     = new Object();
 	let key     = zfi.key();
-	let a_group = this.gd_groups_in_scope(zfi);
+	let a_group_all     = this.gd_groups_in_zfi(zfi, false);
+	let a_group         = this.gd_groups_in_zfi(zfi, true);
 	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
 	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
 	let i;
 
 	// GD_PAB
 	//
-	if ((a_group.length != 0) ||
-	    (a_group.length == 0 &&
+	if ((a_group_all.length != 0) ||
+	    (a_group_all.length == 0 &&
 	     ((self.is_slow_sync() && self.account().gd_suggested == 'ignore') || (self.account().gd_suggested != 'ignore')) &&
 		  (!zfi.isPresent(FeedItem.ATTR_DEL) || zfc.isPresent(SyncFsmGd.gdci_id_from_pair(zfi.key(), id_gd_pab)))))
 			ret[id_gd_pab] = true;
