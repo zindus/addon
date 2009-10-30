@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.228 2009-10-30 03:23:59 cvsuser Exp $
+// $Id: syncfsm.js,v 1.229 2009-10-30 04:05:40 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3996,7 +3996,7 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 			
 			// remote wins if it has a migration field populated and the tb contact doesn't
 			// *unless* tb had already won in which case there are updates that need to be propagated 'both' ways
-			// 'both' is unlikely - folk tend to use one location (tb/google/zimbra) as authoritative.
+			// 'both' is possible but unlikely - folk tend to use one location (tb/google/zimbra) as authoritative.
 			// we're talking here about two contacts that have been twinned during slow sync...
 			//
 			for (i in self.contact_converter().properties_being_migrated())
@@ -4071,7 +4071,6 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddressGenerator = function()
 						self.backdateZfcForcingItToLose(sourceid_gd, luid_gd_ci);
 
 						msg += " and tb has an address so backdating gd to force it to lose";
-						self.debug("AMHERE: backdated zfi: " + self.zfc(sourceid_gd).get(luid_gd_ci).toString()); // TODO
 					}
 					else
 						msg += " and tb has no address";

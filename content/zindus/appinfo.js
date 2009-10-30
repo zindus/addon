@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.4 2009-10-12 22:11:19 cvsuser Exp $
+// $Id: appinfo.js,v 1.5 2009-10-30 04:05:38 cvsuser Exp $
 
 var AppInfo = {
 	m_app_version          : null,
@@ -57,9 +57,18 @@ var AppInfo = {
 		         this.m_app_name;
 	},
 	is_tb_birthday_field : function() {
-		let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
-		return (this.app_name() == 'postbox') || (((this.app_name() == 'thunderbird' || this.app_name() == 'seamonkey') &&
-		                            versionChecker.compare(this.app_version(), "3.0b3pre") >= 0));
+		if (typeof(this.m_is_tb_birthday_field) != 'boolean') {
+			let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
+			let app_name       = this.app_name();
+
+			this.m_is_tb_birthday_field =
+				(app_name == 'postbox') ||
+				(((app_name == 'thunderbird') && versionChecker.compare(this.app_version(), "3.0b3pre") >= 0)) ||
+				(((app_name == 'seamonkey')   && versionChecker.compare(this.app_version(), "2.0b1") >= 0));
+
+			logger().debug("AppInfo.is_tb_birthday_field: returns: " + this.m_is_tb_birthday_field);
+		}
+		return this.m_is_tb_birthday_field;
 	},
 	ab_version : function() {
 		let app_name = this.app_name();
