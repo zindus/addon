@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.68 2009-10-17 07:20:25 cvsuser Exp $
+// $Id: addressbook.js,v 1.69 2009-10-30 22:29:39 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -407,7 +407,7 @@ AddressBook.prototype.nsIAbCardToPrintableVerbose = function(abCard)
 		var properties = this.getCardProperties(abCard);
 		var attributes = this.getCardAttributes(abCard);
 
-		ret = "properties: " + aToString(properties) + " attributes: " + aToString(attributes);
+		ret = "properties: " + JSON.toString(properties) + " attributes: " + aToString(attributes);
 	}
 
 	return ret;
