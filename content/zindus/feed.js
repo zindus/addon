@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.51 2009-10-17 07:20:25 cvsuser Exp $
+// $Id: feed.js,v 1.52 2009-10-30 00:56:10 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -81,7 +81,7 @@ FeedItem.ATTR_TBFM = 'tbfm'; // temporary (not persisted) - thunderbird contact 
 FeedItem.TYPE_CN   = 0x01; // contact
 FeedItem.TYPE_FL   = 0x02; // folder
 FeedItem.TYPE_LN   = 0x04; // link
-FeedItem.TYPE_SF   = 0x08; // link-folder - a hybrid of <link> and remote <folder> managed by zindus
+FeedItem.TYPE_SF   = 0x08; // shared-folder - a hybrid of <link> and remote <folder> managed by the addon
 FeedItem.TYPE_GG   = 0x10; // google group
 FeedItem.TYPE_MASK = (FeedItem.TYPE_CN | FeedItem.TYPE_FL | FeedItem.TYPE_LN | FeedItem.TYPE_SF | FeedItem.TYPE_GG);
 

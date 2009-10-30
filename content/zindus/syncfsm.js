@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.226 2009-10-27 23:53:41 cvsuser Exp $
+// $Id: syncfsm.js,v 1.227 2009-10-30 00:56:10 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1941,10 +1941,9 @@ SyncFsm.prototype.exitActionGetContactZm = function(state, event)
 
 SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 {
-	var nextEvent = null;
+	var nextEvent   = null;
 	var zfcLastSync = this.state.zfcLastSync;
 	var sourceid_pr = this.state.sourceid_pr;
-	var if_fewer_recheck;
 
 	this.state.stopwatch.mark(state);
 
@@ -1956,7 +1955,7 @@ SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 		this.account().zm_sync_gal_enabled = "no";
 	}
 
-	this.state.m_logger.debug("entryActionGalConsider: zm_sync_gal_enabled: " + this.account().zm_sync_gal_enabled);
+	this.debug("entryActionGalConsider: zm_sync_gal_enabled: " + this.account().zm_sync_gal_enabled);
 
 	if (this.account().zm_sync_gal_enabled == "no")
 		nextEvent = 'evSkip';
@@ -1966,26 +1965,24 @@ SyncFsm.prototype.entryActionGalConsider = function(state, event, continuation)
 		var SyncMd = parseInt(zfcLastSync.get(sourceid_pr).getOrNull('SyncMd'));
 		var isSyncGalEnabledChanged = this.account().zm_sync_gal_enabled != zfcLastSync.get(sourceid_pr).getOrNull('zm_sync_gal_enabled');
 
-		this.state.m_logger.debug("entryActionGalConsider:" +
-												 " isSyncGalEnabledChanged: " + isSyncGalEnabledChanged +
-	                                             " SyncMd: " + SyncMd + " this.state.SyncMd: " + this.state.SyncMd +
-	                                             " SyncGalMdInterval == " + SyncGalMdInterval +
-	                                             " (SyncMd + SyncGalMdInterval) == " + (SyncMd + SyncGalMdInterval) );
+		this.debug("entryActionGalConsider: isSyncGalEnabledChanged: "        + isSyncGalEnabledChanged +
+	                                      " SyncMd: "                         + SyncMd +
+										  " this.state.SyncMd: "              + this.state.SyncMd +
+	                                      " SyncGalMdInterval == "            + SyncGalMdInterval +
+	                                      " (SyncMd + SyncGalMdInterval) == " + (SyncMd + SyncGalMdInterval) );
 
 
 		if (isSyncGalEnabledChanged || SyncMd == null || (this.state.SyncMd > (SyncMd + SyncGalMdInterval)))
 		{
 			this.state.SyncGalTokenInRequest = null;
 
-			this.state.m_logger.debug("entryActionGalSync: Gal expired or had no state or 'Sync Gal' preference changed - " +
-			                          "this.state.SyncGalTokenInRequest set to null");
+			this.debug("entryActionGalConsider: Gal expired or had no state or Gal pref changed - SyncGalTokenInRequest set to null");
 		}
 		else
 		{
 			this.state.SyncGalTokenInRequest = zfcLastSync.get(sourceid_pr).getOrNull('SyncGalToken');
 
-			this.state.m_logger.debug("entryActionGalSync: Gal hasn't expired - this.state.SyncGalTokenInRequest == " +
-			                          this.state.SyncGalTokenInRequest);
+			this.debug("entryActionGalConsider: Gal hasn't expired - SyncGalTokenInRequest: " + this.state.SyncGalTokenInRequest);
 		}
 
 		if (this.account().zm_sync_gal_enabled == "if-fewer")
@@ -3552,7 +3549,6 @@ SyncFsm.prototype.deTwin = function(gid)
 	delete this.state.aReverseGid[sourceid_pr][luid_pr];
 
 	gid_new = SyncFsm.addToGid(zfcGid, sourceid_pr, luid_pr, this.state.aReverseGid);
-	// this.resetLsoVer(gid_new, this.zfcPr().get(luid_pr));
 
 	zfcGid.get(gid_new).del(FeedItem.ATTR_PRES);
 
@@ -3626,13 +3622,10 @@ SyncFsm.prototype.twiddleMapsForImmutables = function()
 SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 {
 	var self = this;
-	var sourceid, zfc, generator, event;
+	var sourceid, zfc, generator;
 
 	var functor_foreach_luid_do_checksum = {
-		state: this.state,
-
-		run: function(zfi)
-		{
+		run: function(zfi) {
 			let luid     = zfi.key();
 			let checksum = null;
 			let luid_parent;
@@ -3648,7 +3641,7 @@ SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 				msg = " not in scope - ignoring";
 			else if (zfi.type() == FeedItem.TYPE_CN)
 			{
-				var a_properties    = self.getContactPropertiesNormalised(sourceid, luid, this.state.m_contact_converter_style_basic);
+				var a_properties    = self.getContactPropertiesNormalised(sourceid, luid, self.state.m_contact_converter_style_basic);
 				var a_parent_in_map = self.getContactParentInMap(sourceid, luid);
 
 				if (a_properties) // a card with no properties will never be part of a twin so don't bother
@@ -3656,11 +3649,11 @@ SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 					checksum = self.contact_converter().crc32(a_properties);
 					var key = hyphenate('-', sourceid, a_parent_in_map, checksum);
 
-					if (!(key in this.state.aHasChecksum))
-						this.state.aHasChecksum[key] = new Object();
+					if (!(key in self.state.aHasChecksum))
+						self.state.aHasChecksum[key] = new Object();
 
-					this.state.aHasChecksum[key][luid] = true;
-					this.state.aChecksum[sourceid][luid] = checksum;
+					self.state.aHasChecksum[key][luid] = true;
+					self.state.aChecksum[sourceid][luid] = checksum;
 
 					msg += "checksum: " + strPadTo(checksum, 11) + " parent: " + a_parent_in_map +
 					        " PrimaryEmail: " + (a_properties['PrimaryEmail'] ? a_properties['PrimaryEmail'] : "null");
@@ -3681,17 +3674,15 @@ SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
 		}
 	};
 
-	for (sourceid in this.state.sources)
-	{
-		zfc         = this.zfc(sourceid);
-		generator   = zfc.forEachGenerator(functor_foreach_luid_do_checksum, chunk_size('feed'));
+	for (sourceid in this.state.sources) {
+		zfc       = this.zfc(sourceid);
+		generator = zfc.forEachGenerator(functor_foreach_luid_do_checksum, chunk_size('feed'));
 
 		while (generator.next())
 			yield true;
 	}
 
-	if (false)
-	{
+	if (false) {
 		let msg = "updateGidDoChecksums: aHasChecksum: ";
 		for (var key in this.state.aHasChecksum)
 			msg += "aHasChecksum  key: " + key + ": " + this.state.aHasChecksum[key];
@@ -4059,53 +4050,47 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddressGenerator = function()
 	zinAssert(this.is_slow_sync());
 
 	var functor_foreach_gid = {
-		run: function(zfi)
-		{
-			if (zfi.isPresent(sourceid_tb) && zfi.isPresent(sourceid_gd) && zfcTb.get(zfi.get(sourceid_tb)).type() == FeedItem.TYPE_CN)
-			{
+		run: function(zfi) {
+			if (zfi.isPresent(sourceid_tb) && zfi.isPresent(sourceid_gd) && zfcTb.get(zfi.get(sourceid_tb)).type() == FeedItem.TYPE_CN) {
 				// Thunderbird and Google contact are twins
 				//
-				let luid_gd = zfcPr.get(zfi.get(sourceid_gd)).get(FeedItem.ATTR_GDID);
-				let luid_tb = zfi.get(sourceid_tb);
-				let contact = self.state.a_gd_contact[luid_gd];
-				let msg     = " zfi: " + zfi.toString();
+				let luid_gd_ci = zfi.get(sourceid_gd);
+				let luid_gd_au = zfcPr.get(luid_gd_ci).get(FeedItem.ATTR_GDID);
+				let luid_tb    = zfi.get(sourceid_tb);
+				let contact    = self.state.a_gd_contact[luid_gd_au];
+				let msg        = " zfi: " + zfi.toString();
 
-				zinAssertAndLog(luid_gd in self.state.a_gd_contact, function() { return "luid_gd=" + luid_gd; } );
+				zinAssertAndLog(luid_gd_au in self.state.a_gd_contact, function() { return "luid_gd_au=" + luid_gd_au; } );
 				zinAssert(contact.mode() & ContactGoogle.ePostal.kEnabled);
 
-				if (!contact.isAnyPostalAddressInXml())
-				{
+				if (!contact.isAnyPostalAddressInXml()) {
 					msg += " gd doesn't have xml";
 
-					if (this.is_tb_contact_have_an_address_field(luid_tb))
-					{
-						self.backdateZfcForcingItToLose(sourceid_gd, luid_gd);
+					if (this.is_tb_contact_have_an_address_field(luid_tb)) {
+						self.backdateZfcForcingItToLose(sourceid_gd, luid_gd_ci);
 
 						msg += " and tb has an address so backdating gd to force it to lose";
+						self.debug("AMHERE: backdated zfi: " + self.zfc(sourceid_gd).get(luid_gd_ci).toString()); // TODO
 					}
 					else
 						msg += " and tb has no address";
 				}
-				else
-				{
+				else {
 					msg += " gd has xml";
 
-					if (self.isTwin(sourceid_tb, sourceid_gd, luid_tb, luid_gd, self.state.m_contact_converter_style_gd_postal))
+					if (self.isTwin(sourceid_tb, sourceid_gd, luid_tb, luid_gd_au, self.state.m_contact_converter_style_gd_postal))
 						msg += " is twin";
-					else if (!this.is_tb_contact_have_an_address_field(luid_tb))
-					{
+					else if (!this.is_tb_contact_have_an_address_field(luid_tb)) {
 						self.backdateZfcForcingItToLose(sourceid_tb, luid_tb);
-
 						msg += " and tb doesn't have an address so backdating tb to force it to lose";
 					}
-					else
-					{
+					else {
 						msg += " different from tb and no email address so backdating gd to force it to lose";
 
 						// self.debug("blah: gd contact: " + contact.toString() + " tb properties: " + 
 						//                      aToString(self.getContactFromLuid(sourceid_tb, luid_tb, FORMAT_TB)));
 
-						self.backdateZfcForcingItToLose(sourceid_gd, luid_gd);
+						self.backdateZfcForcingItToLose(sourceid_gd, luid_gd_ci);
 					}
 				}
 
@@ -4114,13 +4099,12 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddressGenerator = function()
 
 			return true;
 		},
-		is_tb_contact_have_an_address_field: function(luid_tb)
-		{
+		is_tb_contact_have_an_address_field: function(luid_tb) {
 			return self.zfcTb().get(luid_tb).get(FeedItem.ATTR_TBPA) == '1';
 		}
 	};
 
-	var generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
+	let generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
 
 	while (generator.next())
 		yield true;
@@ -4232,9 +4216,6 @@ SyncFsm.prototype.backdateZfcForcingItToLose = function(sourceid, luid)
 // This routine written to support issue #89
 // It supplies "forward error recovery" in the event that the previous sync added a bunch of contacts before failing to complete.
 //
-// TODO AMHERE the problem with this routine is that if you've got multiple identical checksums then it doesn't work completely -
-// it only works for the first one.
-//
 SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 {
 	var sourceid_tb = this.state.sourceid_tb;
@@ -4271,7 +4252,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 				}
 			}
 
-			self.debug("AMHERE: gid: " + zfi.toString() + " count: " + count + " a_luid: " + aToString(a_luid)); // TODO
+			// self.debug("gid: " + zfi.toString() + " count: " + count + " a_luid: " + aToString(a_luid));
 
 			if (count == 1) {
 				sourceid       = a_luid[sourceid_tb] ? sourceid_tb : sourceid_pr;
@@ -4292,7 +4273,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 				if (do_lookup && !self.is_suggested_candidate(sourceid, luid))
 					properties = self.getContactPropertiesNormalised(sourceid, luid, self.state.m_contact_converter_style_basic);
 
-				self.debug("AMHERE: 4: " + (properties ? aToString(properties) : "null")); // TODO
+				// self.debug("properties: " + (properties ? aToString(properties) : "null"));
 
 				if (properties) // a contact with no properties will never be part of a twin so don't bother
 					this.add_to_a_checksum(sourceid, luid, properties);
@@ -4315,11 +4296,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 
 	zfcGid.forEach(functor_foreach_gid);
 
-	this.debug("AMHERE: a_checksum: " + aToString(a_checksum)); // TODO
-
-	function mark_as_processed(i) {
-		a_checksum[checksum][i].is_processed = true;
-	}
+	// this.debug("a_checksum: " + aToString(a_checksum));
 
 	let contact_converter = this.state.m_contact_converter_style_basic;
 	let checksum, i;
@@ -4329,7 +4306,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 			let a_new = new Array();
 			let first = a_checksum[checksum][0];
 
-			mark_as_processed(0);
+			first.is_processed = true;
 
 			for (i = 1; i < a_checksum[checksum].length; i++) {
 				let current = a_checksum[checksum][i];
@@ -4338,7 +4315,7 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 				    this.isTwin(first.sourceid, current.sourceid, first.luid, current.luid, contact_converter)) {
 					let luid_tb, luid_pr;
 
-					mark_as_processed(i);
+					current.is_processed = true;
 
 					if (first.sourceid == sourceid_tb) {
 						luid_tb = first.luid;
@@ -4360,8 +4337,14 @@ SyncFsm.prototype.twiddleMapsToPairNewMatchingContacts = function()
 					msg += "\n ADD by twinning: tb: " + sourceid_tb + "/=" + luid_tb + " and gd: " + sourceid_pr + "/=" + luid_pr + " gid=" + gid;
 				}
 
-				if (!a_checksum[checksum][i].is_processed)
-					a_new.push(a_checksum[checksum][i]);
+				if (!current.is_processed)
+					a_new.push(current);
+				else {
+					let j;
+					for (j = i+1; j < a_checksum[checksum].length; j++)
+						a_new.push(a_checksum[checksum][j]);
+					break;
+				}
 			}
 
 			a_checksum[checksum] = a_new;
@@ -4526,20 +4509,15 @@ SyncFsm.prototype.buildGcsGenerator = function()
 	// delete candidate mapitems in other sources once they've been compared
 	//
 	var functor_delete_other_candidate_mapitems = {
-		run: function(key, value)
-		{
+		run: function(key, value) {
 			if ((key in self.state.sources) && key != FeedItem.ATTR_VER && key != sourceid)
 				aZfcCandidate[key].del(value);
-
 			return true;
 		}
 	};
 
 	var functor_foreach_candidate = {
-		state:   this.state,
-
-		run: function(zfi)
-		{
+		run: function(zfi) {
 			var zfc  = self.zfc(sourceid);
 			var luid = zfi.key();
 			var gid, skip_msg;
@@ -4547,7 +4525,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 			buildgcs_msg = "";
 			skip_msg     = null;
 
-			if (sourceid == this.state.sourceid_tb && !self.isInScopeTbLuid(luid))
+			if (sourceid == self.state.sourceid_tb && !self.isInScopeTbLuid(luid))
 				skip_msg = "not in scope";
 			else if (!SyncFsm.isOfInterest(zfc, luid))
 				skip_msg = "not of interest";
@@ -4588,11 +4566,8 @@ SyncFsm.prototype.buildGcsGenerator = function()
 			var msg = "";
 
 			var functor_each_luid_in_gid = {
-				state:   this.state,
-
-				run: function(sourceid, luid)
-				{
-					if (!(sourceid in this.state.sources) || sourceid == FeedItem.ATTR_VER)
+				run: function(sourceid, luid) {
+					if (!(sourceid in self.state.sources) || sourceid == FeedItem.ATTR_VER)
 						return true;
 
 					var zfi = aZfcCandidate[sourceid].get(luid);
@@ -5189,7 +5164,6 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 				if (ab_name != gd_ab_name_internal && ab_name != name_gd_suggested)
 						ret[key] = new Object();
 			}
-			// self.debug("get_a_luid_gp_abs: returns: " + keysToString(ret)); // TODO
 			return ret;
 		}
 
@@ -5243,8 +5217,8 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 						a_suo_to_delete.push(current.key);
 					}
 
-					if (!a_checksum[checksum][i].is_processed)
-						a_new.push(a_checksum[checksum][i]);
+					if (!current.is_processed)
+						a_new.push(current);
 				}
 
 				a_checksum[checksum] = a_new;
@@ -5636,29 +5610,30 @@ SyncFsm.prototype.fakeDelOnUninterestingContacts = function()
 //
 SyncFsm.prototype.twiddleZmFxMs = function()
 {
-	var zfcZm = this.zfcPr();
-	var bigmsg = new BigString();
+	let zfcZm  = this.zfcPr();
+	let bigmsg = new BigString();
 
 	bigmsg.concat("twiddleZmFxMs: ");
 
-	var functor = {
-		run: function(zfi)
-		{
+	let functor = {
+		run: function(zfi) {
 			if (zfi.isPresent(FeedItem.ATTR_FXMS)) {
 				let lso   = new Lso(zfi.get(FeedItem.ATTR_LS));
 				let lsoms = Number(lso.get(FeedItem.ATTR_MS));
 				let ms    = Number(zfi.get(FeedItem.ATTR_MS));
+				let type  = zfi.type();
 
 				if (ms <= lsoms) {
 					lso.set(FeedItem.ATTR_MS, ms);
-					if (zfi.type() != FeedItem.TYPE_LN && zfi.type() != FeedItem.TYPE_FL)
+					if (type != FeedItem.TYPE_LN && type != FeedItem.TYPE_FL && type != FeedItem.TYPE_SF)
 						lso.set(FeedItem.ATTR_REV, Number(zfi.get(FeedItem.ATTR_REV)));
 					let str = lso.toString();
 					zfi.set(FeedItem.ATTR_LS, str);
 					bigmsg.concat("\n key=" + zfi.key() + " reset ATTR_LS: " + str);
 				}
 				else
-					bigmsg.concat("\n key=" + zfi.key() + " has an fxms but not reset: ms: " + ms + " lsoms: " + lsoms + " ms < lsoms: " + (ms < lsoms));
+					bigmsg.concat("\n key=" + zfi.key() + " has an fxms but not reset: ms: " + ms + " lsoms: " + lsoms +
+					              " ms < lsoms: " + (ms < lsoms));
 
 				zfi.del(FeedItem.ATTR_FXMS);
 			}
@@ -6991,7 +6966,6 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 
 				zfiTarget.set(FeedItem.ATTR_MS,  change.token);
 				zfiTarget.set(FeedItem.ATTR_REV, change.token);
-				zfiTarget.set(FeedItem.ATTR_FXMS, '1');
 
 				if (zfiTarget.type() == FeedItem.TYPE_LN)
 				{
@@ -7000,6 +6974,8 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 				}
 				else
 					zfiRelevantToGid = zfiTarget;
+
+				zfiRelevantToGid.set(FeedItem.ATTR_FXMS, '1');
 
 				SyncFsm.setLsoToGid(this.state.zfcGid.get(suo.gid), zfiRelevantToGid);
 
@@ -7237,8 +7213,6 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 						let gid_gp        = this.state.aReverseGid[suo.sourceid_winner][luid_gp_in_tb];
 						let luid_gp_in_gd = this.state.zfcGid.get(gid_gp).get(suo.sourceid_target);
 
-						this.debug("AMHERE: 3: " + " gid_gp: " + gid_gp + " luid_gp_in_gd: " + luid_gp_in_gd); // TODO
-
 						a_groups.push(zfcTarget.get(luid_gp_in_gd).get(FeedItem.ATTR_GGID));
 					}
 
@@ -7280,8 +7254,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				break;
 
 			case Suo.MOD | FeedItem.TYPE_CN: {
-				msg           += " about to modify contact: ";
-				luid_target    = zfiGid.get(sourceid_target);
+				msg               += " about to modify contact: ";
+				luid_target        = zfiGid.get(sourceid_target);
 				let luid_target_au = this.zfc(sourceid_target).get(luid_target).get(FeedItem.ATTR_GDID);
 
 				if (!(luid_target_au in this.state.a_gd_contact)) {
@@ -7335,12 +7309,14 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					this.state.gd_au_group_for_mod[luid_target_au] = true;
 				}
 
-				// convert the properties to a gd contact so that transformations apply before the identity test
-				//
-				contact.postalAddressRemoveEmptyElements(); // issue #160
-				contact.modify(ContactGoogle.eModify.kRemoveDeletedGroupMembershipInfo); // issue #202
+				if (!suo.is_processed) {
+					// convert the properties to a gd contact so that transformations apply before the identity test
+					//
+					contact.postalAddressRemoveEmptyElements(); // issue #160
+					contact.modify(ContactGoogle.eModify.kRemoveDeletedGroupMembershipInfo); // issue #202
 
-				set_remote_for_mod(contact, old_contact);
+					set_remote_for_mod(contact, old_contact);
+				}
 				}
 				break;
 
