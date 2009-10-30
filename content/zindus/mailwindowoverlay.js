@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.61 2009-10-13 21:05:30 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.62 2009-10-30 03:23:59 cvsuser Exp $
 
 function ZinMailWindowOverlay()
 {
@@ -368,7 +368,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	//
 	if (true) {
 		if (preference(MozillaPreferences.AS_IS_FIRSTRUN, 'bool') && accounts.length > 0) {
-			this.m_logger.debug("AS_IS_FIRSTRUN was false but we set it to true because an account was present");
+			this.m_logger.debug("AS_IS_FIRSTRUN was true but we set it to false because an account was present");
 			prefs.setBoolPref(prefs.branch(), MozillaPreferences.AS_IS_FIRSTRUN, false);
 		}
 	}

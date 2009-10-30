@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.227 2009-10-30 00:56:10 cvsuser Exp $
+// $Id: syncfsm.js,v 1.228 2009-10-30 03:23:59 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2367,6 +2367,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 	ab_name = (this.formatPr() == FORMAT_ZM) ? TB_PAB : gd_ab_name_internal;
 
 	passed = passed && this.testForFolderPresentInZfcTb(ab_name);
+
 	if (!this.is_slow_sync())
 		passed = passed && this.testForReservedFolderInvariant(ab_name);
 
@@ -3983,9 +3984,9 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 			return true;
 		},
 		the_winner : function(zfi) {
-			let a_fields = zfcTb.get(zfi.get(sourceid_tb)).get(FeedItem.ATTR_TBFM).split(',');
+			let a_fields          = zfcTb.get(zfi.get(sourceid_tb)).get(FeedItem.ATTR_TBFM).split(',');
 			let remote_properties = self.getContactAsTbProperties(sourceid_pr, zfi.get(sourceid_pr));
-			let ret = 'none';
+			let ret               = 'none';
 			let i;
 
 			// tb wins if it has a migration field populated and the remote contact doesn't
@@ -4012,7 +4013,7 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 	};
 
 	if (!isObjectEmpty(this.contact_converter().properties_being_migrated())) {
-		var generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
+		let generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
 
 		while (generator.next())
 			yield true;

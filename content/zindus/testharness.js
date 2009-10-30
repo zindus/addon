@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.117 2009-10-17 09:16:02 cvsuser Exp $
+// $Id: testharness.js,v 1.118 2009-10-30 03:24:01 cvsuser Exp $
 
 function TestHarness()
 {
@@ -2509,7 +2509,6 @@ TestHarness.prototype.testExitStatusMessages = function()
 		'failon.no.pab.2'                     : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]),'arg':['Thunderbird']},
 		'failon.multiple.ln'                  : { 'trailer': 'address book names go here' },
 		'failon.gd.forbidden'                 : {},
-		'failon.gd.syncwith'                  : { 'trailer': stringBundleString("text.suggest.reset"), 'arg':    [ 'fred' ] },
 		'failon.zm.empty.contact'             : { 'arg':    [ 'Joe', 'ThunderbirdX' ] },
 		'failon.unauthorized'                 : { },
 		'failon.auth'                         :  { 'trailer': stringBundleString("text.http.status.code", [ 403 ]), 'arg': ['Thunderbird']},

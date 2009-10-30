@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.22 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: filesystem.js,v 1.23 2009-10-30 03:23:59 cvsuser Exp $
 
 var Filesystem = {
 	m_a_directory        : new Object(),
@@ -155,8 +155,6 @@ var Filesystem = {
 		re_exclude = re_exclude ? re_exclude : /sqlite/;
 
 		var directory_data = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
-
-		logger().debug("removeZfcs: re_exclude: " + re_exclude.toString());
 
 		// remove files in the data directory
 		//
