@@ -51,3 +51,4 @@
 <!ENTITY zindus.cg.rule.ask.me.label "Zeptej se mne">
 <!ENTITY zindus.cg.rule.dont.ask.label "Neptej se mne - smaž kontakty, které neodpovídají pravidlům">
 <!ENTITY zindus.sw.title "Zindus synchronizace">
+<!ENTITY zindus.id.show.again.label                     "Show this dialog next time">

@@ -52,3 +52,4 @@
 <!ENTITY zindus.cg.rule.ask.me.label "Me demander">
 <!ENTITY zindus.cg.rule.dont.ask.label "Ne pas me demander / supprimer les contacts pour éviter la violation de règles">
 <!ENTITY zindus.sw.title "Synchronisation Zindus">
+<!ENTITY zindus.id.show.again.label                     "Show this dialog next time">

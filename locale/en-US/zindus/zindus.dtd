@@ -69,6 +69,9 @@
 <!-- Sync Window -->
 <!ENTITY zindus.sw.title                                "Zindus Sync">
 
+<!-- Info Dialog -->
+<!ENTITY zindus.id.show.again.label                     "Show this dialog next time">
+
 <!-- Contact Sharing -->
 <!ENTITY zindus.cw.title                                "Zindus Setup">
 <!ENTITY zindus.cw.username.label                       "Desired username:">

@@ -51,3 +51,4 @@
 <!ENTITY zindus.cg.rule.ask.me.label "Solicitar confirmação">
 <!ENTITY zindus.cg.rule.dont.ask.label "Não solicitar confirmação - apagar contato que violam as regras">
 <!ENTITY zindus.sw.title "Sincronização Zindus">
+<!ENTITY zindus.id.show.again.label                     "Show this dialog next time">

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.62 2009-10-30 03:23:59 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.63 2009-11-02 22:18:38 cvsuser Exp $
 
 function ZinMailWindowOverlay()
 {
@@ -361,12 +361,13 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 			}
 
 	// 0.8.13
+	// - NOTUSED
 	// - We only want the AS_IS_FIRSTRUN preference to be true in brand-new installations, not in upgrades to existing installations
 	//   So here we set it to false if the user had an account.
 	//   This approach isn't perfect because a user might a) install the addon, b) create an account c) restart tb
 	//   d) do their first sync.  But most people won't do c) so the approach is 'good enough'.
 	//
-	if (true) {
+	if (false) {
 		if (preference(MozillaPreferences.AS_IS_FIRSTRUN, 'bool') && accounts.length > 0) {
 			this.m_logger.debug("AS_IS_FIRSTRUN was true but we set it to false because an account was present");
 			prefs.setBoolPref(prefs.branch(), MozillaPreferences.AS_IS_FIRSTRUN, false);

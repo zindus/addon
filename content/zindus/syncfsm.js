@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.229 2009-10-30 04:05:40 cvsuser Exp $
+// $Id: syncfsm.js,v 1.230 2009-11-02 22:18:38 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6082,38 +6082,48 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	let slow_sync_txt  = stringBundleString("text.slow.sync");
 	let slow_sync_html = "<a href='" + url('slow-sync') + "'>" + slow_sync_txt + "</a>";
 	let slow_sync_info = stringBundleString("text.more.information.on", [ slow_sync_html ]);
+	let txt_tb         = AppInfo.app_name(AppInfo.firstcap);
+	let txt_gd         = stringBundleString("brand.google");
 
 	if (is_confirm_on_erase) {
 		function do_cancel(string_arg) {
 			if (self.state.m_is_attended) {
-				let msg    = stringBundleString("text.confirm.erase.1", [ string_arg ]);
-				let button = InfoDlg.show(msg, "accept,cancel");
-				nextEvent  = (button == 'accept') ? 'evNext' : 'evCancel';
+				let msg    = stringBundleString("infodlg.confirm.erase.1", [ string_arg ]);
+				let dlg    = InfoDlg.show(msg, {'buttons' : "accept,cancel"});
+				nextEvent  = (dlg.button == 'accept') ? 'evNext' : 'evCancel';
 
-				if (button != 'accept')
-					InfoDlg.show(stringBundleString("text.confirm.erase.2", [ slow_sync_txt, slow_sync_info ]));
+				if (dlg.button != 'accept')
+					InfoDlg.show(stringBundleString("infodlg.confirm.erase.2", [ slow_sync_txt, slow_sync_info ]));
 			}
 			else
 				nextEvent = 'evCancel';
 		}
 
 		if (c_to_be_deleted_gd > 0 && (c_to_be_deleted_gd == c_at_gd))
-			do_cancel(stringBundleString("brand.google"));
+			do_cancel(txt_gd);
 		else if (c_to_be_deleted_tb > 0 && (c_to_be_deleted_tb == c_at_tb))
-			do_cancel(AppInfo.app_name());
+			do_cancel(txt_tb);
 	}
 
-	let is_firstrun = preference(MozillaPreferences.AS_IS_FIRSTRUN, 'bool');
+	let sourceid_pr   = this.state.sourceid_pr;
+	let sourceid_tb   = this.state.sourceid_tb;
+	let fn_add_gd     = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.ADD | FeedItem.TYPE_CN)); }
+	let fn_add_tb     = function(sourceid, bucket) { return (sourceid == sourceid_tb) && (bucket == (Suo.ADD | FeedItem.TYPE_CN)); }
+	let c_added_to_gd = Suo.count(this.state.aSuo, fn_add_gd);
+	let c_added_to_tb = Suo.count(this.state.aSuo, fn_add_tb);
+	let is_show_again = preference(MozillaPreferences.AS_SHOW_AGAIN_SLOW_SYNC, 'bool');
 
-	if (this.state.m_is_attended && is_firstrun && this.is_slow_sync() && c_at_tb != 0 && c_at_gd != 0) {
-		let msg    = stringBundleString("text.firstrun.message", [ slow_sync_txt, slow_sync_info ]) 
-		let button = InfoDlg.show(msg, "accept,cancel");
-		nextEvent  = (button == 'accept') ? 'evNext' : 'evCancel';
-	}
+	if (this.state.m_is_attended && is_show_again && this.is_slow_sync() && c_at_tb != 0 && c_at_gd != 0 &&
+	      !(c_added_to_tb == 0 && c_added_to_gd == 0)) {
+		let msg    = stringBundleString("infodlg.slow.sync", [
+		                 txt_tb, txt_gd, c_added_to_tb, c_added_to_gd, c_at_gd + c_added_to_gd, slow_sync_info ]);
+		let dlg    = InfoDlg.show(msg, {'buttons' : "accept,cancel", 'show_again' : true });
+		nextEvent  = (dlg.button == 'accept') ? 'evNext' : 'evCancel';
 
-	if (nextEvent == 'evNext') {
-		let prefs   = new MozillaPreferences();
-		prefs.setBoolPref(prefs.branch(), MozillaPreferences.AS_IS_FIRSTRUN, false);
+		if (dlg.button == 'accept' && !dlg.show_again) {
+			let prefs   = new MozillaPreferences();
+			prefs.setBoolPref(prefs.branch(), MozillaPreferences.AS_SHOW_AGAIN_SLOW_SYNC, false);
+		}
 	}
 
 	continuation(nextEvent);
