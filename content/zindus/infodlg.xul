@@ -50,6 +50,6 @@
 	<spacer class="zindus-spacer" flex="1" /> 
 	<description  id="zindus-infodlg-description" xmlns:html="http://www.w3.org/1999/xhtml" />
 	<spacer class="zindus-spacer" flex="1" /> 
-	<checkbox id="zindus-infodlg-dont-show-again" label="&zindus.id.dont.show.again.label;" checked="true" />
+	<checkbox id="zindus-infodlg-show-again" label="&zindus.id.show.again.label;" checked="true" />
 	<spacer class="zindus-spacer" flex="1" /> 
 </dialog>

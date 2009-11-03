@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: infodlg.js,v 1.4 2009-11-02 22:18:36 cvsuser Exp $
+// $Id: infodlg.js,v 1.5 2009-11-03 21:18:10 cvsuser Exp $
 
 function InfoDlg()
 {
@@ -40,13 +40,13 @@ InfoDlg.prototype = {
 		else if (!/cancel/.test(this.m_payload.m_args.args['buttons']))
 			dId("zindus-infodlg").getButton('cancel').hidden = true;
 
-		dId("zindus-infodlg-dont-show-again").hidden = !this.m_payload.m_args.args['show_again'];
+		dId("zindus-infodlg-show-again").hidden = !this.m_payload.m_args.args['show_again'];
 	},
 	onAccept : function() {
 		let result = newObject('button', 'accept');
 
 		if (this.m_payload.m_args.args['show_again'])
-			result['show_again'] = dId("zindus-infodlg-dont-show-again").checked;
+			result['show_again'] = dId("zindus-infodlg-show-again").checked;
 
 		this.m_payload.m_result = result;
 

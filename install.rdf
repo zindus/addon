@@ -43,7 +43,7 @@
 	  <Description>
 	    <em:id>postbox@postbox-inc.com</em:id>
 	    <em:minVersion>1.0b13</em:minVersion>   <!-- pb -->
-	    <em:maxVersion>1.0.*</em:maxVersion>    <!-- pb -->
+	    <em:maxVersion>1.1.*</em:maxVersion>    <!-- pb -->
 	  </Description>
 	</em:targetApplication>
 
