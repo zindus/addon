@@ -69,7 +69,7 @@
 <!-- Sync Window -->
 <!ENTITY zindus.sw.title                                "Zindus Sync">
 
-<!-- Info Dialog -->
+<!-- User Prompt -->
 <!ENTITY zindus.up.show.again.label                     "Show this dialog next time">
 
 <!-- Contact Sharing -->
