@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.20 2009-10-15 23:49:48 cvsuser Exp $
+# $Id: build.sh,v 1.21 2009-11-04 21:12:25 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -42,7 +42,7 @@ ROOT_DIRS=          # ...and these directories       (space separated list)
 BEFORE_BUILD=       # run this before building       (bash command)
 BEFORE_JAR=         # run this before making the jar (bash command)
 AFTER_BUILD=        # ...and this after the build    (bash command)
-PLATFORM_ID=tb+sm   # eg: linux-i686 or win.  Don't set it to the empty string here as we want it to be passed in via the environment.
+PLATFORM_ID=tb+sm+pb+sb # eg: linux-i686 or win.  Don't set it to the empty string here as we want it to be passed in via the environment.
 
 if [ -z $1 ]; then
   . ./build-config.sh
