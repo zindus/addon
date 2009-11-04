@@ -70,7 +70,7 @@
 <!ENTITY zindus.sw.title                                "Zindus Sync">
 
 <!-- Info Dialog -->
-<!ENTITY zindus.id.show.again.label                     "Show this dialog next time">
+<!ENTITY zindus.up.show.again.label                     "Show this dialog next time">
 
 <!-- Contact Sharing -->
 <!ENTITY zindus.cw.title                                "Zindus Setup">

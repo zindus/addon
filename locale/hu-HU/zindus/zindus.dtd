@@ -51,4 +51,4 @@
 <!ENTITY zindus.cg.rule.ask.me.label "Rákérdez">
 <!ENTITY zindus.cg.rule.dont.ask.label "Ne kérdezzen rá, törölje a névjegyeket a szabálysértés megszüntetéséhez">
 <!ENTITY zindus.sw.title "Zindus szinkronziálás">
-<!ENTITY zindus.id.show.again.label                     "Show this dialog next time">
+<!ENTITY zindus.up.show.again.label                     "Show this dialog next time">

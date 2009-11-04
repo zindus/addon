@@ -20,33 +20,33 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: infodlg.js,v 1.5 2009-11-03 21:18:10 cvsuser Exp $
+// $Id: userprompt.js,v 1.1 2009-11-04 02:38:42 cvsuser Exp $
 
-function InfoDlg()
+function UserPrompt()
 {
-	this.m_logger = newLogger("InfoDlg");
+	this.m_logger = newLogger("UserPrompt");
 
 	this.m_payload   = null; // we keep it around so that we can pass the results back
 }
 
-InfoDlg.prototype = {
+UserPrompt.prototype = {
 	onLoad : function() {
 		this.m_payload = window.arguments[0];
 
-		xulSetHtml("zindus-infodlg-description", this.m_payload.m_args.msg);
+		xulSetHtml("zindus-userprompt-description", this.m_payload.m_args.msg);
 
 		if (!/accept/.test(this.m_payload.m_args.args['buttons']))
-			dId("zindus-infodlg").getButton('accept').hidden = true;
+			dId("zindus-userprompt-dialog").getButton('accept').hidden = true;
 		else if (!/cancel/.test(this.m_payload.m_args.args['buttons']))
-			dId("zindus-infodlg").getButton('cancel').hidden = true;
+			dId("zindus-userprompt-dialog").getButton('cancel').hidden = true;
 
-		dId("zindus-infodlg-show-again").hidden = !this.m_payload.m_args.args['show_again'];
+		dId("zindus-userprompt-show-again").hidden = !this.m_payload.m_args.args['show_again'];
 	},
 	onAccept : function() {
 		let result = newObject('button', 'accept');
 
 		if (this.m_payload.m_args.args['show_again'])
-			result['show_again'] = dId("zindus-infodlg-show-again").checked;
+			result['show_again'] = dId("zindus-userprompt-show-again").checked;
 
 		this.m_payload.m_result = result;
 
@@ -60,9 +60,9 @@ InfoDlg.prototype = {
 	}
 };
 
-InfoDlg.show = function(msg, args)
+UserPrompt.show = function(msg, args)
 {
-	logger().debug("InfoDlg.show: msg: " + msg + " args: " + aToString(args));
+	logger().debug("UserPrompt.show: msg: " + msg + " args: " + aToString(args));
 
 	let buttons     = false;
 	let show_again  = false;
@@ -80,9 +80,9 @@ InfoDlg.show = function(msg, args)
 	let payload = new Payload();
 	payload.m_args = newObject('msg', msg, 'args', actual_args);
 
-	window.openDialog("chrome://zindus/content/infodlg.xul", "_blank", WINDOW_FEATURES, payload);
+	window.openDialog("chrome://zindus/content/userprompt.xul", "_blank", WINDOW_FEATURES, payload);
 
-	logger().debug("InfoDlg.show: result: " + aToString(payload.m_result));
+	logger().debug("UserPrompt.show: result: " + aToString(payload.m_result));
 
 	return payload.m_result;
 }

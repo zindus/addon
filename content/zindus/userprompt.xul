@@ -29,10 +29,10 @@
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
 
 <dialog
-	id="zindus-infodlg"
+	id="zindus-userprompt-dialog"
 	title = "&zindus.mo.menuitem.label;"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new InfoDlg(); } window.wd.onLoad();"
+	onload="with (ZindusScopeRegistry.getScope()) { window.wd = new UserPrompt(); } window.wd.onLoad();"
 	ondialogcancel="return window.wd.onCancel();"
 	ondialogaccept="return window.wd.onAccept();"
 	buttons="accept,cancel"
@@ -42,14 +42,14 @@
 	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/scoperegistry.js"/>
 	<script type="application/x-javascript;version=1.7" src="chrome://zindus/content/includes.js"/>
 	<script type="application/x-javascript;version=1.7"> <![CDATA[
-		with (ZindusScopeRegistry.getScope()) { includejs('infodlg.js'); }
+		with (ZindusScopeRegistry.getScope()) { includejs('userprompt.js'); }
 	]]> </script>
 
 	<stringbundleset> <stringbundle id="zindus-stringbundle" src="chrome://zindus/locale/zindus.properties" /> </stringbundleset>
 
 	<spacer class="zindus-spacer" flex="1" /> 
-	<description  id="zindus-infodlg-description" xmlns:html="http://www.w3.org/1999/xhtml" />
+	<description  id="zindus-userprompt-description" xmlns:html="http://www.w3.org/1999/xhtml" />
 	<spacer class="zindus-spacer" flex="1" /> 
-	<checkbox id="zindus-infodlg-show-again" label="&zindus.id.show.again.label;" checked="true" />
+	<checkbox id="zindus-userprompt-show-again" label="&zindus.up.show.again.label;" checked="true" />
 	<spacer class="zindus-spacer" flex="1" /> 
 </dialog>

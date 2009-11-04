@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.230 2009-11-02 22:18:38 cvsuser Exp $
+// $Id: syncfsm.js,v 1.231 2009-11-04 02:38:40 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -738,9 +738,6 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	}
 
 	this.state.stopwatch.mark(state + " 8");
-
-	// for (filename in a_zfc)
-	// 	this.debug("entryActionLoad: filename: " + filename + " zfc: " + a_zfc[filename].toString());
 
 	yield false;
 }
@@ -6088,12 +6085,12 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	if (is_confirm_on_erase) {
 		function do_cancel(string_arg) {
 			if (self.state.m_is_attended) {
-				let msg    = stringBundleString("infodlg.confirm.erase.1", [ string_arg ]);
-				let dlg    = InfoDlg.show(msg, {'buttons' : "accept,cancel"});
+				let msg    = stringBundleString("up.confirm.erase.1", [ string_arg ]);
+				let dlg    = UserPrompt.show(msg, {'buttons' : "accept,cancel"});
 				nextEvent  = (dlg.button == 'accept') ? 'evNext' : 'evCancel';
 
 				if (dlg.button != 'accept')
-					InfoDlg.show(stringBundleString("infodlg.confirm.erase.2", [ slow_sync_txt, slow_sync_info ]));
+					UserPrompt.show(stringBundleString("up.confirm.erase.2", [ slow_sync_txt, slow_sync_info ]));
 			}
 			else
 				nextEvent = 'evCancel';
@@ -6115,9 +6112,9 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 
 	if (this.state.m_is_attended && is_show_again && this.is_slow_sync() && c_at_tb != 0 && c_at_gd != 0 &&
 	      !(c_added_to_tb == 0 && c_added_to_gd == 0)) {
-		let msg    = stringBundleString("infodlg.slow.sync", [
+		let msg    = stringBundleString("up.slow.sync", [
 		                 txt_tb, txt_gd, c_added_to_tb, c_added_to_gd, c_at_gd + c_added_to_gd, slow_sync_info ]);
-		let dlg    = InfoDlg.show(msg, {'buttons' : "accept,cancel", 'show_again' : true });
+		let dlg    = UserPrompt.show(msg, {'buttons' : "accept,cancel", 'show_again' : true });
 		nextEvent  = (dlg.button == 'accept') ? 'evNext' : 'evCancel';
 
 		if (dlg.button == 'accept' && !dlg.show_again) {

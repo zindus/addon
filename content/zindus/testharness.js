@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.118 2009-10-30 03:24:01 cvsuser Exp $
+// $Id: testharness.js,v 1.119 2009-11-04 02:38:42 cvsuser Exp $
 
 function TestHarness()
 {
@@ -43,7 +43,7 @@ TestHarness.prototype.run = function()
 	ret = ret && this.testPreferencesHaveDefaults();
 	ret = ret && this.testStringBundleContainsContactProperties();
 
-	// ret = ret && this.testInfoDig();
+	// ret = ret && this.testUserPrompt();
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
 	ret = ret && this.testSuo();
@@ -98,9 +98,9 @@ TestHarness.prototype.run = function()
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
 
-TestHarness.prototype.testInfoDig = function()
+TestHarness.prototype.testUserPrompt = function()
 {
-	InfoDlg.show('<a href="http://zindus.com">hello world</a>');
+	UserPrompt.show('<a href="http://zindus.com">hello world</a>');
 }
 
 TestHarness.prototype.testSuo = function()

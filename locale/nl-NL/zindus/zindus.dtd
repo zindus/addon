@@ -51,4 +51,4 @@
 <!ENTITY zindus.cg.rule.ask.me.label "Vraag me">
 <!ENTITY zindus.cg.rule.dont.ask.label "Vraag me niet - verwijder contacten om conflicten te voorkomen">
 <!ENTITY zindus.sw.title "Zindus Synchronisatie">
-<!ENTITY zindus.id.show.again.label                     "Show this dialog next time">
+<!ENTITY zindus.up.show.again.label                     "Show this dialog next time">
