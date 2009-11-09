@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.231 2009-11-04 02:38:40 cvsuser Exp $
+// $Id: syncfsm.js,v 1.232 2009-11-09 03:54:41 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6109,6 +6109,8 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	let c_added_to_gd = Suo.count(this.state.aSuo, fn_add_gd);
 	let c_added_to_tb = Suo.count(this.state.aSuo, fn_add_tb);
 	let is_show_again = preference(MozillaPreferences.AS_SHOW_AGAIN_SLOW_SYNC, 'bool');
+
+	// this.debug("entryActionConfirmUI: c_added_to_gd: " + c_added_to_gd + " c_added_to_tb: " + c_added_to_tb);
 
 	if (this.state.m_is_attended && is_show_again && this.is_slow_sync() && c_at_tb != 0 && c_at_gd != 0 &&
 	      !(c_added_to_tb == 0 && c_added_to_gd == 0)) {

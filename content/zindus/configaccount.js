@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.33 2009-10-18 22:40:20 cvsuser Exp $
+// $Id: configaccount.js,v 1.34 2009-11-09 03:54:41 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -86,8 +86,9 @@ ConfigAccount.prototype = {
 				delete this.m_account_keys[account.unique_key()];
 		}
 
-		if (!preference("system.as_developer_mode", 'bool')) // TODO enable gr-as-ab in the UI soon (but not yet)!
-			xulSetAttribute('hidden', true, "ca-gd-gr-as-ab-group");
+		// TODO remove this
+		// if (!preference("system.as_developer_mode", 'bool'))
+		//	xulSetAttribute('hidden', true, "ca-gd-gr-as-ab-group");
 
 		this.m_logger.debug("onLoad: m_account_keys: " + aToString(this.m_account_keys) +
 		                    " m_payload_caller.m_format: " + this.m_payload_caller.m_format);
