@@ -1,0 +1,54 @@
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.mo.menuitem.accesskey "z">
+<!ENTITY zindus.sb.settings.label "Setari">
+<!ENTITY zindus.ca.account.type.label "Sincronizează Cu">
+<!ENTITY zindus.ca.group.login.details.label "Detalii Conectare">
+<!ENTITY zindus.ca.group.pap.label "Pentru acest cont">
+<!ENTITY zindus.ca.url.description.value "Tastați url-ul care îl folosiți pentru conectare pe server <html:br></html>exemple: https://mymail.exemple.com">
+<!ENTITY zindus.ca.url.label "Url Server:">
+<!ENTITY zindus.ca.username.description.value "Pastați adresa de email si parola folosite pentru conectare.">
+<!ENTITY zindus.ca.username.label "Adresă Email:">
+<!ENTITY zindus.ca.password.label "Parolă:">
+<!ENTITY zindus.ca.test.connection.label "Test Conecsiune">
+<!ENTITY zindus.ca.test.connection.accesskey "T">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Registru Adrese Personal">
+<!ENTITY zindus.ca.zimbra.gal.label "Listă de Adrese Globala(LAG):">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Da">
+<!ENTITY zindus.ca.zimbra.gal.no.label "Nu">
+<!ENTITY zindus.cs.title "Setări Configurare Zindus">
+<!ENTITY zindus.cs.buttonlabelextra2 "Ajutor">
+<!ENTITY zindus.cs.account.add.label "Adaugă">
+<!ENTITY zindus.cs.account.add.accesskey "A">
+<!ENTITY zindus.cs.account.edit.label "Editare">
+<!ENTITY zindus.cs.account.edit.accesskey "E">
+<!ENTITY zindus.cs.account.delete.label "Șterge">
+<!ENTITY zindus.cs.account.delete.accesskey "D">
+<!ENTITY zindus.cs.account.email.label "Adresă Email">
+<!ENTITY zindus.cs.account.addressbook.label "Registru Adrese">
+<!ENTITY zindus.cs.general.settings.label "Setari">
+<!ENTITY zindus.cs.general.actions.label "Actiuni">
+<!ENTITY zindus.cs.general.auto.sync.label "Sincronizare automată">
+<!ENTITY zindus.cs.general.verbose.logging.label "Conectare detaliata">
+<!ENTITY zindus.cs.general.button.sync.now.label "Sincronizare Acum">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.reset.label "Resetare">
+<!ENTITY zindus.cs.general.button.reset.accesskey "R">
+<!ENTITY zindus.cs.general.button.timer.label "Timp Scurs">
+<!ENTITY zindus.cs.general.button.test.harness.label "Hamurii Testare">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Setări Avansate Google">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.gr.title "Violare a regulilor Contacte Google">
+<!ENTITY zindus.gr.button.accept.label "Confirmă">
+<!ENTITY zindus.gr.button.skip.label "Sari peste">
+<!ENTITY zindus.gr.column.location.label "Locatie">
+<!ENTITY zindus.gr.column.displayname.label "NumeAfișat">
+<!ENTITY zindus.gr.column.email.label "Email">
+<!ENTITY zindus.gr.column.summary.label "Diferențe">
+<!ENTITY zindus.cg.title "Zindus Setări Avansate Google">
+<!ENTITY zindus.cg.postal.caption.label "Câmpuri Adresă Poștală">
+<!ENTITY zindus.cg.postal.false.label "Ne sincronizate (recomandat)">
+<!ENTITY zindus.cg.postal.true.label "Câmpurile din Thunderbird sunt reprezentate ca xml în Google">
+<!ENTITY zindus.cg.rule.caption.label "Cum sunt rezolvate violarile regulile Contacte Google">
+<!ENTITY zindus.cg.rule.ask.me.label "întreabă-mă">
+<!ENTITY zindus.cg.rule.dont.ask.label "Nu mă întreba - șterge și repară contactele ce violează regulile">
+<!ENTITY zindus.sw.title "Sincronizare Zindus">
