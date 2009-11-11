@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.232 2009-11-09 03:54:41 cvsuser Exp $
+// $Id: syncfsm.js,v 1.233 2009-11-11 14:38:14 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -303,7 +303,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 	else if (!preference(MozillaPreferences.AS_ALLOW_PRE_RELEASE, 'bool') && String(navigator.userAgent).match(/pre$/))
 	{
 		this.state.stopFailCode = 'failon.no.tbpre';
-		this.state.stopFailArg  = [ url('roadmap-thunderbird-3') ];
+		this.state.stopFailArg  = [ url('thunderbird-3') ];
 		nextEvent = 'evLackIntegrity';
 	}
 	else if (sfcd.is_first_in_chain() && this.testForAccountsIntegrity())
@@ -6076,9 +6076,7 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	           " c_at_gd: " + c_at_gd + " c_to_be_deleted_gd: " + c_to_be_deleted_gd +
 	           " c_at_tb: " + c_at_tb + " c_to_be_deleted_tb: " + c_to_be_deleted_tb);
 
-	let slow_sync_txt  = stringBundleString("text.slow.sync");
-	let slow_sync_html = "<a href='" + url('slow-sync') + "'>" + slow_sync_txt + "</a>";
-	let slow_sync_info = stringBundleString("text.more.information.on", [ slow_sync_html ]);
+	let more_info      = "<a href='" + url('slow-sync') + "'>" + stringBundleString("text.more.information.on.slow.sync") + "</a>";
 	let txt_tb         = AppInfo.app_name(AppInfo.firstcap);
 	let txt_gd         = stringBundleString("brand.google");
 
@@ -6090,7 +6088,7 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 				nextEvent  = (dlg.button == 'accept') ? 'evNext' : 'evCancel';
 
 				if (dlg.button != 'accept')
-					UserPrompt.show(stringBundleString("up.confirm.erase.2", [ slow_sync_txt, slow_sync_info ]));
+					UserPrompt.show(stringBundleString("up.confirm.erase.2", [ more_info ]));
 			}
 			else
 				nextEvent = 'evCancel';
@@ -6115,7 +6113,7 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	if (this.state.m_is_attended && is_show_again && this.is_slow_sync() && c_at_tb != 0 && c_at_gd != 0 &&
 	      !(c_added_to_tb == 0 && c_added_to_gd == 0)) {
 		let msg    = stringBundleString("up.slow.sync", [
-		                 txt_tb, txt_gd, c_added_to_tb, c_added_to_gd, c_at_gd + c_added_to_gd, slow_sync_info ]);
+		                 txt_tb, txt_gd, c_added_to_tb, c_added_to_gd, c_at_gd + c_added_to_gd, more_info ]);
 		let dlg    = UserPrompt.show(msg, {'buttons' : "accept,cancel", 'show_again' : true });
 		nextEvent  = (dlg.button == 'accept') ? 'evNext' : 'evCancel';
 

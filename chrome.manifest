@@ -11,6 +11,12 @@ locale  zindus       nl-NL            locale/nl-NL/zindus/
 locale  zindus       pt-BR            locale/pt-BR/zindus/
 locale  zindus       uk-UA            locale/uk-UA/zindus/
 
+# incomplete translations here for babelzilla
+# locale  zindus       pt-PT            locale/pt-PT/zindus/
+# locale  zindus       ro-RO            locale/ro-RO/zindus/
+# locale  zindus       sk-SK            locale/sk-SK/zindus/
+# locale  zindus       tr-TR            locale/tr-TR/zindus/
+
 skin    zindus       classic/1.0      skin/classic/zindus/
 
 overlay chrome://messenger/content/mailWindowOverlay.xul           chrome://zindus/content/mailwindowoverlay.xul

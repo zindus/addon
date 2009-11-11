@@ -86,24 +86,38 @@
 					<vbox id="ca-gd-vbox" pack="center" >
 						<groupbox>
 							<caption label="&zindus.ca.google.sync.with.label;" />
+							<hbox>
+							<vbox>
 							<radiogroup id="ca-gd-syncwith-radiogroup" orient="horizontal" >
 								<radio id="ca-gd-syncwith-pab" label="&zindus.ca.google.sync.with.pab.label;" selected="true" class="zindus-gd-account-grid" />
 								<radio id="ca-gd-syncwith-zg" style="min-width:20em"   />
 							</radiogroup>
+							</vbox>
+							<spacer flex="4"/> 
+							<description id="ca-gd-syncwith-help" xmlns:html="http://www.w3.org/1999/xhtml" />
+							</hbox>
 						</groupbox>
 						<groupbox>
 							<caption label="&zindus.ca.google.suggested.contacts.label;" />
+							<hbox>
 							<radiogroup id="ca-gd-suggested-radiogroup" orient="horizontal" >
 								<radio id="ca-gd-suggested-include" label="&zindus.ca.google.suggested.include.label;" selected="true" class="zindus-gd-account-grid" />
 								<radio id="ca-gd-suggested-ignore" label="&zindus.ca.google.suggested.ignore.label;" />
 							</radiogroup>
+							<spacer flex="4"/> 
+							<description id="ca-gd-suggested-help" xmlns:html="http://www.w3.org/1999/xhtml" />
+							</hbox>
 						</groupbox>
 						<groupbox id="ca-gd-gr-as-ab-group">
-							<caption id="ca-gd-gr-as-ab-caption" label="&zindus.ca.google.group.as.ab.label;" />
+							<caption id="ca-gd-gr-as-ab-caption" />
+							<hbox>
 							<radiogroup id="ca-gd-gr-as-ab-radiogroup" orient="horizontal" >
 								<radio id="ca-gd-gr-as-ab-no" label="&zindus.ca.zimbra.gal.no.label;" selected="true" class="zindus-gd-account-grid" />
 								<radio id="ca-gd-gr-as-ab-yes" label="&zindus.ca.zimbra.gal.yes.label;" />
 							</radiogroup>
+							<spacer flex="4"/> 
+							<description id="ca-gd-gr-as-ab-help" xmlns:html="http://www.w3.org/1999/xhtml" />
+							</hbox>
 						</groupbox>
 					</vbox>
 				</vbox>

@@ -16,7 +16,6 @@
 <!ENTITY zindus.ca.google.suggested.contacts.label      "Kontakty navržené Googlem">
 <!ENTITY zindus.ca.google.suggested.include.label       "Zahrnout">
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorovat">
-<!ENTITY zindus.ca.google.group.as.ab.label             "Sync Google Groups with Thunderbird addressbooks">
 <!ENTITY zindus.ca.zimbra.gal.label "Globální kontaky">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Ano">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Ne">

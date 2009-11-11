@@ -16,7 +16,6 @@
 <!ENTITY zindus.ca.google.suggested.contacts.label      "﻿Google Рекомендовані Контакти">
 <!ENTITY zindus.ca.google.suggested.include.label       "Включити">
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ігнорувати">
-<!ENTITY zindus.ca.google.group.as.ab.label             "Sync Google Groups with Thunderbird addressbooks">
 <!ENTITY zindus.ca.zimbra.gal.label "Глобальний Список Адрес (GAL):">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Так">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Ні">

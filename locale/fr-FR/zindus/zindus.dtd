@@ -17,7 +17,6 @@
 <!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggestions Contacts">
 <!ENTITY zindus.ca.google.suggested.include.label       "Inclure">
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorer">
-<!ENTITY zindus.ca.google.group.as.ab.label             "Sync Google Groups with Thunderbird addressbooks">
 <!ENTITY zindus.ca.zimbra.gal.label "Global Address List (GAL) :">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Oui">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Non">
@@ -52,4 +51,4 @@
 <!ENTITY zindus.cg.rule.ask.me.label "Me demander">
 <!ENTITY zindus.cg.rule.dont.ask.label "Ne pas me demander / supprimer les contacts pour éviter la violation de règles">
 <!ENTITY zindus.sw.title "Synchronisation Zindus">
-<!ENTITY zindus.up.show.again.label                     "Show this dialog next time">
+<!ENTITY zindus.up.show.again.label "Show this dialog next time">

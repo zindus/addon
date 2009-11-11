@@ -1,0 +1,54 @@
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.mo.menuitem.accesskey "z">
+<!ENTITY zindus.sb.settings.label "Ayarlar">
+<!ENTITY zindus.ca.account.type.label "İle Eşitle">
+<!ENTITY zindus.ca.group.login.details.label "Giriş Detayları">
+<!ENTITY zindus.ca.group.pap.label "Bu hesap için">
+<!ENTITY zindus.ca.url.description.value "Sunucuya girmek için kullandığınız adresi girin.<html:br/>example: https://mymail.example.com">
+<!ENTITY zindus.ca.url.label "Sunucu Adresi:">
+<!ENTITY zindus.ca.username.description.value "Giriş için kullandığınız e-posta adresleri ve parolaları girin.">
+<!ENTITY zindus.ca.username.label "E-posta Adresi:">
+<!ENTITY zindus.ca.password.label "Parola:">
+<!ENTITY zindus.ca.test.connection.label "Test Bağlantısı">
+<!ENTITY zindus.ca.test.connection.accesskey "T">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Kişisel Adres Defteri">
+<!ENTITY zindus.ca.zimbra.gal.label "Evrensel Adres Listesi (GAL)">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Evet">
+<!ENTITY zindus.ca.zimbra.gal.no.label "Hayır">
+<!ENTITY zindus.cs.title "Zindus Yapılandırma Ayarları">
+<!ENTITY zindus.cs.buttonlabelextra2 "Yardım">
+<!ENTITY zindus.cs.account.add.label "Ekle">
+<!ENTITY zindus.cs.account.add.accesskey "A">
+<!ENTITY zindus.cs.account.edit.label "Düzenle">
+<!ENTITY zindus.cs.account.edit.accesskey "E">
+<!ENTITY zindus.cs.account.delete.label "Sil">
+<!ENTITY zindus.cs.account.delete.accesskey "D">
+<!ENTITY zindus.cs.account.email.label "E-posta Adresi:">
+<!ENTITY zindus.cs.account.addressbook.label "Adres Defteri">
+<!ENTITY zindus.cs.general.settings.label "Ayarlar">
+<!ENTITY zindus.cs.general.actions.label "Eylemler">
+<!ENTITY zindus.cs.general.auto.sync.label "Otomatik Eşitle">
+<!ENTITY zindus.cs.general.verbose.logging.label "Gereksiz giriş">
+<!ENTITY zindus.cs.general.button.sync.now.label "Şimdi Eşitle">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.reset.label "Yeniden Başlat">
+<!ENTITY zindus.cs.general.button.reset.accesskey "R">
+<!ENTITY zindus.cs.general.button.timer.label "Zamanlayıcıyı Çalıştır">
+<!ENTITY zindus.cs.general.button.test.harness.label "Test Zorlukları">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Gelişmiş Google Ayarları">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.gr.title "Google Kişileri kural ihlali">
+<!ENTITY zindus.gr.button.accept.label "Onayla">
+<!ENTITY zindus.gr.button.skip.label "Geç">
+<!ENTITY zindus.gr.column.location.label "Konum">
+<!ENTITY zindus.gr.column.displayname.label "Görünen İsim">
+<!ENTITY zindus.gr.column.email.label "E-posta">
+<!ENTITY zindus.gr.column.summary.label "Farklılıklar">
+<!ENTITY zindus.cg.title "Zindus Gelişmiş Google Ayarları">
+<!ENTITY zindus.cg.postal.caption.label "Posta Adresi Alanları">
+<!ENTITY zindus.cg.postal.false.label "Eşitlenmedi(tavsiye edilen)">
+<!ENTITY zindus.cg.postal.true.label "Thundebird alanları Google'da xml olarak gösteriliyor">
+<!ENTITY zindus.cg.rule.caption.label "Google Kişileri kural ihlalleri ile nasıl başa çıkılıyor">
+<!ENTITY zindus.cg.rule.ask.me.label "Bana sor">
+<!ENTITY zindus.cg.rule.dont.ask.label "Bana sorma-ihlalleri gidermek için bağlantıları sil">
+<!ENTITY zindus.sw.title "Zindus Eşitleme">

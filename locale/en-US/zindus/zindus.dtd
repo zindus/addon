@@ -21,7 +21,6 @@
 <!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggested Contacts">
 <!ENTITY zindus.ca.google.suggested.include.label       "Include">
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ignore">
-<!ENTITY zindus.ca.google.group.as.ab.label             "Sync Google Groups with Thunderbird addressbooks">
 <!ENTITY zindus.ca.zimbra.gal.label                     "Global Address List (GAL): ">
 <!ENTITY zindus.ca.zimbra.gal.yes.label                 "Yes">
 <!ENTITY zindus.ca.zimbra.gal.no.label                  "No">
@@ -71,53 +70,3 @@
 
 <!-- User Prompt -->
 <!ENTITY zindus.up.show.again.label                     "Show this dialog next time">
-
-<!-- Contact Sharing -->
-<!ENTITY zindus.cw.title                                "Zindus Setup">
-<!ENTITY zindus.cw.username.label                       "Desired username:">
-<!ENTITY zindus.cw.username.hint.label                  "Your unique name on Zindus Share">
-<!ENTITY zindus.cw.email.label                          "Your email address:">
-<!ENTITY zindus.cw.email.hint.label                     "In case you forget something">
-<!ENTITY zindus.cw.cn.label                             "Your name:">
-<!ENTITY zindus.cw.cn.hint.label                        "People sharing with you see your name:">
-<!ENTITY zindus.cw.password.label                       "Password:">
-<!ENTITY zindus.cw.password.hint.label                  "Minimum of 6 characters long.">
-<!ENTITY zindus.cw.password.reenter.label               "Re-enter password:">
-<!ENTITY zindus.cw.captcha.label                        "Type the characters you see in the image below:">
-<!ENTITY zindus.cw.captcha.reload.text                  "Reload">
-<!ENTITY zindus.cw.captcha.hint.label                   "Letters are not case-sensitive, spaces are optional.">
-<!ENTITY zindus.cw.try.again.text                       "Try again">
-<!ENTITY zindus.cw.signup.page.1.label                  "Zindus Share Signup (page 1 of 3)">
-<!ENTITY zindus.cw.signup.page.2.label                  "Zindus Share Signup (page 2 of 3)">
-<!ENTITY zindus.cw.signup.page.3.label                  "Finished!">
-<!ENTITY zindus.cw.signup.will.create.label             "Continuing past this page will create your account. ">
-<!ENTITY zindus.cw.signup.tos.text                      "<html:strong > The Zindus Share Service is made available to you subject to terms of services, which contain certain restrictions, disclaimers of warranty, and limitations of liability. The full set of terms may be found <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;);'> here </html:a>.</html:strong>">
-<!ENTITY zindus.cw.signup.tos.agreed.label              "I have read and agreed to the <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;)'>Terms of Service</html:a>">
-<!ENTITY zindus.cw.signup.finished.1.label              "Congratulations, your account is created!
-	<html:br/> <html:br/>
-	We've sent you an email to confirm your email address.
-	<html:br/> <html:br/>
-	Enjoy!
-	">
-<!ENTITY zindus.cw.signup.finished.2.label              "Sync on finish">
-
-<!ENTITY zindus.ss.overview.label                    "Zindus Share is a experimental online service from Toolware Pty Ltd.
-	<html:br/><html:br/>
-	Using Zindus Share you can:
-	<html:ul>
-	<html:li>share selected contacts with other Thunderbird users</html:li>
-	<html:li>sync contacts between Thunderbird on different computers</html:li>
-	<html:li>retrieve deleted contacts from an online Trash addressbook</html:li>
-	</html:ul> <html:br/> <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-faq&apos;)'> More Information.</html:a>">
-
-<!ENTITY zindus.ss.about.service.caption.label       "About Zindus Share">
-<!ENTITY zindus.ss.signup.button.label               "Sign Up - it's free and easy!">
-<!ENTITY zindus.ss.signup.button.accesskey            "S">
-
-<!ENTITY zindus.ss.shares.caption.label              "Shares">
-<!ENTITY zindus.ss.tree.col.email.label              "Address Book / email">
-<!ENTITY zindus.ss.tree.col.cn.label                 "name">
-<!ENTITY zindus.ss.tree.col.ro.label                 "r/o">
-<!ENTITY zindus.ss.tree.col.rw.label                 "r/w">
-<!ENTITY zindus.ss.tree.col.ro.tooltip               "read-only">
-<!ENTITY zindus.ss.tree.col.rw.tooltip               "read-write">

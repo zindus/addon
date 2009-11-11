@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.64 2009-10-17 09:16:03 cvsuser Exp $
+// $Id: util.js,v 1.65 2009-11-11 14:38:14 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1054,13 +1054,16 @@ function url(key)
 	var ret;
 	switch(key)
 	{
-		case 'what-is-soapURL':       ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
-		case 'faq-thunderbird':       ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
-		case 'roadmap-thunderbird-3': ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
-		case 'share-tos':             ret = 'http://www.zindus.com/service/tos.html';                            break;
-		case 'share-faq':             ret = 'http://www.zindus.com/faq-share';                                   break;
-		case 'google-bug-997':        ret = 'http://zindus.com/i/google-bug-997/';                               break;
-		case 'slow-sync':             ret = 'http://zindus.com/i/slow-sync';                                     break;
+		case 'what-is-soapURL':    ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
+		case 'faq-thunderbird':    ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
+		case 'thunderbird-3':      ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
+		case 'share-tos':          ret = 'http://www.zindus.com/service/tos.html';                            break;
+		case 'share-faq':          ret = 'http://www.zindus.com/faq-share';                                   break;
+		case 'google-bug-997':     ret = 'http://zindus.com/i/google-bug-997/';                               break;
+		case 'slow-sync':          ret = 'http://zindus.com/i/slow-sync';                                     break;
+		case 'gr-as-ab':           ret = 'http://www.zindus.com/blog/2009/11/09/sync-google-groups-with-thunderbird-addressbooks/'; break;
+		case 'suggested-contacts': ret = 'http://www.zindus.com/blog/2009/01/19/google-suggested-contacts-include-or-ignore/';      break;
+		case 'google-what-synced': ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized/';                 break;
 		default: zinAssertAndLog(false, key);
 	}
 
