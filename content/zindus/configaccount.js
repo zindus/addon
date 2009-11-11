@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.35 2009-11-11 14:38:14 cvsuser Exp $
+// $Id: configaccount.js,v 1.36 2009-11-11 14:51:26 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -213,7 +213,9 @@ ConfigAccount.prototype = {
 		var account = this.m_payload_caller.m_account;
 		var self    = this;
 
-		function help(key) { return '<a href="' + url(key) + '">' + stringBundleString("text.help") + '</a>'; }
+		function help(key) {
+			return '<a style="color:blue; text-decoration:underline" href="' + url(key) + '">' + stringBundleString("text.help") + '</a>';
+		}
 
 		dId("ca-format-google").label       = stringBundleString("brand.google");
 		dId("ca-format-zimbra").label       = stringBundleString("brand.zimbra");
