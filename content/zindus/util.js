@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.66 2009-11-12 08:37:48 cvsuser Exp $
+// $Id: util.js,v 1.67 2009-11-12 14:49:12 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1052,22 +1052,30 @@ function gdAdjustHttpHttps(url)
 function url(key)
 {
 	var ret;
-	switch(key)
-	{
-		case 'what-is-soapURL':    ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
-		case 'faq-thunderbird':    ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
-		case 'thunderbird-3':      ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
-		case 'share-tos':          ret = 'http://www.zindus.com/service/tos.html';                            break;
-		case 'share-faq':          ret = 'http://www.zindus.com/faq-share';                                   break;
-		case 'google-bug-997':     ret = 'http://zindus.com/i/google-bug-997/';                               break;
-		case 'slow-sync':          ret = 'http://zindus.com/i/slow-sync';                                     break;
-		case 'gr-as-ab':           ret = 'http://www.zindus.com/blog/2009/11/09/sync-google-groups-with-thunderbird-addressbooks/'; break;
-		case 'suggested-contacts': ret = 'http://www.zindus.com/blog/2009/01/19/google-suggested-contacts-include-or-ignore/';      break;
-		case 'google-what-synced': ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized';                  break;
-		default: zinAssertAndLog(false, key);
+	switch(key) {
+	case 'what-is-soapURL':     ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
+	case 'faq-thunderbird':     ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
+	case 'thunderbird-3':       ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
+	case 'share-tos':           ret = 'http://www.zindus.com/service/tos.html';                            break;
+	case 'share-faq':           ret = 'http://www.zindus.com/faq-share';                                   break;
+	case 'google-bug-997':      ret = 'http://zindus.com/i/google-bug-997/';                               break;
+	case 'slow-sync':           ret = 'http://zindus.com/i/slow-sync';                                     break;
+	case 'gr-as-ab':            ret = 'http://www.zindus.com/blog/2009/11/09/sync-google-groups-with-thunderbird-addressbooks/';    break;
+	case 'suggested-contacts':  ret = 'http://www.zindus.com/blog/2009/01/19/google-suggested-contacts-include-or-ignore/';         break;
+	case 'google-what-synced':  ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized';                     break;
+	case 'google-postal-xml':   ret = 'http://www.zindus.com/blog/2008/06/17/thunderbird-google-postal-address-sync-part-two/';     break;
+	case 'google-stay-in-sync': ret = 'http://www.zindus.com/blog/2008/10/06/the-google-thunderbird-address-book-staying-in-sync/'; break;
+	default: zinAssertAndLog(false, key);
 	}
 
 	return ret;
+}
+
+function help_url(key) {
+	return help_href(url(key));
+}
+function help_href(href) {
+	return '<a style="color:blue; text-decoration:underline" href="' + href + '">' + stringBundleString("text.help") + '</a>';
 }
 
 // Not all Unicode characters are valid XML Characters - some characters are excluded.  See

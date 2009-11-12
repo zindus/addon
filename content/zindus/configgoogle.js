@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configgoogle.js,v 1.6 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: configgoogle.js,v 1.7 2009-11-12 14:49:11 cvsuser Exp $
 
 function ConfigGd()
 {
@@ -55,11 +55,8 @@ ConfigGd.prototype.onAccept = function()
 
 ConfigGd.prototype.initialiseView = function()
 {
-	xulSetHtml('cgd-more-information-on-postal', stringBundleString("gr.more.information", [
-			    'http://www.zindus.com/blog/2008/06/17/thunderbird-google-postal-address-sync-part-two/' ]) );
-
-	xulSetHtml('cgd-more-information-on-rules', stringBundleString("gr.more.information", [
-			    'http://www.zindus.com/blog/2008/10/06/the-google-thunderbird-address-book-staying-in-sync' ]) );
+	xulSetHtml('cgd-help-postal', help_url('google-postal-xml'));
+	xulSetHtml('cgd-help-rules',  help_url('google-stay-in-sync'));
 
 	var a = this.m_map;
 	for (var k in a)

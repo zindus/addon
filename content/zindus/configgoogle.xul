@@ -51,7 +51,7 @@
 			<radio id="cgd-postal-true"  label="&zindus.cg.postal.true.label;"  />
 		</radiogroup>
 
-		<description id="cgd-more-information-on-postal" />
+		<description id="cgd-help-postal" />
 	</groupbox>
 	<groupbox pack="center" >
 		<caption label="&zindus.cg.rule.caption.label;" />
@@ -60,6 +60,6 @@
 			<radio id="cgd-conflict-dont-ask" label="&zindus.cg.rule.dont.ask.label;" />
 		</radiogroup>
 
-		<description id="cgd-more-information-on-rules" />
+		<description id="cgd-help-rules" />
 	</groupbox>
 </dialog>

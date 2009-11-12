@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.36 2009-11-11 14:51:26 cvsuser Exp $
+// $Id: configaccount.js,v 1.37 2009-11-12 14:49:11 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -213,19 +213,15 @@ ConfigAccount.prototype = {
 		var account = this.m_payload_caller.m_account;
 		var self    = this;
 
-		function help(key) {
-			return '<a style="color:blue; text-decoration:underline" href="' + url(key) + '">' + stringBundleString("text.help") + '</a>';
-		}
-
 		dId("ca-format-google").label       = stringBundleString("brand.google");
 		dId("ca-format-zimbra").label       = stringBundleString("brand.zimbra");
 		dId("ca-gd-gr-as-ab-caption").label = stringBundleString("ca.gd.group.as.ab", [ AppInfo.app_name(AppInfo.firstcap) ]);
 		dId("ca-zm-gal-if-fewer").label     = stringBundleString("cs.general.zm.gal.if.fewer",
 		                                          [ preference(MozillaPreferences.ZM_SYNC_GAL_IF_FEWER, 'int' ) ]);
 
-		xulSetHtml("ca-gd-syncwith-help",  help('google-what-synced'));
-		xulSetHtml("ca-gd-suggested-help", help('suggested-contacts'));
-		xulSetHtml("ca-gd-gr-as-ab-help",  help('gr-as-ab'));
+		xulSetHtml("ca-gd-syncwith-help",  help_url('google-what-synced'));
+		xulSetHtml("ca-gd-suggested-help", help_url('suggested-contacts'));
+		xulSetHtml("ca-gd-gr-as-ab-help",  help_url('gr-as-ab'));
 
 		function initialise_elements(account) {
 			with (ConfigAccountStatic) {

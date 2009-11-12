@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.233 2009-11-11 14:38:14 cvsuser Exp $
+// $Id: syncfsm.js,v 1.234 2009-11-12 14:49:11 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6076,9 +6076,9 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	           " c_at_gd: " + c_at_gd + " c_to_be_deleted_gd: " + c_to_be_deleted_gd +
 	           " c_at_tb: " + c_at_tb + " c_to_be_deleted_tb: " + c_to_be_deleted_tb);
 
-	let more_info      = "<a href='" + url('slow-sync') + "'>" + stringBundleString("text.more.information.on.slow.sync") + "</a>";
-	let txt_tb         = AppInfo.app_name(AppInfo.firstcap);
-	let txt_gd         = stringBundleString("brand.google");
+	let more_info = "<a href='" + url('slow-sync') + "'>" + stringBundleString("text.more.information.on.slow.sync") + "</a>";
+	let txt_tb    = AppInfo.app_name(AppInfo.firstcap);
+	let txt_gd    = stringBundleString("brand.google");
 
 	if (is_confirm_on_erase) {
 		function do_cancel(string_arg) {
