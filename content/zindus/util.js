@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.65 2009-11-11 14:38:14 cvsuser Exp $
+// $Id: util.js,v 1.66 2009-11-12 08:37:48 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1063,7 +1063,7 @@ function url(key)
 		case 'slow-sync':          ret = 'http://zindus.com/i/slow-sync';                                     break;
 		case 'gr-as-ab':           ret = 'http://www.zindus.com/blog/2009/11/09/sync-google-groups-with-thunderbird-addressbooks/'; break;
 		case 'suggested-contacts': ret = 'http://www.zindus.com/blog/2009/01/19/google-suggested-contacts-include-or-ignore/';      break;
-		case 'google-what-synced': ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized/';                 break;
+		case 'google-what-synced': ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized';                  break;
 		default: zinAssertAndLog(false, key);
 	}
 
