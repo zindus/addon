@@ -1,53 +1,52 @@
-<!ENTITY zindus.mo.menuitem.label "Zindus">
-<!ENTITY zindus.mo.menuitem.accesskey "Z">
-<!ENTITY zindus.sb.settings.label "Налаштування">
 <!ENTITY zindus.ca.account.type.label "Синхронізувати З">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "﻿Google Рекомендовані Контакти">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Ігнорувати">
+<!ENTITY zindus.ca.google.suggested.include.label       "Включити">
+<!ENTITY zindus.ca.google.sync.with.label "Синхронізувати контакти Google з">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Персональна Адресна Книжка">
 <!ENTITY zindus.ca.group.login.details.label "Деталі Облікового запису">
 <!ENTITY zindus.ca.group.pap.label "Для цього облікового запису">
+<!ENTITY zindus.ca.password.label "Пароль:">
+<!ENTITY zindus.ca.test.connection.accesskey "T">
+<!ENTITY zindus.ca.test.connection.label "Тест З&apos;єднання">
 <!ENTITY zindus.ca.url.description.value "Введіть url, який Ви використовуєте для входу на сервер.<html:br/>приклад: https://mymail.example.com">
 <!ENTITY zindus.ca.url.label "Url серверу">
 <!ENTITY zindus.ca.username.description.value "Введіть ел. поштову адресу та пароль який Ви використовуєте для входу.">
 <!ENTITY zindus.ca.username.label "Ел. поштова адреса:">
-<!ENTITY zindus.ca.password.label "Пароль:">
-<!ENTITY zindus.ca.test.connection.label "Тест З&apos;єднання">
-<!ENTITY zindus.ca.test.connection.accesskey "T">
-<!ENTITY zindus.ca.google.sync.with.pab.label "Персональна Адресна Книжка">
-<!ENTITY zindus.ca.google.sync.with.label "Синхронізувати контакти Google з">
-<!ENTITY zindus.ca.google.suggested.contacts.label      "﻿Google Рекомендовані Контакти">
-<!ENTITY zindus.ca.google.suggested.include.label       "Включити">
-<!ENTITY zindus.ca.google.suggested.ignore.label        "Ігнорувати">
 <!ENTITY zindus.ca.zimbra.gal.label "Глобальний Список Адрес (GAL):">
-<!ENTITY zindus.ca.zimbra.gal.yes.label "Так">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Ні">
-<!ENTITY zindus.cs.title "Zindus Налаштування Конфігурації">
-<!ENTITY zindus.cs.buttonlabelextra2 "Допомога">
-<!ENTITY zindus.cs.account.add.label "Додати">
-<!ENTITY zindus.cs.account.add.accesskey "A">
-<!ENTITY zindus.cs.account.edit.label "Редагувати">
-<!ENTITY zindus.cs.account.edit.accesskey "E">
-<!ENTITY zindus.cs.account.delete.label "Видалити">
-<!ENTITY zindus.cs.account.delete.accesskey "D">
-<!ENTITY zindus.cs.account.email.label "Ел. поштова адреса">
-<!ENTITY zindus.cs.account.addressbook.label "Адресна Книжка">
-<!ENTITY zindus.cs.accounts.label "Облікові записи">
-<!ENTITY zindus.cs.general.settings.label "Налаштування">
-<!ENTITY zindus.cs.general.actions.label "Дія">
-<!ENTITY zindus.cs.general.auto.sync.label "Авто Синхронізація">
-<!ENTITY zindus.cs.general.verbose.logging.label "Детальне ведення логів">
-<!ENTITY zindus.cs.general.button.sync.now.label "Синхронізувати">
-<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
-<!ENTITY zindus.cs.general.button.reset.label "Скинути">
-<!ENTITY zindus.cs.general.button.reset.accesskey "R">
-<!ENTITY zindus.cs.general.button.gd.advanced.label "Розширені Налаштування Google">
-<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
-<!ENTITY zindus.gr.title "Порушення правил Google Контакт">
-<!ENTITY zindus.gr.button.accept.label "Підтвердити">
-<!ENTITY zindus.cg.title "Zindus Розширені Налаштування Google">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Так">
 <!ENTITY zindus.cg.postal.caption.label "Поля Поштової Адреси">
 <!ENTITY zindus.cg.postal.false.label "Не синхронізовати (рекомендовано)">
 <!ENTITY zindus.cg.postal.true.label "Поля Thunderbird представляти в Google як xml">
-<!ENTITY zindus.cg.rule.caption.label "Як вирішувати порушення правил Google Контакт">
 <!ENTITY zindus.cg.rule.ask.me.label "Спитати">
+<!ENTITY zindus.cg.rule.caption.label "Як вирішувати порушення правил Google Контакт">
 <!ENTITY zindus.cg.rule.dont.ask.label "Не питати - видаляти контакти для вирішення конфлікту">
+<!ENTITY zindus.cg.title "Zindus Розширені Налаштування Google">
+<!ENTITY zindus.cs.account.add.accesskey "A">
+<!ENTITY zindus.cs.account.add.label "Додати">
+<!ENTITY zindus.cs.account.addressbook.label "Адресна Книжка">
+<!ENTITY zindus.cs.account.delete.accesskey "D">
+<!ENTITY zindus.cs.account.delete.label "Видалити">
+<!ENTITY zindus.cs.account.edit.accesskey "E">
+<!ENTITY zindus.cs.account.edit.label "Редагувати">
+<!ENTITY zindus.cs.account.email.label "Ел. поштова адреса">
+<!ENTITY zindus.cs.accounts.label "Облікові записи">
+<!ENTITY zindus.cs.buttonlabelextra2 "Допомога">
+<!ENTITY zindus.cs.general.actions.label "Дія">
+<!ENTITY zindus.cs.general.auto.sync.label "Авто Синхронізація">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Розширені Налаштування Google">
+<!ENTITY zindus.cs.general.button.reset.accesskey "R">
+<!ENTITY zindus.cs.general.button.reset.label "Скинути">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.sync.now.label "Синхронізувати">
+<!ENTITY zindus.cs.general.settings.label "Налаштування">
+<!ENTITY zindus.cs.general.verbose.logging.label "Детальне ведення логів">
+<!ENTITY zindus.cs.title "Zindus Налаштування Конфігурації">
+<!ENTITY zindus.gr.button.accept.label "Підтвердити">
+<!ENTITY zindus.gr.title "Порушення правил Google Контакт">
+<!ENTITY zindus.mo.menuitem.accesskey "Z">
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.sb.settings.label "Налаштування">
 <!ENTITY zindus.sw.title "Синхронізація Zindus">
-<!ENTITY zindus.up.show.again.label                     "Show this dialog next time">
