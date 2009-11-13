@@ -9,7 +9,7 @@
 <!ENTITY zindus.ca.password.label "Mot de passe :">
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.test.connection.label "Test de connexion">
-<!ENTITY zindus.ca.url.description.value "Entrez l'URL que vous utilisez pour vous connecter au serveur.<html:br></html>exemple : https://moncourriel.exemple.com">
+<!ENTITY zindus.ca.url.description.value "Entrez l'URL que vous utilisez pour vous connecter au serveur.<html:br/>exemple : https://moncourriel.exemple.com">
 <!ENTITY zindus.ca.url.label "URL du serveur :">
 <!ENTITY zindus.ca.username.description.value "Entrez l'adresse électronique et le mot de passe utilisés pour vous connecter.">
 <!ENTITY zindus.ca.username.label "Adresse électronique :">
