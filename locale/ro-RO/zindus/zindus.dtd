@@ -4,7 +4,7 @@
 <!ENTITY zindus.ca.account.type.label "Sincronizează Cu">
 <!ENTITY zindus.ca.group.login.details.label "Detalii Conectare">
 <!ENTITY zindus.ca.group.pap.label "Pentru acest cont">
-<!ENTITY zindus.ca.url.description.value "Tastați url-ul care îl folosiți pentru conectare pe server <html:br></html>exemple: https://mymail.exemple.com">
+<!ENTITY zindus.ca.url.description.value "Tastați url-ul care îl folosiți pentru conectare pe server <html:br/>exemple: https://mymail.exemple.com">
 <!ENTITY zindus.ca.url.label "Url Server:">
 <!ENTITY zindus.ca.username.description.value "Pastați adresa de email si parola folosite pentru conectare.">
 <!ENTITY zindus.ca.username.label "Adresă Email:">
