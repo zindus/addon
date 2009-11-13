@@ -3,7 +3,7 @@
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ігнорувати">
 <!ENTITY zindus.ca.google.suggested.include.label       "Включити">
 <!ENTITY zindus.ca.google.sync.with.label "Синхронізувати контакти Google з">
-<!ENTITY zindus.ca.google.sync.with.pab.label "Персональна Адресна Книжка">
+<!ENTITY zindus.ca.google.sync.with.pab.label                            "Îñîáèñòà àäðåñíà êíèãà">
 <!ENTITY zindus.ca.group.login.details.label "Деталі Облікового запису">
 <!ENTITY zindus.ca.group.pap.label "Для цього облікового запису">
 <!ENTITY zindus.ca.password.label "Пароль:">
@@ -50,3 +50,4 @@
 <!ENTITY zindus.mo.menuitem.label "Zindus">
 <!ENTITY zindus.sb.settings.label "Налаштування">
 <!ENTITY zindus.sw.title "Синхронізація Zindus">
+<!ENTITY zindus.up.show.again.label "Ïîêàçóâàòè öåé ä³àëîã íàñòóïíîãî ðàçó">
