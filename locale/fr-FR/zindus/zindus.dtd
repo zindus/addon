@@ -1,17 +1,17 @@
 <!ENTITY zindus.ca.account.type.label "Synchroniser avec">
-<!ENTITY zindus.ca.google.suggested.contacts.label      "Google Suggestions Contacts">
-<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorer">
-<!ENTITY zindus.ca.google.suggested.include.label       "Inclure">
-<!ENTITY zindus.ca.google.sync.with.label               "Synchroniser les contacts Google avec">
-<!ENTITY zindus.ca.google.sync.with.pab.label "Carnet d&apos;adresses personnel">
+<!ENTITY zindus.ca.google.suggested.contacts.label "Google Suggestions Contacts">
+<!ENTITY zindus.ca.google.suggested.ignore.label "Ignorer">
+<!ENTITY zindus.ca.google.suggested.include.label "Inclure">
+<!ENTITY zindus.ca.google.sync.with.label "Synchroniser les contacts Google avec">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Carnet d'adresses personnel">
 <!ENTITY zindus.ca.group.login.details.label "Détails de la connexion">
 <!ENTITY zindus.ca.group.pap.label "Pour ce compte">
 <!ENTITY zindus.ca.password.label "Mot de passe :">
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.test.connection.label "Test de connexion">
-<!ENTITY zindus.ca.url.description.value "Entrez l&apos;URL que vous utilisez pour vous connecter au serveur.
+<!ENTITY zindus.ca.url.description.value "Entrez l'URL que vous utilisez pour vous connecter au serveur.<html:br></html>exemple : https://moncourriel.exemple.com">
 <!ENTITY zindus.ca.url.label "URL du serveur :">
-<!ENTITY zindus.ca.username.description.value "Entrez l&apos;adresse électronique et le mot de passe utilisés pour vous connecter.">
+<!ENTITY zindus.ca.username.description.value "Entrez l'adresse électronique et le mot de passe utilisés pour vous connecter.">
 <!ENTITY zindus.ca.username.label "Adresse électronique :">
 <!ENTITY zindus.ca.zimbra.gal.label "Global Address List (GAL) :">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Non">
@@ -25,7 +25,7 @@
 <!ENTITY zindus.cg.title "Paramètres avancés de Zindus pour Google">
 <!ENTITY zindus.cs.account.add.accesskey "A">
 <!ENTITY zindus.cs.account.add.label "Ajouter">
-<!ENTITY zindus.cs.account.addressbook.label "Carnet d&apos;adresses">
+<!ENTITY zindus.cs.account.addressbook.label "Carnet d'adresses">
 <!ENTITY zindus.cs.account.delete.accesskey "S">
 <!ENTITY zindus.cs.account.delete.label "Supprimer">
 <!ENTITY zindus.cs.account.edit.accesskey "e">
@@ -43,6 +43,7 @@
 <!ENTITY zindus.cs.general.button.sync.now.label "Synchroniser maintenant">
 <!ENTITY zindus.cs.general.settings.label "Paramètres">
 <!ENTITY zindus.cs.general.verbose.logging.label "Journalisation détaillée">
+<!ENTITY zindus.cs.sharing.label "Partager">
 <!ENTITY zindus.cs.title "Paramètres de configuration de Zindus">
 <!ENTITY zindus.gr.button.accept.label "Confirmer">
 <!ENTITY zindus.gr.title "Violation de règle Google Contacts">
@@ -50,4 +51,4 @@
 <!ENTITY zindus.mo.menuitem.label "Zindus">
 <!ENTITY zindus.sb.settings.label "Paramètres">
 <!ENTITY zindus.sw.title "Synchronisation Zindus">
-<html:br/>exemple : https://moncourriel.exemple.com">
+<!ENTITY zindus.up.show.again.label "Afficher cette boîte la prochaine fois">
