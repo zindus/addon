@@ -3,51 +3,51 @@
 <!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorar">
 <!ENTITY zindus.ca.google.suggested.include.label       "Incluir">
 <!ENTITY zindus.ca.google.sync.with.label               "Sincronizar contactos de Google con">
-<!ENTITY zindus.ca.google.sync.with.pab.label "Axenda de Direccións Persoal">
-<!ENTITY zindus.ca.group.login.details.label "Detalles de Acceso">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Axenda de enderezos persoal">
+<!ENTITY zindus.ca.group.login.details.label "Detalles de acceso">
 <!ENTITY zindus.ca.group.pap.label "Para esta conta">
 <!ENTITY zindus.ca.password.label "Contrasinal:">
 <!ENTITY zindus.ca.test.connection.accesskey "T">
-<!ENTITY zindus.ca.test.connection.label "Test de Conexión">
-<!ENTITY zindus.ca.url.description.value "Tipo de url a empregar para acceder ó servidor<html:br/>exemplo: https://meumail.exemplo.com">
-<!ENTITY zindus.ca.url.label "Dirección do Servidor:">
-<!ENTITY zindus.ca.username.description.value "Escribe a túa dirección de email e contasinal que empregas para acceder">
-<!ENTITY zindus.ca.username.label "Dirección de Correo:">
-<!ENTITY zindus.ca.zimbra.gal.label "Lista de Direccións Global (GAL):">
+<!ENTITY zindus.ca.test.connection.label "Test de conexión">
+<!ENTITY zindus.ca.url.description.value "Tipo de URL a empregar para acceder ao servidor<html:br/>Exemplo: https://omeumail.exemplo.com">
+<!ENTITY zindus.ca.url.label "Enderezo do servidor:">
+<!ENTITY zindus.ca.username.description.value "Escriba o seu enderezo de correo electrónico e a contasinal que emprega para acceder">
+<!ENTITY zindus.ca.username.label "Enderezo de correo:">
+<!ENTITY zindus.ca.zimbra.gal.label "Lista de enderezos global (GAL):">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Non">
-<!ENTITY zindus.ca.zimbra.gal.yes.label "Si">
-<!ENTITY zindus.cg.postal.caption.label "Campos de Dirección Postal">
-<!ENTITY zindus.cg.postal.false.label "Non Sincronizado (recomendado)">
-<!ENTITY zindus.cg.postal.true.label "Os campos de Thunderbird son representados como xml en Google">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Sí">
+<!ENTITY zindus.cg.postal.caption.label "Campos de enderezo postal">
+<!ENTITY zindus.cg.postal.false.label "Non sincronizar (recomendado)">
+<!ENTITY zindus.cg.postal.true.label "Os campos propios de Thunderbird represéntanse como XML en Google">
 <!ENTITY zindus.cg.rule.ask.me.label "Preguntarme">
 <!ENTITY zindus.cg.rule.caption.label "Como son xestionadas as violacións de regras de Contactos en Google">
-<!ENTITY zindus.cg.rule.dont.ask.label "Non me preguntes - eliminar os contactos para arranxar a violación de regras">
-<!ENTITY zindus.cg.title "Configuracións Avanzadas de Google en Zindus">
-<!ENTITY zindus.cs.account.add.accesskey "A">
+<!ENTITY zindus.cg.rule.dont.ask.label "Non me pregunte - eliminar os contactos para arranxar a violación de regras">
+<!ENTITY zindus.cg.title "Configuracións avanzadas de Google en Zindus">
+<!ENTITY zindus.cs.account.add.accesskey "E">
 <!ENTITY zindus.cs.account.add.label "Engadir">
-<!ENTITY zindus.cs.account.addressbook.label "Axenda de Direccións">
+<!ENTITY zindus.cs.account.addressbook.label "Axenda de enderezos">
 <!ENTITY zindus.cs.account.delete.accesskey "D">
 <!ENTITY zindus.cs.account.delete.label "Eliminar">
 <!ENTITY zindus.cs.account.edit.accesskey "E">
 <!ENTITY zindus.cs.account.edit.label "Editar">
-<!ENTITY zindus.cs.account.email.label "Dirección de Email">
+<!ENTITY zindus.cs.account.email.label "Enderezo de Email">
 <!ENTITY zindus.cs.accounts.label "Contas">
 <!ENTITY zindus.cs.buttonlabelextra2 "Axuda">
 <!ENTITY zindus.cs.general.actions.label "Accións">
-<!ENTITY zindus.cs.general.auto.sync.label "Auto Sincronizar">
+<!ENTITY zindus.cs.general.auto.sync.label "Sincronizar automáticamente">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
-<!ENTITY zindus.cs.general.button.gd.advanced.label "Configuracións Avanzadas de Google">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Configuracións avanzadas de Google">
 <!ENTITY zindus.cs.general.button.reset.accesskey "R">
 <!ENTITY zindus.cs.general.button.reset.label "Reiniciar">
 <!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
-<!ENTITY zindus.cs.general.button.sync.now.label "Sincronizar Agora">
+<!ENTITY zindus.cs.general.button.sync.now.label "Sincronizar agora">
 <!ENTITY zindus.cs.general.settings.label "Configuracións">
 <!ENTITY zindus.cs.general.verbose.logging.label "Rexistro completo">
-<!ENTITY zindus.cs.title "Opcións de Configuracións de Zindus">
+<!ENTITY zindus.cs.title "Opcións de configuracións de Zindus">
 <!ENTITY zindus.gr.button.accept.label "Confirmar">
-<!ENTITY zindus.gr.title "Violacións de Regras dos Contactos de Google">
+<!ENTITY zindus.gr.title "Violacións de regras dos contactos de Google">
 <!ENTITY zindus.mo.menuitem.accesskey "z">
 <!ENTITY zindus.mo.menuitem.label "Zindus">
 <!ENTITY zindus.sb.settings.label "Configuracións">
 <!ENTITY zindus.sw.title "Sincronizar Zindus">
-<!ENTITY zindus.up.show.again.label                     "Mostrar este diálogo a seguinte vez">
+<!ENTITY zindus.up.show.again.label                     "Mostrar este diálogo a próxima vez">
