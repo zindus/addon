@@ -12,10 +12,13 @@ locale  zindus       pt-BR            locale/pt-BR/zindus/
 locale  zindus       uk-UA            locale/uk-UA/zindus/
 
 # incomplete translations here for babelzilla
+# locale  zindus       bg-BG            locale/bg-BG/zindus/
+# locale  zindus       mn-MN            locale/mn-MN/zindus/
 # locale  zindus       pt-PT            locale/pt-PT/zindus/
 # locale  zindus       ro-RO            locale/ro-RO/zindus/
 # locale  zindus       sk-SK            locale/sk-SK/zindus/
 # locale  zindus       tr-TR            locale/tr-TR/zindus/
+# locale  zindus       zh-CN            locale/zh-CN/zindus/
 
 skin    zindus       classic/1.0      skin/classic/zindus/
 

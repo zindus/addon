@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.7 2009-11-18 09:13:56 cvsuser Exp $
+// $Id: perlocale.js,v 1.8 2009-11-18 13:29:37 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -46,19 +46,19 @@ var PerLocaleStatic = {
 		let l      = new Array();
 		let r      = new Array();
 
-		l.push("tb.pab");               r.push(TB_PAB_FULLNAME);
-		l.push("zm.emailedcontacts");   r.push(ZM_FOLDER_EMAILED_CONTACTS);
-		l.push("gd.contacts");          r.push(ContactGoogle.eSystemGroup.Contacts);
-		l.push("gd.coworkers");         r.push(ContactGoogle.eSystemGroup.Coworkers);
-		l.push("gd.family");            r.push(ContactGoogle.eSystemGroup.Family);
-		l.push("gd.friends");           r.push(ContactGoogle.eSystemGroup.Friends);
-		l.push("gd.suggestedcontacts"); r.push(ContactGoogle.eSystemGroup.Suggested);
+		l.push("tb.pab");             r.push(TB_PAB_FULLNAME);
+		l.push("zm.emailedcontacts"); r.push(ZM_FOLDER_EMAILED_CONTACTS);
+		l.push("gd.contacts");        r.push(ContactGoogle.eSystemGroup.Contacts);
+		l.push("gd.coworkers");       r.push(ContactGoogle.eSystemGroup.Coworkers);
+		l.push("gd.family");          r.push(ContactGoogle.eSystemGroup.Family);
+		l.push("gd.friends");         r.push(ContactGoogle.eSystemGroup.Friends);
+		l.push("gd.suggested");       r.push(ContactGoogle.eSystemGroup.Suggested);
 
 		let bimap = new BiMap(l, r);
 
 		while (enm.hasMoreElements()) {
 			let elem   = enm.getNext().QueryInterface(Ci.nsIPropertyElement);
-			let a      = re.exec(elem.key);
+			let a      = re.exec(elem.key); zinAssertAndLog(a.length == 3, elem.key);
 			let locale = a[1];
 			let key    = a[2];
 			let k      = bimap.lookup(key, null);
