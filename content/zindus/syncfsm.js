@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.234 2009-11-12 14:49:11 cvsuser Exp $
+// $Id: syncfsm.js,v 1.235 2009-11-18 09:13:56 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2614,7 +2614,7 @@ SyncFsm.prototype.testForAccountsIntegrity = function()
 		this.state.stopFailCode    = 'failon.unexpected';
 		this.state.stopFailTrailer = "Syncing with more than one Zimbra account isn't supported." +
 		                             "  Suggest you remove all but one of the Zimbra accounts and try again." +
-		                             "\n\n" + stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+		                             "\n\n" + stringBundleString("text.file.bug", [ url('reporting-bugs') ]);
 	}
 	else if (index_identical)
 	{
@@ -2806,10 +2806,14 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 		for (system_group_name in ContactGoogle.eSystemGroup) {
 			[ ab_localised, uri ] = get_ab(system_group_name);
 
+			this.debug("AMHERE1: system_group_name: " + system_group_name + " ab_localised: " + ab_localised + " uri: " + uri); // TODO
+
 			if (!uri)
 				for (var old_translation in PerLocaleStatic.all_translations_of(system_group_name)) {
 					let old_localised_ab = this.state.m_folder_converter.tb_ab_name_for_gd_group("/", old_translation);
 					uri                  = this.state.m_addressbook.getAddressBookUriByName(old_localised_ab);
+
+					this.debug("AMHERE2: system_group_name: " + system_group_name + " old_localised_ab: " + old_localised_ab + " uri: " + uri); // TODO
 
 					if (uri) {
 						msg += " found: " + old_localised_ab + " uri: " + uri;
@@ -3048,7 +3052,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 											  "uri: " + uri);
 
 					this.state.stopFailCode    = 'failon.integrity.data.store.map';
-					this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) +
+					this.state.stopFailTrailer = stringBundleString("text.file.bug", [ url('reporting-bugs') ]) +
 					                             stringBundleString("status.failon.integrity.data.store.detail") +
 					                             stringBundleString("text.suggest.reset");
 				}
@@ -4995,7 +4999,7 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 	let sourceid_pr     = this.state.sourceid_pr;
 	let sourceid_tb     = this.state.sourceid_tb;
 	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
-	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
+	let id_gd_suggested = this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Suggested, 'luid_gd')
 	let ret             = new Array();
 	let gp_id;
 
@@ -5042,7 +5046,7 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 	let self            = this;
 	let a_suo_to_delete = new Array();
 	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
-	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
+	let id_gd_suggested = this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Suggested, 'luid_gd')
 	let sourceid_pr     = this.state.sourceid_pr;
 	let fn_add          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.ADD | FeedItem.TYPE_CN)); }
 	let fn_mod          = function(sourceid, bucket) { return (sourceid == sourceid_pr) && (bucket == (Suo.MOD | FeedItem.TYPE_CN)); }
@@ -5151,7 +5155,7 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 		function get_a_luid_gp_abs() {
 			// return associative array of the luids of the tb addressbooks that correspond with google groups
 			let gd_ab_name_internal = self.gdAddressbookName('internal');
-			let zfi_suggested       = SyncFsm.zfi_from_name_gd(GD_SUGGESTED);
+			let zfi_suggested       = SyncFsm.zfi_from_name_gd(ContactGoogle.eSystemGroup.Suggested);
 			let name_gd_suggested   = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi_suggested);
 			let ret                 = new Object();
 
@@ -6030,7 +6034,8 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	let is_confirm_on_erase = preference(MozillaPreferences.GD_CONFIRM_ON_ERASE, 'bool');
 	let nextEvent           = 'evNext';
 	let id_gd_pab           = this.state.gd_cc_meta.find('name', GD_PAB, 'luid_gd')
-	let id_gd_suggested     = (this.account().gd_gr_as_ab == 'true') ? this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd') : null;
+	let id_gd_suggested     = (this.account().gd_gr_as_ab == 'true') ?
+	                               this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Suggested, 'luid_gd') : null;
 	let self                = this;
 
 	function do_count(zfc, functor, format) {
@@ -7205,8 +7210,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				let l_target       = this.state.zfcGid.get(l_gid).get(sourceid_target);
 
 				let id_gd_pab         = this.state.gd_cc_meta.find('name', GD_PAB, 'luid_gd')
-				let id_gd_suggested   = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
-				let id_gd_my_contacts = this.state.gd_cc_meta.find('name', GD_MY_CONTACTS, 'luid_gd')
+				let id_gd_suggested   = this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Suggested, 'luid_gd')
+				let id_gd_my_contacts = this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Contacts,  'luid_gd')
 
 				if (l_target == id_gd_pab)
 					contact.groups = [ zfcTarget.get(id_gd_my_contacts).get(FeedItem.ATTR_GGID) ];
@@ -7848,7 +7853,7 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 		if (!result.is_consistent)
 		{
 			this.state.stopFailCode    = 'failon.integrity.data.store.out'; // this indicates a bug in our code
-			this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+			this.state.stopFailTrailer = stringBundleString("text.file.bug", [ url('reporting-bugs') ]);
 		}
 
 		if (!this.state.stopFailCode)
@@ -7857,7 +7862,7 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 				{
 					this.state.m_logger.error("Internal error: failed to process suo: " + suo.toString());
 					this.state.stopFailCode    = 'failon.integrity.data.store.out'; // this indicates a bug in our code
-					this.state.stopFailTrailer = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+					this.state.stopFailTrailer = stringBundleString("text.file.bug", [ url('reporting-bugs') ]);
 					break;
 				}
 	}
@@ -9162,7 +9167,7 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 				}
 				else {
 					is_noprefix = false; // not relevant
-					is_ignored  = (group.systemGroup() != GD_MY_CONTACTS);
+					is_ignored  = (group.systemGroup() != ContactGoogle.eSystemGroup.Contacts);
 					is_xgid     = true;
 				}
 
@@ -9235,7 +9240,7 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 				                             FeedItem.ATTR_NAME, name,
 				                             FeedItem.ATTR_MS,   1);
 
-				if (name == GD_SUGGESTED)
+				if (name == ContactGoogle.eSystemGroup.Suggested)
 					zfi.set(FeedItem.ATTR_GGSG, '1');
 
 				zfcPr.set(zfi);
@@ -9244,7 +9249,7 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 			set_zfi_for_fake_folder(GD_PAB);
 
 			if (self.account().gd_gr_as_ab == 'true')
-				set_zfi_for_fake_folder(GD_SUGGESTED);
+				set_zfi_for_fake_folder(ContactGoogle.eSystemGroup.Suggested);
 		}
 
 		functor = {
@@ -9258,7 +9263,7 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 		zfcPr.forEach(functor);
 
 		this.debug("gd_cc_meta: " + aToString(this.state.gd_cc_meta));
-		this.debug("My Contacts group id: " + this.state.gd_cc_meta.find('name', GD_MY_CONTACTS, 'luid_gd'));
+		this.debug("My Contacts group id: " + this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Contacts, 'luid_gd'));
 
 		nextEvent = 'evNext';
 	}
@@ -9578,7 +9583,7 @@ SyncFsmGd.prototype.gdciLuidsForGroups = function(zfi)
 	let a_group_all     = this.gd_groups_in_zfi(zfi, false);
 	let a_group         = this.gd_groups_in_zfi(zfi, true);
 	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
-	let id_gd_suggested = this.state.gd_cc_meta.find('name', GD_SUGGESTED, 'luid_gd')
+	let id_gd_suggested = this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Suggested, 'luid_gd')
 	let i;
 
 	// GD_PAB
@@ -9589,7 +9594,7 @@ SyncFsmGd.prototype.gdciLuidsForGroups = function(zfi)
 		  (!zfi.isPresent(FeedItem.ATTR_DEL) || zfc.isPresent(SyncFsmGd.gdci_id_from_pair(zfi.key(), id_gd_pab)))))
 			ret[id_gd_pab] = true;
 
-	// GD_SUGGESTED
+	// ContactGoogle.eSystemGroup.Suggested
 	//
 	if (self.account().gd_gr_as_ab == 'true' && a_group.length == 0 &&
 	    (!zfi.isPresent(FeedItem.ATTR_DEL) || zfc.isPresent(SyncFsmGd.gdci_id_from_pair(zfi.key(), id_gd_suggested))))

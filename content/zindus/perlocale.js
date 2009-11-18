@@ -20,22 +20,61 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.6 2009-10-01 22:30:54 cvsuser Exp $
+// $Id: perlocale.js,v 1.7 2009-11-18 09:13:56 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
-// Note - if any of the "Emailed Contacts" translations change, there will have to be code that migrates the old name to the new...
+// Note - if any of the translations change, there will have to be code that migrates the old name to the new...
 // FIXME: update for new locales as per:
 //   http://www.zimbra.com/products/languages.html
 //   http://wiki.zimbra.com/index.php?title=Translations
 //
 
 var PerLocaleStatic = {
-	m_general_useragent   : null,
-	m_translation         : new Object(),
-	m_all_translations_of : new Object(),
-	m_locale_superset     : newObjectWithKeys( "cs", "da", "de", "es", "fr", "hu", "it", "ja", "ko", "nl", "pl", "pt", "ru", "sv",
-	                                           "tr", "uk", "zh_CN", "zh_HK"), // any locale we've got any kind of translation of goes here
+	m_general_useragent    : null,
+	m_translation          : new Object(),
+	m_all_translations_of  : new Object(),
+	m_is_properties_loaded : false,
+	m_locale_superset      : new Object(),
+
+	load_properties : function() {
+		let src    = "chrome://zindus/content/perlocale.properties";
+		let sbs    = Cc["@mozilla.org/intl/stringbundle;1"].getService(Ci.nsIStringBundleService);
+		let bundle = sbs.createBundle(src);
+		let enm    = bundle.getSimpleEnumeration();
+		let re     = /^zindus\.(.+?)\.(.+?)$/; // eg: zindus.cs.tb.pab
+		let l      = new Array();
+		let r      = new Array();
+
+		l.push("tb.pab");               r.push(TB_PAB_FULLNAME);
+		l.push("zm.emailedcontacts");   r.push(ZM_FOLDER_EMAILED_CONTACTS);
+		l.push("gd.contacts");          r.push(ContactGoogle.eSystemGroup.Contacts);
+		l.push("gd.coworkers");         r.push(ContactGoogle.eSystemGroup.Coworkers);
+		l.push("gd.family");            r.push(ContactGoogle.eSystemGroup.Family);
+		l.push("gd.friends");           r.push(ContactGoogle.eSystemGroup.Friends);
+		l.push("gd.suggestedcontacts"); r.push(ContactGoogle.eSystemGroup.Suggested);
+
+		let bimap = new BiMap(l, r);
+
+		while (enm.hasMoreElements()) {
+			let elem   = enm.getNext().QueryInterface(Ci.nsIPropertyElement);
+			let a      = re.exec(elem.key);
+			let locale = a[1];
+			let key    = a[2];
+			let k      = bimap.lookup(key, null);
+
+			this.m_locale_superset[locale] = true;
+
+			logger().debug(elem.key + " AMHERE: setting m_translation: key: " + key + " lookedup: " + k + " to: " + elem.value); // TODO
+
+			if (!(k in PerLocaleStatic.m_translation))
+				PerLocaleStatic.m_translation[k] = new Object();
+
+			PerLocaleStatic.m_translation[k][locale] = elem.value;
+		}
+
+		this.m_is_properties_loaded = true;
+	},
 	general_useragent : function() {
 		if (!this.m_general_useragent) {
 			let prefs = new MozillaPreferences("general.useragent.");
@@ -48,7 +87,8 @@ var PerLocaleStatic = {
 	translation_of_locale : function(key, locale) {
 		let ret = null;
 
-		this.initialise_google_system_group_translations();
+		if (!this.m_is_properties_loaded)
+			this.load_properties();
 
 		zinAssertAndLog(key in this.m_translation, key);
 
@@ -82,79 +122,18 @@ var PerLocaleStatic = {
 	},
 	all_translations_of : function(key) {
 		if (!(key in this.m_all_translations_of)) {
+			let locale;
 			this.m_all_translations_of[key] = new Object();
 			this.m_all_translations_of[key][key] = true;
-			for (var locale in this.m_locale_superset) {
+			for (locale in this.m_locale_superset) {
 				let translation = this.translation_of_locale(key, locale);
 				if (translation)
 					this.m_all_translations_of[key][translation] = true;
 			}
 
-			logger().debug("all_translations_of: key: " + key + " returns: " + aToString(this.m_all_translations_of[key]));
+			logger().debug("all_translations_of: key: " + key + " returns: " + keysToString(this.m_all_translations_of[key]));
 		}
 
 		return this.m_all_translations_of[key];
-	},
-	initialise_google_system_group_translations : function() {
-		if (!(GD_SUGGESTED in PerLocaleStatic.m_translation)) {
-			let locale = PerLocaleStatic.general_useragent();
-
-			for (var system_group_name in ContactGoogle.eSystemGroup) {
-				PerLocaleStatic.m_translation[system_group_name] = new Object();
-
-				let key          = (system_group_name == GD_SUGGESTED) ? "suggestedcontacts" : system_group_name.toLowerCase();
-				let stringbundle = dId("zindus-stringbundle");
-				let str          = null;
-
-				try {
-					str = stringbundle.getString(APP_NAME + "." + "gd.systemgroup." + key);
-				}
-				catch (e) {
-				}
-
-				if (str && str != system_group_name) {
-					logger().debug("initialise_google_system_group_translations: set translation of key: " + key + " to: " + str);
-					PerLocaleStatic.m_translation[system_group_name][locale] = str;
-				}
-			}
-		}
 	}
 };
-
-// This list aims to be a superset of Zimbra's supported locales...
-//
-PerLocaleStatic.m_translation[ZM_FOLDER_EMAILED_CONTACTS] = {
-		da    : "Kontakter, der er sendt mail til",
-		de    : "Mailempf\u00e4nger",
-		es    : "Contactos respondidos",
-		fr    : "Personnes contact\u00e9es par mail", // Nation component removed - was fr_FR
-		it    : "Contatti usati per email",
-		ja    : "\u30e1\u30fc\u30eb\u3092\u9001\u4fe1\u3057\u305f\u9023\u7d61\u5148",
-		ko    : "\uc774\uba54\uc77c\ud55c \uc5f0\ub77d\ucc98",
-		pl    : "Kontakty e-mail",
-		pt    : "Contatos que receberam e-mail",      // Nation component removed - was pt_BR
-		ru    : "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043d\u044b\u0435 \u043f\u043e \u044d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u043d\u043e\u0439 \u043f\u043e\u0447\u0442\u0435 \u043a\u043e\u043d\u0442\u0430\u043a\u0442\u044b",
-		sv    : "E-postkontakter",
-		zh_CN : "\u7535\u5b50\u90ae\u4ef6\u8054\u7cfb\u4eba",
-		zh_HK : "\u96fb\u5b50\u90f5\u4ef6\u806f\u7d61\u4eba"
-	};
-
-PerLocaleStatic.m_translation[TB_PAB_FULLNAME] = {
-		cs    : "Osobn\u00ED kontakty",
-		da    : "Personlig adressebog",
-		de    : "Pers\u00F6nliches Adressbuch",
-		es    : "Libreta de direcciones personal",
-		fr    : "Adresses personnelles",
-		hu    : "Szem\u00E9lyes c\u00EDmjegyz\u00E9k",
-		it    : "Rubrica personale",
-		ja    : "\u500b\u4eba\u7528\u30a2\u30c9\u30ec\u30b9\u5e33",
-		ko    : "\uac1c\uc778 \uc8fc\uc18c\ub85d",
-		nl    : "Persoonlijk adresboek",
-		pl    : "Osobista ksi\u0105\u017Cka adresowa",
-		pt    : "Cat\u00E1logo pessoal",
-		ru    : "\u041B\u0438\u0447\u043D\u0430\u044F \u0430\u0434\u0440\u0435\u0441\u043D\u0430\u044F \u043A\u043D\u0438\u0433\u0430",
-		sv    : "Personlig adressbok",
-		tr    : "Ki\u015Fisel adres defteri",
-		uk    : "\u041E\u0441\u043E\u0431\u0438\u0441\u0442\u0430 \u0430\u0434\u0440\u0435\u0441\u043D\u0430 \u043A\u043D\u0438\u0433\u0430",
-		zh_CN : "\u4e2a\u4eba\u901a\u8baf\u5f55"
-	};

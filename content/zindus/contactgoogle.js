@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.29 2009-11-16 11:13:47 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.30 2009-11-18 09:13:56 cvsuser Exp $
 
 function GoogleData()
 {
@@ -153,7 +153,7 @@ function ContactGoogle(xml, mode) {
 ContactGoogle.ePostal      = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
 ContactGoogle.eTransform   = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
 ContactGoogle.eModify      = new ZinEnum( { 'kRemoveDeletedGroupMembershipInfo' : 0x01 } );
-ContactGoogle.eSystemGroup = new ZinEnum( newObjectWithKeysMatchingValues('Contacts', 'Coworkers', 'Family', 'Friends', GD_SUGGESTED) );
+ContactGoogle.eSystemGroup = new ZinEnum( newObjectWithKeysMatchingValues('Contacts', 'Coworkers', 'Family', 'Friends', 'Suggested') );
 
 function ContactGoogleProto() {}
 

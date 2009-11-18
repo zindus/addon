@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mozillapreferences.js,v 1.35 2009-11-02 22:18:38 cvsuser Exp $
+// $Id: mozillapreferences.js,v 1.36 2009-11-18 09:13:56 cvsuser Exp $
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
@@ -62,7 +62,7 @@ MozillaPreferences.getAllSystemPrefs = function()
 		MozillaPreferences.AS_TIMER_DELAY_ON_START,  'int',
 		MozillaPreferences.AS_PASSWORD_VERSION,      'char',
 		MozillaPreferences.AS_SHARE_SERICE_API_URL,  'char',
-		MozillaPreferences.AS_SHOW_DLG_SLOW_SYNC,    'bool',
+		MozillaPreferences.AS_SHOW_AGAIN_SLOW_SYNC,  'bool',
 		MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL,  'int',
 		MozillaPreferences.ZM_SYNC_GAL_IF_FEWER,     'int',
 		MozillaPreferences.ZM_SYNC_GAL_RECHECK,      'int',

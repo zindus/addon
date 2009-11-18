@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.37 2009-11-12 14:49:11 cvsuser Exp $
+// $Id: configaccount.js,v 1.38 2009-11-18 09:13:55 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -160,7 +160,7 @@ ConfigAccount.prototype = {
 					if (this.m_payload_sw.m_es.m_exit_status == null) {
 						logger().debug("ConfigAccount.onCommand: status.failon.unexpected");
 						msg = stringBundleString("status.failon.unexpected") + "\n\n" +
-						      stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+						      stringBundleString("text.file.bug", [ url('reporting-bugs') ]);
 					}
 					else
 						msg = this.m_payload_sw.m_es.asMessage("ca.auth.succeeded", "ca.auth.failed");

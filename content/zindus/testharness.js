@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.119 2009-11-04 02:38:42 cvsuser Exp $
+// $Id: testharness.js,v 1.120 2009-11-18 09:13:56 cvsuser Exp $
 
 function TestHarness()
 {
@@ -43,10 +43,11 @@ TestHarness.prototype.run = function()
 	ret = ret && this.testPreferencesHaveDefaults();
 	ret = ret && this.testStringBundleContainsContactProperties();
 
+	ret = ret && this.testStringBundle();
 	// ret = ret && this.testUserPrompt();
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
-	ret = ret && this.testSuo();
+	// ret = ret && this.testSuo();
 	// ret = ret && this.testAccount();
 	// ret = ret && this.testCrc32();
 	// ret = ret && this.testLogging();
@@ -96,6 +97,29 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testLoginManager();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
+}
+
+TestHarness.prototype.testStringBundle = function()
+{
+	let id  = "gd.systemgroup.coworkers";
+	// let id  = "brand.server";
+	// let str = bundle.GetStringFromName("zindus." + id);
+	// this.m_logger.debug("testStringBundle: " + id + ": " + str);
+	// let src    = "chrome://zindus/locale/zindus.properties";
+
+	let src    = "chrome://zindus/content/perlocale.properties";
+	let sbs    = Cc["@mozilla.org/intl/stringbundle;1"].getService(Ci.nsIStringBundleService);
+	let bundle = sbs.createBundle(src);
+	let enm    = bundle.getSimpleEnumeration();
+
+	while (enm.hasMoreElements()) {
+		let elem = enm.getNext().QueryInterface(Ci.nsIPropertyElement);
+		this.m_logger.debug("testStringBundle: key: " + elem.key + ": " + elem.value);
+		if (elem.key == "zindus.de.zm.emailedcontacts")
+			this.m_logger.debug("testStringBundle: match: " + elem.key + ": " + (elem.value == PerLocaleStatic.translation_of(ZM_FOLDER_EMAILED_CONTACTS, 'de')));
+	}
+
+	return true;
 }
 
 TestHarness.prototype.testUserPrompt = function()
@@ -2478,7 +2502,7 @@ TestHarness.prototype.tweakLuidOnCard = function()
 
 TestHarness.prototype.testExitStatusMessages = function()
 {
-	var data_store_map = stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) +
+	var data_store_map = stringBundleString("text.file.bug", [ url('reporting-bugs') ]) +
 	                     stringBundleString("status.failon.integrity.data.store.detail") +
 	                     stringBundleString("text.suggest.reset");
 
@@ -2489,9 +2513,9 @@ TestHarness.prototype.testExitStatusMessages = function()
 		'failon.integrity.zm.bad.credentials' : {},
 		'failon.integrity.gd.bad.credentials' : {},
 		'failon.integrity.data.store.in'      : { 'trailer': stringBundleString("text.suggest.reset")              },
-		'failon.integrity.data.store.out'     : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) },
+		'failon.integrity.data.store.out'     : { 'trailer': stringBundleString("text.file.bug", [ url('reporting-bugs') ]) },
 		'failon.integrity.data.store.map'     : { 'trailer': data_store_map },
-		'failon.unexpected'                   : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]) },
+		'failon.unexpected'                   : { 'trailer': stringBundleString("text.file.bug", [ url('reporting-bugs') ]) },
 		'failon.folder.name.empty'            : { },
 		'failon.folder.name.duplicate'        : { 'arg':    [ 'fred' ] },
 		'failon.folder.name.reserved'         : { 'arg':    [ 'fred' ] },
@@ -2506,7 +2530,7 @@ TestHarness.prototype.testExitStatusMessages = function()
 		                                                     [ 'fred' ]) },
 		'failon.no.xpath'                     : {},
 		'failon.no.tbpre'                     : {},
-		'failon.no.pab.2'                     : { 'trailer': stringBundleString("text.file.bug", [ BUG_REPORT_URI ]),'arg':['Thunderbird']},
+		'failon.no.pab.2'                     : { 'trailer': stringBundleString("text.file.bug", [ url('reporting-bugs') ]),'arg':['Thunderbird']},
 		'failon.multiple.ln'                  : { 'trailer': 'address book names go here' },
 		'failon.gd.forbidden'                 : {},
 		'failon.zm.empty.contact'             : { 'arg':    [ 'Joe', 'ThunderbirdX' ] },

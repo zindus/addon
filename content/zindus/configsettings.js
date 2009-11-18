@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.43 2009-10-12 22:11:19 cvsuser Exp $
+// $Id: configsettings.js,v 1.44 2009-11-18 09:13:55 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -197,7 +197,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 				{
 					logger().debug("ConfigSettings.onCommand: status.failon.unexpected");
 					msg = stringBundleString("status.failon.unexpected") + "\n\n" +
-					      stringBundleString("text.file.bug", [ BUG_REPORT_URI ]);
+					      stringBundleString("text.file.bug", [ url('reporting-bugs') ]);
 				}
 				else if (this.m_payload.m_es.m_exit_status != 0)
 				{

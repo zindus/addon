@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.67 2009-11-12 14:49:12 cvsuser Exp $
+// $Id: util.js,v 1.68 2009-11-18 09:13:56 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -34,7 +34,7 @@ function zinAssert(expr)
 		try
 		{
 			throw new Error(msg + "Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
-				            APP_NAME + " version " + APP_VERSION_NUMBER + "\nSee: " + BUG_REPORT_URI + "\n");
+				            APP_NAME + " version " + APP_VERSION_NUMBER + "\nSee: " + url('reporting-bugs') + "\n");
 		}
 		catch(ex)
 		{
@@ -1051,8 +1051,10 @@ function gdAdjustHttpHttps(url)
 
 function url(key)
 {
-	var ret;
+	let ret;
+
 	switch(key) {
+	case 'reporting-bugs':      ret = 'http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs';         break;
 	case 'what-is-soapURL':     ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
 	case 'faq-thunderbird':     ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
 	case 'thunderbird-3':       ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
