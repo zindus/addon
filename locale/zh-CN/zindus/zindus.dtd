@@ -1,0 +1,54 @@
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.mo.menuitem.accesskey "z">
+<!ENTITY zindus.sb.settings.label "设置">
+<!ENTITY zindus.ca.account.type.label "同步">
+<!ENTITY zindus.ca.group.login.details.label "登陆详情">
+<!ENTITY zindus.ca.group.pap.label "使用此帐户">
+<!ENTITY zindus.ca.url.description.value "输入您用来登陆到服务器的 URL。<html:br/>例如：https://mymail.example.com">
+<!ENTITY zindus.ca.url.label "服务器 URL：">
+<!ENTITY zindus.ca.username.description.value "输入电子邮件地址和密码用来登陆。">
+<!ENTITY zindus.ca.username.label "电子邮件地址：">
+<!ENTITY zindus.ca.password.label "密码：">
+<!ENTITY zindus.ca.test.connection.label "测试连接">
+<!ENTITY zindus.ca.test.connection.accesskey "T">
+<!ENTITY zindus.ca.google.sync.with.pab.label "个人通讯簿">
+<!ENTITY zindus.ca.google.sync.with.label "同步到 Google 联系人用">
+<!ENTITY zindus.ca.google.suggested.contacts.label "Google 建议联系人">
+<!ENTITY zindus.ca.google.suggested.include.label "包含">
+<!ENTITY zindus.ca.google.suggested.ignore.label "忽略">
+<!ENTITY zindus.ca.zimbra.gal.label "公用通讯录 (GAL)：">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "是">
+<!ENTITY zindus.ca.zimbra.gal.no.label "否">
+<!ENTITY zindus.cs.title "Zindus 配置设置">
+<!ENTITY zindus.cs.buttonlabelextra2 "帮助">
+<!ENTITY zindus.cs.sharing.label "共享">
+<!ENTITY zindus.cs.account.add.label "添加">
+<!ENTITY zindus.cs.account.add.accesskey "A">
+<!ENTITY zindus.cs.account.edit.label "编辑">
+<!ENTITY zindus.cs.account.edit.accesskey "E">
+<!ENTITY zindus.cs.account.delete.label "删除">
+<!ENTITY zindus.cs.account.delete.accesskey "D">
+<!ENTITY zindus.cs.account.email.label "电子邮件地址">
+<!ENTITY zindus.cs.account.addressbook.label "通讯簿">
+<!ENTITY zindus.cs.accounts.label "帐户">
+<!ENTITY zindus.cs.general.settings.label "设置">
+<!ENTITY zindus.cs.general.actions.label "动作">
+<!ENTITY zindus.cs.general.auto.sync.label "自动同步">
+<!ENTITY zindus.cs.general.verbose.logging.label "详细日志记录">
+<!ENTITY zindus.cs.general.button.sync.now.label "立即同步">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.reset.label "重置">
+<!ENTITY zindus.cs.general.button.reset.accesskey "R">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "高级 Google 设置">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.gr.title "Google 联系人违规">
+<!ENTITY zindus.gr.button.accept.label "确认">
+<!ENTITY zindus.cg.title "Zindus 高级 Google 设置">
+<!ENTITY zindus.cg.postal.caption.label "邮政编码字段">
+<!ENTITY zindus.cg.postal.false.label "不同步(推荐)">
+<!ENTITY zindus.cg.postal.true.label "Thunderbird 字段表示为 XML 在 Google">
+<!ENTITY zindus.cg.rule.caption.label "如何处理 Google 联系人违规">
+<!ENTITY zindus.cg.rule.ask.me.label "询问我">
+<!ENTITY zindus.cg.rule.dont.ask.label "不再询问我 - 删除联系人来解决联系人违规">
+<!ENTITY zindus.sw.title "Zindus 同步">
+<!ENTITY zindus.up.show.again.label "下一次显示此对话框">

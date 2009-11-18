@@ -1,0 +1,39 @@
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.mo.menuitem.accesskey "z">
+<!ENTITY zindus.sb.settings.label "Настройки">
+<!ENTITY zindus.ca.account.type.label "Синхронизиране с(ъс)">
+<!ENTITY zindus.ca.group.pap.label "За тази регистрация">
+<!ENTITY zindus.ca.url.description.value "Въведете адреса, който изпозлазвате, за да се регистрирате на сървъра.<html:br/>пример: https://mymail.example.com">
+<!ENTITY zindus.ca.url.label "Адрес на сървъра:">
+<!ENTITY zindus.ca.username.description.value "Въведете адреса ел. поща и паролата, които изпозлвате, за да се регистрирате.">
+<!ENTITY zindus.ca.username.label "Адрес на ел. поща:">
+<!ENTITY zindus.ca.password.label "Парола:">
+<!ENTITY zindus.ca.test.connection.label "Избробване на връзката">
+<!ENTITY zindus.ca.test.connection.accesskey "И">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Лична адресна книга">
+<!ENTITY zindus.ca.google.sync.with.label "Синхронизиране на контактите от Google с(ъс)">
+<!ENTITY zindus.ca.google.suggested.include.label "включване на">
+<!ENTITY zindus.ca.google.suggested.ignore.label "игнориране на">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "да">
+<!ENTITY zindus.ca.zimbra.gal.no.label "не">
+<!ENTITY zindus.cs.buttonlabelextra2 "Помощ">
+<!ENTITY zindus.cs.sharing.label "Споделяне">
+<!ENTITY zindus.cs.account.add.label "Добавяне">
+<!ENTITY zindus.cs.account.add.accesskey "Д">
+<!ENTITY zindus.cs.account.edit.label "Редактиране">
+<!ENTITY zindus.cs.account.edit.accesskey "Р">
+<!ENTITY zindus.cs.account.delete.label "Изтриване">
+<!ENTITY zindus.cs.account.delete.accesskey "И">
+<!ENTITY zindus.cs.account.email.label "Адрес на ел. поща">
+<!ENTITY zindus.cs.account.addressbook.label "Адресна книга">
+<!ENTITY zindus.cs.accounts.label "Регистрации">
+<!ENTITY zindus.cs.general.settings.label "Настройки">
+<!ENTITY zindus.cs.general.actions.label "Действия">
+<!ENTITY zindus.cs.general.auto.sync.label "Автоматично синхронизиране">
+<!ENTITY zindus.cs.general.button.sync.now.label "Синхронизиране сега">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "С">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Допълнителни настройки за Google">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.gr.button.accept.label "Потвърждение">
+<!ENTITY zindus.cg.rule.ask.me.label "Да бъда питан(а)">
+<!ENTITY zindus.up.show.again.label "Показване на този диалог и следващия път">
