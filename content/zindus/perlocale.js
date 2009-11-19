@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.8 2009-11-18 13:29:37 cvsuser Exp $
+// $Id: perlocale.js,v 1.9 2009-11-19 07:12:02 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -42,7 +42,7 @@ var PerLocaleStatic = {
 		let sbs    = Cc["@mozilla.org/intl/stringbundle;1"].getService(Ci.nsIStringBundleService);
 		let bundle = sbs.createBundle(src);
 		let enm    = bundle.getSimpleEnumeration();
-		let re     = /^zindus\.(.+?)\.(.+?)$/; // eg: zindus.cs.tb.pab
+		let re     = /^zindus\.(.+?)\.(.+?)(\.\d\d|)$/; // eg: zindus.cs.tb.pab
 		let l      = new Array();
 		let r      = new Array();
 
@@ -58,14 +58,18 @@ var PerLocaleStatic = {
 
 		while (enm.hasMoreElements()) {
 			let elem   = enm.getNext().QueryInterface(Ci.nsIPropertyElement);
-			let a      = re.exec(elem.key); zinAssertAndLog(a.length == 3, elem.key);
+			let a      = re.exec(elem.key); zinAssertAndLog(a.length == 4, elem.key);
 			let locale = a[1];
 			let key    = a[2];
+			let oldver = a[3];
 			let k      = bimap.lookup(key, null);
+
+			if (oldver.length > 0)
+				locale += oldver;
 
 			this.m_locale_superset[locale] = true;
 
-			logger().debug(elem.key + " AMHERE: setting m_translation: key: " + key + " lookedup: " + k + " to: " + elem.value); // TODO
+			logger().debug(" AMHERE: elem.key: " + elem.key + " locale: " + locale + " setting m_translation: key: " + key + " lookedup: " + k + " to: " + elem.value); // TODO
 
 			if (!(k in PerLocaleStatic.m_translation))
 				PerLocaleStatic.m_translation[k] = new Object();
