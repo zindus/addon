@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: bimap.js,v 1.13 2009-10-17 07:14:23 cvsuser Exp $
+// $Id: bimap.js,v 1.14 2009-11-19 07:02:27 cvsuser Exp $
 
 function BiMap(array_a, array_b)
 {
@@ -91,6 +91,8 @@ BiMap.prototype = {
 		var obj, key;
 
 		[obj, key] = this.getObjAndKey(key_a, key_b);
+
+		zinAssertAndLog(key in obj, function() { return "key: " + key + " obj: " + aToString(obj); });
 
 		return obj[key];
 	},
