@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbookff.js,v 1.4 2009-10-17 07:04:36 cvsuser Exp $
+// $Id: addressbookff.js,v 1.5 2009-12-02 15:33:58 cvsuser Exp $
 includejs("json.js");
 
 function AddressBookFf()
@@ -50,7 +50,7 @@ AddressBookFf.prototype.directoryProperty = function(elem, property)
 
 AddressBookFf.prototype.forEachAddressBook = function(functor)
 {
-	let query       = "SELECT * from groupt";
+	let query       = "SELECT * from grp";
 	let is_continue = true;
 	let stmt, uri;
 
@@ -70,7 +70,7 @@ AddressBookFf.prototype.forEachCardGenerator = function(uri, functor, yield_coun
 	let count     = 0;
 	let stmt, query;
 
-	query = "SELECT contact.* from contact,member where contact.id = member.id_contact and member.id_group =:uri";
+	query = "SELECT contact.* from contact,member where contact.id = member.id_contact and member.id_grp =:uri";
 	stmt  = this.conn().createStatement(query);
 	stmt.params.uri = uri;
 
@@ -94,7 +94,7 @@ AddressBookFf.prototype.newAddressBook = function(name)
 {
 	let stmt, query, rc;
 
-	query = "INSERT INTO groupt (name) VALUES (:name)";
+	query = "INSERT INTO grp (name) VALUES (:name)";
 	stmt  = this.conn().createStatement(query);
 	stmt.params.name = name;
 
@@ -119,21 +119,21 @@ AddressBookFf.prototype.deleteAddressBook = function(uri)
 	try {
 		this.conn().beginTransaction();
 
-		query = "DELETE FROM contact where contact.id IN (select id_contact from member where member.id_group = :uri)";
+		query = "DELETE FROM contact where contact.id IN (select id_contact from member where member.id_grp = :uri)";
 		stmt  = this.conn().createStatement(query);
 		stmt.params.uri = uri;
 		stmt.executeStep();
 		stmt.reset();
 		stmt.finalize();
 
-		query = "DELETE FROM member where member.id_group = :uri";
+		query = "DELETE FROM member where member.id_grp = :uri";
 		stmt  = this.conn().createStatement(query);
 		stmt.params.uri = uri;
 		stmt.executeStep();
 		stmt.reset();
 		stmt.finalize();
 
-		query = "DELETE FROM groupt where id = :uri";
+		query = "DELETE FROM grp where id = :uri";
 		stmt  = this.conn().createStatement(query);
 		stmt.params.uri = uri;
 		stmt.executeStep();
@@ -159,7 +159,7 @@ AddressBookFf.prototype.renameAddressBook = function(uri, name)
 {
 	let stmt, query, rc;
 
-	query = "UPDATE groupt set name = :name where id = :uri";
+	query = "UPDATE grp set name = :name where id = :uri";
 	stmt  = this.conn().createStatement(query);
 	stmt.params.uri = uri;
 	stmt.params.name = name;
@@ -197,10 +197,10 @@ AddressBookFf.prototype.addCard = function(uri, properties, attributes)
 
 		id_contact = this.conn().lastInsertRowID;
 
-		query = "INSERT INTO member (id_contact,id_group) VALUES (:id_contact,:id_group)";
+		query = "INSERT INTO member (id_contact,id_grp) VALUES (:id_contact,:id_grp)";
 		stmt  = this.conn().createStatement(query);
 		stmt.params.id_contact = id_contact;
-		stmt.params.id_group   = uri;
+		stmt.params.id_grp     = uri;
 		stmt.executeStep();
 
 		this.conn().commitTransaction();
@@ -464,7 +464,7 @@ AddressBookFfCard.prototype = {
 var AddressBookFfStatic = {
 	elem_properties : newObjectWithKeys("URI", "dirName", "dirType", "dirPrefId", "fileName", "position"),
 	card_properties : newObjectWithKeys("isMailList", "mailListURI", "lastModifiedDate" ),
-	db_table_name   : newObjectWithKeys("contact", "groupt", "member", "master" ),
+	db_table_name   : newObjectWithKeys("contact", "grp", "member", "master" ),
 	db_index_name   : newObjectWithKeys("index_group", "index_member" ),
 	db_new_conn : function() {
 
@@ -500,9 +500,9 @@ var AddressBookFfStatic = {
 		if (ret) {
 			let query, stmt;
 
-			// PAB must be present in groupt
+			// PAB must be present in grp
 			//
-			query = "SELECT * from groupt where name = :name";
+			query = "SELECT * from grp where name = :name";
 			stmt  = conn.createStatement(query);
 			stmt.params.name = TB_PAB_FULLNAME;
 			zinAssert(stmt.executeStep());
@@ -517,7 +517,7 @@ var AddressBookFfStatic = {
 			stmt.finalize();
 
 			// referential integrity
-			// - every row in member must refer to a row in contact and groupt
+			// - every row in member must refer to a row in contact and grp
 			//
 			function do_ref_check(key, query) {
 				stmt  = conn.createStatement(query);
@@ -528,7 +528,7 @@ var AddressBookFfStatic = {
 				zinAssertAndLog(msg.length == 0, query + ": " + msg);
 			}
 			do_ref_check("id_contact", "SELECT id_contact from member where id_contact NOT IN (SELECT distinct id FROM contact)");
-			do_ref_check("id_group",   "SELECT id_group   from member where id_group   NOT IN (SELECT distinct id FROM groupt)");
+			do_ref_check("id_grp",     "SELECT id_grp     from member where id_grp     NOT IN (SELECT distinct id FROM grp)");
 
 			// test for dangling references - ie that contacts must be a member of a group
 			//
@@ -568,18 +568,18 @@ CREATE TABLE contact (                                                    \
   id           INTEGER PRIMARY KEY AUTOINCREMENT,                         \
   properties   BLOB NOT NULL,                                             \
   last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL );            \
-CREATE TABLE groupt (                                                     \
+CREATE TABLE grp (                                                        \
   id           INTEGER PRIMARY KEY AUTOINCREMENT,                         \
   name         TINYTEXT UNIQUE NOT NULL,                                  \
   last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL );            \
 CREATE TABLE member (                                                     \
   id_contact   INTEGER,                                                   \
-  id_group     INTEGER );                                                 \
+  id_grp       INTEGER );                                                 \
 CREATE TABLE master (                                                     \
   key          TINYTEXT UNIQUE NOT NULL,                                  \
   value        BLOB NOT NULL );                                           \
-CREATE INDEX index_group ON groupt (name);                                \
-CREATE INDEX index_member ON member (id_contact, id_group);";
+CREATE INDEX index_group ON grp (name);                                   \
+CREATE INDEX index_member ON member (id_contact, id_grp);";
 
 // CREATE INDEX IF NOT EXISTS property_index ON property (id_contact);   \
 // CREATE TABLE IF NOT EXISTS property (                                 \
@@ -589,11 +589,11 @@ CREATE INDEX index_member ON member (id_contact, id_group);";
 
 		do_sql(query);
 
-		query = "INSERT INTO groupt (name) VALUES (:name)";
+		query = "INSERT INTO grp (name) VALUES (:name)";
 		stmt  = conn.createStatement(query);
 		stmt.params.name = TB_PAB_FULLNAME;
 
-		AddressBookFfStatic.executeStep(conn, stmt, "unable to create groupt with name: " + TB_PAB_FULLNAME);
+		AddressBookFfStatic.executeStep(conn, stmt, "unable to create grp with name: " + TB_PAB_FULLNAME);
 
 		stmt.finalize();
 
