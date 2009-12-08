@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.68 2009-11-18 09:13:56 cvsuser Exp $
+// $Id: util.js,v 1.69 2009-12-08 08:56:54 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1077,7 +1077,9 @@ function help_url(key) {
 	return help_href(url(key));
 }
 function help_href(href) {
-	return '<a style="color:blue; text-decoration:underline" href="' + href + '">' + stringBundleString("text.help") + '</a>';
+	return '<a target="_blank" ' +
+	       'onclick="with (ZindusScopeRegistry.getScope()) { openURL(\'' + href + '\');}" ' +
+		   'style="color:blue; text-decoration:underline" href="' + href + '">'+stringBundleString("text.help")+'</a>';
 }
 
 // Not all Unicode characters are valid XML Characters - some characters are excluded.  See
