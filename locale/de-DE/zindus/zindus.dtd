@@ -1,53 +1,53 @@
-<!ENTITY zindus.mo.menuitem.label "Zindus">
-<!ENTITY zindus.mo.menuitem.accesskey "z">
-<!ENTITY zindus.sb.settings.label "Einstellungen">
 <!ENTITY zindus.ca.account.type.label "Synchronisiere mit">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Vorgeschlagene Google Kontakte">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorieren">
+<!ENTITY zindus.ca.google.suggested.include.label       "Verwenden">
+<!ENTITY zindus.ca.google.sync.with.label               "Synchronisiere Google Kontakte mit">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Persönliches Adressbuch">
 <!ENTITY zindus.ca.group.login.details.label "Anmeldedetails">
 <!ENTITY zindus.ca.group.pap.label "Für dieses Konto">
+<!ENTITY zindus.ca.password.label "Passwort:">
+<!ENTITY zindus.ca.test.connection.accesskey "T">
+<!ENTITY zindus.ca.test.connection.label "Verbindung prüfen">
 <!ENTITY zindus.ca.url.description.value "Geben Sie die URL des Servers ein welche Sie zum Anmelden verwenden. <html:br/>Beispiel: https://mymail.beispiel.com">
 <!ENTITY zindus.ca.url.label "Server URL:">
 <!ENTITY zindus.ca.username.description.value "Geben Sie die E-Mail-Adresse und Passwort wie fürs Anmelden ein.">
 <!ENTITY zindus.ca.username.label "E-Mail-Adresse:">
-<!ENTITY zindus.ca.password.label "Passwort:">
-<!ENTITY zindus.ca.test.connection.label "Verbindung prüfen">
-<!ENTITY zindus.ca.test.connection.accesskey "T">
-<!ENTITY zindus.ca.google.sync.with.pab.label "Persönliches Adressbuch">
-<!ENTITY zindus.ca.google.sync.with.label               "Synchronisiere Google Kontakte mit">
-<!ENTITY zindus.ca.google.suggested.contacts.label      "Vorgeschlagene Google Kontakte">
-<!ENTITY zindus.ca.google.suggested.include.label       "Verwenden">
-<!ENTITY zindus.ca.google.suggested.ignore.label        "Ignorieren">
 <!ENTITY zindus.ca.zimbra.gal.label "Globale Adressliste (GAL):">
-<!ENTITY zindus.ca.zimbra.gal.yes.label "Ja">
 <!ENTITY zindus.ca.zimbra.gal.no.label "Nein">
-<!ENTITY zindus.cs.title "Zindus Einstellungen">
-<!ENTITY zindus.cs.buttonlabelextra2 "Hilfe">
-<!ENTITY zindus.cs.account.add.label "Hinzufügen">
-<!ENTITY zindus.cs.account.add.accesskey "H">
-<!ENTITY zindus.cs.account.edit.label "Bearbeiten">
-<!ENTITY zindus.cs.account.edit.accesskey "B">
-<!ENTITY zindus.cs.account.delete.label "Löschen">
-<!ENTITY zindus.cs.account.delete.accesskey "L">
-<!ENTITY zindus.cs.account.email.label "E-Mail-Adresse">
-<!ENTITY zindus.cs.account.addressbook.label "Adressbuch">
-<!ENTITY zindus.cs.accounts.label "Konten">
-<!ENTITY zindus.cs.general.settings.label "Einstellungen">
-<!ENTITY zindus.cs.general.actions.label "Aktionen">
-<!ENTITY zindus.cs.general.auto.sync.label "Automatische Synchronisation">
-<!ENTITY zindus.cs.general.verbose.logging.label "Ausführliche Protokollierung">
-<!ENTITY zindus.cs.general.button.sync.now.label "Jetzt synchronisieren">
-<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
-<!ENTITY zindus.cs.general.button.reset.label "Zurücksetzen">
-<!ENTITY zindus.cs.general.button.reset.accesskey "R">
-<!ENTITY zindus.cs.general.button.gd.advanced.label "Zusätzliche Google Einstellungen">
-<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
-<!ENTITY zindus.gr.title "Regelverletzung von Google Kontakte">
-<!ENTITY zindus.gr.button.accept.label "Bestätigen">
-<!ENTITY zindus.cg.title "Zindus zusätzliche Google Einstellungen">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Ja">
 <!ENTITY zindus.cg.postal.caption.label "Felder Postadresse">
 <!ENTITY zindus.cg.postal.false.label "Nicht synchronisieren (empfohlen)">
 <!ENTITY zindus.cg.postal.true.label "Thunderbird Felder sind als XML in Google repräsentiert">
-<!ENTITY zindus.cg.rule.caption.label "Wie die Regelverletzung von Google Kontakten gehandhabt wird">
 <!ENTITY zindus.cg.rule.ask.me.label "Mich fragen">
+<!ENTITY zindus.cg.rule.caption.label "Wie die Regelverletzung von Google Kontakten gehandhabt wird">
 <!ENTITY zindus.cg.rule.dont.ask.label "Frag mich nicht - lösche Kontakte um die Regelverletzungen zu beheben">
+<!ENTITY zindus.cg.title "Zindus zusätzliche Google Einstellungen">
+<!ENTITY zindus.cs.account.add.accesskey "H">
+<!ENTITY zindus.cs.account.add.label "Hinzufügen">
+<!ENTITY zindus.cs.account.addressbook.label "Adressbuch">
+<!ENTITY zindus.cs.account.delete.accesskey "L">
+<!ENTITY zindus.cs.account.delete.label "Löschen">
+<!ENTITY zindus.cs.account.edit.accesskey "B">
+<!ENTITY zindus.cs.account.edit.label "Bearbeiten">
+<!ENTITY zindus.cs.account.email.label "E-Mail-Adresse">
+<!ENTITY zindus.cs.accounts.label "Konten">
+<!ENTITY zindus.cs.buttonlabelextra2 "Hilfe">
+<!ENTITY zindus.cs.general.actions.label "Aktionen">
+<!ENTITY zindus.cs.general.auto.sync.label "Automatische Synchronisation">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Zusätzliche Google Einstellungen">
+<!ENTITY zindus.cs.general.button.reset.accesskey "R">
+<!ENTITY zindus.cs.general.button.reset.label "Zurücksetzen">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.sync.now.label "Jetzt synchronisieren">
+<!ENTITY zindus.cs.general.settings.label "Einstellungen">
+<!ENTITY zindus.cs.general.verbose.logging.label "Ausführliche Protokollierung">
+<!ENTITY zindus.cs.title "Zindus Einstellungen">
+<!ENTITY zindus.gr.button.accept.label "Bestätigen">
+<!ENTITY zindus.gr.title "Regelverletzung von Google Kontakte">
+<!ENTITY zindus.mo.menuitem.accesskey "z">
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.sb.settings.label "Einstellungen">
 <!ENTITY zindus.sw.title "Zindus Synchronisation">
 <!ENTITY zindus.up.show.again.label "Diesen Dialog das nächste Mal anzeigen">
