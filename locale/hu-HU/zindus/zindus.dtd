@@ -1,15 +1,15 @@
 <!ENTITY zindus.ca.account.type.label "Szinkronizálni kívánt fiók">
-<!ENTITY zindus.ca.google.suggested.contacts.label   "Google Javasolt Névjegyek">
-<!ENTITY zindus.ca.google.suggested.ignore.label  "Figyelmen kívül hagy">
-<!ENTITY zindus.ca.google.suggested.include.label       "Felvesz">
-<!ENTITY zindus.ca.google.sync.with.label               "Google Címtár szinkronizálása">
+<!ENTITY zindus.ca.google.suggested.contacts.label "Google Javasolt Névjegyek">
+<!ENTITY zindus.ca.google.suggested.ignore.label "Figyelmen kívül hagy">
+<!ENTITY zindus.ca.google.suggested.include.label "Felvesz">
+<!ENTITY zindus.ca.google.sync.with.label "Google Címtár szinkronizálása">
 <!ENTITY zindus.ca.google.sync.with.pab.label "Személyes Címjegyzék">
 <!ENTITY zindus.ca.group.login.details.label "Bejelentkezési adatok">
 <!ENTITY zindus.ca.group.pap.label "Ehhez a felhasználói fiókhoz">
 <!ENTITY zindus.ca.password.label "Jelszó:">
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.test.connection.label "Kapcsolat tesztelése">
-<!ENTITY zindus.ca.url.description.value "Gépelje be a bejelentkezéshez használt URL-t.<html:br/>Például: https://sajatmail.pelda.hu">
+<!ENTITY zindus.ca.url.description.value "Gépelje be a bejelentkezéshez használt URL-t.<html:br></html>Például: https://sajatmail.pelda.hu">
 <!ENTITY zindus.ca.url.label "Szerver URL:">
 <!ENTITY zindus.ca.username.description.value "Gépelje be a bejelentkezéshez használt e-mail címet és a jelszót.">
 <!ENTITY zindus.ca.username.label "E-mail cím:">
@@ -17,7 +17,7 @@
 <!ENTITY zindus.ca.zimbra.gal.no.label "Nem">
 <!ENTITY zindus.ca.zimbra.gal.yes.label "Igen">
 <!ENTITY zindus.cg.postal.caption.label "Postai cím adatai">
-<!ENTITY zindus.cg.postal.false.label "Nem lesznek szinkronizáláva (ajánlott)">
+<!ENTITY zindus.cg.postal.false.label "Nem lesznek szinkronizálva (ajánlott)">
 <!ENTITY zindus.cg.postal.true.label "Thunderbird mezők a Google-ban xml-ként lesznek megjelenítve">
 <!ENTITY zindus.cg.rule.ask.me.label "Rákérdez">
 <!ENTITY zindus.cg.rule.caption.label "Google Címtár szabály megsértésének kezelése">
@@ -31,7 +31,7 @@
 <!ENTITY zindus.cs.account.edit.accesskey "Z">
 <!ENTITY zindus.cs.account.edit.label "Szerkesztés">
 <!ENTITY zindus.cs.account.email.label "E-mail cím">
-<!ENTITY zindus.cs.accounts.label     "Felhasználóifiókok">
+<!ENTITY zindus.cs.accounts.label "Felhasználói fiókok">
 <!ENTITY zindus.cs.buttonlabelextra2 "Súgó">
 <!ENTITY zindus.cs.general.actions.label "Műveletek">
 <!ENTITY zindus.cs.general.auto.sync.label "Automatikus szinkronizáció">
@@ -43,10 +43,12 @@
 <!ENTITY zindus.cs.general.button.sync.now.label "Szinkronizálás most">
 <!ENTITY zindus.cs.general.settings.label "Beállítások">
 <!ENTITY zindus.cs.general.verbose.logging.label "Részletes naplózás">
+<!ENTITY zindus.cs.sharing.label "Megosztás">
 <!ENTITY zindus.cs.title "Zindus Konfigurációs Beállítások">
 <!ENTITY zindus.gr.button.accept.label "Megerősítés">
 <!ENTITY zindus.gr.title "Google Címtár szabály megsértése">
-<!ENTITY zindus.mo.menuitem.accesskey "I">
+<!ENTITY zindus.mo.menuitem.accesskey "Z">
 <!ENTITY zindus.mo.menuitem.label "Zindus">
 <!ENTITY zindus.sb.settings.label "Beállítások">
-<!ENTITY zindus.sw.title "Zindus szinkronziálás">
+<!ENTITY zindus.sw.title "Zindus szinkronizálás">
+<!ENTITY zindus.up.show.again.label "Következő alkalommal is mutassa ezt a párbeszédablakot">
