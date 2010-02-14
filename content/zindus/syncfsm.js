@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.235 2009-11-18 09:13:56 cvsuser Exp $
+// $Id: syncfsm.js,v 1.236 2010-02-14 23:46:53 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -9118,7 +9118,7 @@ SyncFsmGd.prototype.entryActionGetGroupsGd1 = function(state, event, continuatio
 	if (gd_updated_group)
 		url += "&updated-min=" + gd_updated_group;
 
-	this.setupHttpGd(state, 'evNext', "GET", url, null, null, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
+	this.setupHttpGd(state, 'evNext', "GET", url, null, null, HttpStateGd.ON_ERROR_EVNEXT, HttpStateGd.LOG_RESPONSE_YES);
 
 	continuation('evHttpRequest');
 }
@@ -9129,11 +9129,15 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 
 	if (!this.state.m_http || !this.state.m_http.response('text'))
 		nextEvent = 'evCancel';
+	else if (this.state.m_http.is_http_status(HTTP_STATUS_401_UNAUTHORIZED)) {
+		this.state.stopFailCode = 'failon.unauthorized';
+		nextEvent = 'evLackIntegrity';
+		this.gd_remove_cached_auth_token(state);
+	}
 	else if (this.state.m_http.is_http_status(HTTP_STATUS_403_FORBIDDEN)) {
 		this.state.stopFailCode = 'failon.gd.forbidden';
 		nextEvent = 'evLackIntegrity';
-
-		this.gd_403_forbidden(state);
+		this.gd_remove_cached_auth_token(state);
 	}
 	else if (!this.state.m_http.is_http_status(HTTP_STATUS_2xx)) {
 		this.state.stopFailCode = 'failon.gd.get';
@@ -9310,7 +9314,7 @@ SyncFsmGd.prototype.entryActionGetContactGd1 = function(state, event, continuati
 	continuation('evHttpRequest');
 }
 
-SyncFsmGd.prototype.gd_403_forbidden = function(state)
+SyncFsmGd.prototype.gd_remove_cached_auth_token = function(state)
 {
 	var passwordlocator = new PasswordLocator(this.account().passwordlocator);
 	passwordlocator.url(eGoogleLoginUrl.kAuthToken);
@@ -9326,16 +9330,17 @@ SyncFsmGd.prototype.entryActionGetContactGd2 = function(state, event, continuati
 
 	if (!this.state.m_http || !this.state.m_http.response('text'))
 		nextEvent = 'evCancel';
-	else if (this.state.m_http.is_http_status(HTTP_STATUS_403_FORBIDDEN))
-	{
-		this.state.stopFailCode = 'failon.gd.forbidden';
-
+	else if (this.state.m_http.is_http_status(HTTP_STATUS_401_UNAUTHORIZED)) {
+		this.state.stopFailCode = 'failon.unauthorized';
 		nextEvent = 'evLackIntegrity';
-
-		this.gd_403_forbidden(state);
+		this.gd_remove_cached_auth_token(state);
 	}
-	else if (this.state.m_http.is_http_status(HTTP_STATUS_2xx))
-	{
+	else if (this.state.m_http.is_http_status(HTTP_STATUS_403_FORBIDDEN)) {
+		this.state.stopFailCode = 'failon.gd.forbidden';
+		nextEvent = 'evLackIntegrity';
+		this.gd_remove_cached_auth_token(state);
+	}
+	else if (this.state.m_http.is_http_status(HTTP_STATUS_2xx)) {
 		let response = this.state.m_http.response();
 		let i;
 
