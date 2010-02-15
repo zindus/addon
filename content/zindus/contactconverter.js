@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.53 2009-10-17 07:04:37 cvsuser Exp $
+// $Id: contactconverter.js,v 1.54 2010-02-15 04:19:58 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -301,6 +301,11 @@ convert : function(format_to, format_from, properties_from) {
 				this.m_gac.convert(properties_to, this.m_postal_word + "_" + key.toLowerCase(), a_normalised_gd_address[key.toLowerCase()],
 				                     GdAddressConverter.ADDR_TO_XML );
 
+	if (!isObjectEmpty(a_normalised_tb_birthday) && !ContactConverterStatic.is_valid_tb_birthday(a_normalised_tb_birthday)) {
+		this.m_logger.debug("a_normalised_tb_birthday wasn't valid: " + aToString(a_normalised_tb_birthday) + " - ignoring it");
+		a_normalised_tb_birthday = new Object();
+	}
+
 	if (!isObjectEmpty(a_normalised_tb_birthday))
 		this.tb_birthday_output(format_to, properties_to, a_normalised_tb_birthday);
 
@@ -542,6 +547,7 @@ tb_birthday_normalise : function(format_to, format_from, properties_from, key_fr
 },
 tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday) {
 	const empty_year = "0000";
+	let key;
 
 	function pad_dd(x)   { return String("0" + x).slice(-2);        }
 	function pad_yyyy(x) { return String(empty_year + x).slice(-4); }
@@ -552,7 +558,6 @@ tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday
 			// - if no year is given, the BirthYear property isn't present
 			// - no value has leading 0's
 			//
-			let key;
 			for (key in a_normalised_tb_birthday)
 				if (!(key == 'BirthYear' && (a_normalised_tb_birthday[key] == empty_year || (a_normalised_tb_birthday[key].length == 0))))
 					properties_to[key] = a_normalised_tb_birthday[key];
@@ -577,6 +582,11 @@ tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday
 			// - each of yyyy, mm, and dd are padded with leading zeroes.
 			// - if no year is given, then "--mm-dd"
 			//
+			this.m_logger.debug("AMHEREY: a_normalised_tb_birthday: " + aToString(a_normalised_tb_birthday)); // TODO
+
+			this.m_logger.debug("AMHEREY: BirthMonth: a_normalised_tb_birthday: " + a_normalised_tb_birthday['BirthMonth'] + " padded: " + pad_dd(a_normalised_tb_birthday['BirthMonth']));
+			this.m_logger.debug("AMHEREY: BirthDay: a_normalised_tb_birthday: " + a_normalised_tb_birthday['BirthDay'] + " padded: " + pad_dd(a_normalised_tb_birthday['BirthDay']));
+
 			let birthday = "-" + pad_dd(a_normalised_tb_birthday['BirthMonth']) +
 			               "-" + pad_dd(a_normalised_tb_birthday['BirthDay']);
 
@@ -651,5 +661,26 @@ var ContactConverterStatic = {
 	tb_birthday_trim_leading_zeroes : function(properties, x) {
 		if (x in properties)
 			properties[x] = properties[x].replace(/^0+/g, "");
+	},
+	is_valid_tb_birthday: function(properties) {
+		let ret = true;
+		let x;
+
+		x = 'BirthYear';
+
+		if (ret && (x in properties) && properties[x].length > 0)
+			ret = properties[x].length <= 4;
+
+		x = 'BirthMonth';
+
+		if (ret)
+			ret = (x in properties) && (properties[x].length == 0 || (Number(properties[x]) >= 0) && (Number(properties[x]) <= 13));
+
+		x = 'BirthDay';
+
+		if (ret)
+			ret = (x in properties) && (properties[x].length == 0 || (Number(properties[x]) >= 0) && (Number(properties[x]) <= 31));
+
+		return ret;
 	}
 };

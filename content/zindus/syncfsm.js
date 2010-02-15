@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.236 2010-02-14 23:46:53 cvsuser Exp $
+// $Id: syncfsm.js,v 1.237 2010-02-15 04:19:58 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2372,7 +2372,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 		let a_match = this.state.m_addressbook.getAddressBooksByPattern(/.*/);
 
 		for (ab_name in a_match)
-			if (a_match[ab_name].length > 1) {
+			if ((a_match[ab_name].length > 1) && (this.state.m_folder_converter.prefixClass(ab_name) != FolderConverter.PREFIX_CLASS_NONE)){
 				this.state.stopFailCode = 'failon.folder.name.duplicate';
 				this.state.stopFailArg  = [ ab_name ];
 				this.debug("loadTb: multiple folders named: " + ab_name);
@@ -3218,6 +3218,12 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthYear');
 						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthMonth');
 						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthDay')
+
+						// TODO
+						// if (!ContactConverterStatic.is_valid_tb_birthday(properties)) {
+						// 	self.debug("loadTbCards pass 3: invalid birthday - pretending that it's not present");
+						// }
+
 					}
 
 					// if this addressbook is being synced with google...
@@ -3233,7 +3239,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 							properties["SecondEmail"] = "";
 							is_changed = true;
 
-							this.state.m_logger.debug("loadTbCards pass 3: transform: found a card with a SecondEmail and no PrimaryEmail"+
+							self.debug("loadTbCards pass 3: transform: found a card with a SecondEmail and no PrimaryEmail" +
 							                          " - swapping: luid=" + id + " PrimaryEmail: " + properties["PrimaryEmail"]);
 						}
 					}
