@@ -20,9 +20,10 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.23 2009-10-30 03:23:59 cvsuser Exp $
+// $Id: filesystem.js,v 1.24 2010-02-16 03:57:57 cvsuser Exp $
 
 var Filesystem = {
+	m_charset            : "UTF-8",
 	m_a_directory        : new Object(),
 	m_a_parent_directory : null,
 	eDirectory : new ZinEnum( {
@@ -36,6 +37,7 @@ var Filesystem = {
 		LASTSYNC  : 'lastsync.txt',
 		GID       : 'gid.txt',
 		STATUS    : 'status.txt',
+		TEST      : 'test.txt',
 		CONTACTS  : 'contacts.sqlite'
 	}),
 	ePerm : new ZinEnum( {     // from prio.h
@@ -99,12 +101,17 @@ var Filesystem = {
 			if (!file.exists()) 
 				file.create(Ci.nsIFile.NORMAL_FILE_TYPE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR);
 
-			let os = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
+			let fos = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
+			let cos = Cc["@mozilla.org/intl/converter-output-stream;1"].createInstance(Ci.nsIConverterOutputStream);
 
-			os.init(file, this.eFlag.PR_WRONLY | this.eFlag.PR_TRUNCATE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR, null);
-			os.write(content, content.length);
-			os.flush();
-			os.close();
+			fos.init(file, this.eFlag.PR_WRONLY | this.eFlag.PR_TRUNCATE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR, null);
+			fos.QueryInterface(Ci.nsIOutputStream);
+			cos.init(fos, this.m_charset, 0, 0x0000);
+			logger().debug("AMHERE: writing: " + content);// TODO
+			// cos.write(content, content.length);
+			cos.writeString(content);
+			cos.flush();
+			cos.close();
 
 			ret = true;
 		}
@@ -120,21 +127,23 @@ var Filesystem = {
 		file.initWithPath(path);
 
 		if (file.exists()) {
-			let istream = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
+			let fis = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
+			let cis = Cc["@mozilla.org/intl/converter-input-stream;1"].createInstance(Ci.nsIConverterInputStream);
 
-			istream.init(file, this.eFlag.PR_RDONLY,  this.ePerm.PR_IRUSR, 0);
-			istream.QueryInterface(Ci.nsILineInputStream);
+			fis.init(file, this.eFlag.PR_RDONLY,  this.ePerm.PR_IRUSR, 0);
+			cis.init(fis, this.m_charset, 0, 0xFFFD);
+			cis.QueryInterface(Ci.nsIUnicharLineInputStream);
 
 			let line = {};
 
-			while (istream.readLine(line)) {
+			while (cis.readLine(line)) {
 				functor.run(line.value); 
 				line.value = null;
 			} 
 
 			zinAssert(!line.value); // just to confirm that this loop works as documented
 
-			istream.close();
+			cis.close();
 		} 
 	},
 	// the remove* methods...

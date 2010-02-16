@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.120 2009-11-18 09:13:56 cvsuser Exp $
+// $Id: testharness.js,v 1.121 2010-02-16 03:57:57 cvsuser Exp $
 
 function TestHarness()
 {
@@ -95,6 +95,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testPerformanceLoggingStyles();
 	// ret = ret && this.testTb3CardUuid();
 	// ret = ret && this.testLoginManager();
+	// ret = ret && this.testZfcWithMultibyteChars();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -2940,28 +2941,80 @@ TestHarness.prototype.testPasswordManager = function()
 
 TestHarness.prototype.testRemoveBadLogin = function()
 {
-		var i;
-		var pm       = PasswordManager.new();
+	var i;
+	var pm       = PasswordManager.new();
 
-		// passwordmanager doesn't seem to delete the bogus 'username' entry correctly, so we try again here on the first
-		// run after an upgrade to tb3.
-		//
-		let url      = "https://www.google.com";
-		let username = "username";
-		let logins   = pm.nsILoginManager().getAllLogins({});
+	// passwordmanager doesn't seem to delete the bogus 'username' entry correctly, so we try again here on the first
+	// run after an upgrade to tb3.
+	//
+	let url      = "https://www.google.com";
+	let username = "username";
+	let logins   = pm.nsILoginManager().getAllLogins({});
 
-		this.m_logger.debug("testRemoveBadLogin: logins.length: " + logins.length);
+	this.m_logger.debug("testRemoveBadLogin: logins.length: " + logins.length);
 
-		for (i = 0; i < logins.length; i++)
+	for (i = 0; i < logins.length; i++)
+	{
+		this.m_logger.debug("url: " + logins[i].hostname + " username: " + logins[i].username + "formSubmitURL: " + logins[i].formSubmitURL + " httpRealm: " + logins[i].httpRealm);
+
+		if (logins[i].hostname == url && logins[i].username == username &&
+		    (logins[i].formSubmitURL == null || logins[i].formSubmitURL == "") &&
+		    (logins[i].httpRealm == null || logins[i].httpRealm == ""))
 		{
-			this.m_logger.debug("url: " + logins[i].hostname + " username: " + logins[i].username + "formSubmitURL: " + logins[i].formSubmitURL + " httpRealm: " + logins[i].httpRealm);
-
-			if (logins[i].hostname == url && logins[i].username == username &&
-			    (logins[i].formSubmitURL == null || logins[i].formSubmitURL == "") &&
-			    (logins[i].httpRealm == null || logins[i].httpRealm == ""))
-			{
-				// would do: pm.nsILoginManager().removeLogin(logins[i]);
-				this.m_logger.debug("migrate: removed bogus login: url: " + url + " username: " + username);
-			}
+			// would do: pm.nsILoginManager().removeLogin(logins[i]);
+			this.m_logger.debug("migrate: removed bogus login: url: " + url + " username: " + username);
 		}
 	}
+}
+
+TestHarness.prototype.testZfcWithMultibyteChars = function()
+{
+	let name = "zindus/a.b@gdomain.zindus.net#\u041c\u043e\u0457 \u043a\u043e\u043d\u0442\u0430\u043a\u0442\u0438";
+	// let name = "zindus/a.b@gdomain.zindus.net#Compañeiros de traballo";
+	let key = "258#ab";
+	let self = this;
+	let name_load;
+
+	function f1() {
+		let zfc = new FeedCollection();
+		zfc.filename(Filesystem.eFilename.TEST);
+		let zfi = new FeedItem(FeedItem.TYPE_FL,
+			FeedItem.ATTR_L,    1,
+			FeedItem.ATTR_MS,   1,
+			FeedItem.ATTR_LS,   "1##1##",
+			FeedItem.ATTR_TPI,  "ldap_2.servers.zindusabgdomainzindusnet_159",
+			FeedItem.ATTR_KEY,  key,
+			FeedItem.ATTR_NAME, name);
+
+		zfc.set(zfi);
+		zfc.save();
+
+		self.m_logger.debug("testZfcWithMultibyteChars: save: name: " + stringAsUnicodeEscapeSequence(name));
+		self.m_logger.debug("testZfcWithMultibyteChars: save: zfi: " + zfi.toString());
+	}
+
+	function f2() {
+		let zfc = new FeedCollection();
+		zfc.filename(Filesystem.eFilename.TEST);
+
+		zfc.load();
+		let zfi = zfc.get(key);
+
+		name_load = zfi.get(FeedItem.ATTR_NAME);
+
+		self.m_logger.debug("testZfcWithMultibyteChars: load: name: " + stringAsUnicodeEscapeSequence(zfi.get(FeedItem.ATTR_NAME)));
+		self.m_logger.debug("testZfcWithMultibyteChars: load: zfi: " + zfi.toString());
+	}
+
+	f1();
+	f2();
+
+	let is_match = name_load == name;
+	this.m_logger.debug("testZfcWithMultibyteChars: name.length: " + name.length);
+	this.m_logger.debug("testZfcWithMultibyteChars: name_load.length: " + name_load.length);
+	this.m_logger.debug("testZfcWithMultibyteChars: match: " + is_match);
+
+	zinAssert(is_match);
+
+	return is_match;
+}

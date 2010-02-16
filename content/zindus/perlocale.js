@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.9 2009-11-19 07:12:02 cvsuser Exp $
+// $Id: perlocale.js,v 1.10 2010-02-16 03:57:57 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -135,7 +135,7 @@ var PerLocaleStatic = {
 					this.m_all_translations_of[key][translation] = true;
 			}
 
-			logger().debug("all_translations_of: key: " + key + " returns: " + keysToString(this.m_all_translations_of[key]));
+			logger().debug("all_translations_of: key: " + key + " returns: " + stringAsUnicodeEscapeSequence(keysToString(this.m_all_translations_of[key])));
 		}
 
 		return this.m_all_translations_of[key];

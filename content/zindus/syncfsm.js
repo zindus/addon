@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.237 2010-02-15 04:19:58 cvsuser Exp $
+// $Id: syncfsm.js,v 1.238 2010-02-16 03:57:57 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2464,7 +2464,7 @@ SyncFsm.prototype.testForFolderPresentInZfcTb = function(name)
 
 	let ret = (this.state.stopFailCode == null);
 
-	this.state.m_logger.debug("testForFolderPresentInZfcTb: name: " + name + " returns: " + ret);
+	this.state.m_logger.debug("testForFolderPresentInZfcTb: name: " + stringAsUnicodeEscapeSequence(name) + " returns: " + ret);
 
 	return ret;
 }
@@ -2482,8 +2482,8 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 	let pre_prefid  = pre_id  ? zfcTbPre.get(pre_id).get(FeedItem.ATTR_TPI) : null;
 	let post_prefid = post_id ? zfcTbPost.get(post_id).get(FeedItem.ATTR_TPI) : null;
 
-	this.state.m_logger.debug("testForReservedFolderInvariant: name: " + name +
-		" pre_id=" + pre_id + " post_id=" + post_id + 
+	this.state.m_logger.debug("testForReservedFolderInvariant: name: " + stringAsUnicodeEscapeSequence(name) +
+		" pre_id="      + pre_id     + " post_id="      + post_id + 
 		" pre_prefid: " + pre_prefid + " post_prefid: " + post_prefid);
 
 	if (!post_id || pre_prefid != post_prefid)    // no folder by this name or it changed since last sync
@@ -2505,7 +2505,7 @@ SyncFsm.prototype.testForReservedFolderInvariant = function(name)
 SyncFsm.prototype.testForTbAbPresentAndInvariant = function(id, name)
 {
 	var passed = true;
-	var msg = "testForTbAbPresentAndInvariant: id: " + id + " name: " + name;
+	var msg = "testForTbAbPresentAndInvariant: id: " + id + " name: " + stringAsUnicodeEscapeSequence(name);
 
 	if (!this.zfcPr().isPresent(id) || this.zfcPr().get(id).isPresent(FeedItem.ATTR_DEL))
 		msg += " server doesn't have a folder corresponding to this name";
@@ -2513,7 +2513,7 @@ SyncFsm.prototype.testForTbAbPresentAndInvariant = function(id, name)
 		msg += " sourceid: " + this.state.sourceid_pr + " is_slow_sync: " + this.is_slow_sync();
 	else
 	{
-		msg += " server has a folder corresponding to: " + name;
+		msg += " server has a folder corresponding to: " + stringAsUnicodeEscapeSequence(name);
 
 		passed = passed && this.testForFolderPresentInZfcTb(name);
 
@@ -2806,26 +2806,31 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 		for (system_group_name in ContactGoogle.eSystemGroup) {
 			[ ab_localised, uri ] = get_ab(system_group_name);
 
-			this.debug("AMHERE1: system_group_name: " + system_group_name + " ab_localised: " + ab_localised + " uri: " + uri); // TODO
+			this.debug("loadTbGoogleSystemGroupPrepare: system_group_name: " + system_group_name +
+			                        " ab_localised: " + ab_localised + " uri: " + uri);
 
 			if (!uri)
 				for (var old_translation in PerLocaleStatic.all_translations_of(system_group_name)) {
 					let old_localised_ab = this.state.m_folder_converter.tb_ab_name_for_gd_group("/", old_translation);
 					uri                  = this.state.m_addressbook.getAddressBookUriByName(old_localised_ab);
 
-					this.debug("AMHERE2: system_group_name: " + system_group_name + " old_localised_ab: " + old_localised_ab + " uri: " + uri); // TODO
+					// this.debug("loadTbGoogleSystemGroupPrepare: system_group_name: " + system_group_name +
+					//                 " old_localised_ab: " + old_localised_ab + " uri: " + uri);
 
 					if (uri) {
-						msg += " found: " + old_localised_ab + " uri: " + uri;
+						msg += "\n found: system_group_name: " + system_group_name +
+						       " old_localised_ab: "           + stringAsUnicodeEscapeSequence(old_localised_ab) +
+							   " uri: "                        + uri;
 
 						this.state.m_addressbook.renameAddressBook(uri, ab_localised);
 
-						msg += " renamed to " + ab_localised + " uri: " + this.state.m_addressbook.getAddressBookUriByName(ab_localised);
+						msg += " renamed to " + stringAsUnicodeEscapeSequence(ab_localised) +
+						       " uri: "       + this.state.m_addressbook.getAddressBookUriByName(ab_localised);
 
 						// twiddle zfcTb and the pre so that we pass testForReservedFolderInvariant
 						//
 						function twiddle_zfc(zfc) {
-							let pre_id      = SyncFsm.zfcFindFirstFolder(zfc, old_localised_ab);
+							let pre_id = SyncFsm.zfcFindFirstFolder(zfc, old_localised_ab);
 							if (pre_id)
 								zfc.get(pre_id).set(FeedItem.ATTR_NAME, ab_localised);
 						}
@@ -3218,12 +3223,6 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthYear');
 						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthMonth');
 						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthDay')
-
-						// TODO
-						// if (!ContactConverterStatic.is_valid_tb_birthday(properties)) {
-						// 	self.debug("loadTbCards pass 3: invalid birthday - pretending that it's not present");
-						// }
-
 					}
 
 					// if this addressbook is being synced with google...

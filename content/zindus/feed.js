@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.52 2009-10-30 00:56:10 cvsuser Exp $
+// $Id: feed.js,v 1.53 2010-02-16 03:57:57 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -537,7 +537,10 @@ FeedItem.prototype.toString = function(arg)
 
 	for (key in this.m_properties)
 		if (key in FeedItem.DO_FIRST)
-			ret += key + "=" + this.m_properties[key] + eol_char;
+			ret += key + "=" +
+				((eol_char == " " && key == FeedItem.ATTR_NAME) ? stringAsUnicodeEscapeSequence(this.m_properties[key]) :
+				                                                  this.m_properties[key]) +
+			    eol_char;
 
 	if (!is_first_only)
 		for (key in this.m_properties)
