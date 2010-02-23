@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.54 2010-02-15 04:19:58 cvsuser Exp $
+// $Id: contactconverter.js,v 1.55 2010-02-23 05:03:29 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -302,7 +302,7 @@ convert : function(format_to, format_from, properties_from) {
 				                     GdAddressConverter.ADDR_TO_XML );
 
 	if (!isObjectEmpty(a_normalised_tb_birthday) && !ContactConverterStatic.is_valid_tb_birthday(a_normalised_tb_birthday)) {
-		this.m_logger.debug("a_normalised_tb_birthday wasn't valid: " + aToString(a_normalised_tb_birthday) + " - ignoring it");
+		this.m_logger.warn("a_normalised_tb_birthday wasn't valid: " + aToString(a_normalised_tb_birthday) + " - ignoring it");
 		a_normalised_tb_birthday = new Object();
 	}
 
