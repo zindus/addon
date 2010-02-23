@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.238 2010-02-16 03:57:57 cvsuser Exp $
+// $Id: syncfsm.js,v 1.239 2010-02-23 05:03:29 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -8864,6 +8864,10 @@ SyncFsm.prototype.initialise = function(id_fsm, is_attended, sfcd)
 			this.account().url = SyncFsm.zimbraSoapUrl(this.account().url);
 		else
 			; // if extension is installed but not configured, we end up in here with no preferences set - stAuth will report url is invalid
+
+		if (this.account().url && this.account().username && is_url_free_fr(this.account().url)) {
+			this.account().username = this.account().username.replace(/(@.*)$/, ""); // remove anything to the RHS of '@'
+		}
 	}
 	else // this.formatPr() == FORMAT_GD
 	{

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.24 2010-02-16 03:57:57 cvsuser Exp $
+// $Id: filesystem.js,v 1.25 2010-02-23 05:03:29 cvsuser Exp $
 
 var Filesystem = {
 	m_charset            : "UTF-8",
@@ -107,8 +107,6 @@ var Filesystem = {
 			fos.init(file, this.eFlag.PR_WRONLY | this.eFlag.PR_TRUNCATE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR, null);
 			fos.QueryInterface(Ci.nsIOutputStream);
 			cos.init(fos, this.m_charset, 0, 0x0000);
-			logger().debug("AMHERE: writing: " + content);// TODO
-			// cos.write(content, content.length);
 			cos.writeString(content);
 			cos.flush();
 			cos.close();
@@ -176,40 +174,6 @@ var Filesystem = {
 				if (!re_exclude.test(file.leafName))
 					file.remove(false);
 			}
-		}
-	},
-	removeLogfile : function() {
-		// Save the contents of the logfile then truncate it.
-		// Often folk have a problem, "reset" to fix it, then email support and without logfile.txt.old we don't know
-		// what the original problem was.
-		// The reason this is a three step: 1. remove old 2. copy new to old 3. truncate new
-		// and not simply "move" is because we hold open filehandles to the logfile (LogAppender) for performance.
-		//
-		with (Filesystem)
-		{
-			var file_new = nsIFileForDirectory(eDirectory.LOG);
-			var file_old = nsIFileForDirectory(eDirectory.LOG);
-			var name_old = eFilename.LOGFILE + ".old";
-
-			file_new.append(eFilename.LOGFILE);
-			file_old.append(name_old);
-		}
-
-		if (file_new.exists() && !file_new.isDirectory()) {
-			try {
-				file_old.remove(false);
-			}
-			catch (ex) {
-			}
-
-			try {
-				file_new.copyTo(null, name_old);
-			}
-			catch (ex) {
-				logger().error("Filesystem:removeLogfile: unable to copy: " + file_new.path + " to: " + name_old + " error: " + ex);
-			}
-
-			Filesystem.writeToFile(file_new, ""); // truncate
 		}
 	},
 	removeZfcsIfNecessary : function() {

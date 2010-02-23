@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.44 2009-11-18 09:13:55 cvsuser Exp $
+// $Id: configsettings.js,v 1.45 2010-02-23 05:03:29 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -247,7 +247,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			Filesystem.removeZfcs();
 			if (AppInfo.app_name == 'firefox')
 				AddressBookFfStatic.db_drop_and_create();
-			Filesystem.removeLogfile();
+			LogAppenderStatic.rotate();
 			StatusBarState.update();
 			if (this.m_czss)
 				this.m_czss.initialiseView();

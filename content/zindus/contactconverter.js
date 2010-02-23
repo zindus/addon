@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.55 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: contactconverter.js,v 1.56 2010-02-23 05:04:10 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -582,11 +582,6 @@ tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday
 			// - each of yyyy, mm, and dd are padded with leading zeroes.
 			// - if no year is given, then "--mm-dd"
 			//
-			this.m_logger.debug("AMHEREY: a_normalised_tb_birthday: " + aToString(a_normalised_tb_birthday)); // TODO
-
-			this.m_logger.debug("AMHEREY: BirthMonth: a_normalised_tb_birthday: " + a_normalised_tb_birthday['BirthMonth'] + " padded: " + pad_dd(a_normalised_tb_birthday['BirthMonth']));
-			this.m_logger.debug("AMHEREY: BirthDay: a_normalised_tb_birthday: " + a_normalised_tb_birthday['BirthDay'] + " padded: " + pad_dd(a_normalised_tb_birthday['BirthDay']));
-
 			let birthday = "-" + pad_dd(a_normalised_tb_birthday['BirthMonth']) +
 			               "-" + pad_dd(a_normalised_tb_birthday['BirthDay']);
 

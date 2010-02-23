@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: logger.js,v 1.26 2009-05-31 22:56:37 cvsuser Exp $
+// $Id: logger.js,v 1.27 2010-02-23 05:03:29 cvsuser Exp $
 
 // simple logging api, no appenders
 
@@ -140,16 +140,15 @@ LogAppender.prototype = {
 		return ret;
 	},
 	fileOpen : function() {
-		var ret = null;
+		let ret = null;
+		let ioFlags;
 
 		try {
-			
-			with(Filesystem.eFlag)
-			{
-				var ioFlags = PR_CREATE_FILE | PR_RDONLY | PR_WRONLY | PR_APPEND; // not used: PR_SYNC;
+			with(Filesystem.eFlag) {
+				ioFlags = PR_CREATE_FILE | PR_RDONLY | PR_WRONLY | PR_APPEND; // not used: PR_SYNC;
 
 				if (this.m_logfile.exists() && this.m_logfile.fileSize > this.m_logfile_size_max)
-					ioFlags |= PR_TRUNCATE;
+					LogAppenderStatic.rotate();
 			}
 
 			ret = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
@@ -221,6 +220,57 @@ var LogAppenderStatic = {
 		} catch (ex) {
 			LogAppenderStatic.reportError("logToFile: unable to write to logfile, message: " + message, ex);
 		}
+	},
+	rotate : function () {
+		// move logfile.txt   to logfile.txt.1
+		// move logfile.txt.1 to logfile.txt.2
+		// ... up to NUM_LOGFILES
+		// truncate logfile.txt
+		//
+		// The reason this is a three step: 1. remove old 2. copy new to old 3. truncate new
+		// and not simply "move" is because we hold open filehandles to the logfile (LogAppender) for performance.
+		//
+		let i, file;
+
+		function name_for(n) {
+			return Filesystem.eFilename.LOGFILE + ((n > 0) ? ("." + n) : "");
+		}
+
+		function nsifile_for(n) {
+			let name = name_for(n);
+			let file = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.LOG);
+
+			file.append(name);
+			if (file.exists())
+				zinAssert(!file.isDirectory()); // don't take any chances!
+
+			return file;
+		}
+
+		// remove the last one if it exists
+		//
+		let max_rotations = preferences().getIntPref(preferences().branch(), MozillaPreferences.AS_LOGFILE_ROTATIONS);
+		file = nsifile_for(max_rotations);
+
+		if (file.exists())
+			try { file.remove(false); } catch (ex) { }
+
+		for (i = max_rotations - 1; i >= 0; i--) {
+			let file_old = nsifile_for(i);
+			let name_new = name_for(i + 1);
+
+			if (file_old.exists())
+				try {
+					file_old.copyTo(null, name_new);
+				}
+				catch (ex) {
+					logger().error("rotate: unable to copy: " + file_old.path + " to: " + name_new + " error: " + ex);
+				}
+		}
+
+		file = nsifile_for(0);
+		try { file.remove(false); } catch (ex) { }
+		Filesystem.writeToFile(file, ""); // truncate
 	}
 };
 

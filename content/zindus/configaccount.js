@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.38 2009-11-18 09:13:55 cvsuser Exp $
+// $Id: configaccount.js,v 1.39 2010-02-23 05:03:29 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -194,14 +194,7 @@ ConfigAccount.prototype = {
 		if (id == "ca-url" && this.serverFormat() == FORMAT_ZM) {
 			let url              = dId(id).value;
 			let is_share_service = this.is_share_service();
-			let is_free_fr       = false;
-
-			if (url.length > 0) {
-				let prefset = prefsetMatchWithPreAuth(url);
-
-				if (prefset && prefset.getProperty(PrefSet.PREAUTH_NAME) == "free.fr")
-					is_free_fr = true;
-			}
+			let is_free_fr       = is_url_free_fr(url);
 
 			if (is_free_fr || is_share_service)
 				ConfigAccountStatic.setRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap, "no");

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.69 2009-12-08 08:56:54 cvsuser Exp $
+// $Id: util.js,v 1.70 2010-02-23 05:03:29 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -776,8 +776,23 @@ function isSingletonInScope()
 											&& typeof(singleton().logger().error) == 'function');
 }
 
+function is_url_free_fr (url) {
+	let ret = false;
+
+	if (url.length > 0) {
+		let prefset = prefsetMatchWithPreAuth(url);
+
+		if (prefset && prefset.getProperty(PrefSet.PREAUTH_NAME) == "free.fr")
+			ret = true;
+	}
+
+	return ret;
+}
+
 function prefsetMatchWithPreAuth(url)
 {
+	zinAssert(typeof(url) == 'string'); // TODO remove
+
 	var a_preauth = preferences().getImmediateChildren(preferences().branch(), PrefSet.PREAUTH + '.');
 	var prefset   = new PrefSet(PrefSet.PREAUTH, PrefSet.PREAUTH_PROPERTIES);
 	var is_match  = false;

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.121 2010-02-16 03:57:57 cvsuser Exp $
+// $Id: testharness.js,v 1.122 2010-02-23 05:03:29 cvsuser Exp $
 
 function TestHarness()
 {
@@ -2941,15 +2941,14 @@ TestHarness.prototype.testPasswordManager = function()
 
 TestHarness.prototype.testRemoveBadLogin = function()
 {
-	var i;
-	var pm       = PasswordManager.new();
-
 	// passwordmanager doesn't seem to delete the bogus 'username' entry correctly, so we try again here on the first
 	// run after an upgrade to tb3.
 	//
+	let pm = PasswordManager.new();
 	let url      = "https://www.google.com";
 	let username = "username";
 	let logins   = pm.nsILoginManager().getAllLogins({});
+	let i;
 
 	this.m_logger.debug("testRemoveBadLogin: logins.length: " + logins.length);
 

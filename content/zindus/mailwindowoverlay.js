@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.63 2009-11-02 22:18:38 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.64 2010-02-23 05:03:29 cvsuser Exp $
 
 function ZinMailWindowOverlay()
 {
@@ -372,6 +372,20 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 			this.m_logger.debug("AS_IS_FIRSTRUN was true but we set it to false because an account was present");
 			prefs.setBoolPref(prefs.branch(), MozillaPreferences.AS_IS_FIRSTRUN, false);
 		}
+	}
+
+	// 0.8.15
+	// - remove logfile.txt.old ... move to a configurable rotation scheme
+	// 
+	if (true) {
+		let name =  Filesystem.eFilename.LOGFILE + ".old";
+		let file = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.LOG);
+		file.append(name);
+		if (file.exists() && !file.isDirectory())
+			try {
+				file.remove(false);
+				this.m_logger.debug("removed: " + file.path);
+			} catch (ex) { }
 	}
 }
 

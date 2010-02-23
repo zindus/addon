@@ -3,7 +3,8 @@
 //
 // Interval and timer values below are in seconds. Common values are: week:604800 day:86400 hour:3600 min:60
 //
-pref("extensions.zindus.system.as_logfile_max_size",      10000000); // logfile is truncated when it gets bigger than this
+pref("extensions.zindus.system.as_logfile_max_size",      10000000); // logfile is rotated when it gets bigger than this
+pref("extensions.zindus.system.as_logfile_rotations",     5);        // how many logfile rotations to keep
 pref("extensions.zindus.system.as_timer_delay_on_start",  3600);     // how long before the sync timer fires after startup
 pref("extensions.zindus.system.as_timer_delay_on_repeat", 43200);    // how long before the second and subsequent sync timers fire
 pref("extensions.zindus.system.as_allow_pre_release",     false);    // allow the addon to run in a pre-release Thunderbird

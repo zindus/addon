@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mozillapreferences.js,v 1.36 2009-11-18 09:13:56 cvsuser Exp $
+// $Id: mozillapreferences.js,v 1.37 2010-02-23 05:03:29 cvsuser Exp $
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
@@ -37,6 +37,7 @@
 // - home for preference keys that don't belong in a prefset
 
 MozillaPreferences.AS_LOGFILE_MAX_SIZE      = "system.as_logfile_max_size";
+MozillaPreferences.AS_LOGFILE_ROTATIONS     = "system.as_logfile_rotations";
 MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT = "system.as_timer_delay_on_repeat";
 MozillaPreferences.AS_TIMER_DELAY_ON_START  = "system.as_timer_delay_on_start";
 MozillaPreferences.AS_ALLOW_PRE_RELEASE     = "system.as_allow_pre_release";
@@ -58,6 +59,7 @@ MozillaPreferences.getAllSystemPrefs = function()
 {
 	return newObject(
 		MozillaPreferences.AS_LOGFILE_MAX_SIZE,      'int',
+		MozillaPreferences.AS_LOGFILE_ROTATIONS,     'int',
 		MozillaPreferences.AS_TIMER_DELAY_ON_REPEAT, 'int',
 		MozillaPreferences.AS_TIMER_DELAY_ON_START,  'int',
 		MozillaPreferences.AS_PASSWORD_VERSION,      'char',
