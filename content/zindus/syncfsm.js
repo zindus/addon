@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.240 2010-02-26 01:40:54 cvsuser Exp $
+// $Id: syncfsm.js,v 1.241 2010-02-26 03:01:27 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -9140,7 +9140,7 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 
 	if (!this.state.m_http || !this.state.m_http.response('text'))
 		nextEvent = 'evCancel';
-	else if (true || this.state.m_http.is_http_status(HTTP_STATUS_401_UNAUTHORIZED)) {
+	else if (this.state.m_http.is_http_status(HTTP_STATUS_401_UNAUTHORIZED)) {
 		this.state.stopFailCode = 'failon.unauthorized';
 		nextEvent = 'evLackIntegrity';
 		if (this.state.gd_is_use_cached_authtoken) {
