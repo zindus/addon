@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.239 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: syncfsm.js,v 1.240 2010-02-26 01:40:54 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -341,6 +341,7 @@ SyncFsm.prototype.entryActionStart = function(state, event, continuation)
 
 		if (this.state.authToken)
 		{
+			this.state.gd_is_use_cached_authtoken = true;
 			nextEvent = 'evSkip';
 			this.debug("authentication: skip ClientLogin in favour of the cached authToken for: " + passwordlocator.username());
 		}
@@ -9013,6 +9014,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.gd_au_group_for_mod           = new Object(); // set by suoGdTweakCiOps, used by entryAction MOD code
 	state.a_gd_luid_ab_in_tb            = null;         // luids of the addressbooks in zfcTb that are syncing with Google
 	state.gd_is_sync_postal_address     = null;         // true/false
+	state.gd_is_use_cached_authtoken    = false;        // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
 	state.a_gd_contacts_deleted         = new Object();
 
@@ -9138,10 +9140,13 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 
 	if (!this.state.m_http || !this.state.m_http.response('text'))
 		nextEvent = 'evCancel';
-	else if (this.state.m_http.is_http_status(HTTP_STATUS_401_UNAUTHORIZED)) {
+	else if (true || this.state.m_http.is_http_status(HTTP_STATUS_401_UNAUTHORIZED)) {
 		this.state.stopFailCode = 'failon.unauthorized';
 		nextEvent = 'evLackIntegrity';
-		this.gd_remove_cached_auth_token(state);
+		if (this.state.gd_is_use_cached_authtoken) {
+			this.state.m_sfcd.sourceid(this.state.sourceid_pr, 'is_gd_token_invalid', true);
+			this.gd_remove_cached_auth_token(state);
+		}
 	}
 	else if (this.state.m_http.is_http_status(HTTP_STATUS_403_FORBIDDEN)) {
 		this.state.stopFailCode = 'failon.gd.forbidden';
