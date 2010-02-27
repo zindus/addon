@@ -1,123 +1,53 @@
-<!-- Mail Window Overlay -->
-<!ENTITY zindus.mo.menuitem.label                       "Zindus">
-<!ENTITY zindus.mo.menuitem.accesskey                   "z">
-
-<!-- Status Bar Overlay -->
-<!ENTITY zindus.sb.settings.label                       "Настройки">
-
-<!-- Configuration of an Account -->
 <!ENTITY zindus.ca.account.type.label                   "Синхронизация с">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "Предлагаемые Google адреса">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Игнорировать">
+<!ENTITY zindus.ca.google.suggested.include.label       "Включить">
+<!ENTITY zindus.ca.google.sync.with.label               "Синхронизировать контакты Google с">
+<!ENTITY zindus.ca.google.sync.with.pab.label           "Личная адресная книга">
 <!ENTITY zindus.ca.group.login.details.label            "Аутентификация">
 <!ENTITY zindus.ca.group.pap.label                      "Для этой учетной записи">
+<!ENTITY zindus.ca.password.label                       "Пароль:">
+<!ENTITY zindus.ca.test.connection.accesskey            "T">
+<!ENTITY zindus.ca.test.connection.label                "Тестирование соединения">
 <!ENTITY zindus.ca.url.description.value                "Введите url используемый для аутентификации на сервере.<html:br/>пример: https://mymail.example.com">
 <!ENTITY zindus.ca.url.label                            "Url сервера:">
 <!ENTITY zindus.ca.username.description.value           "Введите адрес email и пароль, которые используются при аутентификации.">
 <!ENTITY zindus.ca.username.label                       "Email:">
-<!ENTITY zindus.ca.password.label                       "Пароль:">
-<!ENTITY zindus.ca.test.connection.label                "Тестирование соединения">
-<!ENTITY zindus.ca.test.connection.accesskey            "T">
-<!ENTITY zindus.ca.google.sync.with.pab.label           "Личная адресная книга">
-<!ENTITY zindus.ca.google.sync.with.label               "Синхронизировать контакты Google с">
-<!ENTITY zindus.ca.google.suggested.contacts.label      "Предлагаемые Google адреса">
-<!ENTITY zindus.ca.google.suggested.include.label       "Включить">
-<!ENTITY zindus.ca.google.suggested.ignore.label        "Игнорировать">
-<!ENTITY zindus.ca.google.group.as.ab.label             "Синхронизировать группы Google с адресными книгами Thunderbird">
 <!ENTITY zindus.ca.zimbra.gal.label                     "Глобальный список адресов (GAL): ">
-<!ENTITY zindus.ca.zimbra.gal.yes.label                 "Да">
 <!ENTITY zindus.ca.zimbra.gal.no.label                  "Нет">
-
-<!-- Configuration Settings -->
-<!ENTITY zindus.cs.title                                "Настройки Zindus">
-<!ENTITY zindus.cs.buttonlabelextra2                    "Справка">
-
-<!ENTITY zindus.cs.sharing.label                        "Коллективное">
-
-<!ENTITY zindus.cs.account.add.label                    "Добавить">
-<!ENTITY zindus.cs.account.add.accesskey                "A">
-<!ENTITY zindus.cs.account.edit.label                   "Править">
-<!ENTITY zindus.cs.account.edit.accesskey               "E">
-<!ENTITY zindus.cs.account.delete.label                 "Удалить">
-<!ENTITY zindus.cs.account.delete.accesskey             "D">
-<!ENTITY zindus.cs.account.email.label                  "Email">
-<!ENTITY zindus.cs.account.addressbook.label            "Адресная книга">
-<!ENTITY zindus.cs.accounts.label                       "Учетные записи">
-
-<!ENTITY zindus.cs.general.settings.label               "Настройки">
-<!ENTITY zindus.cs.general.actions.label                "Действия">
-<!ENTITY zindus.cs.general.auto.sync.label              "Автосинхронизация">
-<!ENTITY zindus.cs.general.verbose.logging.label        "Вербальная аутентификация">
-<!ENTITY zindus.cs.general.button.sync.now.label        "Синхронизировать">
-<!ENTITY zindus.cs.general.button.sync.now.accesskey    "S">
-<!ENTITY zindus.cs.general.button.reset.label           "Сброс">
-<!ENTITY zindus.cs.general.button.reset.accesskey       "R">
-<!ENTITY zindus.cs.general.button.gd.advanced.label     "Дополнительные параметры Google">
-<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
-
-<!-- Google Contacts Rule Violation -->
-<!ENTITY zindus.gr.title                                "Нарушение правил в контактах Google">
-<!ENTITY zindus.gr.button.accept.label                  "Подтверждение">
-
-<!-- Google Advanced -->
-<!ENTITY zindus.cg.title                                "Zindus дополнительные параметры Google">
+<!ENTITY zindus.ca.zimbra.gal.yes.label                 "Да">
 <!ENTITY zindus.cg.postal.caption.label                 "Поля почтового адреса">
 <!ENTITY zindus.cg.postal.false.label                   "Не синхронизировать (рекомендуется)">
 <!ENTITY zindus.cg.postal.true.label                    "Поля Thunderbird представлять в Google в виде xml">
-<!ENTITY zindus.cg.rule.caption.label                   "Обработка нарушения правил в контактах Google">
 <!ENTITY zindus.cg.rule.ask.me.label                    "Запрос">
+<!ENTITY zindus.cg.rule.caption.label                   "Обработка нарушения правил в контактах Google">
 <!ENTITY zindus.cg.rule.dont.ask.label                  "Не запрашивать, удалить контакты до исправления нарушений">
-
-<!-- Sync Window -->
+<!ENTITY zindus.cg.title                                "Zindus дополнительные параметры Google">
+<!ENTITY zindus.cs.account.add.accesskey                "A">
+<!ENTITY zindus.cs.account.add.label                    "Добавить">
+<!ENTITY zindus.cs.account.addressbook.label            "Адресная книга">
+<!ENTITY zindus.cs.account.delete.accesskey             "D">
+<!ENTITY zindus.cs.account.delete.label                 "Удалить">
+<!ENTITY zindus.cs.account.edit.accesskey               "E">
+<!ENTITY zindus.cs.account.edit.label                   "Править">
+<!ENTITY zindus.cs.account.email.label                  "Email">
+<!ENTITY zindus.cs.accounts.label                       "Учетные записи">
+<!ENTITY zindus.cs.buttonlabelextra2                    "Справка">
+<!ENTITY zindus.cs.general.actions.label                "Действия">
+<!ENTITY zindus.cs.general.auto.sync.label              "Автосинхронизация">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.cs.general.button.gd.advanced.label     "Дополнительные параметры Google">
+<!ENTITY zindus.cs.general.button.reset.accesskey       "R">
+<!ENTITY zindus.cs.general.button.reset.label           "Сброс">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey    "S">
+<!ENTITY zindus.cs.general.button.sync.now.label        "Синхронизировать">
+<!ENTITY zindus.cs.general.settings.label               "Настройки">
+<!ENTITY zindus.cs.general.verbose.logging.label        "Вербальная аутентификация">
+<!ENTITY zindus.cs.title                                "Настройки Zindus">
+<!ENTITY zindus.gr.button.accept.label                  "Подтверждение">
+<!ENTITY zindus.gr.title                                "Нарушение правил в контактах Google">
+<!ENTITY zindus.mo.menuitem.accesskey                   "z">
+<!ENTITY zindus.mo.menuitem.label                       "Zindus">
+<!ENTITY zindus.sb.settings.label                       "Настройки">
 <!ENTITY zindus.sw.title                                "Синхронизация Zindus">
-
-<!-- User Prompt -->
 <!ENTITY zindus.up.show.again.label                     "Показать этот диалог в следующий раз">
-
-<!-- Contact Sharing -->
-<!ENTITY zindus.cw.title                                "Настройки Zindus">
-<!ENTITY zindus.cw.username.label                       "Желаемое имя пользователя:">
-<!ENTITY zindus.cw.username.hint.label                  "Уникальное имя в Zindus Share">
-<!ENTITY zindus.cw.email.label                          "Ваш адрес email:">
-<!ENTITY zindus.cw.email.hint.label                     "Если что-то забыли">
-<!ENTITY zindus.cw.cn.label                             "Ваше имя:">
-<!ENTITY zindus.cw.cn.hint.label                        "Люди, общающиеся с Вами будут видеть имя:">
-<!ENTITY zindus.cw.password.label                       "Пароль:">
-<!ENTITY zindus.cw.password.hint.label                  "Минимум 6 символов.">
-<!ENTITY zindus.cw.password.reenter.label               "Введите пароль еще раз:">
-<!ENTITY zindus.cw.captcha.label                        "Введите символы, изображенные ниже:">
-<!ENTITY zindus.cw.captcha.reload.text                  "Перезагрузить">
-<!ENTITY zindus.cw.captcha.hint.label                   "Символы не чувствительны к регистру, пробелы допустимы.">
-<!ENTITY zindus.cw.try.again.text                       "Попытайтесь еще раз">
-<!ENTITY zindus.cw.signup.page.1.label                  "Регистрация в Zindus Share (страница 1 из 3)">
-<!ENTITY zindus.cw.signup.page.2.label                  "Регистрация в Zindus Share (страница 2 из 3)">
-<!ENTITY zindus.cw.signup.page.3.label                  "Завершение!">
-<!ENTITY zindus.cw.signup.will.create.label             "Учетная запись будет создана после этой страницы. ">
-<!ENTITY zindus.cw.signup.tos.text                      "<html:strong >Сервис Zindus Share предоставляется в рамках договора об услугах, накладывающего определенные ограничения, отказ от гарантий и ограничение ответственности. Полный текст договора может быть найден <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;);'> здесь </html:a>.</html:strong>">
-<!ENTITY zindus.cw.signup.tos.agreed.label              "Я прочитал и согласен с <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-tos&apos;)'>Договором</html:a>">
-<!ENTITY zindus.cw.signup.finished.1.label              "Поздравляем, Ваша учетная запись создана!
-	<html:br/> <html:br/>
-	На Ваш почтовый адрес послано письмо для подтверждения адреса email.
-	<html:br/> <html:br/>
-	Поздравляем!
-	">
-<!ENTITY zindus.cw.signup.finished.2.label              "Завершение синхронизации">
-
-<!ENTITY zindus.ss.overview.label                    "Zindus Share – это экспериментальный сетевой сервис от Toolware Pty Ltd.
-	<html:br/><html:br/>
-	Используя Zindus Share возможно:
-	<html:ul>
-	<html:li>поделиться выбранными контактами с другими пользвователями Thunderbird</html:li>
-	<html:li>синхронизировать контакты между Thunderbird на разных компьютерах</html:li>
-	<html:li>восстановить удаленные контакты из корзины сетевой адресной книги</html:li>
-	</html:ul> <html:br/> <html:a href='#' onclick='ZindusOpenUrlTo(&apos;share-faq&apos;)'> Дополнительная информация.</html:a>">
-
-<!ENTITY zindus.ss.about.service.caption.label       "Сведения о Zindus Share">
-<!ENTITY zindus.ss.signup.button.label               "Зарегистрируйся - это просто и бесплатно!">
-<!ENTITY zindus.ss.signup.button.accesskey            "S">
-
-<!ENTITY zindus.ss.shares.caption.label              "Разделяемое">
-<!ENTITY zindus.ss.tree.col.email.label              "Адресная книга / email">
-<!ENTITY zindus.ss.tree.col.cn.label                 "название">
-<!ENTITY zindus.ss.tree.col.ro.label                 "чт.">
-<!ENTITY zindus.ss.tree.col.rw.label                 "чт./зп.">
-<!ENTITY zindus.ss.tree.col.ro.tooltip               "только чтение">
-<!ENTITY zindus.ss.tree.col.rw.tooltip               "чтение-запись">
