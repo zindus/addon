@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.10 2010-02-16 03:57:57 cvsuser Exp $
+// $Id: perlocale.js,v 1.11 2010-02-27 04:13:16 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -69,7 +69,7 @@ var PerLocaleStatic = {
 
 			this.m_locale_superset[locale] = true;
 
-			logger().debug(" AMHERE: elem.key: " + elem.key + " locale: " + locale + " setting m_translation: key: " + key + " lookedup: " + k + " to: " + elem.value); // TODO
+			// logger().debug("perlocale: elem.key: " + elem.key + " locale: " + locale + " setting m_translation: key: " + key + " lookedup: " + k + " to: " + elem.value);
 
 			if (!(k in PerLocaleStatic.m_translation))
 				PerLocaleStatic.m_translation[k] = new Object();
