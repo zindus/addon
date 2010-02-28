@@ -1,53 +1,53 @@
-<!ENTITY zindus.ca.account.type.label                   "Ñèíõðîíèçàöèÿ ñ">
-<!ENTITY zindus.ca.google.suggested.contacts.label      "Ïðåäëàãàåìûå Google àäðåñà">
-<!ENTITY zindus.ca.google.suggested.ignore.label        "Èãíîðèðîâàòü">
-<!ENTITY zindus.ca.google.suggested.include.label       "Âêëþ÷èòü">
-<!ENTITY zindus.ca.google.sync.with.label               "Ñèíõðîíèçèðîâàòü êîíòàêòû Google ñ">
-<!ENTITY zindus.ca.google.sync.with.pab.label           "Ëè÷íàÿ àäðåñíàÿ êíèãà">
-<!ENTITY zindus.ca.group.login.details.label            "Àóòåíòèôèêàöèÿ">
-<!ENTITY zindus.ca.group.pap.label                      "Äëÿ ýòîé ó÷åòíîé çàïèñè">
-<!ENTITY zindus.ca.password.label                       "Ïàðîëü:">
+ï»¿<!ENTITY zindus.ca.account.type.label                   "Ð¡Ð¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð°Ñ†Ð¸Ñ Ñ">
+<!ENTITY zindus.ca.google.suggested.contacts.label      "ÐŸÑ€ÐµÐ´Ð»Ð°Ð³Ð°ÐµÐ¼Ñ‹Ðµ Google Ð°Ð´Ñ€ÐµÑÐ°">
+<!ENTITY zindus.ca.google.suggested.ignore.label        "Ð˜Ð³Ð½Ð¾Ñ€Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ">
+<!ENTITY zindus.ca.google.suggested.include.label       "Ð’ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ">
+<!ENTITY zindus.ca.google.sync.with.label               "Ð¡Ð¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ ÐºÐ¾Ð½Ñ‚Ð°ÐºÑ‚Ñ‹ Google Ñ">
+<!ENTITY zindus.ca.google.sync.with.pab.label           "Ð›Ð¸Ñ‡Ð½Ð°Ñ Ð°Ð´Ñ€ÐµÑÐ½Ð°Ñ ÐºÐ½Ð¸Ð³Ð°">
+<!ENTITY zindus.ca.group.login.details.label            "ÐÑƒÑ‚ÐµÐ½Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ">
+<!ENTITY zindus.ca.group.pap.label                      "Ð”Ð»Ñ ÑÑ‚Ð¾Ð¹ ÑƒÑ‡ÐµÑ‚Ð½Ð¾Ð¹ Ð·Ð°Ð¿Ð¸ÑÐ¸">
+<!ENTITY zindus.ca.password.label                       "ÐŸÐ°Ñ€Ð¾Ð»ÑŒ:">
 <!ENTITY zindus.ca.test.connection.accesskey            "T">
-<!ENTITY zindus.ca.test.connection.label                "Òåñòèðîâàíèå ñîåäèíåíèÿ">
-<!ENTITY zindus.ca.url.description.value                "Ââåäèòå url èñïîëüçóåìûé äëÿ àóòåíòèôèêàöèè íà ñåðâåðå.<html:br/>ïðèìåð: https://mymail.example.com">
-<!ENTITY zindus.ca.url.label                            "Url ñåðâåðà:">
-<!ENTITY zindus.ca.username.description.value           "Ââåäèòå àäðåñ email è ïàðîëü, êîòîðûå èñïîëüçóþòñÿ ïðè àóòåíòèôèêàöèè.">
+<!ENTITY zindus.ca.test.connection.label                "Ð¢ÐµÑÑ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ ÑÐ¾ÐµÐ´Ð¸Ð½ÐµÐ½Ð¸Ñ">
+<!ENTITY zindus.ca.url.description.value                "Ð’Ð²ÐµÐ´Ð¸Ñ‚Ðµ url Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼Ñ‹Ð¹ Ð´Ð»Ñ Ð°ÑƒÑ‚ÐµÐ½Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ð¸ Ð½Ð° ÑÐµÑ€Ð²ÐµÑ€Ðµ.<html:br/>Ð¿Ñ€Ð¸Ð¼ÐµÑ€: https://mymail.example.com">
+<!ENTITY zindus.ca.url.label                            "Url ÑÐµÑ€Ð²ÐµÑ€Ð°:">
+<!ENTITY zindus.ca.username.description.value           "Ð’Ð²ÐµÐ´Ð¸Ñ‚Ðµ Ð°Ð´Ñ€ÐµÑ email Ð¸ Ð¿Ð°Ñ€Ð¾Ð»ÑŒ, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑŽÑ‚ÑÑ Ð¿Ñ€Ð¸ Ð°ÑƒÑ‚ÐµÐ½Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ð¸.">
 <!ENTITY zindus.ca.username.label                       "Email:">
-<!ENTITY zindus.ca.zimbra.gal.label                     "Ãëîáàëüíûé ñïèñîê àäðåñîâ (GAL): ">
-<!ENTITY zindus.ca.zimbra.gal.no.label                  "Íåò">
-<!ENTITY zindus.ca.zimbra.gal.yes.label                 "Äà">
-<!ENTITY zindus.cg.postal.caption.label                 "Ïîëÿ ïî÷òîâîãî àäðåñà">
-<!ENTITY zindus.cg.postal.false.label                   "Íå ñèíõðîíèçèðîâàòü (ðåêîìåíäóåòñÿ)">
-<!ENTITY zindus.cg.postal.true.label                    "Ïîëÿ Thunderbird ïðåäñòàâëÿòü â Google â âèäå xml">
-<!ENTITY zindus.cg.rule.ask.me.label                    "Çàïðîñ">
-<!ENTITY zindus.cg.rule.caption.label                   "Îáðàáîòêà íàðóøåíèÿ ïðàâèë â êîíòàêòàõ Google">
-<!ENTITY zindus.cg.rule.dont.ask.label                  "Íå çàïðàøèâàòü, óäàëèòü êîíòàêòû äî èñïðàâëåíèÿ íàðóøåíèé">
-<!ENTITY zindus.cg.title                                "Zindus äîïîëíèòåëüíûå ïàðàìåòðû Google">
+<!ENTITY zindus.ca.zimbra.gal.label                     "Ð“Ð»Ð¾Ð±Ð°Ð»ÑŒÐ½Ñ‹Ð¹ ÑÐ¿Ð¸ÑÐ¾Ðº Ð°Ð´Ñ€ÐµÑÐ¾Ð² (GAL): ">
+<!ENTITY zindus.ca.zimbra.gal.no.label                  "ÐÐµÑ‚">
+<!ENTITY zindus.ca.zimbra.gal.yes.label                 "Ð”Ð°">
+<!ENTITY zindus.cg.postal.caption.label                 "ÐŸÐ¾Ð»Ñ Ð¿Ð¾Ñ‡Ñ‚Ð¾Ð²Ð¾Ð³Ð¾ Ð°Ð´Ñ€ÐµÑÐ°">
+<!ENTITY zindus.cg.postal.false.label                   "ÐÐµ ÑÐ¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ (Ñ€ÐµÐºÐ¾Ð¼ÐµÐ½Ð´ÑƒÐµÑ‚ÑÑ)">
+<!ENTITY zindus.cg.postal.true.label                    "ÐŸÐ¾Ð»Ñ Thunderbird Ð¿Ñ€ÐµÐ´ÑÑ‚Ð°Ð²Ð»ÑÑ‚ÑŒ Ð² Google Ð² Ð²Ð¸Ð´Ðµ xml">
+<!ENTITY zindus.cg.rule.ask.me.label                    "Ð—Ð°Ð¿Ñ€Ð¾Ñ">
+<!ENTITY zindus.cg.rule.caption.label                   "ÐžÐ±Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐ° Ð½Ð°Ñ€ÑƒÑˆÐµÐ½Ð¸Ñ Ð¿Ñ€Ð°Ð²Ð¸Ð» Ð² ÐºÐ¾Ð½Ñ‚Ð°ÐºÑ‚Ð°Ñ… Google">
+<!ENTITY zindus.cg.rule.dont.ask.label                  "ÐÐµ Ð·Ð°Ð¿Ñ€Ð°ÑˆÐ¸Ð²Ð°Ñ‚ÑŒ, ÑƒÐ´Ð°Ð»Ð¸Ñ‚ÑŒ ÐºÐ¾Ð½Ñ‚Ð°ÐºÑ‚Ñ‹ Ð´Ð¾ Ð¸ÑÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ñ Ð½Ð°Ñ€ÑƒÑˆÐµÐ½Ð¸Ð¹">
+<!ENTITY zindus.cg.title                                "Zindus Ð´Ð¾Ð¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Google">
 <!ENTITY zindus.cs.account.add.accesskey                "A">
-<!ENTITY zindus.cs.account.add.label                    "Äîáàâèòü">
-<!ENTITY zindus.cs.account.addressbook.label            "Àäðåñíàÿ êíèãà">
+<!ENTITY zindus.cs.account.add.label                    "Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ">
+<!ENTITY zindus.cs.account.addressbook.label            "ÐÐ´Ñ€ÐµÑÐ½Ð°Ñ ÐºÐ½Ð¸Ð³Ð°">
 <!ENTITY zindus.cs.account.delete.accesskey             "D">
-<!ENTITY zindus.cs.account.delete.label                 "Óäàëèòü">
+<!ENTITY zindus.cs.account.delete.label                 "Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ">
 <!ENTITY zindus.cs.account.edit.accesskey               "E">
-<!ENTITY zindus.cs.account.edit.label                   "Ïðàâèòü">
+<!ENTITY zindus.cs.account.edit.label                   "ÐŸÑ€Ð°Ð²Ð¸Ñ‚ÑŒ">
 <!ENTITY zindus.cs.account.email.label                  "Email">
-<!ENTITY zindus.cs.accounts.label                       "Ó÷åòíûå çàïèñè">
-<!ENTITY zindus.cs.buttonlabelextra2                    "Ñïðàâêà">
-<!ENTITY zindus.cs.general.actions.label                "Äåéñòâèÿ">
-<!ENTITY zindus.cs.general.auto.sync.label              "Àâòîñèíõðîíèçàöèÿ">
+<!ENTITY zindus.cs.accounts.label                       "Ð£Ñ‡ÐµÑ‚Ð½Ñ‹Ðµ Ð·Ð°Ð¿Ð¸ÑÐ¸">
+<!ENTITY zindus.cs.buttonlabelextra2                    "Ð¡Ð¿Ñ€Ð°Ð²ÐºÐ°">
+<!ENTITY zindus.cs.general.actions.label                "Ð”ÐµÐ¹ÑÑ‚Ð²Ð¸Ñ">
+<!ENTITY zindus.cs.general.auto.sync.label              "ÐÐ²Ñ‚Ð¾ÑÐ¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð°Ñ†Ð¸Ñ">
 <!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
-<!ENTITY zindus.cs.general.button.gd.advanced.label     "Äîïîëíèòåëüíûå ïàðàìåòðû Google">
+<!ENTITY zindus.cs.general.button.gd.advanced.label     "Ð”Ð¾Ð¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Google">
 <!ENTITY zindus.cs.general.button.reset.accesskey       "R">
-<!ENTITY zindus.cs.general.button.reset.label           "Ñáðîñ">
+<!ENTITY zindus.cs.general.button.reset.label           "Ð¡Ð±Ñ€Ð¾Ñ">
 <!ENTITY zindus.cs.general.button.sync.now.accesskey    "S">
-<!ENTITY zindus.cs.general.button.sync.now.label        "Ñèíõðîíèçèðîâàòü">
-<!ENTITY zindus.cs.general.settings.label               "Íàñòðîéêè">
-<!ENTITY zindus.cs.general.verbose.logging.label        "Âåðáàëüíàÿ àóòåíòèôèêàöèÿ">
-<!ENTITY zindus.cs.title                                "Íàñòðîéêè Zindus">
-<!ENTITY zindus.gr.button.accept.label                  "Ïîäòâåðæäåíèå">
-<!ENTITY zindus.gr.title                                "Íàðóøåíèå ïðàâèë â êîíòàêòàõ Google">
+<!ENTITY zindus.cs.general.button.sync.now.label        "Ð¡Ð¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ">
+<!ENTITY zindus.cs.general.settings.label               "ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸">
+<!ENTITY zindus.cs.general.verbose.logging.label        "Ð’ÐµÑ€Ð±Ð°Ð»ÑŒÐ½Ð°Ñ Ð°ÑƒÑ‚ÐµÐ½Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ">
+<!ENTITY zindus.cs.title                                "ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ Zindus">
+<!ENTITY zindus.gr.button.accept.label                  "ÐŸÐ¾Ð´Ñ‚Ð²ÐµÑ€Ð¶Ð´ÐµÐ½Ð¸Ðµ">
+<!ENTITY zindus.gr.title                                "ÐÐ°Ñ€ÑƒÑˆÐµÐ½Ð¸Ðµ Ð¿Ñ€Ð°Ð²Ð¸Ð» Ð² ÐºÐ¾Ð½Ñ‚Ð°ÐºÑ‚Ð°Ñ… Google">
 <!ENTITY zindus.mo.menuitem.accesskey                   "z">
 <!ENTITY zindus.mo.menuitem.label                       "Zindus">
-<!ENTITY zindus.sb.settings.label                       "Íàñòðîéêè">
-<!ENTITY zindus.sw.title                                "Ñèíõðîíèçàöèÿ Zindus">
-<!ENTITY zindus.up.show.again.label                     "Ïîêàçàòü ýòîò äèàëîã â ñëåäóþùèé ðàç">
+<!ENTITY zindus.sb.settings.label                       "ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸">
+<!ENTITY zindus.sw.title                                "Ð¡Ð¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð°Ñ†Ð¸Ñ Zindus">
+<!ENTITY zindus.up.show.again.label                     "ÐŸÐ¾ÐºÐ°Ð·Ð°Ñ‚ÑŒ ÑÑ‚Ð¾Ñ‚ Ð´Ð¸Ð°Ð»Ð¾Ð³ Ð² ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ Ñ€Ð°Ð·">
