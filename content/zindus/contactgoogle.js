@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.30 2009-11-18 09:13:56 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.31 2010-03-02 20:59:46 cvsuser Exp $
 
 function GoogleData()
 {
@@ -35,7 +35,7 @@ function GoogleData()
 	this.__defineSetter__("properties", function(p) { return this.set_properties(p); });
 }
 
-GoogleData.eMeta    = new ZinEnum( 'id', 'id_as_url', 'updated', 'edit', 'self', 'deleted' );
+GoogleData.eMeta    = new ZinEnum( 'id', 'id_as_hier', 'updated', 'edit', 'self', 'deleted' );
 GoogleData.eElement = new ZinEnum( 'contact', 'group' );
 
 GoogleData.prototype = {
@@ -45,12 +45,12 @@ meta_initialise_getters : function () {
 	for each ([key, value] in GoogleData.eMeta) {
 		with (GoogleData.eMeta) { with (ContactGoogleStatic) {
 			switch(value) {
-				case id_as_url: fn = function(entry) { return to_string(entry.nsAtom::id); };                            break;
-				case id:        fn = function(entry) { return to_id(entry.nsAtom::id); };                                break;
-				case updated:   fn = function(entry) { return to_string(entry.nsAtom::updated); };                       break;
-				case edit:      fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="edit").@href); };     break;
-				case self:      fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="self").@href); };     break;
-				case deleted:   fn = function(entry) { return to_bool(entry.nsGd::deleted); };                           break;
+				case id_as_hier: fn = function(entry) { return to_id_as_hier(entry.nsAtom::id); };                        break;
+				case id:         fn = function(entry) { return to_id(entry.nsAtom::id); };                                break;
+				case updated:    fn = function(entry) { return to_string(entry.nsAtom::updated); };                       break;
+				case edit:       fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="edit").@href); };     break;
+				case self:       fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="self").@href); };     break;
+				case deleted:    fn = function(entry) { return to_bool(entry.nsGd::deleted); };                           break;
 				default: zinAssertAndLog(false, key);
 			};
 		} }
@@ -838,6 +838,11 @@ var ContactGoogleStatic = {
 			ret = ((a_match[1] == 'contacts') ? "c:" : "g:") + a_match[2];
 
 		return ret;
+	},
+	to_id_as_hier : function(str) {
+		// remove http/s schemes because of google bug: http://code.google.com/p/gdata-issues/issues/detail?id=1915
+		
+		return this.to_string(str).replace(/https?:\/\//gi, "");
 	},
 	shorten_rel : function(value, element_name) {
 		return (element_name == 'website') ? value : rightOfChar(value);

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.242 2010-03-02 10:13:45 cvsuser Exp $
+// $Id: syncfsm.js,v 1.243 2010-03-02 20:59:46 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -9219,7 +9219,7 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 					zfi.set(FeedItem.ATTR_NAME, group.properties.title);
 					zfi.set(FeedItem.ATTR_EDIT, group.meta.edit);
 					zfi.set(FeedItem.ATTR_SELF, group.meta.self);
-					zfi.set(FeedItem.ATTR_GGID, group.meta.id_as_url);
+					zfi.set(FeedItem.ATTR_GGID, group.meta.id_as_hier);
 
 					msg += " updated: ";
 
@@ -9553,7 +9553,7 @@ SyncFsmGd.prototype.newZfiGroup = function(group)
 	                       FeedItem.ATTR_KEY,  group.meta.id,
 	                       FeedItem.ATTR_REV,  group.meta.updated,
 	                       FeedItem.ATTR_L,    '1',
-	                       FeedItem.ATTR_GGID, group.meta.id_as_url);
+	                       FeedItem.ATTR_GGID, group.meta.id_as_hier);
 
 	if (group.systemGroup()) {
 		ret.set(FeedItem.ATTR_NAME, group.systemGroup());
