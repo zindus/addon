@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.241 2010-02-26 03:01:27 cvsuser Exp $
+// $Id: syncfsm.js,v 1.242 2010-03-02 10:13:45 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -59,6 +59,14 @@ function SyncFsmGdAuth(id_fsm) { SyncFsmGd.call(this); }
 SyncFsmZm.prototype         = new SyncFsm();
 SyncFsmGd.prototype         = new SyncFsm();
 SyncFsmGdAuth.prototype     = new SyncFsmGd();
+
+// Sync is broken up into a number of steps, coded as a finite state machine
+// See: http://en.wikipedia.org/wiki/Finite_state_machine#Transducers (Mealy machine)
+// Features:
+// - control is released to Thunderbird on state transitions so that TB get other work done (process UI events)
+// - minimise memory usage (release memory when it's not going to be used by later states)
+// - there is a clear protocol for failing fast when correctness is lost (evLackIntegrity)
+// Google and Zimbra have different fsms (though the general format is similar)
 
 SyncFsmZm.prototype.initialiseFsm = function()
 {
@@ -2308,7 +2316,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 	if (this.formatPr() == FORMAT_GD)
 	{
 		// loadTbAddressBooks tests the addressbooks for public names to know whether they're relevant to google
-		// a_gd_luid_ab_in_tb (which drives isInScopeTbLuid) is populated from names in the map because that catches keeps in scope
+		// a_gd_luid_ab_in_tb (which drives isInScopeTbLuid) is populated from names in the map because that catches and keeps in scope
 		// addressbooks that might have been deleted during a zimbra sync (so they're no longer in tb) but they remain in
 		// the tb luid map because the deletes are yet to propagate to google.
 		//
@@ -3147,9 +3155,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 		//
 		functor_foreach_card = {
 			state: this.state,
-
-			run: function(uri, item)
-			{
+			run: function(uri, item) {
 				var abCard  = this.state.m_addressbook.qiCard(item);
 				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(abCard);
 				msg         = "loadTb pass 3: uri: " + uri + " card key: " + key;
@@ -4567,8 +4573,6 @@ SyncFsm.prototype.buildGcsGenerator = function()
 			var aNeverSynced   = new Object();
 			var aChangeOfNote  = new Object();
 			var aVerMatchesGid = new Object();
-			var aDeletedYes    = new Object();
-			var aDeletedNo     = new Object();
 			var ret = null;
 			var msg = "";
 
@@ -4589,16 +4593,20 @@ SyncFsm.prototype.buildGcsGenerator = function()
 					{
 						var lso = new Lso(zfi.get(FeedItem.ATTR_LS));
 
-						if (zfi.isPresent(FeedItem.ATTR_DEL))
-							aDeletedYes[sourceid] = true;
-						else
-							aDeletedNo[sourceid] = true;
+						if (sourceid == self.state.sourceid_tb && !self.isInScopeTbLuid(luid)) {
+							msg += " AMHERE1: sourceid: " + sourceid + " luid: " + luid + " is out of scope.";
+						}
 
 						if (lso.get(FeedItem.ATTR_VER) == zfcGid.get(gid).get(FeedItem.ATTR_VER))
 						{
 							var res = lso.compare(zfi);
 
-							if (res == 0)
+							if (res == 0 && sourceid == self.state.sourceid_tb && !self.isInScopeTbLuid(luid)) {
+								aChangeOfNote[sourceid] = true;
+								msg += " sourceid: " + sourceid + " luid: " + luid + " is out of scope.";
+								msg += " added to aChangeOfNote";
+							}
+							else if (res == 0)
 							{
 								aVerMatchesGid[sourceid] = true;
 								msg += " added to aVerMatchesGid";
@@ -4726,7 +4734,9 @@ SyncFsm.prototype.isInScopeGid = function(gid)
 		case FORMAT_ZM:
 			break;
 		case FORMAT_GD:
-			if (zfcGid.get(gid).isPresent(this.state.sourceid_tb))
+			if (zfcGid.get(gid).isPresent(this.state.sourceid_pr)) // added re: #236
+				ret = true;
+			else if (zfcGid.get(gid).isPresent(this.state.sourceid_tb))
 				ret = this.isInScopeTbLuid(zfcGid.get(gid).get(this.state.sourceid_tb));
 			
 			break;
@@ -4769,24 +4779,23 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 	var aSuoResult  = new Array();
 	var big_msg     = "suoBuildWinners: ";
 	var a_no_change = new Object();
-	var msg, suo;
+	var msg, suo, gid;
 
-	for (var gid in aGcs)
-		if (this.isInScopeGid(gid))
-		{
+	for (gid in aGcs)
+		if (this.isInScopeGid(gid)) {
 			suo = null;
 			msg = null;
 
-			switch (aGcs[gid].state)
-			{
+			switch (aGcs[gid].state) {
 				case eGcs.win:
 				case eGcs.conflict:
 					var sourceid_winner = aGcs[gid].sourceid;
 					var zfcWinner = this.zfc(sourceid_winner);
 					var zfiWinner = zfcWinner.get(zfcGid.get(gid).get(sourceid_winner));
 
-					if (!zfiWinner.isPresent(FeedItem.ATTR_LS)) // winner is new to gid
-					{
+					if (!zfiWinner.isPresent(FeedItem.ATTR_LS)) {
+						// winner is new to gid
+						//
 						zinAssert(!zfcGid.get(gid).isPresent(FeedItem.ATTR_VER));
 
 						zinAssert(zfcGid.get(gid).length() == 2); // just the id property and the winning sourceid
@@ -4795,21 +4804,18 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 
 						suo = new Suo(gid, aGcs[gid].sourceid, sourceid_winner, Suo.MDU);
 					}
-					else
-					{
+					else {
 						var lso = new Lso(zfiWinner.get(FeedItem.ATTR_LS));
 						var res = lso.compare(zfiWinner);
 
 						zinAssert(lso.get(FeedItem.ATTR_VER) == zfcGid.get(gid).get(FeedItem.ATTR_VER));
 						zinAssert(res >= 0); // winner either changed in an interesting way or stayed the same
 
-						if (res == 1)
-						{
+						if (res == 1) {
 							msg = "changed in an interesting way - MDU";
 							suo = new Suo(gid, aGcs[gid].sourceid, sourceid_winner, Suo.MDU);
 						}
-						else
-						{
+						else {
 							if (!(aGcs[gid].sourceid in a_no_change))
 								a_no_change[aGcs[gid].sourceid] = new Array();
 
@@ -4824,8 +4830,7 @@ SyncFsm.prototype.suoBuildWinners = function(aGcs)
 					zinAssert(false);
 			}
 
-			if (suo != null)
-			{
+			if (suo != null) {
 				big_msg += "\n gid=" + gid + " winner: " + aGcs[gid].sourceid + " " + msg;
 				aSuoResult.push(suo);
 			}
@@ -4905,7 +4910,7 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 
 					a_winner_matches_gid[sourceid].push(gid); // msg = " winner matches gid - no change";
 				}
-				else if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
+				else if (zfiWinner.isPresent(FeedItem.ATTR_DEL) || !this.isInScopeTbLuid(zfiWinner.key())) // isInScopeTbLuid added re: #236
 				{
 					if (!zfiTarget.isPresent(FeedItem.ATTR_DEL))
 						suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);

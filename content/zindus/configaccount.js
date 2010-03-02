@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.39 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: configaccount.js,v 1.40 2010-03-02 10:13:45 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -85,10 +85,6 @@ ConfigAccount.prototype = {
 			if (account)
 				delete this.m_account_keys[account.unique_key()];
 		}
-
-		// TODO remove this
-		// if (!preference("system.as_developer_mode", 'bool'))
-		//	xulSetAttribute('hidden', true, "ca-gd-gr-as-ab-group");
 
 		this.m_logger.debug("onLoad: m_account_keys: " + aToString(this.m_account_keys) +
 		                    " m_payload_caller.m_format: " + this.m_payload_caller.m_format);

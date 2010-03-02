@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.25 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: filesystem.js,v 1.26 2010-03-02 10:13:45 cvsuser Exp $
 
 var Filesystem = {
 	m_charset            : "UTF-8",
@@ -171,7 +171,7 @@ var Filesystem = {
 			while (iter.hasMoreElements()) {
 				let file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
 
-				if (!re_exclude.test(file.leafName))
+				if (!re_exclude.test(file.leafName) && !file.isDirectory())
 					file.remove(false);
 			}
 		}

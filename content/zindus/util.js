@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.70 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: util.js,v 1.71 2010-03-02 10:13:45 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -791,8 +791,6 @@ function is_url_free_fr (url) {
 
 function prefsetMatchWithPreAuth(url)
 {
-	zinAssert(typeof(url) == 'string'); // TODO remove
-
 	var a_preauth = preferences().getImmediateChildren(preferences().branch(), PrefSet.PREAUTH + '.');
 	var prefset   = new PrefSet(PrefSet.PREAUTH, PrefSet.PREAUTH_PROPERTIES);
 	var is_match  = false;
