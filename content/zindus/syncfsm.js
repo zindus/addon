@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.244 2010-03-03 05:32:56 cvsuser Exp $
+// $Id: syncfsm.js,v 1.245 2010-03-03 19:23:03 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4910,7 +4910,8 @@ SyncFsm.prototype.suoBuildLosers = function(aGcs)
 
 					a_winner_matches_gid[sourceid].push(gid); // msg = " winner matches gid - no change";
 				}
-				else if (zfiWinner.isPresent(FeedItem.ATTR_DEL) || !this.isInScopeTbLuid(zfiWinner.key())) // isInScopeTbLuid added re: #236
+				else if (zfiWinner.isPresent(FeedItem.ATTR_DEL) ||
+				        (sourceid_winner == this.state.sourceid_tb && !this.isInScopeTbLuid(zfiWinner.key()))) // added re: #236
 				{
 					if (!zfiTarget.isPresent(FeedItem.ATTR_DEL))
 						suo = new Suo(gid, sourceid_winner, sourceid, Suo.DEL);
