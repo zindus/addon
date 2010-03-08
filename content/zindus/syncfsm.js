@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.245 2010-03-03 19:23:03 cvsuser Exp $
+// $Id: syncfsm.js,v 1.246 2010-03-08 19:09:41 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -5017,7 +5017,7 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 
 	for (gp_id in a_group) {
 		let luid_gd_ci = SyncFsmGd.gdci_id_from_pair(luid_gd_au, gp_id);
-		
+
 		zinAssertAndLog(luid_gd_ci in this.state.aReverseGid[sourceid_pr], luid_gd_ci);
 
 		let gid = this.state.aReverseGid[sourceid_pr][luid_gd_ci];
@@ -7328,7 +7328,8 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					else
 						contact.properties = properties;
 
-					contact.groups = groups;
+					if (this.account().gd_gr_as_ab == 'true') // MOD can't change group unless we're syncing groups with ab's
+						contact.groups = groups;
 
 					this.state.gd_au_group_for_mod[luid_target_au] = true;
 				}
