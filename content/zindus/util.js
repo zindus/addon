@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.71 2010-03-02 10:13:45 cvsuser Exp $
+// $Id: util.js,v 1.72 2010-04-05 21:28:20 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -1067,14 +1067,15 @@ function url(key)
 	let ret;
 
 	switch(key) {
-	case 'reporting-bugs':      ret = 'http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs';         break;
-	case 'what-is-soapURL':     ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL'; break;
-	case 'faq-thunderbird':     ret = 'http://www.zindus.com/faq-thunderbird/';                            break;
-	case 'thunderbird-3':       ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';      break;
-	case 'share-tos':           ret = 'http://www.zindus.com/service/tos.html';                            break;
-	case 'share-faq':           ret = 'http://www.zindus.com/faq-share';                                   break;
-	case 'google-bug-997':      ret = 'http://zindus.com/i/google-bug-997/';                               break;
-	case 'slow-sync':           ret = 'http://zindus.com/i/slow-sync';                                     break;
+	case 'reporting-bugs':      ret = 'http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs';                                  break;
+	case 'what-is-soapURL':     ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL';                          break;
+	case 'faq-thunderbird':     ret = 'http://www.zindus.com/faq-thunderbird/';                                                     break;
+	case 'thunderbird-3':       ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';                               break;
+	case 'share-tos':           ret = 'http://www.zindus.com/service/tos.html';                                                     break;
+	case 'share-faq':           ret = 'http://www.zindus.com/faq-share';                                                            break;
+	case 'google-bug-997':      ret = 'http://zindus.com/i/google-bug-997/';                                                        break;
+	case 'zimbra-bug-c-token':  ret = 'http://www.zimbra.com/forums/developers/29667-soap-how-demand-change.html';                  break;
+	case 'slow-sync':           ret = 'http://zindus.com/i/slow-sync';                                                              break;
 	case 'gr-as-ab':            ret = 'http://www.zindus.com/blog/2009/11/09/sync-google-groups-with-thunderbird-addressbooks/';    break;
 	case 'suggested-contacts':  ret = 'http://www.zindus.com/blog/2009/01/19/google-suggested-contacts-include-or-ignore/';         break;
 	case 'google-what-synced':  ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized';                     break;

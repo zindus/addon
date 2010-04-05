@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.247 2010-04-05 06:37:33 cvsuser Exp $
+// $Id: syncfsm.js,v 1.248 2010-04-05 21:28:20 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1137,7 +1137,7 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 		default:             a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "", TBCARD_ATTRIBUTE_LUID_ITER, ""); break;
 	}
 
- 	var functor_foreach_card = {
+ 	let functor_foreach_card = {
 		run: function(uri, item) {
 			var abCard = addressbook.qiCard(item);
 
@@ -1147,7 +1147,7 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 		}
 	};
 
-	var functor_foreach_addressbook = {
+	let functor_foreach_addressbook = {
 		run: function(elem) {
 			aUri[addressbook.directoryProperty(elem, "URI")] = true;
 
@@ -4612,10 +4612,6 @@ SyncFsm.prototype.buildGcsGenerator = function()
 					{
 						var lso = new Lso(zfi.get(FeedItem.ATTR_LS));
 
-						if (sourceid == self.state.sourceid_tb && !self.isInScopeTbLuid(luid)) {
-							msg += " AMHERE1: sourceid: " + sourceid + " luid: " + luid + " is out of scope.";
-						}
-
 						if (lso.get(FeedItem.ATTR_VER) == zfcGid.get(gid).get(FeedItem.ATTR_VER))
 						{
 							var res = lso.compare(zfi);
@@ -7049,6 +7045,10 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 	{
 		// for safety's sake, we could also check that change.acct matches the zid in remote_update_package - don't bother at the mo...
 		this.state.m_logger.error("No change token found.  This shouldn't happen.  Ignoring soap response.");
+
+		this.state.stopFailCode    = 'failon.known.bug';
+		this.state.stopFailArg     = [ stringBundleString("brand.zimbra"), url("zimbra-bug-c-token") ];
+		this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 	}
 	else
 	{
@@ -9340,7 +9340,6 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 			zfcPr.forEach(functor);
 
 			if (msg.length > 0) {
-				logger().debug("AMHEREX: msg: " + msg);
 				this.state.stopFailCode = 'failon.z.google.groups';
 				this.state.stopFailArg  = [ AppInfo.app_name(AppInfo.firstcap), msg ];
 				nextEvent = 'evLackIntegrity';
