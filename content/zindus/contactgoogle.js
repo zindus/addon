@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.32 2010-03-03 05:32:56 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.33 2010-04-05 06:37:33 cvsuser Exp $
 
 function GoogleData()
 {
@@ -45,7 +45,7 @@ meta_initialise_getters : function () {
 	for each ([key, value] in GoogleData.eMeta) {
 		with (GoogleData.eMeta) { with (ContactGoogleStatic) {
 			switch(value) {
-				case id_as_url: fn = function(entry) { return to_id_as_url(entry.nsAtom::id); };                        break;
+				case id_as_url: fn = function(entry)  { return to_id_as_url(entry.nsAtom::id); };                         break;
 				case id:         fn = function(entry) { return to_id(entry.nsAtom::id); };                                break;
 				case updated:    fn = function(entry) { return to_string(entry.nsAtom::updated); };                       break;
 				case edit:       fn = function(entry) { return to_string(entry.nsAtom::link.(@rel=="edit").@href); };     break;
@@ -154,6 +154,7 @@ ContactGoogle.ePostal      = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0
 ContactGoogle.eTransform   = new ZinEnum( { 'kEmail'   : 0x01, 'kWhitespace' : 0x02, 'kAll' : 0x03 } );
 ContactGoogle.eModify      = new ZinEnum( { 'kRemoveDeletedGroupMembershipInfo' : 0x01 } );
 ContactGoogle.eSystemGroup = new ZinEnum( newObjectWithKeysMatchingValues('Contacts', 'Coworkers', 'Family', 'Friends', 'Suggested') );
+ContactGoogle.eSystemGroupForApps = new ZinEnum( newObjectWithKeysMatchingValues('Contacts', 'Suggested') );
 
 function ContactGoogleProto() {}
 
@@ -816,6 +817,7 @@ var ContactGoogleStatic = {
 	m_a_rel                : new Object(),
 	m_a_element_and_suffix : new Object(),
 	m_a_hyphenation        : new Object(),
+	m_a_system_groups      : new Object(),
 	gac                    : new GdAddressConverter(),
 	cgopi                  : new ContactGoogleOrderedPropertyIterator(),
 	cgei                   : new ContactGoogleEmailIterator(),
@@ -1011,6 +1013,20 @@ var ContactGoogleStatic = {
 	},
 	postalWord : function() {
 		return (GD_API_VERSION == 2) ? 'postalAddress' : 'structuredPostalAddress';
+	},
+	is_google_apps : function (account) {
+		return !(account.username.match(/@(gmail\.com|googlemail\.com)$/i));
+	},
+	systemGroups : function(account) {
+		zinAssert(account.format_xx() == FORMAT_GD);
+
+		if (!(account.username in this.m_a_system_groups)) {
+			this.m_a_system_groups[account.username] = this.is_google_apps(account) ? ContactGoogle.eSystemGroupForApps :
+			                                                                          ContactGoogle.eSystemGroup;
+			logger().debug("AMHERE: systemGroups for " + account.username + " returns: " + this.m_a_system_groups[account.username].toString()); // TODO
+		}
+		
+		return this.m_a_system_groups[account.username];
 	}
 };
 

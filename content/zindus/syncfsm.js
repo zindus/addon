@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.246 2010-03-08 19:09:41 cvsuser Exp $
+// $Id: syncfsm.js,v 1.247 2010-04-05 06:37:33 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2799,7 +2799,7 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 	// isn't handled explicitly - it's just a normal "add" operation
 	// 
 	if (this.account().gd_gr_as_ab == 'true' && this.is_slow_sync()) {
-		for (system_group_name in ContactGoogle.eSystemGroup) {
+		for (system_group_name in ContactGoogleStatic.systemGroups(this.account())) {
 			[ ab_localised, uri ] = get_ab(system_group_name);
 
 			if (!uri) {
@@ -2809,10 +2809,29 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 		}
 	}
 
+	let zfiStatus    = StatusBarState.toZfi();
+	let data_version = zfiStatus ? zfiStatus.getOrNull('appversion') : "";
+
+	// TODO remove this once 0.8.15 is released
+	if ((self.account().gd_gr_as_ab == 'true') &&
+		this.is_slow_sync() &&
+	    ContactGoogleStatic.is_google_apps(self.account()) &&
+		data_version.match(/0\.8\.14\.20/)) {
+		for (system_group_name in ContactGoogle.eSystemGroup)
+			if (!ContactGoogle.eSystemGroupForApps.isPresent(system_group_name)) {
+				[ ab_localised, uri ] = get_ab(system_group_name);
+				if (uri) {
+					msg += " deleted: system addressbook in google apps account: " + ab_localised + " uri: " + uri + "\n";
+					this.state.m_addressbook.deleteAddressBook(uri);
+				}
+			}
+		
+	}
+
 	// migrate any old translations of the mapped system groups to their localised name
 	//
 	if (this.account().gd_gr_as_ab == 'true')
-		for (system_group_name in ContactGoogle.eSystemGroup) {
+		for (system_group_name in ContactGoogleStatic.systemGroups(this.account())) {
 			[ ab_localised, uri ] = get_ab(system_group_name);
 
 			this.debug("loadTbGoogleSystemGroupPrepare: system_group_name: " + system_group_name +
@@ -7204,7 +7223,18 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				group                  = new GroupGoogle();
 				group.properties       = { title : name };
 
-				zinAssert(!ContactGoogle.eSystemGroup.isPresent(name));
+				let translation, system_group_name;
+
+				for (system_group_name in ContactGoogle.eSystemGroup)
+					for (translation in PerLocaleStatic.all_translations_of(system_group_name))
+						if (name == translation) {
+							this.state.stopFailCode    = 'failon.folder.name.reserved';
+							this.state.stopFailArg     = [ zfiWinner.name() ];
+							break;
+						}
+			
+				if (this.state.stopFailCode)
+					break;
 
 				set_remote_for_add_from(group);
 				}
@@ -9189,6 +9219,10 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 					is_noprefix = !group.systemGroup() && !re_gd_group.test(group.properties.title);
 					is_ignored  = group.meta.deleted || is_noprefix;
 					is_xgid     = false; // not relevant
+
+					if (group.systemGroup()) {
+						is_ignored  = is_ignored || !ContactGoogleStatic.systemGroups(self.account()).isPresent(group.systemGroup());
+					}
 				}
 				else {
 					is_noprefix = false; // not relevant
@@ -9287,10 +9321,34 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 
 		zfcPr.forEach(functor);
 
+		// TODO remove me after release 0.8.15
+		//
+		let zfiStatus    = StatusBarState.toZfi();
+		let data_version = zfiStatus ? zfiStatus.getOrNull('appversion') : "";
+
+		if ((self.account().gd_gr_as_ab == 'true') && this.is_slow_sync() && data_version.match(/0\.8\.14\.20/)) {
+			let re = new RegExp("^" + APP_NAME);
+			let msg = "";
+			functor = {
+				run: function(zfi) {
+					if ((zfi.type() == FeedItem.TYPE_GG) && zfi.name().match(re))
+						msg += "\n" + zfi.name();
+				return true;
+				}
+			};
+
+			zfcPr.forEach(functor);
+
+			if (msg.length > 0) {
+				logger().debug("AMHEREX: msg: " + msg);
+				this.state.stopFailCode = 'failon.z.google.groups';
+				this.state.stopFailArg  = [ AppInfo.app_name(AppInfo.firstcap), msg ];
+				nextEvent = 'evLackIntegrity';
+			}
+		}
+
 		this.debug("gd_cc_meta: " + aToString(this.state.gd_cc_meta));
 		this.debug("My Contacts group id: " + this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Contacts, 'luid_gd'));
-
-		nextEvent = 'evNext';
 	}
 
 	continuation(nextEvent);
@@ -9445,6 +9503,24 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 				a_contact_count['regular']++;
 
 			msg += "id=" + id + " contact: ";
+
+			if (false && (self.account().gd_gr_as_ab == 'true') && ContactGoogleStatic.is_google_apps(self.account())) {
+				// decided that this isn't nec - we cope with contacts being members of groups we don't sync with (ie w/o zindus/ prefix)
+				//
+				let a_groups = [];
+				let excluded_group_msg = "";
+				let i;
+				for (i = 0; i < contact.groups.length; i++)
+					if (!zfcPr.isPresent(contact.groups[i]))
+						excluded_group_msg = " " + contact.groups[i];
+					else
+						a_groups.push(contact.groups[i])
+
+				if (excluded_group_msg.length > 0) {
+					msg += " google apps account - ignoring membership in system groups: " + excluded_group_msg;
+					contact.groups = a_groups;
+				}
+			}
 	
 			if (!is_ignored)               msg += contact.toString();
 			else if (contact.meta.deleted) msg += " deleted";

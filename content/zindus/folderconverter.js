@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: folderconverter.js,v 1.22 2009-10-06 22:08:34 cvsuser Exp $
+// $Id: folderconverter.js,v 1.23 2010-04-05 06:37:33 cvsuser Exp $
 
 FolderConverter.PREFIX_CLASS_NONE     = 1;
 FolderConverter.PREFIX_CLASS_INTERNAL = 2;
@@ -86,14 +86,18 @@ FolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
 		ret = name.substring(this.m_prefix_length)
 
 		if (format_to == FORMAT_GD) {
-			// return what's to the right of the ':'
-			let colon = ret.indexOf(gd_gr_as_ab_separator);
-			zinAssert(colon >= 0);
-			let right = ret.substring(colon + 1);
+			// return what's to the right of the separator
+			let separator = ret.indexOf(gd_gr_as_ab_separator);
+			zinAssert(separator >= 0);
+			ret = ret.substring(separator + 1);
+
+			if (false) { // TODO remove me // re_gd_group
+			let right = ret.substring(separator + 1);
 			if (ContactGoogle.eSystemGroup.isPresent(right))
 				ret = right;
 			else
-				ret = name.substring(0, this.m_prefix_length) + ret.substring(colon + 1);
+				ret = name.substring(0, this.m_prefix_length) + ret.substring(separator + 1);
+			}
 		}
 	}
 
@@ -200,8 +204,12 @@ FolderConverter.prototype.tb_from_gd_zfi = function(zfi)
 	if (zfi.isPresent(FeedItem.ATTR_GGSG))
 		ret = this.tb_ab_name_for_gd_group("/", PerLocaleStatic.translation_of(name));
 	else {
-		zinAssertAndLog(this.prefixClass(name) != FolderConverter.PREFIX_CLASS_NONE, name);
-		ret = this.tb_ab_name_for_gd_group(name.substr(this.m_prefix_length - 1, 1), name.substring(this.m_prefix_length));
+		// TODO remove this
+		// re_gd_group
+		// zinAssertAndLog(this.prefixClass(name) != FolderConverter.PREFIX_CLASS_NONE, name);
+		// ret = this.tb_ab_name_for_gd_group(name.substr(this.m_prefix_length - 1, 1), name.substring(this.m_prefix_length));
+		zinAssertAndLog(this.prefixClass(name) == FolderConverter.PREFIX_CLASS_NONE, name);
+		ret = this.tb_ab_name_for_gd_group("/", name);
 	}
 
 	return ret;

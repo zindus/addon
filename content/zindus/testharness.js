@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.122 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: testharness.js,v 1.123 2010-04-05 06:37:33 cvsuser Exp $
 
 function TestHarness()
 {
@@ -66,7 +66,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testZuio();
-	// ret = ret && this.testZinEnum();
+	ret = ret && this.testZinEnum();
 	// ret = ret && this.testGroupGoogle();
 	// ret = ret && this.testContactGoogle1();
 	// ret = ret && this.testContactGoogle2();
@@ -1842,6 +1842,9 @@ TestHarness.prototype.testZinEnum = function()
 		this.m_logger.debug("enm2: for: value: " + value);
 		zinAssertAndLog(enm2.isPresent(value), value);
 	}
+
+	zinAssert(ContactGoogle.eSystemGroupForApps.isPresent('Contacts'));
+	zinAssert(!ContactGoogle.eSystemGroupForApps.isPresent('Coworkers'));
 
 	return true;
 }
