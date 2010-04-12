@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.250 2010-04-12 07:29:51 cvsuser Exp $
+// $Id: syncfsm.js,v 1.251 2010-04-12 19:58:10 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2823,7 +2823,7 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 	//
 	if (self.account().gd_gr_as_ab == 'true' &&
 	    this.is_slow_sync() &&
-		(data_version.match(/0\.8\.14\.20/) || APP_VERSION_NUMBER == "0.8.14.20100412.124111")) {
+		(data_version.match(re_gr_as_ab_testing_release) || APP_VERSION_NUMBER.match(re_gr_as_ab_testing_release)) ) {
 		let ab_c, uri_c, ab_m, uri_m;
 
 		let pat = 'xxx'
@@ -2863,11 +2863,15 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 	if ((self.account().gd_gr_as_ab == 'true') &&
 		this.is_slow_sync() &&
 	    ContactGoogleStatic.is_google_apps(self.account()) &&
-		(data_version.match(/0\.8\.14\.20/) || APP_VERSION_NUMBER == "0.8.14.20100412.124111")) {
+		(data_version.match(re_gr_as_ab_testing_release) || APP_VERSION_NUMBER.match(re_gr_as_ab_testing_release))) {
 		for (system_group_name in ContactGoogle.eSystemGroup)
 			if (!ContactGoogle.eSystemGroupForApps.isPresent(system_group_name)) {
 				[ ab_localised, uri ] = get_ab(system_group_name);
 				if (uri) {
+					let gct   = new GoogleRuleTrash(this.state.m_addressbook);
+					let a_uri = newObject(uri, true);
+					gct.moveToTrashAbs(this.contact_converter(), a_uri);
+
 					msg += " deleted: system addressbook in google apps account: " + ab_localised + " uri: " + uri + "\n";
 					this.state.m_addressbook.deleteAddressBook(uri);
 				}
