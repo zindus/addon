@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.249 2010-04-12 01:06:34 cvsuser Exp $
+// $Id: syncfsm.js,v 1.250 2010-04-12 07:29:51 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2805,8 +2805,10 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 
 SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 {
-	let msg = "loadTbGoogleSystemGroupPrepare: ";
-	let self = this;
+	let msg          = "loadTbGoogleSystemGroupPrepare: ";
+	let self         = this;
+	let zfiStatus    = StatusBarState.toZfi();
+	let data_version = zfiStatus ? zfiStatus.getOrNull('appversion') : "";
 	let system_group_name, zfi, ab_localised, uri;
 
 	function get_ab(system_group_name) {
@@ -2814,6 +2816,30 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 		let ab_localised = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi);
 		let uri          = self.state.m_addressbook.getAddressBookUriByName(ab_localised);
 		return [ ab_localised, uri ];
+	}
+
+	// migration b/n 0.8.14.2* testing releases
+	// TODO remove this once 0.8.15 is released
+	//
+	if (self.account().gd_gr_as_ab == 'true' &&
+	    this.is_slow_sync() &&
+		(data_version.match(/0\.8\.14\.20/) || APP_VERSION_NUMBER == "0.8.14.20100412.124111")) {
+		let ab_c, uri_c, ab_m, uri_m;
+
+		let pat = 'xxx'
+		let zfi = SyncFsm.zfi_from_name_gd(pat);
+		ab_c = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi);
+		ab_c = ab_c.replace(new RegExp(pat), "Contacts");
+		uri_c = self.state.m_addressbook.getAddressBookUriByName(ab_c);
+
+		[ ab_m, uri_m ] = get_ab('My Contacts');
+
+		this.debug("loadTbGoogleSystemGroupPrepare: AMHERE: ab_c: " + ab_c + " uri_c: " + uri_c + " ab_m: " + ab_m + " uri_m: " + uri_m); //TODO
+
+		if (uri_c && !uri_m) {
+			this.state.m_addressbook.renameAddressBook(uri_c, ab_m);
+			msg += "renamed Contacts to My Contacts";
+		}
 	}
 
 	// create the tb addressbooks corresponding to google system groups if they don't exist.
@@ -2833,14 +2859,11 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 		}
 	}
 
-	let zfiStatus    = StatusBarState.toZfi();
-	let data_version = zfiStatus ? zfiStatus.getOrNull('appversion') : "";
-
 	// TODO remove this once 0.8.15 is released
 	if ((self.account().gd_gr_as_ab == 'true') &&
 		this.is_slow_sync() &&
 	    ContactGoogleStatic.is_google_apps(self.account()) &&
-		data_version.match(/0\.8\.14\.20/)) {
+		(data_version.match(/0\.8\.14\.20/) || APP_VERSION_NUMBER == "0.8.14.20100412.124111")) {
 		for (system_group_name in ContactGoogle.eSystemGroup)
 			if (!ContactGoogle.eSystemGroupForApps.isPresent(system_group_name)) {
 				[ ab_localised, uri ] = get_ab(system_group_name);
@@ -2849,7 +2872,6 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 					this.state.m_addressbook.deleteAddressBook(uri);
 				}
 			}
-		
 	}
 
 	// migrate any old translations of the mapped system groups to their localised name
