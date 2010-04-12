@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: logger.js,v 1.27 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: logger.js,v 1.28 2010-04-12 01:06:33 cvsuser Exp $
 
 // simple logging api, no appenders
 
@@ -261,6 +261,15 @@ var LogAppenderStatic = {
 
 			if (file_old.exists())
 				try {
+					let file_new = nsifile_for(i + 1);
+
+					if (file_new.exists())
+						try {
+							file_new.remove(false);
+						} catch (ex) { 
+							logger().error("rotate: unable to remove: " + file_new.path + " error: " + ex);
+						}
+
 					file_old.copyTo(null, name_new);
 				}
 				catch (ex) {
@@ -269,7 +278,6 @@ var LogAppenderStatic = {
 		}
 
 		file = nsifile_for(0);
-		try { file.remove(false); } catch (ex) { }
 		Filesystem.writeToFile(file, ""); // truncate
 	}
 };

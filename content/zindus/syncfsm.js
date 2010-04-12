@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.248 2010-04-05 21:28:20 cvsuser Exp $
+// $Id: syncfsm.js,v 1.249 2010-04-12 01:06:34 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -157,7 +157,8 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stLoad:           { evCancel: 'final', evNext: 'stLoadTb',         evRepeat:      'stLoad',          evLackIntegrity: 'final'     },
 		stLoadTb:         { evCancel: 'final', evNext: 'stGetGroupsGd1',   evRepeat:      'stLoadTb',        evLackIntegrity: 'final'     },
 		stGetGroupsGd1:   { evCancel: 'final', evNext: 'stGetGroupsGd2',   evHttpRequest: 'stHttpRequest'                                 },
-		stGetGroupsGd2:   { evCancel: 'final', evNext: 'stGetContactGd1',                                    evLackIntegrity: 'final'     },
+		stGetGroupsGd2:   { evCancel: 'final', evNext: 'stGetContactGd1',  evRename:      'stRenameGroups',  evLackIntegrity: 'final'     },
+		stRenameGroups:   { evCancel: 'final', evNext: 'stGetContactGd1',  evHttpRequest: 'stHttpRequest',   evRepeat: 'stRenameGroups'   },
 		stGetContactGd1:  { evCancel: 'final', evNext: 'stGetContactGd2',  evHttpRequest: 'stHttpRequest'                                 },
 		stGetContactGd2:  { evCancel: 'final', evNext: 'stGetContactGd3',  evRepeat:      'stGetContactGd1', evLackIntegrity: 'final'     },
 		stGetContactGd3:  { evCancel: 'final', evNext: 'stDeXmlifyAddrGd', evSkip:        'stConverge',      evRepeat: 'stGetContactGd3'  },
@@ -186,6 +187,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stLoadTb:               this.entryActionLoadTb,
 		stGetGroupsGd1:         this.entryActionGetGroupsGd1,
 		stGetGroupsGd2:         this.entryActionGetGroupsGd2,
+		stRenameGroups:         this.entryActionRenameGroups,
 		stGetContactGd1:        this.entryActionGetContactGd1,
 		stGetContactGd2:        this.entryActionGetContactGd2,
 		stGetContactGd3:        this.entryActionGetContactGd3,
@@ -210,6 +212,7 @@ SyncFsmGd.prototype.initialiseFsm = function()
 		stGetContactPuGd:       this.exitActionGetContactPuGd,
 		stGetGroupPuGd:         this.exitActionGetGroupPuGd,
 		stDeXmlifyAddrGd:       this.exitActionDeXmlifyAddrGd,
+		stRenameGroups:         this.exitActionRenameGroups,
 		stUpdateGd:             this.exitActionUpdateGd,
 		stHttpResponse:         this.exitActionHttpResponse  /* this gets tweaked by setupHttpZm */
 	};
@@ -2567,6 +2570,10 @@ SyncFsmGd.prototype.testForTbAbGdCiIntegrity = function()
 					let gdid = zfcPr.get(luid_gd).get(FeedItem.ATTR_GDID);
 
 					if (gdid in a_gd_au_in_tb_ab[l]) {
+						self.debug("testForTbAbGdCiIntegrity:" + " gdid: " + gdid +
+						                                         " l: "    + l +
+																 " a_gd_au_in_tb_ab: " + aToString(a_gd_au_in_tb_ab));
+
 						self.state.stopFailCode    = 'failon.folder.reserved.changed';
 						let ab_name                = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_TB, self.zfcTb().get(l));
 						self.state.stopFailArg     = [ ab_name ];
@@ -2586,6 +2593,23 @@ SyncFsmGd.prototype.testForTbAbGdCiIntegrity = function()
 
 	if (this.account().gd_gr_as_ab == 'true' && !this.is_slow_sync())
 		this.zfcTb().forEach(functor);
+
+	return !this.state.stopFailCode;
+}
+
+SyncFsmGd.prototype.testForGdZindusGroupPrefix = function()
+{
+	let msg = "";
+	let is_rename_clash = false; // true ==> we can't rename group 'zindus/xxx' bcos there's already an 'xxx'
+	let a_groups_with_zindus_prefix = this.gd_groups_with_zindus_prefix();
+
+	this.debug("testForGdZindusGroupPrefix: a_groups_with_zindus_prefix: " + aToString(a_groups_with_zindus_prefix));
+
+	if (aToLength(a_groups_with_zindus_prefix) > 0) {
+		this.state.stopFailCode = 'failon.gd.group.name';
+		this.state.stopFailArg  = [ stringBundleString("brand.google"), this.gd_groups_with_zindus_prefix_as_string(),
+		                            AppInfo.app_name(AppInfo.firstcap) ];
+	}
 
 	return !this.state.stopFailCode;
 }
@@ -5929,6 +5953,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		}
 
 		passed = passed && this.testForTbAbGdCiIntegrity();
+		passed = passed && this.testForGdZindusGroupPrefix();
 	}
 
 	this.state.stopwatch.mark(state + " Converge: updateGidDoChecksums: " + this.state.m_progress_count++);
@@ -9039,6 +9064,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 
 	state.a_gd_contact                  = new Object();
 	state.a_gd_group                    = new Object();
+	state.a_gd_groups_to_rename         = new Object();
 	state.a_gd_to_get                   = new Object(GoogleData.eElement.contact, null, GoogleData.eElement.group, null);;
 	state.a_gd_contact_dexmlify_ids     = null;         // set to a Array() when it's in use
 	state.m_gd_contact_length           = 0;
@@ -9046,7 +9072,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.gd_is_dexmlify_postal_address = false;
 	state.gd_sync_token                 = null;
 	state.gd_updated_group              = null;
-	state.gd_cc_meta                    = new ContactCollectionMeta();
+	state.gd_cc_meta                    = null; // new ContactCollectionMeta();
 	state.gd_au_group_for_add           = new Object(); // set by suoGdTweakCiOps, used by entryAction ADD code
 	state.gd_au_group_for_mod           = new Object(); // set by suoGdTweakCiOps, used by entryAction MOD code
 	state.a_gd_luid_ab_in_tb            = null;         // luids of the addressbooks in zfcTb that are syncing with Google
@@ -9203,52 +9229,64 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 
 		GoogleData.new_from_feed(this.state.m_http.m_xhr, this.state.a_gd_group);
 
-		let self        = this;
-		let zfcPr       = this.zfcPr();
-		let is_gr_as_ab = (self.account().gd_gr_as_ab == 'true');
+		nextEvent = this.gd_process_groups(state);
+	}
 
-		var functor = {
-			run: function(group)
-			{
-				let id  = group.meta.id;
-				let rev = group.meta.updated;
-				let msg = "";
-				let is_noprefix, is_ignored, is_xgid, zfi;
+	continuation(nextEvent);
+}
 
-				if (is_gr_as_ab) {
-					is_noprefix = !group.systemGroup() && !re_gd_group.test(group.properties.title);
-					is_ignored  = group.meta.deleted || is_noprefix;
-					is_xgid     = false; // not relevant
+SyncFsmGd.prototype.gd_process_groups = function(state)
+{
+	let nextEvent   = 'evNext';
+	let self        = this;
+	let zfcPr       = this.zfcPr();
+	let is_gr_as_ab = (self.account().gd_gr_as_ab == 'true');
+	let id, functor;
 
-					if (group.systemGroup()) {
-						is_ignored  = is_ignored || !ContactGoogleStatic.systemGroups(self.account()).isPresent(group.systemGroup());
-					}
+	functor = {
+		run: function(group) {
+			let id  = group.meta.id;
+			let rev = group.meta.updated;
+			let msg = "";
+			let is_noprefix, is_ignored, is_xgid, zfi;
+
+			if (is_gr_as_ab) {
+				is_noprefix = !group.systemGroup() && !re_gd_group.test(group.properties.title);
+				is_ignored  = group.meta.deleted || is_noprefix;
+				is_xgid     = false; // not relevant
+
+				if (group.systemGroup()) {
+					is_ignored  = is_ignored || !ContactGoogleStatic.systemGroups(self.account()).isPresent(group.systemGroup());
 				}
-				else {
-					is_noprefix = false; // not relevant
-					is_ignored  = (group.systemGroup() != ContactGoogle.eSystemGroup.Contacts);
-					is_xgid     = true;
-				}
+			}
+			else {
+				is_noprefix = false; // not relevant
+				is_ignored  = (group.systemGroup() != ContactGoogle.eSystemGroup.Contacts);
+				is_xgid     = true;
+			}
 
-				msg += "id=" + id;
-	
-				if (!group.meta.deleted) {
-					msg += " group: ";
+			msg += "id=" + id;
 
-					if (is_noprefix)
-						msg += " doesn't have a zindus prefix: ";
+			if (!group.meta.deleted) {
+				msg += " group: ";
 
-					if (is_xgid)
-						msg += " will be excluded from gid: ";
+				if (is_noprefix)
+					msg += " doesn't have a zindus prefix: ";
 
-					msg += group.toString();
-				}
-				else
-					msg += " group: deleted";
+				if (is_xgid)
+					msg += " will be excluded from gid: ";
 
-				if (zfcPr.isPresent(id)) {
-					zinAssertAndLog(!group.systemGroup(), function () { return group.toString(); });
+				msg += group.toString();
+			}
+			else
+				msg += " group: deleted";
 
+			if (zfcPr.isPresent(id)) {
+				// ok to assert this when we're here just once, but when we enter a second time via stRenameGroups
+				// we want to avoid updating system groups because the special handling for system group names is in newZfiGroup
+				// zinAssertAndLog(!group.systemGroup(), function () { return group.toString(); });
+
+				if (!group.systemGroup()) {
 					zfi = zfcPr.get(id);
 
 					zfi.set(FeedItem.ATTR_REV,  rev);
@@ -9264,30 +9302,32 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 						msg += " marked as deleted";
 					}
 				}
-				else if (!is_ignored) {
-					zfi = self.newZfiGroup(group);
-
-					if (group.systemGroup() && is_xgid)
-						zfi.set(FeedItem.ATTR_XGID, '1');
-					
-					zfcPr.set(zfi);
-					msg += " added: ";
-				}
-				else
-					msg += " ignored: ";
-
-				if (zfi)
-					msg += " zfi: " + zfi.toString();
-
-				self.debug(msg);
-
-				return;
 			}
-		};
+			else if (!is_ignored) {
+				zfi = self.newZfiGroup(group);
 
-		for (var id in this.state.a_gd_group)
-			functor.run(this.state.a_gd_group[id]);
+				if (group.systemGroup() && is_xgid)
+					zfi.set(FeedItem.ATTR_XGID, '1');
+				
+				zfcPr.set(zfi);
+				msg += " added: ";
+			}
+			else
+				msg += " ignored: ";
 
+			if (zfi)
+				msg += " zfi: " + zfi.toString();
+
+			self.debug(msg);
+
+			return;
+		}
+	};
+
+	for (id in this.state.a_gd_group)
+		functor.run(this.state.a_gd_group[id]);
+
+	if (state != 'stRenameGroups') {
 		if (this.is_slow_sync()) {
 			function set_zfi_for_fake_folder(name) {
 				let type = (name == GD_PAB) ? FeedItem.TYPE_FL : FeedItem.TYPE_GG;
@@ -9311,46 +9351,161 @@ SyncFsmGd.prototype.entryActionGetGroupsGd2 = function(state, event, continuatio
 				set_zfi_for_fake_folder(ContactGoogle.eSystemGroup.Suggested);
 		}
 
-		functor = {
-			run: function(zfi) {
-				if (zfi.type() == FeedItem.TYPE_FL || zfi.type() == FeedItem.TYPE_GG)
-					self.state.gd_cc_meta.push(newObject('luid_gd', zfi.key(), 'name', zfi.get(FeedItem.ATTR_NAME)));
-			return true;
-			}
-		};
-
-		zfcPr.forEach(functor);
-
 		// TODO remove me after release 0.8.15
 		//
 		let zfiStatus    = StatusBarState.toZfi();
 		let data_version = zfiStatus ? zfiStatus.getOrNull('appversion') : "";
 
 		if ((self.account().gd_gr_as_ab == 'true') && this.is_slow_sync() && data_version.match(/0\.8\.14\.20/)) {
-			let re = new RegExp("^" + APP_NAME);
 			let msg = "";
+			let is_rename_clash = false; // true ==> we can't rename group 'zindus/xxx' bcos there's already an 'xxx'
+
+			self.state.a_gd_groups_to_rename = this.gd_groups_with_zindus_prefix();
+
 			functor = {
-				run: function(zfi) {
-					if ((zfi.type() == FeedItem.TYPE_GG) && zfi.name().match(re))
-						msg += "\n" + zfi.name();
-				return true;
+				run: function(group) {
+
+					function test_for_rename_clash(title) {
+						let name;
+						let ret = false;
+						let id;
+						for (id in self.state.a_gd_groups_to_rename) {
+							if (FolderConverter.PREFIX_PRIMARY_ACCOUNT + title == self.state.a_gd_groups_to_rename[id]) {
+								self.debug("test_for_rename_clash: returns true on: " + self.state.a_gd_groups_to_rename[id]);
+								ret = true;
+								break;
+							}
+						}
+
+						return ret;
+					}
+
+					if (!group.meta.deleted && !group.systemGroup()) {
+						if (test_for_rename_clash(group.properties.title))
+							is_rename_clash = true;
+					}
+
+					return;
 				}
 			};
 
-			zfcPr.forEach(functor);
+			if (aToLength(self.state.a_gd_groups_to_rename) > 0) {
+				for (id in this.state.a_gd_group)
+					functor.run(this.state.a_gd_group[id]);
 
-			if (msg.length > 0) {
-				this.state.stopFailCode = 'failon.z.google.groups';
-				this.state.stopFailArg  = [ AppInfo.app_name(AppInfo.firstcap), msg ];
-				nextEvent = 'evLackIntegrity';
+				self.debug("gd_process_groups: is_rename_clash: " + is_rename_clash);
+
+				if (is_rename_clash) {
+					this.state.stopFailCode = 'failon.gd.group.rename';
+					this.state.stopFailArg  = [ this.gd_groups_with_zindus_prefix_as_string() ];
+					nextEvent = 'evLackIntegrity';
+				}
+				else
+					nextEvent = 'evRename';
 			}
 		}
+	}
 
-		this.debug("gd_cc_meta: " + aToString(this.state.gd_cc_meta));
-		this.debug("My Contacts group id: " + this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Contacts, 'luid_gd'));
+	this.state.gd_cc_meta = new ContactCollectionMeta();
+
+	functor = {
+		run: function(zfi) {
+			if (zfi.type() == FeedItem.TYPE_FL || zfi.type() == FeedItem.TYPE_GG)
+				self.state.gd_cc_meta.push(newObject('luid_gd', zfi.key(), 'name', zfi.get(FeedItem.ATTR_NAME)));
+		return true;
+		}
+	};
+
+	zfcPr.forEach(functor);
+
+	this.debug("gd_cc_meta: " + aToString(this.state.gd_cc_meta));
+	this.debug("My Contacts group id: " + this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Contacts, 'luid_gd'));
+
+	return nextEvent;
+}
+
+SyncFsmGd.prototype.gd_groups_with_zindus_prefix = function()
+{
+	let re      = new RegExp("^" + APP_NAME);
+	let a_ret   = new Object();
+	let self    = this;
+	let zfcPr   = this.zfcPr();
+	let functor = {
+		run: function(zfi) {
+			if ((zfi.type() == FeedItem.TYPE_GG) && zfi.name().match(re))
+				a_ret[zfi.get(FeedItem.ATTR_KEY)] = zfi.name();
+		return true;
+		}
+	};
+
+	zfcPr.forEach(functor);
+
+	this.debug("gd_groups_with_zindus_prefix: returns: " + aToString(a_ret));
+
+	return a_ret;
+}
+
+SyncFsmGd.prototype.gd_groups_with_zindus_prefix_as_string = function()
+{
+	let ret = "";
+	let a_groups_with_zindus_prefix = this.gd_groups_with_zindus_prefix();
+
+	for (var id in a_groups_with_zindus_prefix)
+		ret += "\n" + a_groups_with_zindus_prefix[id];
+
+	return  ret;
+}
+
+SyncFsmGd.prototype.entryActionRenameGroups = function(state, event, continuation)
+{
+	var nextEvent = null;
+	var bigmsg    = new BigString();
+
+	if (aToLength(this.state.a_gd_groups_to_rename) > 0) {
+		let re      = new RegExp("^" + FolderConverter.PREFIX_PRIMARY_ACCOUNT);
+		let id      = firstKeyInObject(this.state.a_gd_groups_to_rename);
+		delete this.state.a_gd_groups_to_rename[id];
+		this.debug("AMHERE: a_gd_groups_to_rename: " + aToString(this.state.a_gd_groups_to_rename)); // TODO
+		this.debug("AMHERE: id: " + id); // TODO
+		this.debug("AMHERE: a_gd_group: " + aToString(this.state.a_gd_group)); // TODO
+		let group   = this.state.a_gd_group[id];
+		let new_name = group.properties.title.replace(re, "");
+		group.properties = { title: new_name };
+		let remote  = new Object();
+
+		remote.method  = "POST";  // PUT
+		remote.url     = gdAdjustHttpHttps(group.meta.edit);
+		remote.headers = newObject("Content-type", "application/atom+xml", "X-HTTP-Method-Override", "PUT");
+		remote.body    = group.toStringXml();
+
+		this.setupHttpGd(state, 'evRepeat', remote.method, remote.url, remote.headers, remote.body, HttpStateGd.ON_ERROR_EVCANCEL,
+		                  HttpStateGd.LOG_RESPONSE_YES);
+		
+		nextEvent = 'evHttpRequest'
+	}
+	else {
+		this.state.m_http = null;
+
+		nextEvent = this.gd_process_groups(state);
 	}
 
 	continuation(nextEvent);
+}
+
+SyncFsmGd.prototype.exitActionRenameGroups = function(state, event)
+{
+	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
+		return;
+
+	let group = GoogleData.new(this.state.m_http.m_xhr);
+	let id    = group.meta.id;
+
+	zinAssertAndLog(id in this.state.a_gd_group, id);
+	zinAssertAndLog(this.zfcPr().isPresent(id), id);
+
+	this.state.a_gd_group[id] = group;
+
+	this.debug("exitActionRenameGroups: id=" + id + " group: " + group.toString());
 }
 
 SyncFsmGd.prototype.gd_url_base = function(type)

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmexitstatus.js,v 1.49 2010-04-05 06:37:33 cvsuser Exp $
+// $Id: syncfsmexitstatus.js,v 1.50 2010-04-12 01:06:34 cvsuser Exp $
 
 function SyncFsmExitStatus()
 {
@@ -65,7 +65,8 @@ function SyncFsmExitStatus()
 	'failon.unauthorized'                  : { 'trailer' : 0, 'arglength': 0 }, // 30. server 401 - did a proxy remove the 'Authorized' hdr?
 	'failon.auth'                          : { 'trailer' : 1, 'arglength': 1 }, //     Login attempt failed
 	'failon.known.bug'                     : { 'trailer' : 1, 'arglength': 2 }, //     Known bug
-	'failon.z.google.groups'               : { 'trailer' : 0, 'arglength': 2 }  //     
+	'failon.gd.group.rename'               : { 'trailer' : 0, 'arglength': 1 }, //     
+	'failon.gd.group.name'                 : { 'trailer' : 0, 'arglength': 3 }  //     
 	};
 }
 

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.82 2009-11-18 09:13:56 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.83 2010-04-12 01:06:34 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -143,6 +143,7 @@ SyncFsmObserver.prototype.update = function(fsmstate)
 		stAuthCheck:      { },
 		stGetGroupsGd1:   { count: 1 },
 		stGetGroupsGd2:   { },
+		stRenameGroups:   { },
 		stGetContactGd1:  { count: 1 },
 		stGetContactGd2:  { count: 1 },
 		stGetContactGd3:  { count: 1 },
