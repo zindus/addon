@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.251 2010-04-12 19:58:10 cvsuser Exp $
+// $Id: syncfsm.js,v 1.252 2010-04-12 23:29:09 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2834,7 +2834,7 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 
 		[ ab_m, uri_m ] = get_ab('My Contacts');
 
-		this.debug("loadTbGoogleSystemGroupPrepare: AMHERE: ab_c: " + ab_c + " uri_c: " + uri_c + " ab_m: " + ab_m + " uri_m: " + uri_m); //TODO
+		this.debug("loadTbGoogleSystemGroupPrepare: ab_c: " + ab_c + " uri_c: " + uri_c + " ab_m: " + ab_m + " uri_m: " + uri_m);
 
 		if (uri_c && !uri_m) {
 			this.state.m_addressbook.renameAddressBook(uri_c, ab_m);
@@ -8387,8 +8387,7 @@ SyncFsm.isOfInterest = function(zfc, key)
 				break;
 
 			case FeedItem.TYPE_GG:
-				ret = (!zfi.isPresent(FeedItem.ATTR_XGID) && zfi.isPresent(FeedItem.ATTR_GGSG)) ||
-				      re_gd_group.test(zfi.get(FeedItem.ATTR_NAME));
+				ret = !zfi.isPresent(FeedItem.ATTR_XGID)
 				break;
 
 			default:
@@ -9274,11 +9273,10 @@ SyncFsmGd.prototype.gd_process_groups = function(state)
 			let id  = group.meta.id;
 			let rev = group.meta.updated;
 			let msg = "";
-			let is_noprefix, is_ignored, is_xgid, zfi;
+			let is_ignored, is_xgid, zfi;
 
 			if (is_gr_as_ab) {
-				is_noprefix = !group.systemGroup() && !re_gd_group.test(group.properties.title);
-				is_ignored  = group.meta.deleted || is_noprefix;
+				is_ignored  = group.meta.deleted;
 				is_xgid     = false; // not relevant
 
 				if (group.systemGroup()) {
@@ -9286,7 +9284,6 @@ SyncFsmGd.prototype.gd_process_groups = function(state)
 				}
 			}
 			else {
-				is_noprefix = false; // not relevant
 				is_ignored  = (group.systemGroup() != ContactGoogle.eSystemGroup.Contacts);
 				is_xgid     = true;
 			}
@@ -9295,9 +9292,6 @@ SyncFsmGd.prototype.gd_process_groups = function(state)
 
 			if (!group.meta.deleted) {
 				msg += " group: ";
-
-				if (is_noprefix)
-					msg += " doesn't have a zindus prefix: ";
 
 				if (is_xgid)
 					msg += " will be excluded from gid: ";
@@ -9382,7 +9376,10 @@ SyncFsmGd.prototype.gd_process_groups = function(state)
 		let zfiStatus    = StatusBarState.toZfi();
 		let data_version = zfiStatus ? zfiStatus.getOrNull('appversion') : "";
 
-		if ((self.account().gd_gr_as_ab == 'true') && this.is_slow_sync() && data_version.match(/0\.8\.14\.20/)) {
+		if ((self.account().gd_gr_as_ab == 'true') &&
+		    this.is_slow_sync() &&
+		    (data_version.match(re_gr_as_ab_testing_release) || APP_VERSION_NUMBER.match(re_gr_as_ab_testing_release))) {
+
 			let msg = "";
 			let is_rename_clash = false; // true ==> we can't rename group 'zindus/xxx' bcos there's already an 'xxx'
 
@@ -9491,9 +9488,8 @@ SyncFsmGd.prototype.entryActionRenameGroups = function(state, event, continuatio
 		let re      = new RegExp("^" + FolderConverter.PREFIX_PRIMARY_ACCOUNT);
 		let id      = firstKeyInObject(this.state.a_gd_groups_to_rename);
 		delete this.state.a_gd_groups_to_rename[id];
-		this.debug("AMHERE: a_gd_groups_to_rename: " + aToString(this.state.a_gd_groups_to_rename)); // TODO
-		this.debug("AMHERE: id: " + id); // TODO
-		this.debug("AMHERE: a_gd_group: " + aToString(this.state.a_gd_group)); // TODO
+		this.debug("entryActionRenameGroups: id: " + id + " a_gd_groups_to_rename: " + aToString(this.state.a_gd_groups_to_rename));
+
 		let group   = this.state.a_gd_group[id];
 		let new_name = group.properties.title.replace(re, "");
 		group.properties = { title: new_name };
