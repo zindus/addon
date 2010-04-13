@@ -7,7 +7,7 @@ pref("extensions.zindus.system.as_logfile_max_size",      10000000); // logfile 
 pref("extensions.zindus.system.as_logfile_rotations",     5);        // how many logfile rotations to keep
 pref("extensions.zindus.system.as_timer_delay_on_start",  3600);     // how long before the sync timer fires after startup
 pref("extensions.zindus.system.as_timer_delay_on_repeat", 43200);    // how long before the second and subsequent sync timers fire
-pref("extensions.zindus.system.as_allow_pre_release",     false);    // allow the addon to run in a pre-release Thunderbird
+pref("extensions.zindus.system.as_allow_pre_release",     true);     // allow the addon to run in a pre-release Thunderbird
 pref("extensions.zindus.system.as_password_version",      "notset"); // pm-2, lm-2
 pref("extensions.zindus.system.as_share_service_api_url", "xxx");    // 
 pref("extensions.zindus.system.as_migration.0",           "0:BirthDay,BirthMonth,BirthYear,WebPage1,WebPage2");
