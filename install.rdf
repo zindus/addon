@@ -6,7 +6,7 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.8.14.20100406.123136</em:version>  <!-- version populated by build script -->
+    <em:version>0.8.14.20100414.151222</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <!-- Thunderbird -->
@@ -21,7 +21,6 @@
 		 our use of certain mozStorage features requires gecko 1.9.1 ==> firefox 3.5
 		 FIXME: add the ff comment to support build/install/update.rdf
 	  TODO
-	  -->
     <em:targetApplication>
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
@@ -29,6 +28,7 @@
         <em:maxVersion>3.6.*</em:maxVersion>
       </Description>
     </em:targetApplication>
+	  -->
 
     <em:targetApplication>
       <!-- Seamonkey -->
@@ -66,7 +66,7 @@
     <em:hidden>false</em:hidden>
     <em:iconURL>chrome://zindus/skin/zindus32x32.gif</em:iconURL>
     <em:updateKey>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyC+XK8GT8SJpfhxXZu7MM+ALv/OmcRfP3m2m6DzWrB121ToA3zEfUOfD568gDuKExpptuomgNyYRUB32yCQfmHryMS4fXXuG49JGlQq7kMNXW+aSp7IE5Q6DExVhLZ0jOSXk+alWbTWLFpXNLuI0n72T291Otmq0YEyrlqx3UbwIDAQAB</em:updateKey>
-    <em:updateURL>http://www.zindus.com/download/xpi-update-rdf.php?item_id=%ITEM_ID%&amp;item_version=%ITEM_VERSION%&amp;item_status=%ITEM_STATUS%&amp;app_id=%APP_ID%&amp;app_os=%APP_OS%&amp;app_abi=%APP_ABI%&amp;reltype=dev</em:updateURL>
+    <em:updateURL>http://www.zindus.com/download/xpi-update-rdf.php?item_id=%ITEM_ID%&amp;item_version=%ITEM_VERSION%&amp;item_status=%ITEM_STATUS%&amp;app_id=%APP_ID%&amp;app_os=%APP_OS%&amp;app_abi=%APP_ABI%&amp;reltype=testing</em:updateURL>
 
   </rdf:Description>      
 

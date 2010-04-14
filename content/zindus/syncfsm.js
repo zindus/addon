@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.252 2010-04-12 23:29:09 cvsuser Exp $
+// $Id: syncfsm.js,v 1.253 2010-04-14 04:16:53 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4042,7 +4042,9 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 
 	var functor_foreach_gid = {
 		run: function(zfi) {
+			self.debug("AMHERE1: zfi: " + zfi.toString());
 			if (zfi.isPresent(sourceid_tb) && zfi.isPresent(sourceid_pr) && zfcTb.get(zfi.get(sourceid_tb)).type() == FeedItem.TYPE_CN) {
+				self.debug("AMHERE2: zfi: " + zfi.toString());
 				// Thunderbird and remote contact are twins
 				//
 				let luid_pr    = zfi.get(sourceid_pr);
@@ -4093,6 +4095,8 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 			return ret;
 		}
 	};
+
+	self.debug("AMHERE3: properties_being_migrated: " + aToString(this.contact_converter().properties_being_migrated()));
 
 	if (!isObjectEmpty(this.contact_converter().properties_being_migrated())) {
 		let generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));

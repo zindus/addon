@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.26 2010-03-02 10:13:45 cvsuser Exp $
+// $Id: filesystem.js,v 1.27 2010-04-14 04:16:53 cvsuser Exp $
 
 var Filesystem = {
 	m_charset            : "UTF-8",
@@ -41,10 +41,10 @@ var Filesystem = {
 		CONTACTS  : 'contacts.sqlite'
 	}),
 	ePerm : new ZinEnum( {     // from prio.h
-		PR_IRUSR  : 0400,      // Read    by owner
-		PR_IWUSR  : 0200,      // Write   by owner
-		PR_IXUSR  : 0100,      // Execute by owner
-		PR_IRWXU  : 0700       // R/W/X by owner
+		PR_IRUSR  : 0400,    // Read    by owner
+		PR_IWUSR  : 0200,    // Write   by owner
+		PR_IXUSR  : 0100,    // Execute by owner
+		PR_IRWXU  : 0700     // R/W/X by owner
 	}),
 	eFlag : new ZinEnum( {     // from prio.h
 		PR_RDONLY      : 0x01, // seems silly that mozilla doesn't expose these constants via an interface!
