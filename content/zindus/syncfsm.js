@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.253 2010-04-14 04:16:53 cvsuser Exp $
+// $Id: syncfsm.js,v 1.254 2010-04-18 05:27:16 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4042,9 +4042,9 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 
 	var functor_foreach_gid = {
 		run: function(zfi) {
-			self.debug("AMHERE1: zfi: " + zfi.toString());
+			self.debug("zfi: " + zfi.toString());
 			if (zfi.isPresent(sourceid_tb) && zfi.isPresent(sourceid_pr) && zfcTb.get(zfi.get(sourceid_tb)).type() == FeedItem.TYPE_CN) {
-				self.debug("AMHERE2: zfi: " + zfi.toString());
+				self.debug("zfi: " + zfi.toString());
 				// Thunderbird and remote contact are twins
 				//
 				let luid_pr    = zfi.get(sourceid_pr);
@@ -4096,7 +4096,7 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 		}
 	};
 
-	self.debug("AMHERE3: properties_being_migrated: " + aToString(this.contact_converter().properties_being_migrated()));
+	self.debug("properties_being_migrated: " + aToString(this.contact_converter().properties_being_migrated()));
 
 	if (!isObjectEmpty(this.contact_converter().properties_being_migrated())) {
 		let generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
@@ -8053,8 +8053,9 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 
 			zinAssert(a_str.length == 2);
 
-			if (Number(a_str[0]) < 8)
-				preferences().branch().setCharPref(MozillaPreferences.AS_MIGRATION + '.' + i, hyphenate(':', '9', a_str[1]));
+			if (a_str[0] == "0")
+				preferences().branch().setCharPref(MozillaPreferences.AS_MIGRATION + '.' + i,
+				    hyphenate(':', APP_VERSION_NUMBER, a_str[1]));
 		}
 	}
 

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.123 2010-04-05 06:37:33 cvsuser Exp $
+// $Id: testharness.js,v 1.124 2010-04-18 05:27:16 cvsuser Exp $
 
 function TestHarness()
 {
@@ -42,8 +42,9 @@ TestHarness.prototype.run = function()
 
 	ret = ret && this.testPreferencesHaveDefaults();
 	ret = ret && this.testStringBundleContainsContactProperties();
+	ret = ret && this.testThingsThatShouldHoldTrue();
 
-	ret = ret && this.testStringBundle();
+	// ret = ret && this.testStringBundle();
 	// ret = ret && this.testUserPrompt();
 	// ret = ret && this.testRemoveBadLogin();
 	// ret = ret && this.testPasswordManager();
@@ -66,7 +67,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFolderConverter();
 	// ret = ret && this.testFolderConverterPrefixClass();
 	// ret = ret && this.testZuio();
-	ret = ret && this.testZinEnum();
+	// ret = ret && this.testZinEnum();
 	// ret = ret && this.testGroupGoogle();
 	// ret = ret && this.testContactGoogle1();
 	// ret = ret && this.testContactGoogle2();
@@ -96,6 +97,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testTb3CardUuid();
 	// ret = ret && this.testLoginManager();
 	// ret = ret && this.testZfcWithMultibyteChars();
+	ret = ret && this.testCompareToolkitVersionStrings();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -2199,6 +2201,14 @@ TestHarness.prototype.testStringBundleContainsContactProperties = function()
 	return true;
 }
 
+TestHarness.prototype.testThingsThatShouldHoldTrue= function()
+{
+	// APP_VERSION_NUMBER shouldn't contain ':' because it is inserted into MozillaPreferences.AS_MIGRATION
+	zinAssert(String(APP_VERSION_NUMBER).match(/:/) == null);
+
+	return true;
+}
+
 TestHarness.prototype.addCardTb2 = function(properties, uri)
 {
 	// this.m_logger.debug("testAddCard");
@@ -3019,4 +3029,19 @@ TestHarness.prototype.testZfcWithMultibyteChars = function()
 	zinAssert(is_match);
 
 	return is_match;
+}
+
+TestHarness.prototype.testCompareToolkitVersionStrings = function()
+{
+	this.m_logger.debug("testCompareToolkitVersionStrings: ");
+
+	zinAssert(compareToolkitVersionStrings("0",        "0")        == 0);
+	zinAssert(compareToolkitVersionStrings("0",        "0.8.15")   == -1);
+	zinAssert(compareToolkitVersionStrings("0.8.15",   "0.8.15.1") == -1);
+	zinAssert(compareToolkitVersionStrings("0.8.15",   "0.8.16")   == -1);
+	zinAssert(compareToolkitVersionStrings("0.8.16",   "0.8.15")   == 1);
+	zinAssert(compareToolkitVersionStrings("0.8.15.1", "0.8.15.1") == 0);
+	zinAssert(compareToolkitVersionStrings("0.8.15.2", "0.8.15.1") == 1);
+
+	return true;
 }

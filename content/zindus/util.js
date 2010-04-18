@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.72 2010-04-05 21:28:20 cvsuser Exp $
+// $Id: util.js,v 1.73 2010-04-18 05:27:16 cvsuser Exp $
 
 function zinAssert(expr)
 {
@@ -626,8 +626,8 @@ function randomPlusOrMinus(central, varies_by)
 //
 function compareToolkitVersionStrings(string_a, string_b)
 {
-	var a_a = string_a.split(".");
-	var a_b = string_b.split(".");
+	var a_a = String(string_a).split(".");
+	var a_b = String(string_b).split(".");
 	var max_parts = (a_a.length > a_b.length) ? a_a.length : a_b.length;
 	var ret = 0;
 

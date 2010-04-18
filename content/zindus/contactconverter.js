@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.56 2010-02-23 05:04:10 cvsuser Exp $
+// $Id: contactconverter.js,v 1.57 2010-04-18 05:27:16 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -637,7 +637,7 @@ properties_being_migrated : function() {
 
 			zinAssert(a_str.length == 2);
 
-			if (Number(a_str[0]) < 8) {
+			if (a_str[0] == "0") {
 				let a_fields = a_str[1].split(',');
 				for (j = 0; j < a_fields.length; j++)
 					this.m_properties_being_migrated[a_fields[j]] = true;

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.34 2010-04-12 07:29:23 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.35 2010-04-18 05:27:16 cvsuser Exp $
 
 function GoogleData()
 {
@@ -1023,7 +1023,8 @@ var ContactGoogleStatic = {
 		if (!(account.username in this.m_a_system_groups)) {
 			this.m_a_system_groups[account.username] = this.is_google_apps(account) ? ContactGoogle.eSystemGroupForApps :
 			                                                                          ContactGoogle.eSystemGroup;
-			logger().debug("systemGroups() account: " + account.username + " returns: " + this.m_a_system_groups[account.username].toString()); // TODO
+			logger().debug("systemGroups: account: " + account.username +
+			               " returns: " + this.m_a_system_groups[account.username].toString());
 		}
 		
 		return this.m_a_system_groups[account.username];

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.64 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.65 2010-04-18 05:27:16 cvsuser Exp $
 
 function ZinMailWindowOverlay()
 {
@@ -236,6 +236,25 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 
 	this.m_logger.debug("migrate old prefs... ");
 
+	// 0.8.15 and above
+	// if we've installed an earlier version of the addon, redo the migration
+	//
+	{
+		let a_keys = preferences().getImmediateChildren(preferences().branch(), MozillaPreferences.AS_MIGRATION + '.');
+		let i, j;
+
+		for (i in a_keys) {
+			let a_str = preference(MozillaPreferences.AS_MIGRATION + '.' + i, 'char').split(':');
+
+			zinAssert(a_str.length == 2);
+
+			if (a_str[0] == "9") // this is for 0.8.14.* testing release users - remove after 0.8.15.* release has been out for a while
+				preferences().branch().setCharPref(MozillaPreferences.AS_MIGRATION + '.' + i, hyphenate(':', APP_VERSION_NUMBER, a_str[1]));
+			else if (compareToolkitVersionStrings(a_str[0], APP_VERSION_NUMBER) == 1)
+				preferences().branch().setCharPref(MozillaPreferences.AS_MIGRATION + '.' + i, hyphenate(':', 0, a_str[1]));
+		}
+	}
+	
 	// 0.7.7 replace MANUAL_SYNC_ONLY with AUTO_SYNC
 	//
 	var bimap = new BiMap( [ "true", "false" ], [ "false", "true" ] );

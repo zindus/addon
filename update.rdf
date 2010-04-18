@@ -2,14 +2,11 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="rdf:#$BjjRS2"
-                   em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
-                   em:maxVersion="2.0.*"
-                   em:minVersion="2.0a1"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.15-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:7fc3eb68c65c3c9f40bf74bc59b8a823d8f4ff7030de3a9a38171f7f721a7c8b" />
+  <RDF:Seq RDF:about="rdf:#$qjjRS2">
+    <RDF:li RDF:resource="rdf:#$rjjRS2"/>
+  </RDF:Seq>
   <RDF:Description RDF:about="rdf:#$rjjRS2"
-                   em:version="0.8.15">
+                   em:version="0.8.15.20100418.162303">
     <em:targetApplication RDF:resource="rdf:#$AjjRS2"/>
     <em:targetApplication RDF:resource="rdf:#$BjjRS2"/>
     <em:targetApplication RDF:resource="rdf:#$CjjRS2"/>
@@ -19,25 +16,28 @@
                    em:id="{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}"
                    em:maxVersion="0.7.*"
                    em:minVersion="0.4"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.15-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:7fc3eb68c65c3c9f40bf74bc59b8a823d8f4ff7030de3a9a38171f7f721a7c8b" />
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.15.20100418.162303-tb+sm+pb+sb.xpi"
+                   em:updateHash="sha256:c682cca7f3d7b60d14a07c3e35e95689348ef767d03d342e4db19b6e332919f7" />
   <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAIj7MRw247gWb49i4L7of5VJRxUU33Lo69CZfOO7LDctR1D33PuwoHfGaEhpIl/M2eg9+R6xz880UjAcf4eP6eGQdYZEYJyb1+CbhDhurEs5JiGYSMwLKmHOFat7wV+KsIYPyjT4FbWGqLbaMhb67njOqYZglLcLXDYXRjv2Y9jn">
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAFdwNMUOa322L/ZUO+LFcVaPs5ZRrNxMGizscAx29yhYjzS2TenmKWCXSIpOihYEQrUKAHCBNUmT4GwAKHxcmcfBgdrUBWusOc/x0u7YIAJh2E3vrLRIro6YlGvY5ZMahAeZ+E4dLwDs3vaMUh++X/P2JmmUtTvEl5YNn0YZ4jS0">
     <em:updates RDF:resource="rdf:#$qjjRS2"/>
   </RDF:Description>
-  <RDF:Description RDF:about="rdf:#$AjjRS2"
-                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
-                   em:maxVersion="3.0.*"
-                   em:minVersion="2.0b2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.15-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:7fc3eb68c65c3c9f40bf74bc59b8a823d8f4ff7030de3a9a38171f7f721a7c8b" />
   <RDF:Description RDF:about="rdf:#$CjjRS2"
                    em:id="postbox@postbox-inc.com"
                    em:maxVersion="1.1.*"
                    em:minVersion="1.0b13"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.15-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:7fc3eb68c65c3c9f40bf74bc59b8a823d8f4ff7030de3a9a38171f7f721a7c8b" />
-  <RDF:Seq RDF:about="rdf:#$qjjRS2">
-    <RDF:li RDF:resource="rdf:#$rjjRS2"/>
-  </RDF:Seq>
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.15.20100418.162303-tb+sm+pb+sb.xpi"
+                   em:updateHash="sha256:c682cca7f3d7b60d14a07c3e35e95689348ef767d03d342e4db19b6e332919f7" />
+  <RDF:Description RDF:about="rdf:#$AjjRS2"
+                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
+                   em:maxVersion="3.0.*"
+                   em:minVersion="2.0b2"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.15.20100418.162303-tb+sm+pb+sb.xpi"
+                   em:updateHash="sha256:c682cca7f3d7b60d14a07c3e35e95689348ef767d03d342e4db19b6e332919f7" />
+  <RDF:Description RDF:about="rdf:#$BjjRS2"
+                   em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
+                   em:maxVersion="2.0.*"
+                   em:minVersion="2.0a1"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.15.20100418.162303-tb+sm+pb+sb.xpi"
+                   em:updateHash="sha256:c682cca7f3d7b60d14a07c3e35e95689348ef767d03d342e4db19b6e332919f7" />
 </RDF:RDF>
