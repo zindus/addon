@@ -62,7 +62,7 @@
 		<image id="zindus-statusbar-logo-processing"   hidden="true" src="chrome://zindus/skin/zindus-processing-bw.gif" />
 		<label id="zindus-statusbar-alert"             hidden="true" value="!" />
 		<label id="zindus-statusbar-insync"            hidden="true" value="Y" />
-		<image id="zindus-statusbar-error"             hidden="true" src="chrome://zindus/skin/no_entry_sign_16x16.png" />
+		<image id="zindus-statusbar-error"             hidden="true" src="chrome://zindus/skin/red_square_error_warning_16x16.png" />
 		<!-- <label id="zindus-statusbar-error"        hidden="true" value="X" /> -->
 	</statusbarpanel>
 
