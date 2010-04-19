@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: statusbar.js,v 1.13 2009-08-03 00:40:30 cvsuser Exp $
+// $Id: statusbar.js,v 1.14 2010-04-19 07:44:59 cvsuser Exp $
 
 // Bits of "exit status" reported to the outside world:
 // - last sync success: (time, maybe other stuff like conflicts...)
@@ -199,6 +199,7 @@ var StatusBarState = {
 			run: function(win) {
 				for (var x in obj) {
 					dId(win, "zindus-statusbar-" + x).hidden = (status != x);
+					dId(win, "zindus-statusbar-" + x).value  = obj[x];
 					dId(win, "zindus-statusbar-" + x).value  = obj[x];
 				}
 

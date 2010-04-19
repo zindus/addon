@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.124 2010-04-18 05:27:16 cvsuser Exp $
+// $Id: testharness.js,v 1.125 2010-04-19 07:44:59 cvsuser Exp $
 
 function TestHarness()
 {
@@ -97,7 +97,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testTb3CardUuid();
 	// ret = ret && this.testLoginManager();
 	// ret = ret && this.testZfcWithMultibyteChars();
-	ret = ret && this.testCompareToolkitVersionStrings();
+	// ret = ret && this.testCompareToolkitVersionStrings();
+	ret = ret && this.testBug537815();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -3044,4 +3045,100 @@ TestHarness.prototype.testCompareToolkitVersionStrings = function()
 	zinAssert(compareToolkitVersionStrings("0.8.15.2", "0.8.15.1") == 1);
 
 	return true;
+}
+
+TestHarness.prototype.testBug537815 = function()
+{
+	let Cc              = Components.classes;
+	let Ci              = Components.interfaces;
+	let abm             = Cc["@mozilla.org/abmanager;1"].getService(Ci.nsIAbManager);
+	let ab_prefix       = "test-537815-";
+	let re_prefix       = new RegExp(ab_prefix)
+	let card_properties = { FirstName: "01-first-3", LastName: "02-last", PrimaryEmail: "08-email-1@zindus.com" };
+
+
+	function bug_537815_fixture_setup()
+	{
+		let i, key;
+
+		for (i = 1; i <= 5; i++) {
+			let ab_name = ab_prefix + i;
+			abm.newAddressBook(ab_name, "", 2);
+			logger().debug("created: " + ab_name); // TODO
+		}
+
+		for (var j = 1; j < 2; j++) {
+			let enm_dirs = abm.directories;
+		while (enm_dirs.hasMoreElements()) {
+			let elem = enm_dirs.getNext().QueryInterface(Ci.nsIAbDirectory);
+			let uri  = elem.URI;
+			let dir  = abm.getDirectory(uri);
+
+			logger().debug("considering: j: " + j + " " + elem.dirName); // TODO
+
+			if (j == 1 && String(elem.dirName).match(re_prefix)) {
+				for (i = 1; i <= 1000; i++) {
+					let abCard = Cc["@mozilla.org/addressbook/cardproperty;1"].createInstance().QueryInterface(Ci.nsIAbCard);
+
+					for (key in card_properties)
+						abCard.setProperty(key, card_properties[key]);
+
+					abCard = dir.addCard(abCard);
+				}
+
+				logger().debug("populated: " + elem.dirName); // TODO
+			}
+		}
+		}
+	}
+
+	function bug_537815_test()
+	{
+		let enm_dirs = abm.directories;
+		let i, key;
+
+		while (enm_dirs.hasMoreElements()) {
+			let elem = enm_dirs.getNext().QueryInterface(Ci.nsIAbDirectory);
+			let uri  = elem.URI;
+			let dir  = abm.getDirectory(uri);
+
+			if (String(elem.dirName).match(re_prefix)) {
+				let enm_cards = dir.childCards;
+
+				while (enm_cards.hasMoreElements()) {
+					let item = enm_cards.getNext();
+					let abCard = item.QueryInterface(Ci.nsIAbCard);
+
+					for (i in card_properties) {
+						let value = abCard.getProperty(key, null);
+					}
+				}
+
+				logger().debug("visited all cards in: " + elem.dirName); // TODO
+			}
+		}
+	}
+
+
+	function bug_537815_fixture_tear_down()
+	{
+		let enm_dirs = abm.directories;
+		let a_uri = {};
+
+		while (enm_dirs.hasMoreElements()) {
+			let elem = enm_dirs.getNext().QueryInterface(Ci.nsIAbDirectory);
+
+			if (String(elem.dirName).match(re_prefix)) {
+				a_uri[elem.URI] = true;
+				logger().debug("deleted: " + elem.dirName); // TODO
+			}
+		}
+
+		for (var uri in a_uri)
+			abm.deleteAddressBook(uri);
+	}
+
+	bug_537815_fixture_setup();
+	bug_537815_test();
+	bug_537815_fixture_tear_down();
 }
