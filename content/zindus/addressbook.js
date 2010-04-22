@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.70 2009-11-03 21:11:17 cvsuser Exp $
+// $Id: addressbook.js,v 1.71 2010-04-22 00:24:50 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -702,17 +702,22 @@ AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_cou
 	var fContinue = true;
 	var count     = 0;
 
-	while (fContinue && enm.hasMoreElements()) {
-		var item = enm.getNext();
+	try {
+		while (fContinue && enm.hasMoreElements()) {
+			var item = enm.getNext();
 
-		fContinue = functor.run(uri, item);
+			fContinue = functor.run(uri, item);
 
-		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+			zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
 
-		if (yield_count > 0) {
-			if (++count % yield_count == 0)
-				yield true;
+			if (yield_count > 0) {
+				if (++count % yield_count == 0)
+					yield true;
+			}
 		}
+	} catch (ex) {
+		this.logger().error("forEachCardGenerator: uri: " + uri + " count: " + count + " fContinue: " + fContinue);
+		zinAssert(false);
 	}
 
 	yield false;
