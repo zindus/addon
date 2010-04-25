@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.71 2010-04-22 00:24:50 cvsuser Exp $
+// $Id: addressbook.js,v 1.72 2010-04-25 19:10:06 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -741,7 +741,7 @@ AddressBookTb3.prototype.nsIAbDirectory = function(uri)
 {
 	var dir = this.nsIAbManager().getDirectory(uri);
 
-	zinAssert(dir instanceof Ci.nsIAbMDBDirectory);
+	zinAssertAndLog(dir instanceof Ci.nsIAbMDBDirectory, uri);
 
 	return dir;
 }
