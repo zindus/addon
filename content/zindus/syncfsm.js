@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.255 2010-04-26 00:03:45 cvsuser Exp $
+// $Id: syncfsm.js,v 1.256 2010-04-26 22:13:45 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3302,7 +3302,9 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 						// normalise the birthday fields
 						//
-						is_changed |= ContactConverterStatic.tb_birthday_normalise_all(properties);
+						is_changed |= ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthYear');
+						is_changed |= ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthDay');
+						is_changed |= ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthMonth');
 					}
 
 					// if this addressbook is being synced with google...

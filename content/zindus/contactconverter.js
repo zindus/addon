@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.60 2010-04-26 03:52:32 cvsuser Exp $
+// $Id: contactconverter.js,v 1.61 2010-04-26 22:13:45 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -654,8 +654,14 @@ properties_being_migrated : function() {
 var ContactConverterStatic = {
 	prefix_tb_property_in_zimbra    : "ZindusTb",
 	tb_birthday_trim_leading_zeroes : function(properties, x) {
-		if (x in properties)
+		let is_changed = false;
+		if (x in properties) {
+			let pre = properties[x];
 			properties[x] = properties[x].replace(/^0+/g, "");
+			if (pre != properties[x])
+				is_changed = true;
+		}
+		return is_changed;
 	},
 	is_valid_tb_birthday: function(properties) {
 		let ret = true;
