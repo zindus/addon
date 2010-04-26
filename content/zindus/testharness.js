@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.125 2010-04-19 07:44:59 cvsuser Exp $
+// $Id: testharness.js,v 1.126 2010-04-26 00:03:18 cvsuser Exp $
 
 function TestHarness()
 {
@@ -55,7 +55,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	// ret = ret && this.testContactConverter();
+	ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testAddressBookBugzilla432145Create();
@@ -98,7 +98,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testLoginManager();
 	// ret = ret && this.testZfcWithMultibyteChars();
 	// ret = ret && this.testCompareToolkitVersionStrings();
-	ret = ret && this.testBug537815();
+	// ret = ret && this.testBug537815();
 
 	this.m_logger.debug("test(s) " + (ret ? "succeeded" : "failed"));
 }
@@ -315,6 +315,7 @@ TestHarness.prototype.testContactConverter = function()
 	var ret = true;
 	ret = ret && this.testContactConverter1();
 	ret = ret && this.testContactConverterGdPostalAddress();
+	ret = ret && this.testContactConverterBirthday();
 	return ret;
 }
 
@@ -444,6 +445,47 @@ TestHarness.prototype.testContactConverter1 = function()
 	var a_postalAddress = contact_converter.keysCommonToThatMatch(
 		new RegExp("^" + ContactGoogleStatic.postalWord() + "_(.*)$"), "$1", FORMAT_GD, FORMAT_TB);
 	zinAssert(("home" in a_postalAddress) && ("work" in a_postalAddress));
+
+	return true;
+}
+
+TestHarness.prototype.testContactConverterBirthday = function()
+{
+	var properties_in, properties_out, is_changed;
+
+	function expected() {
+		for (var x in {BirthDay: null, BirthMonth: null, BirthYear: null})
+		zinAssertAndLog(properties_in[x] == properties_out[x], "x: " + x);
+	}
+
+	properties_in  = {BirthDay: '1', BirthMonth: '5',  BirthYear: '1984' };
+	properties_out = {BirthDay: '1', BirthMonth: '05', BirthYear: '1984' };
+
+	is_changed = ContactConverterStatic.tb_birthday_normalise_all(properties_in);
+	this.m_logger.debug("properties_in:: " + aToString(properties_in));
+	zinAssert(is_changed);
+	expected();
+
+	properties_in  = {BirthDay: '01', BirthMonth: '05', BirthYear: '984' };
+	properties_out = {BirthDay: '1',  BirthMonth: '05', BirthYear: '984' };
+	is_changed = ContactConverterStatic.tb_birthday_normalise_all(properties_in);
+	this.m_logger.debug("properties_in:: " + aToString(properties_in));
+	zinAssert(is_changed);
+	expected();
+
+	properties_in  = {BirthDay: '01', BirthMonth: '05', BirthYear: '0984' };
+	properties_out = {BirthDay: '1',  BirthMonth: '05', BirthYear: '984' };
+	is_changed = ContactConverterStatic.tb_birthday_normalise_all(properties_in);
+	this.m_logger.debug("properties_in:: " + aToString(properties_in));
+	zinAssert(is_changed);
+	expected();
+
+	properties_in  = {BirthDay: '1', BirthMonth: '05', BirthYear: '984' };
+	properties_out = {BirthDay: '1', BirthMonth: '05', BirthYear: '984' };
+	is_changed = ContactConverterStatic.tb_birthday_normalise_all(properties_in);
+	this.m_logger.debug("properties_in:: " + aToString(properties_in));
+	zinAssert(!is_changed);
+	expected();
 
 	return true;
 }
