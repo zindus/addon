@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.254 2010-04-18 05:27:16 cvsuser Exp $
+// $Id: syncfsm.js,v 1.255 2010-04-26 00:03:45 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -624,14 +624,19 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 	{
 		this.debug("entryActionLoad: forcing a reset - removing data files and initialising maps and tb attributes...");
 
+		this.debug("entryActionLoad: reset - step #1");  // TODO remove once bug #243 is fixed
 		this.initialiseZfcLastSync();
+		this.debug("entryActionLoad: reset - step #2");
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
+		this.debug("entryActionLoad: reset - step #3");
 		this.initialiseZfcAutoIncrement(this.zfcTb());
+		this.debug("entryActionLoad: reset - step #4");
 
 		generator = this.initialiseTbAddressbookGenerator();
 
 		while (generator.next())
 			yield true;
+		this.debug("entryActionLoad: reset - step #5");
 	}
 	else
 	{
@@ -1142,26 +1147,27 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 
  	let functor_foreach_card = {
 		run: function(uri, item) {
-			var abCard = addressbook.qiCard(item);
-
+			let abCard = addressbook.qiCard(item);
 			addressbook.updateCard(abCard, uri, null, a_ids_to_remove, FORMAT_TB);
-
 			return true;
 		}
 	};
 
 	let functor_foreach_addressbook = {
 		run: function(elem) {
-			aUri[addressbook.directoryProperty(elem, "URI")] = true;
-
+			aUri[addressbook.directoryProperty(elem, "URI")] = elem.dirName; // don't need dirName here except for debugging
 			return true;
 		}
 	};
 
 	addressbook.forEachAddressBook(functor_foreach_addressbook);
 
+	this.debug("initialiseTbAddressbookGenerator: aUri: " + aToString(aUri));
+
 	if (a_ids_to_remove)
 		for (var uri in aUri) {
+			this.debug("initialiseTbAddressbookGenerator: uri: " + uri);
+
 			let generator = addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards'));
 
 			while (generator.next())
@@ -3296,9 +3302,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 						// normalise the birthday fields
 						//
-						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthYear');
-						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthMonth');
-						ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthDay')
+						is_changed |= ContactConverterStatic.tb_birthday_normalise_all(properties);
 					}
 
 					// if this addressbook is being synced with google...
@@ -4053,8 +4057,12 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 				let msg        = null;
 
 				if (the_winner == 'tb' || the_winner == 'both') {
-					self.backdateZfcForcingItToLose(sourceid_pr, luid_pr);
-					msg = " zfi: " + zfi.toString() + " the_winner: " + the_winner + " - backdating remote to force it to lose";
+					if (zfcTb.get(zfi.get(sourceid_tb)).get(FeedItem.ATTR_CS) == TBCARD_CHECKSUM_BACKWARDS) {
+						msg = " zfi: " + zfi.toString() + " the_winner: " + the_winner + " - would have backdated remote to force it to lose except that tb had already been backdated";
+					} else {
+						self.backdateZfcForcingItToLose(sourceid_pr, luid_pr);
+						msg = " zfi: " + zfi.toString() + " the_winner: " + the_winner + " - backdating remote to force it to lose";
+					}
 				}
 				else if (the_winner == 'remote') {
 					self.backdateZfcForcingItToLose(sourceid_tb, luid_tb);
