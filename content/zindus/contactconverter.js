@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.58 2010-04-26 00:03:45 cvsuser Exp $
+// $Id: contactconverter.js,v 1.59 2010-04-26 02:57:44 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -553,7 +553,7 @@ tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday
 			case FORMAT_TB:
 		 		// the TB form is: three properties with keys BirthYear, BirthMonth and BirthDay
 				// - if no year is given, the BirthYear property isn't present
-				// - no value has leading 0's
+				// - day and year don't leading 0's, month may have one - to be consistent with tb
 				//
 				for (key in a_normalised_tb_birthday)
 					if (!(key == 'BirthYear' && (a_normalised_tb_birthday[key] == empty_year || (a_normalised_tb_birthday[key].length == 0))))
@@ -566,8 +566,10 @@ tb_birthday_output : function(format_to, properties_to, a_normalised_tb_birthday
 				// - each of yyyy, mm, and dd are padded with leading zeroes.
 				// - if no year is given, then yyyy is 0000
 				//
-				let year = (Number(a_normalised_tb_birthday['BirthYear']) > 0) ? a_normalised_tb_birthday['BirthYear'] : empty_year;
-					properties_to['birthday'] = pad_yyyy(year) + "-" +
+				let year = (('BirthYear' in a_normalised_tb_birthday) &&
+				             Number(a_normalised_tb_birthday['BirthYear']) > 0) ? a_normalised_tb_birthday['BirthYear'] : empty_year;
+
+				properties_to['birthday'] = pad_yyyy(year) + "-" +
 				                            pad_dd(a_normalised_tb_birthday['BirthMonth']) + "-" +
 				                            pad_dd(a_normalised_tb_birthday['BirthDay']);
 				break;
