@@ -9,7 +9,7 @@
 <!ENTITY zindus.ca.password.label "Jelszó:">
 <!ENTITY zindus.ca.test.connection.accesskey "T">
 <!ENTITY zindus.ca.test.connection.label "Kapcsolat tesztelése">
-<!ENTITY zindus.ca.url.description.value "Gépelje be a bejelentkezéshez használt URL-t.<html:br></html>Például: https://sajatmail.pelda.hu">
+<!ENTITY zindus.ca.url.description.value "Gépelje be a bejelentkezéshez használt URL-t.<html:br/>Például: https://sajatmail.pelda.hu">
 <!ENTITY zindus.ca.url.label "Szerver URL:">
 <!ENTITY zindus.ca.username.description.value "Gépelje be a bejelentkezéshez használt e-mail címet és a jelszót.">
 <!ENTITY zindus.ca.username.label "E-mail cím:">
