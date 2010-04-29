@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.126 2010-04-26 00:03:18 cvsuser Exp $
+// $Id: testharness.js,v 1.127 2010-04-29 01:20:44 cvsuser Exp $
 
 function TestHarness()
 {
@@ -315,7 +315,6 @@ TestHarness.prototype.testContactConverter = function()
 	var ret = true;
 	ret = ret && this.testContactConverter1();
 	ret = ret && this.testContactConverterGdPostalAddress();
-	ret = ret && this.testContactConverterBirthday();
 	return ret;
 }
 
@@ -449,7 +448,7 @@ TestHarness.prototype.testContactConverter1 = function()
 	return true;
 }
 
-TestHarness.prototype.testContactConverterBirthday = function()
+TestHarness.prototype.testContactConverterBirthdayNotUsed = function()
 {
 	var properties_in, properties_out, is_changed;
 

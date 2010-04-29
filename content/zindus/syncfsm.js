@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.257 2010-04-29 00:15:36 cvsuser Exp $
+// $Id: syncfsm.js,v 1.258 2010-04-29 01:20:44 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3305,6 +3305,24 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 						is_changed |= ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthYear');
 						is_changed |= ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthDay');
 						is_changed |= ContactConverterStatic.tb_birthday_trim_leading_zeroes(properties, 'BirthMonth');
+
+						// if the birthday fields are all empty, remove them
+						// if they were all zero to begin with, then tb_birthday_trim_leading_zeroes would have made them all blank
+						// only need to do this bcos it's unclear from the relevant TB bug whether '0' is a valid value for day and month
+						//
+						{
+							let is_set = false;
+							let a_fields = { BirthYear: 0, BirthDay: 0, BirthMonth: 0 };
+							let x;
+							for (x in a_fields)
+								if ((x in properties) && (properties[x].length > 0))
+									is_set = true;
+
+							if (!is_set)
+								for (x in a_fields)
+									if (x in properties)
+										delete properties[x];
+						}
 					}
 
 					// if this addressbook is being synced with google...
@@ -3325,8 +3343,11 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 						}
 					}
 
-					if (is_changed)
+					if (is_changed) {
+						msg += " rewrote card: ";
+
 						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
+					}
 
 					let luid_l = tb_cc_meta.find('uri', uri, 'luid_tb');
 					zinAssertAndLog(luid_l, uri);
