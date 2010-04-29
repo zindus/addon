@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: fsm.js,v 1.19 2009-10-17 07:20:25 cvsuser Exp $
+// $Id: fsm.js,v 1.20 2010-04-29 00:15:36 cvsuser Exp $
 
 // Notes:
 // - only entry actions should call continuation() - not sure what happens
@@ -28,7 +28,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.19 2009-10-17 07:20:25 cvsuser Exp $
+// $Id: fsm.js,v 1.20 2010-04-29 00:15:36 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -53,7 +53,11 @@ function fsmTransitionDo(fsmstate)
 				zinAssert(nextEvent);
 
 				if (fsm.m_a_exit[newstate])
-					fsm.m_a_exit[newstate].call(context, newstate, nextEvent);
+					try {
+						fsm.m_a_exit[newstate].call(context, newstate, nextEvent);
+					} catch (ex) {
+						fsmDoCatch(ex, 'exit', newstate, nextEvent);
+					}
             
 				zinAssert(newstate in context.fsm.m_transitions);
 
@@ -74,7 +78,11 @@ function fsmTransitionDo(fsmstate)
 
 		fsm.m_logger.debug("TransitionDo: context.fsm.m_continuation set - about to call the entry action, newstate: " + newstate);
 
-		fsm.m_a_entry[newstate].call(context, newstate, event, continuation);
+		try {
+			fsm.m_a_entry[newstate].call(context, newstate, event, continuation);
+		} catch (ex) {
+			fsmDoCatch(ex, 'entry', newstate, event);
+		}
 
 		// m_a_entry for the final state won't have a continuation so it doesn't lead to a transition
 		// so here we tell the maestro that the fsm is finished...
@@ -116,6 +124,14 @@ function fsmTransitionSchedule(id_fsm, oldstate, newstate, event, context)
 	Maestro.notifyFsmState(fsmstate);
 
 	context.fsm.m_logger.debug("TransitionSchedule: exiting ");
+}
+
+function fsmDoCatch(ex, msg, state, event)
+{
+	logger().error("fsmDoCatch: state: " + state + " event: " + event + " msg: " + msg + " ex: " + ex +
+	                " stack: " + executionStackFilter(ex.stack));
+
+	zinAssertCatch(ex);
 }
 
 function FsmState()

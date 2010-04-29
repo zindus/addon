@@ -20,46 +20,49 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.73 2010-04-18 05:27:16 cvsuser Exp $
+// $Id: util.js,v 1.74 2010-04-29 00:15:36 cvsuser Exp $
+
+function zinAssertCatch(ex)
+{
+	let msg = "Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
+			    APP_NAME + " version " + APP_VERSION_NUMBER + "\nSee: " + url('reporting-bugs') + "\n";
+
+	msg += ex.message + "\n";
+
+	if (isSingletonInScope()) {
+		let logger = newLogger("Utils");
+		logger.fatal(msg);
+		logger.fatal(executionStackFilter(ex.stack));
+	}
+
+	if (typeof zinAlert == 'function')
+		zinAlert('text.alert.title', msg + " stack: \n" + executionStackFilter(ex.stack));
+	else
+		print(ex.message + " stack: \n" + executionStackFilter(ex.stack));
+
+	let zwc = new WindowCollection([ 'zindus-sw' ]);
+	zwc.populate();
+	let zwc_functor = {
+		run: function(win) {
+			win.document.getElementById('zindus-sw').cancelDialog();
+		}
+	};
+	zwc.forEach(zwc_functor);
+
+	throw new Error(msg + "\n\n stack:\n" + executionStackFilter(ex.stack));
+}
 
 function zinAssert(expr)
 {
-	var msg = "";
-
-	if (arguments.length != 1)
-		msg += "Invalid number of arguments to zinAssert().  "
-
-	if (!expr || arguments.length != 1)
-	{
-		try
-		{
-			throw new Error(msg + "Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
-				            APP_NAME + " version " + APP_VERSION_NUMBER + "\nSee: " + url('reporting-bugs') + "\n");
-		}
-		catch(ex)
-		{
-			if (isSingletonInScope())
-			{
-				var logger = newLogger("Utils");
-				logger.fatal(ex.message);
-				logger.fatal(executionStackFilter(ex.stack));
-			}
-
-			if (typeof zinAlert == 'function')
-				zinAlert('text.alert.title', ex.message + " stack: \n" + executionStackFilter(ex.stack));
+	if (!expr || arguments.length != 1) {
+		try {
+			if (arguments.length != 1)
+				throw new Error("Invalid number of arguments to zinAssert(). ");
 			else
-				print(ex.message + " stack: \n" + executionStackFilter(ex.stack));
-
-			var zwc = new WindowCollection([ 'zindus-sw' ]);
-			zwc.populate();
-			var zwc_functor = {
-				run: function(win) {
-					win.document.getElementById('zindus-sw').cancelDialog();
-				}
-			};
-			zwc.forEach(zwc_functor);
-
-			throw new Error(ex.message + "\n\n stack:\n" + executionStackFilter(ex.stack));
+				throw new Error();
+		}
+		catch(ex) {
+			zinAssertCatch(ex);
 		}
 	}
 }
@@ -942,18 +945,26 @@ function numeric_compare(a, b)
 //
 function zinAlert(title_string_id, msg, win)
 {
-	alert(msg);
-	return;
+	let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
+	let app_name       = AppInfo.app_name();
+	let is_prompts     = (app_name == 'firefox') ||
+				         (((app_name == 'thunderbird') || (app_name == 'seamonkey')) &&
+						    versionChecker.compare(AppInfo.app_version(), "3") >= 0);
 
-	if (!win)
-		win = null;
+	if (is_prompts) {
+		if (!win)
+			win = null;
 
-	logger().debug("zinAlert: title_string_id: " + title_string_id + " msg: " + msg);
+		// logger().debug("zinAlert: title_string_id: " + title_string_id + " msg: " + msg);
 
-	var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
-	prompts.alert(win, stringBundleString(title_string_id), msg);
+		var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
+		prompts.alert(win, stringBundleString(title_string_id), msg);
 
-	logger().debug("zinAlert: done");
+		// logger().debug("zinAlert: done");
+	}
+	else {
+		alert(msg);
+	}
 }
 
 function textToHtml(text)

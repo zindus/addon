@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.256 2010-04-26 22:13:45 cvsuser Exp $
+// $Id: syncfsm.js,v 1.257 2010-04-29 00:15:36 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -5469,19 +5469,18 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid)
 	var zfi    = zfc.get(luid);
 	var type   = zfi.type();
 	var ret    = "";
-	var key;
 
 	if (type == FeedItem.TYPE_FL || type == FeedItem.TYPE_SF)
 		ret += this.state.m_folder_converter.convertForPublic(FORMAT_TB, format, zfi);
 	else
 	{
-		zinAssertAndLog(type == FeedItem.TYPE_CN, type);
+		zinAssertAndLog(type == FeedItem.TYPE_CN, function() { return "sourceid: " + sourceid + " luid: " + luid + " type: " + type; });
 
 		if (zfi.isPresent(FeedItem.ATTR_DEL))
 			ret += "<deleted>";
 		else
 		{
-			var properties = this.getContactFromLuid(sourceid, luid, FORMAT_TB);
+			let properties = this.getContactFromLuid(sourceid, luid, FORMAT_TB);
 		
 			if (properties)
 				ret += this.shortLabelForContactProperties(properties);
@@ -5490,7 +5489,7 @@ SyncFsm.prototype.shortLabelForLuid = function(sourceid, luid)
 		}
 	}
 
-	// this.debug("shortLabelForLuid: blah: sourceid: " + sourceid + " luid=" + luid + " returns: " + ret);
+	// this.debug("shortLabelForLuid: sourceid: " + sourceid + " luid=" + luid + " returns: " + ret);
 
 	return ret;
 }
