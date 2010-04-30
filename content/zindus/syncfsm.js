@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.258 2010-04-29 01:20:44 cvsuser Exp $
+// $Id: syncfsm.js,v 1.259 2010-04-30 22:56:59 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3527,8 +3527,9 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 
 	if (!isObjectEmpty(a_empty_folder_names))
 	{
-		this.state.stopFailCode = 'failon.zm.empty.contact';
-		this.state.stopFailArg  = [ AppInfo.app_name(AppInfo.firstcap), keysToString(a_empty_folder_names) ];
+		this.state.stopFailCode    = 'failon.must.clean.ab';
+		this.state.stopFailArg     = [ AppInfo.app_name(AppInfo.firstcap) ];
+		this.state.stopFailTrailer = stringBundleString("status.failon.must.clean.ab.empty.contact", [ keysToString(a_empty_folder_names)]);
 	}
 
 	return this.state.stopFailCode == null;
@@ -5561,7 +5562,7 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 
 			if ((name in aFolderName))
 			{
-				this.state.stopFailCode    = 'failon.folder.name.clash';
+				this.state.stopFailCode = 'failon.folder.name.clash';
 				this.state.stopFailArg  = [ name ]; // FIXME - this is an internal facing name ie zindus_pab
 				this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 				break;
@@ -5571,10 +5572,10 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 		}
 	}
 
-	var ret = this.state.stopFailCode == null;
+	let ret = this.state.stopFailCode == null;
 
 	if (!ret)
-		this.state.m_logger.debug("testForFolderNameDuplicate:" + " returns: " + ret + " name: " + name +
+		this.debug("testForFolderNameDuplicate:" + " returns: " + ret + " name: " + name +
 						          " aFolderName: " + aToString(aFolderName) + " stopFailCode: " + this.state.stopFailCode +
 								  " has gids: =" + gid + " and =" + aFolderName[name]);
 
