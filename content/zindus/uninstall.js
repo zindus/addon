@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: uninstall.js,v 1.1 2010-04-30 00:41:38 cvsuser Exp $
+// $Id: uninstall.js,v 1.2 2010-04-30 01:29:49 cvsuser Exp $
 
 var UnInstall = {
 	uninstallObserver : {
@@ -32,6 +32,26 @@ var UnInstall = {
 
 				if (item.id == uuid && aData == "item-uninstalled") {
 					// gBrowser.selectedTab = gBrowser.addTab(url-goes-here);
+
+					let accounts = AccountStatic.arrayLoadFromPrefset();
+					let pm = PasswordManager.new();
+					let i;
+
+					for (i = 0; i < accounts.length; i++) {
+						accounts[i].passwordlocator.delPassword();
+
+						logger().debug("uninstall: removed password for url: " + accounts[i].url + " username: " + accounts[i].username);
+
+						if (accounts[i].format_xx() == FORMAT_GD) {
+							let pl = new PasswordLocator(accounts[i].passwordlocator);
+							pl.url(eGoogleLoginUrl.kAuthToken);
+							pl.delPassword();
+							logger().debug("uninstall: removed authtoken for username: " + accounts[i].username);
+						}
+					}
+
+					logger().debug("uninstall: about to delete preferences");
+
 					preferences().deleteBranch(preferences().branch());
 				}
 			} catch (e) {
