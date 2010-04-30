@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mozillapreferences.js,v 1.37 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: mozillapreferences.js,v 1.38 2010-04-30 21:31:59 cvsuser Exp $
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
@@ -87,141 +87,117 @@ function MozillaPreferences()
 	this.m_defaultbranch = null;
 }
 
-MozillaPreferences.prototype.branch = function()
+MozillaPreferences.prototype =
 {
-	if (this.m_branch == null)
-	{
-		try {
-			var instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
+	branch : function() {
+		if (this.m_branch == null) {
+			try {
+				let instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
 	
-			this.m_branch = instance.getBranch(this.m_prefix);
-		}
-		catch(ex) {
-			zinAlert('text.alert.title', "MozillaPreferences::branch : " + ex);
-		}
-	}
-
-	return this.m_branch;
-}
-
-MozillaPreferences.prototype.defaultbranch = function()
-{
-	if (this.m_defaultbranch == null)
-	{
-		try {
-			var instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
-	
-			this.m_defaultbranch = instance.getDefaultBranch(this.m_prefix);
-		}
-		catch(ex) {
-			zinAlert('text.alert.title', "MozillaPreferences::defaultbranch : " + ex);
-		}
-	}
-
-	return this.m_defaultbranch;
-}
-
-MozillaPreferences.prototype.setIntPref = function(branch, key, value)
-{
-	var intValue = Number(value);
-
-	zinAssert(!isNaN(intValue));
-
-	if (branch)
-		branch.setIntPref(key, intValue);
-}
-
-MozillaPreferences.prototype.setCharPref = function(branch, key, value)
-{
-	if (branch)
-		branch.setCharPref(key, value);
-}
-
-MozillaPreferences.prototype.setBoolPref = function(branch, key, value)
-{
-	if (branch)
-		branch.setBoolPref(key, Boolean(value));
-}
-
-MozillaPreferences.prototype.getPrefReal = function(branch, key, type, mustbepresent)
-{
-	var ret = null;
-	var tmp;
-
-	if (branch)
-	{
-		try {
-			switch(type) {
-				case 'int':
-					tmp = branch.getIntPref(key);
-
-					if (!isNaN(tmp))
-						ret = Number(tmp);
-
-					break;
-				case 'char':
-					ret = String(branch.getCharPref(key));
-					break;
-				case 'bool':
-					ret = Boolean(branch.getBoolPref(key));
-					break;
-				default:
-					zinAssert(false, type);
+				this.m_branch = instance.getBranch(this.m_prefix);
+			}
+			catch(ex) {
+				zinAssertCatch(ex);
 			}
 		}
-		catch(ex) {
-			if (mustbepresent)
-			{
-				this.reportCatch(ex, key);
 
-				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+		return this.m_branch;
+	},
+	defaultbranch : function() {
+		if (this.m_defaultbranch == null) {
+			try {
+				let instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
+	
+				this.m_defaultbranch = instance.getDefaultBranch(this.m_prefix);
+			}
+			catch(ex) {
+				zinAssertCatch(ex);
 			}
 		}
-	}
 
-	return ret;
-}
+		return this.m_defaultbranch;
+	},
+	setIntPref : function(branch, key, value) {
+		let intValue = Number(value);
 
-MozillaPreferences.prototype.getCharPref       = function(branch, key) { return this.getPrefReal(branch, key, 'char', true);  }
-MozillaPreferences.prototype.getCharPrefOrNull = function(branch, key) { return this.getPrefReal(branch, key, 'char', false); }
-MozillaPreferences.prototype.getIntPref        = function(branch, key) { return this.getPrefReal(branch, key, 'int',  true);  }
-MozillaPreferences.prototype.getIntPrefOrNull  = function(branch, key) { return this.getPrefReal(branch, key, 'int',  false); }
-MozillaPreferences.prototype.getBoolPref       = function(branch, key) { return this.getPrefReal(branch, key, 'bool', true);  }
-MozillaPreferences.prototype.getBoolPrefOrNull = function(branch, key) { return this.getPrefReal(branch, key, 'bool', false); }
+		zinAssert(!isNaN(intValue));
 
-MozillaPreferences.prototype.reportCatch = function(ex, key)
-{
-	if (typeof zinAlert == 'function')
-		zinAlert('text.alert.title', ex.message + " with key " + key + " stack: \n" + ex.stack);
-	else
-		print(ex.message + " with key " + key + " stack: \n" + ex.stack);
-}
+		if (branch)
+			branch.setIntPref(key, intValue);
+	},
+	setCharPref : function(branch, key, value) {
+		if (branch)
+			branch.setCharPref(key, value);
+	},
+	setBoolPref : function(branch, key, value) {
+		if (branch)
+			branch.setBoolPref(key, Boolean(value));
+	},
+	getPrefReal : function(branch, key, type, mustbepresent) {
+		let ret = null;
+		let tmp;
 
-MozillaPreferences.prototype.getImmediateChildren = function(branch, key)
-{
-	var ret   = new Array();
-	var a_key = {};
+		if (branch) {
+			try {
+				switch(type) {
+					case 'int':
+						tmp = branch.getIntPref(key);
 
-	if (branch)
-	{
-		try {
-			var a_tmp = branch.getChildList(key, {});
+						if (!isNaN(tmp))
+							ret = Number(tmp);
 
-			// logger().debug("getImmediateChildren: key: " + key + " a_tmp: " + a_tmp.toString());
-
-			var re = new RegExp('^' + key + '(\\w*).*$');
-
-			for (var i = 0; i < a_tmp.length; i++)
-				a_key[String(a_tmp[i]).replace(re, "$1")] = null;
+						break;
+					case 'char':
+						ret = String(branch.getCharPref(key));
+						break;
+					case 'bool':
+						ret = Boolean(branch.getBoolPref(key));
+						break;
+					default:
+						zinAssert(false, type);
+				}
+			}
+			catch(ex) {
+				if (mustbepresent)
+					zinAssertAndLog(false, key);
+			}
 		}
-		catch(ex) {
-				this.reportCatch(ex, key);
-				throw new Error(ex.message + "\n\n stack:\n" + ex.stack);
+
+		return ret;
+	},
+	getImmediateChildren : function(branch, key) {
+		let ret   = new Array();
+		let a_key = {};
+		let i;
+
+		if (branch) {
+			try {
+				let a_tmp = branch.getChildList(key, {});
+
+				// logger().debug("getImmediateChildren: key: " + key + " a_tmp: " + a_tmp.toString());
+
+				let re = new RegExp('^' + key + '(\\w*).*$');
+
+				for (i = 0; i < a_tmp.length; i++)
+					a_key[String(a_tmp[i]).replace(re, "$1")] = null;
+			}
+			catch(ex) {
+				zinAssertAndLog(false, key);
+			}
 		}
-	}
 
-	for (var i in a_key)
-		ret.push(i);
+		for (i in a_key)
+			ret.push(i);
 
-	return ret;
-}
+		return ret;
+	},
+	deleteBranch : function (branch) {
+		branch.deleteBranch("");
+	},
+	getCharPref       : function(branch, key) { return this.getPrefReal(branch, key, 'char', true);  },
+	getCharPrefOrNull : function(branch, key) { return this.getPrefReal(branch, key, 'char', false); },
+	getIntPref        : function(branch, key) { return this.getPrefReal(branch, key, 'int',  true);  },
+	getIntPrefOrNull  : function(branch, key) { return this.getPrefReal(branch, key, 'int',  false); },
+	getBoolPref       : function(branch, key) { return this.getPrefReal(branch, key, 'bool', true);  },
+	getBoolPrefOrNull : function(branch, key) { return this.getPrefReal(branch, key, 'bool', false); }
+};
