@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.74 2010-04-29 00:15:36 cvsuser Exp $
+// $Id: util.js,v 1.75 2010-04-30 21:32:33 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
@@ -35,7 +35,7 @@ function zinAssertCatch(ex)
 		logger.fatal(executionStackFilter(ex.stack));
 	}
 
-	if (typeof zinAlert == 'function')
+	if (typeof(zinAlert) == 'function')
 		zinAlert('text.alert.title', msg + " stack: \n" + executionStackFilter(ex.stack));
 	else
 		print(ex.message + " stack: \n" + executionStackFilter(ex.stack));
@@ -946,10 +946,10 @@ function numeric_compare(a, b)
 function zinAlert(title_string_id, msg, win)
 {
 	let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
-	let app_name       = AppInfo.app_name();
-	let is_prompts     = (app_name == 'firefox') ||
-				         (((app_name == 'thunderbird') || (app_name == 'seamonkey')) &&
-						    versionChecker.compare(AppInfo.app_version(), "3") >= 0);
+	let is_prompts     = (typeof(AppInfo) == 'object') &&
+	                     ((AppInfo.app_name() == 'firefox') ||
+				          (((AppInfo.app_name() == 'thunderbird') || (AppInfo.app_name() == 'seamonkey')) &&
+						    versionChecker.compare(AppInfo.app_version(), "3") >= 0));
 
 	if (is_prompts) {
 		if (!win)

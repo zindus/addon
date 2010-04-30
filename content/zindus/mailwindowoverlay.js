@@ -20,7 +20,9 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.65 2010-04-18 05:27:16 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.66 2010-04-30 21:32:39 cvsuser Exp $
+
+includejs("uninstall.js");
 
 function ZinMailWindowOverlay()
 {
@@ -63,6 +65,8 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 			this.timerStartup();
 
 			StatusBarState.update();
+
+			UnInstall.addObserver();
 		}
 	}
 	catch (ex)
