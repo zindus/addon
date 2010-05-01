@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.75 2010-04-30 21:32:33 cvsuser Exp $
+// $Id: util.js,v 1.76 2010-05-01 00:52:15 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
@@ -1092,6 +1092,7 @@ function url(key)
 	case 'google-what-synced':  ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized';                     break;
 	case 'google-postal-xml':   ret = 'http://www.zindus.com/blog/2008/06/17/thunderbird-google-postal-address-sync-part-two/';     break;
 	case 'google-stay-in-sync': ret = 'http://www.zindus.com/blog/2008/10/06/the-google-thunderbird-address-book-staying-in-sync/'; break;
+	case 'zimbra-6-birthday':   ret = 'http://www.zindus.com/blog/2010/04/29/zimbra-6x-birthday-field/';                            break;
 	default: zinAssertAndLog(false, key);
 	}
 

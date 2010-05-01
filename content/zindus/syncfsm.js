@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.259 2010-04-30 22:56:59 cvsuser Exp $
+// $Id: syncfsm.js,v 1.260 2010-05-01 00:52:14 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3590,11 +3590,48 @@ SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 		this.state.stopFailArg    = [ name ];
 	}
 
-	var ret = this.state.stopFailCode == null;
+	let ret = this.state.stopFailCode == null;
 
-	this.state.m_logger.debug("testForLegitimateFolderNames: names: " + msg + " returns: " + ret);
+	this.debug("testForLegitimateFolderNames: names: " + msg + " returns: " + ret);
 
 	return ret;
+}
+
+SyncFsmZm.prototype.testForValidBirthdayFields = function()
+{
+	let a_bad_birthday = new Object();
+	let trailer = "";
+	let count = 0;
+	let luid;
+
+	if (this.contact_converter().is_birthday_field_converted())
+		for (luid in this.state.aSyncContact) {
+			if ('birthday' in this.state.aSyncContact[luid].element) {
+				let birthday = this.state.aSyncContact[luid].element['birthday'];
+				let a        = birthday.split("-");
+
+				if (birthday.length > 0 && !(a.length == 2 || a.length == 3)) {
+					if (count++ < 10) {
+						let element = cloneObject(this.state.aSyncContact[luid].element);
+						delete element['birthday'];
+						let properties = this.contact_converter().convert(FORMAT_TB, FORMAT_ZM, element);
+
+						trailer += "\n  " + birthday + " " + this.shortLabelForContactProperties(properties);
+					}
+				}
+			}
+		}
+
+	if (trailer.length != 0) {
+		this.state.stopFailCode    = 'failon.must.clean.ab';
+		this.state.stopFailArg     = [ stringBundleString("brand.zimbra") ];
+		this.state.stopFailTrailer = stringBundleString("status.failon.must.clean.ab.bad.birthday",
+		                              [ url('zimbra-6-birthday'), trailer ]);
+	}
+
+	this.debug("testForValidBirthdayFields: returns: " + (this.state.stopFailCode == null));
+
+	return this.state.stopFailCode == null;
 }
 
 SyncFsm.prototype.loadTbTestForEmptyCards = function(tb_cc_meta)
@@ -5993,6 +6030,8 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 	if (this.formatPr() == FORMAT_ZM)
 	{
+		passed = passed && this.testForValidBirthdayFields();
+
 		this.twiddleZmFxMs();
 
 		passed = passed && this.sharedFoldersUpdateZm();
