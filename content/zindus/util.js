@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.76 2010-05-01 00:52:15 cvsuser Exp $
+// $Id: util.js,v 1.77 2010-05-05 02:16:26 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
@@ -92,12 +92,21 @@ function executionStackAsString()
 
 function executionStackFilter(str)
 {
-	str = str.replace(new RegExp("^.*@", "mg"),"");
-	str = str.replace(new RegExp(":0", "mg"),"");
+	let ret;
 
-	return str;
+	if (str) {
+		ret = str;
+		ret = ret.replace(new RegExp("^.*@", "mg"),"");
+		ret = ret.replace(new RegExp(":0", "mg"),"");
+	}
+	else {
+		ret = "no execution stack available";
+
+		logger().error(ret + "\narguments.callee.caller:\n" + arguments.callee.caller.toString());
+	}
+
+	return ret;
 }
-
 
 function cloneObject(obj)
 {

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.74 2010-04-29 00:15:36 cvsuser Exp $
+// $Id: addressbook.js,v 1.75 2010-05-05 02:16:26 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -716,7 +716,10 @@ AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_cou
 			}
 		}
 	} catch (ex) {
-		this.logger().error("forEachCardGenerator: uri: " + uri + " count: " + count + " fContinue: " + fContinue + " ex: " + ex + " stack: " + executionStackFilter(ex.stack));
+		this.logger().error("forEachCardGenerator: uri: " + uri + " count: " + count + " fContinue: " + fContinue);
+		this.logger().error("forEachCardGenerator: ex: " + ex);
+		this.logger().error("forEachCardGenerator: arguments.callee.caller:\n" + arguments.callee.caller.toString());
+		this.logger().error("forEachCardGenerator: stack: " + executionStackFilter(ex.stack));
 		zinAssertCatch(ex);
 	}
 
