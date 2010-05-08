@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.75 2010-05-05 02:16:26 cvsuser Exp $
+// $Id: addressbook.js,v 1.76 2010-05-08 01:54:12 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -698,9 +698,20 @@ AddressBookTb2.prototype.directoryProperty = function(elem, property)
 AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_count)
 {
 	var dir       = this.nsIAbDirectory(uri);
-	var enm       = dir.childCards;
 	var fContinue = true;
 	var count     = 0;
+	var enm;
+
+	if (uri.match(/\/MailList/)) {
+		// workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=564554
+		//
+		this.logger().debug("forEachCardGenerator: iterating via addressLists: "); // TODO
+		enm = dir.addressLists.enumerate();
+	}
+	else {
+		enm = dir.childCards;
+		this.logger().debug("forEachCardGenerator: iterating via childCards: "); // TODO
+	}
 
 	try {
 		while (fContinue && enm.hasMoreElements()) {
