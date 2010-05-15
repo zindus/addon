@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.128 2010-04-30 22:56:59 cvsuser Exp $
+// $Id: testharness.js,v 1.129 2010-05-15 05:09:09 cvsuser Exp $
 
 function TestHarness()
 {
@@ -55,7 +55,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testFilesystem();
 	// ret = ret && this.testPropertyDelete();
 	// ret = ret && this.testLso();
-	ret = ret && this.testContactConverter();
+	// ret = ret && this.testContactConverter();
 	// ret = ret && this.testAddressBook1();
 	// ret = ret && this.testAddressBook2();
 	// ret = ret && this.testAddressBookBugzilla432145Create();
@@ -602,12 +602,12 @@ TestHarness.prototype.testFolderConverterSuiteTwo = function(converter, localise
 
 TestHarness.prototype.testFolderConverterSuiteThree = function(converter, email_address)
 {
-	function munge(x) { return "zindus/" + email_address + gd_gr_as_ab_separator + x; }
+	function munge(x) { return "zindus/" + email_address + GD_GR_AS_AB_SEPARATOR + x; }
 
 	let tb_name = ContactGoogle.eSystemGroup.Contacts;
 	// let zfi = SyncFsm.zfi_from_name(munge(tb_name));
 	// let x = converter.convertForPublic(FORMAT_GD, FORMAT_TB, zfi);
-	// let zfi = SyncFsm.zfi_from_name("zindus-" + email_address + gd_gr_as_ab_separator + "fred");
+	// let zfi = SyncFsm.zfi_from_name("zindus-" + email_address + GD_GR_AS_AB_SEPARATOR + "fred");
 
 	let zfi = SyncFsm.zfi_from_name_gd(ContactGoogle.eSystemGroup.Contacts);
 	let x   = converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi);
@@ -615,7 +615,7 @@ TestHarness.prototype.testFolderConverterSuiteThree = function(converter, email_
 	this.m_logger.debug("x: " + x + " zfi: " + zfi.toString());
 
 	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name(munge("fred"))) == "zindus/fred");
-	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name("zindus-" + email_address + gd_gr_as_ab_separator + "fred"))== "zindus-fred");
+	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name("zindus-" + email_address + GD_GR_AS_AB_SEPARATOR + "fred"))== "zindus-fred");
 	zinAssert(converter.convertForPublic(FORMAT_GD, FORMAT_TB, SyncFsm.zfi_from_name(munge(ContactGoogle.eSystemGroup.Contacts))) == ContactGoogle.eSystemGroup.Contacts);
 
 	zinAssert(converter.convertForPublic(FORMAT_TB, FORMAT_GD, SyncFsm.zfi_from_name_gd("zindus/fred")) == munge("fred"));
@@ -3105,7 +3105,6 @@ TestHarness.prototype.testBug537815 = function()
 		for (i = 1; i <= 5; i++) {
 			let ab_name = ab_prefix + i;
 			abm.newAddressBook(ab_name, "", 2);
-			logger().debug("created: " + ab_name); // TODO
 		}
 
 		for (var j = 1; j < 2; j++) {
@@ -3114,8 +3113,6 @@ TestHarness.prototype.testBug537815 = function()
 			let elem = enm_dirs.getNext().QueryInterface(Ci.nsIAbDirectory);
 			let uri  = elem.URI;
 			let dir  = abm.getDirectory(uri);
-
-			logger().debug("considering: j: " + j + " " + elem.dirName); // TODO
 
 			if (j == 1 && String(elem.dirName).match(re_prefix)) {
 				for (i = 1; i <= 1000; i++) {
@@ -3126,8 +3123,6 @@ TestHarness.prototype.testBug537815 = function()
 
 					abCard = dir.addCard(abCard);
 				}
-
-				logger().debug("populated: " + elem.dirName); // TODO
 			}
 		}
 		}
@@ -3154,8 +3149,6 @@ TestHarness.prototype.testBug537815 = function()
 						let value = abCard.getProperty(key, null);
 					}
 				}
-
-				logger().debug("visited all cards in: " + elem.dirName); // TODO
 			}
 		}
 	}
@@ -3171,7 +3164,6 @@ TestHarness.prototype.testBug537815 = function()
 
 			if (String(elem.dirName).match(re_prefix)) {
 				a_uri[elem.URI] = true;
-				logger().debug("deleted: " + elem.dirName); // TODO
 			}
 		}
 

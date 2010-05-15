@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.35 2010-04-18 05:27:16 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.36 2010-05-15 05:09:09 cvsuser Exp $
 
 function GoogleData()
 {
@@ -109,18 +109,18 @@ GoogleData.element_type_from_instance = function(x) {
 GoogleData.new = function(arg, mode) {
 	let entry    = (typeof(arg) == "xml") ? arg : ContactGoogleStatic.newXml(arg);
 	let nsAtom   = ContactGoogleStatic.nsAtom;
-	let category = entry.nsAtom::category;
-	let right_of = rightOfChar(category.@term);
+	let id       = entry.nsAtom::id;
+	let a        = id.toString().match(/\/(contacts|groups)\//);
+	let key      = a[1];
 	let ret;
 
-	zinAssert(category.length() == 1);
+	zinAssert(id.length() == 1);
 
-	if (category.@scheme == Xpath.NS_GD + "#kind")
-		switch(right_of) {
-			case 'contact': ret = new ContactGoogle(entry, mode); break;
-			case 'group':   ret = new GroupGoogle(entry);         break;
-			default:        zinAssertAndLog(false, arg);
-		}
+	switch(key) {
+		case 'contacts': ret = new ContactGoogle(entry, mode); break;
+		case 'groups':   ret = new GroupGoogle(entry);         break;
+		default:        zinAssertAndLog(false, arg);
+	}
 
 	return ret;
 }
@@ -145,9 +145,11 @@ function ContactGoogle(xml, mode) {
 	this.m_entry      = xml  ? xml  : ContactGoogleStatic.newEntry(GoogleData.eElement.contact);
 	this.m_mode       = mode ? mode : ContactGoogle.ePostal.kDisabled;
 	this.m_groups     = null;             //             array populated by the getter
+	this.m_photo      = null;             //             array populated by the getter
 
 	this.__defineGetter__("groups", function()  { return this.get_groups(); });
 	this.__defineSetter__("groups", function(g) { return this.set_groups(g); });
+	this.__defineGetter__("photo",  function()  { return this.get_photo(); }); // don't need a setter
 }
 
 ContactGoogle.ePostal      = new ZinEnum( { 'kEnabled' : 0x01, 'kDisabled'   : 0x02 } );
@@ -254,10 +256,10 @@ properties_from_xml: function () {
 		if (imask & mask.structuredPostalAddress && (this.m_mode & ContactGoogle.ePostal.kEnabled) ) {
 			list = get_elements_matching_attribute(entry.nsGd::structuredPostalAddress, 'rel', a_fragment.structuredPostalAddress, kMatchFirst, 'structuredPostalAddress');
 
-			for (var i = 0; i < list.length(); i++)
+			for (i = 0; i < list.length(); i++)
 				set_if(properties, get_hyphenation('structuredPostalAddress', shorten_rel(list[i].@rel, 'structuredPostalAddress')), list[i].nsGd::formattedAddress);
 		}
-
+		
 		if (imask & mask.name) {
 			// set_if(properties, 'name_givenName',   entry.nsGd::name.nsGd::givenName);
 			// set_if(properties, 'name_familyName',  entry.nsGd::name.nsGd::familyName);
@@ -298,6 +300,36 @@ properties_from_xml: function () {
 			zinAssertAndLog(typeof(properties[i]) == 'string', i);
 
 	return properties;
+},
+get_photo : function() {
+	if (!this.m_photo) {
+		let link = this.get_photo_link();
+
+		with (ContactGoogleStatic) {
+			this.m_photo = newObject('uri', link.@href.toString());
+
+			if (link.@nsGd::etag.length() > 0)
+				this.m_photo['etag'] = link.@nsGd::etag.toString();
+		}
+	}
+	return this.m_photo;
+},
+get_photo_link : function() {
+	let ret = null;
+	with (ContactGoogleStatic) {
+	 	let list = this.m_entry.nsAtom::link;
+		let i;
+
+		for (i = 0; i < list.length(); i++) {
+			if (list[i].@rel == get_rel("photo")) {
+				ret = list[i];
+				break;
+			}
+		}
+
+		zinAssert(ret != null);
+	}
+	return ret;
 },
 get_groups : function() {
 	if (!this.m_groups)
@@ -663,7 +695,13 @@ modify : function( mods ) {
 	}
 },
 toString : function() {
-	return GoogleData.prototype.toString.call(this) + "\n groups:      " + this.groups.toString() + "\n";
+	let photo = "";
+	if ('etag' in this.photo) {
+		photo = "etag: " + this.photo.etag + " uri: " + this.photo.uri;
+	}
+	return GoogleData.prototype.toString.call(this) +
+	       "\n groups:      " + this.groups.toString() + 
+	       "\n photo:       " + photo + "\n";
 }
 };
 
@@ -805,7 +843,8 @@ var ContactGoogleStatic = {
 		phoneNumber             : [ 'work', 'home', 'work_fax', 'pager', 'mobile' ],
 		postalAddress           : [ 'work', 'home' ],
 		structuredPostalAddress : [ 'work', 'home' ],
-		website                 : [ 'work', 'home' ]
+		website                 : [ 'work', 'home' ],
+		photo                   : [ 'photo' ]
 	},
 	ns_rel : {
 		organization            : Xpath.NS_GD,
@@ -899,9 +938,16 @@ var ContactGoogleStatic = {
 			this.modify_or_delete_child(e, properties, key, a_is_used);
 	},
 	get_rel : function (suffix, element_name) {
-		// website is in gContact namespace, which don't use urls in rel values
-		let left_of = (element_name == "website") ? "" : (Xpath.NS_GD + '#');
-		let key     = element_name + '_' + suffix;
+		let left_of;
+
+		if (element_name == "website")
+			left_of = ""; // website is in gContact namespace, and doesn't use urls in rel values
+		else if (suffix == "photo")
+			left_of = 'http://schemas.google.com/contacts/2008/rel#'; // 'contacts' here vs 'contact' in NS_GCONTACT (surely google made a mistake)
+		else
+			left_of = Xpath.NS_GD + '#';
+
+		let key = element_name + '_' + suffix;
 			
 		if (!(key in this.m_a_rel))
 			this.m_a_rel[key] = left_of + suffix;

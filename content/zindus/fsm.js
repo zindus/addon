@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: fsm.js,v 1.20 2010-04-29 00:15:36 cvsuser Exp $
+// $Id: fsm.js,v 1.21 2010-05-15 05:09:09 cvsuser Exp $
 
 // Notes:
 // - only entry actions should call continuation() - not sure what happens
@@ -28,7 +28,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.20 2010-04-29 00:15:36 cvsuser Exp $
+// $Id: fsm.js,v 1.21 2010-05-15 05:09:09 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -126,12 +126,13 @@ function fsmTransitionSchedule(id_fsm, oldstate, newstate, event, context)
 	context.fsm.m_logger.debug("TransitionSchedule: exiting ");
 }
 
-function fsmDoCatch(ex, msg, state, event)
+function fsmDoCatch(ex, action, state, event)
 {
-	logger().error("fsmDoCatch: state: " + state + " event: " + event + " msg: " + msg + " ex: " + ex +
-	                " stack: " + executionStackFilter(ex.stack));
-
-	zinAssertCatch(ex);
+	if (!String(ex).match(/Please report this assertion failure/))
+	{
+		logger().fatal("fsmDoCatch: state: " + state + " event: " + event + " action: " + action);
+		zinAssertCatch(ex);
+	}
 }
 
 function FsmState()

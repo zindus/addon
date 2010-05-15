@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: folderconverter.js,v 1.24 2010-04-12 23:29:24 cvsuser Exp $
+// $Id: folderconverter.js,v 1.25 2010-05-15 05:09:09 cvsuser Exp $
 
 FolderConverter.PREFIX_CLASS_NONE     = 1;
 FolderConverter.PREFIX_CLASS_INTERNAL = 2;
@@ -87,7 +87,7 @@ FolderConverter.prototype.convertForMap = function(format_to, format_from, zfi)
 
 		if (format_to == FORMAT_GD) {
 			// return what's to the right of the separator
-			let separator = ret.indexOf(gd_gr_as_ab_separator);
+			let separator = ret.indexOf(GD_GR_AS_AB_SEPARATOR);
 			zinAssert(separator >= 0);
 			ret = ret.substring(separator + 1);
 		}
@@ -205,7 +205,7 @@ FolderConverter.prototype.tb_from_gd_zfi = function(zfi)
 
 FolderConverter.prototype.tb_ab_name_for_gd_group = function(separator, group_name)
 {
-	return APP_NAME + separator + this.gd_account_email_address() + gd_gr_as_ab_separator + group_name;
+	return APP_NAME + separator + this.gd_account_email_address() + GD_GR_AS_AB_SEPARATOR + group_name;
 }
 
 FolderConverter.prototype.prefixClass = function(str)

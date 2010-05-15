@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.61 2010-04-26 22:13:45 cvsuser Exp $
+// $Id: contactconverter.js,v 1.62 2010-05-15 05:09:09 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -40,7 +40,7 @@ function ContactConverter()
 	this.m_gd_certain_keys_converted = null;
 	this.m_properties_being_migrated = null;
 
-	this.is_birthday_field_converted(AppInfo.is_tb_birthday_field() && String(GD_API_VERSION).substr(0,1) == 3);
+	this.is_birthday_field_converted(AppInfo.is_birthday_field() && String(GD_API_VERSION).substr(0,1) == 3);
 
 	this.m_postal_word = ContactGoogleStatic.postalWord(); // postalAddress or structuredPostalAddress
 }
@@ -60,11 +60,7 @@ setup : function(style) {
 
 	this.m_equivalents = new Array();
 
-	if (GD_API_VERSION == 2) {
-		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, null));
-		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage2",        FORMAT_ZM, "homeURL",           FORMAT_GD, null));
-	}
-	else {
+	{
 		zinAssert(String(GD_API_VERSION).substr(0,1) == 3);
 
 		this.m_equivalents.push(newObject(FORMAT_TB, "WebPage1",        FORMAT_ZM, "workURL",           FORMAT_GD, "website_work"));
@@ -77,12 +73,7 @@ setup : function(style) {
 		}
 	}
 
-	if (GD_API_VERSION == 2) {
-		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
-		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
-		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "title"));
-	}
-	else if (GD_API_VERSION == '3-new-fields-only') {
+	if (GD_API_VERSION == '3-new-fields-only') {
 		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, null));
 		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, null));
 		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "name_fullName"));
@@ -95,6 +86,12 @@ setup : function(style) {
 		this.m_equivalents.push(newObject(FORMAT_TB, "FirstName",       FORMAT_ZM, "firstName",         FORMAT_GD, "name_givenName"));
 		this.m_equivalents.push(newObject(FORMAT_TB, "LastName",        FORMAT_ZM, "lastName",          FORMAT_GD, "name_familyName"));
 		this.m_equivalents.push(newObject(FORMAT_TB, "DisplayName",     FORMAT_ZM, "fullName",          FORMAT_GD, "name_fullName"));
+	}
+
+	if (AppInfo.is_photo()) {
+		this.m_equivalents.push(newObject(FORMAT_TB, "PhotoName",       FORMAT_ZM, null,            FORMAT_GD, null));
+		this.m_equivalents.push(newObject(FORMAT_TB, "PhotoType",       FORMAT_ZM, null,            FORMAT_GD, null));
+		this.m_equivalents.push(newObject(FORMAT_TB, "PhotoURI",        FORMAT_ZM, null,            FORMAT_GD, null));
 	}
 
 	this.m_equivalents.push(newObject(FORMAT_TB, "NickName",        FORMAT_ZM, null,                FORMAT_GD, null));

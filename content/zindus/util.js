@@ -20,23 +20,27 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.77 2010-05-05 02:16:26 cvsuser Exp $
+// $Id: util.js,v 1.78 2010-05-15 05:09:09 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
 	let msg = "Please report this assertion failure (include filenames and line numbers) to support@zindus.com:\n" +
-			    APP_NAME + " version " + APP_VERSION_NUMBER + "\nSee: " + url('reporting-bugs') + "\n";
+			    APP_NAME + " version " + APP_VERSION_NUMBER + "\n\nHow to report a bug: " + url('reporting-bugs') + "\n\n";
+
+	// logger().debug("AMHERE: zinAssertCatch: ex.message: " + ex.message);
+	// logger().debug("AMHERE: zinAssertCatch: ex.stack: " + ex.stack);
+	// logger().debug("AMHERE: zinAssertCatch: executionStackFilter: " + executionStackFilter(ex.stack));
 
 	msg += ex.message + "\n";
 
 	if (isSingletonInScope()) {
 		let logger = newLogger("Utils");
-		logger.fatal(msg);
+		logger.fatal(ex.message);
 		logger.fatal(executionStackFilter(ex.stack));
 	}
 
 	if (typeof(zinAlert) == 'function')
-		zinAlert('text.alert.title', msg + " stack: \n" + executionStackFilter(ex.stack));
+		zinAlert('text.alert.title', msg + "\n" + executionStackFilter(ex.stack));
 	else
 		print(ex.message + " stack: \n" + executionStackFilter(ex.stack));
 
@@ -96,17 +100,24 @@ function executionStackFilter(str)
 
 	if (str) {
 		ret = str;
-		ret = ret.replace(new RegExp("^.*@", "mg"),"");
-		ret = ret.replace(new RegExp(":0", "mg"),"");
+		ret = ret.replace(/^.*@/mg, "");
+		ret = ret.replace(/:0/mg,  "");
+		ret = ret.replace(/^(?:(?!chrome.+).)*$/mg,  "");
+		ret = ret.replace(/\s{2,}/g,  "\n");
 	}
 	else {
 		ret = "no execution stack available";
 
-		logger().error(ret + "\narguments.callee.caller:\n" + arguments.callee.caller.toString());
+		try {
+			throw new Error();
+		} catch(ex) {
+			logger().error(ret + " " + ex.stack);
+		}
 	}
 
 	return ret;
 }
+
 
 function cloneObject(obj)
 {
@@ -175,16 +186,13 @@ function xmlDocumentToString(doc)
 {
 	zinAssert(doc != null);
 
-	var serializer = new XMLSerializer();
-
-	var str = null;
+	let serializer = new XMLSerializer();
+	let str        = null;
 	
-	try
-	{
+	try {
 		str = serializer.serializeToString(doc);
 	}
-	catch (e)
-	{
+	catch (e) {
 		zinAssert(false);
 	}
 
@@ -724,10 +732,9 @@ function arrayFromArguments(args, start_at)
 
 function zinTrim(str)
 {
-	var ret;
+	let ret;
 
-	if (str)
-	{
+	if (str) {
 		zinAssertAndLog(typeof(str) == "string", function () { return "typeof: " + typeof(str) + " : " + str.toString(); } );
 
 		ret = str.replace(/^\s+|\s+$/g, "");
@@ -1087,21 +1094,21 @@ function url(key)
 	let ret;
 
 	switch(key) {
-	case 'reporting-bugs':      ret = 'http://www.zindus.com/faq-thunderbird/#toc-reporting-bugs';                                  break;
+	case 'reporting-bugs':      ret = 'http://zindus.com/i/reporting-bugs';                                                         break;
+	case 'google-bug-997':      ret = 'http://zindus.com/i/google-bug-997/';                                                        break;
+	case 'slow-sync':           ret = 'http://zindus.com/i/slow-sync';                                                              break;
 	case 'what-is-soapURL':     ret = 'http://www.zindus.com/faq-thunderbird-zimbra/#toc-what-is-soapURL';                          break;
 	case 'faq-thunderbird':     ret = 'http://www.zindus.com/faq-thunderbird/';                                                     break;
 	case 'thunderbird-3':       ret = 'http://www.zindus.com/faq-thunderbird/#roadmap-thunderbird-3';                               break;
+	case 'google-what-synced':  ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized';                     break;
 	case 'share-tos':           ret = 'http://www.zindus.com/service/tos.html';                                                     break;
 	case 'share-faq':           ret = 'http://www.zindus.com/faq-share';                                                            break;
-	case 'google-bug-997':      ret = 'http://zindus.com/i/google-bug-997/';                                                        break;
-	case 'zimbra-bug-c-token':  ret = 'http://www.zimbra.com/forums/developers/29667-soap-how-demand-change.html';                  break;
-	case 'slow-sync':           ret = 'http://zindus.com/i/slow-sync';                                                              break;
 	case 'gr-as-ab':            ret = 'http://www.zindus.com/blog/2009/11/09/sync-google-groups-with-thunderbird-addressbooks/';    break;
 	case 'suggested-contacts':  ret = 'http://www.zindus.com/blog/2009/01/19/google-suggested-contacts-include-or-ignore/';         break;
-	case 'google-what-synced':  ret = 'http://www.zindus.com/faq-thunderbird-google/#toc-what-is-synchronized';                     break;
 	case 'google-postal-xml':   ret = 'http://www.zindus.com/blog/2008/06/17/thunderbird-google-postal-address-sync-part-two/';     break;
 	case 'google-stay-in-sync': ret = 'http://www.zindus.com/blog/2008/10/06/the-google-thunderbird-address-book-staying-in-sync/'; break;
 	case 'zimbra-6-birthday':   ret = 'http://www.zindus.com/blog/2010/04/29/zimbra-6x-birthday-field/';                            break;
+	case 'zimbra-bug-c-token':  ret = 'http://www.zimbra.com/forums/developers/29667-soap-how-demand-change.html';                  break;
 	default: zinAssertAndLog(false, key);
 	}
 

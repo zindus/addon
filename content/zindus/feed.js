@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.53 2010-02-16 03:57:57 cvsuser Exp $
+// $Id: feed.js,v 1.54 2010-05-15 05:09:09 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -63,6 +63,7 @@ FeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this a
 FeedItem.ATTR_PERM = 'perm'; // 
 FeedItem.ATTR_ACL  = 'acl';  // <acl> child of a zimbra <folder>
 FeedItem.ATTR_CS   = 'cs';   // checksum
+FeedItem.ATTR_CSPT = 'cspt'; // checksum for Photo* attributes
 FeedItem.ATTR_FXMS = 'fxms'; // fix the ms attribute after a batch update (because change token is high-water, not per-contact/folder)
 FeedItem.ATTR_EDIT = 'edit'; // google edit url
 FeedItem.ATTR_SELF = 'self'; // google self url
@@ -72,6 +73,9 @@ FeedItem.ATTR_GGID = 'ggid'; // TYPE_GG items have this attribute - the <id> ele
 FeedItem.ATTR_XGID = 'xgid'; // this item doesn't map to anything in in the gid
 FeedItem.ATTR_GDGP = 'gdgp'; // comma-separated list of google group ids for which this contact is a member
 FeedItem.ATTR_GDID = 'gdid'; // gdci items have this attribute - value is the id of the authoritative contact
+FeedItem.ATTR_ETAG = 'etag'; // photo etag
+FeedItem.ATTR_GDPI = 'gdpi'; // photo uri
+FeedItem.ATTR_GDPT = 'gdpt'; // photo content-type-as-file-extension ie: png/gif/jpg
 
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).

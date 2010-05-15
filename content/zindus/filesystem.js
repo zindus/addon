@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.27 2010-04-14 04:16:53 cvsuser Exp $
+// $Id: filesystem.js,v 1.28 2010-05-15 05:09:09 cvsuser Exp $
 
 var Filesystem = {
 	m_charset            : "UTF-8",
@@ -30,7 +30,8 @@ var Filesystem = {
 		PROFILE : 'profile',   // C:\Documents and Settings\user\Application Data\Thunderbird\Profiles\blah
 		APP     : APP_NAME,    //                                                                      blah\zindus
 		LOG     : 'log',       //                                                                      blah\zindus\log
-		DATA    : 'data'       //                                                                      blah\zindus\data
+		DATA    : 'data',      //                                                                      blah\zindus\data
+		PHOTO   : 'Photos'     //                                                                      blah\Photos
 	}),
 	eFilename : new ZinEnum( {
 		LOGFILE   : 'logfile.txt',
@@ -59,9 +60,10 @@ var Filesystem = {
 
 		if (!this.m_a_parent_directory)
 			with(Filesystem.eDirectory)
-				this.m_a_parent_directory = newObject(APP,  PROFILE,
-				                                      LOG,  APP,
-													  DATA, APP);
+				this.m_a_parent_directory = newObject(APP,   PROFILE,
+				                                      LOG,   APP,
+													  DATA,  APP,
+													  PHOTO, PROFILE);
 
 		if (!(name in this.m_a_directory))
 			if (name == this.eDirectory.PROFILE) {
@@ -91,25 +93,44 @@ var Filesystem = {
 			}
 	},
 	createDirectoriesIfRequired : function() {
-		for (var name in newObjectWithKeys(this.eDirectory.APP, this.eDirectory.LOG, this.eDirectory.DATA))
+		for (var name in newObjectWithKeys(this.eDirectory.APP, this.eDirectory.LOG, this.eDirectory.DATA, this.eDirectory.PHOTO))
 			this.createDirectoryIfRequired(name)
 	},
-	writeToFile : function(file, content) {
+	writeToFile : function(file, content, flag) {
 		var ret = false;
 
 		try {
 			if (!file.exists()) 
 				file.create(Ci.nsIFile.NORMAL_FILE_TYPE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR);
 
-			let fos = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
-			let cos = Cc["@mozilla.org/intl/converter-output-stream;1"].createInstance(Ci.nsIConverterOutputStream);
+			if (flag && flag == 'binary') {
+				// when writing photos, we just want the bytes in the file
+				// from https://developer.mozilla.org/En/Code_snippets:File_I/O#Writing_a_Binary_File
+				//
+				let fos = Cc["@mozilla.org/network/safe-file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
+				fos.init(file, this.eFlag.PR_WRONLY | this.eFlag.PR_TRUNCATE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR, null);
+				fos.write(content, content.length);
 
-			fos.init(file, this.eFlag.PR_WRONLY | this.eFlag.PR_TRUNCATE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR, null);
-			fos.QueryInterface(Ci.nsIOutputStream);
-			cos.init(fos, this.m_charset, 0, 0x0000);
-			cos.writeString(content);
-			cos.flush();
-			cos.close();
+				if (fos instanceof Ci.nsISafeOutputStream)
+					fos.finish();
+				else
+					fos.close();
+			}
+			else {
+				// when writing text,   we want UTF-8
+				// from https://developer.mozilla.org/En/Code_snippets:File_I/O#Writing_to_a_File
+				//
+				let fos = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(Ci.nsIFileOutputStream);
+				fos.init(file, this.eFlag.PR_WRONLY | this.eFlag.PR_TRUNCATE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR, null);
+
+				fos.QueryInterface(Ci.nsIOutputStream);
+
+				let cos = Cc["@mozilla.org/intl/converter-output-stream;1"].createInstance(Ci.nsIConverterOutputStream);
+				cos.init(fos, this.m_charset, 0, 0x0000);
+				cos.writeString(content);
+				cos.flush();
+				cos.close();
+			}
 
 			ret = true;
 		}
@@ -146,12 +167,12 @@ var Filesystem = {
 	},
 	// the remove* methods...
 	removeZfc : function(filename) {
-		var directory_data = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
+		let directory = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
 
 		logger().debug("removeZfc: " + filename);
 
-		if (directory_data.exists() && directory_data.isDirectory()) {
-			let file = directory_data;
+		if (directory.exists() && directory.isDirectory()) {
+			let file = directory;
 			file.append(filename);
 
 			if (file.exists())
@@ -161,18 +182,18 @@ var Filesystem = {
 	removeZfcs : function(re_exclude) {
 		re_exclude = re_exclude ? re_exclude : /sqlite/;
 
-		var directory_data = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.DATA);
+		for (var name in newObjectWithKeys(this.eDirectory.DATA)) {
+			let directory = Filesystem.nsIFileForDirectory(name);
 
-		// remove files in the data directory
-		//
-		if (directory_data.exists() && directory_data.isDirectory()) {
-			let iter = directory_data.directoryEntries;
+			if (directory.exists() && directory.isDirectory()) {
+				let iter = directory.directoryEntries;
 
-			while (iter.hasMoreElements()) {
-				let file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+				while (iter.hasMoreElements()) {
+					let file = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
 
-				if (!re_exclude.test(file.leafName) && !file.isDirectory())
-					file.remove(false);
+					if (!re_exclude.test(file.leafName) && !file.isDirectory())
+						file.remove(false);
+				}
 			}
 		}
 	},

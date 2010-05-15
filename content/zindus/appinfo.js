@@ -20,14 +20,15 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.5 2009-10-30 04:05:38 cvsuser Exp $
+// $Id: appinfo.js,v 1.6 2010-05-15 05:09:09 cvsuser Exp $
 
 var AppInfo = {
-	m_app_version          : null,
-	m_is_tb_birthday_field : null,
-	m_app_name             : null,
-	m_app_name_capital     : null,
-	firstcap               : 1, // const ==> first letter capitalised
+	m_app_version       : null,
+	m_is_birthday_field : null,
+	m_is_photo          : null,
+	m_app_name          : null,
+	m_app_name_capital  : null,
+	firstcap            : 1, // const ==> first letter capitalised
 	app_version : function() {
 		if (!this.m_app_version) {
 			let appInfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
@@ -56,19 +57,34 @@ var AppInfo = {
 		         (this.app_name().substr(0,1).toUpperCase() + this.app_name().substr(1).toLowerCase()) :
 		         this.m_app_name;
 	},
-	is_tb_birthday_field : function() {
-		if (typeof(this.m_is_tb_birthday_field) != 'boolean') {
+	is_birthday_field : function() {
+		if (this.m_is_birthday_field == null) {
 			let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
 			let app_name       = this.app_name();
 
-			this.m_is_tb_birthday_field =
+			this.m_is_birthday_field =
 				(app_name == 'postbox') ||
 				(((app_name == 'thunderbird') && versionChecker.compare(this.app_version(), "3.0b3pre") >= 0)) ||
 				(((app_name == 'seamonkey')   && versionChecker.compare(this.app_version(), "2.0b1") >= 0));
 
-			logger().debug("AppInfo.is_tb_birthday_field: returns: " + this.m_is_tb_birthday_field);
+			logger().debug("AppInfo.is_birthday_field: returns: " + this.m_is_birthday_field);
 		}
-		return this.m_is_tb_birthday_field;
+		return this.m_is_birthday_field;
+	},
+	is_photo : function() {
+		if (this.m_is_photo == null) {
+			let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
+			let app_name       = this.app_name();
+
+			this.m_is_photo = // TODO postbox
+				(((app_name == 'thunderbird') && versionChecker.compare(this.app_version(), "3.0") >= 0)) ||
+				(((app_name == 'seamonkey')   && versionChecker.compare(this.app_version(), "2.0") >= 0));
+
+			this.m_is_photo = false; // TODO disable for testing release
+
+			logger().debug("AppInfo.is_photo: returns: " + this.m_is_photo);
+		}
+		return this.m_is_photo;
 	},
 	ab_version : function() {
 		let app_name = this.app_name();

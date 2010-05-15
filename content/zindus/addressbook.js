@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.76 2010-05-08 01:54:12 cvsuser Exp $
+// $Id: addressbook.js,v 1.77 2010-05-15 05:09:09 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -280,7 +280,19 @@ AddressBook.prototype.getCardProperties = function(abCard)
 			ret[i] = value;
 	}
 
-	// this.logger().debug("getCardProperties: blah: returns: " + aToString(ret));
+	if (false) {
+		let enm = abCard.properties
+		let msg = "";
+
+		while (enm.hasMoreElements()) {
+			i = enm.getNext().QueryInterface(Ci.nsIProperty);
+			msg += " " + i.name + ": " + i.value;
+		}
+
+		this.logger().debug("AddressBook.getCardProperties: msg: " + msg);
+	}	
+
+	// this.logger().debug("getCardProperties: returns: " + aToString(ret));
 
 	return ret;
 }
@@ -700,22 +712,19 @@ AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_cou
 	var dir       = this.nsIAbDirectory(uri);
 	var fContinue = true;
 	var count     = 0;
+
 	var enm;
 
 	if (uri.match(/\/MailList/)) {
-		// workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=564554
-		//
-		this.logger().debug("forEachCardGenerator: iterating via addressLists: "); // TODO
 		enm = dir.addressLists.enumerate();
 	}
 	else {
 		enm = dir.childCards;
-		this.logger().debug("forEachCardGenerator: iterating via childCards: "); // TODO
 	}
 
 	try {
 		while (fContinue && enm.hasMoreElements()) {
-			var item = enm.getNext();
+			let item = enm.getNext();
 
 			fContinue = functor.run(uri, item);
 
@@ -727,10 +736,7 @@ AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_cou
 			}
 		}
 	} catch (ex) {
-		this.logger().error("forEachCardGenerator: uri: " + uri + " count: " + count + " fContinue: " + fContinue);
-		this.logger().error("forEachCardGenerator: ex: " + ex);
-		this.logger().error("forEachCardGenerator: arguments.callee.caller:\n" + arguments.callee.caller.toString());
-		this.logger().error("forEachCardGenerator: stack: " + executionStackFilter(ex.stack));
+		this.logger().error("forEachCardGenerator: uri: " + uri + " count: " + count + " fContinue: " + fContinue + " ex: " + ex + " stack: " + executionStackFilter(ex.stack));
 		zinAssertCatch(ex);
 	}
 
