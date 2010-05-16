@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.262 2010-05-16 02:13:11 cvsuser Exp $
+// $Id: syncfsm.js,v 1.263 2010-05-16 04:10:59 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4867,11 +4867,16 @@ SyncFsm.prototype.buildGcsGenerator = function()
 
 			var functor_each_luid_in_gid = {
 				run: function(sourceid, luid) {
-					if (!(sourceid in self.state.sources) || sourceid == FeedItem.ATTR_VER)
+					if (!(sourceid in self.state.sources))
 						return true;
+
+					zinAssert(sourceid != FeedItem.ATTR_VER);
 
 					var zfi = aZfcCandidate[sourceid].get(luid);
 					var msg = "  compare:  sourceid: " + sourceid + " zfi: " + zfi.toString(FeedItem.TOSTRING_RET_FIRST_ONLY);
+
+					zinAssertAndLog(zfi.isPresent(FeedItem.ATTR_KEY), // debugging bug #253
+						function() { return sourceid + "/" + luid + " zfi: " + zfi.toString() + " msg: " + msg; });
 
 					if (!zfi.isPresent(FeedItem.ATTR_LS))
 					{
