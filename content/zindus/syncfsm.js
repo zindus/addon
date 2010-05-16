@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.261 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: syncfsm.js,v 1.262 2010-05-16 02:13:11 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1540,7 +1540,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 				//
 
 				if (!('id' in attribute) || !(FeedItem.ATTR_L in attribute))
-					this.state.m_logger.error("<cn> element received from server without an 'id' or 'l' attribute.  Unexpected.  Ignoring: " + aToString(attribute));
+					this.state.m_logger.error("<cn> element missing a required attribute.  Ignoring: " + aToString(attribute));
 				else {
 					let fAddToTheQueue = false;
 
@@ -1576,6 +1576,10 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 
 						attribute[FeedItem.ATTR_KEY] = key;
 
+						// TODO remove when bug #252 is resolved
+						//
+						let msgx = " msgx: key: " + key + " attributes: " + aToString(attribute) + " pre update zfi: " + zfcZm.get(key).toString();
+
 						zfcZm.get(key).set(attribute);
 
 						msg += " - updated in map";
@@ -1591,8 +1595,10 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 							msg += " - rev changed and the contact is of interest";
 						}
 						else
-							msg += " isRevChange: " + isRevChange + " interesting pre: " + isInterestingPreUpdate +
-							       " post: " + isInterestingPostUpdate;
+							msg += " isRevChange: " + isRevChange +
+							       " interesting pre: " + isInterestingPreUpdate +
+							       " post: "            + isInterestingPostUpdate +
+								   msgx;
 					}
 
 					if (fAddToTheQueue) {
