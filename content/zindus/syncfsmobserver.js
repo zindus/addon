@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.84 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.85 2010-05-17 22:57:21 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -315,13 +315,21 @@ SyncFsmObserver.prototype = {
 					break;
 
 				case 'stGetPhotoGd':
-					a = this.state.a_gd_photo_to_get;
-					[ ret, percentage_big_hand ] = this.gd_update_progress(a, fsmstate, "get.photos", false, null);
+					if (AppInfo.is_photo()) {
+						a = this.state.a_gd_photo_to_get;
+						[ ret, percentage_big_hand ] = this.gd_update_progress(a, fsmstate, "get.photos", false, null);
+					}
+					else
+						ret = false;
 					break;
 
 				case 'stUpdateGdPhoto':
-					a = this.state.a_gd_photo_to_put;
-					[ ret, percentage_big_hand ] = this.gd_update_progress(a, fsmstate, "put.photos", false, null);
+					if (AppInfo.is_photo()) {
+						a = this.state.a_gd_photo_to_put;
+						[ ret, percentage_big_hand ] = this.gd_update_progress(a, fsmstate, "put.photos", false, null);
+					}
+					else
+						ret = false;
 					break;
 
 				case 'stGetGroupPuGd':

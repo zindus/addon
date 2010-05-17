@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.263 2010-05-16 04:10:59 cvsuser Exp $
+// $Id: syncfsm.js,v 1.264 2010-05-17 22:57:21 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -8463,78 +8463,58 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 	//
 	if (this.is_slow_sync() && this.formatPr() == FORMAT_GD && AppInfo.is_photo())
 		with (Filesystem) {
+			let a_id = this.gd_photo_filenames_in_contact_directory();
+
+			// be conservative here and only remove photos where there are multiple etags for an id
+			// ie. don't try to remove photos for contacts have been deleted - in case we get it wrong
+			// if users really want to clean up their Photos directory, they'll be able to clearly see which photos
+			// were created by sync (sort by filename) then delete them, run a slow sync, and hey presto,
+			// just the photos for which there's a correponding contact.
+			//
+			let a_filenames_to_delete = new Object();
+			let a_id_length = new Object();
+			let self = this;
+			let id, x, filename;
+
+			for (id in a_id)
+				a_id_length[id] = aToLength(a_id[id]);
+
+			let functor = {
+				run: function(zfi) {
+					if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau) {
+						id = self.gd_photo_filename_base_from_id(zfi.key());
+
+						if (id in a_id && (a_id_length[id] > 1) && zfi.isPresent(FeedItem.ATTR_ETAG)) {
+							let etag = self.gd_photo_filename_base_from([ zfi.get(FeedItem.ATTR_ETAG) ]);
+
+							for (x in a_id[id])
+								if (x != etag)
+									a_filenames_to_delete[a_id[id][x]] = true;
+						}
+					}
+					return true;
+				}
+			};
+
+			this.zfcPr().forEach(functor);
+
+			this.debug("entryActionCommit: a_filenames_to_delete: " + keysToString(a_filenames_to_delete));
+
 			let directory = nsIFileForDirectory(eDirectory.PHOTO);
 
-			if (directory.exists() && directory.isDirectory()) {
-				let iter                 = directory.directoryEntries;
-				let account_part_of_base = this.gd_photo_filename_base_from([ this.account().username ]);
-				let a_id                 = new Object();
-
-				while (iter.hasMoreElements()) {
-					let file     = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
-					let filename = file.leafName;
-
-					if (!file.isDirectory()) {
-						let re = this.gd_photo_filename_re(this.account().username);
-						let a  = re.exec(filename);
-
-						if (a && a.length == 4 && a[1] == account_part_of_base) {
-							if (!(a[2] in a_id))
-								a_id[a[2]] = new Object();
-							a_id[a[2]][a[3]] = filename;
-						}
-					}
+			for (filename in a_filenames_to_delete) {
+				let file = directory.clone();
+				file.append(filename);
+				let msg = "entryActionCommit: about to remove: " + file.path;
+				try {
+					file.remove(false);
+					msg += " - success";
+				} catch (ex) {
+					msg += " - failed: " + ex.message;
 				}
-
-				// be conservative here and only remove photos where there are multiple etags for an id
-				// ie. don't try to remove photos for contacts have been deleted - in case we get it wrong
-				// if users really want to clean up their Photos directory, they'll be able to clearly see which photos
-				// were created by sync (sort by filename) then delete them, run a slow sync, and hey presto,
-				// just the photos for which there's a correponding contact.
-				//
-				let a_filenames_to_delete = new Object();
-				let a_id_length = new Object();
-				let self = this;
-				let id, x, filename;
-
-				for (id in a_id)
-					a_id_length[id] = aToLength(a_id[id]);
-
-				let functor = {
-					run: function(zfi) {
-						if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau) {
-							id = self.gd_photo_filename_base_from_id(zfi.key());
-
-							if (id in a_id && (a_id_length[id] > 1) && zfi.isPresent(FeedItem.ATTR_ETAG)) {
-								let etag = self.gd_photo_filename_base_from([ zfi.get(FeedItem.ATTR_ETAG) ]);
-
-								for (x in a_id[id])
-									if (x != etag)
-										a_filenames_to_delete[a_id[id][x]] = true;
-							}
-						}
-						return true;
-					}
-				};
-
-				this.zfcPr().forEach(functor);
-
-				this.debug("entryActionCommit: a_filenames_to_delete: " + keysToString(a_filenames_to_delete));
-
-				for (filename in a_filenames_to_delete) {
-					let file = directory.clone();
-					file.append(filename);
-					let msg = "entryActionCommit: about to remove: " + file.path;
-					try {
-						file.remove(false);
-						msg += " - success";
-					} catch (ex) {
-						msg += " - failed: " + ex.message;
-					}
-					this.debug(msg);
-				}
+				this.debug(msg);
 			}
-	}
+		}
 
 	continuation('evNext');
 }
@@ -10073,6 +10053,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 	var zfcPr       = this.zfcPr();
 	var a_contact_count     = newObject('regular', 0, 'empty', 0, 'deleted', 0, 'suggested', 0);
 	var a_deleted_suggested = {};
+	var a_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
 	var i, j, generator;
 
 	this.state.stopwatch.mark(state + " enters");
@@ -10158,12 +10139,20 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 				}
 			}
 			else if (!is_ignored) {
-				if ('etag' in contact.photo)
-					self.state.a_gd_photo_to_get.push(id);
-
 				zfi = self.newZfiCnGdAu(id, contact.meta.updated, contact.meta.edit, contact.meta.self, contact.groups, contact.photo);
 				zfcPr.set(zfi); // add new
 				msg += " added: ";
+
+				if ('etag' in contact.photo) {
+					let id_f   = self.gd_photo_filename_base_from_id(id);
+					let etag_f = self.gd_photo_filename_base_from([ contact.photo.etag ]);
+
+					if ((id_f in a_photo_filenames_in_contact_directory) &&
+					    (etag_f in a_photo_filenames_in_contact_directory[id_f]))
+						msg += " photo matches local filename: " + a_photo_filenames_in_contact_directory[id_f][etag_f];
+					else
+						self.state.a_gd_photo_to_get.push(id);
+				}
 			}
 			else
 				msg += " ignored ";
@@ -10830,6 +10819,41 @@ SyncFsmGd.prototype.gd_photo_filename_from_contact = function(contact)
 
 	return ret;
 }
+
+SyncFsmGd.prototype.gd_photo_filenames_in_contact_directory = function()
+{
+	let ret = new Object();
+
+	with (Filesystem) {
+		let directory = nsIFileForDirectory(eDirectory.PHOTO);
+
+		if (directory.exists() && directory.isDirectory()) {
+			let iter                 = directory.directoryEntries;
+			let re                   = this.gd_photo_filename_re(this.account().username);
+			let account_part_of_base = this.gd_photo_filename_base_from([ this.account().username ]);
+
+			while (iter.hasMoreElements()) {
+				let file     = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+				let filename = file.leafName;
+
+				if (!file.isDirectory()) {
+					let a  = re.exec(filename);
+
+					if (a && a.length == 4 && a[1] == account_part_of_base) {
+						let id   = a[2];
+						let etag = a[3];
+						if (!(id in ret))
+							ret[id] = new Object();
+						ret[id][etag] = filename;
+					}
+				}
+			}
+		}
+	}
+
+	return ret;
+}
+
 
 SyncFsm.prototype.state_entry_count = function(state)
 {

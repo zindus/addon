@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.77 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: addressbook.js,v 1.78 2010-05-17 22:57:21 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -970,12 +970,36 @@ AddressBookPb.prototype.lookupCard = function(uri, key, value)
 	return abCard; // an nsIABCard
 }
 
+AddressBookPb.prototype.forEachCardGenerator = function(uri, functor, yield_count)
+{
+	var dir       = this.nsIAbDirectory(uri);
+	var fContinue = true;
+	var count     = 0;
+	var enm       = dir.childCards;
+
+	while (fContinue && enm.hasMoreElements()) {
+		let item = enm.getNext();
+
+		fContinue = functor.run(uri, item);
+
+		zinAssert(typeof(fContinue) == "boolean"); // catch programming errors where the functor hasn't returned a boolean
+
+		if (yield_count > 0) {
+			if (++count % yield_count == 0)
+				yield true;
+		}
+	}
+
+	yield false;
+}
+
 // Postbox and SpiceBird forked Thunderbird somewhere between Tb2 and Tb3
 // here we adjust methods in each AddressBook subclass to suit.
 {
-	let i;
+	let a_pb_methods  = newObjectWithKeys('lookupCard', 'forEachCardGenerator');
 	let a_tb2_methods = newObjectWithKeys('nsIAbDirectory', 'nsIAddressBook', 'addCard', 'updateCard', 'setCardProperties',
 	                                  'setCardAttributes', 'getCardAttributes', 'getCardProperty', 'deleteAddressBook', 'deleteCards');
+	let i;
 
 	// Postbox
 	//
@@ -989,8 +1013,6 @@ AddressBookPb.prototype.lookupCard = function(uri, key, value)
 
 	for (i in a_tb2_methods)
 		AddressBookSb.prototype[i] = AddressBookTb2.prototype[i];
-
-	let a_pb_methods = newObjectWithKeys('lookupCard');
 
 	for (i in a_pb_methods)
 		AddressBookSb.prototype[i] = AddressBookPb.prototype[i];

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.6 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: appinfo.js,v 1.7 2010-05-17 22:57:21 cvsuser Exp $
 
 var AppInfo = {
 	m_app_version       : null,
@@ -76,7 +76,7 @@ var AppInfo = {
 			let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
 			let app_name       = this.app_name();
 
-			this.m_is_photo = // TODO postbox
+			this.m_is_photo =
 				(((app_name == 'thunderbird') && versionChecker.compare(this.app_version(), "3.0") >= 0)) ||
 				(((app_name == 'seamonkey')   && versionChecker.compare(this.app_version(), "2.0") >= 0));
 
