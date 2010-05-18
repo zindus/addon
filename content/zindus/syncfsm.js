@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.265 2010-05-18 03:16:29 cvsuser Exp $
+// $Id: syncfsm.js,v 1.266 2010-05-18 22:47:56 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1450,7 +1450,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 					for (i = 0; i < node.childNodes.length; i++) {
 						let child = node.childNodes.item(i);
 						if (child.nodeType == Node.ELEMENT_NODE && child.nodeName == 'acl' && child.hasChildNodes()) {
-							this.state.m_logger.debug("acl node: " + xmlDocumentToString(child));
+							self.debug("acl node: " + xmlDocumentToString(child));
 							attribute[FeedItem.ATTR_ACL] = xmlDocumentToString(child);
 						}
 					}
@@ -1507,7 +1507,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 				if (!is_processed)
 					msg += " ignoring: not of interest";
 
-				this.state.m_logger.debug(msg);
+				self.debug(msg);
 			}
 		};
 
@@ -1560,6 +1560,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 					}
 					else {
 						let isInterestingPreUpdate = SyncFsm.isOfInterest(zfcZm, key);
+						let zfi = zfcZm.get(key);
 
 						// When a contact is updated on the server the rev attribute returned with the response is written to the map.
 						// The <cn> element returned with the next <SyncResponse> doesn't have a rev attribute -
@@ -1575,17 +1576,22 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 						else if ('token' in change)
 							rev_attr = change['token'];
 
-						let isRevChange = !rev_attr ||
-						                  !zfcZm.get(key).isPresent(FeedItem.ATTR_REV)  ||
-						                   rev_attr != zfcZm.get(key).get(FeedItem.ATTR_REV);
+						let isRevChange = !rev_attr || !zfi.isPresent(FeedItem.ATTR_REV) || rev_attr != zfi.get(FeedItem.ATTR_REV);
+
+						// ms changes iff
+						// - it's present in attribute but not the zfi or
+						// - it's present in both attribute and the zfi and the values are different
+						//
+						let isMsChange = false;
+						if (FeedItem.ATTR_MS in attribute && !zfi.isPresent(FeedItem.ATTR_MS))
+							isMsChange = true;
+						else if (FeedItem.ATTR_MS in attribute && zfi.isPresent(FeedItem.ATTR_MS) &&
+						         attribute[FeedItem.ATTR_MS] != zfi.get(FeedItem.ATTR_MS))
+							isMsChange = true;
 
 						attribute[FeedItem.ATTR_KEY] = key;
 
-						// TODO remove when bug #252 is resolved
-						//
-						let msgx = " msgx: key: " + key + " attributes: " + aToString(attribute) + " pre update zfi: " + zfcZm.get(key).toString();
-
-						zfcZm.get(key).set(attribute);
+						zfi.set(attribute);
 
 						msg += " - updated in map";
 
@@ -1595,15 +1601,15 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 							fAddToTheQueue = true;
 							msg += " - rev didn't change but the contact become of interest";
 						}
-						else if (isRevChange && isInterestingPostUpdate) {
+						else if ((isRevChange || isMsChange) && isInterestingPostUpdate) {
 							fAddToTheQueue = true;
-							msg += " - rev changed and the contact is of interest";
+							msg += " - rev or ms changed and the contact is of interest";
 						}
 						else
-							msg += " isRevChange: " + isRevChange +
+							msg += " isRevChange: "     + isRevChange +
+							       " isMsChange: "      + isMsChange +
 							       " interesting pre: " + isInterestingPreUpdate +
-							       " post: "            + isInterestingPostUpdate +
-								   msgx;
+							       " post: "            + isInterestingPostUpdate; // TODO here for bug #252 - remove July 2010
 					}
 
 					if (fAddToTheQueue) {
@@ -1612,7 +1618,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 					}
 				}
 
-				this.state.m_logger.debug(msg);
+				self.debug(msg);
 			}
 		};
 
@@ -1643,7 +1649,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 					for each (var id in attribute['ids'].split(','))
 						this.ids[id] = true;
 				else
-					this.state.m_logger.debug("ignored <cn ids='" + attribute['ids'] +
+					self.debug("ignored <cn ids='" + attribute['ids'] +
 					                             "'> - because parent folder id='" + parent_folder_attribute['id'] + "' isn't of interest");
 			}
 		};
@@ -1682,7 +1688,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 			if (zfcZm.isPresent(key))
 			{
 				zfcZm.get(key).set(FeedItem.ATTR_DEL, 1);
-				this.state.m_logger.debug("marked a key as deleted: " + key + " zfi: " + zfcZm.get(key).toString());
+				self.debug("marked a key as deleted: " + key + " zfi: " + zfcZm.get(key).toString());
 			}
 		}
 
@@ -1699,14 +1705,14 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 					                                                      && !(zfi.key() in a_foreign_folder_present))
 					{
 						zfi.set(FeedItem.ATTR_DEL, 1);
-						this.state.m_logger.debug("foreign folder change detection: marked deleted: " + zfi.toString());
+						self.debug("foreign folder change detection: marked deleted: " + zfi.toString());
 					}
 
 					return true;
 				}
 			};
 
-			this.state.m_logger.debug("change.acct: " + change.acct + " a_foreign_folder_present: " + aToString(a_foreign_folder_present));
+			self.debug("change.acct: " + change.acct + " a_foreign_folder_present: " + aToString(a_foreign_folder_present));
 
 			zfcZm.forEach(functor);
 		}
@@ -1720,12 +1726,12 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 		msg = "entryActionSyncResponse: aContact: length: " + this.state.aContact.length + " zuios: ";
 		for (var i = 0; i < this.state.aContact.length; i++)
 			msg += " " + i + ": " + this.state.aContact[i].toString();
-		this.state.m_logger.debug(msg);
+		self.debug(msg);
 
 		if (this.state.isRedoSyncRequest)
 		{
 			nextEvent = 'evRedo';
-			this.state.m_logger.debug("entryActionSyncResponse: forcing a second <SyncRequest>");
+			self.debug("entryActionSyncResponse: forcing a second <SyncRequest>");
 		}
 		else
 		{
@@ -1777,7 +1783,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 						msg += "\n " + zid + ": " + this.state.zidbag.get(zid, 'SyncToken');
 					}
 
-				this.state.m_logger.debug(msg);
+				self.debug(msg);
 			}
 		}
 
@@ -1808,7 +1814,7 @@ SyncFsm.prototype.entryActionSyncResponse = function(state, event, continuation)
 		else
 			nextEvent = 'evNext';
 
-		this.state.m_logger.debug("entryActionSyncResponse: zidbag: " + this.state.zidbag.toString());
+		self.debug("entryActionSyncResponse: zidbag: " + this.state.zidbag.toString());
 	}
 
 	continuation(nextEvent);
