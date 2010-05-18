@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.78 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: util.js,v 1.79 2010-05-18 03:16:29 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
@@ -574,17 +574,17 @@ function format_xx_to_localisable_string(format_xx)
 
 function isValidUrl(url)
 {
-	var is_valid = true;
-	var xhr      = new XMLHttpRequest();
+	var ret = true;
+	var xhr = new XMLHttpRequest();
 
 	try {
 		xhr.open("HEAD", url, false);
 	}
 	catch(e) {
-		is_valid = false;
+		ret = false;
 	}
 
-	return is_valid;
+	return ret;
 }
 
 // This of setting up the prototype chain for derived classes is taken from:
@@ -1195,8 +1195,7 @@ function chunk_size(name, flex)
 {
 	const a_chunk = { 'cards'     : 500,
 	                  'feed'      : 500,
-	                  'bigstring' : 500,
-	                  'strcmp'    : 5000 };
+	                  'bigstring' : 500 };
 
 	zinAssertAndLog(name in a_chunk, name);
 
@@ -1204,6 +1203,18 @@ function chunk_size(name, flex)
 		flex = 1;
 	else
 		zinAssert(flex > 0);
+
+	if (!chunk_size.m_scale) {
+		let p           = preferences();
+		let key         = MozillaPreferences.AS_CHUNK_SIZE_SCALE;
+		let numerator   = p.getIntPref(p.branch(), key);
+		let denominator = p.getIntPref(p.defaultbranch(), key);
+		chunk_size.m_scale = numerator / denominator;
+
+		logger().debug("chunk_size: scale: " + chunk_size.m_scale);
+	}
+
+	flex = flex * chunk_size.m_scale;
 
 	return a_chunk[name] * flex;
 }

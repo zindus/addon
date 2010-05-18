@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.264 2010-05-17 22:57:21 cvsuser Exp $
+// $Id: syncfsm.js,v 1.265 2010-05-18 03:16:29 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -625,13 +625,18 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 		this.debug("entryActionLoad: forcing a reset - removing data files and initialising maps and tb attributes...");
 
 		this.initialiseZfcLastSync();
+		this.state.stopwatch.mark(state + " 2.1");
 		this.initialiseZfcAutoIncrement(this.state.zfcGid);
+		this.state.stopwatch.mark(state + " 2.2");
 		this.initialiseZfcAutoIncrement(this.zfcTb());
+		this.state.stopwatch.mark(state + " 2.3");
 
 		generator = this.initialiseTbAddressbookGenerator();
 
-		while (generator.next())
+		while (generator.next()) {
+			this.state.stopwatch.mark(state + " 2.4");
 			yield true;
+		}
 	}
 	else
 	{
@@ -2352,8 +2357,10 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 
 	var generator = this.loadTbCardsGenerator(tb_cc_meta);  // 5. load cards, excluding mailing lists and their cards
 
-	while (generator.next())
+	while (generator.next()) {
+		this.state.stopwatch.mark(state + " 2.1");
 		yield true;
+	}
 
 	passed = (this.state.stopFailCode == null);
 
@@ -3131,7 +3138,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 	for (i = 0; i < tb_cc_meta.m_a.length; i++)
 	{
-		generator = this.state.m_addressbook.forEachCardGenerator(tb_cc_meta.m_a[i].uri, functor_foreach_card, chunk_size('cards', 3));
+		generator = this.state.m_addressbook.forEachCardGenerator(tb_cc_meta.m_a[i].uri, functor_foreach_card, chunk_size('cards', 2));
 
 		while (generator.next())
 			yield true;
@@ -3164,7 +3171,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 		for (uri in aMailListUri)
 		{
-			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards', 3));
+			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards', 2));
 
 			while (generator.next())
 				yield true;

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mozillapreferences.js,v 1.38 2010-04-30 21:31:59 cvsuser Exp $
+// $Id: mozillapreferences.js,v 1.39 2010-05-18 03:16:29 cvsuser Exp $
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
@@ -45,6 +45,7 @@ MozillaPreferences.AS_PASSWORD_VERSION      = "system.as_password_version";
 MozillaPreferences.AS_SHARE_SERICE_API_URL  = "system.as_share_service_api_url";
 MozillaPreferences.AS_MIGRATION             = "system.as_migration";
 MozillaPreferences.AS_SHOW_AGAIN_SLOW_SYNC  = "system.as_show_again_slow_sync";
+MozillaPreferences.AS_CHUNK_SIZE_SCALE      = "system.as_chunk_size_scale";
 MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL  = "system.zm_sync_gal_md_interval";
 MozillaPreferences.ZM_SYNC_GAL_IF_FEWER     = "system.zm_sync_gal_if_fewer";
 MozillaPreferences.ZM_SYNC_GAL_RECHECK      = "system.zm_sync_gal_recheck";
@@ -65,6 +66,7 @@ MozillaPreferences.getAllSystemPrefs = function()
 		MozillaPreferences.AS_PASSWORD_VERSION,      'char',
 		MozillaPreferences.AS_SHARE_SERICE_API_URL,  'char',
 		MozillaPreferences.AS_SHOW_AGAIN_SLOW_SYNC,  'bool',
+		MozillaPreferences.AS_CHUNK_SIZE_SCALE,      'int',
 		MozillaPreferences.ZM_SYNC_GAL_MD_INTERVAL,  'int',
 		MozillaPreferences.ZM_SYNC_GAL_IF_FEWER,     'int',
 		MozillaPreferences.ZM_SYNC_GAL_RECHECK,      'int',
