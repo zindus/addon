@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.266 2010-05-18 22:47:56 cvsuser Exp $
+// $Id: syncfsm.js,v 1.267 2010-05-19 03:57:00 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4046,9 +4046,8 @@ SyncFsm.prototype.twiddleMapsToRemoveFromTbGdSuggestedContacts = function()
 
 	zinAssert(this.is_slow_sync() && this.account().gd_suggested == 'ignore')
 
-	var functor_foreach_gid = {
-		run: function(zfi)
-		{
+	let functor_foreach_gid = {
+		run: function(zfi) {
 			let luid_gd = zfi.isPresent(sourceid_gd) ? zfi.get(sourceid_gd) : false;
 			let zfi_gd  = luid_gd ? zfcPr.get(luid_gd) : false;
 
@@ -4066,10 +4065,11 @@ SyncFsm.prototype.twiddleMapsToRemoveFromTbGdSuggestedContacts = function()
 
 					if ((contact.groups.length == 0) && self.isTwin(sourceid_tb, sourceid_gd, luid_tb, luid_gd_au, self.contact_converter()))
 					{
+						// this should be the first of the twiddles ==> no prior backdating.
+						zinAssertAndLog(!self.isGidBackdated(zfi), function () { return zfi.toString(); });
+
 						self.backdateZfcForcingItToLose(sourceid_tb, luid_tb);
 						msg += " tb contact matches a suggested contact so backdating tb to force it to lose and be deleted";
-						// removing from suggested contacts should be the first of the twiddles ==> no prior backdating.
-						zinAssertAndLog(!self.isGidBackdated(zfi), function () { return zfi.toString(); });
 					}
 
 					self.debug_continue(msg);
@@ -4087,7 +4087,7 @@ SyncFsm.prototype.twiddleMapsToRemoveFromTbGdSuggestedContacts = function()
 		}
 	};
 
-	var generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
+	let generator = this.state.zfcGid.forEachGenerator(functor_foreach_gid, chunk_size('feed'));
 
 	while (generator.next())
 		yield true;
