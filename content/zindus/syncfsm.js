@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.267 2010-05-19 03:57:00 cvsuser Exp $
+// $Id: syncfsm.js,v 1.268 2010-05-21 21:41:32 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3125,17 +3125,17 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 				                                    newObject(TBCARD_ATTRIBUTE_LUID_ITER, tb3_luid_iter), FORMAT_TB);
 
 				// was debugging garcha here
-				if (false)
-					this.state.m_logger.debug("loadTbCards: pass 1: assigning: " +
+				if (true) // TODO
+					self.debug("loadTbCards: pass 1: assigning: " +
 				        " tb3_luid_iter: " + tb3_luid_iter + " to card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 
 				tb3_luid_iter++;
 			}
 
 			// was debugging garcha here
-			if (false)
+			if (true) // TODO
 				if (AppInfo.ab_version() != 'thunderbird2')
-					this.state.m_logger.debug("loadTbCards: pass 1: key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) +
+					self.debug("loadTbCards: pass 1: key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) +
 					                           " for card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
 
 			return this.state.stopFailCode == null;
