@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.45 2010-02-23 05:03:29 cvsuser Exp $
+// $Id: configsettings.js,v 1.46 2010-05-24 09:36:48 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -245,7 +245,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 		case "cs-button-reset":
 			Filesystem.removeZfcs();
-			if (AppInfo.app_name == 'firefox')
+			if (AppInfo.app_name == AppInfo.eApp.firefox)
 				AddressBookFfStatic.db_drop_and_create();
 			LogAppenderStatic.rotate();
 			StatusBarState.update();
@@ -514,7 +514,7 @@ ConfigSettings.prototype.accountsTreeRefresh = function()
 
 		// Addressbook
 		//
-		if (AppInfo.app_name() != 'firefox') {
+		if (AppInfo.app_name() != AppInfo.eApp.firefox) {
 			if (account.format_xx() == FORMAT_GD)
 				value = account.gd_sync_with == 'zg' ? FolderConverter.PREFIX_PRIMARY_ACCOUNT : this.m_addressbook.getPabName();
 			else

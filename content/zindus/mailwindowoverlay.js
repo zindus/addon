@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.66 2010-04-30 21:32:39 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.67 2010-05-24 09:36:48 cvsuser Exp $
 
 includejs("uninstall.js");
 
@@ -44,9 +44,9 @@ ZinMailWindowOverlay.prototype.onLoad = function()
 		let app_name = AppInfo.app_name();
 		let messengerWindow;
 
-		if (app_name == 'spicebird')
+		if (app_name == AppInfo.eApp.spicebird)
 			messengerWindow = document.getElementById("framework-window");
-		else if (app_name == 'firefox')
+		else if (app_name == AppInfo.eApp.firefox)
 			messengerWindow = document.getElementById("main-window");
 		else
 			messengerWindow = document.getElementById("messengerWindow");

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.78 2010-05-17 22:57:21 cvsuser Exp $
+// $Id: addressbook.js,v 1.79 2010-05-24 09:36:48 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -56,18 +56,18 @@ AddressBook.new = function()
 	let version = AppInfo.ab_version();
 	let ret;
 
-	if (version == 'firefox' && !AddressBookFfStatic.db_is_healthy()) {
+	if (version == AppInfo.eApp.firefox && !AddressBookFfStatic.db_is_healthy()) {
 		// this is effectively a reset...
 		Filesystem.removeZfcs();
 		AddressBookFfStatic.db_drop_and_create();
 	}
 
 	switch (version) {
-		case 'thunderbird2': ret = new AddressBookTb2(); break;
-		case 'thunderbird3': ret = new AddressBookTb3(); break;
-		case 'firefox':      ret = new AddressBookFf();  break;
-		case 'postbox':      ret = new AddressBookPb();  break;
-		case 'spicebird':    ret = new AddressBookSb();  break;
+		case AppInfo.eApp.thunderbird2: ret = new AddressBookTb2(); break;
+		case AppInfo.eApp.thunderbird3: ret = new AddressBookTb3(); break;
+		case AppInfo.eApp.firefox:      ret = new AddressBookFf();  break;
+		case AppInfo.eApp.postbox:      ret = new AddressBookPb();  break;
+		case AppInfo.eApp.spicebird:    ret = new AddressBookSb();  break;
 		default:             ret = new AddressBookTb2(); break;
 	}
 
@@ -259,8 +259,10 @@ AddressBook.prototype.updateCard = function(abCard, uri, properties, attributes,
 		this.setCardProperties(abCard, uri, tmp_properties);
 	}
 
-	if (attributes)
+	if (attributes) {
+		// this.logger().debug("udpateCard: uri: " + uri + " setting attributes: " + aToString(attributes));
 		this.setCardAttributes(abCard, uri, attributes)
+	}
 
 	return abCard;
 }
@@ -270,7 +272,7 @@ AddressBook.prototype.getCardProperties = function(abCard)
 	var ret = new Object();
 	var i, value;
 
-	// this.logger().debug("AddressBook.getCardProperties: abCard:" (abCard ? "non-null" : "null"));
+	// this.logger().debug("getCardProperties: abCard:" (abCard ? "non-null" : "null"));
 
 	for (i in this.contact_converter().m_map[FORMAT_TB])
 	{
@@ -289,7 +291,7 @@ AddressBook.prototype.getCardProperties = function(abCard)
 			msg += " " + i.name + ": " + i.value;
 		}
 
-		this.logger().debug("AddressBook.getCardProperties: msg: " + msg);
+		this.logger().debug("getCardProperties: msg: " + msg);
 	}	
 
 	// this.logger().debug("getCardProperties: returns: " + aToString(ret));
@@ -712,15 +714,15 @@ AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_cou
 	var dir       = this.nsIAbDirectory(uri);
 	var fContinue = true;
 	var count     = 0;
-
 	var enm;
 
-	if (uri.match(/\/MailList/)) {
+	// childCards should work fine for both mailing lists and addressbooks
+	// but until https://bugzilla.mozilla.org/show_bug.cgi?id=564554 is fixed we need a workaround
+	//
+	if (uri.match(/\/MailList/))
 		enm = dir.addressLists.enumerate();
-	}
-	else {
+	else
 		enm = dir.childCards;
-	}
 
 	try {
 		while (fContinue && enm.hasMoreElements()) {
@@ -832,8 +834,6 @@ AddressBookTb3.prototype.deleteCards = function(uri, aCards)
 
 AddressBookTb3.prototype.updateCard = function(abCard, uri, properties, attributes, format)
 {
-	var database = this.nsIAddrDatabase(uri);
-
 	AddressBook.prototype.updateCard.call(this, abCard, uri, properties, attributes, format);
 
 	var dir = this.nsIAbDirectory(uri);

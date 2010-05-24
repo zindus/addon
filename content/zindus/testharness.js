@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.129 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: testharness.js,v 1.130 2010-05-24 09:36:49 cvsuser Exp $
 
 function TestHarness()
 {
@@ -867,7 +867,7 @@ TestHarness.prototype.testAddressBook1 = function()
 
 TestHarness.prototype.testAddressBook2 = function()
 {
-	zinAssert(AppInfo.ab_version() == 'thunderbird3');
+	zinAssert(AppInfo.ab_version() == AppInfo.eApp.thunderbird3);
 
 	var uri = "moz-abmdbdirectory://abook.mab";
 	var properties = { "DisplayName": "BlahDisplayName",
@@ -980,7 +980,7 @@ TestHarness.prototype.testAddressBookBugzilla432145Populate = function(propertie
 
 TestHarness.prototype.testAddressBookFf = function()
 {
-	zinAssert(AppInfo.ab_version() == 'firefox');
+	zinAssert(AppInfo.ab_version() == AppInfo.eApp.firefox);
 
 	if (!AddressBookFfStatic.db_is_healthy())
 		AddressBookFfStatic.db_drop_and_create();

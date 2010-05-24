@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.7 2010-05-17 22:57:21 cvsuser Exp $
+// $Id: appinfo.js,v 1.8 2010-05-24 09:36:48 cvsuser Exp $
 
 var AppInfo = {
 	m_app_version       : null,
@@ -29,6 +29,8 @@ var AppInfo = {
 	m_app_name          : null,
 	m_app_name_capital  : null,
 	firstcap            : 1, // const ==> first letter capitalised
+	eApp                : new ZinEnum( newObjectWithKeysMatchingValues(
+	                      'firefox', 'thunderbird', 'thunderbird2', 'thunderbird3', 'seamonkey', 'postbox', 'spicebird', 'other')),
 	app_version : function() {
 		if (!this.m_app_version) {
 			let appInfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
@@ -45,12 +47,12 @@ var AppInfo = {
 			const SB_ID = "{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}";
 			let appInfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULAppInfo);
 			switch(appInfo.ID) {
-				case FF_ID: this.m_app_name = 'firefox';     break;
-				case TB_ID: this.m_app_name = 'thunderbird'; break;
-				case SM_ID: this.m_app_name = 'seamonkey';   break;
-				case PB_ID: this.m_app_name = 'postbox';     break;
-				case SB_ID: this.m_app_name = 'spicebird';   break;
-				default:    this.m_app_name = 'other';       break;
+				case FF_ID: this.m_app_name = this.eApp.firefox;     break;
+				case TB_ID: this.m_app_name = this.eApp.thunderbird; break;
+				case SM_ID: this.m_app_name = this.eApp.seamonkey;   break;
+				case PB_ID: this.m_app_name = this.eApp.postbox;     break;
+				case SB_ID: this.m_app_name = this.eApp.spicebird;   break;
+				default:    this.m_app_name = this.eApp.other;       break;
 			}
 		}
 		return (arg == this.firstcap) ?
@@ -63,9 +65,9 @@ var AppInfo = {
 			let app_name       = this.app_name();
 
 			this.m_is_birthday_field =
-				(app_name == 'postbox') ||
-				(((app_name == 'thunderbird') && versionChecker.compare(this.app_version(), "3.0b3pre") >= 0)) ||
-				(((app_name == 'seamonkey')   && versionChecker.compare(this.app_version(), "2.0b1") >= 0));
+				(app_name == this.eApp.postbox) ||
+				(((app_name == this.eApp.thunderbird) && versionChecker.compare(this.app_version(), "3.0b3pre") >= 0)) ||
+				(((app_name == this.eApp.seamonkey)   && versionChecker.compare(this.app_version(), "2.0b1") >= 0));
 
 			logger().debug("AppInfo.is_birthday_field: returns: " + this.m_is_birthday_field);
 		}
@@ -77,8 +79,8 @@ var AppInfo = {
 			let app_name       = this.app_name();
 
 			this.m_is_photo =
-				(((app_name == 'thunderbird') && versionChecker.compare(this.app_version(), "3.0") >= 0)) ||
-				(((app_name == 'seamonkey')   && versionChecker.compare(this.app_version(), "2.0") >= 0));
+				(((app_name == this.eApp.thunderbird) && versionChecker.compare(this.app_version(), "3.0") >= 0)) ||
+				(((app_name == this.eApp.seamonkey)   && versionChecker.compare(this.app_version(), "2.0") >= 0));
 
 			this.m_is_photo = false; // TODO disable for testing release
 
@@ -90,8 +92,8 @@ var AppInfo = {
 		let app_name = this.app_name();
 		let ret      = app_name;
 
-		if (app_name == 'thunderbird' || app_name == 'seamonkey')
-			ret = ("@mozilla.org/abmanager;1" in Cc) ? 'thunderbird3' : 'thunderbird2';
+		if (app_name == this.eApp.thunderbird || app_name == this.eApp.seamonkey)
+			ret = ("@mozilla.org/abmanager;1" in Cc) ? this.eApp.thunderbird3 : this.eApp.thunderbird2;
 
 		return ret;
 	}

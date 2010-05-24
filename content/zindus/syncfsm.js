@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.268 2010-05-21 21:41:32 cvsuser Exp $
+// $Id: syncfsm.js,v 1.269 2010-05-24 09:36:48 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -230,7 +230,7 @@ SyncFsmGdAuth.prototype.initialiseFsm = function()
 {
 	SyncFsmGd.prototype.initialiseFsm.call(this);
 
-	if (false && AppInfo.app_name() == 'firefox')
+	if (false && AppInfo.app_name() == AppInfo.eApp.firefox)
 	{
 		// TODO - this code is/was toying with the idea that "test connection" in firefox should also get the google groups..
 		//
@@ -1140,9 +1140,9 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
 	let a_ids_to_remove;
 
 	switch (AppInfo.ab_version()) {
-		case 'firefox':      a_ids_to_remove = null;                                                                 break;
-		case 'thunderbird2': a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "");                                 break;
-		default:             a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "", TBCARD_ATTRIBUTE_LUID_ITER, ""); break;
+		case AppInfo.eApp.firefox:      a_ids_to_remove = null;                                                                 break;
+		case AppInfo.eApp.thunderbird2: a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "");                                 break;
+		default:                        a_ids_to_remove = newObject(TBCARD_ATTRIBUTE_LUID, "", TBCARD_ATTRIBUTE_LUID_ITER, ""); break;
 	}
 
  	let functor_foreach_card = {
@@ -3046,24 +3046,29 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 	// pass 1 - iterate through the cards in the zindus folders building an associative array of mailing list uris
 	//          and do some housekeeping.
 	//
-	var aMailListUri       = new Object();
+	var aMailListUri       = new Object(); // eg: aMailListUri[moz-abmdbdirectory://abook-3.mab/MailList1]=moz-abmdbdirectory://abook-3.mab
+	var aMailListCard      = new Object(); // eg: aMailListUri[moz-abmdbdirectory://abook-3.mab/MailList1]=an-abCard
 	var zfcTb              = this.zfcTb();
 	var a_uuid_of_new_card = new Object();
 	var ab_has_uuids       = this.state.m_addressbook.has_uuids();
 	var self               = this;
-	var tb3_luid_iter      = 1;
+	const TB3_LUID_ITER_START = 1
+	var tb3_luid_iter      = TB3_LUID_ITER_START;
+	var addressbook        = this.state.m_addressbook;
 	var i, msg, uri, functor_foreach_card, generator;
 
 	functor_foreach_card = {
 		state: this.state,
 		run: function(uri, item)
 		{
-			var abCard     = this.state.m_addressbook.qiCard(item);
-			var attributes = this.state.m_addressbook.getCardAttributes(abCard);
+			var abCard     = addressbook.qiCard(item);
+			var attributes = addressbook.getCardAttributes(abCard);
 			var id         = attributes[TBCARD_ATTRIBUTE_LUID];
 
-			if (abCard.isMailList)
+			if (abCard.isMailList) {
 				aMailListUri[abCard.mailListURI] = uri;
+				aMailListCard[abCard.mailListURI] = abCard;
+			}
 
 			// if a sync gets cancelled somewhere between assigning+writing luid attributes to cards and saving the map,
 			// we might end up with a card with an luid attribute but without the luid being in the map
@@ -3088,9 +3093,9 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 					else {
 						this.state.m_logger.debug("loadTbCards: attribute luid=" + id +
 						                          " is being removed because it's not in the map.  Card: " +
-				                                  this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard));
+				                                  addressbook.nsIAbCardToPrintableVerbose(abCard));
 
-						this.state.m_addressbook.updateCard(abCard, uri, null, newObject(TBCARD_ATTRIBUTE_LUID, 0), FORMAT_TB);
+						addressbook.updateCard(abCard, uri, null, newObject(TBCARD_ATTRIBUTE_LUID, 0), FORMAT_TB);
 
 						delete attributes[TBCARD_ATTRIBUTE_LUID]; // delete the id from attributes to force temporary luid assignment below
 					}
@@ -3099,7 +3104,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 				{
 					this.state.m_logger.error("card had attribute luid=" + id + " but this luid isn't a contact!  zfi: " +
 					                          zfcTb.get(id).toString() + "Card: " +
-											  this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) +
+											  addressbook.nsIAbCardToPrintableVerbose(abCard) +
 											  "uri: " + uri);
 
 					this.state.stopFailCode    = 'failon.integrity.data.store.map';
@@ -3118,25 +3123,28 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 			// This will get a lot simpler when Tb3 cards get a unique id.
 			// And even simpler when we don't need three passes to identify mailing list cards.
 			//
-			if (!ab_has_uuids && AppInfo.ab_version() != 'thunderbird2' && !abCard.isMailList
+			if (!ab_has_uuids && AppInfo.ab_version() != AppInfo.eApp.thunderbird2 && !abCard.isMailList
 			                                             && !is_card_attribute_valid(attributes, TBCARD_ATTRIBUTE_LUID))
 			{
-				this.state.m_addressbook.updateCard(abCard, uri, null,
+				addressbook.updateCard(abCard, uri, null,
 				                                    newObject(TBCARD_ATTRIBUTE_LUID_ITER, tb3_luid_iter), FORMAT_TB);
 
-				// was debugging garcha here
-				if (true) // TODO
+				if (false) {
 					self.debug("loadTbCards: pass 1: assigning: " +
-				        " tb3_luid_iter: " + tb3_luid_iter + " to card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
+				        " tb3_luid_iter: " + tb3_luid_iter + " to card: " + addressbook.nsIAbCardToPrintable(abCard));
+
+					let attributes = addressbook.getCardAttributes(abCard);
+
+					self.debug("loadTbCards: pass 1: attributes on assigned card: " + aToString(attributes));
+				}
 
 				tb3_luid_iter++;
 			}
 
-			// was debugging garcha here
-			if (true) // TODO
-				if (AppInfo.ab_version() != 'thunderbird2')
-					self.debug("loadTbCards: pass 1: key: " + this.state.m_addressbook.nsIAbMDBCardToKey(abCard) +
-					                           " for card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard));
+			if (false)
+				if (AppInfo.ab_version() != AppInfo.eApp.thunderbird2)
+					self.debug("loadTbCards: pass 1: key: " + addressbook.nsIAbMDBCardToKey(abCard) +
+					                           " for card: " + addressbook.nsIAbCardToPrintable(abCard));
 
 			return this.state.stopFailCode == null;
 		}
@@ -3144,7 +3152,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 	for (i = 0; i < tb_cc_meta.m_a.length; i++)
 	{
-		generator = this.state.m_addressbook.forEachCardGenerator(tb_cc_meta.m_a[i].uri, functor_foreach_card, chunk_size('cards', 2));
+		generator = addressbook.forEachCardGenerator(tb_cc_meta.m_a[i].uri, functor_foreach_card, chunk_size('cards', 2));
 
 		while (generator.next())
 			yield true;
@@ -3160,16 +3168,13 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 		msg = "loadTbCards: aCardKeysToExclude: pass 2: ";
 
 		functor_foreach_card = {
-			state: this.state,
-			run: function(uri, item)
-			{
-				var abCard  = this.state.m_addressbook.qiCard(item);
-				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(abCard);
+			run: function(uri, item) {
+				let abCard  = addressbook.qiCard(item);
+				let key     = addressbook.nsIAbMDBCardToKey(abCard);
 
 				aCardKeysToExclude[key] = aMailListUri[uri];
 
-				msg += "\n excluding card: " + key + " " + aMailListUri[uri] + " " + uri + " " +
-				         this.state.m_addressbook.nsIAbCardToPrintable(abCard);
+				msg += "\n excluding card: " + key + " " + aMailListUri[uri] + " " + uri + " " + addressbook.nsIAbCardToPrintable(abCard);
 
 				return true;
 			}
@@ -3177,7 +3182,16 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 		for (uri in aMailListUri)
 		{
-			generator = this.state.m_addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards', 2));
+			if (AppInfo.ab_version() == AppInfo.eApp.thunderbird3 && tb3_luid_iter != TB3_LUID_ITER_START) {
+				// AddressBookTb3.prototype.forEachCardGenerator uses enumerate() for mailing lists
+				// because of https://bugzilla.mozilla.org/show_bug.cgi?id=564554
+				// so we have to write them to the database here if we changed any of their cards in pass 1
+				//
+				let dir = addressbook.nsIAbDirectory(uri);
+				dir.editMailListToDatabase(aMailListCard[uri]);
+			}
+
+			generator = addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards', 2));
 
 			while (generator.next())
 				yield true;
@@ -3193,8 +3207,8 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 		functor_foreach_card = {
 			state: this.state,
 			run: function(uri, item) {
-				var abCard  = this.state.m_addressbook.qiCard(item);
-				var key     = this.state.m_addressbook.nsIAbMDBCardToKey(abCard);
+				var abCard  = addressbook.qiCard(item);
+				var key     = addressbook.nsIAbMDBCardToKey(abCard);
 				msg         = "loadTb pass 3: uri: " + uri + " card key: " + key;
 
 				var isInTopLevelFolder = false;
@@ -3204,18 +3218,18 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 						isInTopLevelFolder = true;
 
 				if (false)
-				this.state.m_logger.debug("loadTbCards pass 3: blah: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
-				                          " key: " + key +
-				                          " card: " + this.state.m_addressbook.nsIAbCardToPrintable(abCard) +
-				                          " properties: " + aToString(this.state.m_addressbook.getCardProperties(abCard)) +
-				                          " attributes: " + aToString(this.state.m_addressbook.getCardAttributes(abCard)) +
-				                          " lastModifiedDate: " + abCard.lastModifiedDate);
+					self.debug("loadTbCards pass 3: " + " uri: " + uri + " isInTopLevelFolder: " + isInTopLevelFolder +
+					            " key: "              + key +
+				                " card: "             + addressbook.nsIAbCardToPrintable(abCard) +
+				                " properties: "       + aToString(addressbook.getCardProperties(abCard)) +
+				                " attributes: "       + aToString(addressbook.getCardAttributes(abCard)) +
+				                " lastModifiedDate: " + abCard.lastModifiedDate);
 
 				if (isInTopLevelFolder)
 				{
-					let attributes = this.state.m_addressbook.getCardAttributes(abCard);
+					let attributes = addressbook.getCardAttributes(abCard);
 					let id         = (TBCARD_ATTRIBUTE_LUID in attributes) ? attributes[TBCARD_ATTRIBUTE_LUID] : 0;
-					let properties = this.state.m_addressbook.getCardProperties(abCard);
+					let properties = addressbook.getCardProperties(abCard);
 					let is_changed = false;
 					let zfi, is_new_card;
 
@@ -3308,7 +3322,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 					if (is_changed) {
 						msg += " rewrote card: ";
 
-						this.state.m_addressbook.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
+						addressbook.updateCard(abCard, uri, properties, attributes, FORMAT_TB);
 					}
 
 					let luid_l = tb_cc_meta.find('uri', uri, 'luid_tb');
@@ -3323,7 +3337,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 						else {
 							id = zfcTb.get(FeedItem.KEY_AUTO_INCREMENT).increment('next');
 
-							this.state.m_addressbook.updateCard(abCard, uri, null, newObject(TBCARD_ATTRIBUTE_LUID, id), FORMAT_TB);
+							addressbook.updateCard(abCard, uri, null, newObject(TBCARD_ATTRIBUTE_LUID, id), FORMAT_TB);
 						}
 
 						zfi = new FeedItem(FeedItem.TYPE_CN, FeedItem.ATTR_KEY,  id,
@@ -3332,7 +3346,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 															 FeedItem.ATTR_L,    luid_l);
 						zfcTb.set(zfi);
 
-						msg += " added:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
+						msg += " added:   " + addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " + zfi.toString();
 					}
 					else
 					{
@@ -3356,11 +3370,11 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 							zfi.set(FeedItem.ATTR_CSPT, photo_checksum);
 							zfi.set(FeedItem.ATTR_L,    luid_l);
 
-							msg += " changed: " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " +zfi.toString();
+							msg += " changed: " + addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " +zfi.toString();
 							msg += reason;
 						}
 						else
-							msg += " found:   " + this.state.m_addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " +zfi.toString();
+							msg += " found:   " + addressbook.nsIAbCardToPrintableVerbose(abCard) + " - map: " +zfi.toString();
 					}
 
 					// if we're syncing with google, then while we've got the properties, work out whether the contact
@@ -3443,7 +3457,7 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 		for (i = 0; i < tb_cc_meta.m_a.length; i++)
 		{
-			generator = this.state.m_addressbook.forEachCardGenerator(tb_cc_meta.m_a[i].uri, functor_foreach_card, chunk_size('cards'));
+			generator = addressbook.forEachCardGenerator(tb_cc_meta.m_a[i].uri, functor_foreach_card, chunk_size('cards'));
 
 			while (generator.next())
 				yield true;

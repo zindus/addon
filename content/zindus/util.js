@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.79 2010-05-18 03:16:29 cvsuser Exp $
+// $Id: util.js,v 1.80 2010-05-24 09:36:49 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
@@ -963,8 +963,8 @@ function zinAlert(title_string_id, msg, win)
 {
 	let versionChecker = Cc["@mozilla.org/xpcom/version-comparator;1"].getService(Ci.nsIVersionComparator);
 	let is_prompts     = (typeof(AppInfo) == 'object') &&
-	                     ((AppInfo.app_name() == 'firefox') ||
-				          (((AppInfo.app_name() == 'thunderbird') || (AppInfo.app_name() == 'seamonkey')) &&
+	                     ((AppInfo.app_name() == AppInfo.eApp.firefox) ||
+				          (((AppInfo.app_name() == AppInfo.eApp.thunderbird) || (AppInfo.app_name() == AppInfo.eApp.seamonkey)) &&
 						    versionChecker.compare(AppInfo.app_version(), "3") >= 0));
 
 	if (is_prompts) {
@@ -1257,7 +1257,7 @@ function str_with_trailing(str, chr)
 //
 function show_status_panel_in()
 {
-	return (AppInfo.app_name() == 'firefox') ? [ 'browser-bottombox' ] : [ 'folderPaneBox', 'addressbookWindow' ];
+	return (AppInfo.app_name() == AppInfo.eApp.firefox) ? [ 'browser-bottombox' ] : [ 'folderPaneBox', 'addressbookWindow' ];
 }
 
 function AddToPrototype(o, p)
