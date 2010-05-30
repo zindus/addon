@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.269 2010-05-24 09:36:48 cvsuser Exp $
+// $Id: syncfsm.js,v 1.270 2010-05-30 04:26:48 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1148,7 +1148,8 @@ SyncFsm.prototype.initialiseTbAddressbookGenerator = function()
  	let functor_foreach_card = {
 		run: function(uri, item) {
 			let abCard = addressbook.qiCard(item);
-			addressbook.updateCard(abCard, uri, null, a_ids_to_remove, FORMAT_TB);
+			if (!abCard.isMailList)
+				addressbook.updateCard(abCard, uri, null, a_ids_to_remove, FORMAT_TB);
 			return true;
 		}
 	};
@@ -3162,6 +3163,9 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 	{
 		this.debug("loadTbCards pass 1: tb_cc_meta: " + aToString(tb_cc_meta) + " aMailListUri: " + aToString(aMailListUri));
 
+		let aCountCardsInList = new Object();
+		let count_via_foreach;
+
 		// pass 2 - iterate through the cards in the mailing list uris building an associative array of card keys
 		//
 		var aCardKeysToExclude = new Object();
@@ -3176,25 +3180,45 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 				msg += "\n excluding card: " + key + " " + aMailListUri[uri] + " " + uri + " " + addressbook.nsIAbCardToPrintable(abCard);
 
+				count_via_foreach++;
+
 				return true;
 			}
 		};
 
 		for (uri in aMailListUri)
 		{
-			if (AppInfo.ab_version() == AppInfo.eApp.thunderbird3 && tb3_luid_iter != TB3_LUID_ITER_START) {
+
+			if (false && (AppInfo.ab_version() == AppInfo.eApp.thunderbird3) && (tb3_luid_iter != TB3_LUID_ITER_START)) {
 				// AddressBookTb3.prototype.forEachCardGenerator uses enumerate() for mailing lists
 				// because of https://bugzilla.mozilla.org/show_bug.cgi?id=564554
 				// so we have to write them to the database here if we changed any of their cards in pass 1
 				//
+				// this solution isn't doing it - a few people are still asserting inside
+				// addressbook.nsIAbMDBCardToKey(abCard) because the card doesn't have any attributes
+				//
 				let dir = addressbook.nsIAbDirectory(uri);
-				dir.editMailListToDatabase(aMailListCard[uri]);
+				dir.editMailListToDatabase(aMailListCard[uri]); // remove aMailListCard ==> notused
 			}
 
+			count_via_foreach = 0;
 			generator = addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards', 2));
 
 			while (generator.next())
 				yield true;
+
+
+			if (AppInfo.ab_version() == AppInfo.eApp.thunderbird3) {
+				// here we assert that our workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=564554
+				// isn't going to cause a problem by skipping over any cards in a mailing list
+				//
+				let count_via_enumerate = addressbook.countListCardsViaEnumerate(uri);
+
+				this.debug("count cards in list: uri: " + uri + " count_via_foreach: " + count_via_foreach +
+				                                                " count_via_enumerate: " + count_via_enumerate);
+
+				zinAssert(count_via_foreach == count_via_enumerate);
+			}
 		}
 
 		this.debug(msg);

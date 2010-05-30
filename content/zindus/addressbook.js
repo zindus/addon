@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.79 2010-05-24 09:36:48 cvsuser Exp $
+// $Id: addressbook.js,v 1.80 2010-05-30 04:26:48 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -719,9 +719,9 @@ AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_cou
 	// childCards should work fine for both mailing lists and addressbooks
 	// but until https://bugzilla.mozilla.org/show_bug.cgi?id=564554 is fixed we need a workaround
 	//
-	if (uri.match(/\/MailList/))
-		enm = dir.addressLists.enumerate();
-	else
+	// if (uri.match(/\/MailList/))
+	//	enm = dir.addressLists.enumerate();
+	// else
 		enm = dir.childCards;
 
 	try {
@@ -738,11 +738,32 @@ AddressBookTb3.prototype.forEachCardGenerator = function(uri, functor, yield_cou
 			}
 		}
 	} catch (ex) {
-		this.logger().error("forEachCardGenerator: uri: " + uri + " count: " + count + " fContinue: " + fContinue + " ex: " + ex + " stack: " + executionStackFilter(ex.stack));
-		zinAssertCatch(ex);
+		this.logger().debug("forEachCardGenerator: mozilla bug #564554: uri: " + uri + " count: " + count + " fContinue: " + fContinue + " ex: " + ex + " stack: " + executionStackFilter(ex.stack));
+		// zinAssertCatch(ex);
 	}
 
 	yield false;
+}
+
+AddressBookTb3.prototype.countListCardsViaEnumerate = function(uri)
+{
+	var dir   = this.nsIAbDirectory(uri);
+	var enm   = dir.addressLists.enumerate();
+	var count = 0;
+
+	zinAssertAndLog(uri.match(/\/MailList/), uri);
+
+	try {
+		while (enm.hasMoreElements()) {
+			let item = enm.getNext();
+			count++;
+		}
+	} catch (ex) {
+		this.logger().error("countCardsInList: uri: " + uri + " count: " + count + " ex: " + ex + " stack: " + executionStackFilter(ex.stack));
+		zinAssertCatch(ex);
+	}
+
+	return count;
 }
 
 AddressBookTb3.prototype.nsIAbManager = function()
