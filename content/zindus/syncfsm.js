@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.270 2010-05-30 04:26:48 cvsuser Exp $
+// $Id: syncfsm.js,v 1.271 2010-05-30 05:19:03 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4863,8 +4863,10 @@ SyncFsm.prototype.buildGcsGenerator = function()
 	//
 	var functor_delete_other_candidate_mapitems = {
 		run: function(key, value) {
-			if ((key in self.state.sources) && key != FeedItem.ATTR_VER && key != sourceid)
+			if ((key in self.state.sources) && key != FeedItem.ATTR_VER && key != sourceid) {
 				aZfcCandidate[key].del(value);
+				buildgcs_msg += " delcandidate: " + key + "/" + value; // TODO re: bug #257
+			}
 			return true;
 		}
 	};
@@ -4924,6 +4926,9 @@ SyncFsm.prototype.buildGcsGenerator = function()
 					zinAssert(sourceid != FeedItem.ATTR_VER);
 
 					var zfi = aZfcCandidate[sourceid].get(luid);
+
+					zinAssertAndLog(zfi, function() { return "sourceid/luid: " + sourceid + "/" + luid; });
+
 					var msg = "  compare:  sourceid: " + sourceid + " zfi: " + zfi.toString(FeedItem.TOSTRING_RET_FIRST_ONLY);
 
 					zinAssertAndLog(zfi.isPresent(FeedItem.ATTR_KEY), // debugging bug #253
