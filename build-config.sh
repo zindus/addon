@@ -1,10 +1,10 @@
 #!/bin/bash
-# $Id: build-config.sh,v 1.60 2010-05-30 04:26:47 cvsuser Exp $
+# $Id: build-config.sh,v 1.61 2010-05-31 09:15:31 cvsuser Exp $
 
 # Build config for the build script, build.sh. Look there for more info.
 
 APP_NAME=zindus
-APP_VERSION_NUMBER=0.8.17
+APP_VERSION_NUMBER=0.8.18
 CHROME_PROVIDERS="content locale skin"
 CLEAN_UP=1
 ROOT_FILES="README"
