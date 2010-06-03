@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmexitstatus.js,v 1.51 2010-04-30 22:56:59 cvsuser Exp $
+// $Id: syncfsmexitstatus.js,v 1.52 2010-06-03 02:06:27 cvsuser Exp $
 
 function SyncFsmExitStatus()
 {
@@ -66,7 +66,8 @@ function SyncFsmExitStatus()
 	'failon.auth'                          : { 'trailer' : 1, 'arglength': 1 }, //     Login attempt failed
 	'failon.known.bug'                     : { 'trailer' : 1, 'arglength': 2 }, //     Known bug
 	'failon.gd.group.rename'               : { 'trailer' : 0, 'arglength': 1 }, //     
-	'failon.gd.group.name'                 : { 'trailer' : 0, 'arglength': 3 }  //     
+	'failon.gd.group.name'                 : { 'trailer' : 0, 'arglength': 3 }, //     
+	'failon.gd.group.duplicate'            : { 'trailer' : 0, 'arglength': 1 }  //     
 	};
 }
 

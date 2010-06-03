@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.271 2010-05-30 05:19:03 cvsuser Exp $
+// $Id: syncfsm.js,v 1.272 2010-06-03 02:06:25 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2380,7 +2380,7 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 	else if (this.formatPr() == FORMAT_ZM)
 	{
 		passed = passed && this.testForLegitimateFolderNames(); // test for duplicate folder names, zimbra-reserved names, illegal chars
-		passed = passed && this.testForEmptyContacts();         // test that there are no empty contacts
+		passed = passed && this.testForEmptyContactsTb();       // test that there are no empty contacts in tb
 	}
 
 	// test that the main addressbook is present
@@ -2408,22 +2408,21 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 
 SyncFsm.prototype.get_foreach_card_functor = function()
 {
-	var self = this;
+	let self = this;
 
-	var functor = {
+	let functor = {
 		m_a_empty_contacts: new Object(),
 		m_format_pr : self.formatPr(),
 		run: function(card, id, properties) {
-			var properties_pr = self.contact_converter().convert(this.m_format_pr, FORMAT_TB, properties);
+			let properties_pr = self.contact_converter().convert(this.m_format_pr, FORMAT_TB, properties);
 
 			if (this.is_empty(properties_pr))
 				this.m_a_empty_contacts[id] = properties;
 		},
 		is_empty : function(properties) {
-			var ret = true;
+			let ret = true;
 
-			for (var key in properties)
-			{
+			for (var key in properties) {
 				if (this.m_format_pr == FORMAT_GD)
 					ret = !(properties[key] && properties[key].length > 0 && !zinIsWhitespace(properties[key]));
 				else
@@ -2466,12 +2465,12 @@ SyncFsm.zfi_from_name = function(name)
 	return new FeedItem(FeedItem.TYPE_FL, FeedItem.ATTR_KEY, 123, FeedItem.ATTR_NAME, name);
 }
 
-SyncFsm.zfi_from_name_gd = function(name)
+SyncFsm.zfi_from_name_gd = function(name, attr)
 {
 	let zfi = new FeedItem(FeedItem.TYPE_GG, FeedItem.ATTR_KEY, 123, FeedItem.ATTR_NAME, name, FeedItem.ATTR_L, '1');
 
-	if (ContactGoogle.eSystemGroup.isPresent(name))
-		zfi.set(FeedItem.ATTR_GGSG, '1');
+	if (attr)
+		zfi.set(attr, '1');  // for FeedItem.ATTR_GGSG
 	
 	return zfi;
 }
@@ -2609,18 +2608,60 @@ SyncFsmGd.prototype.testForTbAbGdCiIntegrity = function()
 	return !this.state.stopFailCode;
 }
 
-SyncFsmGd.prototype.testForGdZindusGroupPrefix = function()
+SyncFsmGd.prototype.testForGoogleGroupNameIntegrity = function()
 {
-	let msg = "";
-	let is_rename_clash = false; // true ==> we can't rename group 'zindus/xxx' bcos there's already an 'xxx'
-	let a_groups_with_zindus_prefix = this.gd_groups_with_zindus_prefix();
+	let self = this;
 
-	this.debug("testForGdZindusGroupPrefix: a_groups_with_zindus_prefix: " + aToString(a_groups_with_zindus_prefix));
+	// test that no groups have a 'zindus/' prefix
+	//
+	function groups_with_zindus_prefix() {
+		let ret = "";
+		let re  = new RegExp("^" + APP_NAME);
+		for (var i = 0; i < self.state.gd_cc_meta.m_a.length; i++) {
+			let name = self.state.gd_cc_meta.m_a[i].name;
+			if (name.match(re) && name != GD_PAB)
+				ret += "\n" + name;
+		}
+		return ret;
+	}
 
-	if (aToLength(a_groups_with_zindus_prefix) > 0) {
+	let zindus_prefixes = groups_with_zindus_prefix();
+
+	this.debug("testForGoogleGroupNameIntegrity: a_groups_with_zindus_prefix: " + zindus_prefixes);
+
+	if (zindus_prefixes.length > 0) {
 		this.state.stopFailCode = 'failon.gd.group.name';
-		this.state.stopFailArg  = [ stringBundleString("brand.google"), this.gd_groups_with_zindus_prefix_as_string(),
-		                            AppInfo.app_name(AppInfo.firstcap) ];
+		this.state.stopFailArg  = [ stringBundleString("brand.google"), zindus_prefixes, AppInfo.app_name(AppInfo.firstcap) ];
+	}
+
+	// test that no two groups have the same name
+	//
+	function groups_with_duplicate_names() {
+		let ret    = "";
+		let re     = new RegExp("^" + APP_NAME + ".+" + GD_GR_AS_AB_SEPARATOR);
+		let a_name = new Object();
+		for (var i = 0; i < self.state.gd_cc_meta.m_a.length; i++) {
+			let name = self.state.gd_cc_meta.m_a[i].name;
+			if (name != GD_PAB) {
+				let luid_gd = self.state.gd_cc_meta.m_a[i].luid_gd;
+				name = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, self.zfcPr().get(luid_gd))
+				name = name.replace(re, "");
+				if (name in a_name)
+					ret += "\n" + name;
+				else
+					a_name[name] = true;
+			}
+		}
+		return ret;
+	}
+
+	let duplicate_groups = groups_with_duplicate_names();
+
+	self.debug("testForGoogleGroupNameIntegrity: duplicate_groups: " + duplicate_groups);
+
+	if (duplicate_groups.length > 0) {
+		this.state.stopFailCode = 'failon.gd.group.duplicate';
+		this.state.stopFailArg  = [ duplicate_groups ];
 	}
 
 	return !this.state.stopFailCode;
@@ -2824,7 +2865,7 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 	let system_group_name, zfi, ab_localised, uri;
 
 	function get_ab(system_group_name) {
-		let zfi          = SyncFsm.zfi_from_name_gd(system_group_name);
+		let zfi          = SyncFsm.zfi_from_name_gd(system_group_name, FeedItem.ATTR_GGSG);
 		let ab_localised = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi);
 		let uri          = self.state.m_addressbook.getAddressBookUriByName(ab_localised);
 		return [ ab_localised, uri ];
@@ -3514,14 +3555,14 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 	yield false;
 }
 
-SyncFsmZm.prototype.testForEmptyContacts = function()
+SyncFsmZm.prototype.testForEmptyContactsTb = function()
 {
 	var a_empty_contacts = this.state.foreach_tb_card_functor.m_a_empty_contacts;
 	var a_empty_folder_names = new Object();
 	var msg_empty = "";
 	var key;
 
-	// this.debug("testForEmptyContacts: a_empty_contacts: " + aToString(a_empty_contacts));
+	// this.debug("testForEmptyContactsTb: a_empty_contacts: " + aToString(a_empty_contacts));
 
 	for (key in a_empty_contacts)
 	{
@@ -3534,7 +3575,38 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 	{
 		this.state.stopFailCode    = 'failon.must.clean.ab';
 		this.state.stopFailArg     = [ AppInfo.app_name(AppInfo.firstcap) ];
-		this.state.stopFailTrailer = stringBundleString("status.failon.must.clean.ab.empty.contact", [ keysToString(a_empty_folder_names)]);
+		this.state.stopFailTrailer = stringBundleString("status.failon.must.clean.ab.empty.local.contact",
+		                                                  [ keysToString(a_empty_folder_names)]);
+	}
+
+	return this.state.stopFailCode == null;
+}
+
+SyncFsmZm.prototype.testForEmptyContactsZm = function()
+{
+	let self    = this;
+	let count   = 0;
+	let empties = "";
+	let contact_converter = this.contact_converter();
+	let luid;
+
+	for (luid in this.state.aSyncContact) {
+		let properties = contact_converter.convert(FORMAT_TB, FORMAT_ZM, this.state.aSyncContact[luid].element);
+
+		if (isObjectEmpty(properties)) {
+			empties += "\n" + aToString(contact_converter.convert(FORMAT_ZM, FORMAT_ZM, this.state.aSyncContact[luid].element));
+			count++;
+		}
+		
+		if (count >= 5)
+			break;
+	}
+
+	if (empties.length > 0) {
+		this.state.stopFailCode    = 'failon.must.clean.ab';
+		this.state.stopFailArg     = [ stringBundleString("brand.zimbra") ];
+		this.state.stopFailTrailer = stringBundleString("status.failon.must.clean.ab.empty.remote.contact",
+		                                                  [ stringBundleString("brand.zimbra"), AppInfo.app_name(AppInfo.firstcap), empties ]);
 	}
 
 	return this.state.stopFailCode == null;
@@ -3542,20 +3614,17 @@ SyncFsmZm.prototype.testForEmptyContacts = function()
 
 SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 {
-	var msg = "";
+	let msg  = "";
+	let self = this;
 
 	var functor = {
 		a_folder_count:     new Object(),
 		a_folder_violation: new Object(),
-		m_folder_converter: this.state.m_folder_converter,
-		state: this.state,
+		m_folder_converter: self.state.m_folder_converter,
+		run: function(zfi) {
+			let ret = true;
 
-		run: function(zfi)
-		{
-			var ret = true;
-
-			if (zfi.type() == FeedItem.TYPE_FL && !zfi.isPresent(FeedItem.ATTR_DEL))
-			{
+			if (zfi.type() == FeedItem.TYPE_FL && !zfi.isPresent(FeedItem.ATTR_DEL)) {
 				zinAssert(zfi.isPresent(FeedItem.ATTR_NAME));
 				var name = this.m_folder_converter.convertForMap(FORMAT_ZM, FORMAT_TB, zfi);
 
@@ -3578,8 +3647,8 @@ SyncFsmZm.prototype.testForLegitimateFolderNames = function()
 				if (name in this.a_folder_violation)
 					ret = false; // stop at the first violation
 
-				// this.state.m_logger.debug("testForLegitimateFolderNames: zfi: " + zfi + " name: " + name + " " +
-				//                                      (ret ? "" : this.a_folder_violation[name])); 
+				// self.debug("testForLegitimateFolderNames: zfi: " + zfi + " name: " + name + " " +
+				//              (ret ? "" : this.a_folder_violation[name])); 
 			}
 
 			return ret;
@@ -4865,7 +4934,7 @@ SyncFsm.prototype.buildGcsGenerator = function()
 		run: function(key, value) {
 			if ((key in self.state.sources) && key != FeedItem.ATTR_VER && key != sourceid) {
 				aZfcCandidate[key].del(value);
-				buildgcs_msg += " delcandidate: " + key + "/" + value; // TODO re: bug #257
+				buildgcs_msg += " delcandidate: " + key + "/" + value; // re: bug #257
 			}
 			return true;
 		}
@@ -5513,7 +5582,7 @@ SyncFsmGd.prototype.suoGdTweakCiOps = function()
 		function get_a_luid_gp_abs() {
 			// return associative array of the luids of the tb addressbooks that correspond with google groups
 			let gd_ab_name_internal = self.gdAddressbookName('internal');
-			let zfi_suggested       = SyncFsm.zfi_from_name_gd(ContactGoogle.eSystemGroup.Suggested);
+			let zfi_suggested       = SyncFsm.zfi_from_name_gd(ContactGoogle.eSystemGroup.Suggested, FeedItem.ATTR_GGSG);
 			let name_gd_suggested   = self.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, zfi_suggested);
 			let ret                 = new Object();
 
@@ -5791,22 +5860,19 @@ SyncFsm.prototype.testForFolderNameDuplicate = function(aGcs)
 
 	zinAssert(!this.state.stopFailCode);
 
-	for (var gid in aGcs)
-	{
+	for (var gid in aGcs) {
 		var sourceid = aGcs[gid].sourceid;
 		var zfc      = this.zfc(sourceid);
 		var format   = this.state.sources[sourceid]['format'];
 		var luid     = this.state.zfcGid.get(gid).get(sourceid);
 		var zfi      = zfc.get(luid);
 
-		if (zfi.type() == FeedItem.TYPE_FL && !zfi.isPresent(FeedItem.ATTR_DEL) && SyncFsm.isOfInterest(zfc, luid))
-		{
+		if (zfi.type() == FeedItem.TYPE_FL && !zfi.isPresent(FeedItem.ATTR_DEL) && SyncFsm.isOfInterest(zfc, luid)) {
 			zinAssert(zfi.isPresent(FeedItem.ATTR_NAME));
 
 			name = this.state.m_folder_converter.convertForMap(FORMAT_TB, format, zfi);
 
-			if ((name in aFolderName))
-			{
+			if (name in aFolderName) {
 				this.state.stopFailCode = 'failon.folder.name.clash';
 				this.state.stopFailArg  = [ name ]; // FIXME - this is an internal facing name ie zindus_pab
 				this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
@@ -6268,6 +6334,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	if (this.formatPr() == FORMAT_ZM)
 	{
 		passed = passed && this.testForValidBirthdayFields();
+		passed = passed && this.testForEmptyContactsZm();
 
 		this.twiddleZmFxMs();
 
@@ -6285,12 +6352,13 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		for (var i = 0; i < this.state.gd_cc_meta.m_a.length; i++) {
 			let zfi = this.zfcPr().get(this.state.gd_cc_meta.m_a[i].luid_gd);
 			if (zfi.isPresent(FeedItem.ATTR_GGSG) && !zfi.isPresent(FeedItem.ATTR_XGID))
-				passed = passed && this.testForTbAbPresentAndInvariant(zfi.key(),
-					this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD, SyncFsm.zfi_from_name_gd(zfi.name())));
+					passed = passed && this.testForTbAbPresentAndInvariant(zfi.key(),
+						this.state.m_folder_converter.convertForPublic(FORMAT_TB, FORMAT_GD,
+							SyncFsm.zfi_from_name_gd(zfi.name(), FeedItem.ATTR_GGSG)));
 		}
 
 		passed = passed && this.testForTbAbGdCiIntegrity();
-		passed = passed && this.testForGdZindusGroupPrefix();
+		passed = passed && this.testForGoogleGroupNameIntegrity();
 	}
 
 	this.state.stopwatch.mark(state + " Converge: updateGidDoChecksums: " + this.state.m_progress_count++);
@@ -6441,7 +6509,7 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 	           " c_at_gd: " + c_at_gd + " c_to_be_deleted_gd: " + c_to_be_deleted_gd +
 	           " c_at_tb: " + c_at_tb + " c_to_be_deleted_tb: " + c_to_be_deleted_tb);
 
-	let more_info = "<a href='" + url('slow-sync') + "'>" + stringBundleString("text.more.information.on.slow.sync") + "</a>";
+	let more_info = href_for(url('slow-sync'), stringBundleString("text.more.information.on.slow.sync"));
 	let txt_tb    = AppInfo.app_name(AppInfo.firstcap);
 	let txt_gd    = stringBundleString("brand.google");
 
@@ -8201,7 +8269,7 @@ SyncFsm.prototype.getContactFromLuid = function(sourceid, luid, format_to)
 			break;
 
 		case FORMAT_ZM:
-			if (luid in this.state.aSyncContact, luid)
+			if (luid in this.state.aSyncContact)
 				ret = this.contact_converter().convert(format_to, FORMAT_ZM, this.state.aSyncContact[luid].element);
 
 			break;
@@ -9908,38 +9976,6 @@ SyncFsmGd.prototype.gd_process_groups = function(state)
 	return nextEvent;
 }
 
-SyncFsmGd.prototype.gd_groups_with_zindus_prefix = function()
-{
-	let re      = new RegExp("^" + APP_NAME);
-	let a_ret   = new Object();
-	let self    = this;
-	let zfcPr   = this.zfcPr();
-	let functor = {
-		run: function(zfi) {
-			if ((zfi.type() == FeedItem.TYPE_GG) && zfi.name().match(re))
-				a_ret[zfi.get(FeedItem.ATTR_KEY)] = zfi.name();
-		return true;
-		}
-	};
-
-	zfcPr.forEach(functor);
-
-	this.debug("gd_groups_with_zindus_prefix: returns: " + aToString(a_ret));
-
-	return a_ret;
-}
-
-SyncFsmGd.prototype.gd_groups_with_zindus_prefix_as_string = function()
-{
-	let ret = "";
-	let a_groups_with_zindus_prefix = this.gd_groups_with_zindus_prefix();
-
-	for (var id in a_groups_with_zindus_prefix)
-		ret += "\n" + a_groups_with_zindus_prefix[id];
-
-	return  ret;
-}
-
 SyncFsmGd.prototype.entryActionRenameGroups = function(state, event, continuation)
 {
 	var nextEvent = null;
@@ -10126,8 +10162,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 	//   to allow the tb contact to be backated and removed.  The FeedItem is removed during UpdateCleanup.
 	//
 	var functor = {
-		run: function(contact)
-		{
+		run: function(contact) {
 			let id           = contact.meta.id;
 			let is_ignored   = contact.meta.deleted || contact.is_empty();
 			let zfi          = null;
@@ -10225,8 +10260,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 	let id;
 	let count = 0;
 
-	for (id in this.state.a_gd_contact)
-	{
+	for (id in this.state.a_gd_contact) {
 		functor.run(this.state.a_gd_contact[id]);
 
 		if (++count % chunk_size('feed') == 0)

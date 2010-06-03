@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.67 2010-05-24 09:36:48 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.68 2010-06-03 02:06:25 cvsuser Exp $
 
 includejs("uninstall.js");
 
@@ -573,8 +573,9 @@ ZinMailWindowOverlay.prototype.timerStartup = function()
 
 		logger('info').info(getInfoMessage('next', delay));
 	}
-	else
+	else {
 		this.m_logger.debug("manual sync only - timer not started.");
+	}
 }
 
 ZinMailWindowOverlay.prototype.timerShutdown = function()

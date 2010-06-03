@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: statusbar.js,v 1.14 2010-04-19 07:44:59 cvsuser Exp $
+// $Id: statusbar.js,v 1.15 2010-06-03 02:06:25 cvsuser Exp $
 
 // Bits of "exit status" reported to the outside world:
 // - last sync success: (time, maybe other stuff like conflicts...)
@@ -118,6 +118,7 @@ StatusBar.prototype = {
 var StatusBarState = {
 	save : function(es, is_never_synced) {
 		let zfc = StatusBarState.toZfc();
+
 		let now = new Date();
 		let zfi = new FeedItem(null, FeedItem.ATTR_KEY, FeedItem.KEY_STATUSBAR,
 	                      'date',            now.getTime(), // used to use stringified dates here but it appears they're not portable
