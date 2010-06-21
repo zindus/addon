@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.85 2010-05-17 22:57:21 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.86 2010-06-21 09:43:41 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -102,6 +102,12 @@ SyncFsmObserver.prototype = {
 	update : function(fsmstate) {
 		var ret;
 
+		var a_states_ld = {
+			stAuthSelect:     { count: 1 },
+			stAuthLogin:      { count: 1 },
+			stAuthCheck:      { }
+		};
+
 		var a_states_zm = {
 			stAuthSelect:     { count: 1 },
 			stAuthLogin:      { count: 1 },
@@ -155,11 +161,16 @@ SyncFsmObserver.prototype = {
 		for (var state in a_states_common) {
 			zinAssertAndLog(!(state in a_states_zm), "state: " + state);
 			zinAssertAndLog(!(state in a_states_gd), "state: " + state);
-			a_states_zm[state] = a_states_common[state];
 			a_states_gd[state] = a_states_common[state];
+			a_states_ld[state] = a_states_common[state];
+			a_states_zm[state] = a_states_common[state];
 		}
 
 		switch (fsmstate.context.state.id_fsm) {
+			case Maestro.FSM_ID_LD_AUTHONLY:
+			case Maestro.FSM_ID_LD_TWOWAY:
+				ret = this.updateState(fsmstate, a_states_ld);
+				break;
 			case Maestro.FSM_ID_ZM_AUTHONLY:
 			case Maestro.FSM_ID_ZM_TWOWAY:
 				ret = this.updateState(fsmstate, a_states_zm);

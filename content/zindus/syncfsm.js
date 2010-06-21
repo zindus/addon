@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.272 2010-06-03 02:06:25 cvsuser Exp $
+// $Id: syncfsm.js,v 1.273 2010-06-21 09:43:41 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -52,13 +52,15 @@ function SyncFsm()
 	this.state = null;
 	this.fsm   = null;
 }
-function SyncFsmZm(id_fsm)     { SyncFsm.call(this);   }
 function SyncFsmGd(id_fsm)     { SyncFsm.call(this);   }
 function SyncFsmGdAuth(id_fsm) { SyncFsmGd.call(this); }
+function SyncFsmLd(id_fsm)     { SyncFsm.call(this);   }
+function SyncFsmZm(id_fsm)     { SyncFsm.call(this);   }
 
-SyncFsmZm.prototype         = new SyncFsm();
-SyncFsmGd.prototype         = new SyncFsm();
-SyncFsmGdAuth.prototype     = new SyncFsmGd();
+SyncFsmGd.prototype     = new SyncFsm();
+SyncFsmGdAuth.prototype = new SyncFsmGd();
+SyncFsmLd.prototype     = new SyncFsm();
+SyncFsmZm.prototype     = new SyncFsm();
 
 // Sync is broken up into a number of steps, coded as a finite state machine
 // See: http://en.wikipedia.org/wiki/Finite_state_machine#Transducers (Mealy machine)
@@ -241,6 +243,56 @@ SyncFsmGdAuth.prototype.initialiseFsm = function()
 	}
 	else
 		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
+}
+
+SyncFsmLd.prototype.initialiseFsm = function()
+{
+	var transitions = {
+		start:             { evCancel: 'final', evNext: 'stAuthSelect',                                     evLackIntegrity: 'final'     },
+		stAuthSelect:      { evCancel: 'final', evNext: 'stAuthLogin',                                      evLackIntegrity: 'final'     },
+		stAuthLogin:       { evCancel: 'final', evNext: 'final',            evHttpRequest: 'stHttpRequest'                               },
+		stAuthCheck:       { evCancel: 'final', evNext: 'final',                                            evLackIntegrity: 'final'     },
+
+		// FIXME serge:
+		// - once ldap auth is working, you will change the 'evNext' state from 'final' above to stLoad etc
+		//
+		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evRepeat:      'stLoad',          evLackIntegrity: 'final'   },
+		stLoadTb:          { evCancel: 'final', evNext: 'stConverge',       evRepeat:      'stLoadTb',        evLackIntegrity: 'final'   },
+		stConverge:        { evCancel: 'final', evNext: 'stUpdateTb',       evRepeat:      'stConverge',      evLackIntegrity: 'final'   },
+		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateCleanup',  evRepeat:      'stUpdateTb',      evLackIntegrity: 'final'   },
+		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',         evRepeat:      'stUpdateCleanup', evLackIntegrity: 'final'   },
+		stCommit:          { evCancel: 'final', evNext: 'final'                                                                          },
+
+		stHttpRequest:     { evCancel: 'final', evNext: 'stHttpResponse'                                                                 },
+		stHttpResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
+
+		final:             { }
+	};
+
+	var a_entry = {
+		start:                  this.entryActionStart,
+		stAuthSelect:           this.entryActionAuthSelect,
+		stAuthLogin:            this.entryActionAuthLogin,
+		stAuthCheck:            this.entryActionAuthCheck,
+		stLoad:                 this.entryActionLoad,
+		stLoadTb:               this.entryActionLoadTb,
+		stConverge:             this.entryActionConverge,
+		stUpdateTb:             this.entryActionUpdateTb,
+		stUpdateCleanup:        this.entryActionUpdateCleanup,
+		stCommit:               this.entryActionCommit,
+
+		stHttpRequest:          this.entryActionHttpRequest,
+		stHttpResponse:         this.entryActionHttpResponse,
+
+		final:                  this.entryActionFinal
+	};
+
+	var a_exit = {
+		stAuthLogin:            this.exitActionAuthLogin,
+		stHttpResponse:         this.exitActionHttpResponse  /* this gets tweaked by setupHttpZm */
+	};
+
+	this.fsm = new Fsm(transitions, a_entry, a_exit);
 }
 
 SyncFsm.prototype.start = function(win)
@@ -3229,25 +3281,11 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 
 		for (uri in aMailListUri)
 		{
-
-			if (false && (AppInfo.ab_version() == AppInfo.eApp.thunderbird3) && (tb3_luid_iter != TB3_LUID_ITER_START)) {
-				// AddressBookTb3.prototype.forEachCardGenerator uses enumerate() for mailing lists
-				// because of https://bugzilla.mozilla.org/show_bug.cgi?id=564554
-				// so we have to write them to the database here if we changed any of their cards in pass 1
-				//
-				// this solution isn't doing it - a few people are still asserting inside
-				// addressbook.nsIAbMDBCardToKey(abCard) because the card doesn't have any attributes
-				//
-				let dir = addressbook.nsIAbDirectory(uri);
-				dir.editMailListToDatabase(aMailListCard[uri]); // remove aMailListCard ==> notused
-			}
-
 			count_via_foreach = 0;
 			generator = addressbook.forEachCardGenerator(uri, functor_foreach_card, chunk_size('cards', 2));
 
 			while (generator.next())
 				yield true;
-
 
 			if (AppInfo.ab_version() == AppInfo.eApp.thunderbird3) {
 				// here we assert that our workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=564554
@@ -3258,7 +3296,11 @@ SyncFsm.prototype.loadTbCardsGenerator = function(tb_cc_meta)
 				this.debug("count cards in list: uri: " + uri + " count_via_foreach: " + count_via_foreach +
 				                                                " count_via_enumerate: " + count_via_enumerate);
 
-				zinAssert(count_via_foreach == count_via_enumerate);
+				if (count_via_foreach != count_via_enumerate) {
+					this.state.stopFailCode    = 'failon.known.bug';
+					this.state.stopFailArg     = [ AppInfo.app_name(AppInfo.firstcap), url("mozilla-bug-564554") ];
+					this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
+				}
 			}
 		}
 
@@ -7769,7 +7811,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 					msg += " have already modified this gdau contact, so skip update for this MOD";
 					zfiTarget = zfcTarget.get(luid_target);
 					if (zfiWinner.isPresent(FeedItem.ATTR_DEL))
-						zfiTarget..set(FeedItem.ATTR_DEL, 1);
+						zfiTarget.set(FeedItem.ATTR_DEL, 1);
 					SyncFsm.setLsoToGid(zfiGid, zfiTarget);
 					suo.is_processed = true;
 				}
@@ -8992,10 +9034,12 @@ SyncFsm.newSyncFsm = function(syncfsm_details, sfcd)
 	logger().debug("newSyncFsm: account: " + account.toString() + " account_index: " + sfcd.m_account_index +
 	                   " is_attended: " + syncfsm_details.is_attended);
 
-	if      (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm();     id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
-	else if (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd();     id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
-	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm();     id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
+	if      (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd();     id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
+	else if (format == FORMAT_LD && type == "twoway")    { syncfsm = new SyncFsmLd();     id_fsm = Maestro.FSM_ID_LD_TWOWAY;   }
+	else if (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm();     id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
 	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGdAuth(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
+	else if (format == FORMAT_LD && type == "authonly")  { syncfsm = new SyncFsmLd();     id_fsm = Maestro.FSM_ID_LD_AUTHONLY; }
+	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm();     id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
 	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
 
 	syncfsm.initialise(id_fsm, (syncfsm_details.is_attended ? true : false), sfcd);
@@ -9518,7 +9562,7 @@ SyncFsm.prototype.initialise = function(id_fsm, is_attended, sfcd)
 	this.initialiseState(id_fsm, is_attended, sourceid, sfcd);
 	this.initialiseFsm();
 
-	if (id_fsm == Maestro.FSM_ID_ZM_AUTHONLY)
+	if (id_fsm == Maestro.FSM_ID_LD_AUTHONLY || id_fsm == Maestro.FSM_ID_ZM_AUTHONLY)
 	{
 		this.fsm.m_transitions['stAuthLogin']['evNext'] = 'final';
 		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
@@ -10980,6 +11024,88 @@ ContactCollectionMeta.prototype = {
 	},
 	push : function(obj) {
 		this.m_a.push(obj); // properties: luid_tb, uri, 
+	}
+}
+
+
+// LDAP goes here.
+
+SyncFsmLd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd)
+{
+	SyncFsm.prototype.initialiseState.call(this, id_fsm, is_attended, sourceid, sfcd);
+
+	var state = this.state;
+
+	// serge FIXME:
+	// - state that is carried across the life of an ldap sync is initialised here
+
+	state.initialiseSource(sourceid, FORMAT_LD);
+}
+
+// Validate the account information supplied by the user
+//
+SyncFsmLd.prototype.entryActionAuthSelect = function(state, event, continuation)
+{
+	var nextEvent = null;
+
+	this.state.stopwatch.mark(state);
+
+	// serge FIXME: 
+	// - don't always need username + password to connect to an ldap server...
+	// - will need an equivalent of isValidUrl to test connectivity to the ldap server
+	//
+	var sourceid_pr = this.state.sourceid_pr;
+	var url         = this.account().url;
+	var username    = this.account().username;
+	var password    = this.account().passwordlocator.getPassword();
+
+	if (url && /^ldaps?:\/\//.test(url)) // && username.length > 0 && password && password.length > 0 && isValidUrl(url))
+	{
+		nextEvent = 'evNext';
+	}
+	else
+	{
+		this.state.stopFailCode = 'failon.integrity.zm.bad.credentials';
+		nextEvent = 'evLackIntegrity';
+	}
+
+	continuation(nextEvent);
+}
+
+// Authenticate to the ldap server (if necessary)
+//
+SyncFsmLd.prototype.entryActionAuthLogin = function(state, event, continuation)
+{
+	this.state.stopwatch.mark(state);
+
+	var sourceid_pr = this.state.sourceid_pr;
+
+	let dlg = UserPrompt.show("ldap authentication goes here", {'buttons' : "accept"});
+
+	// FIXME serge:
+	// - you will need to create an equivalent to setupHttpGd and setupHttpZm to support communication with an ldap server
+	// - setupHttpGd and setupHttpZm use XMLHttpRequest. I don't know what the mozilla javascript library is for talking ldap,
+	//   or even whether there is one (!)
+	//
+	// this.setupLdap(state, 'evNext', ...);
+	// continuation('evHttpRequest');
+
+	continuation('evNext');
+}
+
+// process the response to the authenticate request
+//
+SyncFsmLd.prototype.exitActionAuthLogin = function(state, event)
+{
+	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
+		return;
+
+	var response = this.state.m_http.response();
+
+	if (response)
+	{
+		// this is for zimbra - need something similar for ldap?
+		// conditionalGetElementByTagNameNS(response, Xpath.NS_ZACCOUNT, "authToken", this.state, 'authToken');
 	}
 }
 

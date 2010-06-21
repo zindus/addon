@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: maestro.js,v 1.25 2009-10-17 09:16:02 cvsuser Exp $
+// $Id: maestro.js,v 1.26 2010-06-21 09:43:41 cvsuser Exp $
 
 // FIXME: this class needs to be refactored into a component
 // that observes notifications from fsms and reflects them back to clients.
@@ -56,14 +56,17 @@ Maestro.DO_FSM_STATE_UPDATE   = "do_state_update";
 
 // Each fsm has a unique FSM_ID_* so that functors can register to be notified of state change in specific fsm's
 //
-Maestro.FSM_ID_ZM_TWOWAY   = "fsm-zm-twoway";
-Maestro.FSM_ID_ZM_AUTHONLY = "fsm-zm-authonly";
 Maestro.FSM_ID_GD_TWOWAY   = "fsm-gd-twoway";
 Maestro.FSM_ID_GD_AUTHONLY = "fsm-gd-authonly";
-Maestro.FSM_GROUP_TWOWAY   = newObjectWithKeys(Maestro.FSM_ID_ZM_TWOWAY, Maestro.FSM_ID_GD_TWOWAY);
-Maestro.FSM_GROUP_AUTHONLY = newObjectWithKeys(Maestro.FSM_ID_ZM_AUTHONLY, Maestro.FSM_ID_GD_AUTHONLY);
-Maestro.FSM_GROUP_SYNC     = newObjectWithKeys(Maestro.FSM_ID_ZM_TWOWAY, Maestro.FSM_ID_ZM_AUTHONLY, 
-                                               Maestro.FSM_ID_GD_TWOWAY, Maestro.FSM_ID_GD_AUTHONLY);
+Maestro.FSM_ID_LD_AUTHONLY = "fsm-ld-authonly";
+Maestro.FSM_ID_LD_TWOWAY   = "fsm-ld-twoway";
+Maestro.FSM_ID_ZM_TWOWAY   = "fsm-zm-twoway";
+Maestro.FSM_ID_ZM_AUTHONLY = "fsm-zm-authonly";
+Maestro.FSM_GROUP_TWOWAY   = newObjectWithKeys( Maestro.FSM_ID_GD_TWOWAY, Maestro.FSM_ID_LD_TWOWAY, Maestro.FSM_ID_ZM_TWOWAY );
+Maestro.FSM_GROUP_AUTHONLY = newObjectWithKeys( Maestro.FSM_ID_GD_AUTHONLY, Maestro.FSM_ID_LD_AUTHONLY, Maestro.FSM_ID_ZM_AUTHONLY );
+Maestro.FSM_GROUP_SYNC     = newObjectWithKeys( Maestro.FSM_ID_GD_TWOWAY, Maestro.FSM_ID_GD_AUTHONLY, 
+                                                Maestro.FSM_ID_LD_TWOWAY, Maestro.FSM_ID_LD_AUTHONLY, 
+                                                Maestro.FSM_ID_ZM_TWOWAY, Maestro.FSM_ID_ZM_AUTHONLY);
 
 // ID_FUNCTOR_* uniquely identifies each functor
 //

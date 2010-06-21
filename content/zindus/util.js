@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.82 2010-06-03 02:06:27 cvsuser Exp $
+// $Id: util.js,v 1.83 2010-06-21 09:43:41 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
@@ -547,10 +547,9 @@ function getBimapFormat(type)
 {
 	var a1, a2;
 
-	switch (type)
-	{
-		case 'short': a1 = [ FORMAT_TB, FORMAT_GD, FORMAT_ZM ];  a2 = [ 'tb', 'gd', 'zm' ];               break;
-		case 'long':  a1 = [            FORMAT_GD, FORMAT_ZM ];  a2 = [ Account.Google, Account.Zimbra ]; break;
+	switch (type) {
+		case 'short': a1 = [ FORMAT_TB, FORMAT_GD, FORMAT_ZM, FORMAT_LD ];  a2 = [ 'tb', 'gd', 'zm', 'ld' ];                       break;
+		case 'long':  a1 = [            FORMAT_GD, FORMAT_ZM, FORMAT_LD ];  a2 = [ Account.Google, Account.Zimbra, Account.Ldap ]; break;
 		default:      zinAssertAndLog(false, "mismatched: type: " + type);
 	}
 
@@ -561,11 +560,11 @@ function format_xx_to_localisable_string(format_xx)
 {
 	var ret;
 
-	switch(format_xx)
-	{
+	switch(format_xx) {
 		case FORMAT_TB: ret = AppInfo.app_name(AppInfo.firstcap);   break;
 		case FORMAT_GD: ret = stringBundleString("brand.google");   break;
 		case FORMAT_ZM: ret = stringBundleString("brand.zimbra");   break;
+		case FORMAT_LD: ret = "ldap server";                        break; // TODO
 		default:        zinAssertAndLog(false, "mismatched: format_xx: " + format_xx);
 	}
 
@@ -1109,6 +1108,7 @@ function url(key)
 	case 'google-stay-in-sync': ret = 'http://www.zindus.com/blog/2008/10/06/the-google-thunderbird-address-book-staying-in-sync/'; break;
 	case 'zimbra-6-birthday':   ret = 'http://www.zindus.com/blog/2010/04/29/zimbra-6x-birthday-field/';                            break;
 	case 'zimbra-bug-c-token':  ret = 'http://www.zimbra.com/forums/developers/29667-soap-how-demand-change.html';                  break;
+	case 'mozilla-bug-564554':  ret = 'http://www.zindus.com/known-bugs/#toc-mailing-list-bug-564554';                              break;
 	default: zinAssertAndLog(false, key);
 	}
 

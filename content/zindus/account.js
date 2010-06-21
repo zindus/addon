@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: account.js,v 1.17 2009-09-16 06:45:46 cvsuser Exp $
+// $Id: account.js,v 1.18 2010-06-21 09:43:41 cvsuser Exp $
 
 var eAccount = new ZinEnum( {
 	sourceid            : 'sourceid',
@@ -30,13 +30,20 @@ var eAccount = new ZinEnum( {
 	gd_gr_as_ab         : 'gd_gr_as_ab',
 	gd_suggested        : 'gd_suggested',
 	gd_sync_with        : 'gd_sync_with',
+	ld_base_dn          : 'ld_base_dn',
+	ld_bind_dn          : 'ld_bind_dn',
 	zm_sync_gal_enabled : 'zm_sync_gal_enabled',
 	zm_emailed_contacts : 'zm_emailed_contacts',
 	passwordlocator     : 'passwordlocator'
 } );
 
 Account.Google = 'Google';   // these values are hardcoded into extensions.zindus.account.nn.format preferences
-Account.Zimbra = 'Zimbra';   // so if you ever want to change one the old preference values have to be migrated
+Account.Ldap   = 'Ldap';     // so if you ever want to change one the old preference values have to be migrated
+Account.Zimbra = 'Zimbra';
+
+// FIXME: for ldap
+// - change unique_key() to take an object argument intead of (format, url, username)
+// - change m_keys_required and m_keys_optional to a per-account-type arrangement
 
 function Account(account)
 {
@@ -162,6 +169,7 @@ Account.prototype = {
 
 var AccountStatic = {
 	m_keys_optional      : newObjectWithKeys( eAccount.gd_sync_with, eAccount.gd_suggested, eAccount.gd_gr_as_ab,
+	                                          eAccount.ld_base_dn, eAccount.ld_bind_dn,
 	                                          eAccount.zm_sync_gal_enabled, eAccount.zm_emailed_contacts ),
 	m_keys_required      : newObjectWithKeys( eAccount.url, eAccount.username, eAccount.format),
 	m_bimap_format       : getBimapFormat('long'),
@@ -197,6 +205,7 @@ var AccountStatic = {
 	unique_key : function(format_xx, url, username) {
 		var ret;
 		switch(format_xx) {
+			case FORMAT_LD: ret = hyphenate(":", Account.Ldap,   url, username); break;
 			case FORMAT_ZM: ret = hyphenate(":", Account.Zimbra, url, username); break;
 			case FORMAT_GD: ret = hyphenate(":", Account.Google,      username); break;
 			default: zinAssertAndLog(false, "mismatched case: " + format_xx);
