@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: deploy-common.sh,v 1.4 2008-12-15 04:34:44 cvsuser Exp $
+# $Id: deploy-common.sh,v 1.5 2010-06-28 02:48:11 cvsuser Exp $
 
 get_appversion()
 {
@@ -15,7 +15,7 @@ get_platform_id()
 		exit 1;
 	fi
 
-	echo *$appv* | sed -r "s#$appv(.*)\.xpi#fredfred \1#" | awk '/fredfred/ { print $2; }'
+	ls *$appv-* | sed -r "s#$appv(.*)\.xpi#fredfred \1#" | awk '/fredfred/ { print $2; }'
 }
 
 generate_and_copy_rdfs()
