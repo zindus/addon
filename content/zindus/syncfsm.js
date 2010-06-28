@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.273 2010-06-21 09:43:41 cvsuser Exp $
+// $Id: syncfsm.js,v 1.274 2010-06-28 02:28:11 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -5469,6 +5469,7 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 	let sourceid_tb     = this.state.sourceid_tb;
 	let id_gd_pab       = this.state.gd_cc_meta.find('name', GD_PAB,       'luid_gd')
 	let id_gd_suggested = this.state.gd_cc_meta.find('name', ContactGoogle.eSystemGroup.Suggested, 'luid_gd')
+	let zfcGid          = this.state.zfcGid;
 	let ret             = new Array();
 	let gp_id;
 
@@ -5479,15 +5480,22 @@ SyncFsm.prototype.gdGroupsFromTbState = function(luid_gd_au)
 
 		let gid = this.state.aReverseGid[sourceid_pr][luid_gd_ci];
 
-		if (this.state.zfcGid.get(gid).isPresent(sourceid_tb)) {
-			let luid_tb = this.state.zfcGid.get(gid).get(sourceid_tb);
+		if (zfcGid.get(gid).isPresent(sourceid_tb)) {
+			let luid_tb = zfcGid.get(gid).get(sourceid_tb);
 
 			if (!this.zfcTb().get(luid_tb).isPresent(FeedItem.ATTR_DEL)) {
 				let luid_tb_l = this.zfcTb().get(luid_tb).get(FeedItem.ATTR_L);
 
 				zinAssertAndLog(luid_tb_l in this.state.aReverseGid[sourceid_tb], luid_tb_l);
 				let gid_l     = this.state.aReverseGid[sourceid_tb][luid_tb_l];
-				let luid_gd_l = this.state.zfcGid.get(gid_l).get(sourceid_pr);
+
+				zinAssertAndLog(zfcGid.isPresent(gid_l),
+					function () { return "luid_gd_au: " + luid_gd_au + " luid_tb_l: " + luid_tb_l + " gid_l: " + gid_l; });
+				zinAssertAndLog(zfcGid.get(gid_l).isPresent(sourceid_pr),
+					function () { return "luid_gd_au: " + luid_gd_au + " luid_tb_l: " + luid_tb_l + " gid_l: " + gid_l +
+					                     " gid item: " + zfcGid.get(gid_l).toString(); });
+
+				let luid_gd_l = zfcGid.get(gid_l).get(sourceid_pr);
 
 				if (luid_gd_l != id_gd_pab && luid_gd_l != id_gd_suggested)
 					ret.push(luid_gd_l);
