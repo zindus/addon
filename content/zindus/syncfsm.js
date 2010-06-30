@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.274 2010-06-28 02:28:11 cvsuser Exp $
+// $Id: syncfsm.js,v 1.275 2010-06-30 17:36:16 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -923,9 +923,12 @@ SyncFsm.prototype.isConsistentGidParse = function(aReverseOut)
 					aReverse[sourceid][luid] = gid;
 
 				if (self.state.sources[sourceid]['format'] == FORMAT_GD) {
+					zinAssertAndLog(self.zfc(sourceid).isPresent(luid),
+					    function() { return " gid: " + gid + " sourceid: " + sourceid + " luid: " + luid +
+						                    " zfc: " + self.zfc(sourceid).toString(); } );
+
 					// gid mapitems never point to gdau contacts
 					//
-					zinAssertAndLog(self.zfc(sourceid).isPresent(luid), function() { return "gid: " + gid + " sourceid: " + sourceid + " luid: " + luid; } );
 					let zfi = self.zfc(sourceid).get(luid);
 					if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() != FeedItem.eStyp.gdci) {
 						self.debug("isConsistentGidParse: sourceid/luid " + sourceid + "/" + luid +
