@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.10 2010-07-06 05:43:05 cvsuser Exp $
+// $Id: appinfo.js,v 1.11 2010-07-06 08:27:33 cvsuser Exp $
 
 var AppInfo = {
 	m_app_version       : null,
@@ -96,7 +96,7 @@ var AppInfo = {
 		let ret      = app_name;
 
 		if (app_name == this.eApp.thunderbird || app_name == this.eApp.seamonkey ||
-		    (app_name = this.eApp.spicebird && this.app_version() >= "0.8"))
+		    (app_name == this.eApp.spicebird && this.app_version() >= "0.8"))
 			ret = ("@mozilla.org/abmanager;1" in Cc) ? this.eApp.thunderbird3 : this.eApp.thunderbird2;
 
 		return ret;
