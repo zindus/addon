@@ -6,7 +6,7 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.8.20.20100701.055923</em:version>  <!-- version populated by build script -->
+    <em:version>0.8.21.20100706.180656</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <!-- Thunderbird -->
@@ -45,6 +45,15 @@
 	    <em:id>postbox@postbox-inc.com</em:id>
 	    <em:minVersion>1.0b13</em:minVersion>   <!-- pb -->
 	    <em:maxVersion>1.1.*</em:maxVersion>    <!-- pb -->
+	  </Description>
+	</em:targetApplication>
+
+	<em:targetApplication>
+	  <!-- Postbox Express -->
+	  <Description>
+	    <em:id>express@postbox-inc.com</em:id>
+	    <em:minVersion>1.0.*</em:minVersion>   <!-- pe -->
+	    <em:maxVersion>1.0.*</em:maxVersion>   <!-- pe -->
 	  </Description>
 	</em:targetApplication>
 

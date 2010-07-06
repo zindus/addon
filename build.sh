@@ -27,7 +27,7 @@
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.21 2009-11-04 21:12:25 cvsuser Exp $
+# $Id: build.sh,v 1.22 2010-07-06 05:43:05 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -110,17 +110,19 @@ DOWNLOAD_DIR=http://www.zindus.com/download/xpi
 app[0]='tb';
 app[1]='sm';
 app[2]='pb';
-app[3]='sb';
+app[3]='pe';
+app[4]='sb';
 # app[4]='ff';
 
 app_id[0]='\{3550f703-e582-4d05-9a08-453d09bdfdc6\}';
 app_id[1]='\{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a\}';
 app_id[2]='postbox@postbox-inc.com';
-app_id[3]='\{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c\}';
+app_id[3]='express@postbox-inc.com';
+app_id[4]='\{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c\}';
 # app_id[4]='\{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}';
 # when you get around to adding firefox: (1) uncomment above (2) change app_indexes (3) add a stanza to update.rdf (4) add to install.rdf
 
-app_indexes="0 1 2 3"
+app_indexes="0 1 2 3 4"
 
 for i in $app_indexes; do
   minversion[$i]=`sed -r "s#<em:minVersion>(.*)</em:minVersion>.*${app[$i]}#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
