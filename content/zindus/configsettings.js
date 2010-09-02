@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.46 2010-05-24 09:36:48 cvsuser Exp $
+// $Id: configsettings.js,v 1.47 2010-09-02 04:38:50 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -261,7 +261,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			rowid           = dId("cs-account-tree").currentIndex;
 			let old_account = this.m_accounts[rowid];
 
-			Filesystem.removeZfc(FeedCollection.zfcFileNameFromSourceid(old_account.sourceid)); // so that the sharing grants are gone
+			Filesystem.removeZfcs();  // always start afresh
 
 			this.m_logger.debug("account-delete: rowid: " + rowid + " username: " + old_account.username);
 

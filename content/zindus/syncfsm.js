@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.275 2010-06-30 17:36:16 cvsuser Exp $
+// $Id: syncfsm.js,v 1.276 2010-09-02 04:38:50 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2379,7 +2379,13 @@ SyncFsm.prototype.entryActionLoadTbGenerator = function(state)
 		this.debug("loadTb: gd_ab_name_public: " + gd_ab_name_public + " gd_ab_name_internal: " + gd_ab_name_internal);
 	}
 
+	this.state.stopwatch.mark(state + " before loading addressbooks");
+	yield true;
+
 	let tb_cc_meta = this.loadTbAddressBooks(re_gd_ab_names);  // 4. merge the current tb luid map with the current addressbook(s)
+
+	this.state.stopwatch.mark(state + " after loading addressbooks");
+	yield true;
 
 	if (this.formatPr() == FORMAT_GD)
 	{
@@ -2913,7 +2919,7 @@ SyncFsm.prototype.loadTbLocaliseEmailedContacts = function()
 
 SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 {
-	let msg          = "loadTbGoogleSystemGroupPrepare: ";
+	let msg          = "loadTbGoogleSystemGroupPrepare: \n";
 	let self         = this;
 	let zfiStatus    = StatusBarState.toZfi();
 	let data_version = zfiStatus ? zfiStatus.getOrNull('appversion') : "";
@@ -2949,8 +2955,7 @@ SyncFsm.prototype.loadTbGoogleSystemGroupPrepare = function()
 		for (system_group_name in ContactGoogleStatic.systemGroups(this.account())) {
 			[ ab_localised, uri ] = get_ab(system_group_name);
 
-			this.debug("loadTbGoogleSystemGroupPrepare: system_group_name: " + system_group_name +
-			                        " ab_localised: " + ab_localised + " uri: " + uri);
+			msg += " system_group_name: " + system_group_name + " ab_localised: " + ab_localised + " uri: " + uri + "\n";
 
 			if (!uri)
 				for (var old_translation in PerLocaleStatic.all_translations_of(system_group_name)) {
@@ -4142,11 +4147,12 @@ SyncFsm.prototype.updateGidFromSourcesSanityCheck = function()
 SyncFsm.prototype.twiddleMaps = function(state)
 {
 	let generator;
+	let a_gid_of_removed_suggested_contacts = new Object();
 
 	if (this.formatPr() == FORMAT_GD) {
 		if (this.is_slow_sync()) {
 			if (this.account().gd_suggested == 'ignore') {
-				generator = this.twiddleMapsToRemoveFromTbGdSuggestedContacts();
+				generator = this.twiddleMapsToRemoveFromTbGdSuggestedContacts(a_gid_of_removed_suggested_contacts);
 				do { yield true; } while (generator.next());
 			}
 
@@ -4162,7 +4168,7 @@ SyncFsm.prototype.twiddleMaps = function(state)
 
 	if (this.is_slow_sync()) {
 		this.state.stopwatch.mark(state + " before twiddleMapsForFieldMigration: ");
-		generator = this.twiddleMapsForFieldMigration();
+		generator = this.twiddleMapsForFieldMigration(a_gid_of_removed_suggested_contacts);
 		do { yield true; } while (generator.next());
 
 		if ((this.formatPr() == FORMAT_GD) && AppInfo.is_photo()) {
@@ -4186,7 +4192,7 @@ SyncFsm.prototype.twiddleMaps = function(state)
 // b) the ones that didn't twin will get removed from the gid and zfc and not generate ADD operations.
 //
 
-SyncFsm.prototype.twiddleMapsToRemoveFromTbGdSuggestedContacts = function()
+SyncFsm.prototype.twiddleMapsToRemoveFromTbGdSuggestedContacts = function(a_gid_of_removed_suggested_contacts)
 {
 	let sourceid_tb = this.state.sourceid_tb;
 	let sourceid_gd = this.state.sourceid_pr;
@@ -4222,6 +4228,7 @@ SyncFsm.prototype.twiddleMapsToRemoveFromTbGdSuggestedContacts = function()
 
 						self.backdateZfcForcingItToLose(sourceid_tb, luid_tb);
 						msg += " tb contact matches a suggested contact so backdating tb to force it to lose and be deleted";
+						a_gid_of_removed_suggested_contacts[zfi.key()] = true;
 					}
 
 					self.debug_continue(msg);
@@ -4350,7 +4357,7 @@ SyncFsm.prototype.twiddleMapsForGdPostalAddressGenerator = function()
 // else if the remote contact has data in one of the to-be-migrated fields and tb doesn't then 
 //     tick the tb version backwards to force remote to win
 // 
-SyncFsm.prototype.twiddleMapsForFieldMigration = function()
+SyncFsm.prototype.twiddleMapsForFieldMigration = function(a_gid_of_removed_suggested_contacts)
 {
 	var sourceid_tb = this.state.sourceid_tb;
 	var sourceid_pr = this.state.sourceid_pr;
@@ -4390,7 +4397,10 @@ SyncFsm.prototype.twiddleMapsForFieldMigration = function()
 
 						if (is_ok == 'same')
 							msg += " was already backdated";
-						else {
+						else if (zfi.key() in a_gid_of_removed_suggested_contacts) {
+							// See bugfix #272
+							msg += " would have migrated contact but " + is_backdated + " was backdated because it was suggested";
+						} else {
 							zinAssertAndLog(is_ok == 'conflict', is_ok);
 							self.deTwin(zfi.key());
 							msg += " but we already backdated " + is_backdated + " - deTwin to avoid data loss";

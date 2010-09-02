@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.36 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.37 2010-09-02 04:38:50 cvsuser Exp $
 
 function GoogleData()
 {
@@ -375,6 +375,7 @@ set_properties : function(properties_in) {
 
 	// logger().debug("ContactGoogle: set_properties: 1: properties: " + aToString(properties));
 
+	try {
 	with (ContactGoogleStatic) {
 		if (imask & mask.title) {
 			// only ever modify - never add or delete <title> here
@@ -548,6 +549,12 @@ set_properties : function(properties_in) {
 
 		if (is_added_organization)
 			entry.* += organization;
+	}
+	}
+	catch (ex) {
+		// better debugging for issue #266
+		logger().fatal("exception encountered in contact setter:\n properties_in: " + aToString(properties_in) + "\n xml: " + this.toString());
+		zinAssertCatch(ex);
 	}
 
 	this.m_properties = null;
