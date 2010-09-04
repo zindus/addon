@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.37 2010-09-02 04:38:50 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.38 2010-09-04 16:48:44 cvsuser Exp $
 
 function GoogleData()
 {
@@ -491,7 +491,17 @@ set_properties : function(properties_in) {
 						is_added_organization = true;
 					}
 					r = rightOfChar(key, '_');
+					try {
 					organization.* += <gd:{r} xmlns:gd={Xpath.NS_GD} >{properties[key]}</gd:{r}>;
+					} catch (ex) {
+						// better debugging for issue #266
+						logger().fatal("exception encountered in organisation setter:\n" +
+						   " is_added_organization: " + is_added_organization + " " +
+						   " organization: " + organization.toString() + " " +
+						   " properties[key]: " + properties[key]);
+						zinAssertCatch(ex);
+					}
+
 					break;
 				case "email1":
 				case "email2":
