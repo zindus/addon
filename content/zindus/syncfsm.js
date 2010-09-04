@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.276 2010-09-02 04:38:50 cvsuser Exp $
+// $Id: syncfsm.js,v 1.277 2010-09-04 16:13:11 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4925,6 +4925,8 @@ SyncFsm.prototype.getContactPropertiesNormalised = function(sourceid, luid, cont
 
 	let properties = this.getContactAsTbProperties(sourceid, luid, contact_converter);
 
+	// this.debug("getContactPropertiesNormalised: 1. sourceid/luid: " + sourceid + "/=" + luid + " returns: " + aToString(properties));
+
 	// This is why slow sync doesn't notice differences in _AimScreenName for example ... even though it is synced b/n tb and google
 	//
 	contact_converter.removeKeysNotCommonToAllFormats(FORMAT_TB, properties);
@@ -4934,8 +4936,7 @@ SyncFsm.prototype.getContactPropertiesNormalised = function(sourceid, luid, cont
 	if (this.formatPr() == FORMAT_GD)
 		ContactGoogle.transformTbProperties(ContactGoogle.eTransform.kAll, properties);
 
-	// this.state.m_logger.debug("getContactPropertiesNormalised: sourceid: " + sourceid + " luid=" + luid +
-	//                           " returns: " properties: " + aToString(properties));
+	// this.debug("getContactPropertiesNormalised: sourceid/luid: " + sourceid + "/=" + luid + " returns: " + aToString(properties));
 
 	return properties;
 }

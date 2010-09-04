@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.62 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: contactconverter.js,v 1.63 2010-09-04 16:13:11 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -221,6 +221,10 @@ setup : function(style) {
 	// m_map[FORMAT_ZM][email] == 4
 	// m_equivalents[4][FORMAT_TB] = "PrimaryEmail";
 
+
+	for (j = 0; j < A_VALID_FORMATS.length;  j++) // this is a precondition for removeKeysNotCommonToAllFormats to work
+		zinAssertAndLog(A_VALID_FORMATS[j] in this.m_equivalents[0], "m_equivalents is missing format: " + A_VALID_FORMATS[j]);  
+
 	this.m_common_to = new Object();
 
 	for (j = 0; j < A_VALID_FORMATS.length;  j++)
@@ -405,7 +409,11 @@ isKeyConverted : function(format_to, format_from, key) {
 
 	let index_to = this.m_map[format_from][key];
 
-	return typeof(index_to) != 'undefined' && this.m_equivalents[index_to][format_to] != null;
+	let ret = typeof(index_to) != 'undefined' && this.m_equivalents[index_to][format_to] != null;
+
+	//this.m_logger.debug("isKeyConverted: format_to: " + format_to + " format_from: " + format_from + " key: " + key + " returns: " + ret);
+
+	return ret;
 },
 
 // We have to normalise the order in which we iterate through the properties so that two hashes with the same
