@@ -124,13 +124,11 @@
 				<hbox> <!-- zimbra -->
 					<vbox id="ca-zm-vbox" >
 						<label value="&zindus.ca.zimbra.gal.label;" />
-						<menulist id="ca-zm-gal-menulist" >
-							<menupopup>
-								<menuitem id="ca-zm-gal-yes"      label="&zindus.ca.zimbra.gal.yes.label;" />
-								<menuitem id="ca-zm-gal-if-fewer" label="" /> <!-- selected in initialiseView after label is set -->
-								<menuitem id="ca-zm-gal-no"       label="&zindus.ca.zimbra.gal.no.label;" />
-							</menupopup>
-						</menulist>
+						<radiogroup id="ca-zm-gal-radiogroup" orient="vertical" >
+							<radio id="ca-zm-gal-yes"      label="&zindus.ca.zimbra.gal.yes.label;" />
+							<radio id="ca-zm-gal-if-fewer" label="" selected="true" /> <!-- set in initialiseView() -->
+							<radio id="ca-zm-gal-no"       label="&zindus.ca.zimbra.gal.no.label;" />
+						</radiogroup>
 					</vbox>
 					<spacer flex="1"/> 
 				</hbox>

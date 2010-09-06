@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.40 2010-03-02 10:13:45 cvsuser Exp $
+// $Id: configaccount.js,v 1.41 2010-09-06 05:14:10 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -193,9 +193,9 @@ ConfigAccount.prototype = {
 			let is_free_fr       = is_url_free_fr(url);
 
 			if (is_free_fr || is_share_service)
-				ConfigAccountStatic.setRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap, "no");
+				ConfigAccountStatic.setRadio("ca-zm-gal-radiogroup", this.m_gal_radio_bimap, "no");
 
-			xulSetAttribute('disabled', is_free_fr || is_share_service, "ca-zm-gal-menulist");
+			xulSetAttribute('disabled', is_free_fr || is_share_service, "ca-zm-gal-radiogroup");
 		}
 	},
 	initialiseView : function() {
@@ -227,7 +227,7 @@ ConfigAccount.prototype = {
 				v = account.gd_gr_as_ab;         setRadio("ca-gd-gr-as-ab-radiogroup",  self.m_gd_gr_as_ab_bimap,  v ? v : 'false');
 				v = account.gd_suggested;        setRadio("ca-gd-suggested-radiogroup", self.m_gd_suggested_bimap, v ? v : 'include');
 				v = account.gd_sync_with;        setRadio("ca-gd-syncwith-radiogroup",  self.m_gd_sync_with_bimap, v ? v : 'pab');
-				v = account.zm_sync_gal_enabled; setRadio("ca-zm-gal-menulist",         self.m_gal_radio_bimap,    v ? v : 'if-fewer');
+				v = account.zm_sync_gal_enabled; setRadio("ca-zm-gal-radiogroup",       self.m_gal_radio_bimap,    v ? v : 'if-fewer');
 			}
 		}
 
@@ -368,7 +368,7 @@ ConfigAccount.prototype = {
 				account.gd_sync_with = getValueFromRadio("ca-gd-syncwith-radiogroup",  this.m_gd_sync_with_bimap);
 			}
 			else {
-				account.zm_sync_gal_enabled = getValueFromRadio("ca-zm-gal-menulist", this.m_gal_radio_bimap);
+				account.zm_sync_gal_enabled = getValueFromRadio("ca-zm-gal-radiogroup", this.m_gal_radio_bimap);
 				account.zm_emailed_contacts = this.is_share_service() ? "false" : "true";
 			}
 
