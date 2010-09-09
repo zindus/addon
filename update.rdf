@@ -2,6 +2,28 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAKb0S4jJ30XGrj1RFMJ6n0SUwZSLtLUv/k2ugXSs1T5gOLW2pFnDtjYKa9HOBJQffmNueekVy5gIEJqCziNf0VWtV/OpRg9c1Dn4kQebLH1dV98N1VxW+SCSZhHECtefBKLp7Bd7GHbbUkPiqYPrTieF6L/GvdQMjZ5GzDMmF0RB">
+    <em:updates RDF:resource="rdf:#$qjjRS2"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$CjjRS2"
+                   em:id="postbox@postbox-inc.com"
+                   em:maxVersion="1.1.*"
+                   em:minVersion="1.0b13"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.25-tb+sm+pb+sb.xpi"
+                   em:updateHash="sha256:24551f31b329141dd73baac6ab478afe29a4d54248b518a4a4c2d940a16f9571" />
+  <RDF:Description RDF:about="rdf:#$AjjRS2"
+                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
+                   em:maxVersion="3.1.*"
+                   em:minVersion="2.0b2"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.25-tb+sm+pb+sb.xpi"
+                   em:updateHash="sha256:24551f31b329141dd73baac6ab478afe29a4d54248b518a4a4c2d940a16f9571" />
+  <RDF:Description RDF:about="rdf:#$BjjRS2"
+                   em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
+                   em:maxVersion="2.0.*"
+                   em:minVersion="2.0a1"
+                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.25-tb+sm+pb+sb.xpi"
+                   em:updateHash="sha256:24551f31b329141dd73baac6ab478afe29a4d54248b518a4a4c2d940a16f9571" />
   <RDF:Description RDF:about="rdf:#$rjjRS2"
                    em:version="0.8.25">
     <em:targetApplication RDF:resource="rdf:#$AjjRS2"/>
@@ -10,41 +32,19 @@
     <em:targetApplication RDF:resource="rdf:#$DjjRS2"/>
     <em:targetApplication RDF:resource="rdf:#$EjjRS2"/>
   </RDF:Description>
-  <RDF:Description RDF:about="rdf:#$AjjRS2"
-                   em:id="{3550f703-e582-4d05-9a08-453d09bdfdc6}"
-                   em:maxVersion="3.1.*"
-                   em:minVersion="2.0b2"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.25-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:a5efd083db971b9f1ab6aa18c27a4c4ecf82274dc04370e0ea04f886a1bea6d4" />
-  <RDF:Description RDF:about="rdf:#$DjjRS2"
-                   em:id="{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}"
-                   em:maxVersion="0.8.*"
-                   em:minVersion="0.4"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.25-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:a5efd083db971b9f1ab6aa18c27a4c4ecf82274dc04370e0ea04f886a1bea6d4" />
+  <RDF:Seq RDF:about="rdf:#$qjjRS2">
+    <RDF:li RDF:resource="rdf:#$rjjRS2"/>
+  </RDF:Seq>
   <RDF:Description RDF:about="rdf:#$EjjRS2"
                    em:id="express@postbox-inc.com"
                    em:maxVersion="1.0.*"
                    em:minVersion="1.0.*"
                    em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.25-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:a5efd083db971b9f1ab6aa18c27a4c4ecf82274dc04370e0ea04f886a1bea6d4" />
-  <RDF:Description RDF:about="rdf:#$BjjRS2"
-                   em:id="{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}"
-                   em:maxVersion="2.0.*"
-                   em:minVersion="2.0a1"
+                   em:updateHash="sha256:24551f31b329141dd73baac6ab478afe29a4d54248b518a4a4c2d940a16f9571" />
+  <RDF:Description RDF:about="rdf:#$DjjRS2"
+                   em:id="{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}"
+                   em:maxVersion="0.8.*"
+                   em:minVersion="0.4"
                    em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.25-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:a5efd083db971b9f1ab6aa18c27a4c4ecf82274dc04370e0ea04f886a1bea6d4" />
-  <RDF:Description RDF:about="rdf:#$CjjRS2"
-                   em:id="postbox@postbox-inc.com"
-                   em:maxVersion="1.1.*"
-                   em:minVersion="1.0b13"
-                   em:updateLink="http://www.zindus.com/download/xpi/zindus-0.8.25-tb+sm+pb+sb.xpi"
-                   em:updateHash="sha256:a5efd083db971b9f1ab6aa18c27a4c4ecf82274dc04370e0ea04f886a1bea6d4" />
-  <RDF:Seq RDF:about="rdf:#$qjjRS2">
-    <RDF:li RDF:resource="rdf:#$rjjRS2"/>
-  </RDF:Seq>
-  <RDF:Description RDF:about="urn:mozilla:extension:{ad7d8a66-253b-11dc-977c-000c29a3126e}"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAKo/vY2blODskUIXj9+sNgSeaFzS4G+xtM17CC9dkyj0A3H+6uevA0/1MUecgn9Co09ObwELi3mzk76BxRkfxkpI193ApiGL2v/2qfYaCNOnuRkypRt0Thb7b/kNMNpYOwxT+U+e4d1tEVGFomIGq2vVSQ6HOjVYG2clyQu0SPaG">
-    <em:updates RDF:resource="rdf:#$qjjRS2"/>
-  </RDF:Description>
+                   em:updateHash="sha256:24551f31b329141dd73baac6ab478afe29a4d54248b518a4a4c2d940a16f9571" />
 </RDF:RDF>
