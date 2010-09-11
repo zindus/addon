@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.277 2010-09-04 16:13:11 cvsuser Exp $
+// $Id: syncfsm.js,v 1.278 2010-09-11 10:52:38 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -3812,19 +3812,21 @@ SyncFsm.prototype.setTwin = function(sourceid, luid, sourceid_tb, luid_tb, rever
 
 SyncFsm.prototype.deTwin = function(gid)
 {
-	var zfcGid      = this.state.zfcGid;
-	var sourceid_pr = this.state.sourceid_pr;
-	var luid_pr     = zfcGid.get(gid).get(this.state.sourceid_pr);
-	var gid_new;
+	with (this.helpfulInScope()) {
+		let luid_pr  = zfcGid.get(gid).get(sourceid_pr);
+		let luid_tb  = zfcGid.get(gid).get(sourceid_tb);
 
-	zfcGid.get(gid).del(sourceid_pr);
-	delete this.state.aReverseGid[sourceid_pr][luid_pr];
+		zfcGid.get(gid).del(sourceid_pr);
+		zfcGid.get(gid).del(FeedItem.ATTR_VER);
+		delete aReverseGid[sourceid_pr][luid_pr];
 
-	gid_new = SyncFsm.addToGid(zfcGid, sourceid_pr, luid_pr, this.state.aReverseGid);
+		let gid_new = SyncFsm.addToGid(zfcGid, sourceid_pr, luid_pr, aReverseGid);
 
-	zfcGid.get(gid_new).del(FeedItem.ATTR_PRES);
+		zfcGid.get(gid_new).del(FeedItem.ATTR_PRES);
 
-	this.zfc(sourceid_pr).get(luid_pr).del(FeedItem.ATTR_LS);
+		zfcPr.get(luid_pr).del(FeedItem.ATTR_LS);
+		zfcTb.get(luid_tb).del(FeedItem.ATTR_LS);
+	}
 }
 
 SyncFsm.prototype.updateGidDoChecksumsGenerator = function()
@@ -6020,6 +6022,20 @@ SyncFsm.prototype.suoToParts = function(suo)
 	return ret;
 }
 
+SyncFsm.prototype.helpfulInScope = function()
+{
+	let ret = new Object();
+	
+	ret.sourceid_tb = this.state.sourceid_tb;
+	ret.sourceid_pr = this.state.sourceid_pr;
+	ret.zfcGid      = this.state.zfcGid;
+	ret.zfcTb       = this.state.sources[ret.sourceid_tb]['zfcLuid'];
+	ret.zfcPr       = this.state.sources[ret.sourceid_pr]['zfcLuid'];
+	ret.aReverseGid = this.state.aReverseGid;
+
+	return ret;
+}
+
 // Test that we're not going to try to create a shared addressbook in Zimbra
 // Slow Sync ==> test that for all the zindus+ and zindus- addressbooks in zfcTb, there's a TYPE_SF item in zfcZm with the same name
 // Fast Sync ==> test that     all the zindus+ and zindus- addressbooks in zfcTb have an entry in the gid
@@ -6463,6 +6479,11 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		this.state.stopwatch.mark(state + " buildGcs: " + this.state.m_progress_count++);
 		this.state.m_progress_yield_text = "buildGcs";
 		yield true;
+
+	// TODO
+	this.debug("entryActionConverge: after twiddle: zfcTb:\n" + this.zfcTb().toString());
+	this.debug("entryActionConverge: after twiddle: zfcPr:\n" + this.zfcPr().toString());
+	this.debug("entryActionConverge: after twiddle: zfcGid:\n" + this.state.zfcGid.toString());
 
 		generator = this.buildGcsGenerator();                // 3. reconcile the sources (via the gid) into a single truth
 	                                                         //    winners and conflicts are identified here
