@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.278 2010-09-11 10:52:38 cvsuser Exp $
+// $Id: syncfsm.js,v 1.279 2010-09-11 10:53:21 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6479,11 +6479,6 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		this.state.stopwatch.mark(state + " buildGcs: " + this.state.m_progress_count++);
 		this.state.m_progress_yield_text = "buildGcs";
 		yield true;
-
-	// TODO
-	this.debug("entryActionConverge: after twiddle: zfcTb:\n" + this.zfcTb().toString());
-	this.debug("entryActionConverge: after twiddle: zfcPr:\n" + this.zfcPr().toString());
-	this.debug("entryActionConverge: after twiddle: zfcGid:\n" + this.state.zfcGid.toString());
 
 		generator = this.buildGcsGenerator();                // 3. reconcile the sources (via the gid) into a single truth
 	                                                         //    winners and conflicts are identified here
