@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.279 2010-09-11 10:53:21 cvsuser Exp $
+// $Id: syncfsm.js,v 1.280 2010-09-11 16:30:45 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -8719,6 +8719,30 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 				this.debug(msg);
 			}
 		}
+
+	// assert integrity re: bug #276
+	// if suo.count() > 0, reload the FeedCollection files to roughly validate that what we wrote is what we get back
+	//
+	{
+		let fn = function(sourceid, bucket) { return true; }
+		let count = Suo.count(this.state.aSuo, fn);
+
+		this.debug("entryActionCommit: suo count: " + count);
+
+		if (count > 0) {
+			for (sourceid in this.state.sources) {
+				let filename = FeedCollection.zfcFileNameFromSourceid(sourceid);
+				let zfc = new FeedCollection();
+				zfc.filename(filename);
+				zfc.load();
+
+				if (zfc.length() != this.zfc(sourceid).length())
+					zinAssertAndLog(false, "sourceid: " + sourceid +
+					                       "zfc written:" + this.zfc(sourceid).toString() +
+					                       "zfc loaded:"  + zfc.toString());
+			}
+		}
+	}
 
 	continuation('evNext');
 }
