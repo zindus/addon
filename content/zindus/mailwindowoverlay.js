@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.68 2010-06-03 02:06:25 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.69 2010-09-12 16:11:45 cvsuser Exp $
 
 includejs("uninstall.js");
 
@@ -432,8 +432,7 @@ ZinMailWindowOverlay.prototype.migratePasswords = function()
 	//
 	if (("@mozilla.org/passwordmanager;1" in Components.classes) && (password_version_old == "notset"))
 	{
-		let accounts = AccountStatic.arrayLoadFromPrefset();
-		let url      = "https://www.google.com/accounts/ClientLogin/AuthToken";
+		let url = "https://www.google.com/accounts/ClientLogin/AuthToken";
 
 		pm.del(url, "username");
 

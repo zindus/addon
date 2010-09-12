@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.280 2010-09-11 16:30:45 cvsuser Exp $
+// $Id: syncfsm.js,v 1.281 2010-09-12 16:11:45 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -638,20 +638,16 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	var zfcLastSync = this.state.zfcLastSync;
 
-	if (sfcd.is_first_in_chain())
-	{
-		if (!is_reset && !zfcLastSync.isPresent(FeedItem.KEY_LASTSYNC_COMMON))
-		{
+	if (sfcd.is_first_in_chain()) {
+		if (!is_reset && !zfcLastSync.isPresent(FeedItem.KEY_LASTSYNC_COMMON)) {
 			is_reset = true;
 			msg_reset += "a critical lastsync key isn't present.";
 		}
 
-		if (!is_reset)
-		{
-			var account_signature = zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('account_signature');
+		if (!is_reset) {
+			let account_signature = zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('account_signature');
 
-			if (account_signature != sfcd.signature())
-			{
+			if (account_signature != sfcd.signature()) {
 				is_reset = true;
 				msg_reset += "account_signature changed.  last: " + account_signature + " now: " + sfcd.signature();
 			}
@@ -659,13 +655,18 @@ SyncFsm.prototype.entryActionLoadGenerator = function(state)
 
 	    if (!is_reset && this.formatPr() == FORMAT_GD && 
 		      zfcLastSync.get(FeedItem.KEY_LASTSYNC_COMMON).getOrNull('gd_is_sync_postal_address') !=
-			    String(this.state.gd_is_sync_postal_address))
-		{
+			    String(this.state.gd_is_sync_postal_address)) {
 			is_reset = true;
 			msg_reset += "gd_is_sync_postal_address changed";
 		}
 
 		this.debug("entryActionLoad: " + (is_reset ? msg_reset : "is_reset: false"));
+	}
+
+	if (is_reset) {
+		Filesystem.removeZfcs();
+		a_zfc[Filesystem.eFilename.LASTSYNC].empty();
+		this.debug("entryActionLoad: removed zfcs");
 	}
 
 	this.state.stopwatch.mark(state + " 2");
@@ -7210,9 +7211,11 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 
 			this.state.m_a_remote_update_package.m_c_used_in_current_batch = i;
 
-			this.debug("entryActionUpdateZm: m_a_remote_update_package: " + aToString(this.state.m_a_remote_update_package));
+			this.debug("entryActionUpdateZm: m_a_remote_update_package: " + aToString(this.state.m_a_remote_update_package) +
+			           " length: " + this.state.m_a_remote_update_package.length);
 
 			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch != 0);
+			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch <= this.state.m_a_remote_update_package.length);
 			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch <= MAX_BATCH_SIZE);
 		}
 		else
@@ -7630,12 +7633,13 @@ SyncFsm.prototype.exitActionUpdateZmHttp = function(state, event)
 								     [ remote.method + " " + aToString(remote.arg) ] );
 	}
 	else {
-		this.debug("exitActionUpdateZmHttp: shifting: " + this.state.m_a_remote_update_package.m_c_used_in_current_batch);
-
 		zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch != 0);
 
 		for (var i = 0; i < this.state.m_a_remote_update_package.m_c_used_in_current_batch; i++)
 			this.state.m_a_remote_update_package.shift();
+
+		this.debug("exitActionUpdateZmHttp: shifted: " + this.state.m_a_remote_update_package.m_c_used_in_current_batch +
+		                               " new length: " + this.state.m_a_remote_update_package.length);
 	}
 
 	this.state.m_logger.debug(msg);
