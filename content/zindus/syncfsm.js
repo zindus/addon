@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.281 2010-09-12 16:11:45 cvsuser Exp $
+// $Id: syncfsm.js,v 1.282 2010-09-15 06:41:39 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -7193,34 +7193,38 @@ SyncFsm.prototype.entryActionUpdateZm = function(state, event, continuation)
 		} while (is_more_ops &&
 		         this.state.m_a_remote_update_package.length < MAX_BATCH_SIZE &&
 				 !key_suo.isEqual(this.state.m_suo_last_in_bucket[key_suo.bucket]));
-
-		if (this.state.m_a_remote_update_package.length != 0) {
-			// work out how many we're going to process in the next batch
-			//
-			let i;
-			if (this.state.m_a_remote_update_package[0].remote.method in ZmSoapDocument.complexMethod)
-				i = 1; // do these one at a time
-			else {
-				let zid = this.state.m_a_remote_update_package[0].remote.zid;
-
-				for (i = 0; (i < this.state.m_a_remote_update_package.length) &&
-						    (zid == this.state.m_a_remote_update_package[i].remote.zid) &&
-						    !(this.state.m_a_remote_update_package[i].remote.method in ZmSoapDocument.complexMethod); i++)
-					;
-			}
-
-			this.state.m_a_remote_update_package.m_c_used_in_current_batch = i;
-
-			this.debug("entryActionUpdateZm: m_a_remote_update_package: " + aToString(this.state.m_a_remote_update_package) +
-			           " length: " + this.state.m_a_remote_update_package.length);
-
-			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch != 0);
-			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch <= this.state.m_a_remote_update_package.length);
-			zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch <= MAX_BATCH_SIZE);
-		}
-		else
-			this.state.m_a_remote_update_package.m_c_used_in_current_batch = 0;
 	}
+
+	if (this.state.m_a_remote_update_package.length != 0) {
+		// work out how many we're going to process in the next batch
+		//
+		let i;
+		let msg = "";
+		if (this.state.m_a_remote_update_package[0].remote.method in ZmSoapDocument.complexMethod) {
+			i = 1; // do these one at a time
+			msg += " complex method: i: " + i;
+		}
+		else {
+			let zid = this.state.m_a_remote_update_package[0].remote.zid;
+
+			for (i = 0; (i < this.state.m_a_remote_update_package.length) &&
+					    (zid == this.state.m_a_remote_update_package[i].remote.zid) &&
+					    !(this.state.m_a_remote_update_package[i].remote.method in ZmSoapDocument.complexMethod); i++)
+				;
+			msg += " use up unless zid changes: i: " + i;
+		}
+
+		this.state.m_a_remote_update_package.m_c_used_in_current_batch = i;
+
+		this.debug("entryActionUpdateZm: msg: " + msg + " m_a_remote_update_package: { " + aToString(this.state.m_a_remote_update_package) +
+		           "} length: " + this.state.m_a_remote_update_package.length);
+
+		zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch != 0);
+		zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch <= this.state.m_a_remote_update_package.length);
+		zinAssert(this.state.m_a_remote_update_package.m_c_used_in_current_batch <= MAX_BATCH_SIZE);
+	}
+	else
+		this.state.m_a_remote_update_package.m_c_used_in_current_batch = 0;
 
 	continuation('evNext');
 }
