@@ -10,6 +10,7 @@ locale  zindus       it-IT            locale/it-IT/zindus/
 locale  zindus       nl-NL            locale/nl-NL/zindus/
 locale  zindus       pt-BR            locale/pt-BR/zindus/
 locale  zindus       ru-RU            locale/ru-RU/zindus/
+locale  zindus       sv-SE            locale/sv-SE/zindus/
 locale  zindus       uk-UA            locale/uk-UA/zindus/
 
 # incomplete translations here for babelzilla

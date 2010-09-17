@@ -1,0 +1,54 @@
+<!ENTITY zindus.ca.account.type.label "Synkronisera med">
+<!ENTITY zindus.ca.google.suggested.contacts.label "Googles föreslagna kontakter">
+<!ENTITY zindus.ca.google.suggested.ignore.label "Ignorera">
+<!ENTITY zindus.ca.google.suggested.include.label "Inkludera">
+<!ENTITY zindus.ca.google.sync.with.label "Synka Google Kontakter med">
+<!ENTITY zindus.ca.google.sync.with.pab.label "Personlig adressbok">
+<!ENTITY zindus.ca.group.login.details.label "Inloggningsuppgifter">
+<!ENTITY zindus.ca.group.pap.label "För det här kontot">
+<!ENTITY zindus.ca.password.label "Lösenord:">
+<!ENTITY zindus.ca.test.connection.accesskey "T">
+<!ENTITY zindus.ca.test.connection.label "Testa anslutningen">
+<!ENTITY zindus.ca.url.description.value "Skriv den URL som du använder för att logga in på servern.<html:br/>Exempel: https://minepost.exempel.se">
+<!ENTITY zindus.ca.url.label "Serveradress:">
+<!ENTITY zindus.ca.username.description.value "Skriv den e-postadress och det lösenord du använder för att logga in.">
+<!ENTITY zindus.ca.username.label "E-postadress:">
+<!ENTITY zindus.ca.zimbra.gal.label "Global adresslista (GAL): ">
+<!ENTITY zindus.ca.zimbra.gal.no.label "Nej">
+<!ENTITY zindus.ca.zimbra.gal.yes.label "Ja">
+<!ENTITY zindus.cg.postal.caption.label "Postala adressfält">
+<!ENTITY zindus.cg.postal.false.label "Synka inte (rekommenderas)">
+<!ENTITY zindus.cg.postal.true.label "Thunderbird-fält visas som XML hos Google">
+<!ENTITY zindus.cg.rule.ask.me.label "Fråga mig">
+<!ENTITY zindus.cg.rule.caption.label "Hantering av brott mot Google Kontakters regler">
+<!ENTITY zindus.cg.rule.dont.ask.label "Fråga inte. Ta bort kontakter för att lösa regelbrott">
+<!ENTITY zindus.cg.title "Avancerade Google-alternativ för Zindus">
+<!ENTITY zindus.cs.account.add.accesskey "L">
+<!ENTITY zindus.cs.account.add.label "Lägg till">
+<!ENTITY zindus.cs.account.addressbook.label "Adressbok">
+<!ENTITY zindus.cs.account.delete.accesskey "T">
+<!ENTITY zindus.cs.account.delete.label "Ta bort">
+<!ENTITY zindus.cs.account.edit.accesskey "R">
+<!ENTITY zindus.cs.account.edit.label "Redigera">
+<!ENTITY zindus.cs.account.email.label "E-postadress">
+<!ENTITY zindus.cs.accounts.label "Konton">
+<!ENTITY zindus.cs.buttonlabelextra2 "Hjälp">
+<!ENTITY zindus.cs.general.actions.label "Åtgärder">
+<!ENTITY zindus.cs.general.auto.sync.label "Automatisk synkning">
+<!ENTITY zindus.cs.general.button.gd.advanced.accesskey "G">
+<!ENTITY zindus.cs.general.button.gd.advanced.label "Avancerade Google-alternativ">
+<!ENTITY zindus.cs.general.button.reset.accesskey "Å">
+<!ENTITY zindus.cs.general.button.reset.label "Återställ">
+<!ENTITY zindus.cs.general.button.sync.now.accesskey "S">
+<!ENTITY zindus.cs.general.button.sync.now.label "Synka nu">
+<!ENTITY zindus.cs.general.settings.label "Inställningar">
+<!ENTITY zindus.cs.general.verbose.logging.label "Detaljerad loggning">
+<!ENTITY zindus.cs.title "Inställningar för Zindus">
+<!ENTITY zindus.gr.button.accept.label "Bekräfta">
+<!ENTITY zindus.gr.title "Brott mot Google Kontakters regler">
+<!ENTITY zindus.mo.menuitem.accesskey "z">
+<!ENTITY zindus.mo.menuitem.label "Zindus">
+<!ENTITY zindus.sb.settings.label "Inställningar">
+<!ENTITY zindus.sw.title "Synkning med Zindus">
+<!ENTITY zindus.up.show.again.label "Visa den här dialogen nästa gång">
+<!ENTITY zindus.cs.sharing.label "Delning">
