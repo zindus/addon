@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.130 2010-05-24 09:36:49 cvsuser Exp $
+// $Id: testharness.js,v 1.131 2011-04-24 12:41:01 cvsuser Exp $
 
 function TestHarness()
 {
@@ -76,6 +76,7 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testContactGoogleIssue185();
 	// ret = ret && this.testContactGoogleIssue202();
 	// ret = ret && this.testContactGoogleIssue211();
+	ret = ret && this.testContactGoogleIssue266();
 	// ret = ret && this.testContactGoogleIterators();
 	// ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
@@ -1686,6 +1687,91 @@ TestHarness.prototype.testContactGoogleIssue211 = function()
 	let abCard = addressbook.addCard(uri, properties, attributes);
 }
 
+// leni TODO
+// completely forgotton what was been tested here!
+//
+TestHarness.prototype.testContactGoogleIssue266 = function()
+{
+	var xmlString = "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:gContact='http://schemas.google.com/contact/2008' xmlns:gd='http://schemas.google.com/g/2005' gd:etag='&quot;Qn4zeDVSLyt7ImA9Wx5WEEQJRww.&quot;'><id>http://www.google.com/m8/feeds/contacts/xxx%40gmail.com/base/1bce32b609b6606a</id><updated>2010-09-21T18:18:03.080Z</updated><app:edited xmlns:app='http://www.w3.org/2007/app'>2010-09-21T18:18:03.080Z</app:edited><category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/contact/2008#contact'/><title>acme Lastname</title><content>US</content> <link rel='http://schemas.google.com/contacts/2008/rel#photo' type='image/*' href='https://www.google.com/m8/feeds/photos/media/xxx%40gmail.com/1bce32b609b6606a'/> <link rel='self' type='application/atom+xml' href='https://www.google.com/m8/feeds/contacts/xxx%40gmail.com/thin/1bce32b609b6606a'/><link rel='edit' type='application/atom+xml' href='https://www.google.com/m8/feeds/contacts/xxx%40gmail.com/thin/1bce32b609b6606a'/><gd:name><gd:fullName>acme Last</gd:fullName><gd:givenName>acme</gd:givenName><gd:familyName>LastName</gd:familyName></gd:name> \
+<gd:organization rel='http://schemas.google.com/g/2005#other'/> \
+<gd:organization rel='http://schemas.google.com/g/2005#work'><gd:orgName>Art in Action</gd:orgName><gd:orgDepartment>SLX</gd:orgDepartment></gd:organization> \
+<gd:organization rel='http://schemas.google.com/g/2005#work'><gd:orgName>Art in Action</gd:orgName></gd:organization> \
+<gd:organization primary='true' rel='http://schemas.google.com/g/2005#other'><gd:orgName>Art in Action</gd:orgName></gd:organization> \
+<gd:email rel='http://schemas.google.com/g/2005#home' address='acme@example.com' primary='true'/><gd:email rel='http://schemas.google.com/g/2005#other' address='acme1@example.org'/><gd:im address='ABC' protocol='http://schemas.google.com/g/2005#AIM' rel='http://schemas.google.com/g/2005#other'/><gd:phoneNumber rel='http://schemas.google.com/g/2005#work'>(111) 123-3333</gd:phoneNumber><gd:structuredPostalAddress rel='http://schemas.google.com/g/2005#work'><gd:formattedAddress>123 Acme Ave Palo Alto,  CA  94301</gd:formattedAddress></gd:structuredPostalAddress><gContact:groupMembershipInfo deleted='false' href='http://www.google.com/m8/feeds/groups/xxx%40gmail.com/base/6'/></entry>";
+
+	var xml    = new XML(xmlString);
+	var nsAtom = Namespace(Xpath.NS_ATOM);
+	var b, x, str, key, value, enm, generator, contact, properties;
+
+	// this.m_logger.debug("testContactGoogle: xml: " + xml.toString());
+
+	if (false)
+	{
+		str = new String(xml.nsAtom::xxx);
+		b   = Boolean(xml.nsAtom::ie);
+		x   = xml.nsAtom::id;
+		this.m_logger.debug("testContactGoogle: xml: " + str + " str.length: " + str.length + " b: " + b + " x.length: " + x.length());
+	}
+
+	if (true)
+	{
+		contact = GoogleData.new(xmlString);
+
+		this.m_logger.debug("contact.toString: " + contact.toString());
+	}
+	
+	if (false)
+	{
+		contact = new ContactGoogle(xml);
+		this.m_logger.debug("contact.properties: " + aToString(contact.properties));
+	}
+
+	if (false)
+	{
+		contact = new ContactGoogle();
+		properties = {
+			'content' :              'a-content',
+			'organization_orgName':  'a-org-name',
+			'organization_orgTitle': 'a-org-title',
+			'phoneNumber_home':      'a-phone-home',
+			'im_AIM':                'a-im-AIM',
+			'email1':                'email1@e.com',
+			'email2':                'email2@e.com'
+		};
+
+		if (false) { // was: GD_API_VERSION == 3
+			properties['name_givenName']  = 'a-name-given';
+			properties['name_familyName'] = 'a-name-family';
+			properties['name_fullName']   = 'a-name-full';
+		}
+
+		// set all properties
+		contact.properties = properties;
+		this.m_logger.debug("contact.xml: " + contact.m_entry.toXMLString());
+		this.m_logger.debug("contact.properties: " + aToString(contact.properties));
+		this.m_logger.debug("properties: " + aToString(properties));
+		zinAssert(isMatchObjects(properties, contact.properties));
+
+		// delete some properties
+		//
+		delete properties['name_givenName'];
+		// delete properties['name_familyName'];
+		delete properties['name_fullName'];
+		delete properties['organization_orgName'];
+		delete properties['organization_orgTitle'];
+		delete properties['im_AIM'];
+		delete properties['email2'];
+		delete properties['title'];
+		// delete properties['phoneNumber_home'];
+		properties['phoneNumber_home'] = "";
+		contact.properties = properties;
+		this.m_logger.debug("contact.xml: " + contact.m_entry.toXMLString());
+		if (properties['phoneNumber_home'] == "") delete properties['phoneNumber_home'];
+		zinAssertAndLog(isMatchObjects(properties, contact.properties), "\n properties: " + aToString(properties) + "\n contact: " + aToString(contact.properties));
+	}
+
+	return true;
+}
 
 TestHarness.prototype.testContactGoogleIterators = function()
 {
