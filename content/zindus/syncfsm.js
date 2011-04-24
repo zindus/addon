@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.282 2010-09-15 06:41:39 cvsuser Exp $
+// $Id: syncfsm.js,v 1.283 2011-04-24 10:16:36 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2668,6 +2668,69 @@ SyncFsmGd.prototype.testForTbAbGdCiIntegrity = function()
 		this.zfcTb().forEach(functor);
 
 	return !this.state.stopFailCode;
+}
+
+SyncFsmGd.prototype.testForGoogleBug2567 = function()
+{
+	let sourceid_tb = this.state.sourceid_tb;
+	let sourceid_pr = this.state.sourceid_pr;
+	let zfcGid      = this.state.zfcGid;
+	let self        = this;
+	let passed      = true;
+
+	var functor_foreach_gid = {
+		run: function(zfi) {
+			let a_luid = newObject(sourceid_tb, false, sourceid_pr, false);
+			let count  = 0;
+			let luid, sourceid, zfc;
+
+			for (sourceid in a_luid) {
+				if (zfi.isPresent(sourceid)) {
+					zfc  = self.zfc(sourceid);
+					luid = zfi.get(sourceid);
+
+					if (zfc.get(luid).type() == FeedItem.TYPE_CN) {
+						if (zfc.get(luid).isPresent(FeedItem.ATTR_DEL)) {
+							count = 0;
+							break;
+						}
+						else {
+							count++;
+							a_luid[sourceid] = luid;
+						}
+					}
+				}
+			}
+
+			if (count == 1 && a_luid[sourceid_pr]) {
+				luid = a_luid[sourceid_pr];
+
+				if (self.zfc(sourceid_pr).get(luid).styp() == FeedItem.eStyp.gdci)
+					luid = self.zfc(sourceid_pr).get(luid).get(FeedItem.ATTR_GDID);
+
+				passed = (luid in self.state.a_gd_contact);
+
+				if (!passed) {
+					self.debug("testForGoogleBug2567: fails on: luid: " + luid);
+					self.debug("testForGoogleBug2567: a_luid: " + aToString(a_luid));
+					self.debug("testForGoogleBug2567: gid zfi: " + zfi.toString());
+				}
+			}
+
+			return passed;
+		}
+	};
+
+	if (!self.is_slow_sync())
+		zfcGid.forEach(functor_foreach_gid);
+
+	if (!passed) {
+		this.state.stopFailCode    = 'failon.known.bug';
+		this.state.stopFailArg     = [ stringBundleString("brand.google"), url("google-bug-2567") ];
+		this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
+	}
+
+	return passed;
 }
 
 SyncFsmGd.prototype.testForGoogleGroupNameIntegrity = function()
@@ -6444,10 +6507,8 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 	this.state.stopwatch.mark(state + " Converge: updateGidDoChecksums: " + this.state.m_progress_count++);
 
-	if (passed)
-	{
-		if (this.is_slow_sync())
-		{
+	if (passed) {
+		if (this.is_slow_sync()) {
 			this.state.m_progress_yield_text = "checksums";
 
 			generator = this.updateGidDoChecksumsGenerator();
@@ -6473,7 +6534,13 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		this.state.stopwatch.mark(state + " Converge: twiddle: " + this.state.m_progress_count++);
 		this.state.m_progress_yield_text = "twiddle";
 		yield true;
+	}
 
+	if (passed) {
+		passed = passed && this.testForGoogleBug2567();
+	}
+
+	if (passed) {
 		generator = this.twiddleMaps(state);
 		do { yield true; } while (generator.next());
 
