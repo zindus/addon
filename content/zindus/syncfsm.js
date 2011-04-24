@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.283 2011-04-24 10:16:36 cvsuser Exp $
+// $Id: syncfsm.js,v 1.284 2011-04-24 12:41:45 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6536,7 +6536,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 		yield true;
 	}
 
-	if (passed) {
+	if (passed && this.formatPr() == FORMAT_GD) {
 		passed = passed && this.testForGoogleBug2567();
 	}
 
