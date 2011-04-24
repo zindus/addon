@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.38 2010-09-04 16:48:44 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.39 2011-04-24 12:42:21 cvsuser Exp $
 
 function GoogleData()
 {
@@ -498,6 +498,7 @@ set_properties : function(properties_in) {
 						logger().fatal("exception encountered in organisation setter:\n" +
 						   " is_added_organization: " + is_added_organization + " " +
 						   " organization: " + organization.toString() + " " +
+						   " key: " + key +
 						   " properties[key]: " + properties[key]);
 						zinAssertCatch(ex);
 					}
