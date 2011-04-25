@@ -6,7 +6,7 @@
 
     <em:id>{ad7d8a66-253b-11dc-977c-000c29a3126e}</em:id>
 
-    <em:version>0.8.29.20110424.182853</em:version>  <!-- version populated by build script -->
+    <em:version>0.8.29.20110425.140717</em:version>  <!-- version populated by build script -->
 
     <em:targetApplication>
       <!-- Thunderbird -->
