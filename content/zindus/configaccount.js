@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.41 2010-09-06 05:14:10 cvsuser Exp $
+// $Id: configaccount.js,v 1.42 2011-04-25 02:57:08 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -88,6 +88,22 @@ ConfigAccount.prototype = {
 
 		this.m_logger.debug("onLoad: m_account_keys: " + aToString(this.m_account_keys) +
 		                    " m_payload_caller.m_format: " + this.m_payload_caller.m_format);
+
+		this.m_logger.debug("onLoad: screen width: " + screen.width + " height: " + screen.height);
+
+		if (screen.width <= 800) {
+			// Make the configaccount window fit in netbook-style screen resolution
+			// The right way to this would be to use media-dependent stylesheets but tb2 doesn't support them.
+			//
+			document.getElementById("zindus-ca-enclosing-vbox").style.margin = "0px";
+			let spacers = document.getElementsByTagName('spacer');
+			for (var i = 0; i < spacers.length; ++i) {
+  				this.m_logger.debug("spacer class: " + spacers[i].className);
+  				if (spacers[i].className == 'zindus-spacer') {
+  					spacers[i].setAttribute('hidden',   true);
+				}
+  			}
+		}
 
 		zinAssert(ObserverService.isRegistered(Maestro.TOPIC))
 
