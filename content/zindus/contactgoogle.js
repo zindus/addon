@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.39 2011-04-24 12:42:21 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.40 2011-04-25 01:11:07 cvsuser Exp $
 
 function GoogleData()
 {
@@ -64,7 +64,7 @@ meta_make_getter: function(key, fn) {
 		zinAssert(self.m_entry);
 		if (!(key in self.m_meta_cache))
 			self.m_meta_cache[key] = fn(self.m_entry);
-				
+
 		return self.m_meta_cache[key];
 	};
 },
@@ -259,7 +259,7 @@ properties_from_xml: function () {
 			for (i = 0; i < list.length(); i++)
 				set_if(properties, get_hyphenation('structuredPostalAddress', shorten_rel(list[i].@rel, 'structuredPostalAddress')), list[i].nsGd::formattedAddress);
 		}
-		
+
 		if (imask & mask.name) {
 			// set_if(properties, 'name_givenName',   entry.nsGd::name.nsGd::givenName);
 			// set_if(properties, 'name_familyName',  entry.nsGd::name.nsGd::familyName);
@@ -277,14 +277,14 @@ properties_from_xml: function () {
 
 		if (imask & mask.im) {
 			list = get_elements_matching_attribute(entry.nsGd::im, 'protocol', ['AIM'], kMatchFirst, 'im');
-	
+
 			if (list.length() > 0)
 				properties['im_AIM'] = list[0].@address.toString();
 		}
 
 		if (imask & mask.website) {
 			list = get_elements_matching_attribute(entry.nsGContact::website, 'rel', a_fragment.website, kMatchFirst, 'website');
-	
+
 			for (i = 0; i < list.length(); i++)
 				set_if(properties, get_hyphenation('website', shorten_rel(list[i].@rel, 'website')), list[i].@href);
 		}
@@ -327,7 +327,7 @@ get_photo_link : function() {
 			}
 		}
 
-		zinAssert(ret != null);
+		zinAssertAndLog(ret != null, "<entry>'s must contain a <limk> element with a photo rel");
 	}
 	return ret;
 },
@@ -421,18 +421,27 @@ set_properties : function(properties_in) {
 		if (imask & mask.organization) {
 			let is_found = false;
 
-			organization = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst, 'organization');
+			list = get_elements_matching_attribute(entry.nsGd::organization, 'rel', a_fragment.organization, kMatchFirst, 'organization');
 
-			if (organization.length() > 0) {
-				modify_or_delete_child_if(organization[0].nsGd::orgTitle, properties, 'organization_orgTitle', a_is_used);
-				modify_or_delete_child_if(organization[0].nsGd::orgName,  properties, 'organization_orgName',  a_is_used);
+			// logger().debug("ContactGoogle: organization list length: " + list.length());
+
+			if (list.length() > 0) {
+				organization = list[0];
+
+				// logger().debug("ContactGoogle: organization before change: " + organization.toString());
+
+				modify_or_delete_child_if(organization.nsGd::orgTitle, properties, 'organization_orgTitle', a_is_used);
+				modify_or_delete_child_if(organization.nsGd::orgName,  properties, 'organization_orgName',  a_is_used);
 				is_found = true;
+
+				// logger().debug("ContactGoogle: organization after change: " + organization.toString());
+				// logger().debug("ContactGoogle: organization.*.length(): " + organization.*.length());
 			}
 
 			if (!is_found)
 				organization = null;
 			else if (organization.*.length() == 0) {
-				// logger().debug("ContactGoogle: deleting");
+				// logger().debug("ContactGoogle: deleting empty organization element");
 				delete entry.*[organization.childIndex()];
 				organization = null;
 			}
@@ -440,7 +449,7 @@ set_properties : function(properties_in) {
 
 		if (imask & mask.im) {
 			let tmp = get_elements_matching_attribute(entry.nsGd::im, 'protocol', ['AIM'], kMatchFirst, 'im');
-	
+
 			if (tmp.length() > 0)
 				modify_or_delete_child(tmp[0], properties, 'im_AIM', a_is_used, 'address');
 		}
@@ -498,7 +507,6 @@ set_properties : function(properties_in) {
 						logger().fatal("exception encountered in organisation setter:\n" +
 						   " is_added_organization: " + is_added_organization + " " +
 						   " organization: " + organization.toString() + " " +
-						   " key: " + key +
 						   " properties[key]: " + properties[key]);
 						zinAssertCatch(ex);
 					}
@@ -986,6 +994,10 @@ var ContactGoogleStatic = {
 		// entry.nsGd::organization.(@rel==blah);
 		// We could catch the exception, but a) that seems clumsy and b) we may (in future) compose the list differently based on style
 		// ie when tb supports multiple 'work' email addresses
+		// For kMatchFirst the return is: an XMLList containing an element for the first matching a_rel eg. for organization the return is:
+		// 0 ==> no match
+		// 1 ==> either 'other' or  'work'
+		// 2 ==> both   'other' and 'work'
 
 		zinAssert(style == this.kMatchFirst); // this.kMatchAll not implemented.
 
