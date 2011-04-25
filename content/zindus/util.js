@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.83 2010-06-21 09:43:41 cvsuser Exp $
+// $Id: util.js,v 1.84 2011-04-25 01:10:14 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
@@ -1095,6 +1095,7 @@ function url(key)
 	switch(key) {
 	case 'reporting-bugs':      ret = 'http://zindus.com/i/reporting-bugs';                                                         break;
 	case 'google-bug-997':      ret = 'http://zindus.com/i/google-bug-997/';                                                        break;
+	case 'google-bug-2567':     ret = 'http://zindus.com/i/google-bug-2567/';                                                       break;
 	case 'slow-sync':           ret = 'http://zindus.com/i/slow-sync';                                                              break;
 	case 'what-is-soapURL':     ret = 'http://zindus.com/i/zimbra-soapURL';                                                         break;
 	case 'faq-thunderbird':     ret = 'http://www.zindus.com/faq-thunderbird/';                                                     break;
