@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.284 2011-04-24 12:41:45 cvsuser Exp $
+// $Id: syncfsm.js,v 1.285 2011-04-26 03:44:09 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4593,7 +4593,7 @@ SyncFsm.prototype.twiddleMapsForPhotos = function()
 			function tb_has_photo() {
 				if (is_tb_have_photo == NO_TB_PHOTO)
 					is_tb_have_photo = (("PhotoType" in tb_properties) && ("PhotoName" in tb_properties) &&
-					                    (tb_properties["PhotoType"] == "file") && 
+					                    (tb_properties["PhotoType"] in TB_PHOTO_TYPES) && 
 					                    self.gd_photo_nsifile_exists(tb_properties["PhotoName"]));
 				return is_tb_have_photo;
 			}
@@ -7856,7 +7856,7 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 				if (AppInfo.is_photo()) {
 					let tb_properties = this.getContactFromLuid(sourceid_winner, luid_winner, FORMAT_TB);
 
-					if (("PhotoType" in tb_properties) && ("PhotoName" in tb_properties) && tb_properties["PhotoType"] == "file")
+					if (("PhotoType" in tb_properties) && ("PhotoName" in tb_properties) && (tb_properties["PhotoType"] in TB_PHOTO_TYPES))
 						this.state.a_gd_photo_to_put.push(suo);
 				}
 
@@ -8269,7 +8269,7 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 				let on_xhr         = null;
 				let nsifile, headers;
 
-				if (tb_properties["PhotoType"] != 'file')
+				if (!(tb_properties["PhotoType"] in TB_PHOTO_TYPES))
 					suo.m_photo_op = 'del';
 				else
 					suo.m_photo_op = this.gd_photo_nsifile_exists(tb_properties["PhotoName"]) ? 'mod' : 'del';
@@ -8346,7 +8346,8 @@ SyncFsmGd.prototype.exitActionUpdateGdPhoto = function(state, event)
 				// which means the next sync will think that the google contact has changed
 				// which will in turn result in the tb contact being updated unecessarily.
 				//
-				zfi_au.del(FeedItem.ATTR_ETAG);
+				if (zfi_au.isPresent(FeedItem.ATTR_ETAG))
+					zfi_au.del(FeedItem.ATTR_ETAG);
 			}
 
 			let luid_tb_l = zfiWinner.get(FeedItem.ATTR_L); zinAssertAndLog(luid_tb_l in aReverseGid[sourceid_tb], luid_tb_l);
@@ -8745,7 +8746,7 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 			let a_id = this.gd_photo_filenames_in_contact_directory();
 
 			// be conservative here and only remove photos where there are multiple etags for an id
-			// ie. don't try to remove photos for contacts have been deleted - in case we get it wrong
+			// ie. don't try to remove photos for contacts that have been deleted - in case we get it wrong
 			// if users really want to clean up their Photos directory, they'll be able to clearly see which photos
 			// were created by sync (sort by filename) then delete them, run a slow sync, and hey presto,
 			// just the photos for which there's a correponding contact.
