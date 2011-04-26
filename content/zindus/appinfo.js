@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.12 2010-07-06 08:29:32 cvsuser Exp $
+// $Id: appinfo.js,v 1.13 2011-04-26 03:43:18 cvsuser Exp $
 
 var AppInfo = {
 	m_app_version       : null,
@@ -85,7 +85,7 @@ var AppInfo = {
 				(((app_name == this.eApp.thunderbird) && versionChecker.compare(this.app_version(), "3.0") >= 0)) ||
 				(((app_name == this.eApp.seamonkey)   && versionChecker.compare(this.app_version(), "2.0") >= 0));
 
-			this.m_is_photo = false; // TODO disable for testing release
+			// this.m_is_photo = false; // TODO disable for testing release
 
 			logger().debug("AppInfo.is_photo: returns: " + this.m_is_photo);
 		}
