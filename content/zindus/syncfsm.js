@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.285 2011-04-26 03:44:09 cvsuser Exp $
+// $Id: syncfsm.js,v 1.286 2011-04-30 02:15:48 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2670,7 +2670,7 @@ SyncFsmGd.prototype.testForTbAbGdCiIntegrity = function()
 	return !this.state.stopFailCode;
 }
 
-SyncFsmGd.prototype.testForGoogleBug2567 = function()
+SyncFsmGd.prototype.testForGoogleBug2351 = function()
 {
 	let sourceid_tb = this.state.sourceid_tb;
 	let sourceid_pr = this.state.sourceid_pr;
@@ -2711,9 +2711,9 @@ SyncFsmGd.prototype.testForGoogleBug2567 = function()
 				passed = (luid in self.state.a_gd_contact);
 
 				if (!passed) {
-					self.debug("testForGoogleBug2567: fails on: luid: " + luid);
-					self.debug("testForGoogleBug2567: a_luid: " + aToString(a_luid));
-					self.debug("testForGoogleBug2567: gid zfi: " + zfi.toString());
+					self.debug("testForGoogleBug2351: fails on: luid: " + luid);
+					self.debug("testForGoogleBug2351: a_luid: " + aToString(a_luid));
+					self.debug("testForGoogleBug2351: gid zfi: " + zfi.toString());
 				}
 			}
 
@@ -2726,7 +2726,7 @@ SyncFsmGd.prototype.testForGoogleBug2567 = function()
 
 	if (!passed) {
 		this.state.stopFailCode    = 'failon.known.bug';
-		this.state.stopFailArg     = [ stringBundleString("brand.google"), url("google-bug-2567") ];
+		this.state.stopFailArg     = [ stringBundleString("brand.google"), url("google-bug-2351") ];
 		this.state.stopFailTrailer = stringBundleString("text.suggest.reset");
 	}
 
@@ -6537,7 +6537,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 	}
 
 	if (passed && this.formatPr() == FORMAT_GD) {
-		passed = passed && this.testForGoogleBug2567();
+		passed = passed && this.testForGoogleBug2351();
 	}
 
 	if (passed) {
