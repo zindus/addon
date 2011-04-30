@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.40 2011-04-25 01:11:07 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.41 2011-04-30 23:25:54 cvsuser Exp $
 
 function GoogleData()
 {
@@ -721,13 +721,14 @@ modify : function( mods ) {
 	}
 },
 toString : function() {
-	let photo = "";
-	if ('etag' in this.photo) {
-		photo = "etag: " + this.photo.etag + " uri: " + this.photo.uri;
+	function photo_to_string(photo) {
+		return ('etag' in photo) ?
+	       "\n photo:       etag: " + photo.etag + " uri: " + photo.uri + "\n" :
+	       "\n photo:\n";
 	}
 	return GoogleData.prototype.toString.call(this) +
 	       "\n groups:      " + this.groups.toString() + 
-	       "\n photo:       " + photo + "\n";
+	       photo_to_string(this.photo);
 }
 };
 
