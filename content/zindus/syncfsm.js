@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.286 2011-04-30 02:15:48 cvsuser Exp $
+// $Id: syncfsm.js,v 1.287 2011-04-30 06:01:58 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -4585,29 +4585,23 @@ SyncFsm.prototype.twiddleMapsForPhotos = function()
 			return true;
 		},
 		the_winner : function(zfi) {
-			let tb_properties    = self.getContactAsTbProperties(sourceid_tb, zfi.get(sourceid_tb));
-			const NO_TB_PHOTO    = 33;
-			let is_tb_have_photo = NO_TB_PHOTO;
-			let ret;
-
-			function tb_has_photo() {
-				if (is_tb_have_photo == NO_TB_PHOTO)
-					is_tb_have_photo = (("PhotoType" in tb_properties) && ("PhotoName" in tb_properties) &&
-					                    (tb_properties["PhotoType"] in TB_PHOTO_TYPES) && 
-					                    self.gd_photo_nsifile_exists(tb_properties["PhotoName"]));
-				return is_tb_have_photo;
-			}
-
 			// tb wins if it has photo field set and the photo exists and the remote doesn't
+			//
+			let ret;
+			let tb_properties = self.getContactAsTbProperties(sourceid_tb, zfi.get(sourceid_tb));
+			let gd_has_photo  = self.gd_photo_is_present(id);
+			let tb_has_photo  = (("PhotoType" in tb_properties) && ("PhotoName" in tb_properties)
+					               && (tb_properties["PhotoType"] in TB_PHOTO_TYPES)
+								   && self.gd_photo_nsifile_exists(tb_properties["PhotoName"]));
 
-			if (!('etag' in self.state.a_gd_contact[id].photo) && tb_has_photo())
+			if (!gd_has_photo && tb_has_photo)
 				ret = 'tb';
-			else if (!('etag' in self.state.a_gd_contact[id].photo) && !tb_has_photo())
+			else if (!gd_has_photo && !tb_has_photo)
 				ret = 'none';
-			else if (('etag' in self.state.a_gd_contact[id].photo) && tb_has_photo())
+			else if (gd_has_photo && tb_has_photo)
 				ret = 'both';
 			else {
-				zinAssert(('etag' in self.state.a_gd_contact[id].photo) && !tb_has_photo());
+				zinAssert(gd_has_photo && !tb_has_photo);
 				ret = 'remote'; // ie. google
 			}
 
@@ -6799,8 +6793,8 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 
 			zinAssertAndLog(luid_winner_au in self.state.a_gd_contact, function () { return "luid_winner_au: " + luid_winner_au; } );
 
-			if ('etag' in self.state.a_gd_contact[luid_winner_au].photo) {
-				if (luid_winner_au in self.state.a_gd_photo, luid_winner_au) {
+			if (self.gd_photo_is_present(luid_winner_au)) {
+				if (luid_winner_au in self.state.a_gd_photo) {
 					let contact  = self.state.a_gd_contact[luid_winner_au];
 					let filename = self.gd_photo_filename_from_contact(contact);
 					let nsifile  = SyncFsmGd.gd_photo_nsifile_for(filename);
@@ -11125,6 +11119,14 @@ SyncFsmGd.prototype.gd_photo_filenames_in_contact_directory = function()
 
 	return ret;
 }
+
+SyncFsmGd.prototype.gd_photo_is_present = function(id)
+{
+	zinAssert(id in this.state.a_gd_contact);
+
+	return ('etag' in this.state.a_gd_contact[id].photo);
+}
+
 
 
 SyncFsm.prototype.state_entry_count = function(state)
