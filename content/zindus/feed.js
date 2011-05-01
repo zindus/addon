@@ -20,12 +20,12 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.54 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: feed.js,v 1.55 2011-05-01 02:37:39 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
 
-FeedItem.ITER_ALL                = 3;   // 
+FeedItem.ITER_ALL                = 3;   //
 FeedItem.ITER_GID_ITEM           = 4;   // don't call functor when key == FeedItem.ATTR_KEY or key == FeedItem.ATTR_VER
 
 FeedItem.KEY_AUTO_INCREMENT      = "1#zindus-housekeeping"; // this key is the one with the 'next' attribute
@@ -60,7 +60,7 @@ FeedItem.ATTR_ZID  = 'zid';  // <link> elements have this attribute - it's the r
 FeedItem.ATTR_LKEY = 'lkey'; // TYPE_SF elements have this attribute - it's the key of the <link> element
 FeedItem.ATTR_FKEY = 'fkey'; // TYPE_SF elements have this attribute - it's the key of the foreign <folder> element
 FeedItem.ATTR_SKEY = 'skey'; // TYPE_LN and foreign TYPE_FL elements have this attribute - it's the key of the TYPE_SF element
-FeedItem.ATTR_PERM = 'perm'; // 
+FeedItem.ATTR_PERM = 'perm'; //
 FeedItem.ATTR_ACL  = 'acl';  // <acl> child of a zimbra <folder>
 FeedItem.ATTR_CS   = 'cs';   // checksum
 FeedItem.ATTR_CSPT = 'cspt'; // checksum for Photo* attributes
@@ -74,6 +74,7 @@ FeedItem.ATTR_XGID = 'xgid'; // this item doesn't map to anything in in the gid
 FeedItem.ATTR_GDGP = 'gdgp'; // comma-separated list of google group ids for which this contact is a member
 FeedItem.ATTR_GDID = 'gdid'; // gdci items have this attribute - value is the id of the authoritative contact
 FeedItem.ATTR_ETAG = 'etag'; // photo etag
+FeedItem.ATTR_GDME = 'gdme'; // photo etag is misleading (GET of photo returned 404)
 FeedItem.ATTR_GDPI = 'gdpi'; // photo uri
 FeedItem.ATTR_GDPT = 'gdpt'; // photo content-type-as-file-extension ie: png/gif/jpg
 
@@ -89,7 +90,7 @@ FeedItem.TYPE_SF   = 0x08; // shared-folder - a hybrid of <link> and remote <fol
 FeedItem.TYPE_GG   = 0x10; // google group
 FeedItem.TYPE_MASK = (FeedItem.TYPE_CN | FeedItem.TYPE_FL | FeedItem.TYPE_LN | FeedItem.TYPE_SF | FeedItem.TYPE_GG);
 
-FeedItem.DO_FIRST  = newObjectWithKeys(FeedItem.ATTR_TYPE, FeedItem.ATTR_KEY, FeedItem.ATTR_ID, FeedItem.ATTR_L, 
+FeedItem.DO_FIRST  = newObjectWithKeys(FeedItem.ATTR_TYPE, FeedItem.ATTR_KEY, FeedItem.ATTR_ID, FeedItem.ATTR_L,
                                              FeedItem.ATTR_NAME, FeedItem.ATTR_LS, FeedItem.ATTR_MS, FeedItem.ATTR_REV, FeedItem.ATTR_DEL);
 
 FeedItem.FAKE_ZID_FOR_AB = "ab";
@@ -302,7 +303,7 @@ FeedCollection.prototype.save = function()
 {
 	var content = this.toString(FeedItem.TOSTRING_EOL_NL);
 
-	// put an addtional newline at the end of the file because nsILineInputStream.readLine doesn't return TRUE 
+	// put an addtional newline at the end of the file because nsILineInputStream.readLine doesn't return TRUE
 	// on the very last newline so the functor used in load() doesn't get called.
 	//
 	content += "\n";
@@ -381,7 +382,7 @@ FeedCollection.prototype.toString = function(arg)
 // - 0 arguments
 // - 2 arguments                where the first argument is type and
 //                                    the second argument is an object: eg new FeedItem(FeedItem.TYPE_FL, attributes)
-// - an odd number of arguments where the first argument is type, followed by zero or more 
+// - an odd number of arguments where the first argument is type, followed by zero or more
 //                                    pairs of property/values: eg new FeedItem(FeedItem.TYPE_FL, FeedItem.ATTR_KEY, 33);
 //
 function FeedItem()
