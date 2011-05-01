@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.87 2011-05-01 02:36:30 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.88 2011-05-01 02:43:17 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -280,7 +280,7 @@ SyncFsmObserver.prototype = {
 				case 'stGetGroupsGd1':
 				case 'stGetContactGd1':
 				case 'stGetContactGd2':  this.progressReportOnSource(context.state.sourceid_pr, "remote.sync");  break;
-				case 'stGalSync'
+				case 'stGalSync':
 				case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "get.gal");      break;
 				case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "load");         break;
 				case 'stUpdateTb':       this.progressReportOnSource(context.state.sourceid_tb, "put.one");      break;
