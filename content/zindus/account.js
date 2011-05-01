@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: account.js,v 1.18 2010-06-21 09:43:41 cvsuser Exp $
+// $Id: account.js,v 1.19 2011-05-01 02:20:17 cvsuser Exp $
 
 var eAccount = new ZinEnum( {
 	sourceid            : 'sourceid',
@@ -91,7 +91,7 @@ Account.prototype = {
 		return AccountStatic.m_bimap_format.lookup(null, this.format);
 	},
 	toString : function() {
-		var ret = "Account:";
+		let ret = "Account: ";
 
 		for (var key in this.m_properties)
 			ret += " " + key + ": " + this.m_properties[key];
