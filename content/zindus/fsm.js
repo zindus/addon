@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: fsm.js,v 1.21 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: fsm.js,v 1.22 2011-05-01 02:21:51 cvsuser Exp $
 
 // Notes:
 // - only entry actions should call continuation() - not sure what happens
@@ -28,7 +28,7 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.21 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: fsm.js,v 1.22 2011-05-01 02:21:51 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {
@@ -58,7 +58,7 @@ function fsmTransitionDo(fsmstate)
 					} catch (ex) {
 						fsmDoCatch(ex, 'exit', newstate, nextEvent);
 					}
-            
+
 				zinAssert(newstate in context.fsm.m_transitions);
 
 				var nextState = context.fsm.m_transitions[newstate][nextEvent];
@@ -186,7 +186,7 @@ Fsm.prototype.sanityCheck = function()
 
 	if (this.m_is_sanity_checked)
 		return;
-	
+
 	this.m_is_sanity_checked = true;
 
 	for (var stateFrom in this.m_transitions)

@@ -76,7 +76,7 @@ var JSON = {
   toString: function JSON_toString(aJSObject, aKeysToDrop) {
     // we use a single string builder for efficiency reasons
     var pieces = [];
-    
+
     // this recursive function walks through all objects and appends their
     // JSON representation (in one or several pieces) to the string builder
     function append_piece(aObj) {
@@ -129,7 +129,7 @@ var JSON = {
           // have to manually pre-process the object)
           if (aKeysToDrop && aKeysToDrop.indexOf(key) != -1)
             continue;
-          
+
           arguments.callee(key.toString());
           pieces.push(":");
           arguments.callee(aObj[key]);
@@ -145,7 +145,7 @@ var JSON = {
       }
     }
     append_piece(aJSObject);
-    
+
     return pieces.join("");
   },
 
@@ -160,7 +160,7 @@ var JSON = {
       zinAssert(false);
       throw new SyntaxError("No valid JSON string!");
     }
-    
+
     var s = new Components.utils.Sandbox("about:blank");
     return Components.utils.evalInSandbox("(" + aJSONString + ")", s);
   },
@@ -176,7 +176,7 @@ var JSON = {
   isMostlyHarmless: function JSON_isMostlyHarmless(aString) {
     const maybeHarmful = /[^,:{}\[\]0-9.\-+Eaeflnr-u \n\r\t]/;
     const jsonStrings = /"(\\.|[^"\\\n\r])*"/g;
-    
+
     return !maybeHarmful.test(aString.replace(jsonStrings, ""));
   }
 };

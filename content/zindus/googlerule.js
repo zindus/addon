@@ -64,7 +64,7 @@ GoogleRuleTrash.prototype.selectContactHandle = function(a_gcch)
 	var a_criteria = {
 		most_data:     { luid: -1, highwater: 0, count: 0 },
 		tb_popularity: { luid: -1, highwater: 0, count: 0 } };
-	                
+
 	var ret = -1;
 	var msg = " ";
 	var criteria      = 'most_data';
@@ -272,7 +272,7 @@ GoogleRuleTrash.prototype.moveToTrashCardsGd = function(a_gcch)
 
 // iterate through the tobedeleted ab, remember the checksums
 // iterate through each of the given abs, and if the checksum doesn't exist in the trash, move the contact there
-// 
+//
 GoogleRuleTrash.prototype.moveToTrashAbs = function(contact_converter, a_uri)
 {
 	let a_checksum = new Object();
@@ -293,7 +293,7 @@ GoogleRuleTrash.prototype.moveToTrashAbs = function(contact_converter, a_uri)
 			return true;
 		}
 	};
-			
+
 	this.m_addressbook.forEachCard(this.m_uri_trash, functor_foreach_card);
 
 	functor_foreach_card = {
@@ -325,8 +325,8 @@ GoogleRuleTrash.prototype.moveToTrashAbs = function(contact_converter, a_uri)
 // The only minor irritant is that one day, tb will fix drag+drop so that attributes are preserved, which means that
 // if the user drags and drops a card out of ToBeDeleted, the TBCARD_ATTRIBUTE_EXPIRED_ON attribute is associated
 // with a card in a regular addressbook.  But I guess that's no big deal - we could always check for this and delete if it became an issue.
-// 
-// 
+//
+//
 GoogleRuleTrash.prototype.expire = function(abName)
 {
 	if (!abName)
@@ -497,7 +497,7 @@ GoogleRuleContactHandle.arrayToString = function(a_gcch)
 
 	for (key in a_gcch)
 		ret += " key: " + key + " a_gcch[key]: " + a_gcch[key].toString() + "\n";
-		
+
 	return ret;
 }
 

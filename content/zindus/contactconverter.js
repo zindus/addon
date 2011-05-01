@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.63 2010-09-04 16:13:11 cvsuser Exp $
+// $Id: contactconverter.js,v 1.64 2011-05-01 02:21:51 cvsuser Exp $
 
 includejs("crc32.js");
 
@@ -199,7 +199,7 @@ setup : function(style) {
 			FORMAT_ZM, newObjectWithKeys("birthday"),
 			FORMAT_GD, newObjectWithKeys("birthday") )
 			};
-			
+
 	var i, j, k;
 	this.m_map = new Object();
 
@@ -223,7 +223,7 @@ setup : function(style) {
 
 
 	for (j = 0; j < A_VALID_FORMATS.length;  j++) // this is a precondition for removeKeysNotCommonToAllFormats to work
-		zinAssertAndLog(A_VALID_FORMATS[j] in this.m_equivalents[0], "m_equivalents is missing format: " + A_VALID_FORMATS[j]);  
+		zinAssertAndLog(A_VALID_FORMATS[j] in this.m_equivalents[0], "m_equivalents is missing format: " + A_VALID_FORMATS[j]);
 
 	this.m_common_to = new Object();
 
@@ -276,7 +276,7 @@ convert : function(format_to, format_from, properties_from) {
 					else if ((key_from in this.m_a_multiplexed['gd_address'][format_from]) &&
 					         (key_to   in this.m_a_multiplexed['gd_address'][format_to]))
 						this.gd_address_normalise(format_to, format_from, properties_from, key_from, a_normalised_gd_address);
-					else if (this.is_birthday_field_converted() && 
+					else if (this.is_birthday_field_converted() &&
 					         ((key_from in this.m_a_multiplexed['tb_birthday'][format_from]) &&
 					          (key_to   in this.m_a_multiplexed['tb_birthday'][format_to]))) {
 						this.tb_birthday_normalise(format_to, format_from, properties_from, key_from, a_normalised_tb_birthday);
@@ -310,7 +310,7 @@ convert : function(format_to, format_from, properties_from) {
 	if (!isObjectEmpty(a_normalised_tb_birthday))
 		this.tb_birthday_output(format_to, properties_to, a_normalised_tb_birthday);
 
-	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from + 
+	// this.m_logger.debug("convert:" + " format_to: " + format_to + " format_from: " + format_from +
 	//                                  " properties_from: "       + aToString(properties_from) +
 	//                                  " returns properties_to: " + aToString(properties_to));
 
@@ -612,7 +612,7 @@ keysCommonToThatMatch : function(regexp, replace_with, format_from, format_to) {
 			ret[key.replace(regexp, replace_with)] = true;
 
 	if (false)
-	this.m_logger.debug("keysCommonToThatMatch: " + regexp + " : " + replace_with + 
+	this.m_logger.debug("keysCommonToThatMatch: " + regexp + " : " + replace_with +
 	                    " from: " + this.m_bimap_format.lookup(format_from, null) +
 	                    " to: "   + this.m_bimap_format.lookup(format_to, null) +
 						" returns: " + keysToString(ret));

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbook.js,v 1.81 2010-06-30 17:36:16 cvsuser Exp $
+// $Id: addressbook.js,v 1.82 2011-05-01 02:20:21 cvsuser Exp $
 
 function AddressBookTb()  { AddressBook.call(this); this.m_nsIRDFService = null; }
 function AddressBookTb2() { AddressBookTb.call(this);  }
@@ -83,9 +83,9 @@ AddressBook.prototype.logger = function()
 {
 	// constructor is called at .js file load time which on installation happens before the zindus/ directory is created
 	// better to delay construction
-	// 
+	//
 	if (!this.m_logger)
-		this.m_logger = newLogger("AddressBook"); 
+		this.m_logger = newLogger("AddressBook");
 
 	return this.m_logger;
 }
@@ -113,7 +113,7 @@ AddressBook.prototype.populateNameToUriMap = function()
 
 				if (key == context.getPabName())
 					uri = context.getPabURI();
-		
+
 				if (!(key in context.m_map_name_to_uri))
 					context.m_map_name_to_uri[key] = new Array();
 
@@ -158,7 +158,7 @@ AddressBook.prototype.getAddressBooksByPattern = function(pat)
 			ret[key] = this.m_map_name_to_uri[key];
 
 	// this.logger().debug("AddressBook.getAddressBooksByPattern: pat: " + pat + " ret: " + aToString(ret));
-			
+
 	return ret;
 }
 
@@ -293,7 +293,7 @@ AddressBook.prototype.getCardProperties = function(abCard)
 		}
 
 		this.logger().debug("getCardProperties: msg: " + msg);
-	}	
+	}
 
 	// this.logger().debug("getCardProperties: returns: " + aToString(ret));
 
@@ -375,7 +375,7 @@ AddressBook.prototype.addressbooksToString = function()
 			       " dirPrefId: " + elem.dirPrefId +
 			       " fileName: "  + context.directoryProperty(elem, "fileName") +
 			       " position: "  + context.directoryProperty(elem, "position");
-			
+
 			return true;
 		}
 	};
@@ -397,7 +397,7 @@ AddressBook.prototype.nsIAbCardToPrintable = function(abCard)
 		ret = "mailing list uri: " + abCard.mailListURI;
 	else {
 		let properties = this.getCardProperties(abCard);
-		
+
 		if ("PrimaryEmail" in properties)
 			ret = properties["PrimaryEmail"];
 		else if ("DisplayName" in properties)

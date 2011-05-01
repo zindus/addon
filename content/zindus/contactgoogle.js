@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.41 2011-04-30 23:25:54 cvsuser Exp $
+// $Id: contactgoogle.js,v 1.42 2011-05-01 02:21:51 cvsuser Exp $
 
 function GoogleData()
 {
@@ -727,7 +727,7 @@ toString : function() {
 	       "\n photo:\n";
 	}
 	return GoogleData.prototype.toString.call(this) +
-	       "\n groups:      " + this.groups.toString() + 
+	       "\n groups:      " + this.groups.toString() +
 	       photo_to_string(this.photo);
 }
 };
@@ -765,7 +765,7 @@ ContactGoogle.transformTbPropertyTo = function(transform, value)
 }
 
 // Here's how the <email> elements map to email1, email2 properties:
-// - email1 is the first <email> element that has a primary attribute, 
+// - email1 is the first <email> element that has a primary attribute,
 //   or if no <email> has a primary attribute, then email1 is the first <email> element
 // - email2 is the first <email> that isn't email1
 // Note that there's no guarantee that the <email> element with the primary attribute will be the first.
@@ -785,7 +785,7 @@ iterator: function(entry) {
 		if (this.m_emails.length() > 0) {
 			let primary = -1;
 			let i;
-	
+
 			for (i = 0; i < this.m_emails.length() && (primary == -1); i++)
 				if (this.m_emails[i].@primary == "true")
 					primary = i;
@@ -806,7 +806,7 @@ iterator: function(entry) {
 	return this;
 },
 __iterator__: function(is_keys_only) {
-	const max = 1; // don't interate over email3 
+	const max = 1; // don't interate over email3
 
 	for (var i = 0; i <= ZinMin(max, this.m_a_index.length - 1); i++)
 		yield is_keys_only ? value : [ 'email' + (i + 1), this.m_a_index[i]];
@@ -975,7 +975,7 @@ var ContactGoogleStatic = {
 			left_of = Xpath.NS_GD + '#';
 
 		let key = element_name + '_' + suffix;
-			
+
 		if (!(key in this.m_a_rel))
 			this.m_a_rel[key] = left_of + suffix;
 

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.28 2010-05-15 05:09:09 cvsuser Exp $
+// $Id: filesystem.js,v 1.29 2011-05-01 02:21:51 cvsuser Exp $
 
 var Filesystem = {
 	m_charset            : "UTF-8",
@@ -83,7 +83,7 @@ var Filesystem = {
 	createDirectoryIfRequired : function(name) {
 		var nsifile = this.nsIFileForDirectory(name);
 
-		if (!nsifile.exists() || !nsifile.isDirectory()) 
+		if (!nsifile.exists() || !nsifile.isDirectory())
 			try {
 				nsifile.create(Ci.nsIFile.DIRECTORY_TYPE, this.ePerm.PR_IRWXU);
 			}
@@ -100,7 +100,7 @@ var Filesystem = {
 		var ret = false;
 
 		try {
-			if (!file.exists()) 
+			if (!file.exists())
 				file.create(Ci.nsIFile.NORMAL_FILE_TYPE, this.ePerm.PR_IRUSR | this.ePerm.PR_IWUSR);
 
 			if (flag && flag == 'binary') {
@@ -156,14 +156,14 @@ var Filesystem = {
 			let line = {};
 
 			while (cis.readLine(line)) {
-				functor.run(line.value); 
+				functor.run(line.value);
 				line.value = null;
-			} 
+			}
 
 			zinAssert(!line.value); // just to confirm that this loop works as documented
 
 			cis.close();
-		} 
+		}
 	},
 	// the remove* methods...
 	removeZfc : function(filename) {

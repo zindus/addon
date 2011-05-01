@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbookff.js,v 1.5 2009-12-02 15:33:58 cvsuser Exp $
+// $Id: addressbookff.js,v 1.6 2011-05-01 02:21:51 cvsuser Exp $
 includejs("json.js");
 
 function AddressBookFf()
@@ -437,13 +437,13 @@ AddressBookFfCard.prototype = {
 				}
 			}
 		}
-			
+
 		return this.m_properties;
 	},
 	id : function(new_id) {
 		if (new_id)
 			this.m_properties[TBCARD_ATTRIBUTE_LUID] = new_id;
-			
+
 		zinAssert(TBCARD_ATTRIBUTE_LUID in this.m_properties);
 
 		return this.m_properties[TBCARD_ATTRIBUTE_LUID];
@@ -562,7 +562,7 @@ var AddressBookFfStatic = {
 			query += "DROP INDEX IF EXISTS " + i + ";";
 
 		do_sql(query);
-	
+
 		query = "                                                         \
 CREATE TABLE contact (                                                    \
   id           INTEGER PRIMARY KEY AUTOINCREMENT,                         \
@@ -637,7 +637,7 @@ CREATE INDEX index_member ON member (id_contact, id_grp);";
 	},
 	debug : function(msg) {
 		if (!this.m_logger) // delay construction
-			this.m_logger = newLogger("AddressBookFf"); 
+			this.m_logger = newLogger("AddressBookFf");
 
 		if (true)
 			this.m_logger.debug(msg);

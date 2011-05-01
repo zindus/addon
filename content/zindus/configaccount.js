@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.42 2011-04-25 02:57:08 cvsuser Exp $
+// $Id: configaccount.js,v 1.43 2011-05-01 02:21:51 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -200,7 +200,7 @@ ConfigAccount.prototype = {
 			                                 (username.length ? username.substr(0, max_length) :
 											                    stringBundleString("cs.general.gd.syncwith.suffix"));
 		}
-	
+
 		// free.fr
 		//
 		if (id == "ca-url" && this.serverFormat() == FORMAT_ZM) {
@@ -392,7 +392,7 @@ ConfigAccount.prototype = {
 			//
 			if (account.url.charAt(account.url.length - 1) == '/')
 				account.url = account.url.substring(0, account.url.length - 1)
-		
+
 			this.m_logger.debug("accountFromDocument: returns: " + account.toString());
 		}
 
@@ -414,7 +414,7 @@ var ConfigAccountStatic = {
 		zinAssertAndLog(bimap.isPresent(value, null), "value: " + value);
 
 		let selected_id = bimap.lookup(value, null);
-		
+
 		// logger().debug("radiogroup_id: " + radiogroup_id + " value: " + value + " selected_id: " + selected_id);
 
 		dId(radiogroup_id).selectedItem = dId(selected_id);
