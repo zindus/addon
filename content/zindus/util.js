@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.85 2011-04-30 02:13:29 cvsuser Exp $
+// $Id: util.js,v 1.86 2011-05-01 02:36:30 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {
@@ -150,7 +150,7 @@ function stringBundleStringFrom(string_bundle_id, id_string, args)
 	var is_exception = false;
 
 	zinAssert(arguments.length == 2 || arguments.length == 3);
-	zinAssertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string); 
+	zinAssertAndLog(id_string != "status" && id_string != "statusnull", "id_string: " + id_string);
 	zinAssert(typeof(args) == 'undefined' || args instanceof Array || typeof(args.length) == 'number');
 
 	if (stringbundle == null)
@@ -188,7 +188,7 @@ function xmlDocumentToString(doc)
 
 	let serializer = new XMLSerializer();
 	let str        = null;
-	
+
 	try {
 		str = serializer.serializeToString(doc);
 	}
@@ -212,7 +212,7 @@ function attributesFromNode(node)
 	zinAssert(node.nodeType == Node.ELEMENT_NODE);
 
 	var ret = new Object();
-	
+
 	if (node.hasAttributes())
 		for (var i = 0; i < node.attributes.length; i++)
 			ret[node.attributes.item(i).nodeName] = node.attributes.item(i).nodeValue;
@@ -338,7 +338,7 @@ function firstDifferingObjectKey(obj1, obj2)
 }
 
 // return true iff the both the keys and the values in both objects match
-// 
+//
 function isMatchObjects(obj1, obj2)
 {
 	var is_match = true;
@@ -388,7 +388,7 @@ function isAnyValue(a, value)
 	zinAssert(typeof(value) == 'boolean');
 
 	var ret = false;
-	
+
 	for (var i in a)
 	{
 		if (a[i] == value)
@@ -600,22 +600,22 @@ function isValidUrl(url)
 // To avoid this trickness, if A's constructor references 'document' or 'window' we use copyPrototype()
 //
 function copyPrototype(child, parent)
-{ 
-	var sConstructor = parent.toString(); 
-	var aMatch       = sConstructor.match( /\s*function (.*)\(/ ); 
+{
+	var sConstructor = parent.toString();
+	var aMatch       = sConstructor.match( /\s*function (.*)\(/ );
 
 	if (aMatch != null)
 		child.prototype[aMatch[1]] = parent;
 
 	for (var i in parent.prototype)
-		child.prototype[i] = parent.prototype[i]; 
+		child.prototype[i] = parent.prototype[i];
 }
 
 function dateSuffixForFolder()
 {
 	var d = new Date();
 
-	return " " + hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
+	return " " + hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) +
 	       "-" + hyphenate("-", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 }
 
@@ -742,7 +742,7 @@ function zinTrim(str)
 		ret = str;
 
 	return ret;
-}; 
+};
 
 function zinIsWhitespace(str)
 {
@@ -762,7 +762,7 @@ function zinSleep(milliseconds)
 		current = new Date();
 	}
 	while (current - start < milliseconds);
-} 
+}
 
 function leftOfChar(str, c)
 {
@@ -1063,7 +1063,7 @@ function xulSetHtml(id, value)
 	// logger().debug("xulSetHtml: id: " + id + " value: " + value);
 
 	// <noscript> was used here because it's a structural html element that can contain other elements
-	// and we don't need to remove any default styling 
+	// and we don't need to remove any default styling
 	// ... but subsequently I found wierd issues on redraw that don't happen when <p> is used - probably because there is
 	// styling associated with <p>.
 	//

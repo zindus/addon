@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.69 2010-09-12 16:11:45 cvsuser Exp $
+// $Id: mailwindowoverlay.js,v 1.70 2011-05-01 02:36:30 cvsuser Exp $
 
 includejs("uninstall.js");
 
@@ -185,13 +185,13 @@ ZinMailWindowOverlay.prototype.statusSummary = function()
 			next_sync_date.setUTCMilliseconds(now.getUTCMilliseconds() + 1000 * 3600); // schedule for an hour ahead - ie, back off...
 			this.m_logger.warn("Something wierd happened - time seems to have gone backwards! " +
 			                   "\n" + " current time:   " + now +
-			                   "\n" + " last_sync_date: " + last_sync_date + 
+			                   "\n" + " last_sync_date: " + last_sync_date +
 							   "\n" + " next_sync_date: " + next_sync_date);
 		}
-		else 
+		else
 		{
 			next_sync_date = new Date();
-			next_sync_date.setUTCMilliseconds(last_sync_date.getUTCMilliseconds() + 
+			next_sync_date.setUTCMilliseconds(last_sync_date.getUTCMilliseconds() +
 			                   1000 * randomPlusOrMinus(this.m_delay_on_repeat, (1/6 * this.m_delay_on_repeat).toFixed(0)));
 
 			if ((now - next_sync_date) > 0)
@@ -258,14 +258,14 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 				preferences().branch().setCharPref(MozillaPreferences.AS_MIGRATION + '.' + i, hyphenate(':', 0, a_str[1]));
 		}
 	}
-	
+
 	// 0.7.7 replace MANUAL_SYNC_ONLY with AUTO_SYNC
 	//
 	var bimap = new BiMap( [ "true", "false" ], [ "false", "true" ] );
 
 	var new_key = "general." + PrefSet.GENERAL_AS_AUTO_SYNC;
 
-	for (old in { "general.manualsynconly": 0, "general.manual_sync_only": 0 }) 
+	for (old in { "general.manualsynconly": 0, "general.manual_sync_only": 0 })
 	{
 		value = prefs.getCharPrefOrNull(prefs.branch(), old);
 
@@ -280,7 +280,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 	}
 
 	// delete once confident all users are on version >= 0.7.9
-	// 
+	//
 	a_map = {
 		"server.2.type":        { type: 'char', new: PrefSet.ACCOUNT + ".2." + eAccount.format   },
 		"server.2.url":         { type: 'char', new: PrefSet.ACCOUNT + ".2." + eAccount.url      },
@@ -399,7 +399,7 @@ ZinMailWindowOverlay.prototype.migratePrefs = function()
 
 	// 0.8.15
 	// - remove logfile.txt.old ... move to a configurable rotation scheme
-	// 
+	//
 	if (true) {
 		let name =  Filesystem.eFilename.LOGFILE + ".old";
 		let file = Filesystem.nsIFileForDirectory(Filesystem.eDirectory.LOG);
@@ -461,7 +461,7 @@ ZinMailWindowOverlay.prototype.migratePasswords = function()
 	}
 
 	// migrate the hostnames/urls used in password manager and loginmanager
-	// to ensure a smooth path to 
+	// to ensure a smooth path to
 	if (password_version_old == "notset" && ("@mozilla.org/passwordmanager;1" in Components.classes))
 	{
 		password_version_new = "pm-2";

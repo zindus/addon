@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: windowcollection.js,v 1.16 2009-08-03 00:40:31 cvsuser Exp $
+// $Id: windowcollection.js,v 1.17 2011-05-01 02:36:30 cvsuser Exp $
 
 function WindowCollection(a_id)
 {
@@ -53,7 +53,7 @@ WindowCollection.prototype = {
 	// eg. lets say thunderbird has two messengerWindow's open, one showing Inbox, the other showing Sent
 	//     input:  h['folderPaneBox']
 	//     output: h['folderPaneBox'] = [ window-object-of-inbox, window-object-of-sent ]
-	// 
+	//
 	// Good background reading:
 	//   http://developer.mozilla.org/en/docs/Working_with_windows_in_chrome_code
 	// which links to this page, which offers the code snippet below:

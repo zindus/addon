@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: logger.js,v 1.28 2010-04-12 01:06:33 cvsuser Exp $
+// $Id: logger.js,v 1.29 2011-05-01 02:35:40 cvsuser Exp $
 
 // simple logging api, no appenders
 
@@ -75,7 +75,7 @@ error : function(msg) { const l = Logger.ERROR; if (this.level() <= l) this.log(
 fatal : function(msg) { const l = Logger.FATAL; if (this.level() <= l) this.log(l, msg); },
 debug_continue : function(msg) {
 	const l = Logger.DEBUG;
-	if (this.level() <= l) { 
+	if (this.level() <= l) {
 		this.log(l, msg, Logger.NO_PREFIX);
 	}
 },
@@ -266,7 +266,7 @@ var LogAppenderStatic = {
 					if (file_new.exists())
 						try {
 							file_new.remove(false);
-						} catch (ex) { 
+						} catch (ex) {
 							logger().error("rotate: unable to remove: " + file_new.path + " error: " + ex);
 						}
 
@@ -282,7 +282,7 @@ var LogAppenderStatic = {
 	}
 };
 
-function LogAppenderOpenClose() { LogAppender.call(this); } 
+function LogAppenderOpenClose() { LogAppender.call(this); }
 function LogAppenderHoldOpen()  { LogAppender.call(this); this.m_os = null; }
 
 LogAppenderOpenClose.prototype = new LogAppender();

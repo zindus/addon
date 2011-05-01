@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: statusbar.js,v 1.15 2010-06-03 02:06:25 cvsuser Exp $
+// $Id: statusbar.js,v 1.16 2011-05-01 02:37:23 cvsuser Exp $
 
 // Bits of "exit status" reported to the outside world:
 // - last sync success: (time, maybe other stuff like conflicts...)
@@ -40,7 +40,7 @@
 //   would mean that entire logging framework could be refactored to use the "Javascript module" approach.
 //   Then the verbose-logging-state-change-notification code could be removed altogether.
 //   Otherwise, we could bite the bullet, create a service and put logging in that.
-//   
+//
 function StatusBar()
 {
 	Filesystem.createDirectoriesIfRequired();  // this comes first - can't log without a directory for the logfile!

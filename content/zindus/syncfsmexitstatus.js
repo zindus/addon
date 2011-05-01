@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmexitstatus.js,v 1.52 2010-06-03 02:06:27 cvsuser Exp $
+// $Id: syncfsmexitstatus.js,v 1.53 2011-05-01 02:36:30 cvsuser Exp $
 
 function SyncFsmExitStatus()
 {
@@ -43,38 +43,38 @@ function SyncFsmExitStatus()
 	'failon.integrity.data.store.out'      : { 'trailer' : 1, 'arglength': 0 }, //     internal error - we created a data store that's dodgy
 	'failon.integrity.data.store.map'      : { 'trailer' : 1, 'arglength': 0 }, //     somehow a card acquired the luid of a folder!
 	'failon.unexpected'                    : { 'trailer' : 1, 'arglength': 0 }, //     some sort of integrity failure
-	'failon.folder.name.empty'             : { 'trailer' : 0, 'arglength': 0 }, //    
-	'failon.folder.name.duplicate'         : { 'trailer' : 0, 'arglength': 1 }, //    
-	'failon.folder.name.reserved'          : { 'trailer' : 0, 'arglength': 1 }, //    
-	'failon.folder.name.invalid'           : { 'trailer' : 0, 'arglength': 1 }, //    
-	'failon.folder.must.be.present'        : { 'trailer' : 0, 'arglength': 1 }, //    
-	'failon.folder.reserved.changed'       : { 'trailer' : 1, 'arglength': 1 }, //    
+	'failon.folder.name.empty'             : { 'trailer' : 0, 'arglength': 0 }, //
+	'failon.folder.name.duplicate'         : { 'trailer' : 0, 'arglength': 1 }, //
+	'failon.folder.name.reserved'          : { 'trailer' : 0, 'arglength': 1 }, //
+	'failon.folder.name.invalid'           : { 'trailer' : 0, 'arglength': 1 }, //
+	'failon.folder.must.be.present'        : { 'trailer' : 0, 'arglength': 1 }, //
+	'failon.folder.reserved.changed'       : { 'trailer' : 1, 'arglength': 1 }, //
 	'failon.folder.name.clash'             : { 'trailer' : 1, 'arglength': 1 }, //     a folder name entered from both tb and zm sides
 	'failon.folder.source.update'          : { 'trailer' : 1, 'arglength': 1 }, //     the source update operations can't be applied
-	'failon.folder.cant.create.shared'     : { 'trailer' : 0, 'arglength': 2 }, //    
+	'failon.folder.cant.create.shared'     : { 'trailer' : 0, 'arglength': 2 }, //
 	'failon.unable.to.update.server'       : { 'trailer' : 1, 'arglength': 0 }, // 20. couldn't make sense of the http/soap response
-	'failon.unable.to.update.thunderbird'  : { 'trailer' : 1, 'arglength': 0 }, //     
-	'failon.no.xpath'                      : { 'trailer' : 0, 'arglength': 0 }, //    
-	'failon.no.tbpre'                      : { 'trailer' : 0, 'arglength': 1 }, //    
-	'failon.no.pab.2'                      : { 'trailer' : 0, 'arglength': 1 }, //     
-	'failon.multiple.ln'                   : { 'trailer' : 1, 'arglength': 0 }, //      
-	'failon.gd.conflict.4'                 : { 'trailer' : 0, 'arglength': 0 }, //    
-	'failon.gd.forbidden'                  : { 'trailer' : 0, 'arglength': 0 }, //    
-	'failon.gd.get'                        : { 'trailer' : 0, 'arglength': 0 }, //     
-	'failon.must.clean.ab'                 : { 'trailer' : 1, 'arglength': 1 }, //    
+	'failon.unable.to.update.thunderbird'  : { 'trailer' : 1, 'arglength': 0 }, //
+	'failon.no.xpath'                      : { 'trailer' : 0, 'arglength': 0 }, //
+	'failon.no.tbpre'                      : { 'trailer' : 0, 'arglength': 1 }, //
+	'failon.no.pab.2'                      : { 'trailer' : 0, 'arglength': 1 }, //
+	'failon.multiple.ln'                   : { 'trailer' : 1, 'arglength': 0 }, //
+	'failon.gd.conflict.4'                 : { 'trailer' : 0, 'arglength': 0 }, //
+	'failon.gd.forbidden'                  : { 'trailer' : 0, 'arglength': 0 }, //
+	'failon.gd.get'                        : { 'trailer' : 0, 'arglength': 0 }, //
+	'failon.must.clean.ab'                 : { 'trailer' : 1, 'arglength': 1 }, //
 	'failon.unauthorized'                  : { 'trailer' : 0, 'arglength': 0 }, // 30. server 401 - did a proxy remove the 'Authorized' hdr?
 	'failon.auth'                          : { 'trailer' : 1, 'arglength': 1 }, //     Login attempt failed
 	'failon.known.bug'                     : { 'trailer' : 1, 'arglength': 2 }, //     Known bug
-	'failon.gd.group.rename'               : { 'trailer' : 0, 'arglength': 1 }, //     
-	'failon.gd.group.name'                 : { 'trailer' : 0, 'arglength': 3 }, //     
-	'failon.gd.group.duplicate'            : { 'trailer' : 0, 'arglength': 1 }  //     
+	'failon.gd.group.rename'               : { 'trailer' : 0, 'arglength': 1 }, //
+	'failon.gd.group.name'                 : { 'trailer' : 0, 'arglength': 3 }, //
+	'failon.gd.group.duplicate'            : { 'trailer' : 0, 'arglength': 1 }  //
 	};
 }
 
 SyncFsmExitStatus.prototype.toString = function()
 {
 	var ret = "";
-	
+
 	ret += "exit_status: " + this.m_exit_status;
 
 	if (this.m_exit_status)
@@ -133,7 +133,7 @@ SyncFsmExitStatus.prototype.asMessage = function(sbsSuccess, sbsFailure)
 		{
 			msg += stringBundleString(sbsFailure) + "\n\n";
 			var arglength = this.m_a_valid_code[this.failcode()]['arglength'];
-			
+
 			if (arglength > 0)
 			{
 				if (arglength != this.m_fail_arg.length)

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.132 2011-04-25 01:10:42 cvsuser Exp $
+// $Id: testharness.js,v 1.133 2011-05-01 02:36:30 cvsuser Exp $
 
 function TestHarness()
 {
@@ -387,7 +387,7 @@ TestHarness.prototype.testContactConverter1 = function()
 
 	for (i = 0; i < A_VALID_FORMATS.length; i++)
 		a_properties[A_VALID_FORMATS[i]] = new Object();
-	
+
 	for (i = 0; i < a_data.length; i++)
 		for (format in a_data[i])
 			if (isInArray(Number(format), A_VALID_FORMATS))
@@ -404,7 +404,7 @@ TestHarness.prototype.testContactConverter1 = function()
 	zinAssert(isMatchObjects(a_properties[FORMAT_TB], contact_converter.convert(FORMAT_TB, FORMAT_TB, a_properties[FORMAT_TB])));
 	zinAssert(isMatchObjects(a_properties[FORMAT_ZM], contact_converter.convert(FORMAT_ZM, FORMAT_TB, a_properties[FORMAT_TB])));
 	zinAssert(isMatchObjects(a_properties[FORMAT_GD], contact_converter.convert(FORMAT_GD, FORMAT_TB, a_properties[FORMAT_TB])));
-	
+
 	// test that crc's match
 	//
 	var a_crc = new Object();
@@ -423,7 +423,7 @@ TestHarness.prototype.testContactConverter1 = function()
 
 		a_crc[format] = contact_converter.crc32(properties);
 	}
-	
+
 	// this.m_logger.debug("testContactConverter: a_crc: " + aToString(a_crc));
 
 	for (i = 1; i < A_VALID_FORMATS.length; i++)
@@ -653,7 +653,7 @@ TestHarness.prototype.testLso = function()
 	//
 	var d = new Date();
 	var s = Date.UTC();
-	var t = hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) + 
+	var t = hyphenate("-", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) +
 	        " " +
 			hyphenate(":", d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
 
@@ -1116,7 +1116,7 @@ TestHarness.prototype.sampleContactGoogleProperties = function()
 		properties["title"] = "2-title";
 	else
 		properties["name_fullName"] = "2-name_fullName";
-	
+
 	if (String(GD_API_VERSION).substr(0,1) == 3) {
 		properties["website_home"] = "13";
 		properties["website_work"] = "14";
@@ -1216,7 +1216,7 @@ TestHarness.prototype.testContactGoogle1 = function()
 		while (Boolean(a = generator.next()))
 			this.m_logger.debug("contact.meta." + a[0] + ": " + contact.meta[a[0]]);
 	}
-	
+
 	if (false)
 	{
 		contact = new ContactGoogle(xml);
@@ -1325,7 +1325,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 	xmlString = xmlString.replace("@@entry@@", xmlStringEntry);
 
 	let api_version = "";
-	
+
 	if (String(GD_API_VERSION).substr(0,1) == '3')
 		api_version += "<gd:name>\
 			<gd:givenName>@@name_givenName@@</gd:givenName>\
@@ -1390,7 +1390,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 	contact = fresh_contact();
 
 	this.m_logger.debug("contact: " + contact.toString());
-	
+
 	// 2. test that everything was parsed out of the xml correctly with/without postal
 	//
 	match(contact, properties, meta, true);
@@ -1514,7 +1514,7 @@ TestHarness.prototype.testContactGoogle2 = function()
 
 	// test that a <gd:organization> without a rel attribute is ignored
 	//
-	var xmlStringTwo = xmlString.replace("organization rel='http://schemas.google.com/g/2005#work'", 
+	var xmlStringTwo = xmlString.replace("organization rel='http://schemas.google.com/g/2005#work'",
 	                                     "organization ");
 	a_gd_contact = GoogleData.new_from_feed(xmlStringTwo);
 	id = firstKeyInObject(a_gd_contact);
@@ -1736,7 +1736,7 @@ TestHarness.prototype.testContactGoogleIssue266 = function()
 
 		this.m_logger.debug("contact.toString: after setting organization to Fred: " + contact.toString());
 	}
-	
+
 	return true;
 }
 
@@ -1744,7 +1744,7 @@ TestHarness.prototype.testContactGoogleIterators = function()
 {
 	var cgei = new ContactGoogleEmailIterator();
 	var a_keys;
-	
+
 	function setup(entry) {
 		var a_keys = new Object();
 		var key, value;
@@ -1840,7 +1840,7 @@ TestHarness.prototype.testGroupGoogle = function()
 		while (Boolean([key, value] = generator.next()))
 			this.m_logger.debug("contact.meta." + key + ": " + contact.meta[key]);
 	}
-	
+
 	if (false)
 	{
 		contact = new ContactGoogle(xml);
@@ -2114,7 +2114,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	zinAssert(tb_properties["HomeAddress2"] == this.m_street2);
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact with an address field should xmlify the Google contact
-	// 
+	//
 	this.setupFixtureGdPostalAddress();
 
 	contact = new_contact(this.m_otheraddr);
@@ -2137,7 +2137,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", adding postal fields to a contact should xmlify postalAddress inside the contact
-	// 
+	//
 	this.setupFixtureGdPostalAddress();
 
 	gd_properties = contact_converter.convert(FORMAT_GD, FORMAT_TB, tb_properties);
@@ -2163,7 +2163,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", updating the contact (no address field) should xmlify the plain-text
 	// into the <otheraddr> element
-	// 
+	//
 	this.setupFixtureGdPostalAddress();
 
 	contact = new_contact(this.m_otheraddr);
@@ -2175,7 +2175,7 @@ TestHarness.prototype.testContactGooglePostalAddress = function()
 	zinAssert(contact.postalAddressOtherAddr(postal_home) == this.m_otheraddr);
 
 	// When GENERAL_GD_SYNC_POSTAL_ADDRESS == "true", test creating and matching a contact from xml that contains entities
-	// 
+	//
 	var entity_str = " &amp;lt;fred&amp;gt; ";
 	var xml_with_entity_str = this.m_address_as_xml_entity.replace(this.m_street1, entity_str);
 	contact = new_contact(xml_with_entity_str);
@@ -2319,7 +2319,7 @@ TestHarness.prototype.addCardTb2 = function(properties, uri)
 		properties = { PrimaryEmail: "111-test@example.com", DisplayName: "111 test" };
 
 	zinAssert(typeof(abCard.setCardValue) == 'function'); // otherwise we're not running in tb2
-	
+
 	for (var key in properties)
 		abCard.setCardValue(key, properties[key]);
 
@@ -2447,7 +2447,7 @@ TestHarness.prototype.testFileLoggingTimes = function()
 	for (i = 0; i < lines/10; i++)
 	{
 		a = new Array();
-	
+
 		for (j = 1; j <= 10; j++)
 		{
 			a.push(msg);
@@ -2479,7 +2479,7 @@ TestHarness.prototype.testFileLoggingTimes = function()
 	for (i = 0; i < lines/10; i++)
 	{
 		a = new Array();
-	
+
 		for (j = 1; j <= 10; j++)
 			a.push(msg);
 
@@ -2518,7 +2518,7 @@ TestHarness.prototype.testStringTimes = function()
 		for (j = 1; j <= 10; j++)
 			msg += x;
 	}
-	
+
 	stopwatch.mark("end");
 
 	stopwatch.reset();
@@ -2664,7 +2664,7 @@ TestHarness.prototype.testExitStatusMessages = function()
 			this.m_logger.debug("testExitStatusMessages: failcode: " + failcode + " message:\n" +
 		                     	es.asMessage("cs.sync.succeeded", "cs.sync.failed"));
 		}
-		
+
 	return true;
 }
 
@@ -2828,7 +2828,7 @@ TestHarness.prototype.testPerformanceStringConcat = function()
 	for (i = 0; i < max; i++)
 	{
 		msg += snippet;
-		
+
 		if (i % 1000 == 0)
 		{
 			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
@@ -2843,7 +2843,7 @@ TestHarness.prototype.testPerformanceStringConcat = function()
 	for (i = 0; i < max; i++)
 	{
 		bs.concat(snippet);
-		
+
 		if (i % 1000 == 0)
 		{
 			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
@@ -2861,7 +2861,7 @@ TestHarness.prototype.testPerformanceStringConcat = function()
 	for (i = 0; i <= max; i++)
 	{
 		a.push(snippet);
-		
+
 		if (i % 1000 == 0)
 		{
 			msg += String.prototype.concat.apply("", a);
@@ -2893,7 +2893,7 @@ TestHarness.prototype.testPerformanceLoggingStyles = function()
 	for (i = 0; i <= max; i++)
 	{
 		bs.concat(snippet);
-		
+
 		if (i % 1000 == 0)
 		{
 			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
@@ -2923,7 +2923,7 @@ TestHarness.prototype.testPerformanceLoggingStyles = function()
 	for (i = 0; i <= max; i++)
 	{
 		buflogger.debug(snippet);
-		
+
 		if (i % 1000 == 0)
 		{
 			stopwatch.mark(i + " " + (stopwatch.elapsed() - last));
@@ -2991,11 +2991,11 @@ TestHarness.prototype.testLoginManager = function()
 {
 	try {
 		var myLoginManager = Components.classes["@mozilla.org/login-manager;1"].getService(Components.interfaces.nsILoginManager);
-	
+
 		var logins = myLoginManager.getAllLogins({});
 
 		this.m_logger.debug("testLoginManager: length: " + logins.length);
-	
+
 		for (var i = 0; i < logins.length; i++) {
 			this.m_logger.debug("logins: hostname: " + logins[i].hostname + " username: " + logins[i].username + " formSubmitURL: " + logins[i].formSubmitURL + " httpRealm: " + logins[i].httpRealm + " username: " + logins[i].username + " password: " + (logins[i].password ? (" is present with length: " + logins[i].password.length) : " none") + "usernameField: " + logins[i].usernameField + " passwordField: " + logins[i].passwordField)
 		}
@@ -3029,7 +3029,7 @@ TestHarness.prototype.testPasswordManager = function()
 	// test get
 	//
 	zinAssert(password == pm.get(url, username) && pm.get(url, username).length == password_length);
-	
+
 	// test del
 	//
 	zinAssert(pm.del(url, username));

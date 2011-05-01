@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: timer.js,v 1.50 2010-02-26 01:40:54 cvsuser Exp $
+// $Id: timer.js,v 1.51 2011-05-01 02:36:30 cvsuser Exp $
 
 function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {
@@ -111,7 +111,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 		else
 		{
 			this.m_logger.debug("onFsmStateChangeFunctor: fsm is not running - starting... ");
-		
+
 			this.m_zwc.populate();
 			this.m_zwc.forEach(this.zwc_functor('unhide'));
 
@@ -140,7 +140,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			let sourceid = AccountStatic.indexToSourceId(sfcd.m_account_index);
 			let is_repeat_current = false;
 			let is_repeat_all     = false;
-			
+
 			if (sfcd.account().format_xx() == FORMAT_GD)
 				is_repeat_current =
 					(sfcd.sourceid(sourceid, 'c_start') < MAX_SYNC_START) &&
@@ -183,7 +183,7 @@ TimerFunctor.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			else
 			{
 				this.m_zwc.forEach(this.zwc_functor('hide'));
-			
+
 				StatusBarState.update(this.m_zwc);
 
 				this.finish(false);
@@ -248,7 +248,7 @@ TimerFunctor.prototype.zwc_functor = function(name)
 				this.m_a_zwc_functor[name] = {
 					run: function(win) {
 						dId(win, 'zindus-statusbar-progress').setAttribute('hidden', false);
-						dId(win, 'zindus-statusbar-progress-leftmost').value = 
+						dId(win, 'zindus-statusbar-progress-leftmost').value =
 							stringBundleString("brand.zindus") + ": " + self.m_sfcd.account().username;
 					}
 				};

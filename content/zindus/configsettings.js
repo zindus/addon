@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.47 2010-09-02 04:38:50 cvsuser Exp $
+// $Id: configsettings.js,v 1.48 2011-05-01 02:35:40 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -34,7 +34,7 @@ function ConfigSettings()
 	this.m_checkbox_ids         = [ "cs-auto-sync", "cs-verbose-logging" ];
 	this.m_checkbox_bimap       = new BiMap(this.m_checkbox_properties, this.m_checkbox_ids);
 
-	this.m_gd_sync_with_bimap   = new BiMap( [ "zg",                              "pab"                              ], 
+	this.m_gd_sync_with_bimap   = new BiMap( [ "zg",                              "pab"                              ],
 	                                         [ "cs-gdsyncwith-zg", "cs-gdsyncwith-pab" ] );
 
 	this.m_prefset_general      = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_AS_PROPERTIES);
@@ -184,7 +184,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			// we see SyncWindow.onAccept() exits but window.openDialog() hasn't returned!  And ... the "Sync Now" button
 			// is enabled because updateView() got told that the fsm finished.  So if the user starts another fsm, the payload of
 			// of the original window is lost.
-			// 
+			//
 			if (!window.closed && this.m_payload instanceof Payload)
 			{
 				let msg = "";
@@ -618,7 +618,7 @@ var ConfigSettingsStatic = {
 			selected_id = bimap.lookup(value, null);
 		else
 			selected_id = default_id;
-		
+
 		dId(radiogroup_id).selectedItem = dId(selected_id);
 	},
 	appendCell : function(treerow, value, properties) {
@@ -672,7 +672,7 @@ var ConfigSettingsStatic = {
 		// 4. Next sync (a fast sync) ==> the same conflict that got resolved earlier!
 		//    If the user had the patience to fix the conflict a second time it'd stay fixed
 		//    but still not acceptable.
-		// 
+		//
 		// Having Zimbra accounts sync first means that the Google conflicts appear second so if the user deletes a contact and syncs again,
 		// the deletes are propagated to Zimbra
 		//

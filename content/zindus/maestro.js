@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: maestro.js,v 1.26 2010-06-21 09:43:41 cvsuser Exp $
+// $Id: maestro.js,v 1.27 2011-05-01 02:36:30 cvsuser Exp $
 
 // FIXME: this class needs to be refactored into a component
 // that observes notifications from fsms and reflects them back to clients.
@@ -64,8 +64,8 @@ Maestro.FSM_ID_ZM_TWOWAY   = "fsm-zm-twoway";
 Maestro.FSM_ID_ZM_AUTHONLY = "fsm-zm-authonly";
 Maestro.FSM_GROUP_TWOWAY   = newObjectWithKeys( Maestro.FSM_ID_GD_TWOWAY, Maestro.FSM_ID_LD_TWOWAY, Maestro.FSM_ID_ZM_TWOWAY );
 Maestro.FSM_GROUP_AUTHONLY = newObjectWithKeys( Maestro.FSM_ID_GD_AUTHONLY, Maestro.FSM_ID_LD_AUTHONLY, Maestro.FSM_ID_ZM_AUTHONLY );
-Maestro.FSM_GROUP_SYNC     = newObjectWithKeys( Maestro.FSM_ID_GD_TWOWAY, Maestro.FSM_ID_GD_AUTHONLY, 
-                                                Maestro.FSM_ID_LD_TWOWAY, Maestro.FSM_ID_LD_AUTHONLY, 
+Maestro.FSM_GROUP_SYNC     = newObjectWithKeys( Maestro.FSM_ID_GD_TWOWAY, Maestro.FSM_ID_GD_AUTHONLY,
+                                                Maestro.FSM_ID_LD_TWOWAY, Maestro.FSM_ID_LD_AUTHONLY,
                                                 Maestro.FSM_ID_ZM_TWOWAY, Maestro.FSM_ID_ZM_AUTHONLY);
 
 // ID_FUNCTOR_* uniquely identifies each functor
@@ -143,7 +143,7 @@ Maestro.prototype.observe = function(nsSubject, topic, data)
 
 				// if (!(id_fsm in this.m_a_fsmstate) && !subject.fsmstate.isFinal())
 				//	logger().debug("Maestro: observe: adding to m_a_fsmstate: " + id_fsm);
-					
+
 				this.m_a_fsmstate[id_fsm] = subject.fsmstate;
 
 				// logger().debug("Maestro: DO_FSM_STATE_UPDATE: m_a_fsmstate[" + id_fsm + "]: " + this.m_a_fsmstate[id_fsm].toString());

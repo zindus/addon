@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zmsoapdocument.js,v 1.19 2009-10-17 07:14:23 cvsuser Exp $
+// $Id: zmsoapdocument.js,v 1.20 2011-05-01 02:36:30 cvsuser Exp $
 
 function ZmSoapDocument()
 {
@@ -38,11 +38,11 @@ ZmSoapDocument.nsFromMethod = function(method)
 		GetAccountInfo: "za",
 		GetInfo:        "za",
 		SyncGal:        "za",
-		ContactAction:  "zm", 
-		CreateContact:  "zm", 
-		CreateFolder:   "zm", 
+		ContactAction:  "zm",
+		CreateContact:  "zm",
+		CreateFolder:   "zm",
 		GetContacts:    "zm",
-		FolderAction:   "zm", 
+		FolderAction:   "zm",
 		FakeHead:       "zm",
 		Sync:           "zm",
 		Batch:          "z",  // used in ForeignContactDelete
@@ -94,7 +94,7 @@ ZmSoapDocument.prototype.context = function(authToken, zimbraId, is_noqualify)
 	elUserAgent.setAttribute("name", APP_NAME);
 	elUserAgent.setAttribute("version", APP_VERSION_NUMBER);
 
-	// noqualify controls the formatting of returned id's and distinguishes whether the owner of the mailbox 
+	// noqualify controls the formatting of returned id's and distinguishes whether the owner of the mailbox
 	// matches the principal.  Since there's no delegation of authority here, we use noqualify.
 	// see: ZimbraServer/src/java/com/zimbra/cs/service/util/ItemIdFormatter.java
 

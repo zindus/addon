@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmobserver.js,v 1.86 2010-06-21 09:43:41 cvsuser Exp $
+// $Id: syncfsmobserver.js,v 1.87 2011-05-01 02:36:30 cvsuser Exp $
 
 // An object of this class is updated as a SyncFsm progresses from start to finish.
 // It's state includes both percentage complete and per-fsm-state text detail.
@@ -86,7 +86,7 @@ SyncFsmObserver.prototype = {
 	},
 	progressToString : function() {
 		var ret = "";
-	
+
 		ret += this.get(SyncFsmObserver.OP);
 
 		if (this.get(SyncFsmObserver.PROG_MAX) > 0)
@@ -275,12 +275,12 @@ SyncFsmObserver.prototype = {
 				case 'stLoad':           this.progressReportOn("load");                                          break;
 				case 'stGetInfo':        this.progressReportOnSource(context.state.sourceid_pr, "account.info"); break;
 				case 'stGetAccountInfo': this.progressReportOnSource(context.state.sourceid_pr, "account.info"); break;
-				case 'stSync':          
+				case 'stSync':
 				case 'stSyncResponse':
 				case 'stGetGroupsGd1':
 				case 'stGetContactGd1':
-				case 'stGetContactGd2': this.progressReportOnSource(context.state.sourceid_pr, "remote.sync");  break;
-				case 'stGalSync':        
+				case 'stGetContactGd2':  this.progressReportOnSource(context.state.sourceid_pr, "remote.sync");  break;
+				case 'stGalSync'
 				case 'stGalCommit':      this.progressReportOnSource(context.state.sourceid_pr, "get.gal");      break;
 				case 'stLoadTb':         this.progressReportOnSource(context.state.sourceid_tb, "load");         break;
 				case 'stUpdateTb':       this.progressReportOnSource(context.state.sourceid_tb, "put.one");      break;
@@ -363,7 +363,7 @@ SyncFsmObserver.prototype = {
 
 				case 'stUpdateGd': {
 					let max_suos = 0;
-	
+
 					if (!context.state.m_suo_generator)
 						max_suos = Suo.count(context.state.aSuo, function(sourceid, bucket) { return sourceid == context.state.sourceid_pr; });
 

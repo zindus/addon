@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zidbag.js,v 1.10 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: zidbag.js,v 1.11 2011-05-01 02:36:30 cvsuser Exp $
 
 // ZidBag:
 // - a_zid        an array of Zimbra account ids.
@@ -87,7 +87,7 @@ assert : function(zid, key) {
 //
 soapUrl : function(arg) {
 	var ret;
-	
+
 	if (arguments.length  == 0)
 		ret = this.soapUrl(this.m_index);
 	else if (typeof(arg) == 'number')

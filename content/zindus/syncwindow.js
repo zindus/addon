@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncwindow.js,v 1.52 2010-02-26 01:40:54 cvsuser Exp $
+// $Id: syncwindow.js,v 1.53 2011-05-01 02:36:30 cvsuser Exp $
 
 function SyncWindow()
 {
@@ -75,7 +75,7 @@ SyncWindow.prototype.onAccept = function()
 	this.m_logger.debug("onAccept: enters");
 
 	logger('info').info(getInfoMessage('finish'));
-			
+
 	if (!this.m_payload.m_is_cancelled)
 		Maestro.notifyFunctorUnregister(Maestro.ID_FUNCTOR_SYNCWINDOW);
 
@@ -140,7 +140,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 
 		this.m_syncfsm.start(window);
 	}
-	else 
+	else
 	{
 		this.m_timeoutID = fsmstate.timeoutID;
 
@@ -162,7 +162,7 @@ SyncWindow.prototype.onFsmStateChangeFunctor = function(fsmstate)
 			let sourceid = AccountStatic.indexToSourceId(sfcd.m_account_index);
 			let is_repeat_current = false;
 			let is_repeat_all     = false;
-			
+
 			if (sfcd.account().format_xx() == FORMAT_GD)
 				is_repeat_current =
 					(sfcd.sourceid(sourceid, 'c_start') < MAX_SYNC_START) &&

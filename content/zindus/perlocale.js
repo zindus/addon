@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: perlocale.js,v 1.11 2010-02-27 04:13:16 cvsuser Exp $
+// $Id: perlocale.js,v 1.12 2011-05-01 02:36:30 cvsuser Exp $
 
 // A locale eg 'en-US' is made up of language (en) and nation/location (US)
 //
@@ -107,11 +107,11 @@ var PerLocaleStatic = {
 	},
 	translation_of : function(key, locale) {
 		// Use logic that's similar to zimbra's (see soap.txt)
-		// 1. notused: zimbraPrefLocale of the target account if it is present 
+		// 1. notused: zimbraPrefLocale of the target account if it is present
 		// 2. Thunderbird's "general.useragent.locale" preference (if set)
 		// 3. "Emailed Contacts"
 		//
-	
+
 		locale = locale || PerLocaleStatic.general_useragent();
 
 		let ret = key;

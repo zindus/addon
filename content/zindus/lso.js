@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: lso.js,v 1.19 2009-10-17 07:20:26 cvsuser Exp $
+// $Id: lso.js,v 1.20 2011-05-01 02:35:40 cvsuser Exp $
 
 // lso == Last Sync Object
 //
@@ -39,7 +39,7 @@ function Lso(arg)
 			var zfi = arg;
 			zinAssert(zfi);
 			for (i = 0; i < Lso.aPartsZfi.length; i++)
-				if (zfi.isPresent(Lso.aPartsZfi[i]))	
+				if (zfi.isPresent(Lso.aPartsZfi[i]))
 					this.m_properties[Lso.aPartsZfi[i]] = zfi.get(Lso.aPartsZfi[i]);
 			break;
 		case 'string': // populate properties from a FeedItem.ATTR_LS string
@@ -85,12 +85,12 @@ Lso.prototype.compareFormat = function()
 //  * if the ms and rev parts aren't empty (and the cs part is):
 //	  * the ms  attribute is greater than the ms  part of the ls attribute or
 //	  * the rev attribute is greater than the rev part of the ls attribute or
-//	  * the ms and rev attributes equal the corresponding parts of the ls attribute and 
-//      the DEL attribute is different from the DEL part of the ls attribute 
+//	  * the ms and rev attributes equal the corresponding parts of the ls attribute and
+//      the DEL attribute is different from the DEL part of the ls attribute
 //  * if the cs part isn't empty (and the ms part is):
 //    * the cs attribute is different from the corresponding part of the ls attribute or
 //    * the cs attributes is the same as the corresponding parts of the ls attribute and
-//      the DEL attribute is different from the DEL part of the ls attribute 
+//      the DEL attribute is different from the DEL part of the ls attribute
 // returns -1 otherwise
 //
 Lso.prototype.compare = function(zfi)
@@ -130,7 +130,7 @@ Lso.prototype.compare = function(zfi)
 				isGreaterThan =
 				            (Number(Lso.normalise(zfi, MS))  > Number(this.m_properties[MS]))  ||
 			                (Number(Lso.normalise(zfi, REV)) > Number(this.m_properties[REV])) ||
-			                ( 
+			                (
 								(Lso.normalise(zfi, MS) == this.m_properties[MS]) &&
 			                  	(Lso.normalise(zfi, REV) == this.m_properties[REV]) &&
 					  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL])
@@ -139,7 +139,7 @@ Lso.prototype.compare = function(zfi)
 			case FORMAT_GD:
 				isGreaterThan =
 			                (Lso.normalise(zfi, REV) > this.m_properties[REV]) ||
-			                ( 
+			                (
 			                  	(Lso.normalise(zfi, REV) == this.m_properties[REV]) &&
 					  			(Lso.normalise(zfi, DEL) != this.m_properties[DEL])
 							);

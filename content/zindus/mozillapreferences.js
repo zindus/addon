@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mozillapreferences.js,v 1.39 2010-05-18 03:16:29 cvsuser Exp $
+// $Id: mozillapreferences.js,v 1.40 2011-05-01 02:36:30 cvsuser Exp $
 
 // see: http://developer.mozilla.org/en/docs/Code_snippets:Preferences
 //
@@ -95,7 +95,7 @@ MozillaPreferences.prototype =
 		if (this.m_branch == null) {
 			try {
 				let instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
-	
+
 				this.m_branch = instance.getBranch(this.m_prefix);
 			}
 			catch(ex) {
@@ -109,7 +109,7 @@ MozillaPreferences.prototype =
 		if (this.m_defaultbranch == null) {
 			try {
 				let instance = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
-	
+
 				this.m_defaultbranch = instance.getDefaultBranch(this.m_prefix);
 			}
 			catch(ex) {

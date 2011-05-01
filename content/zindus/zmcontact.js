@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zmcontact.js,v 1.13 2009-05-31 22:56:38 cvsuser Exp $
+// $Id: zmcontact.js,v 1.14 2011-05-01 02:36:30 cvsuser Exp $
 
 function ZmContact()
 {
@@ -75,7 +75,7 @@ ZmContact.prototype.loadFromNode = function(doc, node, ns)
 		var elementA = nodelist_of_a.item(i);
 		key = null;
 		value = null;
-		
+
 		if (!elementA || !elementA.childNodes)
 		{
 			logger().warn("Unexpected response from server: <a> element didn't have attributes - skipping the rest of this contact.");
@@ -107,7 +107,7 @@ function ZmContactFunctorToMakeArrayFromNodes(ns)
 
 	// this associative array is a reverse mapping of contact ids to elements in a.  It's used for fast lookup by contact id.
 	// So if this.a[6].attribute.id == 123, then this.mapId.123 == 6
-	// 
+	//
 	this.mapId = new Object();
 }
 

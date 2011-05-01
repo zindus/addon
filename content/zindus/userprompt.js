@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: userprompt.js,v 1.1 2009-11-04 02:38:42 cvsuser Exp $
+// $Id: userprompt.js,v 1.2 2011-05-01 02:36:30 cvsuser Exp $
 
 function UserPrompt()
 {
@@ -73,7 +73,7 @@ UserPrompt.show = function(msg, args)
 		for (i in actual_args)
 			if (i in args)
 				actual_args[i] = args[i];
-		
+
 	zinAssert(/accept/.test(actual_args['buttons']) || /cancel/.test(actual_args['show_again']));
 	zinAssert(typeof(actual_args['show_again']) == 'boolean');
 

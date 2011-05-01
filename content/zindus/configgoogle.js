@@ -20,16 +20,16 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configgoogle.js,v 1.7 2009-11-12 14:49:11 cvsuser Exp $
+// $Id: configgoogle.js,v 1.8 2011-05-01 02:35:40 cvsuser Exp $
 
 function ConfigGd()
 {
 	this.m_prefset_gd = new PrefSet(PrefSet.GENERAL, PrefSet.GENERAL_GD_PROPERTIES);
 
 	this.m_bimap = new Object();
-	this.m_bimap['postal']    = new BiMap( [ "true",                "false"                 ], 
+	this.m_bimap['postal']    = new BiMap( [ "true",                "false"                 ],
 	                                       [ "cgd-postal-true",     "cgd-postal-false"      ] );
-	this.m_bimap['conflict']  = new BiMap( [ "ask-me",              "dont-ask"              ], 
+	this.m_bimap['conflict']  = new BiMap( [ "ask-me",              "dont-ask"              ],
 	                                       [ "cgd-conflict-ask-me", "cgd-conflict-dont-ask" ] );
 
 	this.m_map = {

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsmchaindata.js,v 1.18 2010-02-26 01:40:54 cvsuser Exp $
+// $Id: syncfsmchaindata.js,v 1.19 2011-05-01 02:36:30 cvsuser Exp $
 
 // An instance of this class is passed from SyncFsm to SyncFsm - carrying state from one to the next
 //
@@ -65,7 +65,7 @@ SyncFsmChainData.ITEM_KEYS = {
 
 SyncFsmChainData.prototype = {
 	toString : function() {
-		var ret = "SyncFsmChainData:" + 
+		var ret = "SyncFsmChainData:" +
 		          " account_index: "     + this.m_account_index +
 			      " a_first_of_format: " + aToString(this.m_a_first_of_format) +
 			      " a_last_of_format: "  + aToString(this.m_a_last_of_format);

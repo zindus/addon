@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: prefset.js,v 1.26 2009-10-17 09:16:02 cvsuser Exp $
+// $Id: prefset.js,v 1.27 2011-05-01 02:36:30 cvsuser Exp $
 
 function PrefSet(prefprefix, a)
 {
@@ -99,7 +99,6 @@ PrefSet.prototype.save = function()
 		logger().warn("PrefSet.prototype.save: exception thrown i: " + i + " this: " + this.toString() + " " + executionStackAsString());
 	}
 
-	
 	return retval;
 }
 
@@ -117,7 +116,7 @@ PrefSet.prototype.remove = function()
 	}
 	catch (ex) {
 	}
-	
+
 	return ret;
 }
 
@@ -177,7 +176,7 @@ PrefSet.prototype.makePrefKey = function(id, property)
 	var ret = "";
 
 	ret += this.m_prefprefix;
-	
+
 	if (id != PrefSet.ID_UNINITIALISED)
 		ret += "." + id;
 

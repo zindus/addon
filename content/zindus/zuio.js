@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zuio.js,v 1.12 2009-09-16 06:45:47 cvsuser Exp $
+// $Id: zuio.js,v 1.13 2011-05-01 02:36:30 cvsuser Exp $
 
 // zuio == Zimbra Uniquely Identified Object
 //
@@ -62,7 +62,7 @@ Zuio.prototype = {
 			this.setFromPair(a[0], null);
 		else if (a.length == 2)
 			this.setFromPair(a[0], a[1]);
-		else 
+		else
 			zinAssertAndLog(false, key_as_string);
 	},
 	id : function() {
@@ -78,7 +78,7 @@ Zuio.key = function(id, zid)
 	zinAssertAndLog(id, id);
 
 	var ret = id + "";
-	
+
 	if (zid && zid.length > 0 && zid != "null") // the != "null" caters for when zid is used a key to a hash - for x[null] the key is "null"
 		ret += "#" + zid;
 
