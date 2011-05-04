@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.288 2011-05-01 02:38:11 cvsuser Exp $
+// $Id: syncfsm.js,v 1.289 2011-05-04 22:36:35 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6800,8 +6800,9 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				let contact  = self.state.a_gd_contact[luid_winner_au];
 				let id_f     = self.gd_photo_filename_base_from_id(contact.meta.id);
 				let etag_f   = self.gd_photo_filename_base_from([ contact.photo.etag ]);
-				// self.debug("a_gd_photo_filenames_in_contact_directory: " + aToString(a_gd_photo_filenames_in_contact_directory) +
-				// " id_f: " + id_f + " etag: " + etag_f);
+
+				self.debug("a_gd_photo_filenames_in_contact_directory: " + aToString(a_gd_photo_filenames_in_contact_directory) + " id_f: " + id_f + " etag: " + etag_f);
+
 				let filename = a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
 				let nsifile  = SyncFsmGd.gd_photo_nsifile_for(filename);
 
