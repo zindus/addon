@@ -29,7 +29,7 @@ set -e
 # Note: It modifies chrome.manifest when packaging so that it points to 
 #       chrome/$APP_NAME.jar!/*
 #
-# $Id: build.sh,v 1.23 2011-05-04 22:01:27 cvsuser Exp $
+# $Id: build.sh,v 1.24 2011-05-04 22:06:13 cvsuser Exp $
 
 #
 # default configuration file is ./build-config.sh, unless another file is 
@@ -184,9 +184,14 @@ if [ -f "chrome.manifest" ]; then
   # Then try this! (Same, but with characters escaped for bash :)
   # sed -i "" -E s/^\(content\\s+\\S*\\s+\)\(\\S*\\/\)$/\\1jar:chrome\\/$APP_NAME\\.jar!\\/\\2/ chrome.manifest
   # sed -i "" -E s/^\(skin\|locale\)\(\\s+\\S*\\s+\\S*\\s+\)\(.*\\/\)$/\\1\\2jar:chrome\\/$APP_NAME\\.jar!\\/\\3/ chrome.manifest
+if [ "$OS" = "Darwin" ]; then
   $SED_IN_PLACE s/^\(content\[\ \\t\]+\[^\ \\t\]*\[\ \\t\]+\)\(content.*$\)/\\1jar:chrome\\/$APP_NAME\\.jar!\\/\\2/ chrome.manifest
   $SED_IN_PLACE s/^\(skin.*\)\(skin.*$\)/\\1jar:chrome\\/$APP_NAME\\.jar!\\/\\2/ chrome.manifest
   $SED_IN_PLACE s/^\(locale.*\)\(locale.*$\)/\\1jar:chrome\\/$APP_NAME\\.jar!\\/\\2/ chrome.manifest
+elif [ "$OS" = "CYGWIN_NT-5.0" ]; then
+  $SED_IN_PLACE s/^\(content\\s+\\S*\\s+\)\(\\S*\\/\)$/\\1jar:chrome\\/$APP_NAME\\.jar!\\/\\2/ chrome.manifest
+  $SED_IN_PLACE s/^\(skin\|locale\)\(\\s+\\S*\\s+\\S*\\s+\)\(.*\\/\)$/\\1\\2jar:chrome\\/$APP_NAME\\.jar!\\/\\3/ chrome.manifest
+fi
 
   # (it simply adds jar:chrome/whatever.jar!/ at appropriate positions of chrome.manifest)
 fi
