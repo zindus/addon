@@ -1,9 +1,23 @@
 #!/bin/bash
-# $Id: deploy-common.sh,v 1.5 2010-06-28 02:48:11 cvsuser Exp $
+# $Id: deploy-common.sh,v 1.6 2011-05-04 21:59:05 cvsuser Exp $
+
+OS=`uname`
+
+if [ "$OS" = "Darwin" ]; then
+	SED="sed -E"
+	SED_IN_PLACE='sed -E -i .sed.bak'
+elif [ "$OS" = "CYGWIN_NT-5.0" ]; then
+	SED="sed -r"
+	SED_IN_PLACE="sed -r -i "
+else
+	echo unknown OS
+	exit 1
+fi
+export OS SED SED_IN_PLACE
 
 get_appversion()
 {
-	echo `sed -r "s#<em:version>(.*)</em:version>#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
+	echo `$SED "s#<em:version>(.*)</em:version>#fredfred \1#" < install.rdf | awk '/fredfred/ { print $2; }'`
 }
 
 get_platform_id()
@@ -15,7 +29,7 @@ get_platform_id()
 		exit 1;
 	fi
 
-	ls *$appv-* | sed -r "s#$appv(.*)\.xpi#fredfred \1#" | awk '/fredfred/ { print $2; }'
+	ls *$appv-* | $SED "s#$appv(.*)\.xpi#fredfred \1#" | awk '/fredfred/ { print $2; }'
 }
 
 generate_and_copy_rdfs()
