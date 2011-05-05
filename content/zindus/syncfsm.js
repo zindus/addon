@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.289 2011-05-04 22:36:35 cvsuser Exp $
+// $Id: syncfsm.js,v 1.290 2011-05-05 03:16:06 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -10974,9 +10974,9 @@ SyncFsmGd.prototype.exitActionGetPhotoGd = function(state, event)
 		this.debug("exitActionGetPhotoGd: photo for id=" + contact.meta.id +
 		           " stored as filename: " + filename + " bytes: " + this.state.m_http.response('text').length);
 	}
-	else if (this.state.m_http.is_http_status(HTTP_STATUS_404_NOT_FOUND)) {
+	else {
 		zfi.set(FeedItem.ATTR_GDME, contact.photo.etag);
-		this.debug("added gdme to zfi: " + zfi.toString());
+		this.debug("exitActionGetPhotoGd: added gdme to zfi: " + zfi.toString());
 
 		// the stopFailCode below actually works fine, but there's nothing useful that can be said to users re: a workaround.
 		// Gmail export/delete/import would to do the trick except that Google Contacts export doesn't currently export photos.
@@ -10987,8 +10987,9 @@ SyncFsmGd.prototype.exitActionGetPhotoGd = function(state, event)
 		// this.state.stopFailArg     = [ stringBundleString("brand.google"), url("google-bug-1234") ];
 		// this.state.stopFailTrailer = " ";
 	}
-	else
-		zinAssertAndLog(false, "unexpected response when getting photo for contact id: " + contact.meta.id);
+	// else if (this.state.m_http.is_http_status(HTTP_STATUS_404_NOT_FOUND)) {
+	// else
+	//	zinAssertAndLog(false, "unexpected response when getting photo for contact id: " + contact.meta.id);
 }
 
 SyncFsm.tb_photo_checksum = function(properties)
@@ -11127,6 +11128,8 @@ SyncFsmGd.prototype.gd_photo_filename_from_retrieved_photo = function(contact)
 SyncFsmGd.prototype.gd_photo_filenames_in_contact_directory = function()
 {
 	let ret = new Object();
+	let c_etag = 0;
+	let c_id   = 0;
 
 	with (Filesystem) {
 		let directory = nsIFileForDirectory(eDirectory.PHOTO);
@@ -11146,14 +11149,19 @@ SyncFsmGd.prototype.gd_photo_filenames_in_contact_directory = function()
 					if (a && a.length == 4 && a[1] == account_part_of_base) {
 						let id   = a[2];
 						let etag = a[3];
-						if (!(id in ret))
+						if (!(id in ret)) {
 							ret[id] = new Object();
+							c_id++;
+						}
+						c_etag++;
 						ret[id][etag] = filename;
 					}
 				}
 			}
 		}
 	}
+
+	this.debug("gd_photo_filenames_in_contact_directory: c_etag: " + c_etag + " (photos) in c_id: " + c_id + " (unique contacts) returns: " + aToString(ret));
 
 	return ret;
 }
