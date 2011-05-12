@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.290 2011-05-05 03:16:06 cvsuser Exp $
+// $Id: syncfsm.js,v 1.291 2011-05-12 03:08:07 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6801,7 +6801,10 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				let id_f     = self.gd_photo_filename_base_from_id(contact.meta.id);
 				let etag_f   = self.gd_photo_filename_base_from([ contact.photo.etag ]);
 
-				self.debug("a_gd_photo_filenames_in_contact_directory: " + aToString(a_gd_photo_filenames_in_contact_directory) + " id_f: " + id_f + " etag: " + etag_f);
+				self.debug("set_photo_properties: id_f: " + id_f + " etag: " + etag_f);
+
+				zinAssert(id_f in a_gd_photo_filenames_in_contact_directory);
+				zinAssert(etag_f in a_gd_photo_filenames_in_contact_directory[id_f]);
 
 				let filename = a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
 				let nsifile  = SyncFsmGd.gd_photo_nsifile_for(filename);
@@ -10390,7 +10393,10 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 					if (!zfi.isPresent(FeedItem.ATTR_ETAG) || zfi.get(FeedItem.ATTR_ETAG) != contact.photo.etag) {
 						self.state.a_gd_photo_to_get.push(id);
 						zfi.set(FeedItem.ATTR_ETAG, contact.photo.etag);
+						msg += "photo pushed (a seen contact) ";
 					}
+					else
+						msg += "photo not pushed (etag was missing or matching) ";
 				}
 				else if (zfi.isPresent(FeedItem.ATTR_ETAG))
 					zfi.del(FeedItem.ATTR_ETAG);
@@ -10423,6 +10429,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 						msg += " photo matches local filename: " + a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
 					else {
 						self.state.a_gd_photo_to_get.push(id);
+						msg += "photo pushed (a new contact) ";
 					}
 				}
 			}
