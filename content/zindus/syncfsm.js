@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.291 2011-05-12 03:08:07 cvsuser Exp $
+// $Id: syncfsm.js,v 1.292 2011-05-22 04:07:55 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2791,6 +2791,41 @@ SyncFsmGd.prototype.testForGoogleGroupNameIntegrity = function()
 	return !this.state.stopFailCode;
 }
 
+// confirm that every google contact that should have a local photo does actually have one!
+// 
+SyncFsmGd.prototype.testForGooglePhotoIntegrity = function()
+{
+	this.debug("testForGooglePhotoIntegrity: enters");
+
+	if (AppInfo.is_photo()) {
+		let self  = this;
+		let a_map = newObject();
+		let a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
+
+		let functor = {
+			run: function(zfi) {
+				if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau
+						                           && zfi.isPresent(FeedItem.ATTR_ETAG)
+						                           && !zfi.isPresent(FeedItem.ATTR_GDME)) {
+					let id_f   = self.gd_photo_filename_base_from_id(zfi.key());
+					let etag_f = self.gd_photo_filename_base_from([ zfi.get(FeedItem.ATTR_ETAG) ]);
+
+					if ((id_f in a_gd_photo_filenames_in_contact_directory) && (etag_f in a_gd_photo_filenames_in_contact_directory[id_f]))
+						a_map[zfi.key()] = a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
+					else
+						zinAssertAndLog(false, "expected addon to have retrieved photo for zfi: " + zfi.toString());
+				}
+				return true;
+			}
+		};
+
+		this.zfcPr().forEach(functor);
+
+		this.debug("testForGooglePhotoIntegrity: a_map: " + aToString(a_map));
+	}
+
+	this.debug("testForGooglePhotoIntegrity: exits");
+}
 // The ui should not allow these conditions, so if these errors are triggered, then
 // a) the ui is broken or
 // b) the user created a second zimbra account by editing preferences manually
@@ -6496,6 +6531,7 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 		passed = passed && this.testForTbAbGdCiIntegrity();
 		passed = passed && this.testForGoogleGroupNameIntegrity();
+		this.testForGooglePhotoIntegrity();
 	}
 
 	this.state.stopwatch.mark(state + " Converge: updateGidDoChecksums: " + this.state.m_progress_count++);
@@ -10324,14 +10360,16 @@ SyncFsm.prototype.entryActionGetContactGd3 = function(state, event, continuation
 
 SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 {
-	var self        = this;
-	var zfcPr       = this.zfcPr();
-	var a_contact_count     = newObject('regular', 0, 'empty', 0, 'deleted', 0, 'suggested', 0);
-	var a_deleted_suggested = {};
-	var a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
-	var i, j, generator;
+	let self    = this;
+	let zfcPr   = this.zfcPr();
+	let a_stats = newObject('regular', 0, 'empty', 0, 'deleted', 0, 'suggested', 0);
+	let i, j, generator, a_gd_photo_filenames_in_contact_directory;
 
 	this.state.stopwatch.mark(state + " enters");
+
+	this.debug("before calling gd_photo_filenames_in_contact_directory");
+	a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
+	this.debug("after  calling gd_photo_filenames_in_contact_directory");
 
 	this.state_entry_count(state);
 
@@ -10344,42 +10382,24 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 	// - suggested contacts are in the luid map on a slow sync so that they can be twinned with their tb contacts
 	//   to allow the tb contact to be backated and removed.  The FeedItem is removed during UpdateCleanup.
 	//
-	var functor = {
+	let functor = {
 		run: function(contact) {
-			let id           = contact.meta.id;
-			let is_ignored   = contact.meta.deleted || contact.is_empty();
-			let zfi          = null;
-			let msg = "";
+			let id         = contact.meta.id;
+			let is_ignored = contact.meta.deleted || contact.is_empty();
+			let zfi        = null;
+			let msg        = "";
 
 			self.state.a_gd_contact[id] = contact;
 			self.state.m_gd_progress_count++;       // count the contacts processed in total
 
 			if (contact.meta.deleted)              // count the contacts by breakdown to match against gmail UI
-				a_contact_count['deleted']++;
+				a_stats['deleted']++;
 			else if (contact.is_empty())
-				a_contact_count['empty']++;
+				a_stats['empty']++;
 			else
-				a_contact_count['regular']++;
+				a_stats['regular']++;
 
 			msg += "id=" + id + " contact: ";
-
-			if (false && (self.account().gd_gr_as_ab == 'true') && ContactGoogleStatic.is_google_apps(self.account())) {
-				// decided that this isn't nec - we cope with contacts being members of groups we don't sync with (ie w/o zindus/ prefix)
-				//
-				let a_groups = [];
-				let excluded_group_msg = "";
-				let i;
-				for (i = 0; i < contact.groups.length; i++)
-					if (!zfcPr.isPresent(contact.groups[i]))
-						excluded_group_msg = " " + contact.groups[i];
-					else
-						a_groups.push(contact.groups[i])
-
-				if (excluded_group_msg.length > 0) {
-					msg += " google apps account - ignoring membership in system groups: " + excluded_group_msg;
-					contact.groups = a_groups;
-				}
-			}
 
 			if (!is_ignored)               msg += contact.toString();
 			else if (contact.meta.deleted) msg += " deleted";
@@ -10458,9 +10478,9 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 	this.state.stopwatch.mark(state + " finished parsing a_gd_contact");
 
 	this.debug("entryActionGetContactGd3: contacts processed: " +
-		" regular: " + a_contact_count['regular'] +
-		" empty: "   + a_contact_count['empty'] +
-		" deleted: " + a_contact_count['deleted'] +
+		" regular: " + a_stats['regular'] +
+		" empty: "   + a_stats['empty'] +
+		" deleted: " + a_stats['deleted'] +
 		" gmail ui should match (regular + empty) after a slow sync");
 
 	this.debug("entryActionGetContactGd3: a_gd_photo_to_get: " + self.state.a_gd_photo_to_get.toString());
