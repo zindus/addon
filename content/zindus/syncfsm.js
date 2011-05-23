@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.292 2011-05-22 04:07:55 cvsuser Exp $
+// $Id: syncfsm.js,v 1.293 2011-05-23 01:18:00 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -2792,7 +2792,7 @@ SyncFsmGd.prototype.testForGoogleGroupNameIntegrity = function()
 }
 
 // confirm that every google contact that should have a local photo does actually have one!
-// 
+//
 SyncFsmGd.prototype.testForGooglePhotoIntegrity = function()
 {
 	this.debug("testForGooglePhotoIntegrity: enters");
@@ -10410,13 +10410,24 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 				zfi = zfcPr.get(id);
 
 				if ('etag' in contact.photo) {
-					if (!zfi.isPresent(FeedItem.ATTR_ETAG) || zfi.get(FeedItem.ATTR_ETAG) != contact.photo.etag) {
+					if (!zfi.isPresent(FeedItem.ATTR_ETAG) || zfi.get(FeedItem.ATTR_ETAG) != contact.photo.etag
+					                                       || zfi.isPresent(FeedItem.ATTR_GDME)) {
 						self.state.a_gd_photo_to_get.push(id);
 						zfi.set(FeedItem.ATTR_ETAG, contact.photo.etag);
-						msg += "photo pushed (a seen contact) ";
+						msg += "photo pushed (new or updated photo) ";
 					}
-					else
-						msg += "photo not pushed (etag was missing or matching) ";
+					else {
+						msg += "photo not pushed (matching etag) ";
+
+						// TODO remove this debugging once bug #290 is fixed
+						let id_f   = self.gd_photo_filename_base_from_id(id);
+						let etag_f = self.gd_photo_filename_base_from([ contact.photo.etag ]);
+
+						zinAssertAndLog(id_f in a_gd_photo_filenames_in_contact_directory, "id_f: " + id_f);
+						zinAssertAndLog(etag_f in a_gd_photo_filenames_in_contact_directory[id_f], "etag_f: " + etag_f);
+
+						msg += " local filename: " + a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
+					}
 				}
 				else if (zfi.isPresent(FeedItem.ATTR_ETAG))
 					zfi.del(FeedItem.ATTR_ETAG);
@@ -10980,19 +10991,28 @@ SyncFsmGd.prototype.exitActionGetPhotoGd = function(state, event)
 	if (!this.state.m_http || event == "evCancel")
 		return;
 
+	let self    = this;
 	let contact = this.state.a_gd_contact[this.state.a_gd_photo_to_get[this.state.m_gd_progress_count - 1]];
 	let zfi     = this.zfcPr().get(contact.meta.id);
 
 	if (this.state.m_http.is_http_status(HTTP_STATUS_2xx)) {
-		zfi.set(FeedItem.ATTR_GDPT, SyncFsmGd.gd_photo_extension(this.state.m_http.m_xhr));
+		function filename_from_retrieved_photo(contact, ext) {
+			let basename = self.gd_photo_filename_base_from([
+			                   self.account().username,
+							   self.gd_photo_filename_base_from_id(contact.meta.id),
+							   contact.photo.etag ]);
+			let ret = basename + "." + ext;
+
+			self.debug("gd_photo_filename_from_retrieved_photo: contact id: " + contact.meta.id + " returns: " + ret);
+
+			return ret;
+		}
 
 		if (zfi.isPresent(FeedItem.ATTR_GDME))
 			zfi.del(FeedItem.ATTR_GDME);
 
-		if (zfi.isPresent(FeedItem.ATTR_GDME))
-			zfi.del(FeedItem.ATTR_GDME);
-
-		let filename = this.gd_photo_filename_from_retrieved_photo(contact);
+		let ext      = SyncFsmGd.gd_photo_extension(this.state.m_http.m_xhr);
+		let filename = filename_from_retrieved_photo(contact, ext);
 
 		Filesystem.writeToFile(SyncFsmGd.gd_photo_nsifile_for(filename), this.state.m_http.response('text'), 'binary');
 
@@ -11134,20 +11154,6 @@ SyncFsmGd.prototype.gd_photo_filename_base_from = function(a)
 
 	if (a.length == 3)
 		zinAssertAndLog(ret.match(this.gd_photo_filename_re(a[0])), ret);
-
-	return ret;
-}
-
-SyncFsmGd.prototype.gd_photo_filename_from_retrieved_photo = function(contact)
-{
-	let basename = this.gd_photo_filename_base_from([
-	                   this.account().username,
-					   this.gd_photo_filename_base_from_id(contact.meta.id),
-					   contact.photo.etag ]);
-	let ext      = this.zfcPr().get(contact.meta.id).get(FeedItem.ATTR_GDPT);
-	let ret      = basename + "." + ext;
-
-	this.debug("gd_photo_filename_from_retrieved_photo: contact id: " + contact.meta.id + " returns: " + ret);
 
 	return ret;
 }

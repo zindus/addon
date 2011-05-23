@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: feed.js,v 1.55 2011-05-01 02:37:39 cvsuser Exp $
+// $Id: feed.js,v 1.56 2011-05-23 01:18:00 cvsuser Exp $
 
 FeedCollection.ITER_ALL          = 1;   // call functor for all items in the collection
 FeedCollection.ITER_NON_RESERVED = 2;   // call functor for all items in the collection except those in KEYS_RESERVED
@@ -76,7 +76,6 @@ FeedItem.ATTR_GDID = 'gdid'; // gdci items have this attribute - value is the id
 FeedItem.ATTR_ETAG = 'etag'; // photo etag
 FeedItem.ATTR_GDME = 'gdme'; // photo etag is misleading (GET of photo returned 404)
 FeedItem.ATTR_GDPI = 'gdpi'; // photo uri
-FeedItem.ATTR_GDPT = 'gdpt'; // photo content-type-as-file-extension ie: png/gif/jpg
 
 FeedItem.ATTR_PRES = 'pres'; // temporary (not persisted) - item was present during some previous iteration
 FeedItem.ATTR_KEEP = 'keep'; // temporary (not persisted) - retain the item during cleanup (eg an unprocessed delete).
