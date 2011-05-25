@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.293 2011-05-23 01:18:00 cvsuser Exp $
+// $Id: syncfsm.js,v 1.294 2011-05-25 10:18:41 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -1109,6 +1109,94 @@ SyncFsmGd.prototype.isConsistentGdCi = function()
 	var a_gdci_references_gdau = new Object();
 	var a_gdau_seen = new Object();
 	var zfc;
+
+	var functor_foreach_luid = {
+		state: this.state,
+		run: function(zfi) {
+			if (is_consistent && zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdci)
+			{
+				is_consistent = is_consistent && SyncFsm.isConsistentKeyReference(zfc, zfi, FeedItem.ATTR_GDID, a_error_msg);
+				is_consistent = is_consistent && SyncFsm.isConsistentKeyReference(zfc, zfi, FeedItem.ATTR_L, a_error_msg);
+				a_gdci_references_gdau[zfi.get(FeedItem.ATTR_GDID)] = true;
+			}
+
+			if (is_consistent && zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau)
+			{
+				if (!zfi.isPresent(FeedItem.ATTR_GDGP)) {
+					is_consistent = false;
+					a_error_msg.error_msg = " zfi for gdau is missing ATTR_GDGP: zfi: " + zfi.toString();
+				}
+
+				a_gdau_seen[zfi.key()] = true;
+			}
+
+			return is_consistent;
+		}
+	};
+
+	for (var sourceid in this.state.sources) {
+		zfc = this.zfc(sourceid);
+
+		if (this.state.sources[sourceid]['format'] == FORMAT_GD)
+			zfc.forEach(functor_foreach_luid);
+	}
+
+	if (is_consistent && firstDifferingObjectKey(a_gdci_references_gdau, a_gdau_seen)) {
+		is_consistent = false;
+		a_error_msg.error_msg = " mismatched gdci and gdau references: " +
+		               "\n a_gdci_references_gdau: " + keysToString(a_gdci_references_gdau) + 
+		               "\n a_gdau_seen: " + keysToString(a_gdau_seen) +
+					   "\n diff: " + firstDifferingObjectKey(a_gdci_references_gdau, a_gdau_seen);
+	}
+
+	this.debug("isConsistentGdCi: " + is_consistent + " " + a_error_msg.error_msg);
+
+	return is_consistent;
+}
+
+
+SyncFsmGd.prototype.isConsistentGdPhotos = function()
+{
+	var is_consistent = true;
+	var a_error_msg   = newObject('error_msg', "");
+	var zfc;
+
+	this.debug("isConsistentGdPhotos: enters");
+
+	if (AppInfo.is_photo()) {
+		let self  = this;
+		let a_map = newObject();
+		// remove me let a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
+
+		let functor = {
+			run: function(zfi) {
+				if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau
+						                           && zfi.isPresent(FeedItem.ATTR_ETAG)
+						                           && !zfi.isPresent(FeedItem.ATTR_GDME)) {
+					//
+					// TODO get the TB PHOTO FILENAME
+					// 
+					let filename = SyncFsmGd.gd_photo_filename_for(a_gd_photo_filenames_in_contact_directory, zfi.key(), zfi.get(FeedItem.ATTR_ETAG));
+
+					if (!filename.exists)
+						a_bad_tb_missing[zfi.key()] = true;
+					else
+						a_map[zfi.key()] = filename;
+
+					// if (filename has a pattern suggesting that it came from google) && !(filename doesnt match id + etag of the google contact)
+					//	a_bad_mismatched_filename[zfi.key()] = true;
+
+				}
+				return true;
+			}
+		};
+
+		this.zfcPr().forEach(functor);
+
+		this.debug("testForGooglePhotoIntegrity: a_map: " + aToString(a_map));
+	}
+
+	this.debug("testForGooglePhotoIntegrity: exits");
 
 	var functor_foreach_luid = {
 		state: this.state,
@@ -2797,6 +2885,10 @@ SyncFsmGd.prototype.testForGooglePhotoIntegrity = function()
 {
 	this.debug("testForGooglePhotoIntegrity: enters");
 
+	// leni TODO - this is wrong:
+	// if a user adds a contact to TB, then this test throws an assertion
+	// REMOVE THIS CODE
+	//
 	if (AppInfo.is_photo()) {
 		let self  = this;
 		let a_map = newObject();
@@ -2807,11 +2899,10 @@ SyncFsmGd.prototype.testForGooglePhotoIntegrity = function()
 				if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau
 						                           && zfi.isPresent(FeedItem.ATTR_ETAG)
 						                           && !zfi.isPresent(FeedItem.ATTR_GDME)) {
-					let id_f   = self.gd_photo_filename_base_from_id(zfi.key());
-					let etag_f = self.gd_photo_filename_base_from([ zfi.get(FeedItem.ATTR_ETAG) ]);
+					let filename = SyncFsmGd.gd_photo_filename_for(a_gd_photo_filenames_in_contact_directory, zfi.key(), zfi.get(FeedItem.ATTR_ETAG));
 
-					if ((id_f in a_gd_photo_filenames_in_contact_directory) && (etag_f in a_gd_photo_filenames_in_contact_directory[id_f]))
-						a_map[zfi.key()] = a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
+					if (filename)
+						a_map[zfi.key()] = filename;
 					else
 						zinAssertAndLog(false, "expected addon to have retrieved photo for zfi: " + zfi.toString());
 				}
@@ -6531,7 +6622,6 @@ SyncFsm.prototype.entryActionConvergeGenerator = function(state)
 
 		passed = passed && this.testForTbAbGdCiIntegrity();
 		passed = passed && this.testForGoogleGroupNameIntegrity();
-		this.testForGooglePhotoIntegrity();
 	}
 
 	this.state.stopwatch.mark(state + " Converge: updateGidDoChecksums: " + this.state.m_progress_count++);
@@ -6806,7 +6896,6 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 		let luid_target = null;  // if non-null at the bottom of loop, it means that a change was made
 		let properties  = null;
 		let msg         = "";
-		let a_gd_photo_filenames_in_contact_directory = null;
 		let uri, abfCard, abCard, l_winner, l_gid, l_target, l_current, attributes, checksum;
 
 		this.debug("entryActionUpdateTb: acting on suo:" +
@@ -6830,19 +6919,14 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 			zinAssertAndLog(luid_winner_au in self.state.a_gd_contact, function () { return "luid_winner_au: " + luid_winner_au; } );
 
 			if (self.gd_photo_is_present(luid_winner_au)) {
-				if (!a_gd_photo_filenames_in_contact_directory)
-					a_gd_photo_filenames_in_contact_directory = self.gd_photo_filenames_in_contact_directory();
+				if (!self.state.a_gd_photo_filenames_in_contact_directory)
+					self.a_gd_photo_filenames_in_contact_directory = self.gd_photo_filenames_in_contact_directory();
 
 				let contact  = self.state.a_gd_contact[luid_winner_au];
-				let id_f     = self.gd_photo_filename_base_from_id(contact.meta.id);
-				let etag_f   = self.gd_photo_filename_base_from([ contact.photo.etag ]);
+				let filename = SyncFsmGd.gd_photo_filename_for(self.a_gd_photo_filenames_in_contact_directory, contact.meta.id, contact.photo.etag);
 
-				self.debug("set_photo_properties: id_f: " + id_f + " etag: " + etag_f);
+				zinAssert(filename);
 
-				zinAssert(id_f in a_gd_photo_filenames_in_contact_directory);
-				zinAssert(etag_f in a_gd_photo_filenames_in_contact_directory[id_f]);
-
-				let filename = a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
 				let nsifile  = SyncFsmGd.gd_photo_nsifile_for(filename);
 
 				properties["PhotoName"] = filename;
@@ -8304,6 +8388,7 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 				let luid_target_au = this.zfc(sourceid_target).get(luid_target).get(FeedItem.ATTR_GDID);
 				let uri            = this.zfc(sourceid_target).get(luid_target_au).get(FeedItem.ATTR_GDPI);
 				let on_xhr         = null;
+				let is_noop        = false;
 				let nsifile, headers;
 
 				if (!(tb_properties["PhotoType"] in TB_PHOTO_TYPES))
@@ -8314,23 +8399,47 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 				msg += " m_photo_op: " + suo.m_photo_op;
 
 				if (suo.m_photo_op == 'mod') {
-					nsifile     = SyncFsmGd.gd_photo_nsifile_for(tb_properties["PhotoName"]);
-					headers     = newObject("Content-Type",           "image/" + SyncFsmGd.gd_photo_extension(nsifile),
-					                        "X-HTTP-Method-Override", "PUT",
-					                        "If-Match",               "*");
-					let istream = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
+					// TODO AMHERE
+					// code is done - next step is to test it
+					// also need to fix up the integrity checking
+					// leni - Tue 24 May 2011 09:48:02 EST
+					// 
+					if (!this.state.a_gd_photo_filenames_in_contact_directory)
+						this.a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
 
-					istream.init(nsifile, -1, -1, false);
+					let zfi_au = this.zfc(sourceid_target).get(luid_target_au);
 
-					on_xhr = function (http) {
-						http.m_xhr.send(istream);
+					if (zfi_au.isPresent(FeedItem.ATTR_ETAG) &&
+						!zfi_au.isPresent(FeedItem.ATTR_GDME) &&
+							(tb_properties["PhotoName"] ==
+							SyncFsmGd.gd_photo_filename_for(this.a_gd_photo_filenames_in_contact_directory, luid_target_au,
+								zfi_au.get(FeedItem.ATTR_ETAG)))) {
+							// we'd be POSTing a contact to google identical to the one that's there
+							is_noop = true;
+							this.state.m_gd_progress_count++;
+							nextEvent = 'evRepeat'
+							msg += " local filename matches remote etag: " + tb_properties["PhotoName"] + " - noop ";
+					}
+
+					if (!is_noop) {
+						nsifile     = SyncFsmGd.gd_photo_nsifile_for(tb_properties["PhotoName"]);
+						headers     = newObject("Content-Type",           "image/" + SyncFsmGd.gd_photo_extension(nsifile),
+					                        	"X-HTTP-Method-Override", "PUT",
+					                        	"If-Match",               "*");
+						let istream = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
+
+						istream.init(nsifile, -1, -1, false);
+
+						on_xhr = function (http) { http.m_xhr.send(istream); }
 					}
 				}
 				else
 					headers = newObject("X-HTTP-Method-Override", "DELETE", "If-Match", "*");
 
-				this.setupHttpGd(state, 'evRepeat', "POST", uri, headers, null, on_xhr, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
-				nextEvent = 'evHttpRequest'
+				if (!is_noop) {
+					this.setupHttpGd(state, 'evRepeat', "POST", uri, headers, null, on_xhr, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
+					nextEvent = 'evHttpRequest'
+				}
 			}
 		}
 		else
@@ -8525,7 +8634,7 @@ SyncFsm.prototype.entryActionUpdateCleanupGenerator = function(state)
 
 				if (self.formatPr() == FORMAT_GD && self.is_slow_sync(self.state.sourceid_pr)
 				                                    && self.state.gd_is_sync_postal_address
-					                                && sourceid == self.state.sourceid_tb 
+					                                && sourceid == self.state.sourceid_tb
 													&& zfi.isPresent(FeedItem.ATTR_TBPA))
 				{
 					zfi.del(FeedItem.ATTR_TBPA); // ATTR_TBPA won't be present if the zfi is the folder or if it was added by UpdateTb
@@ -8799,10 +8908,10 @@ SyncFsm.prototype.entryActionCommit = function(state, event, continuation)
 			let functor = {
 				run: function(zfi) {
 					if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau) {
-						id = self.gd_photo_filename_base_from_id(zfi.key());
+						id = SyncFsmGd.gd_photo_filename_base_from_id(zfi.key());
 
 						if (id in a_id && (a_id_length[id] > 1) && zfi.isPresent(FeedItem.ATTR_ETAG)) {
-							let etag = self.gd_photo_filename_base_from([ zfi.get(FeedItem.ATTR_ETAG) ]);
+							let etag = SyncFsmGd.gd_photo_filename_base_from([ zfi.get(FeedItem.ATTR_ETAG) ]);
 
 							for (x in a_id[id])
 								if (x != etag)
@@ -9910,6 +10019,7 @@ SyncFsmGd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sf
 	state.gd_is_use_cached_authtoken    = false;        // true/false
 	state.gd_scheme_data_transfer       = this.getCharPref(MozillaPreferences.GD_SCHEME_DATA_TRANSFER);
 	state.a_gd_contacts_deleted         = new Object();
+	state.a_gd_photo_filenames_in_contact_directory = null;
 
 	// this contact_converter is used when we're syncing postalAddress with Google, but the _style_basic version is still called
 	// from the slow sync checksum code because we don't want to include Google postalAddress in the checksum/isTwin comparison
@@ -10392,7 +10502,7 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 			self.state.a_gd_contact[id] = contact;
 			self.state.m_gd_progress_count++;       // count the contacts processed in total
 
-			if (contact.meta.deleted)              // count the contacts by breakdown to match against gmail UI
+			if (contact.meta.deleted)               // count the contacts by breakdown to match against gmail UI
 				a_stats['deleted']++;
 			else if (contact.is_empty())
 				a_stats['empty']++;
@@ -10418,15 +10528,6 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 					}
 					else {
 						msg += "photo not pushed (matching etag) ";
-
-						// TODO remove this debugging once bug #290 is fixed
-						let id_f   = self.gd_photo_filename_base_from_id(id);
-						let etag_f = self.gd_photo_filename_base_from([ contact.photo.etag ]);
-
-						zinAssertAndLog(id_f in a_gd_photo_filenames_in_contact_directory, "id_f: " + id_f);
-						zinAssertAndLog(etag_f in a_gd_photo_filenames_in_contact_directory[id_f], "etag_f: " + etag_f);
-
-						msg += " local filename: " + a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
 					}
 				}
 				else if (zfi.isPresent(FeedItem.ATTR_ETAG))
@@ -10452,12 +10553,10 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 				msg += " added: ";
 
 				if ('etag' in contact.photo) {
-					let id_f   = self.gd_photo_filename_base_from_id(id);
-					let etag_f = self.gd_photo_filename_base_from([ contact.photo.etag ]);
+					let filename = SyncFsmGd.gd_photo_filename_for(a_gd_photo_filenames_in_contact_directory, id, contact.photo.etag);
 
-					if ((id_f in a_gd_photo_filenames_in_contact_directory) &&
-					    (etag_f in a_gd_photo_filenames_in_contact_directory[id_f]))
-						msg += " photo matches local filename: " + a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
+					if (filename)
+						msg += " photo matches local filename: " + filename;
 					else {
 						self.state.a_gd_photo_to_get.push(id);
 						msg += "photo pushed (a new contact) ";
@@ -10997,13 +11096,13 @@ SyncFsmGd.prototype.exitActionGetPhotoGd = function(state, event)
 
 	if (this.state.m_http.is_http_status(HTTP_STATUS_2xx)) {
 		function filename_from_retrieved_photo(contact, ext) {
-			let basename = self.gd_photo_filename_base_from([
+			let basename = SyncFsmGd.gd_photo_filename_base_from([
 			                   self.account().username,
-							   self.gd_photo_filename_base_from_id(contact.meta.id),
+							   SyncFsmGd.gd_photo_filename_base_from_id(contact.meta.id),
 							   contact.photo.etag ]);
 			let ret = basename + "." + ext;
 
-			self.debug("gd_photo_filename_from_retrieved_photo: contact id: " + contact.meta.id + " returns: " + ret);
+			self.debug("filename_from_retrieved_photo: contact id: " + contact.meta.id + " returns: " + ret);
 
 			return ret;
 		}
@@ -11117,7 +11216,7 @@ SyncFsmGd.prototype.gd_photo_filename_re = function(username)
 			let str = "";
 
 			str += "^"
-			str += "(" + this.gd_photo_filename_base_from([username]) + ")";
+			str += "(" + SyncFsmGd.gd_photo_filename_base_from([username]) + ")";
 			str += "-" + "(\\w+?)"; // ATOM id
 			str += "-" + "(\\w+)"; // etag stripped of quotes
 
@@ -11130,12 +11229,12 @@ SyncFsmGd.prototype.gd_photo_filename_re = function(username)
 	return this.state.m_a_gd_photo_filename_re[username];
 }
 
-SyncFsmGd.prototype.gd_photo_filename_base_from_id = function(id)
+SyncFsmGd.gd_photo_filename_base_from_id = function(id)
 {
 	return id.replace(/.*[^\w](\w+)$/, "$1");
 }
 
-SyncFsmGd.prototype.gd_photo_filename_base_from = function(a)
+SyncFsmGd.gd_photo_filename_base_from = function(a)
 {
 	zinAssert(a instanceof Array);
 
@@ -11152,8 +11251,21 @@ SyncFsmGd.prototype.gd_photo_filename_base_from = function(a)
 	//
 	let ret = hyphenate('-', b).replace(/[\\\/\:\;\*\?\<\>\|\+\[\]=."]/g,"");
 
-	if (a.length == 3)
-		zinAssertAndLog(ret.match(this.gd_photo_filename_re(a[0])), ret);
+	// the assertion is good but since I made this a static method I can't reference 'this'
+	// if (a.length == 3)
+	//	zinAssertAndLog(ret.match(this.gd_photo_filename_re(a[0])), ret);
+
+	return ret;
+}
+
+SyncFsmGd.gd_photo_filename_for = function(a_gd_photo_filenames_in_contact_directory, id, etag)
+{
+	let id_f   = SyncFsmGd.gd_photo_filename_base_from_id(id);
+	let etag_f = SyncFsmGd.gd_photo_filename_base_from([ etag ]);
+	let ret    = null;
+
+	if ((id_f in a_gd_photo_filenames_in_contact_directory) && (etag_f in a_gd_photo_filenames_in_contact_directory[id_f]))
+		ret = a_gd_photo_filenames_in_contact_directory[id_f][etag_f];
 
 	return ret;
 }
@@ -11170,7 +11282,7 @@ SyncFsmGd.prototype.gd_photo_filenames_in_contact_directory = function()
 		if (directory.exists() && directory.isDirectory()) {
 			let iter                 = directory.directoryEntries;
 			let re                   = this.gd_photo_filename_re(this.account().username);
-			let account_part_of_base = this.gd_photo_filename_base_from([ this.account().username ]);
+			let account_part_of_base = SyncFsmGd.gd_photo_filename_base_from([ this.account().username ]);
 
 			while (iter.hasMoreElements()) {
 				let file     = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
