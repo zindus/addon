@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.294 2011-05-25 10:18:41 cvsuser Exp $
+// $Id: syncfsm.js,v 1.295 2011-05-26 00:34:07 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -6794,9 +6794,11 @@ SyncFsmGd.prototype.entryActionConfirmUI = function(state, event, continuation)
 				nextEvent = 'evCancel';
 		}
 
-		if (c_to_be_deleted_gd > 0 && (c_to_be_deleted_gd == c_at_gd))
+		let threshold = 0.95;
+
+		if (c_to_be_deleted_gd > 0 && ((c_to_be_deleted_gd == c_at_gd) || (c_to_be_deleted_gd / c_at_gd > threshold)))
 			do_cancel(txt_gd);
-		else if (c_to_be_deleted_tb > 0 && (c_to_be_deleted_tb == c_at_tb))
+		else if (c_to_be_deleted_tb > 0 && ((c_to_be_deleted_tb == c_at_tb) || (c_to_be_deleted_tb / c_at_tb > threshold)))
 			do_cancel(txt_tb);
 	}
 
@@ -8399,11 +8401,6 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 				msg += " m_photo_op: " + suo.m_photo_op;
 
 				if (suo.m_photo_op == 'mod') {
-					// TODO AMHERE
-					// code is done - next step is to test it
-					// also need to fix up the integrity checking
-					// leni - Tue 24 May 2011 09:48:02 EST
-					// 
 					if (!this.state.a_gd_photo_filenames_in_contact_directory)
 						this.a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
 
@@ -8414,7 +8411,11 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 							(tb_properties["PhotoName"] ==
 							SyncFsmGd.gd_photo_filename_for(this.a_gd_photo_filenames_in_contact_directory, luid_target_au,
 								zfi_au.get(FeedItem.ATTR_ETAG)))) {
-							// we'd be POSTing a contact to google identical to the one that's there
+							// when the postal-address-as-xml is enabled/disabled the addon might update google re: postal address xml
+							// in which case we don't want to unnecessarily update the google photo
+							//
+							// avoid POSTing a contact to google identical to the one that's there
+							//
 							is_noop = true;
 							this.state.m_gd_progress_count++;
 							nextEvent = 'evRepeat'
@@ -8437,6 +8438,7 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 					headers = newObject("X-HTTP-Method-Override", "DELETE", "If-Match", "*");
 
 				if (!is_noop) {
+					msg += " headers: " + aToString(headers);
 					this.setupHttpGd(state, 'evRepeat', "POST", uri, headers, null, on_xhr, HttpStateGd.ON_ERROR_EVCANCEL, HttpStateGd.LOG_RESPONSE_YES);
 					nextEvent = 'evHttpRequest'
 				}
