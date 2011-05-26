@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.295 2011-05-26 00:34:07 cvsuser Exp $
+// $Id: syncfsm.js,v 1.296 2011-05-26 01:22:02 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -8423,10 +8423,12 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 					}
 
 					if (!is_noop) {
-						nsifile     = SyncFsmGd.gd_photo_nsifile_for(tb_properties["PhotoName"]);
-						headers     = newObject("Content-Type",           "image/" + SyncFsmGd.gd_photo_extension(nsifile),
-					                        	"X-HTTP-Method-Override", "PUT",
-					                        	"If-Match",               "*");
+						nsifile = SyncFsmGd.gd_photo_nsifile_for(tb_properties["PhotoName"]);
+						let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
+						let content_type = mimeSvc.getTypeFromFile(nsifile);
+						headers = newObject("Content-Type",           content_type,
+					                    	"X-HTTP-Method-Override", "PUT",
+					                    	"If-Match",               "*");
 						let istream = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
 
 						istream.init(nsifile, -1, -1, false);
