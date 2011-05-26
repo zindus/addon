@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.296 2011-05-26 01:22:02 cvsuser Exp $
+// $Id: syncfsm.js,v 1.297 2011-05-26 18:50:33 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -8424,6 +8424,8 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 
 					if (!is_noop) {
 						nsifile = SyncFsmGd.gd_photo_nsifile_for(tb_properties["PhotoName"]);
+						this.debug("entryActionUpdateGdPhoto: before calling getTypeFromFile: nsifile.path: " + nsifile.path); // TODO REMOVE ME
+
 						let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
 						let content_type = mimeSvc.getTypeFromFile(nsifile);
 						headers = newObject("Content-Type",           content_type,
