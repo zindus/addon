@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configaccount.js,v 1.43 2011-05-01 02:21:51 cvsuser Exp $
+// $Id: configaccount.js,v 1.44 2011-06-21 04:59:15 cvsuser Exp $
 
 includejs("payload.js");
 
@@ -133,7 +133,7 @@ ConfigAccount.prototype = {
 
 		this.m_payload_caller.m_result_accounts = new Array(account);
 
-		this.m_logger.debug("onAccept: account: " + account);
+		this.m_logger.debug("onAccept: account: " + account.toString());
 
 		for (var i = 0; i < this.m_server_format_values.length; i++)
 			if (this.m_server_format_values[i] != account.format_xx())
