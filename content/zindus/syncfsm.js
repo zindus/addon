@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.297 2011-05-26 18:50:33 cvsuser Exp $
+// $Id: syncfsm.js,v 1.298 2011-06-21 05:04:52 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -8086,6 +8086,10 @@ SyncFsm.prototype.entryActionUpdateGd = function(state, event, continuation)
 							let zfcTbPreMerge = this.state.zfcTbPreMerge;
 
 							// luid_winner is not present in zfcTbPreMerge on a mod when the twiddle routines backdate a twin
+							//
+							// TODO this isn't right because when the user syncs with both zimbra and google
+							// then CSPT is the same in zfcTbPreMerge and zfcTb regardless of whether the photo was modified
+							// Do I need to put CSPT in the gid?
 							//
 							if (!zfcTbPreMerge.isPresent(luid_winner) || (zfcTbPreMerge.get(luid_winner).get(FeedItem.ATTR_CSPT) !=
 							     this.zfcTb().get(luid_winner).get(FeedItem.ATTR_CSPT)))
