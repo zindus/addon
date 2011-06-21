@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.48 2011-05-01 02:35:40 cvsuser Exp $
+// $Id: configsettings.js,v 1.49 2011-06-21 05:01:16 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");
@@ -295,16 +295,23 @@ ConfigSettings.prototype.onCommand = function(id_target)
 			{
 				let account = null;
 
+				let a_result_accounts = new Array();
+				let i;
+				for (i = 0; i < payload.m_result_accounts.length; i++) {
+					let account = new Account(payload.m_result_accounts[i]);
+					a_result_accounts.push(account);
+				}
+
 				if (id_target == "cs-account-add" || id_target == "cs-account-edit")
-					account = new Account(payload.m_result_accounts[0]);
+					account = new Account(a_result_accounts[0]);
 
 				// remember that the account object(s) in m_result_accounts must be brought into the scope of the current window.
 				//
 				switch (id_target) {
 					case "czss-share-signup-wizard": {
 						let i;
-						for (i = 0; i < payload.m_result_accounts.length; i++)
-							this.m_accounts.push(new Account(payload.m_result_accounts[i]));
+						for (i = 0; i < a_result_accounts.length; i++)
+							this.m_accounts.push(new Account(a_result_accounts[i]));
 						}
 						do_sync_now_after_wizard = payload.m_result_sync_now;
 						break;
@@ -327,7 +334,7 @@ ConfigSettings.prototype.onCommand = function(id_target)
 
 				if (id_target != "cs-account-edit")
 				{
-					if (payload.m_result_accounts[payload.m_result_accounts.length-1] == FORMAT_ZM)
+					if (a_result_accounts[a_result_accounts.length-1].format_xx() == FORMAT_ZM)
 						rowid = 0; // Zimbra accounts appear above Google accounts
 					else
 						rowid = this.m_accounts.length - 1;
