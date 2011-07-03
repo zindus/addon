@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.133 2011-05-01 02:36:30 cvsuser Exp $
+// $Id: testharness.js,v 1.134 2011-07-03 21:53:42 cvsuser Exp $
 
 function TestHarness()
 {
@@ -76,7 +76,8 @@ TestHarness.prototype.run = function()
 	// ret = ret && this.testContactGoogleIssue185();
 	// ret = ret && this.testContactGoogleIssue202();
 	// ret = ret && this.testContactGoogleIssue211();
-	ret = ret && this.testContactGoogleIssue266();
+	// ret = ret && this.testContactGoogleIssue266();
+	ret = ret && this.testContactGoogleIssue296();
 	// ret = ret && this.testContactGoogleIterators();
 	// ret = ret && this.testContactGooglePostalAddress();
 	// ret = ret && this.testGdAddressConverter();
@@ -1736,6 +1737,61 @@ TestHarness.prototype.testContactGoogleIssue266 = function()
 
 		this.m_logger.debug("contact.toString: after setting organization to Fred: " + contact.toString());
 	}
+
+	return true;
+}
+
+TestHarness.prototype.testContactGoogleIssue296 = function()
+{
+	let a_filename = new Object();
+
+	with (Filesystem) {
+		let directory = nsIFileForDirectory(eDirectory.PHOTO);
+
+		if (directory.exists() && directory.isDirectory()) {
+			let iter = directory.directoryEntries;
+
+			while (iter.hasMoreElements()) {
+				let file     = iter.getNext().QueryInterface(Components.interfaces.nsIFile);
+				let filename = file.leafName;
+
+				if (!file.isDirectory())
+					a_filename[filename] = true;
+			}
+		}
+	}
+
+	let filename;
+
+	logger().debug("testContactGoogleIssue296: a_filename: " + aToString(a_filename));
+
+	for (filename in a_filename) {
+		let nsifile = SyncFsmGd.gd_photo_nsifile_for(filename);
+		let content_type;
+
+		logger().debug("testContactGoogleIssue296: before calling getTypeFromFile: nsifile.path: " + nsifile.path);
+
+		let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
+
+		try {
+			content_type = mimeSvc.getTypeFromFile(nsifile);
+			a_filename[filename] = content_type;
+		}
+		catch (ex) {
+			logger().debug("testContactGoogleIssue296: EXCEPTION: " + nsifile.path);
+			a_filename[filename] = "BAD";
+		}
+
+		logger().debug("testContactGoogleIssue296: content_type: " + content_type);
+	}
+
+	for (filename in a_filename) {
+		if (a_filename[filename] == "BAD") {
+			logger().debug("testContactGoogleIssue296: BAD: getTypeFromFile: nsifile.path: " + filename);
+		}
+	}
+
+	// logger().debug("testContactGoogleIssue296: a_filename: " + aToString(a_filename));
 
 	return true;
 }

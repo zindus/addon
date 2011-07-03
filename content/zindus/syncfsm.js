@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.298 2011-06-21 05:04:52 cvsuser Exp $
+// $Id: syncfsm.js,v 1.299 2011-07-03 21:53:24 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -10491,6 +10491,34 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 	a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
 	this.debug("after  calling gd_photo_filenames_in_contact_directory");
 
+	if (this.is_slow_sync() && AppInfo.is_photo()) {
+		// re: bug #296, delete photo filenames that don't have an extension
+		let id, etag;
+		let is_any_deleted = false;
+
+		for (id in a_gd_photo_filenames_in_contact_directory)
+			for (etag in a_gd_photo_filenames_in_contact_directory[id])
+				if (a_gd_photo_filenames_in_contact_directory[id][etag][a_gd_photo_filenames_in_contact_directory[id][etag].length - 1] == '.') {
+					is_any_deleted = true;
+					let filename = a_gd_photo_filenames_in_contact_directory[id][etag];
+
+					let nsifile = SyncFsmGd.gd_photo_nsifile_for(filename);
+
+					this.debug("entryActionGetContactGd3Generator: file is missing extension - intend to remove nsifile: " + nsifile.path);
+
+					try {
+						nsifile.remove(false);
+						this.debug("entryActionGetContactGd3Generator: remove succeeded: " + filename);
+					} catch (ex) {
+						this.debug("entryActionGetContactGd3Generator: remove failed: " + filename);
+						this.debug("entryActionGetContactGd3Generator: ex: " + ex);
+					}
+				}
+
+		if (is_any_deleted)
+			a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
+	}
+
 	this.state_entry_count(state);
 
 	if (this.is_first_entry_to_state(state)) {
@@ -11123,12 +11151,32 @@ SyncFsmGd.prototype.exitActionGetPhotoGd = function(state, event)
 		let ext      = SyncFsmGd.gd_photo_extension(this.state.m_http.m_xhr);
 		let filename = filename_from_retrieved_photo(contact, ext);
 
+		if (ext.length == 0) {
+			// on the tail of bug #296
+			this.debug("exitActionGetPhotoGd: photo for id: " + contact.meta.id);
+			this.debug("exitActionGetPhotoGd: bytes: " + this.state.m_http.response('text').length);
+			this.debug("exitActionGetPhotoGd: getAllResponseHeaders: " + this.state.m_http.m_xhr.getAllResponseHeaders());
+
+			zinAssert(false);
+		}
+
 		Filesystem.writeToFile(SyncFsmGd.gd_photo_nsifile_for(filename), this.state.m_http.response('text'), 'binary');
 
 		this.state.a_gd_photo[contact.meta.id] = filename;
 
 		this.debug("exitActionGetPhotoGd: photo for id=" + contact.meta.id +
 		           " stored as filename: " + filename + " bytes: " + this.state.m_http.response('text').length);
+
+		{
+			// TODO REMOVE ME when finished debugging #296
+			//
+			let nsifile = SyncFsmGd.gd_photo_nsifile_for(filename);
+			this.debug("exitActionGetPhotoGd: confirming that getTypeFromFile works: nsifile.path: " + nsifile.path);
+
+			let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
+			let content_type = mimeSvc.getTypeFromFile(nsifile);
+			this.debug("exitActionGetPhotoGd: content_type: " + content_type);
+		}
 	}
 	else {
 		zfi.set(FeedItem.ATTR_GDME, contact.photo.etag);
@@ -11194,7 +11242,7 @@ SyncFsmGd.gd_photo_extension = function(arg)
 		try {
 			let contentType = xhr.getResponseHeader('Content-Type');
 			ret = mimeSvc.getPrimaryExtension(contentType, ret);
-			msg += " contentType: " + contentType;
+			msg += " http Content-Type: " + contentType;
 		} catch (e) {}
 	}
 	else {
