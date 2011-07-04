@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.299 2011-07-03 21:53:24 cvsuser Exp $
+// $Id: syncfsm.js,v 1.300 2011-07-04 05:49:12 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -10495,25 +10495,27 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 		// re: bug #296, delete photo filenames that don't have an extension
 		let id, etag;
 		let is_any_deleted = false;
+		let re = SyncFsmGd.gd_photo_filename_re_full(this.account().username);
+		this.debug("entryActionGetContactGd3Generator: issue #296: checking for invalid photo filenames.");
 
 		for (id in a_gd_photo_filenames_in_contact_directory)
-			for (etag in a_gd_photo_filenames_in_contact_directory[id])
-				if (a_gd_photo_filenames_in_contact_directory[id][etag][a_gd_photo_filenames_in_contact_directory[id][etag].length - 1] == '.') {
+			for (etag in a_gd_photo_filenames_in_contact_directory[id]) {
+				if (!re.exec(a_gd_photo_filenames_in_contact_directory[id][etag])) {
 					is_any_deleted = true;
 					let filename = a_gd_photo_filenames_in_contact_directory[id][etag];
 
 					let nsifile = SyncFsmGd.gd_photo_nsifile_for(filename);
 
-					this.debug("entryActionGetContactGd3Generator: file is missing extension - intend to remove nsifile: " + nsifile.path);
+					this.debug("entryActionGetContactGd3Generator: issue #296: remove attempt: " + nsifile.path);
 
 					try {
 						nsifile.remove(false);
-						this.debug("entryActionGetContactGd3Generator: remove succeeded: " + filename);
+						this.debug("entryActionGetContactGd3Generator: issue #296: remove succeeded: " + filename);
 					} catch (ex) {
-						this.debug("entryActionGetContactGd3Generator: remove failed: " + filename);
-						this.debug("entryActionGetContactGd3Generator: ex: " + ex);
+						this.debug("entryActionGetContactGd3Generator: issue #296: remove failed: " + filename + " ex: " + ex);
 					}
 				}
+			}
 
 		if (is_any_deleted)
 			a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
@@ -11264,28 +11266,13 @@ SyncFsmGd.gd_photo_extension = function(arg)
 	return ret;
 }
 
-SyncFsmGd.prototype.gd_photo_filename_re = function(username)
+SyncFsmGd.gd_photo_filename_re_str_base = function(username)
 {
-	if (!this.state.m_a_gd_photo_filename_re || !(username in this.state.m_a_gd_photo_filename_re)) {
-		if (!this.state.m_a_gd_photo_filename_re)
-			this.state.m_a_gd_photo_filename_re = new Object();
-
-		if (!(username in this.state.m_a_gd_photo_filename_re)) {
-			let str = "";
-
-			str += "^"
-			str += "(" + SyncFsmGd.gd_photo_filename_base_from([username]) + ")";
-			str += "-" + "(\\w+?)"; // ATOM id
-			str += "-" + "(\\w+)"; // etag stripped of quotes
-
-			this.state.m_a_gd_photo_filename_re[username] = new RegExp(str);
-
-			// this.debug("gd_photo_filename_re: " + this.state.m_a_gd_photo_filename_re[username].toString());
-		}
-	}
-
-	return this.state.m_a_gd_photo_filename_re[username];
+	return "^(" + SyncFsmGd.gd_photo_filename_base_from([username]) + ")-(\\w+?)-(\\w+)";
 }
+
+SyncFsmGd.gd_photo_filename_re_base = function(username) { return new RegExp(SyncFsmGd.gd_photo_filename_re_str_base(username)); }
+SyncFsmGd.gd_photo_filename_re_full = function(username) { return new RegExp(SyncFsmGd.gd_photo_filename_re_str_base(username) + "\\.(\\w+?)" ); }
 
 SyncFsmGd.gd_photo_filename_base_from_id = function(id)
 {
@@ -11309,9 +11296,8 @@ SyncFsmGd.gd_photo_filename_base_from = function(a)
 	//
 	let ret = hyphenate('-', b).replace(/[\\\/\:\;\*\?\<\>\|\+\[\]=."]/g,"");
 
-	// the assertion is good but since I made this a static method I can't reference 'this'
-	// if (a.length == 3)
-	//	zinAssertAndLog(ret.match(this.gd_photo_filename_re(a[0])), ret);
+	if (a.length == 3)
+		zinAssertAndLog(ret.match(SyncFsmGd.gd_photo_filename_re_base(a[0])), ret);
 
 	return ret;
 }
@@ -11339,7 +11325,7 @@ SyncFsmGd.prototype.gd_photo_filenames_in_contact_directory = function()
 
 		if (directory.exists() && directory.isDirectory()) {
 			let iter                 = directory.directoryEntries;
-			let re                   = this.gd_photo_filename_re(this.account().username);
+			let re                   = SyncFsmGd.gd_photo_filename_re_base(this.account().username);
 			let account_part_of_base = SyncFsmGd.gd_photo_filename_base_from([ this.account().username ]);
 
 			while (iter.hasMoreElements()) {
