@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.302 2011-07-04 07:47:03 cvsuser Exp $
+// $Id: syncfsm.js,v 1.303 2011-07-04 07:53:07 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -11249,8 +11249,7 @@ SyncFsmGd.gd_photo_extension = function(arg)
 			if (contentType == "image/jpg") {
 				// Google Contacts API may occasionally respond with Content-Type: image/jpg which isn't a valid image media type:
 				// http://www.iana.org/assignments/media-types/image/index.html
-				// and isn't recognised by mozilla's nsIMIMEService
-				// handle it here:
+				// mozilla's nsIMIMEService doesn't know about this google-invented content type, so it's special-cased here:
 				//
 				ret = "jpg";
 			}
