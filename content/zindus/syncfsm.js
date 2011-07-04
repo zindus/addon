@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.300 2011-07-04 05:49:12 cvsuser Exp $
+// $Id: syncfsm.js,v 1.301 2011-07-04 05:56:38 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -11152,10 +11152,12 @@ SyncFsmGd.prototype.exitActionGetPhotoGd = function(state, event)
 
 		let ext      = SyncFsmGd.gd_photo_extension(this.state.m_http.m_xhr);
 		let filename = filename_from_retrieved_photo(contact, ext);
+		let re       = SyncFsmGd.gd_photo_filename_re_full(this.account().username);
 
-		if (ext.length == 0) {
+		if (ext.length == 0 || !re.exec(filename)) {
 			// on the tail of bug #296
 			this.debug("exitActionGetPhotoGd: photo for id: " + contact.meta.id);
+			this.debug("exitActionGetPhotoGd: filename: " + filename);
 			this.debug("exitActionGetPhotoGd: bytes: " + this.state.m_http.response('text').length);
 			this.debug("exitActionGetPhotoGd: getAllResponseHeaders: " + this.state.m_http.m_xhr.getAllResponseHeaders());
 
