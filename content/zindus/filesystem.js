@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.29 2011-05-01 02:21:51 cvsuser Exp $
+// $Id: filesystem.js,v 1.30 2011-07-07 11:10:05 cvsuser Exp $
 
 var Filesystem = {
 	m_charset            : "UTF-8",
@@ -164,6 +164,20 @@ var Filesystem = {
 
 			cis.close();
 		}
+	},
+	readBinaryFile : function(nsifile) {
+		let fstream = Cc['@mozilla.org/network/file-input-stream;1'].createInstance(Ci.nsIFileInputStream);
+		let bstream = Cc['@mozilla.org/binaryinputstream;1'].createInstance(Ci.nsIBinaryInputStream);
+
+		fstream.init(nsifile, 1, 0, false);
+		bstream.setInputStream(fstream);
+
+		let ret = bstream.readByteArray(fstream.available());
+
+		bstream.close();
+		fstream.close();
+
+		return ret;
 	},
 	// the remove* methods...
 	removeZfc : function(filename) {

@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.304 2011-07-04 23:35:34 cvsuser Exp $
+// $Id: syncfsm.js,v 1.305 2011-07-07 11:10:05 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -232,17 +232,7 @@ SyncFsmGdAuth.prototype.initialiseFsm = function()
 {
 	SyncFsmGd.prototype.initialiseFsm.call(this);
 
-	if (false && AppInfo.app_name() == AppInfo.eApp.firefox)
-	{
-		// TODO - this code is/was toying with the idea that "test connection" in firefox should also get the google groups..
-		//
-		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'stGetAllGroups';
-		this.fsm.m_transitions['stGetAllGroups'] = { evCancel: 'final', evNext: 'final',  evHttpRequest: 'stHttpRequest' };
-		this.fsm.m_a_entry['stGetAllGroups'] = this.entryActionGetAllGroups;
-		this.fsm.m_a_exit['stGetAllGroups'] = this.exitActionGetAllGroups;
-	}
-	else
-		this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
+	this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
 }
 
 SyncFsmLd.prototype.initialiseFsm = function()
@@ -8428,10 +8418,9 @@ SyncFsm.prototype.entryActionUpdateGdPhoto = function(state, event, continuation
 
 					if (!is_noop) {
 						nsifile = SyncFsmGd.gd_photo_nsifile_for(tb_properties["PhotoName"]);
-						this.debug("entryActionUpdateGdPhoto: before calling getTypeFromFile: nsifile.path: " + nsifile.path); // TODO REMOVE ME
 
-						let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
-						let content_type = mimeSvc.getTypeFromFile(nsifile);
+						let content_type = SyncFsmGd.gd_content_type_from_file(nsifile);
+
 						headers = newObject("Content-Type",           content_type,
 					                    	"X-HTTP-Method-Override", "PUT",
 					                    	"If-Match",               "*");
@@ -11095,15 +11084,6 @@ SyncFsmGd.prototype.entryActionGetPhotoGd = function(state, event, continuation)
 		if (this.state.m_gd_progress_count < this.state.a_gd_photo_to_get.length) {
 			let uri = gdAdjustHttpHttps(this.state.a_gd_contact[this.state.a_gd_photo_to_get[this.state.m_gd_progress_count]].photo.uri);
 
-			if (false) // for testing issue #288
-			{
-				let id = this.state.a_gd_photo_to_get[this.state.m_gd_progress_count];
-				if (id == "c:89d8544889ecd6f") {
-					uri = uri + "XXXX"; // TODO
-					this.debug("mangled uri: " + uri);
-				}
-			}
-
 			function on_xhr(http) {
 				http.m_xhr.overrideMimeType('text/plain; charset=x-user-defined');
 				http.m_xhr.send(http.httpBody());
@@ -11150,7 +11130,7 @@ SyncFsmGd.prototype.exitActionGetPhotoGd = function(state, event)
 		if (zfi.isPresent(FeedItem.ATTR_GDME))
 			zfi.del(FeedItem.ATTR_GDME);
 
-		let ext      = SyncFsmGd.gd_photo_extension(this.state.m_http.m_xhr);
+		let ext      = SyncFsmGd.gd_file_ext_from_http(this.state.m_http.m_xhr);
 		let filename = filename_from_retrieved_photo(contact, ext);
 		let re       = SyncFsmGd.gd_photo_filename_re_full(this.account().username);
 
@@ -11170,17 +11150,6 @@ SyncFsmGd.prototype.exitActionGetPhotoGd = function(state, event)
 
 		this.debug("exitActionGetPhotoGd: photo for id=" + contact.meta.id +
 		           " stored as filename: " + filename + " bytes: " + this.state.m_http.response('text').length);
-
-		{
-			// TODO REMOVE ME when finished debugging #296
-			//
-			let nsifile = SyncFsmGd.gd_photo_nsifile_for(filename);
-			this.debug("exitActionGetPhotoGd: confirming that getTypeFromFile works: nsifile.path: " + nsifile.path);
-
-			let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
-			let content_type = mimeSvc.getTypeFromFile(nsifile);
-			this.debug("exitActionGetPhotoGd: content_type: " + content_type);
-		}
 	}
 	else {
 		zfi.set(FeedItem.ATTR_GDME, contact.photo.etag);
@@ -11230,50 +11199,62 @@ SyncFsmGd.gd_photo_nsifile_for = function(filename)
 	return nsifile;
 }
 
-SyncFsmGd.gd_photo_extension = function(arg)
+SyncFsmGd.gd_file_ext_from_http = function(xhr)
 {
 	let ret = "";
-	let msg = "";
 
-	if (arg instanceof XMLHttpRequest) {
-		let xhr     = arg;
-		let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
-		let uri     = xhr.channel.URI;
+	zinAssert(xhr instanceof XMLHttpRequest);
 
-		if (uri instanceof Components.interfaces.nsIURL)
-			ret = uri.fileExtension;
+	let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
+	let uri     = xhr.channel.URI;
 
-		try {
-			let contentType = xhr.getResponseHeader('Content-Type');
-
-			if (contentType == "image/jpg") {
-				// Google Contacts API may occasionally respond with Content-Type: image/jpg which isn't a valid image media type:
-				// http://www.iana.org/assignments/media-types/image/index.html
-				// mozilla's nsIMIMEService doesn't know about 'image/jpg', so it's special-cased here:
-				//
-				ret = "jpg";
-			}
-			else
-				ret = mimeSvc.getPrimaryExtension(contentType, ret);
-
-			msg += " http Content-Type: " + contentType;
-		} catch (e) {}
-	}
-	else {
-		zinAssert(arg instanceof Ci.nsIFile);
-
-		let nsifile = arg;
-		let uri = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService).newFileURI(nsifile);
-
-		zinAssertAndLog(uri instanceof Ci.nsIURL, function() { return nsifile.path; } );
-
+	if (uri instanceof Components.interfaces.nsIURL)
 		ret = uri.fileExtension;
+
+	try {
+		let contentType = xhr.getResponseHeader('Content-Type');
+
+		if (contentType == "image/jpg") {
+			// Google Contacts API sometimes responds with Content-Type: image/jpg which isn't a valid image media type:
+			// http://www.iana.org/assignments/media-types/image/index.html
+			// bug filed: http://code.google.com/a/google.com/p/apps-api-issues/issues/detail?id=2649
+			//
+			ret = "jpg";
+		}
+		else
+			ret = mimeSvc.getPrimaryExtension(contentType, ret);
+	} catch (e) {
+		zinAssertAndLog(false, "google served a wierd content type: getAllResponseHeaders: " + xhr.getAllResponseHeaders());
 	}
 
 	if (ret == "jpe")
 		ret = "jpg";
 
-	logger().debug("SyncFsmGd.gd_photo_extension: returns: " + ret + msg);
+	logger().debug("SyncFsmGd.gd_file_ext_from_http: returns: " + ret);
+
+	return ret;
+}
+
+SyncFsmGd.gd_content_type_from_file = function(nsifile)
+{
+	let ret;
+	let msg = " uses: ";
+
+	zinAssert(nsifile instanceof Ci.nsIFile);
+
+	let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
+
+	try {
+		ret = mimeSvc.getTypeFromFile(nsifile);
+		msg += "nsIMIMEService";
+	} catch(ex) {
+		let sniffer = Cc["@mozilla.org/network/content-sniffer;1"].getService(Ci.nsIContentSniffer);
+		let aData = Filesystem.readBinaryFile(nsifile);
+		ret = sniffer.getMIMETypeFromContent(null, aData, aData.length);
+		msg += "nsIContentSniffer";
+	}
+
+	logger().debug("SyncFsmGd.gd_content_type_from_file: file: " + nsifile.path + msg + " returns: " + ret);
 
 	return ret;
 }

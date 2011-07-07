@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.134 2011-07-03 21:53:42 cvsuser Exp $
+// $Id: testharness.js,v 1.135 2011-07-07 11:10:05 cvsuser Exp $
 
 function TestHarness()
 {
@@ -1765,9 +1765,14 @@ TestHarness.prototype.testContactGoogleIssue296 = function()
 
 	logger().debug("testContactGoogleIssue296: a_filename: " + aToString(a_filename));
 
+	let content_sniffer = Cc["@mozilla.org/network/content-sniffer;1"].getService(Ci.nsIContentSniffer);
+
 	for (filename in a_filename) {
 		let nsifile = SyncFsmGd.gd_photo_nsifile_for(filename);
-		let content_type;
+		let aData = Filesystem.readBinaryFile(nsifile);
+		let content_type = content_sniffer.getMIMETypeFromContent(null, aData, aData.length);
+
+		logger().debug("testContactGoogleIssue296: content_sniffer: " + content_type + " filename: " + filename);
 
 		logger().debug("testContactGoogleIssue296: before calling getTypeFromFile: nsifile.path: " + nsifile.path);
 
