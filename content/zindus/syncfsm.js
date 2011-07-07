@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.305 2011-07-07 11:10:05 cvsuser Exp $
+// $Id: syncfsm.js,v 1.306 2011-07-07 12:22:30 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");
@@ -11220,6 +11220,12 @@ SyncFsmGd.gd_file_ext_from_http = function(xhr)
 			// bug filed: http://code.google.com/a/google.com/p/apps-api-issues/issues/detail?id=2649
 			//
 			ret = "jpg";
+		}
+		else if (contentType == "image/bmp") {
+			// image/bmp isn't IANA-registered either, but since bmp predates google it's hardly their fault
+			// But it'd be nice if they documented the image media types they use somewhere.
+			//
+			ret = "bmp";
 		}
 		else
 			ret = mimeSvc.getPrimaryExtension(contentType, ret);
