@@ -11123,6 +11123,7 @@ SyncFsmGd.gd_photo_nsifile_for = function(filename)
 SyncFsmGd.gd_file_ext_from_http = function(xhr)
 {
 	let ret = "";
+	let msg = "";
 
 	zinAssert(xhr instanceof XMLHttpRequest);
 
@@ -11131,11 +11132,13 @@ SyncFsmGd.gd_file_ext_from_http = function(xhr)
 
 	if (uri instanceof Components.interfaces.nsIURL) {
 		ret = uri.fileExtension;
-		logger().debug("SyncFsmGd.gd_file_ext_from_http: uri.fileExtension: " + ret);
+		msg += " uri.fileExtension: ret: " + ret + " typeof: " + typeof(ret);
 	}
 
 	try {
 		let contentType = xhr.getResponseHeader('Content-Type');
+
+		msg += " contentType: " + contentType;
 
 		if (contentType == "image/jpg") {
 			// Google Contacts API sometimes responds with Content-Type: image/jpg which isn't a valid image media type:
@@ -11153,7 +11156,7 @@ SyncFsmGd.gd_file_ext_from_http = function(xhr)
 		else
 			ret = mimeSvc.getPrimaryExtension(contentType, ret);
 	} catch (ex) {
-		zinAssertAndLog(false, "google served a wierd content type: contentType: " + contentType + " headers: " + xhr.getAllResponseHeaders() + " ex: " + ex);
+		zinAssertAndLog(false, "google served a wierd content type: msg: " + msg + " headers: " + xhr.getAllResponseHeaders() + " ex: " + ex);
 	}
 
 	if (ret == "jpe")
