@@ -1745,6 +1745,12 @@ TestHarness.prototype.testContactGoogleIssue296 = function()
 {
 	let a_filename = new Object();
 
+	let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
+	let content_type = "image/jpeg";
+	let blah = "";
+	ret = mimeSvc.getPrimaryExtension(content_type, blah);
+	logger().debug("testContactGoogleIssue296: file_ext: " + ret);
+
 	with (Filesystem) {
 		let directory = nsIFileForDirectory(eDirectory.PHOTO);
 
@@ -1775,8 +1781,6 @@ TestHarness.prototype.testContactGoogleIssue296 = function()
 		logger().debug("testContactGoogleIssue296: content_sniffer: " + content_type + " filename: " + filename);
 
 		logger().debug("testContactGoogleIssue296: before calling getTypeFromFile: nsifile.path: " + nsifile.path);
-
-		let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
 
 		try {
 			content_type = mimeSvc.getTypeFromFile(nsifile);
