@@ -1163,9 +1163,11 @@ SyncFsmGd.prototype.isConsistentGdPhotos = function()
 				if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau
 						                           && zfi.isPresent(FeedItem.ATTR_ETAG)
 						                           && !zfi.isPresent(FeedItem.ATTR_GDME)) {
+					// leni TODO - this is wrong:
+					// if a user adds a contact to TB, then this test throws an assertion
 					//
-					// TODO get the TB PHOTO FILENAME
-					// 
+					// get the TB PHOTO FILENAME
+					//
 					let filename = SyncFsmGd.gd_photo_filename_for(a_gd_photo_filenames_in_contact_directory, zfi.key(), zfi.get(FeedItem.ATTR_ETAG));
 
 					if (!filename.exists)
@@ -1185,49 +1187,6 @@ SyncFsmGd.prototype.isConsistentGdPhotos = function()
 
 		this.debug("testForGooglePhotoIntegrity: a_map: " + aToString(a_map));
 	}
-
-	this.debug("testForGooglePhotoIntegrity: exits");
-
-	var functor_foreach_luid = {
-		state: this.state,
-		run: function(zfi) {
-			if (is_consistent && zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdci)
-			{
-				is_consistent = is_consistent && SyncFsm.isConsistentKeyReference(zfc, zfi, FeedItem.ATTR_GDID, a_error_msg);
-				is_consistent = is_consistent && SyncFsm.isConsistentKeyReference(zfc, zfi, FeedItem.ATTR_L, a_error_msg);
-				a_gdci_references_gdau[zfi.get(FeedItem.ATTR_GDID)] = true;
-			}
-
-			if (is_consistent && zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau)
-			{
-				if (!zfi.isPresent(FeedItem.ATTR_GDGP)) {
-					is_consistent = false;
-					a_error_msg.error_msg = " zfi for gdau is missing ATTR_GDGP: zfi: " + zfi.toString();
-				}
-
-				a_gdau_seen[zfi.key()] = true;
-			}
-
-			return is_consistent;
-		}
-	};
-
-	for (var sourceid in this.state.sources) {
-		zfc = this.zfc(sourceid);
-
-		if (this.state.sources[sourceid]['format'] == FORMAT_GD)
-			zfc.forEach(functor_foreach_luid);
-	}
-
-	if (is_consistent && firstDifferingObjectKey(a_gdci_references_gdau, a_gdau_seen)) {
-		is_consistent = false;
-		a_error_msg.error_msg = " mismatched gdci and gdau references: " +
-		               "\n a_gdci_references_gdau: " + keysToString(a_gdci_references_gdau) + 
-		               "\n a_gdau_seen: " + keysToString(a_gdau_seen) +
-					   "\n diff: " + firstDifferingObjectKey(a_gdci_references_gdau, a_gdau_seen);
-	}
-
-	this.debug("isConsistentGdCi: " + is_consistent + " " + a_error_msg.error_msg);
 
 	return is_consistent;
 }
@@ -2869,44 +2828,6 @@ SyncFsmGd.prototype.testForGoogleGroupNameIntegrity = function()
 	return !this.state.stopFailCode;
 }
 
-// confirm that every google contact that should have a local photo does actually have one!
-//
-SyncFsmGd.prototype.testForGooglePhotoIntegrity = function()
-{
-	this.debug("testForGooglePhotoIntegrity: enters");
-
-	// leni TODO - this is wrong:
-	// if a user adds a contact to TB, then this test throws an assertion
-	// REMOVE THIS CODE
-	//
-	if (AppInfo.is_photo()) {
-		let self  = this;
-		let a_map = newObject();
-		let a_gd_photo_filenames_in_contact_directory = this.gd_photo_filenames_in_contact_directory();
-
-		let functor = {
-			run: function(zfi) {
-				if (zfi.type() == FeedItem.TYPE_CN && zfi.styp() == FeedItem.eStyp.gdau
-						                           && zfi.isPresent(FeedItem.ATTR_ETAG)
-						                           && !zfi.isPresent(FeedItem.ATTR_GDME)) {
-					let filename = SyncFsmGd.gd_photo_filename_for(a_gd_photo_filenames_in_contact_directory, zfi.key(), zfi.get(FeedItem.ATTR_ETAG));
-
-					if (filename)
-						a_map[zfi.key()] = filename;
-					else
-						zinAssertAndLog(false, "expected addon to have retrieved photo for zfi: " + zfi.toString());
-				}
-				return true;
-			}
-		};
-
-		this.zfcPr().forEach(functor);
-
-		this.debug("testForGooglePhotoIntegrity: a_map: " + aToString(a_map));
-	}
-
-	this.debug("testForGooglePhotoIntegrity: exits");
-}
 // The ui should not allow these conditions, so if these errors are triggered, then
 // a) the ui is broken or
 // b) the user created a second zimbra account by editing preferences manually
