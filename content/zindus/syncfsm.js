@@ -11129,8 +11129,10 @@ SyncFsmGd.gd_file_ext_from_http = function(xhr)
 	let mimeSvc = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
 	let uri     = xhr.channel.URI;
 
-	if (uri instanceof Components.interfaces.nsIURL)
+	if (uri instanceof Components.interfaces.nsIURL) {
 		ret = uri.fileExtension;
+		logger().debug("SyncFsmGd.gd_file_ext_from_http: uri.fileExtension: " + ret);
+	}
 
 	try {
 		let contentType = xhr.getResponseHeader('Content-Type');
@@ -11150,8 +11152,8 @@ SyncFsmGd.gd_file_ext_from_http = function(xhr)
 		}
 		else
 			ret = mimeSvc.getPrimaryExtension(contentType, ret);
-	} catch (e) {
-		zinAssertAndLog(false, "google served a wierd content type: getAllResponseHeaders: " + xhr.getAllResponseHeaders());
+	} catch (ex) {
+		zinAssertAndLog(false, "google served a wierd content type: contentType: " + contentType + " headers: " + xhr.getAllResponseHeaders() + " ex: " + ex);
 	}
 
 	if (ret == "jpe")
