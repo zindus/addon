@@ -1,26 +1,26 @@
 <?xml version="1.0"?>
 
 <!-- ***** BEGIN LICENSE BLOCK *****
-  
+
   "The contents of this file are subject to the Mozilla Public License
   Version 1.1 (the "License"); you may not use this file except in
   compliance with the License. You may obtain a copy of the License at
   http://www.mozilla.org/MPL/
-  
+
   Software distributed under the License is distributed on an "AS IS"
   basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
   License for the specific language governing rights and limitations
   under the License.
-  
+
   The Original Code is Zindus Sync.
-  
+
   The Initial Developer of the Original Code is Toolware Pty Ltd.
- 
+
   Portions created by Initial Developer are Copyright (C) 2007
   the Initial Developer. All Rights Reserved.
- 
+
   Contributor(s): Leni Mayo
-  
+
   ***** END LICENSE BLOCK ***** -->
 
 <!DOCTYPE window SYSTEM "chrome://zindus/locale/zindus.dtd">
@@ -39,16 +39,16 @@
 					<radio id="ca-format-zimbra" />
 				</radiogroup>
 		</groupbox>
-		<spacer class="zindus-spacer" flex="1"/> 
+		<spacer class="zindus-spacer" flex="1"/>
 		<groupbox pack="center" oninput="window.ca.onInput();" >
 			<caption label="&zindus.ca.group.login.details.label;" />
-			<grid flex="1" class="zindus-grid" > 
+			<grid flex="1" class="zindus-grid" >
 				<columns>
 					<column style="margin-left:15px" />
 					<column flex="1" />
 				</columns>
 				<rows>
-					<description id="ca-url-description" 
+					<description id="ca-url-description"
 						xmlns:html="http://www.w3.org/1999/xhtml" style="margin-bottom:10px;visibility:hidden" >
 						&zindus.ca.url.description.value;
 					</description>
@@ -66,17 +66,17 @@
 						<label value="&zindus.ca.password.label;" />
 						<textbox id="ca-password" type="password" />
 					</row>
-					<spacer class="zindus-spacer" /> 
+					<spacer class="zindus-spacer" />
 					<hbox align="left" style="margin-left:20px" >
 						<button id="ca-button-authonly" command="ca-command" flex="1"
 					        	align="center" label="&zindus.ca.test.connection.label;"
 								accesskey="&zindus.ca.test.connection.accesskey;" />
 					</hbox>
-					<spacer class="zindus-spacer" flex="1"/> 
+					<spacer class="zindus-spacer" flex="1"/>
 				</rows>
 			</grid>
 		</groupbox>
-		<spacer class="zindus-spacer" flex="1"/> 
+		<spacer class="zindus-spacer" flex="1"/>
 		<!-- pap == per account preferences -->
 
 		<groupbox pack="center" >
@@ -93,7 +93,7 @@
 								<radio id="ca-gd-syncwith-zg" style="min-width:20em"   />
 							</radiogroup>
 							</vbox>
-							<spacer flex="4"/> 
+							<spacer flex="4"/>
 							<description id="ca-gd-syncwith-help" xmlns:html="http://www.w3.org/1999/xhtml" />
 							</hbox>
 						</groupbox>
@@ -104,7 +104,7 @@
 								<radio id="ca-gd-suggested-include" label="&zindus.ca.google.suggested.include.label;" selected="true" class="zindus-gd-account-grid" />
 								<radio id="ca-gd-suggested-ignore" label="&zindus.ca.google.suggested.ignore.label;" />
 							</radiogroup>
-							<spacer flex="4"/> 
+							<spacer flex="4"/>
 							<description id="ca-gd-suggested-help" xmlns:html="http://www.w3.org/1999/xhtml" />
 							</hbox>
 						</groupbox>
@@ -115,7 +115,7 @@
 								<radio id="ca-gd-gr-as-ab-no" label="&zindus.ca.zimbra.gal.no.label;" selected="true" class="zindus-gd-account-grid" />
 								<radio id="ca-gd-gr-as-ab-yes" label="&zindus.ca.zimbra.gal.yes.label;" />
 							</radiogroup>
-							<spacer flex="4"/> 
+							<spacer flex="4"/>
 							<description id="ca-gd-gr-as-ab-help" xmlns:html="http://www.w3.org/1999/xhtml" />
 							</hbox>
 						</groupbox>
@@ -130,10 +130,10 @@
 							<radio id="ca-zm-gal-no"       label="&zindus.ca.zimbra.gal.no.label;" />
 						</radiogroup>
 					</vbox>
-					<spacer flex="1"/> 
+					<spacer flex="1"/>
 				</hbox>
 			</deck>
 		</groupbox>
-		<spacer class="zindus-spacer" flex="1"/> 
+		<spacer class="zindus-spacer" flex="1"/>
 	</vbox>
 </overlay>
