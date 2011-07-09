@@ -56,17 +56,16 @@ function Suo(gid, sourceid_winner, sourceid_target, opcode)
 	this.is_processed    = false; // used in sanity checking that all operations are processed exactly once
 }
 
-Suo.prototype.toString = function()
-{
-	return      "gid: =" + this.gid +
-			" winner: "  + this.sourceid_winner +
-			" target: "  + this.sourceid_target +
-			" opcode: "  + this.opcodeAsString();
-}
-
-Suo.prototype.opcodeAsString = function()
-{
-	return Suo.bimap_opcode.lookup(this.opcode);
+Suo.prototype = {
+	toString : function() {
+		return  "gid: =" + this.gid +
+				" winner: "  + this.sourceid_winner +
+				" target: "  + this.sourceid_target +
+				" opcode: "  + this.opcodeAsString();
+	},
+	opcodeAsString : function() {
+		return Suo.bimap_opcode.lookup(this.opcode);
+	}
 }
 
 Suo.opcodeAsString = function(opcode)
