@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: testharness.js,v 1.135 2011-07-07 11:10:05 cvsuser Exp $
 
 function TestHarness()
 {

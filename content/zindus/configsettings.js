@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: configsettings.js,v 1.49 2011-06-21 05:01:16 cvsuser Exp $
 
 includejs("payload.js");
 includejs("testharness.js");

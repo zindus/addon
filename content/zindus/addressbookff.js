@@ -20,7 +20,7 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: addressbookff.js,v 1.6 2011-05-01 02:21:51 cvsuser Exp $
+
 includejs("json.js");
 
 function AddressBookFf()

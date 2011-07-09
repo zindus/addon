@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: fsm.js,v 1.22 2011-05-01 02:21:51 cvsuser Exp $
 
 // Notes:
 // - only entry actions should call continuation() - not sure what happens
@@ -28,7 +27,6 @@
 // - states are final when their entryAction()'s don't call continuation()
 //   observers rely on the convention that there's only one such state and it's called 'final'
 //
-// $Id: fsm.js,v 1.22 2011-05-01 02:21:51 cvsuser Exp $
 
 function fsmTransitionDo(fsmstate)
 {

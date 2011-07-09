@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: logger.js,v 1.29 2011-05-01 02:35:40 cvsuser Exp $
 
 // simple logging api, no appenders
 

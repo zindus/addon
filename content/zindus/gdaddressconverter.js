@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: gdaddressconverter.js,v 1.14 2009-10-17 07:20:26 cvsuser Exp $
 
 function GdAddressConverter()
 {

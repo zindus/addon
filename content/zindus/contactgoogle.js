@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactgoogle.js,v 1.42 2011-05-01 02:21:51 cvsuser Exp $
 
 function GoogleData()
 {

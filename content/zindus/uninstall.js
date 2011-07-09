@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: uninstall.js,v 1.2 2010-04-30 01:29:49 cvsuser Exp $
 
 var UnInstall = {
 	uninstallObserver : {

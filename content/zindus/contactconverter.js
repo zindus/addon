@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: contactconverter.js,v 1.64 2011-05-01 02:21:51 cvsuser Exp $
 
 includejs("crc32.js");
 

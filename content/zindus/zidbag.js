@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: zidbag.js,v 1.11 2011-05-01 02:36:30 cvsuser Exp $
 
 // ZidBag:
 // - a_zid        an array of Zimbra account ids.

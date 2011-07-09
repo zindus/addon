@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: appinfo.js,v 1.13 2011-04-26 03:43:18 cvsuser Exp $
 
 var AppInfo = {
 	m_app_version       : null,

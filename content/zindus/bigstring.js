@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: bigstring.js,v 1.5 2011-05-01 02:21:51 cvsuser Exp $
 
 // if you want to do 10,000 string concatenations in a row, the performance is better if they are chunked up
 // 

@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: passwordmanager.js,v 1.19 2009-06-28 10:45:13 cvsuser Exp $
 
 function PasswordManagerTb2()
 {

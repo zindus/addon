@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: bimap.js,v 1.15 2011-05-01 02:21:51 cvsuser Exp $
 
 function BiMap(array_a, array_b)
 {

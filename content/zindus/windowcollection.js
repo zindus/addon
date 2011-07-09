@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: windowcollection.js,v 1.17 2011-05-01 02:36:30 cvsuser Exp $
 
 function WindowCollection(a_id)
 {

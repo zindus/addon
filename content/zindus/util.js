@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: util.js,v 1.86 2011-05-01 02:36:30 cvsuser Exp $
 
 function zinAssertCatch(ex)
 {

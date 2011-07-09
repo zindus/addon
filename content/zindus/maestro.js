@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: maestro.js,v 1.27 2011-05-01 02:36:30 cvsuser Exp $
 
 // FIXME: this class needs to be refactored into a component
 // that observes notifications from fsms and reflects them back to clients.

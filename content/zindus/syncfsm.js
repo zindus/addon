@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: syncfsm.js,v 1.306 2011-07-07 12:22:30 cvsuser Exp $
 
 includejs("fsm.js");
 includejs("zmsoapdocument.js");

@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: suo.js,v 1.22 2009-10-13 22:21:22 cvsuser Exp $
 
 // suo == Source Update Operation
 //

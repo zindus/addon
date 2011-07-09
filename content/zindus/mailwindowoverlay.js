@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: mailwindowoverlay.js,v 1.70 2011-05-01 02:36:30 cvsuser Exp $
 
 includejs("uninstall.js");
 

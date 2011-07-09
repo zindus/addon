@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: timer.js,v 1.51 2011-05-01 02:36:30 cvsuser Exp $
 
 function TimerFunctor(id_fsm_functor, on_finish_function, on_finish_function_arg)
 {

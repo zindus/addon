@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: includes.js,v 1.15 2009-11-04 02:38:39 cvsuser Exp $
 
 with (ZindusScopeRegistry.getScope())
 {

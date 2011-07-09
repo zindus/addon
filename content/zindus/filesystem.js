@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: filesystem.js,v 1.30 2011-07-07 11:10:05 cvsuser Exp $
 
 var Filesystem = {
 	m_charset            : "UTF-8",

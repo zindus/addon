@@ -20,7 +20,6 @@
  * Contributor(s): Leni Mayo
  * 
  * ***** END LICENSE BLOCK *****/
-// $Id: xpath.js,v 1.21 2009-10-17 07:14:23 cvsuser Exp $
 
 function Xpath()
 {
