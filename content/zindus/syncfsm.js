@@ -6837,7 +6837,7 @@ SyncFsm.prototype.entryActionUpdateTbGenerator = function(state)
 				let contact  = self.state.a_gd_contact[luid_winner_au];
 				let filename = SyncFsmGd.gd_photo_filename_for(self.a_gd_photo_filenames_in_contact_directory, contact.meta.id, contact.photo.etag);
 
-				zinAssert(filename);
+				zinAssertAndLog(filename, luid_winner_au);
 
 				let nsifile  = SyncFsmGd.gd_photo_nsifile_for(filename);
 
@@ -10466,11 +10466,21 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 			else zinAssertAndLog(false, function() { return contact.toString(); });
 
 			if (zfcPr.isPresent(id)) {
+			    	// we've seen this contact before
+				//
 				zfi = zfcPr.get(id);
 
 				if ('etag' in contact.photo) {
-					if (!zfi.isPresent(FeedItem.ATTR_ETAG) || zfi.get(FeedItem.ATTR_ETAG) != contact.photo.etag
-					                                       || zfi.isPresent(FeedItem.ATTR_GDME)) {
+					if (!zfi.isPresent(FeedItem.ATTR_ETAG) ||
+					     zfi.get(FeedItem.ATTR_ETAG) != contact.photo.etag ||
+					     zfi.isPresent(FeedItem.ATTR_GDME) ||
+					     !SyncFsmGd.gd_photo_filename_for(a_gd_photo_filenames_in_contact_directory, id, contact.photo.etag)) {
+						// always fetching the photo when gd_photo_filename_for() returns null
+						// means we'll be unnecessarily fetching and storing the photo in certain circumstances
+						// eg. when a previous sync involved a TB photo win
+						// but it's a big simplification bcos o/w we'd need to check the gid and tb maps
+						// to know whether the actual user-displayed photo is present.
+						//
 						self.state.a_gd_photo_to_get.push(id);
 						zfi.set(FeedItem.ATTR_ETAG, contact.photo.etag);
 						msg += "photo pushed (new or updated photo) ";
@@ -10497,6 +10507,8 @@ SyncFsmGd.prototype.entryActionGetContactGd3Generator = function(state)
 				}
 			}
 			else if (!is_ignored) {
+				// first we've seen this contact
+				//
 				zfi = self.newZfiCnGdAu(id, contact.meta.updated, contact.meta.edit, contact.meta.self, contact.groups, contact.photo);
 				zfcPr.set(zfi); // add new
 				msg += " added: ";
