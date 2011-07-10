@@ -17,11 +17,15 @@
       </Description>
     </em:targetApplication>
 
-    <!-- Firefox Experiment...
-		 our use of certain mozStorage features requires gecko 1.9.1 ==> firefox 3.5
-		 FIXME: add the ff comment to support build/install/update.rdf
-	  TODO
-	  -->
+    <!-- Notes on the experiment with Firefox Contact Sync:
+         - the addon installs into firefox and sync with Google works fine
+         - firefox doesn't have a built-in contacts store
+         - the addon uses an SQLite analogue of the Thunderbird addressbook (addressbookff.js)
+         - the use of mozStorage means the addon needs gecko 1.9.1 ==> firefox 3.5 at a minimum
+         - mozilla's release of 'Firefox Contacts' has killed my interest in pursuing this further
+           (even though they are a ways away from two-way sync)
+         - if the intent was to support firefox properly we'd want a firefox comment here that fed the build
+           of the corresponding xml element in update.rdf
     <em:targetApplication>
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
@@ -29,54 +33,55 @@
         <em:maxVersion>3.6.*</em:maxVersion>
       </Description>
     </em:targetApplication>
+    -->
 
     <em:targetApplication>
       <!-- Seamonkey -->
       <Description>
         <em:id>{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}</em:id>
         <em:minVersion>2.0a1</em:minVersion> <!-- sm -->
-        <em:maxVersion>2.1b1</em:maxVersion> <!-- sm -->
+        <em:maxVersion>2.2.*</em:maxVersion> <!-- sm -->
       </Description>
     </em:targetApplication>
 
-	<em:targetApplication>
-	  <!-- Postbox -->
-	  <Description>
-	    <em:id>postbox@postbox-inc.com</em:id>
-	    <em:minVersion>1.0b13</em:minVersion>   <!-- pb -->
-	    <em:maxVersion>2.*</em:maxVersion>    <!-- pb -->
-	  </Description>
-	</em:targetApplication>
+    <em:targetApplication>
+      <!-- Postbox -->
+      <Description>
+        <em:id>postbox@postbox-inc.com</em:id>
+        <em:minVersion>1.0b13</em:minVersion>  <!-- pb -->
+        <em:maxVersion>2.*</em:maxVersion>     <!-- pb -->
+      </Description>
+    </em:targetApplication>
 
-	<em:targetApplication>
-	  <!-- Postbox Express -->
-	  <Description>
-	    <em:id>express@postbox-inc.com</em:id>
-	    <em:minVersion>1.0.*</em:minVersion>   <!-- pe -->
-	    <em:maxVersion>1.0.*</em:maxVersion>   <!-- pe -->
-	  </Description>
-	</em:targetApplication>
+    <em:targetApplication>
+      <!-- Postbox Express -->
+      <Description>
+        <em:id>express@postbox-inc.com</em:id>
+        <em:minVersion>1.0.*</em:minVersion>   <!-- pe -->
+        <em:maxVersion>1.0.*</em:maxVersion>   <!-- pe -->
+      </Description>
+    </em:targetApplication>
 
-	<em:targetApplication>
-	  <!-- Spicebird -->
-	  <Description>
-	    <em:id>{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}</em:id>
-	    <em:minVersion>0.4</em:minVersion>       <!-- sb -->
-	    <em:maxVersion>0.8.*</em:maxVersion>     <!-- sb -->
-	  </Description>
-	</em:targetApplication>
+    <em:targetApplication>
+      <!-- Spicebird -->
+      <Description>
+        <em:id>{ee53ece0-255c-4cc6-8a7e-81a8b6e5ba2c}</em:id>
+        <em:minVersion>0.4</em:minVersion>       <!-- sb -->
+        <em:maxVersion>0.8.*</em:maxVersion>     <!-- sb -->
+      </Description>
+    </em:targetApplication>
 
     <em:name>Zindus</em:name>
     <em:optionsURL>chrome://zindus/content/configsettings.xul</em:optionsURL>
     <em:description>Google and Zimbra contact sync for Thunderbird.</em:description>
     <em:creator>Leni Mayo</em:creator>
     <em:contributor>Sunny Bains</em:contributor>
-    <em:homepageURL>http://www.zindus.com/</em:homepageURL>  
+    <em:homepageURL>http://www.zindus.com/</em:homepageURL>
     <em:hidden>false</em:hidden>
     <em:iconURL>chrome://zindus/skin/zindus32x32.gif</em:iconURL>
     <em:updateKey>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyC+XK8GT8SJpfhxXZu7MM+ALv/OmcRfP3m2m6DzWrB121ToA3zEfUOfD568gDuKExpptuomgNyYRUB32yCQfmHryMS4fXXuG49JGlQq7kMNXW+aSp7IE5Q6DExVhLZ0jOSXk+alWbTWLFpXNLuI0n72T291Otmq0YEyrlqx3UbwIDAQAB</em:updateKey>
     <em:updateURL>http://www.zindus.com/download/xpi-update-rdf.php?item_id=%ITEM_ID%&amp;item_version=%ITEM_VERSION%&amp;item_status=%ITEM_STATUS%&amp;app_id=%APP_ID%&amp;app_os=%APP_OS%&amp;app_abi=%APP_ABI%&amp;reltype=dev</em:updateURL>
 
-  </rdf:Description>      
+  </rdf:Description>
 
 </rdf:RDF>
