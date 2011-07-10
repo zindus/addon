@@ -53,12 +53,10 @@ function SyncFsm()
 }
 function SyncFsmGd(id_fsm)     { SyncFsm.call(this);   }
 function SyncFsmGdAuth(id_fsm) { SyncFsmGd.call(this); }
-function SyncFsmLd(id_fsm)     { SyncFsm.call(this);   }
 function SyncFsmZm(id_fsm)     { SyncFsm.call(this);   }
 
 SyncFsmGd.prototype     = new SyncFsm();
 SyncFsmGdAuth.prototype = new SyncFsmGd();
-SyncFsmLd.prototype     = new SyncFsm();
 SyncFsmZm.prototype     = new SyncFsm();
 
 // Sync is broken up into a number of steps, coded as a finite state machine
@@ -232,56 +230,6 @@ SyncFsmGdAuth.prototype.initialiseFsm = function()
 	SyncFsmGd.prototype.initialiseFsm.call(this);
 
 	this.fsm.m_transitions['stAuthCheck']['evNext'] = 'final';
-}
-
-SyncFsmLd.prototype.initialiseFsm = function()
-{
-	var transitions = {
-		start:             { evCancel: 'final', evNext: 'stAuthSelect',                                     evLackIntegrity: 'final'     },
-		stAuthSelect:      { evCancel: 'final', evNext: 'stAuthLogin',                                      evLackIntegrity: 'final'     },
-		stAuthLogin:       { evCancel: 'final', evNext: 'final',            evHttpRequest: 'stHttpRequest'                               },
-		stAuthCheck:       { evCancel: 'final', evNext: 'final',                                            evLackIntegrity: 'final'     },
-
-		// FIXME serge:
-		// - once ldap auth is working, you will change the 'evNext' state from 'final' above to stLoad etc
-		//
-		stLoad:            { evCancel: 'final', evNext: 'stLoadTb',         evRepeat:      'stLoad',          evLackIntegrity: 'final'   },
-		stLoadTb:          { evCancel: 'final', evNext: 'stConverge',       evRepeat:      'stLoadTb',        evLackIntegrity: 'final'   },
-		stConverge:        { evCancel: 'final', evNext: 'stUpdateTb',       evRepeat:      'stConverge',      evLackIntegrity: 'final'   },
-		stUpdateTb:        { evCancel: 'final', evNext: 'stUpdateCleanup',  evRepeat:      'stUpdateTb',      evLackIntegrity: 'final'   },
-		stUpdateCleanup:   { evCancel: 'final', evNext: 'stCommit',         evRepeat:      'stUpdateCleanup', evLackIntegrity: 'final'   },
-		stCommit:          { evCancel: 'final', evNext: 'final'                                                                          },
-
-		stHttpRequest:     { evCancel: 'final', evNext: 'stHttpResponse'                                                                 },
-		stHttpResponse:    { evCancel: 'final', evNext: 'final' /* evNext here is set by setupHttp */                                    },
-
-		final:             { }
-	};
-
-	var a_entry = {
-		start:                  this.entryActionStart,
-		stAuthSelect:           this.entryActionAuthSelect,
-		stAuthLogin:            this.entryActionAuthLogin,
-		stAuthCheck:            this.entryActionAuthCheck,
-		stLoad:                 this.entryActionLoad,
-		stLoadTb:               this.entryActionLoadTb,
-		stConverge:             this.entryActionConverge,
-		stUpdateTb:             this.entryActionUpdateTb,
-		stUpdateCleanup:        this.entryActionUpdateCleanup,
-		stCommit:               this.entryActionCommit,
-
-		stHttpRequest:          this.entryActionHttpRequest,
-		stHttpResponse:         this.entryActionHttpResponse,
-
-		final:                  this.entryActionFinal
-	};
-
-	var a_exit = {
-		stAuthLogin:            this.exitActionAuthLogin,
-		stHttpResponse:         this.exitActionHttpResponse  /* this gets tweaked by setupHttpZm */
-	};
-
-	this.fsm = new Fsm(transitions, a_entry, a_exit);
 }
 
 SyncFsm.prototype.start = function(win)
@@ -9224,31 +9172,35 @@ SyncFsm.isOfInterest = function(zfc, key)
 	return ret;
 }
 
+
 SyncFsm.newSyncFsm = function(syncfsm_details, sfcd)
 {
-	var id_fsm  = null;
-	var account = sfcd.account();
-	var type    = syncfsm_details.type;
-	var format  = account.format_xx();
-	var syncfsm;
+	let id_fsm  = null;
+	let account = sfcd.account();
+	let type    = syncfsm_details.type;
+	let format  = account.format_xx();
+	let key     = type + format;
 
 	zinAssert(account);
+	zinAssertAndLog(key in SyncFsm.newSyncFsm.a_map, "mismatched: format: " + format + " type: " + type);
 
-	logger().debug("newSyncFsm: account: " + account.toString() + " account_index: " + sfcd.m_account_index +
-	                   " is_attended: " + syncfsm_details.is_attended);
+	logger().debug("newSyncFsm: account: " + account.toString() +
+			       " account_index: "      + sfcd.m_account_index +
+	               " is_attended: "        + syncfsm_details.is_attended);
 
-	if      (format == FORMAT_GD && type == "twoway")    { syncfsm = new SyncFsmGd();     id_fsm = Maestro.FSM_ID_GD_TWOWAY;   }
-	else if (format == FORMAT_LD && type == "twoway")    { syncfsm = new SyncFsmLd();     id_fsm = Maestro.FSM_ID_LD_TWOWAY;   }
-	else if (format == FORMAT_ZM && type == "twoway")    { syncfsm = new SyncFsmZm();     id_fsm = Maestro.FSM_ID_ZM_TWOWAY;   }
-	else if (format == FORMAT_GD && type == "authonly")  { syncfsm = new SyncFsmGdAuth(); id_fsm = Maestro.FSM_ID_GD_AUTHONLY; }
-	else if (format == FORMAT_LD && type == "authonly")  { syncfsm = new SyncFsmLd();     id_fsm = Maestro.FSM_ID_LD_AUTHONLY; }
-	else if (format == FORMAT_ZM && type == "authonly")  { syncfsm = new SyncFsmZm();     id_fsm = Maestro.FSM_ID_ZM_AUTHONLY; }
-	else zinAssertAndLog(false, "mismatched case: format: " + format + " type: " + type);
+	let o = SyncFsm.newSyncFsm.a_map[key]
+	let syncfsm = o.syncfsm();
 
-	syncfsm.initialise(id_fsm, (syncfsm_details.is_attended ? true : false), sfcd);
+	syncfsm.initialise(o.id_fsm, (syncfsm_details.is_attended ? true : false), sfcd);
 
 	return syncfsm;
 }
+
+SyncFsm.newSyncFsm.a_map = SyncFsm.newSyncFsm.a_map || new Object();
+SyncFsm.newSyncFsm.a_map["twoway"   + FORMAT_GD] = { id_fsm: Maestro.FSM_ID_GD_TWOWAY,   syncfsm: function() { return new SyncFsmGd(); } };
+SyncFsm.newSyncFsm.a_map["twoway"   + FORMAT_ZM] = { id_fsm: Maestro.FSM_ID_ZM_TWOWAY,   syncfsm: function() { return new SyncFsmZm(); } };
+SyncFsm.newSyncFsm.a_map["authonly" + FORMAT_GD] = { id_fsm: Maestro.FSM_ID_GD_AUTHONLY, syncfsm: function() { return new SyncFsmGdAuth(); } };
+SyncFsm.newSyncFsm.a_map["authonly" + FORMAT_ZM] = { id_fsm: Maestro.FSM_ID_ZM_AUTHONLY, syncfsm: function() { return new SyncFsmZm(); } };
 
 SyncFsm.prototype.setupHttpGd = function(state, eventOnResponse, http_method, url, headers, body, on_xhr, on_error, log_response)
 {
@@ -11339,86 +11291,3 @@ ContactCollectionMeta.prototype = {
 		this.m_a.push(obj); // properties: luid_tb, uri, 
 	}
 }
-
-
-// LDAP goes here.
-
-SyncFsmLd.prototype.initialiseState = function(id_fsm, is_attended, sourceid, sfcd)
-{
-	SyncFsm.prototype.initialiseState.call(this, id_fsm, is_attended, sourceid, sfcd);
-
-	var state = this.state;
-
-	// serge FIXME:
-	// - state that is carried across the life of an ldap sync is initialised here
-
-	state.initialiseSource(sourceid, FORMAT_LD);
-}
-
-// Validate the account information supplied by the user
-//
-SyncFsmLd.prototype.entryActionAuthSelect = function(state, event, continuation)
-{
-	var nextEvent = null;
-
-	this.state.stopwatch.mark(state);
-
-	// serge FIXME: 
-	// - don't always need username + password to connect to an ldap server...
-	// - will need an equivalent of isValidUrl to test connectivity to the ldap server
-	//
-	var sourceid_pr = this.state.sourceid_pr;
-	var url         = this.account().url;
-	var username    = this.account().username;
-	var password    = this.account().passwordlocator.getPassword();
-
-	if (url && /^ldaps?:\/\//.test(url)) // && username.length > 0 && password && password.length > 0 && isValidUrl(url))
-	{
-		nextEvent = 'evNext';
-	}
-	else
-	{
-		this.state.stopFailCode = 'failon.integrity.zm.bad.credentials';
-		nextEvent = 'evLackIntegrity';
-	}
-
-	continuation(nextEvent);
-}
-
-// Authenticate to the ldap server (if necessary)
-//
-SyncFsmLd.prototype.entryActionAuthLogin = function(state, event, continuation)
-{
-	this.state.stopwatch.mark(state);
-
-	var sourceid_pr = this.state.sourceid_pr;
-
-	let dlg = UserPrompt.show("ldap authentication goes here", {'buttons' : "accept"});
-
-	// FIXME serge:
-	// - you will need to create an equivalent to setupHttpGd and setupHttpZm to support communication with an ldap server
-	// - setupHttpGd and setupHttpZm use XMLHttpRequest. I don't know what the mozilla javascript library is for talking ldap,
-	//   or even whether there is one (!)
-	//
-	// this.setupLdap(state, 'evNext', ...);
-	// continuation('evHttpRequest');
-
-	continuation('evNext');
-}
-
-// process the response to the authenticate request
-//
-SyncFsmLd.prototype.exitActionAuthLogin = function(state, event)
-{
-	if (!this.state.m_http || !this.state.m_http.response() || event == "evCancel")
-		return;
-
-	var response = this.state.m_http.response();
-
-	if (response)
-	{
-		// this is for zimbra - need something similar for ldap?
-		// conditionalGetElementByTagNameNS(response, Xpath.NS_ZACCOUNT, "authToken", this.state, 'authToken');
-	}
-}
-
