@@ -195,18 +195,28 @@ AddressBook.prototype.getAddressBookNameByUri = function(uri)
 	return ret;
 }
 
+AddressBookTb2.prototype.getAddressBookIterator = function()
+{
+	var root = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Ci.nsIAbDirectory);
+	return root.childNodes;
+}
+
+AddressBookTb3.prototype.getAddressBookIterator = function()
+{
+	return this.nsIAbManager().directories;
+}
+
 AddressBook.prototype.forEachAddressBook = function(functor)
 {
 	zinAssert(typeof(Ci.nsIAbDirectory) != 'undefined');
 
-	var root      = this.nsIRDFService().GetResource("moz-abdirectory://").QueryInterface(Ci.nsIAbDirectory);
-	var nodes     = root.childNodes;
+	var iter      = this.getAddressBookIterator();
 	var fContinue = true;
 	var aUri      = new Object();
 	var uri;
 
-	while (nodes.hasMoreElements() && fContinue) {
-		var elem = nodes.getNext().QueryInterface(Ci.nsIAbDirectory);
+	while (iter.hasMoreElements() && fContinue) {
+		var elem = iter.getNext().QueryInterface(Ci.nsIAbDirectory);
 
 		uri = this.directoryProperty(elem, "URI");
 
@@ -1019,7 +1029,8 @@ AddressBookPb.prototype.forEachCardGenerator = function(uri, functor, yield_coun
 {
 	let a_pb_methods  = newObjectWithKeys('lookupCard', 'forEachCardGenerator');
 	let a_tb2_methods = newObjectWithKeys('nsIAbDirectory', 'nsIAddressBook', 'addCard', 'updateCard', 'setCardProperties',
-	                                  'setCardAttributes', 'getCardAttributes', 'getCardProperty', 'deleteAddressBook', 'deleteCards');
+	                                  'setCardAttributes', 'getCardAttributes', 'getCardProperty', 'deleteAddressBook', 'deleteCards',
+									  'getAddressBookIterator');
 	let i;
 
 	// Postbox

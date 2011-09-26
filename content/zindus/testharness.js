@@ -2333,12 +2333,9 @@ TestHarness.prototype.testAbCreate1 = function()
 		var uri = abProps.URI;
 		var zab = AddressBook.new();
 		zab.populateNameToUriMap();
-		var rdf = Cc["@mozilla.org/rdf/rdf-service;1"].getService(Ci.nsIRDFService);
-		var dir = rdf.GetResource(uri).QueryInterface(Ci.nsIAbDirectory);
 
 		this.m_logger.debug("created addressbook name: " + name + " uri: " + uri + " typeof: " + typeof(uri));
 		this.m_logger.debug("abProps.prefName: " + abProps.prefName);
-		this.m_logger.debug("dirPrefId: " + dir.dirPrefId);
 	}
 }
 
