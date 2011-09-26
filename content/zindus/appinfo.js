@@ -84,6 +84,8 @@ var AppInfo = {
 				(((app_name == this.eApp.thunderbird) && versionChecker.compare(this.app_version(), "3.0") >= 0)) ||
 				(((app_name == this.eApp.seamonkey)   && versionChecker.compare(this.app_version(), "2.0") >= 0));
 
+			this.m_is_photo = false; // set to false until kinks worked out.
+
 			logger().debug("AppInfo.is_photo: returns: " + this.m_is_photo);
 		}
 		return this.m_is_photo;
