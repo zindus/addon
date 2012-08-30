@@ -9607,13 +9607,7 @@ function HttpStateGd(http_method, url, headers, authToken, body, on_xhr, on_erro
 {
 	zinAssert(on_error == HttpStateGd.ON_ERROR_EVNEXT || on_error == HttpStateGd.ON_ERROR_EVCANCEL);
 
-	var a_default_headers = { 'Accept':          null,
-	                          'Accept-Language': null,
-							  'Accept-Encoding': null,
-							  'Accept-Charset':  null,
-							  'User-Agent':      null,
-							  'GData-Version':   String(GD_API_VERSION).substr(0,1)
-							  };
+	var a_default_headers = { 'GData-Version':   String(GD_API_VERSION).substr(0,1) };
 	var http_headers = new Object();
 	var key;
 
